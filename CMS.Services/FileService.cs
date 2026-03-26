@@ -1,0 +1,536 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using CMS.Data.Interfaces;
+using CMS.Domain.Models;
+using CMS.Infrastructure.Interfaces;
+using CMS.Services.DTOs;
+using CMS.Services.Interfaces;
+
+namespace CMS.Services
+{
+    public class FileService : IFileService
+    {
+        private const long   MaxFileSizeBytes = 100L * 1024 * 1024;
+        private const int    MaxBatchCount    = 10;
+
+        private static readonly HashSet<string> AllowedExtensions = new HashSet<string>(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx",
+            ".ppt", ".pptx", ".jpg", ".png", ".gif", ".zip"
+        };
+
+        private readonly IFileDocumentRepository  _fileDocumentRepository;
+        private readonly IFolderRepository        _folderRepository;
+        private readonly IOrgUnitRepository       _orgUnitRepository;
+        private readonly IVirusScanService        _virusScanService;
+        private readonly IPermissionService       _permissionService;
+        private readonly INetworkDriveHelper      _networkDriveHelper;
+        private readonly IAuditService            _auditService;
+        private readonly INotificationRepository  _notificationRepository;
+        private readonly IUserAccountRepository   _userAccountRepository;
+        private readonly ILoggingService          _loggingService;
+        private readonly IPermissionRepository    _permissionRepository;
+        private readonly IFilePermissionRepository _filePermissionRepository;
+
+        public FileService(
+            IFileDocumentRepository  fileDocumentRepository,
+            IFolderRepository        folderRepository,
+            IOrgUnitRepository       orgUnitRepository,
+            IVirusScanService        virusScanService,
+            IPermissionService       permissionService,
+            INetworkDriveHelper      networkDriveHelper,
+            IAuditService            auditService,
+            INotificationRepository  notificationRepository,
+            IUserAccountRepository   userAccountRepository,
+            ILoggingService          loggingService,
+            IPermissionRepository    permissionRepository    = null,
+            IFilePermissionRepository filePermissionRepository = null)
+        {
+            if (fileDocumentRepository == null) throw new ArgumentNullException("fileDocumentRepository");
+            if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
+            if (orgUnitRepository      == null) throw new ArgumentNullException("orgUnitRepository");
+            if (virusScanService       == null) throw new ArgumentNullException("virusScanService");
+            if (permissionService      == null) throw new ArgumentNullException("permissionService");
+            if (networkDriveHelper     == null) throw new ArgumentNullException("networkDriveHelper");
+            if (auditService           == null) throw new ArgumentNullException("auditService");
+            if (notificationRepository == null) throw new ArgumentNullException("notificationRepository");
+            if (userAccountRepository  == null) throw new ArgumentNullException("userAccountRepository");
+            if (loggingService         == null) throw new ArgumentNullException("loggingService");
+
+            _fileDocumentRepository   = fileDocumentRepository;
+            _folderRepository         = folderRepository;
+            _orgUnitRepository        = orgUnitRepository;
+            _virusScanService         = virusScanService;
+            _permissionService        = permissionService;
+            _networkDriveHelper       = networkDriveHelper;
+            _auditService             = auditService;
+            _notificationRepository   = notificationRepository;
+            _userAccountRepository    = userAccountRepository;
+            _loggingService           = loggingService;
+            _permissionRepository     = permissionRepository;
+            _filePermissionRepository = filePermissionRepository;
+        }
+
+        // -----------------------------------------------------------------------
+        // UploadFiles
+        // -----------------------------------------------------------------------
+
+        public IEnumerable<UploadResult> UploadFiles(
+            IEnumerable<FileUploadRequest> files, int folderId, UserContext user)
+        {
+            if (files == null) throw new ArgumentNullException("files");
+            if (user  == null) throw new ArgumentNullException("user");
+
+            var fileList = files.ToList();
+            var results  = new List<UploadResult>();
+
+            if (fileList.Count > MaxBatchCount)
+            {
+                foreach (var f in fileList)
+                    results.Add(Fail(f.FileName, string.Format(
+                        "Batch contains {0} files; maximum is {1}.", fileList.Count, MaxBatchCount)));
+                return results;
+            }
+
+            var folder = _folderRepository.GetById(folderId);
+            if (folder == null)
+                throw new InvalidOperationException(string.Format("Folder with ID {0} was not found.", folderId));
+            if (folder.IsDeleted)
+                throw new InvalidOperationException("Cannot upload to a deleted folder.");
+            if (folder.IsArchived)
+                throw new InvalidOperationException("Cannot upload to an archived folder.");
+
+            // Admin (AppRole=4) and Manager (AppRole=3) bypass permission check
+            bool isPrivileged = user.AppRole >= 3;
+            if (!isPrivileged && !_permissionService.CheckPermission(user.UserID, folderId, "Write"))
+                throw new UnauthorizedAccessException(string.Format(
+                    "User {0} does not have Write permission on folder {1}.", user.UserID, folderId));
+
+            foreach (var request in fileList)
+                results.Add(UploadSingleFile(request, folder, user));
+
+            return results;
+        }
+
+        // -----------------------------------------------------------------------
+        // DownloadFile
+        // -----------------------------------------------------------------------
+
+        public FileDownloadResult DownloadFile(int fileId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var doc = _fileDocumentRepository.GetById(fileId);
+            if (doc == null)
+                throw new InvalidOperationException(string.Format("FileDocument with ID {0} was not found.", fileId));
+            if (doc.FileStatus == 3)
+                throw new InvalidOperationException("The requested file has been deleted.");
+
+            if (!_permissionService.CheckPermission(user.UserID, doc.FolderID, "Read"))
+                throw new UnauthorizedAccessException(string.Format(
+                    "User {0} does not have Read permission on folder {1}.", user.UserID, doc.FolderID));
+
+            Stream fileStream;
+            try
+            {
+                fileStream = _networkDriveHelper.ReadFile(doc.PhysicalPath);
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error(string.Format(
+                    "FileService: Failed to read file '{0}' from network drive.", doc.PhysicalPath), ex);
+                return new FileDownloadResult
+                {
+                    FileName     = doc.OriginalFileName,
+                    Success      = false,
+                    ErrorMessage = "The file could not be read from storage."
+                };
+            }
+
+            string recomputedChecksum = ComputeSha256(fileStream);
+            fileStream.Position = 0;
+
+            if (!string.Equals(recomputedChecksum, doc.Checksum, StringComparison.OrdinalIgnoreCase))
+            {
+                Log(user, "File", "DOWNLOAD", "storage.FileDocument", fileId, 2,
+                    string.Format("Checksum mismatch for '{0}'. Stored: {1}, Recomputed: {2}.",
+                        doc.OriginalFileName, doc.Checksum, recomputedChecksum));
+
+                _notificationRepository.Insert(new Notification
+                {
+                    RecipientUserId = user.UserID,
+                    EventType       = "FileIntegrityFailure",
+                    RelatedEntityId = fileId.ToString(),
+                    MessageText     = string.Format(
+                        "File '{0}' failed integrity check. Please contact your administrator.",
+                        doc.OriginalFileName),
+                    DeliveredAt = DateTime.Now
+                });
+
+                fileStream.Dispose();
+                return new FileDownloadResult
+                {
+                    FileName     = doc.OriginalFileName,
+                    Success      = false,
+                    ErrorMessage = string.Format("File '{0}' failed integrity check.", doc.OriginalFileName)
+                };
+            }
+
+            Log(user, "File", "DOWNLOAD", "storage.FileDocument", fileId, 1,
+                string.Format("Downloaded file '{0}'.", doc.OriginalFileName));
+
+            return new FileDownloadResult
+            {
+                FileName      = doc.OriginalFileName,
+                FileStream    = fileStream,
+                FileSizeBytes = doc.FileSizeBytes,
+                Success       = true
+            };
+        }
+
+        // -----------------------------------------------------------------------
+        // DeleteFile
+        // -----------------------------------------------------------------------
+
+        public void DeleteFile(int fileId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var doc = _fileDocumentRepository.GetById(fileId);
+            if (doc == null)
+                throw new InvalidOperationException(string.Format("FileDocument with ID {0} was not found.", fileId));
+            if (doc.FileStatus == 3)
+                throw new InvalidOperationException("The file has already been deleted.");
+
+            if (!_permissionService.CheckPermission(user.UserID, doc.FolderID, "Delete"))
+                throw new UnauthorizedAccessException(string.Format(
+                    "User {0} does not have Delete permission on folder {1}.", user.UserID, doc.FolderID));
+
+            _fileDocumentRepository.SoftDelete(fileId, user.UserID);
+
+            Log(user, "File", "DELETE", "storage.FileDocument", fileId, 1,
+                string.Format("Soft-deleted file '{0}'.", doc.OriginalFileName));
+        }
+
+        // -----------------------------------------------------------------------
+        // GetFilesInFolder
+        // -----------------------------------------------------------------------
+
+        public IEnumerable<FileDocument> GetFilesInFolder(int folderId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            // Admin (4) and Manager (3) bypass permission check
+            bool isPrivileged = user.AppRole >= 3;
+            if (!isPrivileged && !_permissionService.CheckPermission(user.UserID, folderId, "Read"))
+                throw new UnauthorizedAccessException(string.Format(
+                    "User {0} does not have Read permission on folder {1}.", user.UserID, folderId));
+
+            return _fileDocumentRepository.GetByFolder(folderId)
+                .Where(f => f.FileStatus != 3); // exclude deleted
+        }
+
+        // -----------------------------------------------------------------------
+        // GetStorageReport
+        // -----------------------------------------------------------------------
+
+        public StorageUsageReport GetStorageReport(int orgUnitId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var orgUnit = _orgUnitRepository.GetById(orgUnitId);
+            if (orgUnit == null)
+                throw new InvalidOperationException(string.Format("OrgUnit with ID {0} was not found.", orgUnitId));
+
+            var rootFolders = _folderRepository.GetRootFoldersByOrgUnit(orgUnitId).ToList();
+            var allFolders  = new List<Folder>();
+            foreach (var root in rootFolders)
+            {
+                allFolders.Add(root);
+                allFolders.AddRange(_folderRepository.GetDescendants(root.FolderID));
+            }
+
+            var report = new StorageUsageReport
+            {
+                OrgUnitID   = orgUnitId,
+                OrgUnitName = orgUnit.OrgUnitNameTH
+            };
+
+            foreach (var folder in allFolders.Where(f => !f.IsDeleted))
+            {
+                report.Folders.Add(new FolderStorageEntry
+                {
+                    FolderID          = folder.FolderID,
+                    FolderName        = folder.FolderName,
+                    CurrentUsageBytes = folder.FolderSizeBytes
+                });
+            }
+
+            return report;
+        }
+
+        public IEnumerable<FileDocument> GetAllFilesGroupedByFolder(UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (user.AppRole < 3)
+                throw new UnauthorizedAccessException("GetAllFilesGroupedByFolder requires Manager or Admin role.");
+            return _fileDocumentRepository.GetAllGroupedByFolder();
+        }
+
+        public IEnumerable<FileDocument> GetFilesByOrgUnit(int orgUnitId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (user.AppRole < 3)
+                throw new UnauthorizedAccessException("GetFilesByOrgUnit requires Manager or Admin role.");
+            return _fileDocumentRepository.GetByOrgUnit(orgUnitId);
+        }
+
+        public void RenameFile(int fileId, string newName, UserContext user)
+        {
+            if (user    == null) throw new ArgumentNullException("user");
+            if (string.IsNullOrWhiteSpace(newName)) throw new ArgumentException("ชื่อไฟล์ต้องไม่ว่าง");
+
+            var file = _fileDocumentRepository.GetById(fileId);
+            if (file == null)
+                throw new InvalidOperationException(string.Format("ไม่พบไฟล์ ID {0}", fileId));
+            if (file.IsDeleted)
+                throw new InvalidOperationException("ไม่สามารถเปลี่ยนชื่อไฟล์ที่ถูกลบแล้ว");
+
+            string oldName = file.OriginalFileName;
+            _fileDocumentRepository.RenameFile(fileId, newName.Trim());
+
+            Log(user, "File", "RENAME", "storage.FileDocument", fileId, 1,
+                string.Format("เปลี่ยนชื่อจาก '{0}' เป็น '{1}'", oldName, newName.Trim()));
+        }
+
+        // -----------------------------------------------------------------------
+        // Private: single-file upload pipeline
+        // -----------------------------------------------------------------------
+
+        private UploadResult UploadSingleFile(FileUploadRequest request, Folder folder, UserContext user)
+        {
+            string writtenPath = null;
+            int?   insertedId  = null;
+
+            try
+            {
+                string ext = Path.GetExtension(request.FileName);
+                if (string.IsNullOrEmpty(ext) || !AllowedExtensions.Contains(ext))
+                    return Fail(request.FileName, string.Format(
+                        "File extension '{0}' is not permitted.", ext));
+
+                if (request.FileSizeBytes > MaxFileSizeBytes)
+                    return Fail(request.FileName, string.Format(
+                        "File size {0:N0} bytes exceeds the 100 MB limit.", request.FileSizeBytes));
+
+                if (request.FileStream == null)
+                    return Fail(request.FileName, "File stream is null.");
+
+                // Check quota before proceeding
+                if (folder.QuotaBytes.HasValue)
+                {
+                    long projectedUsage = folder.FolderSizeBytes + request.FileSizeBytes;
+                    if (projectedUsage > folder.QuotaBytes.Value)
+                    {
+                        long remainingQuota = folder.QuotaBytes.Value - folder.FolderSizeBytes;
+                        return Fail(request.FileName, string.Format(
+                            "Upload would exceed folder quota. Current usage: {0:N0} bytes, Quota: {1:N0} bytes, Remaining: {2:N0} bytes.",
+                            folder.FolderSizeBytes, folder.QuotaBytes.Value, remainingQuota));
+                    }
+                }
+
+                request.FileStream.Position = 0;
+                string checksum = ComputeSha256(request.FileStream);
+                request.FileStream.Position = 0;
+
+                // Virus scan
+                ScanResult scanResult = _virusScanService.Scan(request.FileStream, request.FileName);
+                request.FileStream.Position = 0;
+
+                if (scanResult.ScannerError)
+                {
+                    // ClamAV unavailable — allow upload but mark VirusScanStatus = 0 (pending scan)
+                    Log(user, "File", "UPLOAD", "storage.FileDocument", 0, 1, "Virus scanner unavailable — file queued for later scan.");
+                    scanResult.IsClean = false; // will be stored as status 0 (pending), not clean
+                }
+
+                if (!scanResult.IsClean && !scanResult.ScannerError)
+                {
+                    Log(user, "File", "UPLOAD", "storage.FileDocument", 0, 2,
+                        string.Format("Virus threat detected: {0}.", scanResult.ThreatName));
+                    return Fail(request.FileName, string.Format(
+                        "Virus threat detected in '{0}': {1}.", request.FileName, scanResult.ThreatName));
+                }
+
+                // Write to network drive
+                writtenPath = _networkDriveHelper.BuildPath(folder.OrgUnitID, folder.FolderID, request.FileName);
+                _networkDriveHelper.WriteFile(writtenPath, request.FileStream);
+
+                string storedFileName = Path.GetFileName(writtenPath);
+                string mimeType = string.IsNullOrEmpty(request.MimeType) ? "application/octet-stream" : request.MimeType;
+
+                var doc = new FileDocument
+                {
+                    FolderID         = folder.FolderID,
+                    OriginalFileName = request.FileName,
+                    StoredFileName   = storedFileName,
+                    FileExtension    = ext,
+                    MimeType         = mimeType,
+                    FileSizeBytes    = request.FileSizeBytes,
+                    PhysicalPath     = writtenPath,
+                    Checksum         = checksum,
+                    VirusScanStatus  = scanResult.ScannerError ? 0   // 0=Pending (scanner unavailable)
+                                     : scanResult.IsClean    ? 1   // 1=Clean
+                                                             : 2,  // 2=Infected
+                    VirusScanDate    = DateTime.Now,
+                    FileStatus       = 1, // 1=Active
+                    UploadedBy       = user.UserID,
+                    UploadedDate     = DateTime.Now,
+                    Version          = 1
+                };
+
+                insertedId = _fileDocumentRepository.Insert(doc);
+
+                // Auto-propagate folder permissions to the new file
+                if (_permissionRepository != null && _filePermissionRepository != null)
+                {
+                    try
+                    {
+                        var folderPerms = _permissionRepository.GetByFolder(folder.FolderID)
+                            .Where(p => p.RevokedDate == null
+                                     && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today))
+                            .ToList();
+
+                        // Revoke any existing file permissions first to avoid duplicates
+                        var existingFilePerms = _filePermissionRepository.GetByFile(insertedId.Value).ToList();
+                        foreach (var ep in existingFilePerms)
+                            _filePermissionRepository.Revoke(ep.FilePermissionID, user.UserID, "Replaced by folder propagation on upload");
+
+                        foreach (var fp in folderPerms)
+                        {
+                            _filePermissionRepository.Insert(new FilePermission
+                            {
+                                FileID         = insertedId.Value,
+                                PrincipalType  = fp.PrincipalType,
+                                PrincipalID    = fp.PrincipalID,
+                                CanRead        = fp.CanRead,
+                                CanWrite       = fp.CanWrite,
+                                CanDelete      = fp.CanDelete,
+                                CanModify      = fp.CanModify,
+                                CanFullControl = fp.CanFullControl,
+                                IsDeny         = fp.IsDeny,
+                                ExpiryDate     = fp.ExpiryDate,
+                                GrantedBy      = user.UserID,
+                                GrantedDate    = DateTime.Now
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Permission propagation failure must not block upload
+                        _loggingService.Error(string.Format(
+                            "FileService: Failed to propagate folder permissions to file {0}: {1}",
+                            insertedId.Value, ex.Message), ex);
+                    }
+                }
+
+                // Update folder size
+                folder.FolderSizeBytes += request.FileSizeBytes;
+                folder.FileCount       += 1;
+                _folderRepository.Update(folder);
+
+                Log(user, "File", "UPLOAD", "storage.FileDocument", insertedId.Value, 1,
+                    string.Format("Uploaded '{0}' ({1:N0} bytes) to folder {2}.",
+                        request.FileName, request.FileSizeBytes, folder.FolderID));
+
+                return new UploadResult
+                {
+                    OriginalFileName = request.FileName,
+                    Success          = true,
+                    FileDocumentId   = insertedId
+                };
+            }
+            catch (Exception ex)
+            {
+                if (writtenPath != null)
+                {
+                    try
+                    {
+                        if (_networkDriveHelper.FileExists(writtenPath))
+                            _networkDriveHelper.DeleteFile(writtenPath);
+                    }
+                    catch (Exception rollbackEx)
+                    {
+                        _loggingService.Error(string.Format(
+                            "FileService: Rollback failed — could not delete '{0}'.", writtenPath), rollbackEx);
+                    }
+                }
+
+                if (insertedId.HasValue)
+                {
+                    try { _fileDocumentRepository.SoftDelete(insertedId.Value, user.UserID); }
+                    catch (Exception rollbackEx)
+                    {
+                        _loggingService.Error(string.Format(
+                            "FileService: Rollback failed — could not soft-delete FileDocument {0}.", insertedId.Value),
+                            rollbackEx);
+                    }
+                }
+
+                _loggingService.Error(string.Format("FileService: Upload failed for '{0}'.", request.FileName), ex);
+                Log(user, "File", "UPLOAD", "storage.FileDocument", 0, 2, ex.Message);
+
+                return Fail(request.FileName, "An unexpected error occurred during upload. The operation has been rolled back.");
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // Helpers
+        // -----------------------------------------------------------------------
+
+        private static string ComputeSha256(Stream stream)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] hash = sha256.ComputeHash(stream);
+                var sb = new StringBuilder(64);
+                foreach (byte b in hash)
+                    sb.Append(b.ToString("x2"));
+                return sb.ToString();
+            }
+        }
+
+        private void Log(UserContext user, string module, string action, string tableName,
+                         int recordId, int result, string newValue = null)
+        {
+            try
+            {
+                _auditService.Log(new AuditEntry
+                {
+                    Module      = module,
+                    Action      = action,
+                    UserID      = user.UserID,
+                    TableName   = tableName,
+                    RecordID    = recordId > 0 ? (int?)recordId : null,
+                    NewValue    = newValue,
+                    MachineName = user.MachineName,
+                    IPAddress   = user.IPAddress,
+                    SessionID   = user.SessionID,
+                    Result      = result,
+                    AuditDate   = DateTime.Now
+                });
+            }
+            catch { }
+        }
+
+        private static UploadResult Fail(string fileName, string message)
+        {
+            return new UploadResult { OriginalFileName = fileName, Success = false, ErrorMessage = message };
+        }
+    }
+}

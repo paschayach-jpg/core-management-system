@@ -1,0 +1,100 @@
+C:\code_programe\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.AssemblyReference.cache
+C:\code_programe\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.CoreCompileInputs.cache
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.exe.config
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.exe
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.pdb
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Data.dll
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Domain.dll
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Infrastructure.dll
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Services.dll
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\log4net.dll
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Domain.pdb
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Infrastructure.pdb
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Data.pdb
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Services.pdb
+C:\code_programe\MenuImport\CMS\CMS.Presentation\bin\Debug\log4net.xml
+C:\code_programe\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Pres.F339C674.Up2Date
+C:\code_programe\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.exe
+C:\code_programe\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.pdb
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.exe.config
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.exe
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.pdb
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Data.dll
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Domain.dll
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Infrastructure.dll
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Services.dll
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\log4net.dll
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Domain.pdb
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Infrastructure.pdb
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Data.pdb
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Services.pdb
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\bin\Debug\log4net.xml
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.AssemblyReference.cache
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.CoreCompileInputs.cache
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Pres.F339C674.Up2Date
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.exe
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.pdb
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.MDI_Container.resources
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.GenerateResource.cache
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.PermissionForm.resources
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.CreateOrgUnitDialog.resources
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.FolderForm.resources
+C:\Code_Program\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.ApprovalInboxForm.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.exe.config
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.exe
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.pdb
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Data.dll
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Domain.dll
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Infrastructure.dll
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Services.dll
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\log4net.dll
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Domain.pdb
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Infrastructure.pdb
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Data.pdb
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Services.pdb
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\log4net.xml
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.AssemblyReference.cache
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.ApprovalInboxForm.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.CreateOrgUnitDialog.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.FolderForm.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.MDI_Container.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.PermissionForm.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.GenerateResource.cache
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.CoreCompileInputs.cache
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Pres.F339C674.Up2Date
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.exe
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.pdb
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.ConfigAdminForm.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.FileUploadForm.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.ApplyTemplateDialog.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.EmployeeSearchDialog.resources
+C:\code_programe\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.FolderTemplateForm.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.exe.config
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.exe
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Presentation.pdb
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Data.dll
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Domain.dll
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Infrastructure.dll
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Services.dll
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\log4net.dll
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Domain.pdb
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Infrastructure.pdb
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Data.pdb
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\CMS.Services.pdb
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\bin\Debug\log4net.xml
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.AssemblyReference.cache
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.ApplyTemplateDialog.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.ApprovalInboxForm.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.ConfigAdminForm.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.CreateOrgUnitDialog.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.FileUploadForm.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.FolderForm.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.EmployeeSearchDialog.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.FolderTemplateForm.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.MDI_Container.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.PermissionForm.resources
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.GenerateResource.cache
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.CoreCompileInputs.cache
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Pres.F339C674.Up2Date
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.exe
+C:\Users\pitakpong\Documents\MenuImport (2)\MenuImport\MenuImport\CMS\CMS.Presentation\obj\Debug\CMS.Presentation.pdb

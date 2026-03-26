@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{C1CC34BC-573E-4C98-AA9E-37CB98534DEA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CMS.Domain</RootNamespace>
+    <AssemblyName>CMS.Domain</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Enums\ConfidentialityLevel.cs" />
+    <Compile Include="Enums\PermissionType.cs" />
+    <Compile Include="Enums\PermissionState.cs" />
+    <Compile Include="Enums\UserRole.cs" />
+    <Compile Include="Enums\OrgUnitTier.cs" />
+    <Compile Include="Enums\ApprovalStatus.cs" />
+    <Compile Include="Enums\PrincipalType.cs" />
+    <Compile Include="Models\UserContext.cs" />
+    <Compile Include="Models\EffectivePermission.cs" />
+    <Compile Include="Models\UploadResult.cs" />
+    <Compile Include="Models\ScanResult.cs" />
+    <Compile Include="Models\OrgUnit.cs" />
+    <Compile Include="Models\Folder.cs" />
+    <Compile Include="Models\FileDocument.cs" />
+    <Compile Include="Models\FolderPermission.cs" />
+    <Compile Include="Models\AuditEntry.cs" />
+    <Compile Include="Models\AuditLog.cs" />
+    <Compile Include="Models\ApprovalRequest.cs" />
+    <Compile Include="Models\ApprovalStep.cs" />
+    <Compile Include="Models\Notification.cs" />
+    <Compile Include="Models\NotificationRequest.cs" />
+    <Compile Include="Models\UserAccount.cs" />
+    <Compile Include="Models\EmployeeApiModels.cs" />
+    <Compile Include="Models\FilePermission.cs" />
+    <Compile Include="Models\FolderTemplate.cs" />
+    <Compile Include="Models\FolderTemplateItem.cs" />
+    <Compile Include="Models\PermissionGroup.cs" />
+    <Compile Include="Models\UserGroupMember.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -1,0 +1,564 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+using CMS.Domain.Enums;
+using CMS.Domain.Models;
+using CMS.Presentation.Presenters;
+using CMS.Services.Interfaces;
+
+namespace CMS.Presentation
+{
+    /// <summary>
+    /// MOD-001: Organizational Structure Form.
+    /// Displays OrgUnits in Organization View (hierarchy) or Confidentiality View (by level).
+    /// Switching views reloads only the data panel — no full form reload (Req 3.8, 3.9).
+    /// Wires Create / Edit / Deactivate actions to OrgStructurePresenter (Req 3.2–3.7).
+    /// </summary>
+    public partial class OrgStructureForm : Form, IOrgStructureView
+    {
+        private readonly OrgStructurePresenter _presenter;
+
+        // Backing list used when building dialogs (populated during ShowOrganizationView)
+        private List<OrgUnit> _allUnits = new List<OrgUnit>();
+        private readonly IEmployeeApiService _employeeApiService;
+
+        // -----------------------------------------------------------------------
+        // Constructor
+        // -----------------------------------------------------------------------
+
+        public OrgStructureForm(IOrgStructureService service, UserContext user,
+            IEmployeeApiService employeeApiService = null)
+        {
+            if (service == null) throw new ArgumentNullException("service");
+            if (user    == null) throw new ArgumentNullException("user");
+
+            _employeeApiService = employeeApiService;
+
+            InitializeComponent();
+
+            _presenter = new OrgStructurePresenter(service, this, user);
+
+            // Default to Organization View on load
+            radioOrgView.Checked = true;
+        }
+
+        // -----------------------------------------------------------------------
+        // Form load
+        // -----------------------------------------------------------------------
+
+        private void OrgStructureForm_Load(object sender, EventArgs e)
+        {
+            _presenter.SetActiveView(false);
+            _presenter.LoadOrganizationView();
+        }
+
+        // -----------------------------------------------------------------------
+        // View-switch handlers (Req 3.9 — reload data panel only)
+        // -----------------------------------------------------------------------
+
+        private void radioOrgView_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!radioOrgView.Checked) return;
+            _presenter.SetActiveView(false);
+            _presenter.LoadOrganizationView();
+        }
+
+        private void radioConfView_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!radioConfView.Checked) return;
+            _presenter.SetActiveView(true);
+            _presenter.LoadConfidentialityView();
+        }
+
+        // -----------------------------------------------------------------------
+        // IOrgStructureView — ShowOrganizationView  (Req 3.8)
+        // -----------------------------------------------------------------------
+
+        public void ShowOrganizationView(IEnumerable<OrgUnit> units)
+        {
+            _allUnits = units == null ? new List<OrgUnit>() : units.ToList();
+
+            treeView.BeginUpdate();
+            treeView.Nodes.Clear();
+
+            // Build SubCommittee → Division → Department hierarchy
+            var subCommittees = _allUnits
+                .Where(u => u.Tier == OrgUnitTier.SubCommittee)
+                .OrderBy(u => u.Name);
+
+            foreach (var sc in subCommittees)
+            {
+                var scNode = CreateNode(sc);
+
+                var divisions = _allUnits
+                    .Where(u => u.Tier == OrgUnitTier.Division && u.ParentId == sc.OrgUnitId)
+                    .OrderBy(u => u.Name);
+
+                foreach (var div in divisions)
+                {
+                    var divNode = CreateNode(div);
+
+                    var departments = _allUnits
+                        .Where(u => u.Tier == OrgUnitTier.Department && u.ParentId == div.OrgUnitId)
+                        .OrderBy(u => u.Name);
+
+                    foreach (var dept in departments)
+                        divNode.Nodes.Add(CreateNode(dept));
+
+                    scNode.Nodes.Add(divNode);
+                }
+
+                treeView.Nodes.Add(scNode);
+            }
+
+            treeView.ExpandAll();
+            treeView.EndUpdate();
+        }
+
+        // -----------------------------------------------------------------------
+        // IOrgStructureView — ShowConfidentialityView  (Req 3.8)
+        // -----------------------------------------------------------------------
+
+        public void ShowConfidentialityView(IEnumerable<OrgUnit> units)
+        {
+            _allUnits = units == null ? new List<OrgUnit>() : units.ToList();
+
+            treeView.BeginUpdate();
+            treeView.Nodes.Clear();
+
+            // Group by ConfidentialityLevel in defined order
+            var levels = new[]
+            {
+                ConfidentialityLevel.HC,
+                ConfidentialityLevel.SC,
+                ConfidentialityLevel.NC,
+                ConfidentialityLevel.PC
+            };
+
+            foreach (var level in levels)
+            {
+                var groupNode = new TreeNode(ConfidentialityLevelLabel(level))
+                {
+                    ForeColor = ConfidentialityLevelColor(level),
+                    Tag       = null
+                };
+
+                var grouped = _allUnits
+                    .Where(u => u.ConfidentialityLevelValue == (int)level)
+                    .OrderBy(u => u.Tier)
+                    .ThenBy(u => u.Name);
+
+                foreach (var unit in grouped)
+                    groupNode.Nodes.Add(CreateNode(unit));
+
+                treeView.Nodes.Add(groupNode);
+            }
+
+            treeView.ExpandAll();
+            treeView.EndUpdate();
+        }
+
+        // -----------------------------------------------------------------------
+        // IOrgStructureView — messages
+        // -----------------------------------------------------------------------
+
+        public void ShowError(string message)
+        {
+            MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        public void ShowInfo(string message)
+        {
+            MessageBox.Show(message, "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        // -----------------------------------------------------------------------
+        // IOrgStructureView — SelectedOrgUnit
+        // -----------------------------------------------------------------------
+
+        public OrgUnit SelectedOrgUnit
+        {
+            get
+            {
+                if (treeView.SelectedNode == null) return null;
+                return treeView.SelectedNode.Tag as OrgUnit;
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // Toolbar button handlers
+        // -----------------------------------------------------------------------
+
+        private void btnCreate_Click(object sender, EventArgs e)
+        {
+            // Step 1: เลือกประเภทหน่วยงานที่ต้องการสร้าง
+            OrgUnitTier? selectedTier = PromptForTier();
+            if (!selectedTier.HasValue) return;
+
+            // Step 2: ตรวจสอบว่ามี parent ที่จำเป็นหรือไม่
+            if (selectedTier.Value == OrgUnitTier.Division)
+            {
+                var subCommittees = _allUnits.Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive).ToList();
+                if (subCommittees.Count == 0)
+                {
+                    ShowError("ยังไม่มี SubCommittee ในระบบ\nกรุณาสร้าง SubCommittee ก่อน");
+                    return;
+                }
+            }
+            else if (selectedTier.Value == OrgUnitTier.Department)
+            {
+                var divisions = _allUnits.Where(u => u.Tier == OrgUnitTier.Division && u.IsActive).ToList();
+                if (divisions.Count == 0)
+                {
+                    ShowError("ยังไม่มีฝ่ายในระบบ\nกรุณาสร้างฝ่ายก่อน");
+                    return;
+                }
+            }
+
+            // Step 3: เปิด dialog สร้างหน่วยงาน พร้อม tier ที่เลือกไว้
+            using (var dlg = new CreateOrgUnitDialog(_allUnits, _employeeApiService, selectedTier.Value))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.Result != null)
+                    _presenter.CreateOrgUnit(dlg.Result);
+            }
+        }
+
+        /// <summary>แสดง dialog เลือกประเภทหน่วยงาน</summary>
+        private OrgUnitTier? PromptForTier()
+        {
+            using (var dlg = new Form())
+            {
+                dlg.Text            = "เลือกประเภทหน่วยงาน";
+                dlg.ClientSize      = new Size(340, 220);
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.StartPosition   = FormStartPosition.CenterParent;
+                dlg.MaximizeBox     = false;
+                dlg.MinimizeBox     = false;
+                dlg.BackColor       = Color.White;
+
+                // Header
+                var pnlHdr = new Panel
+                {
+                    Dock      = DockStyle.Top,
+                    Height    = 44,
+                    BackColor = Color.FromArgb(0, 51, 102)
+                };
+                pnlHdr.Controls.Add(new Label
+                {
+                    Text      = "เลือกประเภทหน่วยงานที่ต้องการสร้าง",
+                    Dock      = DockStyle.Fill,
+                    ForeColor = Color.White,
+                    Font      = new Font("Segoe UI", 10f, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding   = new Padding(12, 0, 0, 0)
+                });
+                dlg.Controls.Add(pnlHdr);
+
+                OrgUnitTier result = OrgUnitTier.SubCommittee;
+
+                // ปุ่มเลือก 3 ประเภท
+                var btnSC = new Button
+                {
+                    Text      = "🏢  SubCommittee  (ระดับสูงสุด)",
+                    Location  = new Point(20, 60),
+                    Size      = new Size(300, 38),
+                    FlatStyle = FlatStyle.Flat,
+                    Font      = new Font("Segoe UI", 10f),
+                    BackColor = Color.FromArgb(232, 240, 254),
+                    ForeColor = Color.FromArgb(0, 51, 102),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding   = new Padding(8, 0, 0, 0),
+                    Cursor    = Cursors.Hand
+                };
+                btnSC.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 102);
+                btnSC.Click += (s, ev) => { result = OrgUnitTier.SubCommittee; dlg.DialogResult = DialogResult.OK; };
+
+                var btnDiv = new Button
+                {
+                    Text      = "🏬  ฝ่าย  (สังกัด SubCommittee)",
+                    Location  = new Point(20, 106),
+                    Size      = new Size(300, 38),
+                    FlatStyle = FlatStyle.Flat,
+                    Font      = new Font("Segoe UI", 10f),
+                    BackColor = Color.FromArgb(232, 248, 240),
+                    ForeColor = Color.FromArgb(0, 80, 40),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding   = new Padding(8, 0, 0, 0),
+                    Cursor    = Cursors.Hand
+                };
+                btnDiv.FlatAppearance.BorderColor = Color.FromArgb(0, 120, 60);
+                btnDiv.Click += (s, ev) => { result = OrgUnitTier.Division; dlg.DialogResult = DialogResult.OK; };
+
+                var btnDept = new Button
+                {
+                    Text      = "🏪  แผนก  (สังกัดฝ่าย)",
+                    Location  = new Point(20, 152),
+                    Size      = new Size(300, 38),
+                    FlatStyle = FlatStyle.Flat,
+                    Font      = new Font("Segoe UI", 10f),
+                    BackColor = Color.FromArgb(255, 248, 230),
+                    ForeColor = Color.FromArgb(120, 70, 0),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding   = new Padding(8, 0, 0, 0),
+                    Cursor    = Cursors.Hand
+                };
+                btnDept.FlatAppearance.BorderColor = Color.FromArgb(180, 100, 0);
+                btnDept.Click += (s, ev) => { result = OrgUnitTier.Department; dlg.DialogResult = DialogResult.OK; };
+
+                dlg.Controls.Add(btnSC);
+                dlg.Controls.Add(btnDiv);
+                dlg.Controls.Add(btnDept);
+                dlg.CancelButton = null;
+
+                return dlg.ShowDialog(this) == DialogResult.OK ? (OrgUnitTier?)result : null;
+            }
+        }
+
+        private void btnEdit_Click(object sender, EventArgs e)
+        {
+            var selected = SelectedOrgUnit;
+            if (selected == null)
+            {
+                ShowError("Please select an OrgUnit to edit.");
+                return;
+            }
+
+            string newName = PromptForName("Edit OrgUnit", "New name:", selected.Name);
+            if (newName == null) return; // cancelled
+
+            _presenter.UpdateOrgUnit(selected.OrgUnitId, newName);
+        }
+
+        private void btnMove_Click(object sender, EventArgs e)
+        {
+            var selected = SelectedOrgUnit;
+            if (selected == null)
+            {
+                ShowError("Please select an OrgUnit to move.");
+                return;
+            }
+
+            // Get valid parent candidates (units that can be parents for this unit's tier)
+            var validParents = GetValidParentCandidates(selected);
+            if (validParents.Count == 0)
+            {
+                ShowError("No valid parent units available for this OrgUnit.");
+                return;
+            }
+
+            using (var dlg = new OrgUnitSelectorDialog(validParents, "Select New Parent"))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    var newParent = dlg.SelectedOrgUnit;
+                    _presenter.MoveOrgUnit(selected.OrgUnitId, newParent.OrgUnitId);
+                }
+            }
+        }
+
+        private List<OrgUnit> GetValidParentCandidates(OrgUnit unit)
+        {
+            // Determine valid parent tier based on current unit's tier
+            OrgUnitTier? validParentTier = null;
+            switch (unit.Tier)
+            {
+                case OrgUnitTier.Division:
+                    validParentTier = OrgUnitTier.SubCommittee;
+                    break;
+                case OrgUnitTier.Department:
+                    validParentTier = OrgUnitTier.Division;
+                    break;
+            }
+
+            if (!validParentTier.HasValue)
+                return new List<OrgUnit>();
+
+            // Return all active units of the valid parent tier, excluding the unit itself
+            return _allUnits
+                .Where(u => u.Tier == validParentTier.Value && u.OrgUnitId != unit.OrgUnitId && u.IsActive)
+                .OrderBy(u => u.Name)
+                .ToList();
+        }
+
+        private void btnDeactivate_Click(object sender, EventArgs e)
+        {
+            var selected = SelectedOrgUnit;
+            if (selected == null)
+            {
+                ShowError("Please select an OrgUnit to deactivate.");
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                string.Format("Deactivate '{0}'? This cannot be undone.", selected.Name),
+                "Confirm Deactivation",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirm == DialogResult.Yes)
+                _presenter.DeactivateOrgUnit(selected.OrgUnitId);
+        }
+
+        // -----------------------------------------------------------------------
+        // Private helpers
+        // -----------------------------------------------------------------------
+
+        private static TreeNode CreateNode(OrgUnit unit)
+        {
+            string label = string.Format("{0} [{1}]{2}",
+                unit.Name,
+                unit.Tier,
+                unit.IsActive ? string.Empty : " (inactive)");
+
+            return new TreeNode(label)
+            {
+                Tag       = unit,
+                ForeColor = unit.IsActive ? SystemColors.WindowText : SystemColors.GrayText
+            };
+        }
+
+        private static string ConfidentialityLevelLabel(ConfidentialityLevel level)
+        {
+            switch (level)
+            {
+                case ConfidentialityLevel.HC: return "1HC — Highly Confidential";
+                case ConfidentialityLevel.SC: return "2SC — Secret";
+                case ConfidentialityLevel.NC: return "3NC — Non-Confidential";
+                case ConfidentialityLevel.PC: return "4PC — Public/Common";
+                default:                      return level.ToString();
+            }
+        }
+
+        private static Color ConfidentialityLevelColor(ConfidentialityLevel level)
+        {
+            switch (level)
+            {
+                case ConfidentialityLevel.HC: return Color.DarkRed;
+                case ConfidentialityLevel.SC: return Color.OrangeRed;
+                case ConfidentialityLevel.NC: return Color.DarkBlue;
+                default:                      return SystemColors.WindowText;
+            }
+        }
+
+        /// <summary>Simple single-line input dialog.</summary>
+        private static string PromptForName(string title, string prompt, string defaultValue)
+        {
+            using (var form  = new Form())
+            using (var label = new Label())
+            using (var input = new TextBox())
+            using (var ok    = new Button())
+            using (var cancel = new Button())
+            {
+                form.Text          = title;
+                form.ClientSize    = new Size(360, 110);
+                form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                form.StartPosition = FormStartPosition.CenterParent;
+                form.MaximizeBox   = false;
+                form.MinimizeBox   = false;
+
+                label.Text     = prompt;
+                label.Location = new Point(12, 12);
+                label.Size     = new Size(336, 20);
+
+                input.Text     = defaultValue ?? string.Empty;
+                input.Location = new Point(12, 36);
+                input.Size     = new Size(336, 23);
+                input.SelectAll();
+
+                ok.Text           = "OK";
+                ok.DialogResult   = DialogResult.OK;
+                ok.Location       = new Point(192, 72);
+                ok.Size           = new Size(75, 26);
+                form.AcceptButton = ok;
+
+                cancel.Text           = "Cancel";
+                cancel.DialogResult   = DialogResult.Cancel;
+                cancel.Location       = new Point(273, 72);
+                cancel.Size           = new Size(75, 26);
+                form.CancelButton     = cancel;
+
+                form.Controls.AddRange(new Control[] { label, input, ok, cancel });
+
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    string value = input.Text.Trim();
+                    return string.IsNullOrEmpty(value) ? null : value;
+                }
+                return null;
+            }
+        }
+
+        // ── Confidentiality Level Filter ──────────────────────────────────
+        private void OnConfidentialityLevelChanged(object sender, EventArgs e)
+        {
+            // Ensure only one checkbox is checked (radio button behavior)
+            if (sender == chk1HC && chk1HC.Checked)
+            {
+                chk2SC.Checked = false;
+                chk3NC.Checked = false;
+                chk4PC.Checked = false;
+                FilterByConfidentialityLevel(ConfidentialityLevel.HC);
+            }
+            else if (sender == chk2SC && chk2SC.Checked)
+            {
+                chk1HC.Checked = false;
+                chk3NC.Checked = false;
+                chk4PC.Checked = false;
+                FilterByConfidentialityLevel(ConfidentialityLevel.SC);
+            }
+            else if (sender == chk3NC && chk3NC.Checked)
+            {
+                chk1HC.Checked = false;
+                chk2SC.Checked = false;
+                chk4PC.Checked = false;
+                FilterByConfidentialityLevel(ConfidentialityLevel.NC);
+            }
+            else if (sender == chk4PC && chk4PC.Checked)
+            {
+                chk1HC.Checked = false;
+                chk2SC.Checked = false;
+                chk3NC.Checked = false;
+                FilterByConfidentialityLevel(ConfidentialityLevel.PC);
+            }
+        }
+
+        private void FilterByConfidentialityLevel(ConfidentialityLevel level)
+        {
+            try
+            {
+                treeView.BeginUpdate();
+                treeView.Nodes.Clear();
+
+                // Get all units and filter by selected confidentiality level
+                var allUnits = _allUnits;
+                var filteredUnits = allUnits
+                    .Where(u => u.ConfidentialityLevel == level && !u.IsDeleted)
+                    .OrderBy(u => u.Name)
+                    .ToList();
+
+                // Build hierarchy for filtered units
+                foreach (var sc in filteredUnits.Where(u => u.Tier == OrgUnitTier.SubCommittee).OrderBy(u => u.Name))
+                {
+                    var scNode = CreateNode(sc);
+                    foreach (var div in filteredUnits.Where(u => u.Tier == OrgUnitTier.Division && u.ParentId == sc.OrgUnitId).OrderBy(u => u.Name))
+                    {
+                        var divNode = CreateNode(div);
+                        foreach (var dept in filteredUnits.Where(u => u.Tier == OrgUnitTier.Department && u.ParentId == div.OrgUnitId).OrderBy(u => u.Name))
+                            divNode.Nodes.Add(CreateNode(dept));
+                        scNode.Nodes.Add(divNode);
+                    }
+                    treeView.Nodes.Add(scNode);
+                }
+
+                treeView.ExpandAll();
+                treeView.EndUpdate();
+            }
+            catch (Exception ex)
+            {
+                ShowError("ไม่สามารถกรองข้อมูลตามระดับความลับ: " + ex.Message);
+            }
+        }
+    }
+}

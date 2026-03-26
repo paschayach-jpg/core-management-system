@@ -1,0 +1,2425 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+using CMS.Data.Interfaces;
+using CMS.Domain.Enums;
+using CMS.Domain.Models;
+using CMS.Infrastructure.Interfaces;
+using CMS.Services.Interfaces;
+
+namespace CMS.Presentation
+{
+    /// <summary>
+    /// The WinForms Multiple Document Interface host form.
+    /// Hosts all four module forms as MDI children, enforces role-based navigation,
+    /// and provides a notification inbox panel.
+    /// Satisfies Requirements 2.1–2.4, 13.3, 13.4.
+    /// </summary>
+    public partial class MDI_Container : Form
+    {
+        private readonly ILoggingService      _logger;
+        private readonly IAuditService        _auditService;
+        private readonly UserContext          _currentUser;
+        private readonly INotificationService _notificationService;
+        private readonly IApprovalService     _approvalService;
+        private readonly IOrgStructureService _orgStructureService;
+        private readonly IFolderService       _folderService;
+        private readonly IFileService         _fileService;
+        private readonly IConfigManager       _configManager;
+        private readonly IUserAccountRepository _userAccountRepository;
+        private readonly IPermissionService       _permissionService;
+        private readonly IPermissionRepository    _permissionRepository;
+        private readonly IFolderRepository        _folderRepository;
+        private readonly IFilePermissionService   _filePermissionService;
+        private readonly IFilePermissionRepository _filePermissionRepository;
+        private readonly IFileDocumentRepository   _fileDocumentRepository;
+        private readonly IFolderTemplateRepository _folderTemplateRepository;
+        private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
+
+        // Notification inbox controls (built programmatically)
+        private Panel    _notificationPanel;
+        private ListBox  _notificationListBox;
+        private Button   _markReadButton;
+        private Button   _refreshButton;
+
+        // Background timer for escalations and inbox refresh
+        private Timer _escalationTimer;
+
+        // Backing list for the inbox
+        private List<Notification> _unreadNotifications = new List<Notification>();
+
+        // Track expanded folder IDs in lvRecentFiles
+        private readonly HashSet<int> _expandedFolderIds = new HashSet<int>();
+
+        // Tracks whether the logout audit has already been recorded
+        private bool _logoutRecorded;
+
+        // File detail panel controls
+        private Panel _fileDetailPanel;
+        private Label _lblDetailFileName;
+        private Label _lblDetailType;
+        private Label _lblDetailConfidentiality;
+        private Label _lblDetailSize;
+        private Label _lblDetailVersion;
+        private Label _lblDetailDate;
+        private Label _lblDetailUploadedBy;
+        private Button _btnDetailOpen;
+        private Button _btnDetailDownload;
+        private Button _btnDetailSecurity;
+
+        // -----------------------------------------------------------------------
+        // Constructor
+        // -----------------------------------------------------------------------
+
+        public MDI_Container(
+            ILoggingService           logger,
+            IAuditService             auditService,
+            UserContext               currentUser,
+            INotificationService      notificationService,
+            IApprovalService          approvalService,
+            IOrgStructureService      orgStructureService       = null,
+            IFolderService            folderService             = null,
+            IFileService              fileService               = null,
+            IConfigManager            configManager             = null,
+            IUserAccountRepository    userAccountRepository     = null,
+            IPermissionService        permissionService         = null,
+            IPermissionRepository     permissionRepository      = null,
+            IFolderRepository         folderRepository          = null,
+            IFilePermissionService    filePermissionService     = null,
+            IFilePermissionRepository filePermissionRepository  = null,
+            IFileDocumentRepository   fileDocumentRepository    = null,
+            IFolderTemplateRepository folderTemplateRepository  = null,
+            CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null)
+        {
+            if (logger              == null) throw new ArgumentNullException("logger");
+            if (auditService        == null) throw new ArgumentNullException("auditService");
+            if (currentUser         == null) throw new ArgumentNullException("currentUser");
+            if (notificationService == null) throw new ArgumentNullException("notificationService");
+            if (approvalService     == null) throw new ArgumentNullException("approvalService");
+
+            _logger                   = logger;
+            _auditService             = auditService;
+            _currentUser              = currentUser;
+            _notificationService      = notificationService;
+            _approvalService          = approvalService;
+            _orgStructureService      = orgStructureService;
+            _folderService            = folderService;
+            _fileService              = fileService;
+            _configManager            = configManager;
+            _userAccountRepository    = userAccountRepository;
+            _permissionService        = permissionService;
+            _permissionRepository     = permissionRepository;
+            _folderRepository         = folderRepository;
+            _filePermissionService    = filePermissionService;
+            _filePermissionRepository = filePermissionRepository;
+            _fileDocumentRepository   = fileDocumentRepository;
+            _folderTemplateRepository = folderTemplateRepository;
+            _employeeApiService       = employeeApiService;
+
+            InitializeComponent();
+            BuildFileDetailPanel();
+            WireMenuHandlers();
+            BuildEscalationTimer();
+        }
+
+        // -----------------------------------------------------------------------
+        // Form lifecycle
+        // -----------------------------------------------------------------------
+
+        private void MDI_Container_Load(object sender, EventArgs e)
+        {
+            // Set form to full screen
+            this.WindowState = FormWindowState.Maximized;
+
+            Text = string.Format("CMS — {0}", _currentUser.AdIdentity);
+            ApplyRoleBasedMenuVisibility();
+            WireRibbonHandlers();
+            WireDashboardHandlers();
+            SetupRecentFilesColumns();
+            LoadDashboardFolderTree();
+            LoadRecentFiles();
+            UpdateStatusBar();
+            LoadDashboardStats();
+            _escalationTimer.Start();
+
+            // ซ่อน detail panel จนกว่าจะมีการคลิกไฟล์
+            _fileDetailPanel.Visible = false;
+
+            // Add refresh button for recent files
+            AddRefreshButton();
+
+            // Wire treeViewFolders selection → show files
+            treeViewFolders.AfterSelect += TreeViewFolders_AfterSelect;
+
+            // Wire lvRecentFiles selection → show detail panel
+            lvRecentFiles.SelectedIndexChanged += LvRecentFiles_SelectedIndexChanged;
+
+            // Double-click folder row → toggle expand/collapse files
+            lvRecentFiles.DoubleClick += LvRecentFiles_DoubleClick;
+
+            // Right-click context menu for lvRecentFiles
+            BuildRecentFilesContextMenu();
+
+            // Auto-resize columns when form is resized
+            this.Resize += (s, ev) => AutoResizeColumnsProportional();
+
+            // Clock timer for status bar
+            var clockTimer = new Timer { Interval = 30000 };
+            clockTimer.Tick += (s, ev) => UpdateStatusBarDateTime();
+            clockTimer.Start();
+
+            // Handle MDI child activation to show/hide dashboard
+            this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
+        }
+
+        private void OnMdiChildActivate()
+        {
+            bool showDashboard = (this.ActiveMdiChild == null);
+            pnlDashboard.Visible = showDashboard;
+
+            // Reload lvRecentFiles ทุกครั้งที่ dashboard กลับมาแสดง
+            if (showDashboard)
+                RefreshDashboardFiles();
+        }
+
+        /// <summary>
+        /// Reload lvRecentFiles ตาม context ที่เลือกอยู่:
+        /// - ถ้า treeViewFolders มี node เลือกอยู่ → โหลดไฟล์ตาม OrgUnit นั้น
+        /// - ถ้าไม่มี → โหลดไฟล์ทั้งหมด (recent files)
+        /// </summary>
+        private void RefreshDashboardFiles()
+        {
+            var selectedNode = treeViewFolders.SelectedNode;
+            if (selectedNode != null)
+            {
+                // Mode: ตามองค์กร
+                var orgUnit = selectedNode.Tag as OrgUnit;
+                if (orgUnit != null)
+                {
+                    lblRecentFiles.Text = string.Format("📄 ไฟล์ใน {0}", orgUnit.Name);
+                    LoadFilesForOrgUnit(orgUnit.OrgUnitID);
+                    return;
+                }
+
+                // Mode: ตามความลับ
+                if (selectedNode.Tag is int)
+                {
+                    int level = (int)selectedNode.Tag;
+                    string[] labels = { "", "1HC — Highly Confidential", "2SC — Secret", "3NC — Non-Confidential", "4PC — Public/Common" };
+                    string labelText = (level >= 1 && level <= 4) ? labels[level] : "ระดับ " + level;
+                    lblRecentFiles.Text = string.Format("📄 ไฟล์ระดับ {0}", labelText);
+                    LoadFilesByConfidentialityLevel(level);
+                    return;
+                }
+            }
+
+            lblRecentFiles.Text = "📄 ไฟล์ล่าสุด";
+            LoadRecentFiles();
+        }
+
+        /// <summary>
+        /// Reloads lvRecentFiles with the same data as the initial load.
+        /// Clears the list and reloads recent files from the file service.
+        /// </summary>
+        private void ReloadRecentFilesData()
+        {
+            lvRecentFiles.Items.Clear();
+            _fileDetailPanel.Visible = false;
+            LoadRecentFiles();
+            AutoResizeColumnsProportional();
+        }
+
+        /// <summary>
+        /// Adds a refresh button to the dashboard for reloading recent files.
+        /// </summary>
+        private void AddRefreshButton()
+        {
+            // Create refresh button
+            var btnRefresh = new Button
+            {
+                Text      = "🔄 รีเฟรช",
+                Font      = new Font("Segoe UI", 10, FontStyle.Bold),
+                BackColor = Color.FromArgb(43, 87, 154),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size      = new Size(110, 32),
+                Location  = new Point(36, 217),
+                Cursor    = Cursors.Hand,
+                Name      = "btnRefreshFiles"
+            };
+            btnRefresh.Click += (s, e) => ReloadRecentFilesData();
+            
+            // Add to pnlDashContent
+            pnlDashContent.Controls.Add(btnRefresh);
+            btnRefresh.BringToFront();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            base.OnFormClosing(e);
+
+            _escalationTimer.Stop();
+
+            if (!_logoutRecorded)
+            {
+                _logoutRecorded = true;
+                try
+                {
+                    _auditService.Log(new AuditEntry
+                    {
+                        EventType        = "Logout",
+                        ActorUserId      = _currentUser.UserId,
+                        WorkstationId    = _currentUser.WorkstationId,
+                        Outcome          = "Success",
+                        TargetEntityType = "UserAccount",
+                        TargetEntityId   = _currentUser.UserId.ToString()
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error("Failed to record logout audit on form close.", ex);
+                }
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // 16.1 — Role-based menu visibility (Req 2.1, 2.4)
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Enables/disables menu items based on the current user's role.
+        /// Officer and SrOfficer: MOD-002 and MOD-003 only.
+        /// Manager: MOD-001 through MOD-004.
+        /// Admin: all four modules.
+        /// </summary>
+        private void ApplyRoleBasedMenuVisibility()
+        {
+            bool isOfficer  = _currentUser.Role == UserRole.Officer || _currentUser.Role == UserRole.SrOfficer;
+            bool isManager  = _currentUser.Role == UserRole.Manager;
+            bool isAdmin    = _currentUser.Role == UserRole.Admin;
+            bool canManage  = isManager || isAdmin;
+
+            // เครื่องมือ — ทุก role ใช้ได้
+            menuItemTools.Enabled  = true;
+            menuItemTools.Visible  = true;
+
+            // มุมมอง — ทุก role
+            menuItemView.Enabled   = true;
+            menuItemView.Visible   = true;
+
+            // ผู้ดูแล — Manager/Admin เท่านั้น
+            menuItemAdmin.Enabled  = canManage;
+            menuItemAdmin.Visible  = canManage;
+
+            // Admin ribbon visibility
+            ribbonStripAdmin.Visible = canManage && ribbonStripAdmin.Visible;
+            btnRibbonSysConfig.Visible    = canManage;
+            btnRibbonOrgAdmin.Visible     = canManage;
+            btnRibbonReportExcel.Visible  = canManage;
+            btnRibbonPDPA.Visible         = canManage;
+
+            // legacy hidden items
+            menuItemMod001.Visible = false;
+            menuItemMod002.Visible = false;
+            menuItemMod003.Visible = false;
+            menuItemMod004.Visible = false;
+
+            // Initialize with home ribbon active
+            SwitchToHomeRibbon();
+        }
+
+        // -----------------------------------------------------------------------
+        // 16.2 — Child window management (Req 2.2, 2.3)
+        // -----------------------------------------------------------------------
+
+        private void WireMenuHandlers()
+        {
+            // Tab switching for ribbons
+            menuItemHome.Click  += (s, e) => SwitchToHomeRibbon();
+            menuItemAdmin.Click += (s, e) => SwitchToAdminRibbon();
+
+            // หน้าหลัก
+            menuItemUpload.Click         += (s, e) => OpenFileUpload();
+            menuItemNewFolder.Click      += (s, e) => OpenFolderStructure();
+            menuItemDownload.Click       += (s, e) => OpenFolderStructure();
+            menuItemRename.Click         += (s, e) => OpenFolderStructure();
+            menuItemMove.Click           += (s, e) => OpenFolderStructure();
+            menuItemDelete.Click         += (s, e) => OpenFolderStructure();
+            menuItemTemplate.Click       += (s, e) => OpenFolderTemplateManagement();
+            menuItemFavorites.Click      += (s, e) => OpenFolderStructure();
+            menuItemFolderSettings.Click += (s, e) => OpenFolderSettings();
+            menuItemPermission.Click     += (s, e) => OpenFolderSettings();
+            menuItemAuditLog.Click       += (s, e) => OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService));
+            menuItemApproval.Click       += (s, e) => OpenApprovalInbox();
+            // แทรก
+            menuItemInsertDoc.Click      += (s, e) => OpenFileUpload();
+            menuItemInsertImage.Click    += (s, e) => OpenFileUpload();
+            menuItemInsertZip.Click      += (s, e) => OpenFileUpload();
+            // มุมมอง
+            menuItemViewList.Click       += (s, e) => OpenFolderStructure();
+            menuItemViewGrid.Click       += (s, e) => OpenFolderStructure();
+            menuItemViewOrg.Click        += (s, e) => OpenOrgStructure();
+            // เครื่องมือ
+            menuItemVirusScan.Click      += (s, e) => OpenFolderStructure();
+            menuItemChecksum.Click       += (s, e) => OpenFolderStructure();
+            menuItemRecycleBin.Click     += (s, e) => OpenFolderStructure();
+            menuItemArchive.Click        += (s, e) => OpenFolderStructure();
+            // ผู้ดูแล
+            menuItemConfig.Click         += (s, e) => OpenSysConfig();
+            menuItemOrgAdmin.Click       += (s, e) => OpenOrgStructure();
+            menuItemReportExcel.Click    += (s, e) => OpenSysConfig();
+            menuItemPDPA.Click           += (s, e) => OpenSysConfig();
+        }
+
+        private void SwitchToHomeRibbon()
+        {
+            ribbonStrip.Visible = true;
+            ribbonStripAdmin.Visible = false;
+
+            // Update tab appearance - Office 2021 Navy Blue Light style
+            menuItemHome.BackColor = System.Drawing.Color.White;
+            menuItemHome.ForeColor = System.Drawing.Color.FromArgb(31, 56, 100);
+            menuItemAdmin.BackColor = System.Drawing.Color.FromArgb(31, 56, 100);
+            menuItemAdmin.ForeColor = System.Drawing.Color.FromArgb(180, 200, 230);
+        }
+
+        private void SwitchToAdminRibbon()
+        {
+            ribbonStrip.Visible = false;
+            ribbonStripAdmin.Visible = true;
+
+            // Update tab appearance - Office 2021 Navy Blue Light style
+            menuItemHome.BackColor = System.Drawing.Color.FromArgb(31, 56, 100);
+            menuItemHome.ForeColor = System.Drawing.Color.FromArgb(180, 200, 230);
+            menuItemAdmin.BackColor = System.Drawing.Color.White;
+            menuItemAdmin.ForeColor = System.Drawing.Color.FromArgb(31, 56, 100);
+        }
+
+        private void WireRibbonHandlers()
+        {
+            // หน้าหลัก
+            btnRibbonUpload.Click         += (s, e) => OpenFileUpload();
+            btnRibbonNewFolder.Click      += (s, e) => OpenFolderStructure();
+            btnRibbonDownload.Click       += (s, e) => OpenFolderStructure();
+            btnRibbonRename.Click         += (s, e) => OpenFolderStructure();
+            btnRibbonMove.Click           += (s, e) => OpenFolderStructure();
+            btnRibbonDelete.Click         += (s, e) => OpenFolderStructure();
+            btnRibbonTemplate.Click       += (s, e) => OpenFolderTemplateManagement();
+            btnRibbonFavorites.Click      += (s, e) => OpenFolderStructure();
+            btnRibbonFolderSettings.Click += (s, e) => OpenFolderSettings();
+            btnRibbonPermission.Click     += (s, e) => OpenFolderSettings();
+            btnRibbonAuditLog.Click       += (s, e) => OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService));
+            btnRibbonApproval.Click       += (s, e) => OpenApprovalInbox();
+            // มุมมอง
+            btnRibbonViewList.Click       += (s, e) => OpenFolderStructure();
+            btnRibbonViewGrid.Click       += (s, e) => OpenFolderStructure();
+            btnRibbonViewOrg.Click        += (s, e) => OpenOrgStructure();
+            // เครื่องมือ
+            btnRibbonVirusScan.Click      += (s, e) => OpenFolderStructure();
+            btnRibbonChecksum.Click       += (s, e) => OpenFolderStructure();
+            btnRibbonRecycleBin.Click     += (s, e) => OpenFolderStructure();
+            btnRibbonArchive.Click        += (s, e) => OpenFolderStructure();
+            // ผู้ดูแล
+            btnRibbonSysConfig.Click      += (s, e) => OpenSysConfig();
+            btnRibbonOrgAdmin.Click       += (s, e) => OpenOrgStructure();
+            btnRibbonReportExcel.Click    += (s, e) => OpenSysConfig();
+            btnRibbonPDPA.Click           += (s, e) => OpenSysConfig();
+        }
+
+        private void OpenFolderTemplateManagement()
+        {
+            if (_folderTemplateRepository == null)
+            {
+                MessageBox.Show("Folder Template service is not available.", "Template",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            using (var dlg = new FolderTemplateForm(_folderTemplateRepository, _currentUser))
+                dlg.ShowDialog(this);
+        }
+
+        private void OpenOrgStructure()
+        {
+            if (_orgStructureService != null)
+                OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService));
+            else
+                MessageBox.Show("Org Structure service is not available.", "MOD-001",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private void OpenFolderStructure()
+        {
+            if (_folderService != null)
+            {
+                var ff = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository);
+                ff.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
+                ff.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
+                OpenChildForm(ff);
+            }
+            else
+                MessageBox.Show("Folder service is not available.", "MOD-002",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private void OpenFolderSettings()
+        {
+            // Get selected folder from active FolderForm
+            Folder selectedFolder = null;
+            foreach (Form child in MdiChildren)
+            {
+                var ff = child as FolderForm;
+                if (ff != null) { selectedFolder = ff.SelectedFolder; break; }
+            }
+
+            if (selectedFolder == null)
+            {
+                MessageBox.Show(
+                    "กรุณาเลือก Folder ใน Folder Explorer ก่อน",
+                    "ตั้งค่า Folder",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                OpenFolderStructure();
+                return;
+            }
+
+            OpenFolderSettingsForFolder(selectedFolder);
+        }
+
+        /// <summary>เปิด PermissionForm สำหรับ folder ที่ระบุ — เรียกได้จาก FolderForm context menu</summary>
+        public void OpenFolderSettingsForFolder(Folder selectedFolder)
+        {
+            if (selectedFolder == null) return;
+
+            if (_permissionService == null || _permissionRepository == null || _folderService == null)
+            {
+                MessageBox.Show("Permission service is not available.", "ตั้งค่า Folder",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = new PermissionForm(
+                _permissionService, _approvalService, _folderService,
+                _permissionRepository, _currentUser, selectedFolder,
+                _userAccountRepository, _folderRepository, _employeeApiService,
+                _orgStructureService, _fileDocumentRepository))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        /// <summary>เปิด FilePermissionForm สำหรับ file ที่ระบุ — เรียกได้จาก FolderForm context menu และ detail panel</summary>
+        public void OpenFilePermissionDialog(FileDocument file)
+        {
+            if (file == null) return;
+
+            if (_filePermissionService == null || _filePermissionRepository == null)
+            {
+                MessageBox.Show("File permission service is not available.", "ตั้งค่าสิทธิ์ไฟล์",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = new FilePermissionForm(
+                _filePermissionService, _filePermissionRepository,
+                _currentUser, file, _userAccountRepository, _permissionRepository,
+                _orgStructureService))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        private void OpenApprovalInbox()
+        {
+            if (_approvalService != null)
+                OpenChildForm(new ApprovalInboxForm(_approvalService, _currentUser));
+            else
+                MessageBox.Show("Approval service is not available.", "Approval Inbox",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private void OpenFileUpload()
+        {
+            if (_fileService == null || _folderService == null)
+            {
+                new FileUploadForm().ShowDialog(this);
+                return;
+            }
+
+            // ถ้า FolderForm เปิดอยู่แล้ว
+            foreach (Form child in MdiChildren)
+            {
+                var ff = child as FolderForm;
+                if (ff != null)
+                {
+                    if (ff.SelectedFolder != null)
+                    {
+                        ff.OpenUploadForSelectedFolder();
+                        return;
+                    }
+                    else
+                    {
+                        ff.Activate();
+                        MessageBox.Show(
+                            "กรุณาเลือก Folder ปลายทางใน Folder Explorer ก่อนอัพโหลด\n\n" +
+                            "1. กด 🏢 เลือกหน่วยงาน เพื่อกรอง\n" +
+                            "2. คลิก Folder ใน tree ด้านซ้าย\n" +
+                            "3. กด 📤 ปุ่มอัพโหลด อีกครั้ง",
+                            "เลือก Folder ก่อน",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                        return;
+                    }
+                }
+            }
+
+            // ยังไม่มี FolderForm — เปิดให้เลย พร้อมแจ้ง
+            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository);
+            folderForm.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
+            folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
+            OpenChildForm(folderForm);
+        }
+
+        private void OpenSysConfig()
+        {
+            if (_configManager != null)
+                OpenChildForm(new ConfigAdminForm(_configManager, _auditService, _currentUser, _fileService, _userAccountRepository));
+            else
+                MessageBox.Show("Config service is not available.", "Admin",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        /// <summary>
+        /// Opens a form as an MDI child. Multiple instances may be open concurrently.
+        /// </summary>
+        private void OpenChildForm(Form childForm)
+        {
+            pnlDashboard.Visible = false;
+            childForm.MdiParent = this;
+            childForm.Show();
+        }
+
+        // -----------------------------------------------------------------------
+        // Status bar helpers
+        // -----------------------------------------------------------------------
+
+        private void UpdateStatusBar()
+        {
+            lblStatusUser.Text   = string.Format("👤 {0} ({1})", _currentUser.AdIdentity, _currentUser.Role);
+            lblStatusDept.Text   = "🏢 —";
+            lblStatusFolder.Text = "📁 —";
+            lblStatusPath.Text   = "🖥️ —";
+            UpdateStatusBarDateTime();
+        }
+
+        private void UpdateStatusBarDateTime()
+        {
+            lblStatusDateTime.Text = System.DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+        }
+
+        /// <summary>Updates the approval badge count on the ribbon.</summary>
+        public void UpdateApprovalBadge(int count)
+        {
+            if (count > 0)
+            {
+                lblApprovalBadge.Text    = count.ToString();
+                lblApprovalBadge.Visible = true;
+            }
+            else
+            {
+                lblApprovalBadge.Visible = false;
+            }
+        }
+
+        /// <summary>Updates the folder info in the status bar.</summary>
+        public void UpdateStatusBarFolder(string folderName, int fileCount, string physicalPath)
+        {
+            lblStatusFolder.Text = string.Format("📁 {0} — {1} รายการ", folderName, fileCount);
+            lblStatusPath.Text   = string.Format("🖥️ {0}", physicalPath);
+        }
+
+        /// <summary>
+        /// Loads and displays dashboard statistics.
+        /// Shows total files, folders, pending approvals, and users.
+        /// Renders as a styled card panel replacing the plain lblStatsContent label.
+        /// </summary>
+        private void LoadDashboardStats()
+        {
+            try
+            {
+                int totalFiles = 0;
+                int totalFolders = 0;
+                int pendingApprovals = 0;
+                int totalUsers = 0;
+
+                if (_fileService != null)
+                {
+                    try
+                    {
+                        totalFiles = _fileService.GetAllFilesGroupedByFolder(_currentUser)
+                            .Where(f => !f.IsDeleted).Count();
+                    }
+                    catch { }
+                }
+
+                if (_folderService != null)
+                {
+                    try
+                    {
+                        totalFolders = _folderService.GetAllFolders(null, _currentUser)
+                            .Where(f => !f.IsDeleted).Count();
+                    }
+                    catch { }
+                }
+
+                if (_approvalService != null)
+                {
+                    try
+                    {
+                        pendingApprovals = _approvalService.GetPendingForApprover(_currentUser.UserId).Count();
+                    }
+                    catch { }
+                }
+
+                if (_userAccountRepository != null)
+                {
+                    try
+                    {
+                        totalUsers = _userAccountRepository.GetAll().Count();
+                    }
+                    catch { }
+                }
+
+                // Update plain label (fallback)
+                lblStatsContent.Text = string.Format(
+                    "• ไฟล์ทั้งหมด: {0}\n• Folder ทั้งหมด: {1}\n• รายการรออนุมัติ: {2}\n• ผู้ใช้งาน: {3}",
+                    totalFiles, totalFolders, pendingApprovals, totalUsers);
+
+                // นับจำนวนไฟล์แยกตามประเภท
+                var fileCounts = CountFilesByType(null);
+
+                // Build / refresh the styled stats card
+                BuildStatsCard(totalFiles, totalFolders, pendingApprovals, totalUsers, "สถิติระบบ", fileCounts);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to load dashboard stats: " + ex.Message, ex);
+                lblStatsContent.Text = "• ไฟล์ทั้งหมด: --\n• Folder ทั้งหมด: --\n• รายการรออนุมัติ: --\n• ผู้ใช้งาน: --";
+            }
+        }
+
+        /// <summary>
+        /// สร้าง / อัปเดต stats card panel ที่มีกรอบสวยงามแทน lblStats + lblStatsContent
+        /// </summary>
+        private void BuildStatsCard(int files, int folders, int pending, int users,
+                                    string title = "สถิติระบบ",
+                                    Dictionary<string, int> fileCounts = null)
+        {
+            // ลบ card เก่าออกก่อน (ถ้ามี)
+            var existing = splitContainer1.Panel1.Controls["pnlStatsCard"] as Panel;
+            if (existing != null)
+                splitContainer1.Panel1.Controls.Remove(existing);
+
+            lblStats.Visible        = false;
+            lblStatsContent.Visible = false;
+
+            // คำนวณความสูง: 4 แถวหลัก + separator + แถวประเภทไฟล์
+            int typeRowCount = (fileCounts != null && fileCounts.Count > 0) ? fileCounts.Count + 1 : 0; // +1 = separator
+            int cardW    = 220;
+            int cardH    = 30 + 4 + (4 * 24) + (typeRowCount * 22) + 8; // header + padding + rows
+            int rightMargin = 12;
+            int topMargin   = 8;
+
+            var card = new Panel
+            {
+                Name        = "pnlStatsCard",
+                Size        = new Size(cardW, cardH),
+                BackColor   = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            card.Location = new Point(
+                splitContainer1.Panel1.ClientSize.Width - cardW - rightMargin,
+                topMargin);
+
+            splitContainer1.Panel1.Resize += (s, e) =>
+            {
+                var c = splitContainer1.Panel1.Controls["pnlStatsCard"] as Panel;
+                if (c != null)
+                    c.Left = splitContainer1.Panel1.ClientSize.Width - c.Width - rightMargin;
+            };
+
+            // Header
+            var header = new Panel { Dock = DockStyle.Top, Height = 30, BackColor = Color.FromArgb(43, 87, 154) };
+            header.Controls.Add(new Label
+            {
+                Text      = "📊  " + title,
+                Dock      = DockStyle.Fill,
+                ForeColor = Color.White,
+                Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding   = new Padding(6, 0, 0, 0)
+            });
+
+            // Body
+            var body = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(8, 4, 8, 4) };
+
+            // helper: เพิ่มแถว icon + label + value
+            Action<string, string, string, Color, int> addRow = (icon, label, value, valColor, yy) =>
+            {
+                body.Controls.Add(new Label
+                {
+                    Text      = icon,
+                    Location  = new Point(0, yy + 1),
+                    Size      = new Size(20, 20),
+                    Font      = new Font("Segoe UI Emoji", 8.5f),
+                    ForeColor = Color.FromArgb(60, 60, 60)
+                });
+                body.Controls.Add(new Label
+                {
+                    Text      = label + ":",
+                    Location  = new Point(22, yy + 2),
+                    Size      = new Size(120, 18),
+                    Font      = new Font("Segoe UI", 8.5f),
+                    ForeColor = Color.FromArgb(80, 80, 80)
+                });
+                body.Controls.Add(new Label
+                {
+                    Text      = value,
+                    Location  = new Point(148, yy + 2),
+                    Size      = new Size(44, 18),
+                    Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    ForeColor = valColor,
+                    TextAlign = ContentAlignment.TopRight
+                });
+            };
+
+            var blue = Color.FromArgb(43, 87, 154);
+            int y = 4;
+
+            addRow("📄", "ไฟล์ทั้งหมด",     files.ToString(),   blue, y); y += 24;
+            addRow("📁", "Folder ทั้งหมด",  folders.ToString(), blue, y); y += 24;
+            addRow("✅", "รายการรออนุมัติ", pending.ToString(), pending > 0 ? Color.OrangeRed : blue, y); y += 24;
+            if (users >= 0)
+            {
+                addRow("👤", "ผู้ใช้งาน", users.ToString(), blue, y);
+                y += 24;
+            }
+
+            // ── แถวประเภทไฟล์ ────────────────────────────────────────────────
+            if (fileCounts != null && fileCounts.Count > 0)
+            {
+                // separator line
+                body.Controls.Add(new Panel
+                {
+                    Location  = new Point(0, y + 4),
+                    Size      = new Size(cardW - 20, 1),
+                    BackColor = Color.FromArgb(220, 220, 220)
+                });
+                y += 12;
+
+                // sub-header
+                body.Controls.Add(new Label
+                {
+                    Text      = "แยกตามประเภท",
+                    Location  = new Point(0, y),
+                    Size      = new Size(180, 16),
+                    Font      = new Font("Segoe UI", 7.5f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(100, 100, 100)
+                });
+                y += 18;
+
+                foreach (var kv in fileCounts.OrderByDescending(k => k.Value))
+                {
+                    string extIcon = FileIcon("." + kv.Key.ToLower());
+                    addRow(extIcon, kv.Key.ToUpper(), kv.Value.ToString(), blue, y);
+                    y += 22;
+                }
+            }
+
+            card.Controls.Add(body);
+            card.Controls.Add(header);
+
+            splitContainer1.Panel1.Controls.Add(card);
+            card.BringToFront();
+        }
+
+        // -----------------------------------------------------------------------
+        // 16.3 — Notification inbox panel (Req 13.3, 13.4)
+        // -----------------------------------------------------------------------
+
+        private void BuildNotificationPanel()
+        {
+            _notificationPanel = new Panel
+            {
+                Dock      = DockStyle.Right,
+                Width     = 280,
+                BackColor = SystemColors.Control,
+                Padding   = new Padding(4)
+            };
+
+            var headerLabel = new Label
+            {
+                Text      = "Notifications",
+                Dock      = DockStyle.Top,
+                Height    = 24,
+                Font      = new Font(Font, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            _notificationListBox = new ListBox
+            {
+                Dock          = DockStyle.Fill,
+                SelectionMode = SelectionMode.One,
+                HorizontalScrollbar = true
+            };
+
+            var buttonPanel = new Panel
+            {
+                Dock   = DockStyle.Bottom,
+                Height = 32
+            };
+
+            _markReadButton = new Button
+            {
+                Text   = "Mark as Read",
+                Dock   = DockStyle.Left,
+                Width  = 120
+            };
+            _markReadButton.Click += OnMarkReadClick;
+
+            _refreshButton = new Button
+            {
+                Text  = "Refresh",
+                Dock  = DockStyle.Right,
+                Width = 80
+            };
+            _refreshButton.Click += (s, e) => LoadNotifications();
+
+            buttonPanel.Controls.Add(_markReadButton);
+            buttonPanel.Controls.Add(_refreshButton);
+
+            _notificationPanel.Controls.Add(_notificationListBox);
+            _notificationPanel.Controls.Add(buttonPanel);
+            _notificationPanel.Controls.Add(headerLabel);
+
+            Controls.Add(_notificationPanel);
+        }
+
+        /// <summary>
+        /// Builds the file detail panel on the right side of the form.
+        /// Shows file metadata when a file is selected in lvRecentFiles.
+        /// </summary>
+        private void BuildFileDetailPanel()
+        {
+            _fileDetailPanel = new Panel
+            {
+                Dock        = DockStyle.Right,
+                Width       = 240,
+                BackColor   = Color.White,
+                Padding     = new Padding(0),
+                Visible     = false,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            // ── Header: icon (centered) + filename ──────────────────────────
+            var headerPanel = new Panel
+            {
+                Dock      = DockStyle.Top,
+                Height    = 110,
+                BackColor = Color.White,
+                Padding   = new Padding(12, 12, 12, 8)
+            };
+
+            var fileIconLabel = new Label
+            {
+                Text      = "📄",
+                Font      = new Font("Segoe UI Emoji", 28),
+                Dock      = DockStyle.Top,
+                Height    = 48,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.White
+            };
+
+            _lblDetailFileName = new Label
+            {
+                Text      = string.Empty,
+                Font      = new Font("Segoe UI", 9, FontStyle.Bold),
+                Dock      = DockStyle.Fill,
+                AutoSize  = false,
+                TextAlign = ContentAlignment.TopCenter,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(32, 32, 32)
+            };
+
+            headerPanel.Controls.Add(_lblDetailFileName);
+            headerPanel.Controls.Add(fileIconLabel);
+
+            // ── Red separator ────────────────────────────────────────────────
+            var separator = new Panel
+            {
+                Dock      = DockStyle.Top,
+                Height    = 4,
+                BackColor = Color.FromArgb(204, 0, 0)
+            };
+
+            // ── Detail rows ──────────────────────────────────────────────────
+            var detailsPanel = new Panel
+            {
+                Dock       = DockStyle.Fill,
+                BackColor  = Color.White,
+                Padding    = new Padding(14, 10, 14, 6),
+                AutoScroll = true
+            };
+
+            int y   = 0;
+            int w   = 200;
+            int rowH = 46;
+
+            // helper: add one label+value row
+            Action<string, Label, int> addRow = (caption, valueLabel, yy) =>
+            {
+                var cap = new Label
+                {
+                    Text      = caption,
+                    Font      = new Font("Segoe UI", 8),
+                    Location  = new Point(0, yy),
+                    Size      = new Size(w, 16),
+                    ForeColor = Color.FromArgb(120, 120, 120),
+                    AutoSize  = false
+                };
+                valueLabel.Font      = new Font("Segoe UI", 10, FontStyle.Bold);
+                valueLabel.Location  = new Point(0, yy + 18);
+                valueLabel.Size      = new Size(w, 22);
+                valueLabel.AutoSize  = false;
+                valueLabel.TextAlign = ContentAlignment.TopLeft;
+                detailsPanel.Controls.Add(cap);
+                detailsPanel.Controls.Add(valueLabel);
+            };
+
+            _lblDetailType            = new Label { ForeColor = Color.FromArgb(32, 32, 32) };
+            _lblDetailConfidentiality = new Label { ForeColor = Color.DarkRed };
+            _lblDetailSize            = new Label { ForeColor = Color.FromArgb(32, 32, 32) };
+            _lblDetailVersion         = new Label { ForeColor = Color.FromArgb(32, 32, 32) };
+            _lblDetailDate            = new Label { ForeColor = Color.FromArgb(32, 32, 32) };
+            _lblDetailUploadedBy      = new Label { ForeColor = Color.FromArgb(32, 32, 32) };
+
+            addRow("ชนิด",    _lblDetailType,            y); y += rowH;
+            addRow("ระดับ",   _lblDetailConfidentiality, y); y += rowH;
+            addRow("ขนาด",    _lblDetailSize,             y); y += rowH;
+            addRow("เวอร์ชัน", _lblDetailVersion,          y); y += rowH;
+            addRow("วันที่",   _lblDetailDate,             y); y += rowH;
+            addRow("โดย",     _lblDetailUploadedBy,       y);
+
+            // ── Buttons ──────────────────────────────────────────────────────
+            var buttonsPanel = new Panel
+            {
+                Dock      = DockStyle.Bottom,
+                Height    = 136,
+                BackColor = Color.White,
+                Padding   = new Padding(12, 8, 12, 12)
+            };
+
+            _btnDetailOpen = new Button
+            {
+                Text      = "👁  เปิดดู",
+                Dock      = DockStyle.Top,
+                Height    = 36,
+                Font      = new Font("Segoe UI", 10, FontStyle.Bold),
+                BackColor = Color.FromArgb(43, 87, 154),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor    = Cursors.Hand
+            };
+            _btnDetailOpen.FlatAppearance.BorderSize = 0;
+            _btnDetailOpen.Click += OnDetailOpenClick;
+
+            _btnDetailDownload = new Button
+            {
+                Text      = "⬇  ดาวน์โหลด",
+                Dock      = DockStyle.Top,
+                Height    = 36,
+                Font      = new Font("Segoe UI", 10),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(43, 87, 154),
+                FlatStyle = FlatStyle.Flat,
+                Cursor    = Cursors.Hand
+            };
+            _btnDetailDownload.FlatAppearance.BorderColor = Color.FromArgb(43, 87, 154);
+            _btnDetailDownload.FlatAppearance.BorderSize  = 1;
+            _btnDetailDownload.Click += OnDetailDownloadClick;
+
+            _btnDetailSecurity = new Button
+            {
+                Text      = "🔒  สิทธิ์",
+                Dock      = DockStyle.Top,
+                Height    = 36,
+                Font      = new Font("Segoe UI", 10),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(43, 87, 154),
+                FlatStyle = FlatStyle.Flat,
+                Cursor    = Cursors.Hand
+            };
+            _btnDetailSecurity.FlatAppearance.BorderColor = Color.FromArgb(43, 87, 154);
+            _btnDetailSecurity.FlatAppearance.BorderSize  = 1;
+            _btnDetailSecurity.Click += OnDetailSecurityClick;
+
+            // Add in reverse order (Dock=Top stacks bottom-up)
+            buttonsPanel.Controls.Add(_btnDetailSecurity);
+            buttonsPanel.Controls.Add(_btnDetailDownload);
+            buttonsPanel.Controls.Add(_btnDetailOpen);
+
+            _fileDetailPanel.Controls.Add(buttonsPanel);
+            _fileDetailPanel.Controls.Add(detailsPanel);
+            _fileDetailPanel.Controls.Add(separator);
+            _fileDetailPanel.Controls.Add(headerPanel);
+
+            Controls.Add(_fileDetailPanel);
+        }
+
+        /// <summary>
+        /// Loads unread notifications ordered by DeliveredAt descending and populates the list box.
+        /// </summary>
+        private void LoadNotifications()
+        {
+            try
+            {
+                var notifications = _notificationService.GetUnread(_currentUser.UserId);
+
+                _unreadNotifications.Clear();
+                _notificationListBox.Items.Clear();
+
+                // GetUnread already returns ordered by DeliveredAt desc (per NotificationService contract)
+                foreach (var n in notifications)
+                {
+                    _unreadNotifications.Add(n);
+                    _notificationListBox.Items.Add(
+                        string.Format("[{0:yyyy-MM-dd HH:mm}] {1}",
+                            n.DeliveredAt.ToLocalTime(), n.MessageText));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("MDI_Container: Failed to load notifications.", ex);
+            }
+        }
+
+        private void OnMarkReadClick(object sender, EventArgs e)
+        {
+            int selectedIndex = _notificationListBox.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= _unreadNotifications.Count)
+                return;
+
+            var notification = _unreadNotifications[selectedIndex];
+
+            try
+            {
+                _notificationService.MarkRead(notification.NotificationId, _currentUser);
+                LoadNotifications();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(
+                    string.Format("MDI_Container: Failed to mark notification {0} as read.",
+                        notification.NotificationId), ex);
+                MessageBox.Show(
+                    "Failed to mark notification as read. Please try again.",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // Background escalation timer
+        // -----------------------------------------------------------------------
+
+        private void BuildEscalationTimer()
+        {
+            // Req 8.5: read interval from ConfigManager; default to 60 seconds
+            int intervalSeconds = 60;
+            if (_configManager != null)
+            {
+                try
+                {
+                    intervalSeconds = _configManager.Get<int>("EscalationTimerIntervalSeconds");
+                }
+                catch
+                {
+                    // Key not configured — use default
+                }
+            }
+
+            int intervalMs = intervalSeconds * 1000;
+            if (intervalMs <= 0)
+                intervalMs = 60000;
+
+            _escalationTimer = new Timer { Interval = intervalMs };
+            _escalationTimer.Tick += OnEscalationTimerTick;
+        }
+
+        private void OnEscalationTimerTick(object sender, EventArgs e)
+        {
+            try
+            {
+                _approvalService.ProcessEscalations();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("MDI_Container: ProcessEscalations failed.", ex);
+            }
+        }
+
+        // ── Dashboard Handlers ────────────────────────────────────────────────
+        private void WireDashboardHandlers()
+        {
+            btnDashUpload.Click   += (s, e) => OpenFileUpload();
+            btnDashFolder.Click   += (s, e) => OpenFolderStructure();
+            btnDashApproval.Click += (s, e) => OpenApprovalInbox();
+            btnDashOrgUnit.Click  += (s, e) => OpenOrgStructure();
+
+            // Toggle buttons: ตามองค์กร / ตามความลับ
+            btnToggleByOrg.Click             += (s, e) => SetTreeViewMode(byOrg: true);
+            btnToggleByConfidentiality.Click += (s, e) => SetTreeViewMode(byOrg: false);
+
+            // Search box placeholder behavior
+            txtSearchFolder.GotFocus  += (s, e) => { if (txtSearchFolder.Text == "🔍 ค้นหา Folder...") { txtSearchFolder.Text = ""; txtSearchFolder.ForeColor = System.Drawing.Color.Black; } };
+            txtSearchFolder.LostFocus += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearchFolder.Text)) { txtSearchFolder.Text = "🔍 ค้นหา Folder..."; txtSearchFolder.ForeColor = System.Drawing.Color.Gray; } };
+            txtSearchFolder.TextChanged += TxtSearchFolder_TextChanged;
+
+            // Refresh button for recent files (if it exists in designer)
+            if (Controls.ContainsKey("btnRefreshFiles"))
+            {
+                var btnRefresh = Controls["btnRefreshFiles"] as Button;
+                if (btnRefresh != null)
+                    btnRefresh.Click += (s, e) => ReloadRecentFilesData();
+            }
+        }
+
+        private bool _treeViewByOrg = true;
+
+        private void SetTreeViewMode(bool byOrg)
+        {
+            _treeViewByOrg = byOrg;
+
+            // Update button styles - Office 2021 Navy Blue Light style
+            var sidebarBg = System.Drawing.Color.FromArgb(238, 242, 248);
+            btnToggleByOrg.BackColor             = byOrg ? System.Drawing.Color.FromArgb(43, 87, 154) : sidebarBg;
+            btnToggleByOrg.ForeColor             = byOrg ? System.Drawing.Color.White : System.Drawing.Color.FromArgb(43, 87, 154);
+            btnToggleByOrg.Font                  = new System.Drawing.Font("Segoe UI", 9F, byOrg ? System.Drawing.FontStyle.Bold : System.Drawing.FontStyle.Regular);
+
+            btnToggleByConfidentiality.BackColor = byOrg ? sidebarBg : System.Drawing.Color.FromArgb(43, 87, 154);
+            btnToggleByConfidentiality.ForeColor = byOrg ? System.Drawing.Color.FromArgb(43, 87, 154) : System.Drawing.Color.White;
+            btnToggleByConfidentiality.Font      = new System.Drawing.Font("Segoe UI", 9F, byOrg ? System.Drawing.FontStyle.Regular : System.Drawing.FontStyle.Bold);
+
+            // Update title label
+            lblTreeTitle.Text = byOrg ? "📁 ตามองค์กร" : "🔒 ตามความลับ";
+
+            // Reload tree
+            if (byOrg)
+                LoadDashboardFolderTree();
+            else
+                LoadDashboardConfidentialityTree();
+        }
+
+        private void LoadDashboardConfidentialityTree()
+        {
+            treeViewFolders.Nodes.Clear();
+
+            if (_folderService == null) return;
+
+            try
+            {
+                // Group folders by confidentiality level
+                var levels = new[]
+                {
+                    new { Level = 1, Label = "🔴 1HC — Highly Confidential" },
+                    new { Level = 2, Label = "🟠 2SC — Secret" },
+                    new { Level = 3, Label = "🔵 3NC — Non-Confidential" },
+                    new { Level = 4, Label = "🟢 4PC — Public/Common" },
+                };
+
+                foreach (var lvl in levels)
+                {
+                    var node = new TreeNode(lvl.Label)
+                    {
+                        ForeColor = ConfidentialityColor(lvl.Level),
+                        Tag       = lvl.Level
+                    };
+                    treeViewFolders.Nodes.Add(node);
+                }
+
+                treeViewFolders.ExpandAll();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to load confidentiality tree: " + ex.Message, ex);
+            }
+        }
+
+        private void TxtSearchFolder_TextChanged(object sender, EventArgs e)
+        {
+            string keyword = txtSearchFolder.Text.Trim();
+            if (keyword == "🔍 ค้นหา Folder..." || string.IsNullOrEmpty(keyword))
+            {
+                // Restore full tree
+                if (_treeViewByOrg) LoadDashboardFolderTree();
+                else LoadDashboardConfidentialityTree();
+                return;
+            }
+
+            // Filter nodes by keyword
+            FilterTreeNodes(treeViewFolders.Nodes, keyword.ToLower());
+        }
+
+        private bool FilterTreeNodes(TreeNodeCollection nodes, string keyword)
+        {
+            bool anyVisible = false;
+            foreach (TreeNode node in nodes)
+            {
+                bool childVisible = FilterTreeNodes(node.Nodes, keyword);
+                bool selfMatch    = node.Text.ToLower().Contains(keyword);
+                node.ForeColor    = selfMatch ? System.Drawing.Color.FromArgb(0, 102, 204) : System.Drawing.Color.FromArgb(32, 32, 32);
+                if (selfMatch || childVisible)
+                {
+                    node.Expand();
+                    anyVisible = true;
+                }
+            }
+            return anyVisible;
+        }
+
+        private void LoadDashboardFolderTree()
+        {
+            try
+            {
+                treeViewFolders.Nodes.Clear();
+
+                if (_orgStructureService == null)
+                    return;
+
+                // Get all OrgUnits using GetHierarchy()
+                var allUnits = _orgStructureService.GetHierarchy().ToList();
+                if (allUnits.Count == 0)
+                    return;
+
+                // Build SubCommittee → Division → Department hierarchy
+                var subCommittees = allUnits
+                    .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive)
+                    .OrderBy(u => u.Name);
+
+                foreach (var sc in subCommittees)
+                {
+                    var scNode = new TreeNode(string.Format("🏢 {0} [SubCommittee]", sc.Name))
+                    {
+                        Tag = sc,
+                        ImageIndex = 0,
+                        SelectedImageIndex = 0
+                    };
+
+                    var divisions = allUnits
+                        .Where(u => u.Tier == OrgUnitTier.Division && u.ParentId == sc.OrgUnitId && u.IsActive)
+                        .OrderBy(u => u.Name);
+
+                    foreach (var div in divisions)
+                    {
+                        var divNode = new TreeNode(string.Format("📂 {0} [Division]", div.Name))
+                        {
+                            Tag = div,
+                            ImageIndex = 1,
+                            SelectedImageIndex = 1
+                        };
+
+                        var departments = allUnits
+                            .Where(u => u.Tier == OrgUnitTier.Department && u.ParentId == div.OrgUnitId && u.IsActive)
+                            .OrderBy(u => u.Name);
+
+                        foreach (var dept in departments)
+                        {
+                            var deptNode = new TreeNode(string.Format("📋 {0} [Department]", dept.Name))
+                            {
+                                Tag = dept,
+                                ImageIndex = 2,
+                                SelectedImageIndex = 2
+                            };
+                            divNode.Nodes.Add(deptNode);
+                        }
+
+                        scNode.Nodes.Add(divNode);
+                    }
+
+                    treeViewFolders.Nodes.Add(scNode);
+                }
+
+                treeViewFolders.ExpandAll();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to load dashboard org structure tree: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Setup columns for lvRecentFiles once on load.
+        /// </summary>
+        private void SetupRecentFilesColumns()
+        {
+            if (lvRecentFiles.Columns.Count > 0) return;
+            lvRecentFiles.Columns.Add("ชื่อ",      340);
+            lvRecentFiles.Columns.Add("ประเภท",     70);
+            lvRecentFiles.Columns.Add("ระดับ",      60);
+            lvRecentFiles.Columns.Add("ขนาด",       80);
+            lvRecentFiles.Columns.Add("วันที่",     120);
+            lvRecentFiles.Columns.Add("โดย",        80);
+            lvRecentFiles.Columns.Add("Ver",        36);
+            lvRecentFiles.Columns.Add("หน่วยงาน",  120);
+
+            AutoResizeColumnsProportional();
+        }
+
+        /// <summary>
+        /// Resizes columns proportionally to fit the available ListView width.
+        /// </summary>
+        private void AutoResizeColumnsProportional()
+        {
+            if (lvRecentFiles.Columns.Count == 0) return;
+
+            // Get available width (account for scrollbar)
+            int availableWidth = lvRecentFiles.Width - SystemInformation.VerticalScrollBarWidth - 4;
+            if (availableWidth <= 0) return;
+
+            // Define proportions for each column (total = 906)
+            int[] proportions = { 340, 70, 60, 80, 120, 80, 36, 120 };
+            int totalProportion = 0;
+            foreach (int p in proportions) totalProportion += p;
+
+            // Resize each column proportionally
+            for (int i = 0; i < lvRecentFiles.Columns.Count; i++)
+            {
+                int newWidth = (availableWidth * proportions[i]) / totalProportion;
+                lvRecentFiles.Columns[i].Width = newWidth;
+            }
+        }
+
+        // ── treeViewFolders selection → load files ────────────────────────────
+
+        private void TreeViewFolders_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            if (e.Node == null) return;
+
+            // Mode: ตามองค์กร — tag เป็น OrgUnit
+            var orgUnit = e.Node.Tag as OrgUnit;
+            if (orgUnit != null)
+            {
+                lblRecentFiles.Text = string.Format("📄 ไฟล์ใน {0}", orgUnit.Name);
+                LoadFilesForOrgUnit(orgUnit.OrgUnitID);
+                UpdateStatsCardForOrgUnit(orgUnit);
+                return;
+            }
+
+            // Mode: ตามความลับ — tag เป็น int (confidentiality level)
+            if (e.Node.Tag is int)
+            {
+                int level = (int)e.Node.Tag;
+                string[] labels = { "", "1HC — Highly Confidential", "2SC — Secret", "3NC — Non-Confidential", "4PC — Public/Common" };
+                string labelText = (level >= 1 && level <= 4) ? labels[level] : "ระดับ " + level;
+                lblRecentFiles.Text = string.Format("📄 ไฟล์ระดับ {0}", labelText);
+                LoadFilesByConfidentialityLevel(level);
+                UpdateStatsCardForConfidentialityLevel(level, labelText);
+            }
+        }
+
+        /// <summary>อัปเดต stats card ให้แสดงยอดตาม OrgUnit ที่เลือก (รวม child OrgUnit)</summary>
+        private void UpdateStatsCardForOrgUnit(OrgUnit orgUnit)
+        {
+            int files   = 0;
+            int folders = 0;
+            int pending = 0;
+
+            // รวบรวม OrgUnitID ทั้งหมด (ตัวเองและ child ทั้งหมด)
+            var orgUnitIds = new List<int> { orgUnit.OrgUnitID };
+            if (_orgStructureService != null)
+            {
+                try
+                {
+                    var all = _orgStructureService.GetHierarchy().ToList();
+                    // เพิ่ม child ทุกระดับ
+                    var queue = new Queue<int>();
+                    queue.Enqueue(orgUnit.OrgUnitID);
+                    while (queue.Count > 0)
+                    {
+                        int parentId = queue.Dequeue();
+                        foreach (var child in all.Where(u => u.ParentId == parentId))
+                        {
+                            if (!orgUnitIds.Contains(child.OrgUnitID))
+                            {
+                                orgUnitIds.Add(child.OrgUnitID);
+                                queue.Enqueue(child.OrgUnitID);
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            // นับไฟล์และ folder จากทุก OrgUnit ที่รวบรวมได้
+            try
+            {
+                if (_fileService != null)
+                {
+                    // ใช้ OrgUnit แรก (ตัวเอง) เป็น root สำหรับ GetFilesByOrgUnit
+                    // SP ใช้ recursive CTE ครอบคลุม child อยู่แล้ว
+                    files = _fileService.GetFilesByOrgUnit(orgUnit.OrgUnitID, _currentUser)
+                        .Where(f => !f.IsDeleted).Count();
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (_folderService != null)
+                {
+                    // นับ folder จากทุก OrgUnit ใน orgUnitIds
+                    foreach (var ouId in orgUnitIds)
+                    {
+                        try
+                        {
+                            folders += _folderService.GetAllFolders(ouId, _currentUser)
+                                .Where(f => !f.IsDeleted).Count();
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (_approvalService != null)
+                    pending = _approvalService.GetPendingForApprover(_currentUser.UserId).Count();
+            }
+            catch { }
+
+            var fileCounts = CountFilesByType(orgUnit.OrgUnitID);
+            BuildStatsCard(files, folders, pending, -1,
+                string.Format("{0}", orgUnit.Name), fileCounts);
+        }
+
+        /// <summary>อัปเดต stats card ให้แสดงยอดตาม Confidentiality Level ที่เลือก</summary>
+        private void UpdateStatsCardForConfidentialityLevel(int level, string labelText)
+        {
+            int files   = 0;
+            int folders = 0;
+
+            try
+            {
+                if (_fileService != null && _folderService != null)
+                {
+                    var allFiles = _fileService.GetAllFilesGroupedByFolder(_currentUser)
+                        .Where(f => !f.IsDeleted).ToList();
+
+                    // นับ folder ที่มี level ตรงกัน
+                    var folderIds = allFiles.Select(f => f.FolderID).Distinct().ToList();
+                    foreach (var fid in folderIds)
+                    {
+                        try
+                        {
+                            var folder = _folderService.GetFolder(fid, _currentUser);
+                            if (folder != null && folder.ConfidentialityLevel == level)
+                            {
+                                folders++;
+                                files += allFiles.Count(f => f.FolderID == fid);
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+
+            BuildStatsCard(files, folders, 0, -1, labelText,
+                CountFilesByType(null, level));
+        }
+
+        /// <summary>
+        /// โหลดไฟล์ทั้งหมดที่มี confidentiality level ตรงกับที่เลือก
+        /// โดย filter จาก folder's ConfidentialityLevel
+        /// </summary>
+        private void LoadFilesByConfidentialityLevel(int level)
+        {
+            lvRecentFiles.Items.Clear();
+            _fileDetailPanel.Visible = false;
+
+            if (_fileService == null || _folderService == null) return;
+
+            try
+            {
+                var orgNames = BuildOrgUnitNameLookup();
+
+                var allFiles = _fileService.GetAllFilesGroupedByFolder(_currentUser)
+                    .Where(f => !f.IsDeleted)
+                    .ToList();
+
+                if (allFiles.Count == 0) return;
+
+                var byFolder = allFiles
+                    .GroupBy(f => f.FolderID)
+                    .OrderBy(g => g.First().FolderName ?? string.Format("Folder {0}", g.Key));
+
+                foreach (var group in byFolder)
+                {
+                    var firstFile = group.First();
+
+                    Folder headerFolder;
+                    try
+                    {
+                        headerFolder = _folderService.GetFolder(firstFile.FolderID, _currentUser);
+                        if (headerFolder == null) continue;
+                        headerFolder.FileCount   = group.Count();
+                        headerFolder.OrgUnitName = orgNames.TryGetValue(headerFolder.OrgUnitID, out var ouN) ? ouN : "—";
+                    }
+                    catch { continue; }
+
+                    if (headerFolder.ConfidentialityLevel != level) continue;
+
+                    AddFolderHeaderRow(headerFolder);
+
+                    if (_expandedFolderIds.Contains(headerFolder.FolderID))
+                    {
+                        foreach (var file in group.OrderBy(f => f.OriginalFileName))
+                        {
+                            file.OrgUnitName = headerFolder.OrgUnitName;
+                            AddFileRow(file, headerFolder.ConfidentialityLevel);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("LoadFilesByConfidentialityLevel failed: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// ดึงไฟล์ทั้งหมดใน OrgUnit ที่ระบุ (รวม child OrgUnit ทั้งหมด) ผ่าน SP โดยตรง
+        /// SP ใช้ recursive CTE: OrgUnit → Folder → FileDocument
+        /// </summary>
+        private void LoadFilesForOrgUnit(int orgUnitId)
+        {
+            lvRecentFiles.Items.Clear();
+            _fileDetailPanel.Visible = false;
+
+            if (_fileService == null || _folderService == null) return;
+
+            try
+            {
+                var orgNames = BuildOrgUnitNameLookup();
+
+                var files = _fileService.GetFilesByOrgUnit(orgUnitId, _currentUser)
+                    .Where(f => !f.IsDeleted)
+                    .ToList();
+
+                if (files.Count == 0) return;
+
+                var byFolder = files
+                    .GroupBy(f => f.FolderID)
+                    .OrderBy(g => g.First().FolderName ?? string.Format("Folder {0}", g.Key));
+
+                foreach (var group in byFolder)
+                {
+                    var first = group.First();
+
+                    Folder headerFolder;
+                    try
+                    {
+                        headerFolder = _folderService.GetFolder(first.FolderID, _currentUser);
+                        if (headerFolder == null)
+                        {
+                            headerFolder = new Folder
+                            {
+                                FolderID             = first.FolderID,
+                                FolderName           = first.FolderName ?? string.Format("Folder {0}", first.FolderID),
+                                ConfidentialityLevel = 0,
+                                FileCount            = group.Count()
+                            };
+                        }
+                        else
+                        {
+                            headerFolder.FileCount = group.Count();
+                        }
+                    }
+                    catch
+                    {
+                        headerFolder = new Folder
+                        {
+                            FolderID             = first.FolderID,
+                            FolderName           = first.FolderName ?? string.Format("Folder {0}", first.FolderID),
+                            ConfidentialityLevel = 0,
+                            FileCount            = group.Count()
+                        };
+                    }
+
+                    headerFolder.OrgUnitName = orgNames.TryGetValue(headerFolder.OrgUnitID, out var ouN2) ? ouN2 : "—";
+
+                    AddFolderHeaderRow(headerFolder);
+
+                    if (_expandedFolderIds.Contains(headerFolder.FolderID))
+                    {
+                        foreach (var file in group.OrderBy(f => f.OriginalFileName))
+                        {
+                            file.OrgUnitName = headerFolder.OrgUnitName;
+                            AddFileRow(file, headerFolder.ConfidentialityLevel);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("LoadFilesForOrgUnit failed: " + ex.Message, ex);
+            }
+        }
+
+        private void AddFolderHeaderRow(Folder folder)
+        {
+            string badge    = ConfidentialityBadge(folder.ConfidentialityLevel);
+            bool   expanded = _expandedFolderIds.Contains(folder.FolderID);
+            string arrow    = expanded ? "▼" : "▶";
+            string label    = string.Format("{0} 📁  {1}  {2}", arrow, folder.FolderName, badge);
+
+            var item = new ListViewItem(label);
+            item.SubItems.Add("Folder");
+            item.SubItems.Add(badge);
+            item.SubItems.Add(folder.FileCount > 0
+                ? string.Format("{0} ไฟล์", folder.FileCount) : "—");
+            item.SubItems.Add("—");
+            item.SubItems.Add("—");
+            item.SubItems.Add("—");
+            item.SubItems.Add(folder.OrgUnitName ?? "—");
+            item.Tag       = folder;
+            item.BackColor = Color.FromArgb(230, 238, 250);
+            item.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
+            item.Font      = new Font(lvRecentFiles.Font, FontStyle.Bold);
+
+            item.UseItemStyleForSubItems = false;
+            item.SubItems[2].ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
+
+            lvRecentFiles.Items.Add(item);
+        }
+
+        private void AddFileRow(FileDocument file, int folderConfidentialityLevel = 0)
+        {
+            file.ConfidentialityLevel = folderConfidentialityLevel;
+
+            string ext   = file.FileExtension.TrimStart('.').ToUpper();
+            string icon  = FileIcon(file.FileExtension);
+            string badge = ConfidentialityBadge(folderConfidentialityLevel);
+
+            var item = new ListViewItem(string.Format("      {0}  {1}", icon, file.OriginalFileName));
+            item.SubItems.Add(ext);
+            item.SubItems.Add(badge);
+            item.SubItems.Add(FormatFileSize(file.FileSizeBytes));
+            item.SubItems.Add(file.UploadedDate.ToString("dd/MM/yy HH:mm"));
+            item.SubItems.Add(file.UploadedBy.ToString());
+            item.SubItems.Add(file.Version.ToString());
+            item.SubItems.Add(file.OrgUnitName ?? "—");
+            item.Tag = file;
+
+            if (file.VirusScanStatus == 2)
+                item.ForeColor = Color.DarkRed;
+            else if (file.VirusScanStatus == 0)
+                item.ForeColor = Color.DarkOrange;
+            else if (folderConfidentialityLevel > 0)
+            {
+                item.UseItemStyleForSubItems = false;
+                item.SubItems[2].ForeColor = ConfidentialityColor(folderConfidentialityLevel);
+            }
+
+            lvRecentFiles.Items.Add(item);
+        }
+
+        /// <summary>
+        /// นับจำนวนไฟล์แยกตามนามสกุล (extension)
+        /// orgUnitId = null → นับทั้งหมด, confidentialityLevel = null → ไม่ filter ระดับ
+        /// </summary>
+        private Dictionary<string, int> CountFilesByType(int? orgUnitId, int? confidentialityLevel = null)
+        {
+            var dict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (_fileService == null) return dict;
+
+            try
+            {
+                IEnumerable<FileDocument> files;
+                if (orgUnitId.HasValue)
+                    files = _fileService.GetFilesByOrgUnit(orgUnitId.Value, _currentUser);
+                else
+                    files = _fileService.GetAllFilesGroupedByFolder(_currentUser);
+
+                foreach (var f in files.Where(f => !f.IsDeleted))
+                {
+                    // filter ตาม confidentiality level ถ้าระบุ
+                    if (confidentialityLevel.HasValue && f.ConfidentialityLevel != confidentialityLevel.Value)
+                        continue;
+
+                    string ext = (f.FileExtension ?? "").TrimStart('.').ToUpper();
+                    if (string.IsNullOrEmpty(ext)) ext = "อื่นๆ";
+
+                    if (dict.ContainsKey(ext))
+                        dict[ext]++;
+                    else
+                        dict[ext] = 1;
+                }
+            }
+            catch { }
+
+            return dict;
+        }
+
+        /// <summary>สร้าง dictionary OrgUnitID → Name สำหรับ lookup ชื่อหน่วยงาน</summary>
+        private Dictionary<int, string> BuildOrgUnitNameLookup()
+        {
+            var dict = new Dictionary<int, string>();
+            if (_orgStructureService == null) return dict;
+            try
+            {
+                foreach (var ou in _orgStructureService.GetHierarchy())
+                    if (!dict.ContainsKey(ou.OrgUnitID))
+                        dict[ou.OrgUnitID] = ou.Name;
+            }
+            catch { }
+            return dict;
+        }
+
+        private static string ConfidentialityBadge(int level)
+        {
+            switch (level)
+            {
+                case 1: return "1HC";
+                case 2: return "2SC";
+                case 3: return "3NC";
+                case 4: return "4PC";
+                default: return "—";
+            }
+        }
+
+        private static Color ConfidentialityColor(int level)
+        {
+            switch (level)
+            {
+                case 1: return Color.FromArgb(192, 0, 0);        // 1HC — แดงเข้ม
+                case 2: return Color.FromArgb(210, 105, 30);     // 2SC — ส้ม
+                case 3: return Color.FromArgb(0, 84, 166);       // 3NC — น้ำเงิน
+                case 4: return Color.FromArgb(0, 128, 0);        // 4PC — เขียว
+                default: return Color.FromArgb(32, 32, 32);
+            }
+        }
+
+        private static string FileIcon(string ext)
+        {
+            if (ext == null) return "📄";
+            switch (ext.ToLower().TrimStart('.'))
+            {
+                case "pdf":  return "📕";
+                case "doc": case "docx": return "📘";
+                case "xls": case "xlsx": return "📗";
+                case "ppt": case "pptx": return "📙";
+                case "jpg": case "jpeg": case "png": case "gif": return "🖼️";
+                case "zip": return "🗜️";
+                default:    return "📄";
+            }
+        }
+
+        /// <summary>
+        /// Loads recently uploaded files (top 10 folders) into lvRecentFiles on initial load.
+        /// </summary>
+        private void LoadRecentFiles()
+        {
+            lvRecentFiles.Items.Clear();
+            _fileDetailPanel.Visible = false;
+
+            if (_fileService == null || _folderService == null) return;
+
+            try
+            {
+                var orgNames = BuildOrgUnitNameLookup();
+
+                var allFiles = _fileService.GetAllFilesGroupedByFolder(_currentUser)
+                    .Where(f => !f.IsDeleted)
+                    .ToList();
+
+                var byFolder = allFiles
+                    .GroupBy(f => f.FolderID)
+                    .OrderByDescending(g => g.Max(f => f.UploadedDate))
+                    .Take(10);
+
+                foreach (var group in byFolder)
+                {
+                    var firstFile = group.First();
+
+                    Folder headerFolder;
+                    try
+                    {
+                        headerFolder = _folderService.GetFolder(firstFile.FolderID, _currentUser);
+                        if (headerFolder == null)
+                        {
+                            headerFolder = new Folder
+                            {
+                                FolderID             = firstFile.FolderID,
+                                FolderName           = firstFile.FolderName ?? string.Format("Folder {0}", firstFile.FolderID),
+                                ConfidentialityLevel = 0,
+                                FileCount            = group.Count()
+                            };
+                        }
+                        else
+                        {
+                            headerFolder.FileCount = group.Count();
+                        }
+                    }
+                    catch
+                    {
+                        headerFolder = new Folder
+                        {
+                            FolderID             = firstFile.FolderID,
+                            FolderName           = firstFile.FolderName ?? string.Format("Folder {0}", firstFile.FolderID),
+                            ConfidentialityLevel = 0,
+                            FileCount            = group.Count()
+                        };
+                    }
+
+                    headerFolder.OrgUnitName = orgNames.TryGetValue(headerFolder.OrgUnitID, out var ouN3) ? ouN3 : "—";
+
+                    AddFolderHeaderRow(headerFolder);
+
+                    if (_expandedFolderIds.Contains(headerFolder.FolderID))
+                    {
+                        foreach (var file in group.OrderBy(f => f.OriginalFileName))
+                        {
+                            file.OrgUnitName = headerFolder.OrgUnitName;
+                            AddFileRow(file, headerFolder.ConfidentialityLevel);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to load recent files: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Formats file size in human-readable format (B, KB, MB, GB).
+        /// </summary>
+        private static string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return string.Format("{0:0.##} {1}", len, sizes[order]);
+        }
+
+        // -----------------------------------------------------------------------
+        // File detail panel handlers
+        // -----------------------------------------------------------------------
+
+        private void LvRecentFiles_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (lvRecentFiles.SelectedItems.Count == 0)
+            {
+                _fileDetailPanel.Visible = false;
+                return;
+            }
+
+            var selectedItem = lvRecentFiles.SelectedItems[0];
+            var file = selectedItem.Tag as FileDocument;
+            var folder = selectedItem.Tag as Folder;
+
+            if (file != null)
+            {
+                ShowFileDetail(file);
+                _fileDetailPanel.Visible = true;
+            }
+            else if (folder != null)
+            {
+                _fileDetailPanel.Visible = false;
+            }
+        }
+
+        private void ShowFileDetail(FileDocument file)
+        {
+            _lblDetailFileName.Text = file.OriginalFileName;
+
+            string ext = file.FileExtension.TrimStart('.').ToUpper();
+            _lblDetailType.Text = ext;
+
+            int level = file.ConfidentialityLevel;
+            _lblDetailConfidentiality.Text     = GetConfidentialityShort(level) + "  " + GetConfidentialityDesc(level);
+            _lblDetailConfidentiality.ForeColor = GetConfidentialityColor(level);
+
+            _lblDetailSize.Text         = FormatFileSize(file.FileSizeBytes);
+            _lblDetailVersion.Text      = string.Format("v{0}", file.Version);
+            _lblDetailDate.Text         = file.UploadedDate.ToString("dd/MM/yy HH:mm");
+            _lblDetailUploadedBy.Text   = file.UploadedBy.ToString();
+
+            _fileDetailPanel.Tag = file;
+        }
+
+        private static string GetConfidentialityShort(int level)
+        {
+            switch (level)
+            {
+                case 1: return "1HC";
+                case 2: return "2SC";
+                case 3: return "3NC";
+                case 4: return "4PC";
+                default: return "—";
+            }
+        }
+
+        private static string GetConfidentialityDesc(int level)
+        {
+            switch (level)
+            {
+                case 1: return "High Confidential";
+                case 2: return "Secret";
+                case 3: return "Non-Confidential";
+                case 4: return "Public/Common";
+                default: return string.Empty;
+            }
+        }
+
+        private static Color GetConfidentialityColor(int level)
+        {
+            switch (level)
+            {
+                case 1: return Color.FromArgb(192, 0, 0);
+                case 2: return Color.FromArgb(210, 105, 30);
+                case 3: return Color.FromArgb(0, 84, 166);
+                case 4: return Color.FromArgb(0, 128, 0);
+                default: return Color.FromArgb(32, 32, 32);
+            }
+        }
+
+        private void OnDetailOpenClick(object sender, EventArgs e)
+        {
+            // เฉพาะ FileDocument เท่านั้น — Folder item จะถูกกรองออกที่นี่
+            var file = _fileDetailPanel.Tag as FileDocument;
+            if (file == null) return;
+
+            try
+            {
+                string pathToOpen = ResolveFilePhysicalPath(file);
+
+                if (string.IsNullOrEmpty(pathToOpen) || !System.IO.File.Exists(pathToOpen))
+                {
+                    // Fallback: ดึง stream จาก service แล้วบันทึกไป temp file
+                    pathToOpen = OpenViaDownloadStream(file);
+                }
+
+                if (string.IsNullOrEmpty(pathToOpen))
+                {
+                    MessageBox.Show(
+                        string.Format("ไม่พบไฟล์: {0}", file.OriginalFileName),
+                        "เปิดไฟล์ไม่ได้", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName        = pathToOpen,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to open file: " + ex.Message, ex);
+                MessageBox.Show(
+                    string.Format("ไม่สามารถเปิดไฟล์ได้\n\n{0}", ex.Message),
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// คืน path จาก PhysicalPath ของไฟล์ (ถ้าเป็น absolute path ที่มีอยู่จริง)
+        /// </summary>
+        private static string ResolveFilePhysicalPath(FileDocument file)
+        {
+            if (string.IsNullOrEmpty(file.PhysicalPath)) return null;
+
+            // PhysicalPath อาจเป็น absolute path จาก NetworkDriveHelper.BuildPath
+            if (System.IO.Path.IsPathRooted(file.PhysicalPath) &&
+                System.IO.File.Exists(file.PhysicalPath))
+                return file.PhysicalPath;
+
+            return null;
+        }
+
+        /// <summary>
+        /// ดึง stream จาก _fileService แล้วเขียนไป temp file เพื่อเปิดด้วย default application
+        /// คืน path ของ temp file (หรือ null ถ้าล้มเหลว)
+        /// </summary>
+        private string OpenViaDownloadStream(FileDocument file)
+        {
+            if (_fileService == null) return null;
+
+            var result = _fileService.DownloadFile(file.FileID, _currentUser);
+            if (result == null || !result.Success || result.FileStream == null) return null;
+
+            // ชื่อ temp file ใช้ original name เพื่อให้ application เปิดถูก type
+            string tempDir  = System.IO.Path.GetTempPath();
+            string tempPath = System.IO.Path.Combine(tempDir, result.FileName ?? file.OriginalFileName);
+
+            using (var fs = new System.IO.FileStream(tempPath, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                result.FileStream.CopyTo(fs);
+
+            result.FileStream.Dispose();
+            return tempPath;
+        }
+
+        private void OnDetailDownloadClick(object sender, EventArgs e)
+        {
+            var file = _fileDetailPanel.Tag as FileDocument;
+            if (file == null) return;
+
+            if (_fileService == null)
+            {
+                MessageBox.Show("File service is not available.", "ดาวน์โหลด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var sfd = new SaveFileDialog())
+            {
+                sfd.Title    = "บันทึกไฟล์";
+                sfd.FileName = file.OriginalFileName;
+                string ext   = (file.FileExtension ?? "").TrimStart('.').ToLower();
+                sfd.Filter   = string.Format("{0} files (*.{1})|*.{1}|All files (*.*)|*.*",
+                    ext.ToUpper(), ext);
+                sfd.DefaultExt = ext;
+
+                if (sfd.ShowDialog(this) != DialogResult.OK) return;
+
+                try
+                {
+                    var result = _fileService.DownloadFile(file.FileID, _currentUser);
+                    if (result == null || !result.Success)
+                    {
+                        MessageBox.Show(
+                            string.Format("ดาวน์โหลดไม่สำเร็จ: {0}",
+                                result != null ? result.ErrorMessage : "ไม่ทราบสาเหตุ"),
+                            "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    using (result.FileStream)
+                    using (var fs = new System.IO.FileStream(
+                        sfd.FileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                    {
+                        result.FileStream.CopyTo(fs);
+                    }
+
+                    MessageBox.Show(
+                        string.Format("ดาวน์โหลด '{0}' เรียบร้อยแล้ว", file.OriginalFileName),
+                        "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    _logger.Error("Download unauthorized: " + ex.Message, ex);
+                    MessageBox.Show("ไม่มีสิทธิ์ดาวน์โหลดไฟล์นี้: " + ex.Message,
+                        "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error("Failed to download file: " + ex.Message, ex);
+                    MessageBox.Show("ดาวน์โหลดไม่สำเร็จ: " + ex.Message,
+                        "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void OnDetailSecurityClick(object sender, EventArgs e)
+        {
+            var file = _fileDetailPanel.Tag as FileDocument;
+            if (file == null) return;
+
+            try
+            {
+                OpenFilePermissionDialog(file);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to open security settings: " + ex.Message, ex);
+                MessageBox.Show("ไม่สามารถเปิดตั้งค่าสิทธิ์ได้", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BuildRecentFilesContextMenu()
+        {
+            var ctx = new ContextMenuStrip();
+
+            var mnuOpen       = new ToolStripMenuItem("👁  เปิดดู",           null, CtxDash_Open_Click);
+            var mnuDownload   = new ToolStripMenuItem("⬇  ดาวน์โหลด",        null, CtxDash_Download_Click);
+            var mnuSeparator1 = new ToolStripSeparator();
+            var mnuRename     = new ToolStripMenuItem("✏️  เปลี่ยนชื่อ",       null, CtxDash_Rename_Click);
+            var mnuDelete     = new ToolStripMenuItem("🗑️  ลบ",               null, CtxDash_Delete_Click);
+            var mnuSeparator2 = new ToolStripSeparator();
+            var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxDash_Permission_Click);
+            var mnuSeparator3 = new ToolStripSeparator();
+            var mnuProperties = new ToolStripMenuItem("ℹ️  คุณสมบัติ",         null, CtxDash_Properties_Click);
+
+            ctx.Items.AddRange(new ToolStripItem[]
+            {
+                mnuOpen, mnuDownload,
+                mnuSeparator1,
+                mnuRename, mnuDelete,
+                mnuSeparator2,
+                mnuPermission,
+                mnuSeparator3,
+                mnuProperties
+            });
+
+            // enable/disable ตาม selection
+            ctx.Opening += (s, e) =>
+            {
+                bool hasFile = GetDashSelectedFile() != null;
+                mnuOpen.Enabled       = hasFile;
+                mnuDownload.Enabled   = hasFile;
+                mnuRename.Enabled     = hasFile;
+                mnuDelete.Enabled     = hasFile;
+                mnuPermission.Enabled = hasFile;
+                mnuProperties.Enabled = lvRecentFiles.SelectedItems.Count > 0;
+
+                // ถ้าไม่มีไฟล์เลือก ซ่อน menu ทั้งหมด
+                if (lvRecentFiles.SelectedItems.Count == 0)
+                    e.Cancel = true;
+            };
+
+            lvRecentFiles.ContextMenuStrip = ctx;
+
+            // select item on right-click
+            lvRecentFiles.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right)
+                {
+                    var hit = lvRecentFiles.HitTest(e.Location);
+                    if (hit.Item != null)
+                    {
+                        hit.Item.Selected = true;
+                        hit.Item.Focused  = true;
+                    }
+                }
+            };
+        }
+
+        /// <summary>คืน FileDocument ที่เลือกอยู่ใน lvRecentFiles (null ถ้าเลือก folder หรือไม่มี)</summary>
+        private FileDocument GetDashSelectedFile()
+        {
+            if (lvRecentFiles.SelectedItems.Count == 0) return null;
+            return lvRecentFiles.SelectedItems[0].Tag as FileDocument;
+        }
+
+        private void CtxDash_Open_Click(object sender, EventArgs e)
+        {
+            var file = GetDashSelectedFile();
+            if (file == null) return;
+
+            try
+            {
+                string path = ResolveFilePhysicalPath(file) ?? OpenViaDownloadStream(file);
+                if (string.IsNullOrEmpty(path))
+                {
+                    MessageBox.Show(string.Format("ไม่พบไฟล์: {0}", file.OriginalFileName),
+                        "เปิดไฟล์ไม่ได้", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = path, UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("ไม่สามารถเปิดไฟล์ได้: " + ex.Message,
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void CtxDash_Download_Click(object sender, EventArgs e)
+        {
+            var file = GetDashSelectedFile();
+            if (file == null || _fileService == null) return;
+
+            using (var sfd = new SaveFileDialog())
+            {
+                sfd.Title      = "บันทึกไฟล์";
+                sfd.FileName   = file.OriginalFileName;
+                string ext     = (file.FileExtension ?? "").TrimStart('.').ToLower();
+                sfd.Filter     = string.Format("{0} files (*.{1})|*.{1}|All files (*.*)|*.*", ext.ToUpper(), ext);
+                sfd.DefaultExt = ext;
+
+                if (sfd.ShowDialog(this) != DialogResult.OK) return;
+
+                try
+                {
+                    var result = _fileService.DownloadFile(file.FileID, _currentUser);
+                    if (result == null || !result.Success)
+                    {
+                        MessageBox.Show(string.Format("ดาวน์โหลดไม่สำเร็จ: {0}",
+                            result != null ? result.ErrorMessage : "ไม่ทราบสาเหตุ"),
+                            "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    using (result.FileStream)
+                    using (var fs = new System.IO.FileStream(sfd.FileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+                        result.FileStream.CopyTo(fs);
+
+                    MessageBox.Show(string.Format("ดาวน์โหลด '{0}' เรียบร้อยแล้ว", file.OriginalFileName),
+                        "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("ดาวน์โหลดไม่สำเร็จ: " + ex.Message,
+                        "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void CtxDash_Rename_Click(object sender, EventArgs e)
+        {
+            var file = GetDashSelectedFile();
+            if (file == null || _fileService == null) return;
+
+            using (var form   = new Form())
+            using (var lbl    = new Label())
+            using (var input  = new TextBox())
+            using (var btnOk  = new Button())
+            using (var btnCan = new Button())
+            {
+                form.Text            = "เปลี่ยนชื่อไฟล์";
+                form.ClientSize      = new Size(360, 110);
+                form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                form.StartPosition   = FormStartPosition.CenterParent;
+                form.MaximizeBox     = false; form.MinimizeBox = false;
+
+                lbl.Text = "ชื่อใหม่:"; lbl.Location = new Point(12, 12); lbl.Size = new Size(336, 20);
+                input.Text = file.OriginalFileName; input.Location = new Point(12, 36); input.Size = new Size(336, 23); input.SelectAll();
+                btnOk.Text = "OK"; btnOk.DialogResult = DialogResult.OK; btnOk.Location = new Point(192, 72); btnOk.Size = new Size(75, 26);
+                btnCan.Text = "Cancel"; btnCan.DialogResult = DialogResult.Cancel; btnCan.Location = new Point(273, 72); btnCan.Size = new Size(75, 26);
+                form.AcceptButton = btnOk; form.CancelButton = btnCan;
+                form.Controls.AddRange(new Control[] { lbl, input, btnOk, btnCan });
+
+                if (form.ShowDialog(this) != DialogResult.OK) return;
+                string newName = input.Text.Trim();
+                if (string.IsNullOrEmpty(newName)) return;
+
+                try
+                {
+                    _fileService.RenameFile(file.FileID, newName, _currentUser);
+                    RefreshDashboardFiles();
+                    MessageBox.Show(string.Format("เปลี่ยนชื่อเป็น '{0}' เรียบร้อยแล้ว", newName),
+                        "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("ไม่สามารถเปลี่ยนชื่อได้: " + ex.Message,
+                        "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void CtxDash_Delete_Click(object sender, EventArgs e)
+        {
+            var file = GetDashSelectedFile();
+            if (file == null || _fileService == null) return;
+
+            var confirm = MessageBox.Show(
+                string.Format("ลบไฟล์ '{0}' หรือไม่?\nไฟล์จะถูกย้ายไปยังถังขยะ", file.OriginalFileName),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                _fileService.DeleteFile(file.FileID, _currentUser);
+                RefreshDashboardFiles();
+                LoadDashboardStats();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                MessageBox.Show("ไม่มีสิทธิ์ลบไฟล์นี้: " + ex.Message,
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("ไม่สามารถลบไฟล์ได้: " + ex.Message,
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void CtxDash_Permission_Click(object sender, EventArgs e)
+        {
+            var file = GetDashSelectedFile();
+            if (file != null)
+                OpenFilePermissionDialog(file);
+        }
+
+        private void CtxDash_Properties_Click(object sender, EventArgs e)
+        {
+            if (lvRecentFiles.SelectedItems.Count == 0) return;
+            var tag = lvRecentFiles.SelectedItems[0].Tag;
+
+            var file   = tag as FileDocument;
+            var folder = tag as Folder;
+
+            if (file != null)
+            {
+                MessageBox.Show(
+                    string.Format("ชื่อ: {0}\nประเภท: {1}\nขนาด: {2}\nอัพโหลด: {3}\nVersion: {4}",
+                        file.OriginalFileName,
+                        file.FileExtension.TrimStart('.').ToUpper(),
+                        FormatFileSize(file.FileSizeBytes),
+                        file.UploadedDate.ToString("dd/MM/yyyy HH:mm"),
+                        file.Version),
+                    string.Format("คุณสมบัติ — {0}", file.OriginalFileName),
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else if (folder != null)
+            {
+                MessageBox.Show(
+                    string.Format("ชื่อ: {0}\nระดับ: {1}\nไฟล์: {2} รายการ\nขนาด: {3}",
+                        folder.FolderName,
+                        ConfidentialityBadge(folder.ConfidentialityLevel),
+                        folder.FileCount,
+                        FormatFileSize(folder.FolderSizeBytes)),
+                    string.Format("คุณสมบัติ — {0}", folder.FolderName),
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void LvRecentFiles_DoubleClick(object sender, EventArgs e)
+        {
+            if (lvRecentFiles.SelectedItems.Count == 0) return;
+
+            var folder = lvRecentFiles.SelectedItems[0].Tag as Folder;
+            if (folder == null) return; // double-click on file row → ignore
+
+            // Toggle expand/collapse
+            if (_expandedFolderIds.Contains(folder.FolderID))
+                _expandedFolderIds.Remove(folder.FolderID);
+            else
+                _expandedFolderIds.Add(folder.FolderID);
+
+            // Rebuild the list preserving scroll position
+            int topIndex = lvRecentFiles.TopItem != null ? lvRecentFiles.TopItem.Index : 0;
+            RefreshDashboardFiles();
+            if (topIndex < lvRecentFiles.Items.Count)
+                lvRecentFiles.EnsureVisible(topIndex);
+        }
+
+        private void lblStatsContent_Click(object sender, EventArgs e)
+        {
+
+        }
+    }
+}

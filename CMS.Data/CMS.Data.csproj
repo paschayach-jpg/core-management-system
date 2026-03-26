@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A63FD418-CCA6-4FE1-834F-A09136EE92D6}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CMS.Data</RootNamespace>
+    <AssemblyName>CMS.Data</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">
+      <Project>{C1CC34BC-573E-4C98-AA9E-37CB98534DEA}</Project>
+      <Name>CMS.Domain</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CMS.Infrastructure\CMS.Infrastructure.csproj">
+      <Project>{F52CF319-4754-4882-A243-DD367C39C156}</Project>
+      <Name>CMS.Infrastructure</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Interfaces\IUserAccountRepository.cs" />
+    <Compile Include="Interfaces\IOrgUnitRepository.cs" />
+    <Compile Include="Interfaces\IFolderRepository.cs" />
+    <Compile Include="Interfaces\IFileDocumentRepository.cs" />
+    <Compile Include="Interfaces\IPermissionRepository.cs" />
+    <Compile Include="Interfaces\IApprovalRepository.cs" />
+    <Compile Include="Interfaces\IAuditRepository.cs" />
+    <Compile Include="Interfaces\INotificationRepository.cs" />
+    <Compile Include="Interfaces\IFilePermissionRepository.cs" />
+    <Compile Include="Interfaces\IFolderTemplateRepository.cs" />
+    <Compile Include="Models\AuditQuery.cs" />
+    <Compile Include="Models\PagedResult.cs" />
+    <Compile Include="Repositories\UserAccountRepository.cs" />
+    <Compile Include="Repositories\OrgUnitRepository.cs" />
+    <Compile Include="Repositories\FolderRepository.cs" />
+    <Compile Include="Repositories\FileDocumentRepository.cs" />
+    <Compile Include="Repositories\PermissionRepository.cs" />
+    <Compile Include="Repositories\ApprovalRepository.cs" />
+    <Compile Include="Repositories\AuditRepository.cs" />
+    <Compile Include="Repositories\NotificationRepository.cs" />
+    <Compile Include="Repositories\FilePermissionRepository.cs" />
+    <Compile Include="Repositories\FolderTemplateRepository.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Scripts\001_CreateSchema.sql" />
+    <None Include="Scripts\002_StoredProcedures.sql" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
