@@ -171,7 +171,7 @@ namespace CMS.Presentation
 
             // Columns
             this.colFolderName.Text    = "ชื่อ Folder";      this.colFolderName.Width    = 280;
-            this.colConfidential.Text  = "ระดับความลับ";    this.colConfidential.Width  = 120;
+            this.colConfidential.Text  = "ระดับ";    this.colConfidential.Width  = 120;
             this.colSortOrder.Text     = "ลำดับ";            this.colSortOrder.Width     = 60;
             this.colInherit.Text       = "Inherit";           this.colInherit.Width       = 80;
 

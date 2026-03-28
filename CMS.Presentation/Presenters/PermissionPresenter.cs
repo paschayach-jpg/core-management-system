@@ -20,6 +20,10 @@ namespace CMS.Presentation.Presenters
 
         private Folder _currentFolder;
 
+        public UserContext User => _user;
+
+        public void SetCurrentFolder(Folder folder) { _currentFolder = folder; }
+
         public PermissionPresenter(
             IPermissionService      permissionService,
             IApprovalService        approvalService,
@@ -57,7 +61,12 @@ namespace CMS.Presentation.Presenters
 
             try
             {
-                IEnumerable<FolderPermission> entries = _permissionRepo.GetAllByFolder(folder.FolderID);
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] ── LoadAclEntries START ──────────────────────────────");
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] FolderID={folder.FolderID}  Name={folder.FolderName}  Level={folder.ConfidentialityLevel}");
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] UserID={_user.UserID}  AppRole={_user.AppRole}");
+
+                var entries = _permissionRepo.GetAllByFolder(folder.FolderID).ToList();
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] Repository → {entries.Count} total entries (incl. revoked)");
 
                 // Auto-revoke entries that have passed their expiry date
                 var expired = entries
@@ -65,81 +74,92 @@ namespace CMS.Presentation.Presenters
                              && e.ExpiryDate.HasValue
                              && e.ExpiryDate.Value.Date < DateTime.Today)
                     .ToList();
-                foreach (var exp in expired)
-                    _permissionRepo.Revoke(exp.PermissionID, _user.UserID, "หมดอายุอัตโนมัติ");
 
-                // Reload after auto-revoke if any were expired
                 if (expired.Count > 0)
-                    entries = _permissionRepo.GetAllByFolder(folder.FolderID);
+                {
+                    System.Diagnostics.Debug.WriteLine($"[PRESENTER] Auto-revoking {expired.Count} expired entries");
+                    foreach (var exp in expired)
+                        _permissionRepo.Revoke(exp.PermissionID, _user.UserID, "หมดอายุอัตโนมัติ");
 
-                _view.ShowAclEntries(entries ?? Enumerable.Empty<FolderPermission>());
+                    entries = _permissionRepo.GetAllByFolder(folder.FolderID).ToList();
+                    System.Diagnostics.Debug.WriteLine($"[PRESENTER] After auto-revoke reload → {entries.Count} entries");
+                }
+
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] Calling view.ShowAclEntries with {entries.Count} entries");
+                _view.ShowAclEntries(entries);
 
                 EffectivePermission effective = _permissionService.GetEffectivePermission(
                     _user.UserID, folder.FolderID);
                 _view.ShowEffectivePermissions(effective);
 
-                // Show any pending approval requests for this folder
                 var pending = _approvalService.GetAllApprovalsByFolder(folder.FolderID)
                     .Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION")
                     .OrderByDescending(r => r.RequestedDate)
                     .ToList();
-                _view.ShowPendingApprovals(pending);
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] Pending approvals: {pending.Count}");
 
-                // ConfidentialityLevel is now int: 1=HC, 2=SC, 3=NC, 4=Public
+                _view.ShowPendingApprovals(pending);
                 _view.ShowConfidentialityLevel(folder.ConfidentialityLevel);
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] ── LoadAclEntries END ────────────────────────────────");
             }
             catch (UnauthorizedAccessException ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] UNAUTHORIZED: {ex.Message}");
                 _view.ShowError("Access denied: " + ex.Message);
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] EXCEPTION ({ex.GetType().Name}): {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] StackTrace: {ex.StackTrace}");
                 _view.ShowError("Failed to load permissions: " + ex.Message);
             }
         }
 
         public void SetPermission(SetPermissionRequest request)
         {
-            if (_currentFolder == null)
+            // ── ตรวจสอบ User ──────────────────────────────────────────────────
+            if (_user == null)
             {
-                _view.ShowError("No folder selected.");
+                _view.ShowError("ไม่พบข้อมูล User — กรุณาล็อกอินใหม่");
                 return;
             }
+            System.Diagnostics.Debug.WriteLine($"[PRESENTER] SetPermission: UserID={_user.UserID} Role={_user.AppRole}");
+
+            // ── ตรวจสอบ Folder ────────────────────────────────────────────────
+            if (_currentFolder == null)
+            {
+                // Fallback: โหลด Folder จาก FolderID ใน request
+                try
+                {
+                    var folder = _folderService.GetFolder(request.FolderID, _user);
+                    if (folder != null)
+                    {
+                        _currentFolder = folder;
+                        System.Diagnostics.Debug.WriteLine($"[PRESENTER] SetPermission: Folder loaded from request — ID={folder.FolderID} Name={folder.FolderName}");
+                    }
+                    else
+                    {
+                        _view.ShowError($"ไม่พบ Folder ID: {request.FolderID}");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _view.ShowError($"ไม่สามารถโหลด Folder ID {request.FolderID}: {ex.Message}");
+                    return;
+                }
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[PRESENTER] SetPermission: FolderID={_currentFolder.FolderID} Name={_currentFolder.FolderName} Level={_currentFolder.ConfidentialityLevel}");
+            System.Diagnostics.Debug.WriteLine($"[PRESENTER] SetPermission: PrincipalType={request.PrincipalType} PrincipalID={request.PrincipalID} Read={request.CanRead} Write={request.CanWrite}");
 
             try
             {
-                // HC=1, SC=2 require approval workflow
-                bool requiresApproval = _currentFolder.ConfidentialityLevel == 1
-                                     || _currentFolder.ConfidentialityLevel == 2;
-
-                if (requiresApproval)
-                {
-                    var approvalRequest = new SubmitApprovalRequest
-                    {
-                        RequestType = "CHANGE_PERMISSION",
-                        FolderID    = _currentFolder.FolderID,
-                        Subject     = string.Format("ขอเปลี่ยนสิทธิ์ Folder: {0}", _currentFolder.FolderName),
-                        Remark      = BuildPermissionRemark(request),
-                        Steps       = BuildDefaultApprovalSteps(_user)
-                    };
-
-                    _approvalService.SubmitPermissionRequest(approvalRequest, _user);
-
-                    // Reload ACL list — LoadAclEntries will also call ShowPendingApprovals
-                    LoadAclEntries(_currentFolder);
-
-                    _view.ShowInfo(
-                        "📋 ส่งคำขอเปลี่ยนสิทธิ์เพื่ออนุมัติแล้ว\n\n" +
-                        "Folder นี้เป็นระดับ " + (_currentFolder.ConfidentialityLevel == 1 ? "1HC (Highly Confidential)" : "2SC (Secret)") + "\n" +
-                        "การเปลี่ยนสิทธิ์จะมีผลหลังจากผู้อนุมัติอนุมัติคำขอแล้ว\n\n" +
-                        "สามารถตรวจสอบสถานะได้ที่เมนู 'อนุมัติ'");
-                }
-                else
-                {
-                    _permissionService.SetFolderPermission(request, _user);
-                    LoadAclEntries(_currentFolder);
-                    PromptPropagateToFiles();
-                }
+                // บันทึกสิทธิ์ทันที — ไม่ผ่านขั้นตอนอนุมัติ
+                _permissionService.SetFolderPermission(request, _user);
+                System.Diagnostics.Debug.WriteLine($"[PRESENTER] SetPermission: SaveOK — reloading ACL...");
+                LoadAclEntries(_currentFolder);
+                PromptPropagateToFiles();
             }
             catch (UnauthorizedAccessException ex)
             {

@@ -34,6 +34,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
+    <Reference Include="Microsoft.VisualBasic" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -78,6 +79,9 @@
     </Compile>
     <Compile Include="OrgUnitSelectorDialog.Designer.cs">
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="OrgStructureSelectionDialog.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Presenters\IOrgStructureView.cs" />
     <Compile Include="Presenters\OrgStructurePresenter.cs" />
@@ -152,6 +156,15 @@
     </Compile>
     <Compile Include="Presenters\IConfigAdminView.cs" />
     <Compile Include="Presenters\ConfigAdminPresenter.cs" />
+    <Compile Include="FolderPickerDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FilePreviewPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="RecycleBinForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -199,6 +212,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="MDI_Container.resx">
       <DependentUpon>MDI_Container.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="OrgUnitPickerDialog.resx">
+      <DependentUpon>OrgUnitPickerDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="OrgUnitSelectorDialog.resx">
+      <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PermissionForm.resx">
       <DependentUpon>PermissionForm.cs</DependentUpon>

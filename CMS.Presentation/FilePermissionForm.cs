@@ -241,7 +241,7 @@ namespace CMS.Presentation
                     _filePermissionRepository.Insert(new FilePermission
                     {
                         FileID         = _file.FileID,
-                        PrincipalType  = fp.PrincipalType,
+                        PrincipalType  = (int)fp.PrincipalType,
                         PrincipalID    = fp.PrincipalID,
                         CanRead        = fp.CanRead,
                         CanWrite       = fp.CanWrite,

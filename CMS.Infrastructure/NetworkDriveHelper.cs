@@ -72,5 +72,26 @@ namespace CMS.Infrastructure
             if (path == null) throw new ArgumentNullException("path");
             return File.Exists(path);
         }
+
+        /// <summary>
+        /// ย้ายไฟล์จาก sourcePath ไปยัง destPath จริงบน disk
+        /// สร้าง directory ปลายทางอัตโนมัติถ้ายังไม่มี
+        /// ถ้า destPath มีไฟล์ชื่อเดิมอยู่แล้วจะ overwrite
+        /// </summary>
+        public void MoveFile(string sourcePath, string destPath)
+        {
+            if (sourcePath == null) throw new ArgumentNullException("sourcePath");
+            if (destPath   == null) throw new ArgumentNullException("destPath");
+
+            string destDir = Path.GetDirectoryName(destPath);
+            if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+                Directory.CreateDirectory(destDir);
+
+            // ถ้า dest มีไฟล์อยู่แล้วให้ลบก่อน (File.Move ไม่ overwrite ใน .NET Framework)
+            if (File.Exists(destPath))
+                File.Delete(destPath);
+
+            File.Move(sourcePath, destPath);
+        }
     }
 }

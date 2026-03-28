@@ -241,6 +241,7 @@ namespace CMS.Presentation
                 case "CHANGE_PERMISSION": return "🔐 สิทธิ์ Folder";
                 case "UPLOAD":            return "📤 อัพโหลดไฟล์";
                 case "DELETE":            return "🗑 ลบไฟล์";
+                case "DELETE_FOLDER":     return "🗑 ลบ Folder";
                 case "FOLDER":            return "📁 จัดการ Folder";
                 default:                  return t ?? "—";
             }

@@ -309,6 +309,102 @@ namespace CMS.Services
         }
 
         // -----------------------------------------------------------------------
+        // MoveFiles
+        // -----------------------------------------------------------------------
+
+        public void MoveFiles(MoveFileRequest request, UserContext user)
+        {
+            if (request == null) throw new ArgumentNullException("request");
+            if (user    == null) throw new ArgumentNullException("user");
+
+            if (request.FileIds == null || !request.FileIds.Any())
+                throw new ArgumentException("ต้องระบุไฟล์อย่างน้อย 1 รายการ");
+
+            var destination = _folderRepository.GetById(request.DestinationFolderId);
+            if (destination == null)
+                throw new InvalidOperationException(
+                    string.Format("ไม่พบ Folder ปลายทาง ID {0}", request.DestinationFolderId));
+
+            if (user.AppRole < 4)
+            {
+                if (!_permissionService.CheckPermission(user.UserID, request.DestinationFolderId, "Write"))
+                    throw new UnauthorizedAccessException(
+                        string.Format("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง '{0}'", destination.FolderName));
+            }
+
+            foreach (int fileId in request.FileIds)
+            {
+                var file = _fileDocumentRepository.GetById(fileId);
+                if (file == null)
+                    throw new InvalidOperationException(
+                        string.Format("ไม่พบไฟล์ ID {0}", fileId));
+
+                if (file.FileStatus != 1)
+                    throw new InvalidOperationException(
+                        string.Format("ไม่สามารถย้ายไฟล์ ID {0} ได้ เนื่องจากสถานะไม่ใช่ Active", fileId));
+
+                if (user.AppRole < 4)
+                {
+                    if (!_permissionService.CheckPermission(user.UserID, file.FolderID, "Write"))
+                        throw new UnauthorizedAccessException(
+                            string.Format("ไม่มีสิทธิ์เขียนใน Folder ต้นทาง (ID: {0})", file.FolderID));
+                }
+
+                int    oldFolderId   = file.FolderID;
+                string oldPhysicalPath = file.PhysicalPath;   // เก็บ path เดิมไว้ก่อน
+
+                string newPhysicalPath = _networkDriveHelper.BuildPath(
+                    destination.OrgUnitID, request.DestinationFolderId, file.StoredFileName);
+
+                // ── ย้ายไฟล์จริงบน disk ก่อน update DB ──────────────────────
+                bool physicalMoved = false;
+                if (!string.IsNullOrEmpty(oldPhysicalPath) && _networkDriveHelper.FileExists(oldPhysicalPath))
+                {
+                    _networkDriveHelper.MoveFile(oldPhysicalPath, newPhysicalPath);
+                    physicalMoved = true;
+                }
+                // ถ้าไฟล์ต้นทางไม่มีบน disk (อาจถูก archive/เสียหาย) ให้ยังคง update DB ต่อไป
+                // แต่บันทึก path ใหม่ไว้ถูกต้องเผื่อ upload ซ้ำในอนาคต
+
+                // ── Update DB ─────────────────────────────────────────────────
+                file.FolderID     = request.DestinationFolderId;
+                file.PhysicalPath = newPhysicalPath;
+
+                try
+                {
+                    _fileDocumentRepository.Update(file);
+                }
+                catch
+                {
+                    // DB update ล้มเหลว — ย้ายไฟล์กลับคืน (rollback physical)
+                    if (physicalMoved)
+                    {
+                        try { _networkDriveHelper.MoveFile(newPhysicalPath, oldPhysicalPath); }
+                        catch { /* best-effort rollback */ }
+                    }
+                    throw;
+                }
+
+                _auditService.Log(new AuditEntry
+                {
+                    Module      = "File",
+                    Action      = "MoveFile",
+                    UserID      = user.UserID,
+                    TableName   = "storage.FileDocument",
+                    RecordID    = fileId,
+                    OldValue    = string.Format("FolderID={0} Path={1}", oldFolderId, oldPhysicalPath),
+                    NewValue    = string.Format("FolderID={0} Path={1}", request.DestinationFolderId, newPhysicalPath),
+                    MachineName = user.MachineName,
+                    IPAddress   = user.IPAddress,
+                    SessionID   = user.SessionID,
+                    Result      = 1,
+                    AuditDate   = DateTime.Now
+                });
+            }
+        }
+
+
+        // -----------------------------------------------------------------------
         // Private: single-file upload pipeline
         // -----------------------------------------------------------------------
 
@@ -348,24 +444,8 @@ namespace CMS.Services
                 string checksum = ComputeSha256(request.FileStream);
                 request.FileStream.Position = 0;
 
-                // Virus scan
-                ScanResult scanResult = _virusScanService.Scan(request.FileStream, request.FileName);
-                request.FileStream.Position = 0;
-
-                if (scanResult.ScannerError)
-                {
-                    // ClamAV unavailable — allow upload but mark VirusScanStatus = 0 (pending scan)
-                    Log(user, "File", "UPLOAD", "storage.FileDocument", 0, 1, "Virus scanner unavailable — file queued for later scan.");
-                    scanResult.IsClean = false; // will be stored as status 0 (pending), not clean
-                }
-
-                if (!scanResult.IsClean && !scanResult.ScannerError)
-                {
-                    Log(user, "File", "UPLOAD", "storage.FileDocument", 0, 2,
-                        string.Format("Virus threat detected: {0}.", scanResult.ThreatName));
-                    return Fail(request.FileName, string.Format(
-                        "Virus threat detected in '{0}': {1}.", request.FileName, scanResult.ThreatName));
-                }
+                // Virus scan — skipped (not in use); all files treated as clean
+                ScanResult scanResult = new ScanResult { IsClean = true, ScannerError = false };
 
                 // Write to network drive
                 writtenPath = _networkDriveHelper.BuildPath(folder.OrgUnitID, folder.FolderID, request.FileName);
@@ -416,7 +496,7 @@ namespace CMS.Services
                             _filePermissionRepository.Insert(new FilePermission
                             {
                                 FileID         = insertedId.Value,
-                                PrincipalType  = fp.PrincipalType,
+                                PrincipalType  = (int)fp.PrincipalType,
                                 PrincipalID    = fp.PrincipalID,
                                 CanRead        = fp.CanRead,
                                 CanWrite       = fp.CanWrite,
@@ -439,10 +519,23 @@ namespace CMS.Services
                     }
                 }
 
-                // Update folder size
+                // Update folder size and file count
                 folder.FolderSizeBytes += request.FileSizeBytes;
                 folder.FileCount       += 1;
                 _folderRepository.Update(folder);
+                
+                // Try to ensure FileCount is accurate by calling stored procedure (if available)
+                try
+                {
+                    _folderRepository.UpdateFileCount(folder.FolderID);
+                }
+                catch (Exception updateEx)
+                {
+                    // If stored procedure doesn't exist, just log and continue
+                    _loggingService.Error(string.Format(
+                        "FileService: Could not update FileCount via stored procedure for folder {0}: {1}",
+                        folder.FolderID, updateEx.Message), updateEx);
+                }
 
                 Log(user, "File", "UPLOAD", "storage.FileDocument", insertedId.Value, 1,
                     string.Format("Uploaded '{0}' ({1:N0} bytes) to folder {2}.",

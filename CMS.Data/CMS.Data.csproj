@@ -55,6 +55,7 @@
     <Compile Include="Interfaces\INotificationRepository.cs" />
     <Compile Include="Interfaces\IFilePermissionRepository.cs" />
     <Compile Include="Interfaces\IFolderTemplateRepository.cs" />
+    <Compile Include="Interfaces\IQuickAccessRepository.cs" />
     <Compile Include="Models\AuditQuery.cs" />
     <Compile Include="Models\PagedResult.cs" />
     <Compile Include="Repositories\UserAccountRepository.cs" />
@@ -67,6 +68,7 @@
     <Compile Include="Repositories\NotificationRepository.cs" />
     <Compile Include="Repositories\FilePermissionRepository.cs" />
     <Compile Include="Repositories\FolderTemplateRepository.cs" />
+    <Compile Include="Repositories\QuickAccessRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\001_CreateSchema.sql" />

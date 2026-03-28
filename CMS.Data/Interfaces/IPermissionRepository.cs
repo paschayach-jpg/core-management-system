@@ -11,5 +11,8 @@ namespace CMS.Data.Interfaces
         IEnumerable<FolderPermission> GetByPrincipal(int principalType, int principalId);
         void Revoke(int permissionId, int revokedBy, string revokeReason);
         void DeleteByFolder(int folderId);
+
+        /// <summary>Alias for GetByFolder — returns active ACL entries for the folder.</summary>
+        IEnumerable<FolderPermission> GetAclEntries(int folderId);
     }
 }

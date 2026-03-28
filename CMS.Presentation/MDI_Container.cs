@@ -37,6 +37,8 @@ namespace CMS.Presentation
         private readonly IFileDocumentRepository   _fileDocumentRepository;
         private readonly IFolderTemplateRepository _folderTemplateRepository;
         private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
+        private readonly IUploadCheckpointService _uploadCheckpointService;
+        private readonly IQuickAccessService _quickAccessService;
 
         // Notification inbox controls (built programmatically)
         private Panel    _notificationPanel;
@@ -91,7 +93,9 @@ namespace CMS.Presentation
             IFilePermissionRepository filePermissionRepository  = null,
             IFileDocumentRepository   fileDocumentRepository    = null,
             IFolderTemplateRepository folderTemplateRepository  = null,
-            CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null)
+            CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
+            IUploadCheckpointService uploadCheckpointService = null,
+            IQuickAccessService quickAccessService = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
             if (auditService        == null) throw new ArgumentNullException("auditService");
@@ -117,11 +121,16 @@ namespace CMS.Presentation
             _fileDocumentRepository   = fileDocumentRepository;
             _folderTemplateRepository = folderTemplateRepository;
             _employeeApiService       = employeeApiService;
+            _uploadCheckpointService  = uploadCheckpointService;
+            _quickAccessService       = quickAccessService;
 
             InitializeComponent();
             BuildFileDetailPanel();
             WireMenuHandlers();
             BuildEscalationTimer();
+            
+            // Hide recycle bin menu items since recycle bin functionality is disabled
+            HideRecycleBinMenuItems();
         }
 
         // -----------------------------------------------------------------------
@@ -172,6 +181,9 @@ namespace CMS.Presentation
 
             // Handle MDI child activation to show/hide dashboard
             this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
+
+            // Auto-open FolderForm as default instead of showing dashboard
+            OpenFolderStructure();
         }
 
         private void OnMdiChildActivate()
@@ -182,6 +194,50 @@ namespace CMS.Presentation
             // Reload lvRecentFiles ทุกครั้งที่ dashboard กลับมาแสดง
             if (showDashboard)
                 RefreshDashboardFiles();
+
+            // Update move controls enabled state based on active child (Req 9.4)
+            UpdateMoveControlsState();
+        }
+
+        /// <summary>
+        /// Enables menuItemMove and btnRibbonMove only when the active MDI child
+        /// is a FolderForm that has a Folder or FileDocument selected (Req 9.3, 9.4).
+        /// </summary>
+        private void UpdateMoveControlsState()
+        {
+            var activeFolder = ActiveMdiChild as FolderForm;
+            bool enabled = activeFolder != null && activeFolder.HasActiveSelection;
+            menuItemMove.Enabled    = enabled;
+            btnRibbonMove.Enabled   = enabled;
+        }
+
+        /// <summary>
+        /// Handles menuItemMove and btnRibbonMove clicks.
+        /// Delegates to the active FolderForm's TriggerMove() (Req 9.3).
+        /// </summary>
+        private void MenuItemMove_Click(object sender, EventArgs e)
+        {
+            var activeFolder = ActiveMdiChild as FolderForm;
+            if (activeFolder != null)
+                activeFolder.TriggerMove();
+        }
+
+        /// <summary>
+        /// Find the active FolderForm MDI child and run an action on it.
+        /// Shows a message if no FolderForm is open.
+        /// </summary>
+        private void TriggerOnActiveFolderForm(Action<FolderForm> action)
+        {
+            var ff = ActiveMdiChild as FolderForm
+                  ?? MdiChildren.OfType<FolderForm>().FirstOrDefault();
+            if (ff == null)
+            {
+                MessageBox.Show("กรุณาเปิด Folder Explorer ก่อน",
+                    "ไม่พบ Folder Explorer",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            action(ff);
         }
 
         /// <summary>
@@ -315,7 +371,19 @@ namespace CMS.Presentation
 
             // Admin ribbon visibility
             ribbonStripAdmin.Visible = canManage && ribbonStripAdmin.Visible;
-            btnRibbonSysConfig.Visible    = canManage;
+
+            // ปุ่มผู้ดูแล — จัดการ Folder / สิทธิ์ / Audit / อนุมัติ / Template
+            btnRibbonFolderSettings.Visible = canManage;
+            btnRibbonPermission.Visible     = canManage;
+            btnRibbonAuditLog.Visible       = canManage;
+            btnRibbonApproval.Visible       = canManage;
+            btnRibbonTemplate.Visible       = canManage;
+            btnRibbonFolderArchive.Visible  = canManage;
+            btnRibbonChangeLevel.Visible    = canManage;
+            btnRibbonCopyStructure.Visible  = canManage;
+
+            // ปุ่มระบบ
+            btnRibbonSysConfig.Visible    = isAdmin;
             btnRibbonOrgAdmin.Visible     = canManage;
             btnRibbonReportExcel.Visible  = canManage;
             btnRibbonPDPA.Visible         = canManage;
@@ -345,7 +413,7 @@ namespace CMS.Presentation
             menuItemNewFolder.Click      += (s, e) => OpenFolderStructure();
             menuItemDownload.Click       += (s, e) => OpenFolderStructure();
             menuItemRename.Click         += (s, e) => OpenFolderStructure();
-            menuItemMove.Click           += (s, e) => OpenFolderStructure();
+            menuItemMove.Click           += MenuItemMove_Click;
             menuItemDelete.Click         += (s, e) => OpenFolderStructure();
             menuItemTemplate.Click       += (s, e) => OpenFolderTemplateManagement();
             menuItemFavorites.Click      += (s, e) => OpenFolderStructure();
@@ -370,7 +438,7 @@ namespace CMS.Presentation
             menuItemConfig.Click         += (s, e) => OpenSysConfig();
             menuItemOrgAdmin.Click       += (s, e) => OpenOrgStructure();
             menuItemReportExcel.Click    += (s, e) => OpenSysConfig();
-            menuItemPDPA.Click           += (s, e) => OpenSysConfig();
+            menuItemPDPA.Click           += (s, e) => OpenPdpaConsent();
         }
 
         private void SwitchToHomeRibbon()
@@ -404,7 +472,7 @@ namespace CMS.Presentation
             btnRibbonNewFolder.Click      += (s, e) => OpenFolderStructure();
             btnRibbonDownload.Click       += (s, e) => OpenFolderStructure();
             btnRibbonRename.Click         += (s, e) => OpenFolderStructure();
-            btnRibbonMove.Click           += (s, e) => OpenFolderStructure();
+            btnRibbonMove.Click           += MenuItemMove_Click;
             btnRibbonDelete.Click         += (s, e) => OpenFolderStructure();
             btnRibbonTemplate.Click       += (s, e) => OpenFolderTemplateManagement();
             btnRibbonFavorites.Click      += (s, e) => OpenFolderStructure();
@@ -419,13 +487,17 @@ namespace CMS.Presentation
             // เครื่องมือ
             btnRibbonVirusScan.Click      += (s, e) => OpenFolderStructure();
             btnRibbonChecksum.Click       += (s, e) => OpenFolderStructure();
-            btnRibbonRecycleBin.Click     += (s, e) => OpenFolderStructure();
+            btnRibbonRecycleBin.Click     += (s, e) => OpenRecycleBin();
             btnRibbonArchive.Click        += (s, e) => OpenFolderStructure();
-            // ผู้ดูแล
+            // ผู้ดูแล — Folder actions
+            btnRibbonFolderArchive.Click  += (s, e) => TriggerOnActiveFolderForm(ff => ff.TriggerArchive());
+            btnRibbonChangeLevel.Click    += (s, e) => TriggerOnActiveFolderForm(ff => ff.TriggerChangeLevel());
+            btnRibbonCopyStructure.Click  += (s, e) => TriggerOnActiveFolderForm(ff => ff.TriggerCopyStructure());
+            // ผู้ดูแล — ระบบ
             btnRibbonSysConfig.Click      += (s, e) => OpenSysConfig();
             btnRibbonOrgAdmin.Click       += (s, e) => OpenOrgStructure();
             btnRibbonReportExcel.Click    += (s, e) => OpenSysConfig();
-            btnRibbonPDPA.Click           += (s, e) => OpenSysConfig();
+            btnRibbonPDPA.Click           += (s, e) => OpenPdpaConsent();
         }
 
         private void OpenFolderTemplateManagement()
@@ -453,9 +525,10 @@ namespace CMS.Presentation
         {
             if (_folderService != null)
             {
-                var ff = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository);
+                var ff = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService);
                 ff.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
                 ff.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
+                ff.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
                 OpenChildForm(ff);
             }
             else
@@ -467,11 +540,16 @@ namespace CMS.Presentation
         {
             // Get selected folder from active FolderForm
             Folder selectedFolder = null;
+            FolderForm activeFolderForm = null;
             foreach (Form child in MdiChildren)
             {
                 var ff = child as FolderForm;
-                if (ff != null) { selectedFolder = ff.SelectedFolder; break; }
+                if (ff != null) { activeFolderForm = ff; selectedFolder = ff.SelectedFolder; break; }
             }
+
+            // Fallback: use first folder in tree when none is explicitly selected
+            if (selectedFolder == null && activeFolderForm != null)
+                selectedFolder = activeFolderForm.FirstFolderInTree;
 
             if (selectedFolder == null)
             {
@@ -575,9 +653,10 @@ namespace CMS.Presentation
             }
 
             // ยังไม่มี FolderForm — เปิดให้เลย พร้อมแจ้ง
-            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository);
+            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService);
             folderForm.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
+            folderForm.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
             OpenChildForm(folderForm);
         }
 
@@ -588,6 +667,27 @@ namespace CMS.Presentation
             else
                 MessageBox.Show("Config service is not available.", "Admin",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private void OpenPdpaConsent()
+        {
+            try
+            {
+                using (var pdpaDialog = new PdpaConsentDialog())
+                {
+                    var result = pdpaDialog.ShowDialog(this);
+                    if (result == DialogResult.OK)
+                    {
+                        MessageBox.Show("ขอบคุณสำหรับการยืนยันนโยบายข้อมูลส่วนบุคคล", 
+                            "PDPA Consent", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"เกิดข้อผิดพลาดในการเปิด PDPA Consent: {ex.Message}", 
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /// <summary>
@@ -1167,6 +1267,36 @@ namespace CMS.Presentation
             {
                 _logger.Error("MDI_Container: ProcessEscalations failed.", ex);
             }
+        }
+
+        // -----------------------------------------------------------------------
+        // Hide Recycle Bin Menu Items
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Hides the top-menu shortcut for recycle bin (access is via Admin ribbon tab instead).
+        /// The Admin ribbon button btnRibbonRecycleBin stays visible.
+        /// </summary>
+        private void HideRecycleBinMenuItems()
+        {
+            // Hide the old top-level menu shortcut only
+            if (menuItemRecycleBin != null)
+                menuItemRecycleBin.Visible = false;
+
+            // btnRibbonRecycleBin is intentionally left visible — it lives in the Admin tab
+        }
+
+        private void OpenRecycleBin()
+        {
+            if (_folderService == null)
+            {
+                MessageBox.Show("Folder service is not available.", "ถังขยะ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            var form = new RecycleBinForm(_folderService, _currentUser, _orgStructureService);
+            form.MdiParent = this;
+            form.Show();
         }
 
         // ── Dashboard Handlers ────────────────────────────────────────────────

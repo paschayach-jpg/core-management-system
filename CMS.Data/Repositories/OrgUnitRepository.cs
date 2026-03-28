@@ -20,21 +20,34 @@ namespace CMS.Data.Repositories
 
         public int Insert(OrgUnit orgUnit)
         {
-            using (var conn = new SqlConnection(_connectionString))
+            try
             {
-                conn.Open();
-                using (var cmd = new SqlCommand("core.sp_InsertOrgUnit", conn))
+                using (var conn = new SqlConnection(_connectionString))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@OrgUnitCode",    orgUnit.OrgUnitCode);
-                    cmd.Parameters.AddWithValue("@OrgUnitNameTH",  orgUnit.OrgUnitNameTH);
-                    cmd.Parameters.AddWithValue("@OrgUnitNameEN",  (object)orgUnit.OrgUnitNameEN ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@OrgUnitType",    (byte)orgUnit.OrgUnitType);
-                    cmd.Parameters.AddWithValue("@ParentOrgUnitID",(object)orgUnit.ParentOrgUnitID ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@SortOrder",      orgUnit.SortOrder);
-                    cmd.Parameters.AddWithValue("@CreatedBy",      orgUnit.CreatedBy);
-                    return Convert.ToInt32(cmd.ExecuteScalar());
+                    conn.Open();
+                    using (var cmd = new SqlCommand("core.sp_InsertOrgUnit", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@OrgUnitCode",    orgUnit.OrgUnitCode);
+                        cmd.Parameters.AddWithValue("@OrgUnitNameTH",  orgUnit.OrgUnitNameTH);
+                        cmd.Parameters.AddWithValue("@OrgUnitNameEN",  (object)orgUnit.OrgUnitNameEN ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@OrgUnitType",    (byte)orgUnit.OrgUnitType);
+                        cmd.Parameters.AddWithValue("@ParentOrgUnitID",(object)orgUnit.ParentOrgUnitID ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@SortOrder",      orgUnit.SortOrder);
+                        cmd.Parameters.AddWithValue("@CreatedBy",      orgUnit.CreatedBy);
+                        return Convert.ToInt32(cmd.ExecuteScalar());
+                    }
                 }
+            }
+            catch (SqlException ex)
+            {
+                // Handle duplicate key constraint violations
+                if (ex.Number == 2627 || ex.Number == 2601) // Unique constraint violation
+                {
+                    throw new InvalidOperationException(string.Format(
+                        "รหัสหน่วยงาน '{0}' มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น", orgUnit.OrgUnitCode), ex);
+                }
+                throw; // Re-throw other SQL exceptions
             }
         }
 
@@ -69,6 +82,36 @@ namespace CMS.Data.Repositories
                         if (reader.Read()) return MapOrgUnit(reader);
                         return null;
                     }
+                }
+            }
+        }
+
+        public OrgUnit GetByCode(string orgUnitCode)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("SELECT * FROM core.OrgUnit WHERE OrgUnitCode = @OrgUnitCode AND IsDeleted = 0", conn))
+                {
+                    cmd.Parameters.AddWithValue("@OrgUnitCode", orgUnitCode);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read()) return MapOrgUnit(reader);
+                        return null;
+                    }
+                }
+            }
+        }
+
+        public bool ExistsByCode(string orgUnitCode)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM core.OrgUnit WHERE OrgUnitCode = @OrgUnitCode AND IsDeleted = 0", conn))
+                {
+                    cmd.Parameters.AddWithValue("@OrgUnitCode", orgUnitCode);
+                    return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
                 }
             }
         }
@@ -137,6 +180,12 @@ namespace CMS.Data.Repositories
                     cmd.ExecuteNonQuery();
                 }
             }
+        }
+
+        /// <summary>Alias for SoftDelete — deactivates the OrgUnit without requiring a deletedBy user.</summary>
+        public void Deactivate(int orgUnitId)
+        {
+            SoftDelete(orgUnitId, 0);
         }
 
         private static OrgUnit MapOrgUnit(SqlDataReader reader)

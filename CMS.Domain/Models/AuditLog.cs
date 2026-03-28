@@ -103,5 +103,19 @@ namespace CMS.Domain.Models
             get { return NewValue; }
             set { NewValue = value; }
         }
+
+        /// <summary>Alias for UserID.</summary>
+        public int ActorUserId
+        {
+            get { return UserID; }
+            set { UserID = value; }
+        }
+
+        /// <summary>Alias for MachineName.</summary>
+        public string WorkstationId
+        {
+            get { return MachineName; }
+            set { MachineName = value; }
+        }
     }
 }

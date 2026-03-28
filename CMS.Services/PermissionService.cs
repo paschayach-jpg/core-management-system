@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CMS.Data.Interfaces;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
@@ -71,7 +72,7 @@ namespace CMS.Services
                     "Folder with ID {0} was not found.", request.FolderID));
 
             // Revoke existing entries for the same principal+folder+isDeny type to avoid duplicates
-            var existing = _permissionRepository.GetByFolder(request.FolderID)
+            var existing = _permissionRepository.GetAclEntries(request.FolderID)
                 .Where(e => e.PrincipalType == request.PrincipalType
                          && e.PrincipalID   == request.PrincipalID
                          && e.IsDeny        == request.IsDeny)
@@ -82,17 +83,18 @@ namespace CMS.Services
 
             var entry = new FolderPermission
             {
-                FolderID       = request.FolderID,
-                PrincipalType  = request.PrincipalType,
-                PrincipalID    = request.PrincipalID,
-                CanRead        = request.CanRead,
-                CanWrite       = request.CanWrite,
-                CanDelete      = request.CanDelete,
-                CanModify      = request.CanModify,
-                CanFullControl = request.CanFullControl,
-                IsDeny         = request.IsDeny,
-                GrantedBy      = user.UserID,
-                GrantedDate    = DateTime.Now
+                FolderID          = request.FolderID,
+                PrincipalType     = request.PrincipalType,
+                PrincipalID       = request.PrincipalID,
+                CanRead           = request.CanRead,
+                CanWrite          = request.CanWrite,
+                CanDelete         = request.CanDelete,
+                CanModify         = request.CanModify,
+                CanFullControl    = request.CanFullControl,
+                IsDeny            = request.IsDeny,
+                InheritanceBroken = request.BreakInheritance,
+                GrantedBy         = user.UserID,
+                GrantedDate       = DateTime.Now
             };
 
             _permissionRepository.Insert(entry);
@@ -151,7 +153,7 @@ namespace CMS.Services
                     _filePermissionRepository.Insert(new FilePermission
                     {
                         FileID         = file.FileID,
-                        PrincipalType  = fp.PrincipalType,
+                        PrincipalType  = (int)fp.PrincipalType,
                         PrincipalID    = fp.PrincipalID,
                         CanRead        = fp.CanRead,
                         CanWrite       = fp.CanWrite,
@@ -201,6 +203,12 @@ namespace CMS.Services
             return EvaluatePermission(userId, folderId, permissionType);
         }
 
+        /// <summary>Overload that accepts PermissionType enum.</summary>
+        public bool CheckPermission(int userId, int folderId, CMS.Domain.Enums.PermissionType permissionType)
+        {
+            return CheckPermission(userId, folderId, permissionType.ToString());
+        }
+
         // -----------------------------------------------------------------------
         // Core evaluation
         // -----------------------------------------------------------------------
@@ -220,15 +228,15 @@ namespace CMS.Services
             var folder = _folderRepository.GetById(folderId);
             if (folder == null) return false;
 
-            var allEntries = _permissionRepository.GetByFolder(folderId).ToList();
+            var allEntries = _permissionRepository.GetAclEntries(folderId).ToList();
 
             var userAccount = _userAccountRepository.GetById(userId);
             int? userRole = userAccount != null ? (int?)userAccount.AppRole : null;
 
             // Entries applicable to this user (direct user or role match)
             var applicable = allEntries.Where(e =>
-                (e.PrincipalType == 1 && e.PrincipalID == userId) ||
-                (e.PrincipalType == 2 && userRole.HasValue && e.PrincipalID == userRole.Value)
+                (e.PrincipalType == PrincipalType.User && e.PrincipalID == userId) ||
+                (e.PrincipalType == PrincipalType.Role && userRole.HasValue && e.PrincipalID == userRole.Value)
             ).ToList();
 
             // IsDeny overrides everything
@@ -239,8 +247,9 @@ namespace CMS.Services
             bool hasAllow = applicable.Any(e => !e.IsDeny && MatchesFlag(e, permissionType));
             if (hasAllow) return true;
 
-            // Inherit from parent if InheritPermission is set
-            if (folder.InheritPermission && folder.ParentFolderID.HasValue)
+            // Inherit from parent unless any ACL entry has InheritanceBroken = true
+            bool inheritanceBroken = allEntries.Any(e => e.InheritanceBroken);
+            if (!inheritanceBroken && folder.ParentFolderID.HasValue)
                 return EvaluatePermissionRecursive(userId, folder.ParentFolderID.Value, permissionType, visited);
 
             return false; // default deny

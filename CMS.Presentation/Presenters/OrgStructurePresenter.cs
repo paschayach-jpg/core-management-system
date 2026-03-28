@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
@@ -34,7 +35,15 @@ namespace CMS.Presentation.Presenters
             try
             {
                 IEnumerable<OrgUnit> units = _service.GetHierarchy();
-                _view.ShowOrganizationView(units);
+                var unitsList = units.ToList();
+                
+                // Debug logging
+                System.Diagnostics.Debug.WriteLine($"LoadOrganizationView: Loaded {unitsList.Count} units");
+                var divisionCount = unitsList.Count(u => u.Tier == OrgUnitTier.Division && u.IsActive);
+                var subCommitteeCount = unitsList.Count(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive);
+                System.Diagnostics.Debug.WriteLine($"Active SubCommittees: {subCommitteeCount}, Active Divisions: {divisionCount}");
+                
+                _view.ShowOrganizationView(unitsList);
             }
             catch (Exception ex)
             {
@@ -149,6 +158,28 @@ namespace CMS.Presentation.Presenters
             catch (Exception ex)
             {
                 _view.ShowError("Failed to deactivate OrgUnit: " + ex.Message);
+            }
+        }
+
+        public void DeleteOrgUnit(int orgUnitId)
+        {
+            try
+            {
+                _service.DeleteOrgUnit(orgUnitId, _user);
+                _view.ShowInfo("หน่วยงานถูกลบเรียบร้อยแล้ว");
+                RefreshCurrentView();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _view.ShowError(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _view.ShowError("ไม่มีสิทธิ์ในการลบหน่วยงาน: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("ไม่สามารถลบหน่วยงานได้: " + ex.Message);
             }
         }
 

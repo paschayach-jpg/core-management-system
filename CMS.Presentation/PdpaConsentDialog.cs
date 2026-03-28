@@ -14,6 +14,37 @@ namespace CMS.Presentation
         {
             InitializeComponent();
             SetPolicyText();
+            SetupGoldBorderEffect();
+        }
+
+        // ── Gold Border Effect ────────────────────────────────────────────────
+
+        private void SetupGoldBorderEffect()
+        {
+            // เพิ่ม Paint event สำหรับ gradient effect
+            pnlGoldBorder.Paint += PnlGoldBorder_Paint;
+        }
+
+        private void PnlGoldBorder_Paint(object sender, PaintEventArgs e)
+        {
+            Panel panel = sender as Panel;
+            if (panel == null) return;
+
+            // สร้าง gradient brush สีทองหรูหรา
+            using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(0, 0, panel.Width, panel.Height),
+                Color.FromArgb(255, 223, 0),    // ทองสว่าง (Gold)
+                Color.FromArgb(184, 134, 11),   // ทองเข้ม (DarkGoldenrod)
+                System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+            {
+                e.Graphics.FillRectangle(brush, 0, 0, panel.Width, panel.Height);
+            }
+
+            // เพิ่ม highlight ด้านบน
+            using (var highlightPen = new Pen(Color.FromArgb(255, 235, 59), 1))
+            {
+                e.Graphics.DrawLine(highlightPen, 0, 0, panel.Width, 0);
+            }
         }
 
         // ── Event handlers ────────────────────────────────────────────────────

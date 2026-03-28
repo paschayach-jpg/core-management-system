@@ -88,6 +88,10 @@ namespace CMS.Presentation
             this.btnRibbonApproval = new System.Windows.Forms.ToolStripButton();
             this.lblApprovalBadge = new System.Windows.Forms.ToolStripLabel();
             this.ribbonStripAdmin = new System.Windows.Forms.ToolStrip();
+            this.btnRibbonFolderArchive = new System.Windows.Forms.ToolStripButton();
+            this.btnRibbonChangeLevel = new System.Windows.Forms.ToolStripButton();
+            this.btnRibbonCopyStructure = new System.Windows.Forms.ToolStripButton();
+            this.sepRibbon5 = new System.Windows.Forms.ToolStripSeparator();
             this.btnRibbonSysConfig = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonOrgAdmin = new System.Windows.Forms.ToolStripButton();
             this.sepRibbon3 = new System.Windows.Forms.ToolStripSeparator();
@@ -667,16 +671,7 @@ namespace CMS.Presentation
             this.btnRibbonDownload,
             this.btnRibbonRename,
             this.btnRibbonMove,
-            this.btnRibbonDelete,
-            this.sepRibbon1,
-            this.btnRibbonTemplate,
-            this.btnRibbonFavorites,
-            this.btnRibbonFolderSettings,
-            this.btnRibbonPermission,
-            this.sepRibbon2,
-            this.btnRibbonAuditLog,
-            this.btnRibbonApproval,
-            this.lblApprovalBadge});
+            this.btnRibbonDelete});
             this.ribbonStrip.Location = new System.Drawing.Point(0, 27);
             this.ribbonStrip.Name = "ribbonStrip";
             this.ribbonStrip.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
@@ -792,8 +787,20 @@ namespace CMS.Presentation
             // 
             this.ribbonStripAdmin.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(250)))));
             this.ribbonStripAdmin.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.ribbonStripAdmin.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.ribbonStripAdmin.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.ribbonStripAdmin.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.btnRibbonFolderSettings,
+            this.btnRibbonPermission,
+            this.btnRibbonAuditLog,
+            this.btnRibbonApproval,
+            this.lblApprovalBadge,
+            this.btnRibbonTemplate,
+            this.btnRibbonFolderArchive,
+            this.btnRibbonChangeLevel,
+            this.btnRibbonCopyStructure,
+            this.btnRibbonRecycleBin,
+            this.sepRibbon1,
             this.btnRibbonSysConfig,
             this.btnRibbonOrgAdmin,
             this.sepRibbon3,
@@ -820,8 +827,34 @@ namespace CMS.Presentation
             this.btnRibbonOrgAdmin.Text = "🏢 โครงสร้างองค์กร";
             this.btnRibbonOrgAdmin.ToolTipText = "จัดการโครงสร้างองค์กร";
             // 
+            // btnRibbonFolderArchive
+            //
+            this.btnRibbonFolderArchive.Name = "btnRibbonFolderArchive";
+            this.btnRibbonFolderArchive.Size = new System.Drawing.Size(81, 22);
+            this.btnRibbonFolderArchive.Text = "📦 Archive";
+            this.btnRibbonFolderArchive.ToolTipText = "Archive Folder ที่เลือก";
+            //
+            // btnRibbonChangeLevel
+            //
+            this.btnRibbonChangeLevel.Name = "btnRibbonChangeLevel";
+            this.btnRibbonChangeLevel.Size = new System.Drawing.Size(95, 22);
+            this.btnRibbonChangeLevel.Text = "🔒 เปลี่ยนระดับ";
+            this.btnRibbonChangeLevel.ToolTipText = "เปลี่ยน Confidentiality Level ของ Folder";
+            //
+            // btnRibbonCopyStructure
+            //
+            this.btnRibbonCopyStructure.Name = "btnRibbonCopyStructure";
+            this.btnRibbonCopyStructure.Size = new System.Drawing.Size(123, 22);
+            this.btnRibbonCopyStructure.Text = "📂 คัดลอกโครงสร้าง";
+            this.btnRibbonCopyStructure.ToolTipText = "คัดลอกโครงสร้าง Folder ไปยัง Parent ใหม่";
+            //
+            // sepRibbon5
+            //
+            this.sepRibbon5.Name = "sepRibbon5";
+            this.sepRibbon5.Size = new System.Drawing.Size(6, 25);
+            //
             // sepRibbon3
-            // 
+            //
             this.sepRibbon3.Name = "sepRibbon3";
             this.sepRibbon3.Size = new System.Drawing.Size(6, 25);
             // 
@@ -1061,6 +1094,10 @@ namespace CMS.Presentation
         private System.Windows.Forms.ToolStripButton        btnRibbonRecycleBin;
         private System.Windows.Forms.ToolStripButton        btnRibbonArchive;
         private System.Windows.Forms.ToolStripSeparator     sepRibbon4;
+        private System.Windows.Forms.ToolStripButton        btnRibbonFolderArchive;
+        private System.Windows.Forms.ToolStripButton        btnRibbonChangeLevel;
+        private System.Windows.Forms.ToolStripButton        btnRibbonCopyStructure;
+        private System.Windows.Forms.ToolStripSeparator     sepRibbon5;
         private System.Windows.Forms.ToolStripButton        btnRibbonSysConfig;
         private System.Windows.Forms.ToolStripButton        btnRibbonOrgAdmin;
         private System.Windows.Forms.ToolStripButton        btnRibbonReportExcel;

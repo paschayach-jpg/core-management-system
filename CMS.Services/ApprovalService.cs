@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CMS.Data.Interfaces;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Services.DTOs;
@@ -182,20 +183,54 @@ namespace CMS.Services
                 {
                     try
                     {
+                        System.Diagnostics.Debug.WriteLine($"ApproveStep: Applying permission for request {step.RequestID}");
+                        System.Diagnostics.Debug.WriteLine($"  Remark: {approvalRequest.Remark}");
+                        System.Diagnostics.Debug.WriteLine($"  FolderID: {approvalRequest.FolderID.Value}");
+                        
                         var permReq = ParsePermissionRemark(approvalRequest.Remark, approvalRequest.FolderID.Value);
                         if (permReq != null)
                         {
+                            System.Diagnostics.Debug.WriteLine($"  Parsed permission request successfully");
+                            System.Diagnostics.Debug.WriteLine($"  PrincipalType: {permReq.PrincipalType}, PrincipalID: {permReq.PrincipalID}");
+                            System.Diagnostics.Debug.WriteLine($"  Permissions: Read:{permReq.CanRead}, Write:{permReq.CanWrite}, Delete:{permReq.CanDelete}");
+                            
                             _permissionService.SetFolderPermission(permReq, user);
+                            
+                            System.Diagnostics.Debug.WriteLine($"  Permission applied successfully");
+                            
                             Log(user, "Workflow", "APPLY_PERMISSION", "security.FolderPermission",
                                 step.RequestID, 1,
                                 string.Format("Permission applied for FolderID:{0} after approval.", approvalRequest.FolderID.Value));
                         }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine($"  Failed to parse permission remark");
+                            _loggingService.Error(string.Format(
+                                "ApprovalService.ApproveStep: Failed to parse permission remark for request {0}. Remark: {1}",
+                                step.RequestID, approvalRequest.Remark));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"  Exception applying permission: {ex.Message}");
+                        _loggingService.Error(string.Format(
+                            "ApprovalService.ApproveStep: Failed to apply permission for request {0}. {1}",
+                            step.RequestID, ex.Message), ex);
+                    }
+                }
+                else if (approvalRequest.RequestType == "DELETE_FOLDER" && approvalRequest.FolderID.HasValue)
+                {
+                    try
+                    {
+                        _folderRepository.SoftDelete(approvalRequest.FolderID.Value, user.UserID);
+                        Log(user, "Folder", "DELETE", "storage.Folder", approvalRequest.FolderID.Value, 1,
+                            string.Format("Folder soft-deleted after approval of request {0}.", step.RequestID));
                     }
                     catch (Exception ex)
                     {
                         _loggingService.Error(string.Format(
-                            "ApprovalService.ApproveStep: Failed to apply permission for request {0}. {1}",
-                            step.RequestID, ex.Message), ex);
+                            "ApprovalService.ApproveStep: Failed to soft-delete folder {0} for request {1}. {2}",
+                            approvalRequest.FolderID.Value, step.RequestID, ex.Message), ex);
                     }
                 }
 
@@ -322,6 +357,62 @@ namespace CMS.Services
                 _loggingService.Error($"ApprovalService.GetApprovalSteps: Failed to get steps for request {requestId}.", ex);
                 return new List<ApprovalStep>();
             }
+        }
+
+        // -----------------------------------------------------------------------
+        // RequestFolderDelete
+        // -----------------------------------------------------------------------
+
+        public ApprovalRequest RequestFolderDelete(int folderId, string reason, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var folder = _folderRepository.GetById(folderId);
+            if (folder == null)
+                throw new InvalidOperationException(string.Format("Folder with ID {0} was not found.", folderId));
+            if (folder.IsDeleted)
+                throw new InvalidOperationException("Folder is already in the recycle bin.");
+            if (folder.FileCount == 0)
+                throw new InvalidOperationException("Folder มีไฟล์อยู่ 0 รายการ สามารถลบได้โดยตรงโดยไม่ต้องขออนุมัติ");
+
+            // Find active admins (AppRole = 4) to be the approver
+            var admins = _userAccountRepository.GetByRole(4).Where(a => a.IsActive).ToList();
+            if (!admins.Any())
+                throw new InvalidOperationException("ไม่พบ Admin ที่ Active ในระบบ ไม่สามารถส่งคำขออนุมัติได้");
+
+            var approvalRequest = new ApprovalRequest
+            {
+                RequestType   = "DELETE_FOLDER",
+                FolderID      = folderId,
+                RequestedBy   = user.UserID,
+                RequestedDate = DateTime.Now,
+                RequestStatus = 1, // Pending
+                Subject       = string.Format("ขออนุมัติลบ Folder: {0}", folder.FolderName),
+                Remark        = reason ?? string.Empty,
+                ExpiryDate    = DateTime.Now.AddDays(7)
+            };
+
+            int requestId = _approvalRepository.InsertRequest(approvalRequest);
+            approvalRequest.RequestID = requestId;
+
+            var firstAdmin = admins.First();
+            _approvalRepository.InsertStep(new ApprovalStep
+            {
+                RequestID  = requestId,
+                StepOrder  = 1,
+                ApproverID = firstAdmin.UserID,
+                StepStatus = 1 // Pending
+            });
+
+            Log(user, "Workflow", "CREATE", "workflow.ApprovalRequest", requestId, 1,
+                string.Format("DELETE_FOLDER request created for Folder {0}. Subject: {1}",
+                    folderId, approvalRequest.Subject));
+
+            NotifyUser(firstAdmin.UserID, "DeleteFolderRequested", requestId.ToString(),
+                string.Format("มีคำขออนุมัติลบ Folder '{0}' (คำขอ ID {1}) รออนุมัติจากคุณ",
+                    folder.FolderName, requestId));
+
+            return approvalRequest;
         }
 
         // -----------------------------------------------------------------------
@@ -471,18 +562,25 @@ namespace CMS.Services
 
             try
             {
+                System.Diagnostics.Debug.WriteLine($"ParsePermissionRemark: Parsing remark: {remark}");
+                
                 var parts = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var token in remark.Split(' '))
                 {
                     var idx = token.IndexOf(':');
                     if (idx > 0)
-                        parts[token.Substring(0, idx)] = token.Substring(idx + 1);
+                    {
+                        string key = token.Substring(0, idx);
+                        string value = token.Substring(idx + 1);
+                        parts[key] = value;
+                        System.Diagnostics.Debug.WriteLine($"  Parsed: {key} = {value}");
+                    }
                 }
 
-                return new SetPermissionRequest
+                var request = new SetPermissionRequest
                 {
                     FolderID       = folderId,
-                    PrincipalType  = RemarkGetInt(parts, "PrincipalType"),
+                    PrincipalType  = (PrincipalType)RemarkGetInt(parts, "PrincipalType"),
                     PrincipalID    = RemarkGetInt(parts, "PrincipalID"),
                     CanRead        = RemarkGetBool(parts, "Read"),
                     CanWrite       = RemarkGetBool(parts, "Write"),
@@ -491,9 +589,13 @@ namespace CMS.Services
                     CanFullControl = RemarkGetBool(parts, "FullControl"),
                     IsDeny         = RemarkGetBool(parts, "IsDeny")
                 };
+
+                System.Diagnostics.Debug.WriteLine($"ParsePermissionRemark: Created request - PrincipalType:{request.PrincipalType}, PrincipalID:{request.PrincipalID}, Read:{request.CanRead}");
+                return request;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"ParsePermissionRemark Error: {ex.Message}");
                 return null;
             }
         }

@@ -9,14 +9,16 @@ using CMS.Domain.Models;
 namespace CMS.Presentation
 {
     /// <summary>
-    /// Dialog แสดงโครงสร้างองค์กรแบบ TreeView พร้อม Checkbox
-    /// ให้เลือกได้หลายหน่วยงาน (Division / Department)
-    /// Returns: List of selected OrgUnit with PrincipalType (3=Department, 4=Division)
+    /// Dialog สำหรับสร้างหน่วยงานใหม่
+    /// แบบ Step-by-Step Form
     /// </summary>
     public partial class OrgUnitPickerDialog : Form
     {
         private readonly IEnumerable<OrgUnit> _allUnits;
 
+        public OrgUnit NewOrgUnit { get; private set; }
+
+        // For backward compatibility with existing code that expects SelectedUnits
         public List<OrgUnitSelection> SelectedUnits { get; private set; } = new List<OrgUnitSelection>();
 
         public OrgUnitPickerDialog(IEnumerable<OrgUnit> allUnits)
@@ -27,167 +29,309 @@ namespace CMS.Presentation
 
         private void OrgUnitPickerDialog_Load(object sender, EventArgs e)
         {
-            BuildTree();
+            InitializeForm();
         }
 
-        private void BuildTree()
+        private void InitializeForm()
         {
-            treeOrg.BeginUpdate();
-            treeOrg.Nodes.Clear();
+            // Initialize Level ComboBox
+            cmbLevel.Items.Clear();
+            cmbLevel.Items.Add(new ComboBoxItem { Text = "คณะกรรมการ (SubCommittee)", Value = 1 });
+            cmbLevel.Items.Add(new ComboBoxItem { Text = "ฝ่าย (Division)", Value = 2 });
+            cmbLevel.Items.Add(new ComboBoxItem { Text = "แผนก (Department)", Value = 3 });
+            cmbLevel.DisplayMember = "Text";
+            cmbLevel.ValueMember = "Value";
 
-            var units = _allUnits.Where(u => u.IsActive && !u.IsDeleted).ToList();
+            // Initialize Parent ComboBox
+            LoadParentUnits();
 
-            var subCommittees = units
-                .Where(u => u.OrgUnitType == 1)
-                .OrderBy(u => u.OrgUnitNameTH ?? u.Name);
+            // Set step label styles
+            SetStepLabelStyle(lblStep1);
+            SetStepLabelStyle(lblStep2);
+            SetStepLabelStyle(lblStep3);
+            SetStepLabelStyle(lblStep4);
+            SetStepLabelStyle(lblStep5);
+            SetStepLabelStyle(lblStep6);
 
-            foreach (var sc in subCommittees)
+            // Event handlers
+            cmbLevel.SelectedIndexChanged += CmbLevel_SelectedIndexChanged;
+            txtDivisionCode.TextChanged += txtDivisionCode_TextChanged;
+            txtDepartmentCode.TextChanged += txtDepartmentCode_TextChanged;
+            
+            // Auto-generate organization code when division/department codes change
+            UpdateOrgCode();
+        }
+
+        private void SetStepLabelStyle(Label stepLabel)
+        {
+            stepLabel.BackColor = Color.FromArgb(220, 53, 69);
+            stepLabel.ForeColor = Color.White;
+            stepLabel.TextAlign = ContentAlignment.MiddleCenter;
+            stepLabel.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            // Make it circular
+            stepLabel.Width = stepLabel.Height = 35;
+            stepLabel.FlatStyle = FlatStyle.Flat;
+        }
+
+        private void LoadParentUnits()
+        {
+            cmbParent.Items.Clear();
+            var activeUnits = _allUnits.Where(u => u.IsActive && !u.IsDeleted).ToList();
+            
+            foreach (var unit in activeUnits.OrderBy(u => u.OrgUnitNameTH ?? u.Name))
             {
-                var scNode = MakeNode(sc, "🏢");
-                scNode.ForeColor  = Color.FromArgb(31, 56, 100);
-                scNode.NodeFont   = new Font(treeOrg.Font, FontStyle.Bold);
+                string tierName = unit.OrgUnitType == 1 ? "คณะกรรมการ" 
+                                : unit.OrgUnitType == 2 ? "ฝ่าย" 
+                                : "แผนก";
+                
+                cmbParent.Items.Add(new ComboBoxItem 
+                { 
+                    Text = $"[{tierName}] {unit.OrgUnitNameTH ?? unit.Name}", 
+                    Value = unit.OrgUnitID 
+                });
+            }
+            cmbParent.DisplayMember = "Text";
+            cmbParent.ValueMember = "Value";
+        }
 
-                var divisions = units
-                    .Where(u => u.OrgUnitType == 2 && u.ParentOrgUnitID == sc.OrgUnitID)
-                    .OrderBy(u => u.OrgUnitNameTH ?? u.Name);
+        private void CmbLevel_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Filter parent units based on selected level
+            if (cmbLevel.SelectedItem is ComboBoxItem selectedLevel)
+            {
+                int levelValue = (int)selectedLevel.Value;
+                LoadParentUnitsForLevel(levelValue);
+            }
+        }
 
-                foreach (var div in divisions)
-                {
-                    var divNode = MakeNode(div, "📁");
-                    divNode.ForeColor = Color.FromArgb(0, 80, 160);
-
-                    var departments = units
-                        .Where(u => u.OrgUnitType == 3 && u.ParentOrgUnitID == div.OrgUnitID)
-                        .OrderBy(u => u.OrgUnitNameTH ?? u.Name);
-
-                    foreach (var dept in departments)
-                    {
-                        var deptNode = MakeNode(dept, "📋");
-                        deptNode.ForeColor = Color.FromArgb(60, 60, 60);
-                        divNode.Nodes.Add(deptNode);
-                    }
-
-                    scNode.Nodes.Add(divNode);
-                }
-
-                treeOrg.Nodes.Add(scNode);
+        private void LoadParentUnitsForLevel(int selectedLevel)
+        {
+            cmbParent.Items.Clear();
+            var activeUnits = _allUnits.Where(u => u.IsActive && !u.IsDeleted).ToList();
+            
+            // Filter parent units based on hierarchy rules
+            IEnumerable<OrgUnit> validParents = Enumerable.Empty<OrgUnit>();
+            
+            switch (selectedLevel)
+            {
+                case 1: // SubCommittee - no parent needed
+                    cmbParent.Items.Add(new ComboBoxItem { Text = "ไม่มีหน่วยงานแม่", Value = null });
+                    return; // Exit early since no parent units needed
+                case 2: // Division - parent should be SubCommittee
+                    validParents = activeUnits.Where(u => u.OrgUnitType == 1);
+                    break;
+                case 3: // Department - parent should be Division
+                    validParents = activeUnits.Where(u => u.OrgUnitType == 2);
+                    break;
+                default:
+                    validParents = activeUnits;
+                    break;
             }
 
-            treeOrg.ExpandAll();
-            treeOrg.EndUpdate();
-            UpdateStatus();
-        }
-
-        private static TreeNode MakeNode(OrgUnit unit, string icon)
-        {
-            string tierLabel = unit.OrgUnitType == 1 ? "SubCommittee"
-                             : unit.OrgUnitType == 2 ? "Division"
-                             : "Department";
-            string display = string.Format("{0} {1} [{2}]",
-                icon,
-                unit.OrgUnitNameTH ?? unit.Name,
-                tierLabel);
-
-            return new TreeNode(display)
+            // Add valid parent units to combobox
+            foreach (var unit in validParents.OrderBy(u => u.OrgUnitNameTH ?? u.Name))
             {
-                Tag      = unit,
-                Checked  = false
-            };
+                string tierName = unit.OrgUnitType == 1 ? "คณะกรรมการ" 
+                                : unit.OrgUnitType == 2 ? "ฝ่าย" 
+                                : "แผนก";
+                
+                cmbParent.Items.Add(new ComboBoxItem 
+                { 
+                    Text = $"[{tierName}] {unit.OrgUnitNameTH ?? unit.Name}", 
+                    Value = unit.OrgUnitID 
+                });
+            }
+
+            cmbParent.DisplayMember = "Text";
+            cmbParent.ValueMember = "Value";
         }
 
         // ── Event handlers ────────────────────────────────────────────────────
 
-        private void treeOrg_AfterCheck(object sender, TreeViewEventArgs e)
+        private void txtDivisionCode_TextChanged(object sender, EventArgs e)
         {
-            // Propagate check to children
-            if (e.Action == TreeViewAction.Unknown) return;
-            SetChildChecks(e.Node, e.Node.Checked);
-            UpdateStatus();
+            UpdateOrgCode();
         }
 
-        private static void SetChildChecks(TreeNode node, bool check)
+        private void txtDepartmentCode_TextChanged(object sender, EventArgs e)
         {
-            foreach (TreeNode child in node.Nodes)
+            UpdateOrgCode();
+        }
+
+        private void UpdateOrgCode()
+        {
+            string divCode = txtDivisionCode.Text.PadLeft(2, '0');
+            string deptCode = txtDepartmentCode.Text.PadLeft(2, '0');
+            
+            if (txtDivisionCode.Text.Length > 0 && txtDepartmentCode.Text.Length > 0)
             {
-                child.Checked = check;
-                SetChildChecks(child, check);
+                string newCode = divCode + deptCode;
+                txtOrgCode.Text = newCode;
+                
+                // Check for duplicate code
+                CheckForDuplicateCode(newCode);
+            }
+            else if (txtDivisionCode.Text.Length > 0)
+            {
+                txtOrgCode.Text = divCode + "00";
+            }
+            else
+            {
+                txtOrgCode.Text = "";
             }
         }
 
-        private void btnSelectAll_Click(object sender, EventArgs e)
+        private void CheckForDuplicateCode(string orgCode)
         {
-            SetAllChecks(treeOrg.Nodes, true);
-            UpdateStatus();
-        }
+            if (string.IsNullOrWhiteSpace(orgCode)) return;
 
-        private void btnClearAll_Click(object sender, EventArgs e)
-        {
-            SetAllChecks(treeOrg.Nodes, false);
-            UpdateStatus();
-        }
+            // Check if code already exists in the provided units
+            var existingUnit = _allUnits.FirstOrDefault(u => 
+                u.OrgUnitCode == orgCode && u.IsActive && !u.IsDeleted);
 
-        private static void SetAllChecks(TreeNodeCollection nodes, bool check)
-        {
-            foreach (TreeNode n in nodes)
+            if (existingUnit != null)
             {
-                n.Checked = check;
-                SetAllChecks(n.Nodes, check);
+                txtOrgCode.BackColor = Color.FromArgb(255, 235, 235); // Light red
+                txtOrgCode.ForeColor = Color.FromArgb(220, 53, 69);   // Red text
+                txtOrgCode.Font = new Font(txtOrgCode.Font, FontStyle.Bold);
+            }
+            else
+            {
+                txtOrgCode.BackColor = Color.FromArgb(240, 240, 240); // Light gray (original)
+                txtOrgCode.ForeColor = Color.Black;
+                txtOrgCode.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             }
         }
 
-        private void UpdateStatus()
+        private void btnSearchTH_Click(object sender, EventArgs e)
         {
-            int count = CountChecked(treeOrg.Nodes);
-            lblStatus.Text = string.Format("เลือกแล้ว {0} หน่วยงาน", count);
-            btnOk.Enabled  = count > 0;
+            // TODO: Implement search functionality for Thai name
+            MessageBox.Show("ฟีเจอร์ค้นหาจะพัฒนาในอนาคต", "แจ้งเตือน", 
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private static int CountChecked(TreeNodeCollection nodes)
+        private void btnSearchEN_Click(object sender, EventArgs e)
         {
-            int c = 0;
-            foreach (TreeNode n in nodes)
-            {
-                var unit = n.Tag as OrgUnit;
-                if (n.Checked && unit != null && unit.OrgUnitType != 1) // ไม่นับ SubCommittee
-                    c++;
-                c += CountChecked(n.Nodes);
-            }
-            return c;
+            // TODO: Implement search functionality for English name
+            MessageBox.Show("Search feature will be implemented in the future", "Information", 
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void pnlFooter_Resize(object sender, EventArgs e)
+        {
+            btnCancel.Left = pnlFooter.ClientSize.Width - btnCancel.Width - 8;
+            btnOk.Left = btnCancel.Left - btnOk.Width - 8;
+            btnOk.Top = btnCancel.Top = (pnlFooter.Height - btnOk.Height) / 2;
         }
 
         private void btnOk_Click(object sender, EventArgs e)
         {
-            SelectedUnits = CollectChecked(treeOrg.Nodes);
-            if (SelectedUnits.Count == 0)
+            if (ValidateForm())
             {
-                MessageBox.Show("กรุณาเลือกอย่างน้อย 1 หน่วยงาน", "แจ้งเตือน",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                DialogResult = DialogResult.None;
-                return;
+                CreateNewOrgUnit();
+                DialogResult = DialogResult.OK;
             }
-            DialogResult = DialogResult.OK;
         }
 
-        private static List<OrgUnitSelection> CollectChecked(TreeNodeCollection nodes)
+        private bool ValidateForm()
         {
-            var result = new List<OrgUnitSelection>();
-            foreach (TreeNode n in nodes)
+            if (string.IsNullOrWhiteSpace(txtDivisionCode.Text))
             {
-                var unit = n.Tag as OrgUnit;
-                if (n.Checked && unit != null && unit.OrgUnitType != 1)
-                {
-                    result.Add(new OrgUnitSelection
-                    {
-                        OrgUnit       = unit,
-                        PrincipalType = unit.OrgUnitType == 2 ? 4 : 3  // 4=Division, 3=Department
-                    });
-                }
-                result.AddRange(CollectChecked(n.Nodes));
+                MessageBox.Show("กรุณากรอกรหัสฝ่าย (2 หลัก)", "แจ้งเตือน", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtDivisionCode.Focus();
+                return false;
             }
-            return result;
+
+            if (cmbLevel.SelectedItem == null)
+            {
+                MessageBox.Show("กรุณาเลือกระดับหน่วยงาน", "แจ้งเตือน", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                cmbLevel.Focus();
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtDepartmentCode.Text))
+            {
+                MessageBox.Show("กรุณากรอกรหัสแผนก (2 หลัก)", "แจ้งเตือน", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtDepartmentCode.Focus();
+                return false;
+            }
+
+            // Check for duplicate organization code
+            string orgCode = txtOrgCode.Text;
+            if (!string.IsNullOrWhiteSpace(orgCode))
+            {
+                var existingUnit = _allUnits.FirstOrDefault(u => 
+                    u.OrgUnitCode == orgCode && u.IsActive && !u.IsDeleted);
+                
+                if (existingUnit != null)
+                {
+                    MessageBox.Show(
+                        string.Format("รหัสหน่วยงาน '{0}' มีอยู่ในระบบแล้ว\nหน่วยงาน: {1}\n\nกรุณาเปลี่ยนรหัสฝ่ายหรือรหัสแผนก", 
+                            orgCode, existingUnit.OrgUnitNameTH ?? existingUnit.Name), 
+                        "รหัสซ้ำ", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtDivisionCode.Focus();
+                    return false;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(txtOrgNameEN.Text))
+            {
+                MessageBox.Show("กรุณากรอกชื่อหน่วยงาน (ภาษาอังกฤษ)", "แจ้งเตือน", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtOrgNameEN.Focus();
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtOrgNameTH.Text))
+            {
+                MessageBox.Show("กรุณากรอกชื่อหน่วยงาน (ภาษาไทย)", "แจ้งเตือน", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtOrgNameTH.Focus();
+                return false;
+            }
+
+            var selectedLevel = (ComboBoxItem)cmbLevel.SelectedItem;
+            if ((int)selectedLevel.Value > 1 && cmbParent.SelectedItem == null)
+            {
+                MessageBox.Show("กรุณาเลือกหน่วยงานแม่", "แจ้งเตือน", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                cmbParent.Focus();
+                return false;
+            }
+
+            return true;
         }
 
-        /// <summary>ข้อมูลหน่วยงานที่เลือก พร้อม PrincipalType สำหรับ FolderPermission</summary>
+        private void CreateNewOrgUnit()
+        {
+            var selectedLevel = (ComboBoxItem)cmbLevel.SelectedItem;
+            var selectedParent = cmbParent.SelectedItem as ComboBoxItem;
+
+            NewOrgUnit = new OrgUnit
+            {
+                Name = txtOrgNameEN.Text?.Trim(),
+                OrgUnitNameTH = txtOrgNameTH.Text?.Trim(),
+                OrgUnitCode = txtOrgCode.Text?.Trim(),
+                OrgUnitType = (int)selectedLevel.Value,
+                ParentOrgUnitID = selectedParent?.Value as int?,
+                IsActive = true,
+                IsDeleted = false,
+                CreatedDate = DateTime.Now
+            };
+        }
+
+        /// <summary>Helper class for ComboBox items</summary>
+        public class ComboBoxItem
+        {
+            public string Text { get; set; }
+            public object Value { get; set; }
+        }
+
+        /// <summary>ข้อมูลหน่วยงานที่เลือก พร้อม PrincipalType สำหรับ FolderPermission (for backward compatibility)</summary>
         public class OrgUnitSelection
         {
             public OrgUnit OrgUnit       { get; set; }

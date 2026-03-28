@@ -38,6 +38,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DTOs\CreateFolderRequest.cs" />
+    <Compile Include="DTOs\MoveFolderRequest.cs" />
+    <Compile Include="DTOs\MoveFileRequest.cs" />
     <Compile Include="DTOs\CreateOrgUnitRequest.cs" />
     <Compile Include="DTOs\FileDownloadResult.cs" />
     <Compile Include="DTOs\FileUploadRequest.cs" />
@@ -57,6 +59,10 @@
     <Compile Include="Interfaces\IFilePermissionService.cs" />
     <Compile Include="Interfaces\INotificationService.cs" />
     <Compile Include="Interfaces\IVirusScanService.cs" />
+    <Compile Include="Interfaces\IUploadCheckpointService.cs" />
+    <Compile Include="Interfaces\IQuickAccessService.cs" />
+    <Compile Include="UploadCheckpointService.cs" />
+    <Compile Include="QuickAccessService.cs" />
     <Compile Include="EmployeeApiService.cs" />
     <Compile Include="ApprovalService.cs" />
     <Compile Include="NotificationService.cs" />

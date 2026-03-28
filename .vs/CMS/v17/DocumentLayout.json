@@ -1,7 +1,20 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\pitakpong\\Documents\\MenuImport (2)\\MenuImport\\MenuImport\\CMS\\",
-  "Documents": [],
+  "WorkspaceRootPath": "C:\\Users\\pitakpong\\Documents\\cms_import\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|c:\\users\\pitakpong\\documents\\cms_import\\cms.presentation\\folderform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|solutionrelative:cms.presentation\\folderform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|C:\\Users\\pitakpong\\Documents\\cms_import\\cms.presentation\\folderform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|solutionrelative:cms.presentation\\folderform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|C:\\Users\\pitakpong\\Documents\\cms_import\\cms.presentation\\permissionform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|solutionrelative:cms.presentation\\permissionform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 255,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 34,
           "Children": [
             {
               "$type": "Bookmark",
@@ -146,6 +159,42 @@
             {
               "$type": "Bookmark",
               "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "FolderForm.cs",
+              "DocumentMoniker": "C:\\Users\\pitakpong\\Documents\\cms_import\\CMS.Presentation\\FolderForm.cs",
+              "RelativeDocumentMoniker": "CMS.Presentation\\FolderForm.cs",
+              "ToolTip": "C:\\Users\\pitakpong\\Documents\\cms_import\\CMS.Presentation\\FolderForm.cs",
+              "RelativeToolTip": "CMS.Presentation\\FolderForm.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-28T04:18:19.695Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "FolderForm.cs [Design]",
+              "DocumentMoniker": "C:\\Users\\pitakpong\\Documents\\cms_import\\CMS.Presentation\\FolderForm.cs",
+              "RelativeDocumentMoniker": "CMS.Presentation\\FolderForm.cs",
+              "ToolTip": "C:\\Users\\pitakpong\\Documents\\cms_import\\CMS.Presentation\\FolderForm.cs [Design]",
+              "RelativeToolTip": "CMS.Presentation\\FolderForm.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-28T02:03:00.865Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "PermissionForm.cs",
+              "DocumentMoniker": "C:\\Users\\pitakpong\\Documents\\cms_import\\CMS.Presentation\\PermissionForm.cs",
+              "RelativeDocumentMoniker": "CMS.Presentation\\PermissionForm.cs",
+              "ToolTip": "C:\\Users\\pitakpong\\Documents\\cms_import\\CMS.Presentation\\PermissionForm.cs",
+              "RelativeToolTip": "CMS.Presentation\\PermissionForm.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAlwBAAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-27T16:55:19.022Z"
             }
           ]
         },

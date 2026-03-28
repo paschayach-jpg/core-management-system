@@ -13,6 +13,16 @@ namespace CMS.Services
     {
         private const int MaxFolderDepth = 10;
 
+        private static readonly char[] InvalidFolderNameChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' };
+
+        private static void ValidateFolderName(string name)
+        {
+            var found = name.Where(c => InvalidFolderNameChars.Contains(c)).Distinct().ToArray();
+            if (found.Length > 0)
+                throw new ArgumentException(
+                    string.Format("ชื่อ Folder ไม่อนุญาตให้ใช้อักขระ: {0}", string.Join(" ", found)));
+        }
+
         private readonly IFolderRepository       _folderRepository;
         private readonly IFileDocumentRepository _fileDocumentRepository;
         private readonly IPermissionRepository   _permissionRepository;
@@ -55,6 +65,17 @@ namespace CMS.Services
             if (user    == null) throw new ArgumentNullException("user");
             if (string.IsNullOrWhiteSpace(request.Name))
                 throw new ArgumentException("Folder name is required.");
+
+            ValidateFolderName(request.Name.Trim());
+
+            // Duplicate check: compare case-insensitive + trimmed against active siblings
+            string trimmedName = request.Name.Trim();
+            var siblings = _folderRepository.GetSiblings(request.ParentFolderId, request.OrgUnitId);
+            var duplicate = siblings.FirstOrDefault(
+                f => string.Equals(f.FolderName.Trim(), trimmedName, StringComparison.OrdinalIgnoreCase));
+            if (duplicate != null)
+                throw new InvalidOperationException(
+                    string.Format("มี Folder ชื่อ '{0}' อยู่แล้วใน Parent เดียวกัน", duplicate.FolderName));
 
             int depth;
             int confidentiality;
@@ -122,11 +143,23 @@ namespace CMS.Services
             if (string.IsNullOrWhiteSpace(newName))
                 throw new ArgumentException("New folder name is required.");
 
+            ValidateFolderName(newName.Trim());
+
             var folder = _folderRepository.GetById(folderId);
             if (folder == null)
                 throw new InvalidOperationException(string.Format("Folder with ID {0} was not found.", folderId));
             if (folder.IsDeleted)
                 throw new InvalidOperationException("Cannot rename a deleted folder.");
+
+            // Duplicate check: compare case-insensitive + trimmed against active siblings
+            string trimmedName = newName.Trim();
+            var siblings = _folderRepository.GetSiblings(folder.ParentFolderID, folder.OrgUnitID);
+            var duplicate = siblings.FirstOrDefault(
+                f => f.FolderID != folderId &&
+                     string.Equals(f.FolderName.Trim(), trimmedName, StringComparison.OrdinalIgnoreCase));
+            if (duplicate != null)
+                throw new InvalidOperationException(
+                    string.Format("มี Folder ชื่อ '{0}' อยู่แล้วใน Parent เดียวกัน", duplicate.FolderName));
 
             string oldName = folder.FolderName;
             folder.FolderName = newName.Trim();
@@ -190,6 +223,13 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format("Folder with ID {0} was not found.", folderId));
             if (folder.IsDeleted)
                 throw new InvalidOperationException("Folder is already in the recycle bin.");
+
+            // Req 5.1–5.3: folders with files must go through Admin approval workflow
+            if (folder.FileCount > 0)
+                throw new InvalidOperationException(
+                    string.Format(
+                        "ไม่สามารถลบ Folder '{0}' ได้โดยตรง เนื่องจากมีไฟล์อยู่ {1} รายการ\nกรุณายื่นคำขออนุมัติการลบผ่านระบบ Workflow",
+                        folder.FolderName, folder.FileCount));
 
             _folderRepository.SoftDelete(folderId, user.UserID);
 
@@ -476,6 +516,10 @@ namespace CMS.Services
             if (items.Count == 0)
                 throw new InvalidOperationException("Template นี้ไม่มี Sub-Folder กำหนดไว้");
 
+            // Clamp confidentialityLevel to valid range 1-4
+            if (confidentialityLevel < 1 || confidentialityLevel > 4)
+                confidentialityLevel = 4;
+
             // สร้าง root folder ของ OrgUnit
             var rootFolder = new Folder
             {
@@ -518,7 +562,9 @@ namespace CMS.Services
                 int depth = parentDepth + 1;
                 if (depth > MaxFolderDepth) continue;
 
-                int itemConfidentiality = item.InheritPermission ? confidentialityLevel : item.ConfidentialityLevel;
+                int itemConfidentiality = (item.InheritPermission || item.ConfidentialityLevel < 1 || item.ConfidentialityLevel > 4)
+                    ? confidentialityLevel
+                    : item.ConfidentialityLevel;
 
                 var folder = new Folder
                 {
@@ -536,6 +582,195 @@ namespace CMS.Services
 
                 int newId = _folderRepository.Insert(folder);
                 CreateFoldersFromItems(allItems, item.ItemID, newId, depth, orgUnitId, itemConfidentiality, user);
+            }
+        }
+
+        public void MoveFolder(MoveFolderRequest request, UserContext user)
+        {
+            // 3.1 — Null check
+            if (request == null) throw new ArgumentNullException("request");
+            if (user    == null) throw new ArgumentNullException("user");
+
+            int sourceFolderId            = request.SourceFolderId;
+            int destinationParentFolderId = request.DestinationParentFolderId;
+
+            // 3.1 — Permission check: role gate
+            if (user.AppRole < 2)
+                throw new UnauthorizedAccessException("ต้องมีสิทธิ์ระดับ SrOfficer ขึ้นไป");
+
+            // 3.1 — Permission check: Write on source and destination (skip for Admin)
+            if (user.AppRole < 4)
+            {
+                if (!_permissionService.CheckPermission(user.UserID, sourceFolderId, "Write"))
+                    throw new UnauthorizedAccessException(
+                        string.Format("ไม่มีสิทธิ์เขียนใน Folder ต้นทาง (ID: {0})", sourceFolderId));
+
+                if (!_permissionService.CheckPermission(user.UserID, destinationParentFolderId, "Write"))
+                    throw new UnauthorizedAccessException("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง");
+            }
+
+            // 3.2 — Load source and destination
+            var source      = _folderRepository.GetById(sourceFolderId);
+            var destination = _folderRepository.GetById(destinationParentFolderId);
+
+            if (source == null)
+                throw new InvalidOperationException(
+                    string.Format("ไม่พบ Folder ต้นทาง ID {0}", sourceFolderId));
+            if (destination == null)
+                throw new InvalidOperationException(
+                    string.Format("ไม่พบ Folder ปลายทาง ID {0}", destinationParentFolderId));
+
+            // 3.2 — Circular reference: self-move
+            if (sourceFolderId == destinationParentFolderId)
+                throw new InvalidOperationException("ไม่สามารถย้าย Folder ไปยังตัวเองได้");
+
+            // 3.2 — Circular reference: destination is a descendant of source
+            var descendants = _folderRepository.GetDescendants(sourceFolderId).ToList();
+            if (descendants.Any(d => d.FolderID == destinationParentFolderId))
+                throw new InvalidOperationException("ไม่สามารถย้าย Folder ไปยัง Descendant ของตัวเองได้");
+
+            // 3.2 — Depth limit check
+            int maxDescendantDepth = descendants.Any()
+                ? descendants.Max(d => d.FolderDepth)
+                : source.FolderDepth;
+            int subtreeHeight  = maxDescendantDepth - source.FolderDepth;
+            int projectedDepth = destination.FolderDepth + 1 + subtreeHeight;
+            if (projectedDepth > MaxFolderDepth)
+                throw new InvalidOperationException(
+                    string.Format("การย้ายจะทำให้ depth เป็น {0} ซึ่งเกิน MaxFolderDepth ({1})",
+                                  projectedDepth, MaxFolderDepth));
+
+            // 3.3 — Duplicate name check (active siblings only; GetChildren returns non-deleted)
+            var siblings = _folderRepository.GetChildren(destinationParentFolderId).ToList();
+            if (siblings.Any(s => string.Equals(s.FolderName.Trim(), source.FolderName.Trim(),
+                                                  StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException(
+                    string.Format("มี Folder ชื่อ '{0}' อยู่แล้วใน Folder ปลายทาง", source.FolderName));
+
+            // 3.3 / 3.4 — Record old values for audit and depth delta
+            int? oldParentFolderId = source.ParentFolderID;
+            int  originalSourceDepth = source.FolderDepth;
+            int  depthDelta = (destination.FolderDepth + 1) - originalSourceDepth;
+
+            // 3.3 — Update source folder
+            source.ParentFolderID = destinationParentFolderId;
+            source.FolderDepth    = destination.FolderDepth + 1;
+            source.PhysicalPath   = _networkDriveHelper.BuildPath(source.OrgUnitID, source.FolderID, source.FolderName);
+            source.UpdatedBy      = user.UserID;
+            source.UpdatedDate    = DateTime.Now;
+            _folderRepository.Update(source);
+
+            // 3.4 — Update all descendants
+            foreach (var descendant in descendants)
+            {
+                descendant.FolderDepth  += depthDelta;
+                descendant.PhysicalPath  = _networkDriveHelper.BuildPath(descendant.OrgUnitID, descendant.FolderID, descendant.FolderName);
+                descendant.UpdatedBy     = user.UserID;
+                descendant.UpdatedDate   = DateTime.Now;
+                _folderRepository.Update(descendant);
+            }
+
+            // 3.4 — Update PhysicalPath of all FileDocuments in source + descendants
+            var allFolderIds = new List<int> { sourceFolderId };
+            allFolderIds.AddRange(descendants.Select(d => d.FolderID));
+
+            foreach (int folderId in allFolderIds)
+            {
+                var files = _fileDocumentRepository.GetByFolder(folderId).ToList();
+                foreach (var file in files)
+                {
+                    if (file.FileStatus == 1) // Active only
+                    {
+                        file.PhysicalPath = _networkDriveHelper.BuildPath(source.OrgUnitID, file.FolderID, file.StoredFileName);
+                        _fileDocumentRepository.Update(file);
+                    }
+                }
+            }
+
+            // 3.5 — Audit log
+            _auditService.Log(new AuditEntry
+            {
+                Module      = "Folder",
+                Action      = "MoveFolder",
+                UserID      = user.UserID,
+                TableName   = "storage.Folder",
+                RecordID    = sourceFolderId,
+                OldValue    = oldParentFolderId.HasValue ? oldParentFolderId.Value.ToString() : null,
+                NewValue    = destinationParentFolderId.ToString(),
+                MachineName = user.MachineName,
+                IPAddress   = user.IPAddress,
+                SessionID   = user.SessionID,
+                Result      = 1,
+                AuditDate   = DateTime.Now
+            });
+        }
+
+        public void CopyFolderStructure(int sourceFolderId, int destinationParentFolderId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (user.AppRole < 3)
+                throw new UnauthorizedAccessException("ต้องมีสิทธิ์ Manager หรือ Admin เพื่อคัดลอกโครงสร้าง Folder");
+
+            var source = _folderRepository.GetById(sourceFolderId);
+            if (source == null)
+                throw new InvalidOperationException(string.Format("ไม่พบ Folder ID {0}", sourceFolderId));
+
+            var destinationParent = _folderRepository.GetById(destinationParentFolderId);
+            if (destinationParent == null)
+                throw new InvalidOperationException(string.Format("ไม่พบ Destination Parent Folder ID {0}", destinationParentFolderId));
+
+            int newDepth = destinationParent.FolderDepth + 1;
+            if (newDepth > MaxFolderDepth)
+                throw new InvalidOperationException(
+                    string.Format("ไม่สามารถคัดลอก Folder ได้ เนื่องจาก depth จะเกิน MaxFolderDepth ({0})", MaxFolderDepth));
+
+            var newRoot = new Folder
+            {
+                ParentFolderID       = destinationParentFolderId,
+                OrgUnitID            = destinationParent.OrgUnitID,
+                FolderName           = source.FolderName,
+                FolderDepth          = newDepth,
+                ConfidentialityLevel = source.ConfidentialityLevel,
+                InheritPermission    = source.InheritPermission,
+                IsDeleted            = false,
+                IsArchived           = false,
+                CreatedBy            = user.UserID,
+                CreatedDate          = DateTime.Now
+            };
+
+            int newRootId = _folderRepository.Insert(newRoot);
+
+            CopyFolderStructureChildren(sourceFolderId, newRootId, newDepth, destinationParent.OrgUnitID, user);
+
+            Log(user, "Folder", "COPY_STRUCTURE", "storage.Folder", newRootId, 1,
+                string.Format("คัดลอกโครงสร้าง Folder จาก ID {0} ไปยัง Parent ID {1}", sourceFolderId, destinationParentFolderId));
+        }
+
+        private void CopyFolderStructureChildren(int sourceFolderId, int newParentId, int parentDepth, int orgUnitId, UserContext user)
+        {
+            foreach (var child in _folderRepository.GetChildren(sourceFolderId))
+            {
+                int childDepth = parentDepth + 1;
+                if (childDepth > MaxFolderDepth)
+                    throw new InvalidOperationException(
+                        string.Format("ไม่สามารถคัดลอก Folder ได้ เนื่องจาก depth จะเกิน MaxFolderDepth ({0})", MaxFolderDepth));
+
+                var newFolder = new Folder
+                {
+                    ParentFolderID       = newParentId,
+                    OrgUnitID            = orgUnitId,
+                    FolderName           = child.FolderName,
+                    FolderDepth          = childDepth,
+                    ConfidentialityLevel = child.ConfidentialityLevel,
+                    InheritPermission    = child.InheritPermission,
+                    IsDeleted            = false,
+                    IsArchived           = false,
+                    CreatedBy            = user.UserID,
+                    CreatedDate          = DateTime.Now
+                };
+
+                int newId = _folderRepository.Insert(newFolder);
+                CopyFolderStructureChildren(child.FolderID, newId, childDepth, orgUnitId, user);
             }
         }
 
@@ -565,6 +800,11 @@ namespace CMS.Services
 
                 CopyTemplateChildren(child.FolderID, newId, childDepth, orgUnitId, user);
             }
+        }
+
+        public IEnumerable<Folder> GetDescendants(int folderId)
+        {
+            return _folderRepository.GetDescendants(folderId);
         }
 
         private void Log(UserContext user, string module, string action, string tableName,

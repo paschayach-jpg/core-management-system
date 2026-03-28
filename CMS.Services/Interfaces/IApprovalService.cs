@@ -15,5 +15,6 @@ namespace CMS.Services.Interfaces
         IEnumerable<ApprovalStep> GetApprovalSteps(int requestId);
         IEnumerable<ApprovalRequest> GetApprovalsByFolder(int folderId);
         IEnumerable<ApprovalRequest> GetAllApprovalsByFolder(int folderId);
+        ApprovalRequest RequestFolderDelete(int folderId, string reason, UserContext user);
     }
 }

@@ -21,5 +21,8 @@ namespace CMS.Services.Interfaces
         IEnumerable<Folder> GetDeletedFolders(int? orgUnitId, UserContext user);
         IEnumerable<Folder> GetAllFolders(int? orgUnitId, UserContext user);
         IEnumerable<Folder> GetFoldersByOrgUnit(int orgUnitId, UserContext user);
+        void CopyFolderStructure(int sourceFolderId, int destinationParentFolderId, UserContext user);
+        void MoveFolder(MoveFolderRequest request, UserContext user);
+        IEnumerable<Folder> GetDescendants(int folderId);
     }
 }

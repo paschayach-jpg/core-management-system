@@ -21,5 +21,6 @@ namespace CMS.Services.Interfaces
         IEnumerable<FileDocument> GetAllFilesGroupedByFolder(UserContext user);
         IEnumerable<FileDocument> GetFilesByOrgUnit(int orgUnitId, UserContext user);
         void RenameFile(int fileId, string newName, UserContext user);
+        void MoveFiles(MoveFileRequest request, UserContext user);
     }
 }

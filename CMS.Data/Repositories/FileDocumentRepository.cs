@@ -100,6 +100,8 @@ namespace CMS.Data.Repositories
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@FileID",       document.FileID);
+                    cmd.Parameters.AddWithValue("@FolderID",     document.FolderID);
+                    cmd.Parameters.AddWithValue("@PhysicalPath", (object)document.PhysicalPath ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@FileStatus",   (byte)document.FileStatus);
                     cmd.Parameters.AddWithValue("@ArchivedBy",   (object)document.ArchivedBy ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ArchivedDate", (object)document.ArchivedDate ?? DBNull.Value);

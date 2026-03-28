@@ -19,6 +19,7 @@ namespace CMS.Presentation
     public partial class OrgStructureForm : Form, IOrgStructureView
     {
         private readonly OrgStructurePresenter _presenter;
+        private readonly IOrgStructureService _service;
 
         // Backing list used when building dialogs (populated during ShowOrganizationView)
         private List<OrgUnit> _allUnits = new List<OrgUnit>();
@@ -34,6 +35,7 @@ namespace CMS.Presentation
             if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
 
+            _service = service;
             _employeeApiService = employeeApiService;
 
             InitializeComponent();
@@ -80,28 +82,43 @@ namespace CMS.Presentation
         {
             _allUnits = units == null ? new List<OrgUnit>() : units.ToList();
 
+            // Debug logging
+            System.Diagnostics.Debug.WriteLine($"ShowOrganizationView: Processing {_allUnits.Count} units");
+            var activeUnits = _allUnits.Where(u => u.IsActive).ToList();
+            System.Diagnostics.Debug.WriteLine($"Active units: {activeUnits.Count}");
+            
+            foreach (var unit in activeUnits.OrderBy(u => u.OrgUnitType).ThenBy(u => u.Name))
+            {
+                System.Diagnostics.Debug.WriteLine($"  {unit.OrgUnitCode}: {unit.Name} (Type: {unit.OrgUnitType}, Parent: {unit.ParentId})");
+            }
+
             treeView.BeginUpdate();
             treeView.Nodes.Clear();
 
             // Build SubCommittee → Division → Department hierarchy
             var subCommittees = _allUnits
-                .Where(u => u.Tier == OrgUnitTier.SubCommittee)
+                .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive)
                 .OrderBy(u => u.Name);
+
+            System.Diagnostics.Debug.WriteLine($"Found {subCommittees.Count()} active SubCommittees");
 
             foreach (var sc in subCommittees)
             {
                 var scNode = CreateNode(sc);
 
-                var divisions = _allUnits
-                    .Where(u => u.Tier == OrgUnitTier.Division && u.ParentId == sc.OrgUnitId)
+                // Get ALL divisions that belong to this SubCommittee (both with and without parent relationship)
+                var directDivisions = _allUnits
+                    .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == sc.OrgUnitId)
                     .OrderBy(u => u.Name);
 
-                foreach (var div in divisions)
+                System.Diagnostics.Debug.WriteLine($"SubCommittee {sc.Name} has {directDivisions.Count()} direct divisions");
+
+                foreach (var div in directDivisions)
                 {
                     var divNode = CreateNode(div);
 
                     var departments = _allUnits
-                        .Where(u => u.Tier == OrgUnitTier.Department && u.ParentId == div.OrgUnitId)
+                        .Where(u => u.Tier == OrgUnitTier.Department && u.IsActive && u.ParentId == div.OrgUnitId)
                         .OrderBy(u => u.Name);
 
                     foreach (var dept in departments)
@@ -113,8 +130,34 @@ namespace CMS.Presentation
                 treeView.Nodes.Add(scNode);
             }
 
+            // Show standalone Divisions (without any parent) as a separate group
+            var standaloneDivisions = _allUnits
+                .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == null)
+                .OrderBy(u => u.Name);
+
+            System.Diagnostics.Debug.WriteLine($"Found {standaloneDivisions.Count()} standalone divisions");
+
+            foreach (var div in standaloneDivisions)
+            {
+                var divNode = CreateNode(div);
+                divNode.Text = "🔗 " + divNode.Text; // Add link icon to show it's flexible
+                divNode.ForeColor = Color.FromArgb(0, 100, 0); // Dark green
+                divNode.NodeFont = new Font(SystemFonts.DefaultFont, FontStyle.Bold);
+
+                var departments = _allUnits
+                    .Where(u => u.Tier == OrgUnitTier.Department && u.IsActive && u.ParentId == div.OrgUnitId)
+                    .OrderBy(u => u.Name);
+
+                foreach (var dept in departments)
+                    divNode.Nodes.Add(CreateNode(dept));
+
+                treeView.Nodes.Add(divNode); // Add directly to root, not under a group
+            }
+
             treeView.ExpandAll();
             treeView.EndUpdate();
+            
+            System.Diagnostics.Debug.WriteLine($"Tree updated with {treeView.Nodes.Count} root nodes");
         }
 
         // -----------------------------------------------------------------------
@@ -193,32 +236,32 @@ namespace CMS.Presentation
 
         private void btnCreate_Click(object sender, EventArgs e)
         {
-            // Step 1: เลือกประเภทหน่วยงานที่ต้องการสร้าง
-            OrgUnitTier? selectedTier = PromptForTier();
+            // Step 1: ตรวจสอบ selected node เพื่อกำหนด context
+            TreeNode selectedNode = treeView.SelectedNode;
+            OrgUnit selectedOrgUnit = null;
+            
+            if (selectedNode?.Tag is OrgUnit unit)
+            {
+                selectedOrgUnit = unit;
+            }
+
+            // Step 2: เลือกประเภทหน่วยงานที่ต้องการสร้าง (ตาม context ของ parent)
+            OrgUnitTier? selectedTier = PromptForTier(selectedOrgUnit);
             if (!selectedTier.HasValue) return;
 
-            // Step 2: ตรวจสอบว่ามี parent ที่จำเป็นหรือไม่
-            if (selectedTier.Value == OrgUnitTier.Division)
-            {
-                var subCommittees = _allUnits.Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive).ToList();
-                if (subCommittees.Count == 0)
-                {
-                    ShowError("ยังไม่มี SubCommittee ในระบบ\nกรุณาสร้าง SubCommittee ก่อน");
-                    return;
-                }
-            }
-            else if (selectedTier.Value == OrgUnitTier.Department)
+            // Step 3: ตรวจสอบว่ามี parent ที่จำเป็นหรือไม่ (เฉพาะ Department เท่านั้น)
+            if (selectedTier.Value == OrgUnitTier.Department)
             {
                 var divisions = _allUnits.Where(u => u.Tier == OrgUnitTier.Division && u.IsActive).ToList();
                 if (divisions.Count == 0)
                 {
-                    ShowError("ยังไม่มีฝ่ายในระบบ\nกรุณาสร้างฝ่ายก่อน");
+                    ShowError("ยังไม่มีฝ่ายในระบบ\nกรุณาสร้างฝ่ายก่อนสร้างแผนก");
                     return;
                 }
             }
 
-            // Step 3: เปิด dialog สร้างหน่วยงาน พร้อม tier ที่เลือกไว้
-            using (var dlg = new CreateOrgUnitDialog(_allUnits, _employeeApiService, selectedTier.Value))
+            // Step 4: เปิด dialog สร้างหน่วยงาน พร้อมส่ง context ของ selected node
+            using (var dlg = new CreateOrgUnitDialog(_allUnits, _employeeApiService, null, _service, selectedOrgUnit))
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK && dlg.Result != null)
                     _presenter.CreateOrgUnit(dlg.Result);
@@ -226,7 +269,7 @@ namespace CMS.Presentation
         }
 
         /// <summary>แสดง dialog เลือกประเภทหน่วยงาน</summary>
-        private OrgUnitTier? PromptForTier()
+        private OrgUnitTier? PromptForTier(OrgUnit selectedParent = null)
         {
             using (var dlg = new Form())
             {
@@ -245,9 +288,16 @@ namespace CMS.Presentation
                     Height    = 44,
                     BackColor = Color.FromArgb(0, 51, 102)
                 };
+                
+                string headerText = "เลือกประเภทหน่วยงานที่ต้องการสร้าง";
+                if (selectedParent != null)
+                {
+                    headerText = $"สร้างหน่วยงานใต้: {selectedParent.Name}";
+                }
+                
                 pnlHdr.Controls.Add(new Label
                 {
-                    Text      = "เลือกประเภทหน่วยงานที่ต้องการสร้าง",
+                    Text      = headerText,
                     Dock      = DockStyle.Fill,
                     ForeColor = Color.White,
                     Font      = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -257,59 +307,109 @@ namespace CMS.Presentation
                 dlg.Controls.Add(pnlHdr);
 
                 OrgUnitTier result = OrgUnitTier.SubCommittee;
+                int yPos = 60;
 
-                // ปุ่มเลือก 3 ประเภท
-                var btnSC = new Button
+                // กำหนดตัวเลือกตาม parent type
+                List<OrgUnitTier> availableTiers = new List<OrgUnitTier>();
+                
+                if (selectedParent == null)
                 {
-                    Text      = "🏢  SubCommittee  (ระดับสูงสุด)",
-                    Location  = new Point(20, 60),
-                    Size      = new Size(300, 38),
-                    FlatStyle = FlatStyle.Flat,
-                    Font      = new Font("Segoe UI", 10f),
-                    BackColor = Color.FromArgb(232, 240, 254),
-                    ForeColor = Color.FromArgb(0, 51, 102),
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    Padding   = new Padding(8, 0, 0, 0),
-                    Cursor    = Cursors.Hand
-                };
-                btnSC.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 102);
-                btnSC.Click += (s, ev) => { result = OrgUnitTier.SubCommittee; dlg.DialogResult = DialogResult.OK; };
-
-                var btnDiv = new Button
+                    // ไม่ได้เลือก parent - แสดงทุกตัวเลือก
+                    availableTiers.Add(OrgUnitTier.SubCommittee);
+                    availableTiers.Add(OrgUnitTier.Division);
+                    availableTiers.Add(OrgUnitTier.Department);
+                }
+                else if (selectedParent.Tier == OrgUnitTier.SubCommittee)
                 {
-                    Text      = "🏬  ฝ่าย  (สังกัด SubCommittee)",
-                    Location  = new Point(20, 106),
-                    Size      = new Size(300, 38),
-                    FlatStyle = FlatStyle.Flat,
-                    Font      = new Font("Segoe UI", 10f),
-                    BackColor = Color.FromArgb(232, 248, 240),
-                    ForeColor = Color.FromArgb(0, 80, 40),
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    Padding   = new Padding(8, 0, 0, 0),
-                    Cursor    = Cursors.Hand
-                };
-                btnDiv.FlatAppearance.BorderColor = Color.FromArgb(0, 120, 60);
-                btnDiv.Click += (s, ev) => { result = OrgUnitTier.Division; dlg.DialogResult = DialogResult.OK; };
-
-                var btnDept = new Button
+                    // Parent เป็น SubCommittee - สร้างได้แค่ Division
+                    availableTiers.Add(OrgUnitTier.Division);
+                    result = OrgUnitTier.Division; // Set default
+                }
+                else if (selectedParent.Tier == OrgUnitTier.Division)
                 {
-                    Text      = "🏪  แผนก  (สังกัดฝ่าย)",
-                    Location  = new Point(20, 152),
-                    Size      = new Size(300, 38),
-                    FlatStyle = FlatStyle.Flat,
-                    Font      = new Font("Segoe UI", 10f),
-                    BackColor = Color.FromArgb(255, 248, 230),
-                    ForeColor = Color.FromArgb(120, 70, 0),
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    Padding   = new Padding(8, 0, 0, 0),
-                    Cursor    = Cursors.Hand
-                };
-                btnDept.FlatAppearance.BorderColor = Color.FromArgb(180, 100, 0);
-                btnDept.Click += (s, ev) => { result = OrgUnitTier.Department; dlg.DialogResult = DialogResult.OK; };
+                    // Parent เป็น Division - สร้างได้ทั้ง SubCommittee และ Department
+                    availableTiers.Add(OrgUnitTier.SubCommittee);
+                    availableTiers.Add(OrgUnitTier.Department);
+                    result = OrgUnitTier.Department; // Set default เป็น Department
+                }
+                else
+                {
+                    // Parent เป็น Department - ไม่สามารถสร้างอะไรใต้ได้
+                    ShowError("ไม่สามารถสร้างหน่วยงานใต้แผนกได้");
+                    return null;
+                }
 
-                dlg.Controls.Add(btnSC);
-                dlg.Controls.Add(btnDiv);
-                dlg.Controls.Add(btnDept);
+                // สร้างปุ่มตามตัวเลือกที่มี
+                foreach (var tier in availableTiers)
+                {
+                    Button btn = null;
+                    
+                    switch (tier)
+                    {
+                        case OrgUnitTier.SubCommittee:
+                            btn = new Button
+                            {
+                                Text      = "🏢  SubCommittee  (ระดับสูงสุด)",
+                                Location  = new Point(20, yPos),
+                                Size      = new Size(300, 38),
+                                FlatStyle = FlatStyle.Flat,
+                                Font      = new Font("Segoe UI", 10f),
+                                BackColor = Color.FromArgb(232, 240, 254),
+                                ForeColor = Color.FromArgb(0, 51, 102),
+                                TextAlign = ContentAlignment.MiddleLeft,
+                                Padding   = new Padding(8, 0, 0, 0),
+                                Cursor    = Cursors.Hand
+                            };
+                            btn.FlatAppearance.BorderColor = Color.FromArgb(0, 51, 102);
+                            btn.Click += (s, ev) => { result = OrgUnitTier.SubCommittee; dlg.DialogResult = DialogResult.OK; };
+                            break;
+                            
+                        case OrgUnitTier.Division:
+                            btn = new Button
+                            {
+                                Text      = "🏬  ฝ่าย  (ยืดหยุ่น - สามารถสังกัด SubCommittee หรือเป็นอิสระ)",
+                                Location  = new Point(20, yPos),
+                                Size      = new Size(300, 38),
+                                FlatStyle = FlatStyle.Flat,
+                                Font      = new Font("Segoe UI", 10f),
+                                BackColor = Color.FromArgb(232, 248, 240),
+                                ForeColor = Color.FromArgb(0, 80, 40),
+                                TextAlign = ContentAlignment.MiddleLeft,
+                                Padding   = new Padding(8, 0, 0, 0),
+                                Cursor    = Cursors.Hand
+                            };
+                            btn.FlatAppearance.BorderColor = Color.FromArgb(0, 120, 60);
+                            btn.Click += (s, ev) => { result = OrgUnitTier.Division; dlg.DialogResult = DialogResult.OK; };
+                            break;
+                            
+                        case OrgUnitTier.Department:
+                            btn = new Button
+                            {
+                                Text      = "🏪  แผนก  (สังกัดฝ่าย)",
+                                Location  = new Point(20, yPos),
+                                Size      = new Size(300, 38),
+                                FlatStyle = FlatStyle.Flat,
+                                Font      = new Font("Segoe UI", 10f),
+                                BackColor = Color.FromArgb(255, 248, 230),
+                                ForeColor = Color.FromArgb(120, 70, 0),
+                                TextAlign = ContentAlignment.MiddleLeft,
+                                Padding   = new Padding(8, 0, 0, 0),
+                                Cursor    = Cursors.Hand
+                            };
+                            btn.FlatAppearance.BorderColor = Color.FromArgb(180, 100, 0);
+                            btn.Click += (s, ev) => { result = OrgUnitTier.Department; dlg.DialogResult = DialogResult.OK; };
+                            break;
+                    }
+                    
+                    if (btn != null)
+                    {
+                        dlg.Controls.Add(btn);
+                        yPos += 46;
+                    }
+                }
+
+                // ปรับขนาด dialog ตามจำนวนปุ่ม
+                dlg.ClientSize = new Size(340, Math.Max(160, yPos + 20));
                 dlg.CancelButton = null;
 
                 return dlg.ShowDialog(this) == DialogResult.OK ? (OrgUnitTier?)result : null;
@@ -401,22 +501,68 @@ namespace CMS.Presentation
                 _presenter.DeactivateOrgUnit(selected.OrgUnitId);
         }
 
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            var selected = SelectedOrgUnit;
+            if (selected == null)
+            {
+                ShowError("กรุณาเลือกหน่วยงานที่ต้องการลบ");
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                string.Format("คุณต้องการลบหน่วยงาน '{0}' หรือไม่?\n\nการลบนี้ไม่สามารถยกเลิกได้", 
+                    selected.OrgUnitNameTH ?? selected.Name),
+                "ยืนยันการลบหน่วยงาน",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirm == DialogResult.Yes)
+            {
+                _presenter.DeleteOrgUnit(selected.OrgUnitId);
+            }
+        }
+
         // -----------------------------------------------------------------------
         // Private helpers
         // -----------------------------------------------------------------------
 
         private static TreeNode CreateNode(OrgUnit unit)
         {
-            string label = string.Format("{0} [{1}]{2}",
+            string tierName = unit.Tier == OrgUnitTier.SubCommittee ? "SubCommittee"
+                            : unit.Tier == OrgUnitTier.Division ? "Division"
+                            : "Department";
+            
+            string parentInfo = "";
+            if (unit.Tier == OrgUnitTier.Division && unit.ParentId == null)
+            {
+                parentInfo = " (Many-to-Many)";
+            }
+            else if (unit.ParentId.HasValue)
+            {
+                parentInfo = $" (Parent: {unit.ParentId})";
+            }
+
+            string label = string.Format("{0} [{1}]{2}{3}",
                 unit.Name,
-                unit.Tier,
+                tierName,
+                parentInfo,
                 unit.IsActive ? string.Empty : " (inactive)");
 
-            return new TreeNode(label)
+            var node = new TreeNode(label)
             {
                 Tag       = unit,
                 ForeColor = unit.IsActive ? SystemColors.WindowText : SystemColors.GrayText
             };
+
+            // Add special styling for Many-to-Many divisions
+            if (unit.Tier == OrgUnitTier.Division && unit.ParentId == null)
+            {
+                node.ForeColor = Color.FromArgb(0, 100, 0); // Dark green
+                node.NodeFont = new Font(SystemFonts.DefaultFont, FontStyle.Bold);
+            }
+
+            return node;
         }
 
         private static string ConfidentialityLevelLabel(ConfidentialityLevel level)
@@ -557,7 +703,7 @@ namespace CMS.Presentation
             }
             catch (Exception ex)
             {
-                ShowError("ไม่สามารถกรองข้อมูลตามระดับความลับ: " + ex.Message);
+                ShowError("ไม่สามารถกรองข้อมูลตามระดับได้: " + ex.Message);
             }
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
@@ -61,6 +62,22 @@ namespace CMS.Presentation.Presenters
             catch (Exception ex)
             {
                 _view.ShowError("Failed to load folder tree: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// แสดง root folders ของ OrgUnit ใน content area (เมื่อเลือก OrgUnit จาก tree ซ้าย)
+        /// </summary>
+        public void ShowOrgUnitRootFolders(int? orgUnitId)
+        {
+            try
+            {
+                IEnumerable<Folder> roots = _service.GetRootFolders(orgUnitId, _user);
+                _view.ShowFolderContents(roots, Enumerable.Empty<FileDocument>());
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("โหลด Folder ไม่สำเร็จ: " + ex.Message);
             }
         }
 
@@ -156,9 +173,13 @@ namespace CMS.Presentation.Presenters
 
         /// <summary>
         /// Loads soft-deleted folders into the recycle bin panel.
+        /// Note: Recycle bin functionality is currently disabled.
         /// </summary>
         public void LoadRecycleBin(int? orgUnitId)
         {
+            // Recycle bin functionality is disabled - pass empty list
+            _view.ShowRecycleBin(new List<Folder>());
+            /*
             try
             {
                 IEnumerable<Folder> deleted = _service.GetDeletedFolders(orgUnitId, _user);
@@ -168,6 +189,7 @@ namespace CMS.Presentation.Presenters
             {
                 _view.ShowError("Failed to load recycle bin: " + ex.Message);
             }
+            */
         }
 
         // -----------------------------------------------------------------------
@@ -193,7 +215,7 @@ namespace CMS.Presentation.Presenters
                 // ใช้ orgUnitId ที่รับมาเพื่อ reload ให้แน่ใจว่าถูกต้อง
                 _currentOrgUnitId = orgUnitId;
                 LoadFolderTree(_currentOrgUnitId);
-                LoadRecycleBin(_currentOrgUnitId);
+                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
 
                 _view.ShowInfo(string.Format("Root folder '{0}' สร้างสำเร็จ", created.FolderName));
             }
@@ -230,7 +252,7 @@ namespace CMS.Presentation.Presenters
 
                 // Reload the folder tree and recycle bin, then show success message
                 LoadFolderTree(_currentOrgUnitId);
-                LoadRecycleBin(_currentOrgUnitId);
+                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
 
                 _view.ShowInfo(string.Format("Folder '{0}' สร้างสำเร็จ", created.FolderName));
             }
@@ -319,7 +341,7 @@ namespace CMS.Presentation.Presenters
                 
                 // Reload data first, then show success message
                 LoadFolderTree(_currentOrgUnitId);
-                LoadRecycleBin(_currentOrgUnitId);
+                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
                 
                 _view.ShowInfo("Folder moved to recycle bin.");
             }
@@ -350,7 +372,7 @@ namespace CMS.Presentation.Presenters
                 
                 // Reload data first, then show success message
                 LoadFolderTree(_currentOrgUnitId);
-                LoadRecycleBin(_currentOrgUnitId);
+                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
                 
                 _view.ShowInfo("Folder restored successfully.");
             }
@@ -379,7 +401,7 @@ namespace CMS.Presentation.Presenters
                 _service.PermanentlyDeleteFolder(folderId, _user);
                 
                 // Reload data first, then show success message
-                LoadRecycleBin(_currentOrgUnitId);
+                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
                 
                 _view.ShowInfo("ลบ Folder ถาวรเรียบร้อยแล้ว");
             }

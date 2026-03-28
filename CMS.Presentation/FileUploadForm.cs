@@ -40,6 +40,7 @@ namespace CMS.Presentation
         private Folder  _selectedFolder;
 
         private readonly IFolderService _folderService;
+        private readonly IUploadCheckpointService _checkpointService;
 
         private readonly List<FileUploadRequest>  _pendingFiles = new List<FileUploadRequest>();
         private readonly Dictionary<int, int>     _uploadedIds  = new Dictionary<int, int>();
@@ -60,17 +61,19 @@ namespace CMS.Presentation
             IFileService   fileService,
             IFolderService folderService,
             UserContext    user,
-            Folder         targetFolder)
+            Folder         targetFolder,
+            IUploadCheckpointService checkpointService = null)
         {
             if (fileService   == null) throw new ArgumentNullException("fileService");
             if (folderService == null) throw new ArgumentNullException("folderService");
             if (user          == null) throw new ArgumentNullException("user");
             if (targetFolder  == null) throw new ArgumentNullException("targetFolder");
 
-            _user           = user;
-            _folderService  = folderService;
-            _selectedFolder = targetFolder;
-            _folderId       = targetFolder.FolderID;
+            _user              = user;
+            _folderService     = folderService;
+            _selectedFolder    = targetFolder;
+            _folderId          = targetFolder.FolderID;
+            _checkpointService = checkpointService;
 
             InitializeComponent();
 
@@ -98,6 +101,10 @@ namespace CMS.Presentation
 
         private void FileUploadForm_Load(object sender, EventArgs e)
         {
+            // Req 10.6 — purge stale checkpoints before checking for resume
+            if (_checkpointService != null)
+                _checkpointService.DeleteExpired(TimeSpan.FromHours(24));
+
             if (_selectedFolder != null)
                 ApplyFolderContext(_selectedFolder);
             else
@@ -122,8 +129,8 @@ namespace CMS.Presentation
             {
                 // Build breadcrumb path
                 string badge = GetConfidentialityBadge(folder.ConfidentialityLevel);
-                lblFolderPath.Text    = folder.FolderName;
-                lblBadge.Text         = badge;
+                lblFolderPath.Text    = folder.FolderName ?? "";
+                lblBadge.Text         = badge ?? "";
                 lblBadge.Visible      = true;
                 lblBadge.BackColor    = GetConfidentialityColor(folder.ConfidentialityLevel);
 
@@ -135,7 +142,7 @@ namespace CMS.Presentation
             }
             else
             {
-                lblFolderPath.Text = "— ยังไม่ได้เลือก Folder —";
+                lblFolderPath.Text = "— ยังไม่ได้เลือก Folder —" ?? "";
                 lblBadge.Visible   = false;
             }
         }
@@ -208,9 +215,36 @@ namespace CMS.Presentation
 
         private void UploadWorker_Completed(object sender, RunWorkerCompletedEventArgs e)
         {
-            if (e.Error != null) ShowError("Unexpected upload error: " + e.Error.Message);
+            if (e.Error != null) 
+            {
+                ShowError("Unexpected upload error: " + e.Error.Message);
+                btnPause.Enabled = false;
+                UpdateSummary();
+                return;
+            }
+            
             btnPause.Enabled = false;
             UpdateSummary();
+            
+            // ตรวจสอบว่าอัปโหลดสำเร็จทั้งหมดหรือไม่
+            int successCount = _fileRows.Count(r => r.LblStatus.Text == "สำเร็จ");
+            int totalCount = _fileRows.Count;
+            
+            if (successCount > 0)
+            {
+                // แสดงข้อความสำเร็จสั้นๆ
+                string message = successCount == totalCount 
+                    ? $"อัปโหลดสำเร็จ {successCount} ไฟล์"
+                    : $"อัปโหลดสำเร็จ {successCount}/{totalCount} ไฟล์";
+                
+                // แสดงข้อความสำเร็จแล้วปิดหน้าต่างอัตโนมัติ
+                MessageBox.Show(message, "อัปโหลดเสร็จสิ้น", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                
+                // ปิดหน้าต่างและ reload หน้าหลัก
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            }
         }
 
         // ── File picker ───────────────────────────────────────────────────────
@@ -250,6 +284,29 @@ namespace CMS.Presentation
             if (_folderId <= 0 || _selectedFolder == null) { ShowError("ไม่พบข้อมูล Folder ปลายทาง"); return; }
             if (_pendingFiles.Count == 0)                  { ShowError("กรุณาเลือกไฟล์ที่ต้องการอัพโหลด"); return; }
             if (_presenter == null)                        { ShowError("บริการอัพโหลดไม่พร้อม"); return; }
+
+            // Req 10.1 — save checkpoint for each file before starting
+            if (_checkpointService != null)
+            {
+                foreach (var req in _pendingFiles)
+                {
+                    long offset = (req.FileStream != null && req.FileStream != Stream.Null && req.FileStream.CanSeek)
+                        ? req.FileStream.Position
+                        : 0L;
+                    try
+                    {
+                        _checkpointService.Save(new UploadCheckpoint
+                        {
+                            FileName       = req.FileName,
+                            FileSizeBytes  = req.FileSizeBytes,
+                            FolderID       = _folderId,
+                            BytesUploaded  = offset,
+                            CheckpointDate = DateTime.Now
+                        });
+                    }
+                    catch { /* best-effort */ }
+                }
+            }
 
             _uploadedIds.Clear();
             _currentUploadRow = -1;
@@ -339,6 +396,12 @@ namespace CMS.Presentation
                 {
                     row.FileDocId          = result.FileDocumentId.Value;
                     _uploadedIds[rowIndex] = result.FileDocumentId.Value;
+                }
+
+                // Req 10.5 — delete checkpoint on successful upload
+                if (_checkpointService != null && rowIndex < _pendingFiles.Count)
+                {
+                    try { _checkpointService.Delete(_folderId, _pendingFiles[rowIndex].FileName); } catch { }
                 }
             }
             else
@@ -483,9 +546,60 @@ namespace CMS.Presentation
 
             UpdateSummary();
 
+            // Req 10.2 — check for resume checkpoint after files are selected
+            if (_checkpointService != null && _pendingFiles.Count > 0 && _selectedFolder != null)
+                CheckAndOfferResume(paths);
+
             // Auto-start upload if folder is ready
             if (_pendingFiles.Count > 0 && _selectedFolder != null)
                 StartUpload();
+        }
+
+        /// <summary>
+        /// Req 10.2, 10.3, 10.4 — For each pending file, check if a checkpoint exists.
+        /// If found, ask user whether to resume. Seek stream to BytesUploaded if resuming,
+        /// or delete checkpoint if not.
+        /// </summary>
+        private void CheckAndOfferResume(string[] paths)
+        {
+            for (int i = 0; i < _pendingFiles.Count; i++)
+            {
+                var req = _pendingFiles[i];
+                UploadCheckpoint cp = null;
+                try { cp = _checkpointService.Load(_folderId, req.FileName); }
+                catch { /* ignore — treat as no checkpoint */ }
+
+                if (cp == null || cp.BytesUploaded <= 0) continue;
+
+                var answer = MessageBox.Show(
+                    string.Format(
+                        "พบการอัพโหลดที่ค้างไว้สำหรับไฟล์ \"{0}\"\n" +
+                        "อัพโหลดไปแล้ว: {1} / {2}\n\n" +
+                        "ต้องการอัพโหลดต่อจากจุดที่ค้างไว้หรือไม่?",
+                        req.FileName,
+                        FormatBytes(cp.BytesUploaded),
+                        FormatBytes(cp.FileSizeBytes)),
+                    "Resume Upload",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (answer == DialogResult.Yes)
+                {
+                    // Req 10.3 — seek stream to BytesUploaded
+                    if (_pendingFiles[i].FileStream != null &&
+                        _pendingFiles[i].FileStream != Stream.Null &&
+                        _pendingFiles[i].FileStream.CanSeek &&
+                        cp.BytesUploaded < _pendingFiles[i].FileStream.Length)
+                    {
+                        _pendingFiles[i].FileStream.Seek(cp.BytesUploaded, SeekOrigin.Begin);
+                    }
+                }
+                else
+                {
+                    // Req 10.4 — delete checkpoint and start fresh
+                    try { _checkpointService.Delete(_folderId, req.FileName); } catch { }
+                }
+            }
         }
 
         private FileRowControls BuildFileRow(int index, string fileName, long sizeBytes)

@@ -342,7 +342,7 @@ namespace CMS.Presentation
             this.lblConf.Name = "lblConf";
             this.lblConf.Size = new System.Drawing.Size(276, 24);
             this.lblConf.TabIndex = 4;
-            this.lblConf.Text = "🔐  ระดับความลับ";
+            this.lblConf.Text = "🔐  ระดับ";
             // 
             // sep2
             // 

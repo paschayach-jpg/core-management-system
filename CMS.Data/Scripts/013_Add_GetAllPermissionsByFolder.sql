@@ -18,7 +18,7 @@ BEGIN
            ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
     FROM   security.FolderPermission
     WHERE  FolderID = @FolderID
-    ORDER  BY RevokedDate IS NOT NULL, GrantedDate DESC;
-    -- Active entries first (RevokedDate IS NULL = 0), then revoked (1)
+    ORDER  BY CASE WHEN RevokedDate IS NULL THEN 0 ELSE 1 END, GrantedDate DESC;
+    -- Active entries first (0), then revoked (1)
 END
 GO

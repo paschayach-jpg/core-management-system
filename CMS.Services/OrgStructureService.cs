@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
@@ -36,6 +37,19 @@ namespace CMS.Services
             if (string.IsNullOrWhiteSpace(request.OrgUnitNameTH))
                 throw new ArgumentException("OrgUnit name (TH) is required.");
 
+            // Server-side code generation fallback if code is empty or conflicts
+            if (string.IsNullOrWhiteSpace(request.OrgUnitCode) || _orgUnitRepository.ExistsByCode(request.OrgUnitCode))
+            {
+                if (!string.IsNullOrWhiteSpace(request.OrgUnitCode))
+                {
+                    // Log the conflict for debugging
+                    System.Diagnostics.Debug.WriteLine($"Code conflict detected: {request.OrgUnitCode} already exists. Generating new code.");
+                }
+                
+                request.OrgUnitCode = GenerateUniqueCode(request.OrgUnitType);
+                System.Diagnostics.Debug.WriteLine($"Server-side generated code: {request.OrgUnitCode}");
+            }
+
             ValidateParentTier(request.OrgUnitType, request.ParentOrgUnitID);
 
             var orgUnit = new OrgUnit
@@ -51,13 +65,39 @@ namespace CMS.Services
                 CreatedDate    = DateTime.Now
             };
 
-            int newId = _orgUnitRepository.Insert(orgUnit);
-            orgUnit.OrgUnitID = newId;
+            // Retry mechanism for race conditions
+            int maxRetries = 3;
+            int attempt = 0;
+            
+            while (attempt < maxRetries)
+            {
+                try
+                {
+                    int newId = _orgUnitRepository.Insert(orgUnit);
+                    orgUnit.OrgUnitID = newId;
 
-            Log(user, "OrgStructure", "CREATE", "core.OrgUnit", newId, 1,
-                string.Format("Created OrgUnit '{0}' (type {1}).", orgUnit.OrgUnitNameTH, orgUnit.OrgUnitType));
+                    Log(user, "OrgStructure", "CREATE", "core.OrgUnit", newId, 1,
+                        string.Format("Created OrgUnit '{0}' (type {1}).", orgUnit.OrgUnitNameTH, orgUnit.OrgUnitType));
 
-            return orgUnit;
+                    return orgUnit;
+                }
+                catch (InvalidOperationException ex) when (ex.Message.Contains("มีอยู่ในระบบแล้ว"))
+                {
+                    attempt++;
+                    if (attempt >= maxRetries)
+                    {
+                        throw new InvalidOperationException(
+                            string.Format("ไม่สามารถสร้างรหัสหน่วยงานที่ไม่ซ้ำได้หลังจากพยายาม {0} ครั้ง", maxRetries), ex);
+                    }
+                    
+                    // Generate a new code and try again
+                    orgUnit.OrgUnitCode = GenerateUniqueCode(request.OrgUnitType);
+                    System.Diagnostics.Debug.WriteLine($"Retry {attempt}: Generated new code {orgUnit.OrgUnitCode}");
+                }
+            }
+
+            // This should never be reached, but just in case
+            throw new InvalidOperationException("ไม่สามารถสร้างหน่วยงานได้");
         }
 
         public OrgUnit UpdateOrgUnit(UpdateOrgUnitRequest request, UserContext user)
@@ -143,10 +183,36 @@ namespace CMS.Services
                     "UserAccounts still reference this unit.",
                     existing.OrgUnitNameTH, orgUnitId));
 
-            _orgUnitRepository.SoftDelete(orgUnitId, user.UserID);
+            _orgUnitRepository.Deactivate(orgUnitId);
 
             Log(user, "OrgStructure", "DELETE", "core.OrgUnit", orgUnitId, 1,
                 string.Format("Deactivated OrgUnit '{0}'.", existing.OrgUnitNameTH));
+        }
+
+        public void DeleteOrgUnit(int orgUnitId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            if (user.AppRole != 4)
+                throw new UnauthorizedAccessException("Deleting an OrgUnit requires Admin role.");
+
+            var existing = _orgUnitRepository.GetById(orgUnitId);
+            if (existing == null)
+                throw new InvalidOperationException(string.Format(
+                    "OrgUnit with ID {0} was not found.", orgUnitId));
+
+            if (existing.IsDeleted) return; // already deleted — idempotent
+
+            if (_orgUnitRepository.HasActiveDependents(orgUnitId))
+                throw new InvalidOperationException(string.Format(
+                    "Cannot delete OrgUnit '{0}' (ID {1}): one or more active Folders or " +
+                    "UserAccounts still reference this unit.",
+                    existing.OrgUnitNameTH, orgUnitId));
+
+            _orgUnitRepository.SoftDelete(orgUnitId, user.UserID);
+
+            Log(user, "OrgStructure", "DELETE", "core.OrgUnit", orgUnitId, 1,
+                string.Format("Deleted OrgUnit '{0}'.", existing.OrgUnitNameTH));
         }
 
         public IEnumerable<OrgUnit> GetHierarchy()
@@ -172,19 +238,20 @@ namespace CMS.Services
                         throw new ArgumentException("A Sub-Committee (type 1) must not have a parent OrgUnit.");
                     break;
 
-                case 2: // Division — parent must be SubCommittee (1)
-                    if (!parentId.HasValue)
-                        throw new ArgumentException("A Division (type 2) requires a parent Sub-Committee.");
-
-                    var divParent = _orgUnitRepository.GetById(parentId.Value);
-                    if (divParent == null)
-                        throw new ArgumentException(string.Format("Parent OrgUnit with ID {0} does not exist.", parentId.Value));
-                    if (!divParent.IsActive)
-                        throw new ArgumentException(string.Format("Parent OrgUnit '{0}' is inactive.", divParent.OrgUnitNameTH));
-                    if (divParent.OrgUnitType != 1)
-                        throw new ArgumentException(string.Format(
-                            "A Division (type 2) can only be created under a Sub-Committee (type 1). " +
-                            "The selected parent '{0}' is type {1}.", divParent.OrgUnitNameTH, divParent.OrgUnitType));
+                case 2: // Division — parent is optional (can belong to multiple SubCommittees via relationship table)
+                    if (parentId.HasValue)
+                    {
+                        var divParent = _orgUnitRepository.GetById(parentId.Value);
+                        if (divParent == null)
+                            throw new ArgumentException(string.Format("Parent OrgUnit with ID {0} does not exist.", parentId.Value));
+                        if (!divParent.IsActive)
+                            throw new ArgumentException(string.Format("Parent OrgUnit '{0}' is inactive.", divParent.OrgUnitNameTH));
+                        if (divParent.OrgUnitType != 1)
+                            throw new ArgumentException(string.Format(
+                                "A Division (type 2) can only be created under a Sub-Committee (type 1). " +
+                                "The selected parent '{0}' is type {1}.", divParent.OrgUnitNameTH, divParent.OrgUnitType));
+                    }
+                    // Note: Division can have no parent and be linked to SubCommittees via OrgUnitRelationship table
                     break;
 
                 case 3: // Department — parent must be Division (2)
@@ -229,6 +296,60 @@ namespace CMS.Services
                 });
             }
             catch { }
+        }
+
+        /// <summary>Server-side code generation with database-level uniqueness guarantee</summary>
+        private string GenerateUniqueCode(int orgUnitType)
+        {
+            string prefix;
+            switch (orgUnitType)
+            {
+                case 1: prefix = "SC";   break;  // SubCommittee
+                case 2: prefix = "DIV";  break;  // Division
+                default: prefix = "DEPT"; break; // Department
+            }
+
+            // Get all existing codes with this prefix from database
+            var allUnits = _orgUnitRepository.GetHierarchy();
+            var existingCodes = new HashSet<string>(allUnits
+                .Where(u => u.OrgUnitCode != null && u.OrgUnitCode.StartsWith(prefix + "-"))
+                .Select(u => u.OrgUnitCode));
+
+            // Extract numbers and find the next available
+            var existingNumbers = new List<int>();
+            foreach (var code in existingCodes)
+            {
+                var parts = code.Split('-');
+                if (parts.Length == 2 && int.TryParse(parts[1], out int number))
+                {
+                    existingNumbers.Add(number);
+                }
+            }
+
+            int nextNumber = existingNumbers.Count > 0 ? existingNumbers.Max() + 1 : 1;
+            
+            // Generate and verify uniqueness
+            string newCode;
+            int attempts = 0;
+            do
+            {
+                newCode = string.Format("{0}-{1:D3}", prefix, nextNumber);
+                if (!_orgUnitRepository.ExistsByCode(newCode))
+                    break;
+                    
+                nextNumber++;
+                attempts++;
+            }
+            while (attempts < 100); // Prevent infinite loop
+
+            // Fallback to timestamp if we can't find a unique number
+            if (attempts >= 100)
+            {
+                var timestamp = DateTime.Now.ToString("MMddHHmm");
+                newCode = string.Format("{0}-{1}", prefix, timestamp);
+            }
+
+            return newCode;
         }
     }
 }

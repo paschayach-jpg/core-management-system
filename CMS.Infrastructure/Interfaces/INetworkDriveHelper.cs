@@ -21,5 +21,11 @@ namespace CMS.Infrastructure.Interfaces
 
         /// <summary>Returns true if a file exists at the specified path.</summary>
         bool FileExists(string path);
+
+        /// <summary>
+        /// ย้ายไฟล์จาก sourcePath ไปยัง destPath จริงบน disk
+        /// สร้าง directory ปลายทางอัตโนมัติถ้ายังไม่มี
+        /// </summary>
+        void MoveFile(string sourcePath, string destPath);
     }
 }

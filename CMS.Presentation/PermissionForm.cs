@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using Microsoft.VisualBasic;
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
@@ -98,6 +99,7 @@ namespace CMS.Presentation
             }
 
             InitializeComponent();
+            BuildTracePanel();
 
             _presenter = new PermissionPresenter(
                 permissionService, approvalService, folderService, permissionRepo, this, user,
@@ -134,142 +136,142 @@ namespace CMS.Presentation
 
                 chkInheritPerm.Checked = _folder.InheritPermission;
 
-                // ── Tab สิทธิ์ ────────────────────────────────────────────────
-                _presenter.LoadAclEntries(_folder);
-
-                // ── Tab Workflow — approvers ──────────────────────────────────
-                LoadApprovers();
-
-                // ── Tab ประวัติ (sample rows — replace with real audit service call if available)
-                PopulateHistoryTab();
+                // ── Tab สิทธิ์ — โหลดข้อมูลสิทธิ์ทันที ────────────────────────────
+                DiagLog(string.Format("=== FORM LOAD: FolderID={0}  Name={1}  Level={2} ===",
+                    _folder.FolderID, _folder.FolderName, _folder.ConfidentialityLevel));
+                LoadPermissionsImmediate();
             }
 
             tabControl.SelectedTab = tabGeneral;
         }
 
-        private void LoadApprovers()
+        /// <summary>
+        /// โหลดข้อมูลสิทธิ์ทันทีแบบง่าย ๆ โดยไม่ผ่าน presenter
+        /// </summary>
+        private void LoadPermissionsImmediate()
         {
-            lvApprovers.Items.Clear();
-            if (_folder == null || _approvalService == null) return;
+            int folderId = 0;
+
+            if (_folder == null)
+            {
+                DiagLog("ERROR: _folder is null — cannot load permissions");
+                return;
+            }
+
+            folderId = _folder.FolderID;
+            DiagLog(string.Format("── LoadPermissionsImmediate START: FolderID={0} ──", folderId));
+
+            // ── ตรวจสอบ User ──────────────────────────────────────────────────
+            var currentUser = _presenter?.User;
+            if (currentUser == null)
+            {
+                DiagLog("  [CHECK-USER] ❌ ไม่พบข้อมูล User — presenter.User เป็น null");
+            }
+            else
+            {
+                DiagLog(string.Format("  [CHECK-USER] ✅ UserID={0}  Name={1}  Role={2}",
+                    currentUser.UserID,
+                    currentUser.ADUserName,
+                    currentUser.AppRole));
+            }
+
+            // ── ตรวจสอบ Folder และ Set ให้ Presenter ─────────────────────────
+            if (_presenter != null)
+            {
+                _presenter.SetCurrentFolder(_folder);
+                DiagLog(string.Format("  [CHECK-FOLDER] ✅ SetCurrentFolder: FolderID={0}  Name={1}  Level={2}",
+                    _folder.FolderID, _folder.FolderName, _folder.ConfidentialityLevel));
+            }
+            else
+            {
+                DiagLog("  [CHECK-FOLDER] ❌ _presenter เป็น null");
+            }
 
             try
             {
-                // ดึงทุก request ของ folder นี้ (ทุก status)
-                var allRequests = _approvalService.GetAllApprovalsByFolder(_folder.FolderId)
-                    .OrderByDescending(r => r.RequestedDate).ToList();
+                // Clear existing data
+                aclListView.Items.Clear();
+                _allAclEntries = new List<FolderPermission>();
 
-                // กรองเฉพาะที่อนุมัติแล้ว (RequestStatus = 2)
-                var approvedRequests = allRequests.Where(r => r.RequestStatus == 2).ToList();
+                // Step 1: Query DB first
+                DiagLog("Step 1: Querying DB via PermissionRepository.GetAllByFolder...");
+                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
+                    new CMS.Infrastructure.ConfigManager());
 
-                if (approvedRequests.Count == 0)
+                var allPermissions = permissionRepo.GetAllByFolder(folderId).ToList();
+
+                if (allPermissions.Count == 0)
                 {
-                    var empty = new ListViewItem("—");
-                    empty.SubItems.Add(allRequests.Count > 0
-                        ? string.Format("มีคำขอ {0} รายการ แต่ยังไม่มีที่อนุมัติแล้ว", allRequests.Count)
-                        : "ไม่มีประวัติการอนุมัติ");
-                    empty.SubItems.Add(""); empty.SubItems.Add(""); empty.SubItems.Add("");
-                    empty.ForeColor = Color.Gray;
-                    lvApprovers.Items.Add(empty);
-                    return;
+                    DiagLog(string.Format("  [SP-RESULT] ⚠ ไม่พบข้อมูลสิทธิ์ใน DB สำหรับ FolderID={0} (0 รายการ)", folderId));
+                    DiagLog("  → ยังไม่มีการตั้งสิทธิ์ หรือ FolderID อาจไม่ถูกต้อง");
+                    DiagLog("  → กด [+ เพิ่ม] เพื่อเพิ่มรายการสิทธิ์ใหม่");
+                }
+                else
+                {
+                    DiagLog(string.Format("  [SP-RESULT] ✅ พบ {0} รายการ — กำลังแสดงข้อมูล...", allPermissions.Count));
                 }
 
-                // Build user lookup map
-                var userMap = new Dictionary<int, string>();
-                if (_userAccountRepository != null)
+                foreach (var p in allPermissions)
+                    DiagLog(string.Format("  [DB Row] PermID={0} Type={1} PrincipalID={2} Read={3} Write={4} Revoked={5}",
+                        p.PermissionID, p.PrincipalType, p.PrincipalID,
+                        p.CanRead, p.CanWrite, p.RevokedDate.HasValue ? p.RevokedDate.Value.ToString("dd/MM/yy") : "No"));
+
+                // Step 2: store entries then load display names
+                _allAclEntries = allPermissions;
+                DiagLog("Step 2: Loading display name maps (users, org units)...");
+                LoadDisplayNames();
+                DiagLog(string.Format("  UserDisplayMap={0} entries, OrgUnitNameMap={1} entries",
+                    _userDisplayMap.Count, _orgUnitNameMap.Count));
+
+                // Active = not revoked, not expired
+                var active = allPermissions
+                    .Where(p => p.RevokedDate == null
+                             && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today))
+                    .ToList();
+                var revoked  = allPermissions.Where(p => p.RevokedDate != null).ToList();
+                var expired  = allPermissions.Where(p => p.RevokedDate == null
+                                                      && p.ExpiryDate.HasValue
+                                                      && p.ExpiryDate.Value.Date < DateTime.Today).ToList();
+
+                DiagLog(string.Format("Step 3: Categorised → Active={0}, Revoked={1}, Expired={2}",
+                    active.Count, revoked.Count, expired.Count));
+
+                // _allAclEntries = ทั้งหมด (ใช้เมื่อกด "แสดงทั้งหมด")
+                // _aclEntries    = เฉพาะที่ใช้งาน (ค่าเริ่มต้นที่แสดง)
+                _allAclEntries = allPermissions;
+                _aclEntries    = active;
+
+                // Populate ListView — แสดงเฉพาะรายการที่ใช้งาน
+                DiagLog(string.Format("Step 4: Populating ListView (active only: {0} รายการ)...", active.Count));
+                int addedOk = 0, addedFail = 0;
+                foreach (var perm in _aclEntries)
                 {
                     try
                     {
-                        foreach (var u in _userAccountRepository.GetAll())
-                            userMap[u.UserID] = string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
+                        AddPermissionItemToListView(perm);
+                        addedOk++;
                     }
-                    catch { }
-                }
-
-                foreach (var req in approvedRequests)                {
-                    // Header row per request
-                    string resolvedDate = req.ResolvedDate.HasValue
-                        ? req.ResolvedDate.Value.ToString("dd/MM/yy HH:mm")
-                        : req.RequestedDate.ToString("dd/MM/yy HH:mm");
-
-                    var header = new ListViewItem(string.Empty);
-                    header.SubItems.Add(string.Format("✅ #{0}  {1}  ({2})",
-                        req.RequestID, req.Subject ?? req.RequestType, resolvedDate));
-                    header.SubItems.Add(""); header.SubItems.Add(""); header.SubItems.Add("");
-                    header.BackColor = Color.FromArgb(230, 245, 230);
-                    header.ForeColor = Color.FromArgb(0, 100, 0);
-                    header.Font = new Font(lvApprovers.Font, FontStyle.Bold);
-                    lvApprovers.Items.Add(header);
-
-                    // Steps ของ request นี้
-                    var steps = _approvalService.GetApprovalSteps(req.RequestID)
-                        .OrderBy(s => s.StepOrder).ToList();
-
-                    foreach (var step in steps)
+                    catch (Exception rowEx)
                     {
-                        string approverName;
-                        if (!_userDisplayMap.TryGetValue(step.ApproverID, out approverName))
-                            approverName = string.Format("UserID: {0}", step.ApproverID);
-                        string actionDate = step.ActionDate.HasValue
-                            ? step.ActionDate.Value.ToString("dd/MM/yy HH:mm")
-                            : "—";
-
-                        var item = new ListViewItem(step.StepOrder.ToString());
-                        item.SubItems.Add(approverName);
-                        item.SubItems.Add(StepStatusLabel(step.StepStatus));
-                        item.SubItems.Add(actionDate);
-                        item.SubItems.Add(step.ActionRemark ?? "—");
-
-                        switch (step.StepStatus)
-                        {
-                            case 2: item.ForeColor = Color.Green; break;
-                            case 3: item.ForeColor = Color.Crimson; break;
-                            case 4: item.ForeColor = Color.DarkOrange; break;
-                            default: item.ForeColor = Color.RoyalBlue; break;
-                        }
-
-                        lvApprovers.Items.Add(item);
+                        addedFail++;
+                        DiagLog(string.Format("  ERROR adding PermID={0}: {1}", perm.PermissionID, rowEx.Message));
                     }
                 }
+
+                DiagLog(string.Format("Step 4 result: added={0}, failed={1}, ListView.Items.Count={2}",
+                    addedOk, addedFail, aclListView.Items.Count));
+
+                // Update status
+                UpdatePermissionStatusLabel(active.Count, 0);
+                EnsureShowAllCheckbox();
+
+                DiagLog(string.Format("── LoadPermissionsImmediate END ──────────────────────────────────"));
             }
             catch (Exception ex)
             {
-                var errItem = new ListViewItem("!");
-                errItem.SubItems.Add("โหลดข้อมูลไม่สำเร็จ: " + ex.Message);
-                errItem.SubItems.Add(""); errItem.SubItems.Add(""); errItem.SubItems.Add("");
-                errItem.ForeColor = Color.Red;
-                lvApprovers.Items.Add(errItem);
-            }
-        }
-
-        private static string StepStatusLabel(int status)
-        {
-            switch (status)
-            {
-                case 1: return "⏳ รออนุมัติ";
-                case 2: return "✅ อนุมัติแล้ว";
-                case 3: return "❌ ปฏิเสธ";
-                case 4: return "↗ โอนสิทธิ์";
-                default: return status.ToString();
-            }
-        }
-
-        private void PopulateHistoryTab()
-        {
-            historyListView.Items.Clear();
-            // Placeholder rows — in production wire to IAuditService.GetFolderHistory(_folder.FolderId)
-            if (_folder == null) return;
-            var rows = new[]
-            {
-                new { Date = _folder.UpdatedDate ?? _folder.CreatedDate, User = "—", Action = "UPDATE", Detail = string.Format("Folder: {0}", _folder.FolderName) },
-                new { Date = _folder.CreatedDate, User = "—", Action = "CREATE", Detail = "สร้าง Folder ใหม่" }
-            };
-            foreach (var r in rows)
-            {
-                var item = new System.Windows.Forms.ListViewItem(r.Date.ToLocalTime().ToString("dd/MM/yy HH:mm"));
-                item.SubItems.Add(r.User);
-                item.SubItems.Add(r.Action);
-                item.SubItems.Add(r.Detail);
-                historyListView.Items.Add(item);
+                DiagLog(string.Format("EXCEPTION: {0}: {1}", ex.GetType().Name, ex.Message));
+                DiagLog("StackTrace: " + ex.StackTrace);
+                ShowError("ไม่สามารถโหลดข้อมูลสิทธิ์ได้: " + ex.Message);
             }
         }
 
@@ -277,16 +279,47 @@ namespace CMS.Presentation
 
         public void ShowAclEntries(IEnumerable<FolderPermission> entries)
         {
-            // Store all entries (including revoked) for "show all" toggle
-            _allAclEntries = entries == null ? new List<FolderPermission>() : entries.ToList();
-            // Active = not revoked AND not expired
-            _aclEntries = _allAclEntries
-                .Where(e => e.RevokedDate == null
-                         && !(e.ExpiryDate.HasValue && e.ExpiryDate.Value.Date < DateTime.Today))
-                .ToList();
+            try
+            {
+                var list = entries == null ? new List<FolderPermission>() : entries.ToList();
+                DiagLog(string.Format("── ShowAclEntries called with {0} entries ──", list.Count));
 
-            RenderAclList();
-            EnsureShowAllCheckbox();
+                _allAclEntries = list;
+                // แสดงเฉพาะรายการที่ใช้งาน (ไม่ถูก revoke และไม่หมดอายุ)
+                _aclEntries = list
+                    .Where(p => p.RevokedDate == null
+                             && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today))
+                    .ToList();
+
+                DiagLog(string.Format("  Active={0}, Hidden(revoked/expired)={1}",
+                    _aclEntries.Count, list.Count - _aclEntries.Count));
+
+                LoadDisplayNames();
+
+                aclListView.Items.Clear();
+
+                int ok = 0, fail = 0;
+                foreach (var perm in _aclEntries)
+                {
+                    try { AddPermissionItemToListView(perm); ok++; }
+                    catch (Exception ex)
+                    {
+                        fail++;
+                        DiagLog(string.Format("  ERROR row PermID={0}: {1}", perm.PermissionID, ex.Message));
+                    }
+                }
+
+                DiagLog(string.Format("  ListView after render: added={0} failed={1} total={2}",
+                    ok, fail, aclListView.Items.Count));
+
+                UpdatePermissionStatusLabel(_allAclEntries.Count, 0);
+                EnsureShowAllCheckbox();
+            }
+            catch (Exception ex)
+            {
+                DiagLog(string.Format("EXCEPTION in ShowAclEntries: {0}", ex.Message));
+                ShowError("เกิดข้อผิดพลาดในการแสดงรายการสิทธิ์: " + ex.Message);
+            }
         }
 
         private void RenderAclList()
@@ -300,19 +333,19 @@ namespace CMS.Presentation
                 bool isRevoked = entry.RevokedDate.HasValue;
 
                 string principalName;
-                if (entry.PrincipalType == 1)
+                if (entry.PrincipalType == PrincipalType.User)
                 {
                     // User
                     if (!_userDisplayMap.TryGetValue(entry.PrincipalId, out principalName))
                         principalName = string.Format("UserID: {0}", entry.PrincipalId);
                 }
-                else if (entry.PrincipalType == 3)
+                else if (entry.PrincipalType == PrincipalType.Department)
                 {
                     // Department — PrincipalId is OrgUnitID
                     if (!_orgUnitNameMap.TryGetValue(entry.PrincipalId, out principalName))
                         principalName = string.Format("DeptID: {0}", entry.PrincipalId);
                 }
-                else if (entry.PrincipalType == 4)
+                else if (entry.PrincipalType == PrincipalType.Division)
                 {
                     // Division — PrincipalId is OrgUnitID
                     if (!_orgUnitNameMap.TryGetValue(entry.PrincipalId, out principalName))
@@ -320,11 +353,11 @@ namespace CMS.Presentation
                 }
                 else
                 {
-                    principalName = string.Format("{0} #{1}", PrincipalTypeLabel(entry.PrincipalType), entry.PrincipalId);
+                    principalName = string.Format("{0} #{1}", PrincipalTypeLabel((int)entry.PrincipalType), entry.PrincipalId);
                 }
 
                 var item = new ListViewItem(isDeny ? "⊘ " + principalName : principalName);
-                item.SubItems.Add(PrincipalTypeLabel(entry.PrincipalType));
+                item.SubItems.Add(PrincipalTypeLabel((int)entry.PrincipalType));
                 item.SubItems.Add(PermCheck(entry.CanRead,        isDeny));
                 item.SubItems.Add(PermCheck(entry.CanWrite,       isDeny));
                 item.SubItems.Add(PermCheck(entry.CanDelete,      isDeny));
@@ -381,6 +414,73 @@ namespace CMS.Presentation
         }
 
         private CheckBox _chkShowAll;
+
+        // ── Trace log ─────────────────────────────────────────────────────────
+        private readonly System.Text.StringBuilder _diagLog = new System.Text.StringBuilder();
+        private System.Windows.Forms.RichTextBox _rtbTrace;
+
+        private void DiagLog(string msg)
+        {
+            string line = string.Format("[{0}] {1}", DateTime.Now.ToString("HH:mm:ss.fff"), msg);
+            _diagLog.AppendLine(line);
+            System.Diagnostics.Debug.WriteLine("[VIEW] " + msg);
+
+            if (_rtbTrace != null)
+            {
+                _rtbTrace.AppendText(line + "\r\n");
+                _rtbTrace.ScrollToCaret();
+            }
+        }
+
+        private void BuildTracePanel()
+        {
+            // Collapsible trace panel docked to Bottom of tabPermission
+            var pnlTrace = new System.Windows.Forms.Panel
+            {
+                Dock      = System.Windows.Forms.DockStyle.Bottom,
+                Height    = 110,
+                BackColor = System.Drawing.Color.FromArgb(240, 240, 245),
+                BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
+            };
+
+            var lblHeader = new System.Windows.Forms.Label
+            {
+                Text      = "📋 Trace Log (Debug Output)",
+                Dock      = System.Windows.Forms.DockStyle.Top,
+                Height    = 20,
+                Font      = new System.Drawing.Font("Segoe UI", 8f, System.Drawing.FontStyle.Bold),
+                ForeColor = System.Drawing.Color.FromArgb(0, 51, 102),
+                Padding   = new System.Windows.Forms.Padding(4, 2, 0, 0)
+            };
+
+            var btnClear = new System.Windows.Forms.Button
+            {
+                Text      = "Clear",
+                Width     = 50,
+                Height    = 18,
+                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                Font      = new System.Drawing.Font("Segoe UI", 7f),
+                Dock      = System.Windows.Forms.DockStyle.None,
+                Anchor    = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right
+            };
+            btnClear.Location = new System.Drawing.Point(pnlTrace.Width - 56, 1);
+            btnClear.Click += (s, e) => { _rtbTrace.Clear(); _diagLog.Clear(); };
+
+            _rtbTrace = new System.Windows.Forms.RichTextBox
+            {
+                Dock      = System.Windows.Forms.DockStyle.Fill,
+                ReadOnly  = true,
+                Font      = new System.Drawing.Font("Consolas", 7.5f),
+                BackColor = System.Drawing.Color.FromArgb(248, 248, 255),
+                BorderStyle = System.Windows.Forms.BorderStyle.None,
+                ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical
+            };
+
+            pnlTrace.Controls.Add(_rtbTrace);
+            pnlTrace.Controls.Add(btnClear);
+            pnlTrace.Controls.Add(lblHeader);
+            tabPermission.Controls.Add(pnlTrace);
+        }
         private void EnsureShowAllCheckbox()
         {
             if (_chkShowAll != null) return; // already added
@@ -436,11 +536,17 @@ namespace CMS.Presentation
                 aclListView.Items.Add(item);
             }
 
-            // Update count label
-            int total = _aclEntries.Count + aclListView.Items.Cast<ListViewItem>()
-                .Count(i => i.Tag is ApprovalRequest);
-            lblAclStatus.Text      = string.Format("{0} รายการ  (มีคำขอรออนุมัติ)", _aclEntries.Count);
-            lblAclStatus.ForeColor = Color.FromArgb(160, 90, 0);
+            // Update count label — only show "มีคำขอรออนุมัติ" when pending requests actually exist
+            int pendingCount = aclListView.Items.Cast<ListViewItem>().Count(i => i.Tag is ApprovalRequest);
+            if (pendingCount > 0)
+            {
+                lblAclStatus.Text      = string.Format("{0} รายการ  (รออนุมัติ {1})", _aclEntries.Count, pendingCount);
+                lblAclStatus.ForeColor = Color.FromArgb(160, 90, 0);
+            }
+            else
+            {
+                UpdatePermissionStatusLabel(_allAclEntries.Count, 0);
+            }
         }
 
         public void ShowConfidentialityLevel(int level)
@@ -493,29 +599,84 @@ namespace CMS.Presentation
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            if (_folder == null) return;
+            if (_folder == null) 
+            {
+                // Fallback: ให้ผู้ใช้กรอก Folder ID ด้วยตนเอง
+                string input = Microsoft.VisualBasic.Interaction.InputBox(
+                    "ไม่พบ Folder ที่เลือก\nกรุณากรอก Folder ID ที่ต้องการตั้งสิทธิ์:",
+                    "กรอก Folder ID",
+                    "");
+                
+                if (string.IsNullOrEmpty(input)) return;
+                
+                if (!int.TryParse(input, out int folderId) || folderId <= 0)
+                {
+                    ShowError("Folder ID ไม่ถูกต้อง");
+                    return;
+                }
+                
+                // ใช้ folderId ที่กรอกมา
+                var fallbackReqs = PromptForPermissionRequests(folderId, null);
+                if (fallbackReqs != null)
+                {
+                    foreach (var req in fallbackReqs)
+                        _presenter.SetPermission(req);
+                    
+                    // Refresh permissions immediately after adding
+                    LoadPermissionsImmediate();
+                }
+                return;
+            }
+            
             var reqs = PromptForPermissionRequests(_folder.FolderId, null);
             if (reqs != null)
             {
                 foreach (var req in reqs)
                     _presenter.SetPermission(req);
+                
+                // Refresh permissions immediately after adding
+                LoadPermissionsImmediate();
             }
         }
 
         private void btnEdit_Click(object sender, EventArgs e)
         {
-            if (_folder == null || aclListView.SelectedItems.Count == 0) return;
+            if (aclListView.SelectedItems.Count == 0) 
+            {
+                ShowError("กรุณาเลือกรายการที่ต้องการแก้ไข");
+                return;
+            }
+            
             var entry = aclListView.SelectedItems[0].Tag as FolderPermission;
             if (entry == null)
             {
                 ShowError("ไม่สามารถแก้ไขรายการที่รออนุมัติได้");
                 return;
             }
+            
+            if (_folder == null) 
+            {
+                // Fallback: ใช้ FolderId จาก entry ที่เลือก
+                var editReqs = PromptForPermissionRequests(entry.FolderID, entry);
+                if (editReqs != null)
+                {
+                    foreach (var req in editReqs)
+                        _presenter.SetPermission(req);
+                    
+                    // Refresh permissions immediately after editing
+                    LoadPermissionsImmediate();
+                }
+                return;
+            }
+            
             var reqs = PromptForPermissionRequests(_folder.FolderId, entry);
             if (reqs != null)
             {
                 foreach (var req in reqs)
                     _presenter.SetPermission(req);
+                
+                // Refresh permissions immediately after editing
+                LoadPermissionsImmediate();
             }
         }
 
@@ -533,6 +694,795 @@ namespace CMS.Presentation
             if (MessageBox.Show("ลบรายการสิทธิ์ที่เลือกใช่ไหม?", "ยืนยันการลบ",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 _presenter.RemovePermission(permId.Value);
+        }
+
+        private void btnRefresh_Click(object sender, EventArgs e)
+        {
+            if (_folder != null)
+            {
+                try
+                {
+                    System.Diagnostics.Debug.WriteLine($"=== REFRESH PERMISSIONS START ===");
+                    System.Diagnostics.Debug.WriteLine($"Folder ID: {_folder.FolderID}");
+
+                    // Use the new immediate loading system
+                    LoadPermissionsImmediate();
+
+                    ShowInfo("รีเฟรชข้อมูลสิทธิ์เรียบร้อยแล้ว");
+                    System.Diagnostics.Debug.WriteLine($"=== REFRESH PERMISSIONS END ===");
+                }
+                catch (Exception ex)
+                {
+                    ShowError("ไม่สามารถรีเฟรชข้อมูลได้: " + ex.Message);
+                    System.Diagnostics.Debug.WriteLine($"btnRefresh_Click Error: {ex.Message}");
+                }
+            }
+        }
+
+        private void ForceReloadPermissions()
+        {
+            if (_folder == null) return;
+
+            try
+            {
+                // Direct database access to get all permissions
+                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
+                    new CMS.Infrastructure.ConfigManager());
+                var approvalRepo = new CMS.Data.Repositories.ApprovalRepository(
+                    new CMS.Infrastructure.ConfigManager());
+
+                // Get all permissions for this folder (including revoked)
+                var allPermissions = permissionRepo.GetAllByFolder(_folder.FolderID).ToList();
+                
+                // Get pending approval requests
+                var pendingApprovals = approvalRepo.GetAllRequestsByFolder(_folder.FolderID)
+                    .Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION")
+                    .ToList();
+
+                System.Diagnostics.Debug.WriteLine($"ForceReloadPermissions: Found {allPermissions.Count} permissions, {pendingApprovals.Count} pending approvals for folder {_folder.FolderID}");
+
+                // Update the internal collections
+                _allAclEntries = allPermissions;
+                _aclEntries = allPermissions
+                    .Where(e => e.RevokedDate == null
+                             && !(e.ExpiryDate.HasValue && e.ExpiryDate.Value.Date < DateTime.Today))
+                    .ToList();
+
+                // Load display names BEFORE rendering so principal names are resolved
+                LoadDisplayNames();
+
+                // Render the permission list
+                RenderAclList();
+
+                // Add pending approvals to the display
+                ShowPendingApprovals(pendingApprovals);
+
+                // Ensure show all checkbox is available
+                EnsureShowAllCheckbox();
+            }
+            catch (Exception ex)
+            {
+                ShowError("เกิดข้อผิดพลาดในการดึงข้อมูลจากฐานข้อมูล: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine($"ForceReloadPermissions Error: {ex.Message}");
+            }
+        }
+
+        private void LoadDisplayNames()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("=== LoadDisplayNames START ===");
+                
+                // Initialize display maps if they don't exist
+                if (_userDisplayMap == null) _userDisplayMap = new Dictionary<int, string>();
+                if (_orgUnitNameMap == null) _orgUnitNameMap = new Dictionary<int, string>();
+
+                if (_allAclEntries == null) 
+                {
+                    System.Diagnostics.Debug.WriteLine("LoadDisplayNames: _allAclEntries is null, returning");
+                    return;
+                }
+
+                System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: Processing {_allAclEntries.Count} ACL entries");
+
+                // Reload user names from repository
+                if (_userAccountRepository != null)
+                {
+                    try
+                    {
+                        var users = _userAccountRepository.GetAll().ToList();
+                        System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: Found {users.Count} users from repository");
+                        
+                        foreach (var u in users)
+                        {
+                            string displayName = string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
+                            _userDisplayMap[u.UserID] = displayName;
+                            System.Diagnostics.Debug.WriteLine($"  User {u.UserID}: {displayName}");
+                        }
+                        
+                        System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: _userDisplayMap now has {_userDisplayMap.Count} entries");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"LoadDisplayNames - user repo error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("LoadDisplayNames: _userAccountRepository is null");
+                }
+
+                // Reload org unit names from service
+                if (_orgStructureService != null)
+                {
+                    try
+                    {
+                        var orgUnits = _orgStructureService.GetHierarchy().ToList();
+                        System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: Found {orgUnits.Count} org units from service");
+                        
+                        foreach (var u in orgUnits)
+                        {
+                            string displayName = u.OrgUnitNameTH ?? u.OrgUnitNameEN ?? u.OrgUnitCode ?? u.OrgUnitID.ToString();
+                            _orgUnitNameMap[u.OrgUnitID] = displayName;
+                            System.Diagnostics.Debug.WriteLine($"  OrgUnit {u.OrgUnitID}: {displayName}");
+                        }
+                        
+                        System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: _orgUnitNameMap now has {_orgUnitNameMap.Count} entries");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"LoadDisplayNames - org service error: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("LoadDisplayNames: _orgStructureService is null");
+                }
+
+                // Fill in any remaining unknown IDs with fallback labels
+                foreach (var e in _allAclEntries)
+                {
+                    if (e.PrincipalType == PrincipalType.User && !_userDisplayMap.ContainsKey(e.PrincipalID))
+                    {
+                        string fallback = string.Format("UserID: {0}", e.PrincipalID);
+                        _userDisplayMap[e.PrincipalID] = fallback;
+                        System.Diagnostics.Debug.WriteLine($"  Added fallback user {e.PrincipalID}: {fallback}");
+                    }
+                    else if ((e.PrincipalType == PrincipalType.Department || e.PrincipalType == PrincipalType.Division)
+                             && !_orgUnitNameMap.ContainsKey(e.PrincipalID))
+                    {
+                        string fallback = string.Format("{0} ID: {1}", e.PrincipalType, e.PrincipalID);
+                        _orgUnitNameMap[e.PrincipalID] = fallback;
+                        System.Diagnostics.Debug.WriteLine($"  Added fallback org unit {e.PrincipalID}: {fallback}");
+                    }
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"=== LoadDisplayNames END - Users: {_userDisplayMap.Count}, OrgUnits: {_orgUnitNameMap.Count} ===");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"LoadDisplayNames Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+            }
+        }
+
+        private void RefreshPermissionDisplay()
+        {
+            if (_folder == null) return;
+
+            try
+            {
+                // Direct database access to ensure we get all data
+                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
+                    new CMS.Infrastructure.ConfigManager());
+                var approvalRepo = new CMS.Data.Repositories.ApprovalRepository(
+                    new CMS.Infrastructure.ConfigManager());
+
+                // Get all permissions for this folder (including revoked ones)
+                var allPermissions = permissionRepo.GetAllByFolder(_folder.FolderID).ToList();
+                
+                // Get all approval requests for this folder
+                var allApprovals = approvalRepo.GetAllRequestsByFolder(_folder.FolderID).ToList();
+                var pendingApprovals = allApprovals
+                    .Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION")
+                    .OrderByDescending(r => r.RequestedDate)
+                    .ToList();
+
+                System.Diagnostics.Debug.WriteLine($"RefreshPermissionDisplay: Found {allPermissions.Count} permissions, {pendingApprovals.Count} pending approvals");
+
+                // Update internal collections - DON'T FILTER, SHOW ALL
+                _allAclEntries = allPermissions;
+                _aclEntries = allPermissions; // Show ALL permissions, not just active ones
+
+                // Load display names BEFORE rendering so principal names are resolved
+                LoadDisplayNames();
+
+                // Clear ListView and manually add all items
+                aclListView.Items.Clear();
+
+                // Add all permissions (including revoked ones)
+                foreach (var perm in allPermissions)
+                {
+                    AddPermissionItemToListView(perm);
+                }
+
+                // Add pending approvals
+                foreach (var approval in pendingApprovals)
+                {
+                    AddApprovalItemToListView(approval);
+                }
+
+                // Update status
+                UpdatePermissionStatusLabel(allPermissions.Count, pendingApprovals.Count);
+
+                // Log for debugging
+                System.Diagnostics.Debug.WriteLine($"RefreshPermissionDisplay: UI now shows {aclListView.Items.Count} items");
+            }
+            catch (Exception ex)
+            {
+                ShowError("เกิดข้อผิดพลาดในการดึงข้อมูล: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine($"RefreshPermissionDisplay Error: {ex.Message}");
+            }
+        }
+
+        private void AddPermissionItemToListView(FolderPermission perm)
+        {
+            string principalName = GetPrincipalName(perm.PrincipalType, perm.PrincipalID);
+            bool isDeny    = perm.IsDeny;
+            bool isRevoked = perm.RevokedDate.HasValue;
+            bool isExpired = !isRevoked && perm.ExpiryDate.HasValue && perm.ExpiryDate.Value.Date < DateTime.Today;
+
+            DiagLog(string.Format("  Row PermID={0} {1}#{2} Name={3} Revoked={4} Expired={5} Deny={6}",
+                perm.PermissionID, perm.PrincipalType, perm.PrincipalID,
+                principalName, isRevoked, isExpired, isDeny));
+
+            var item = new ListViewItem(isDeny ? "⊘ " + principalName : principalName);
+            item.SubItems.Add(GetPrincipalTypeText(perm.PrincipalType));
+            item.SubItems.Add(perm.CanRead        ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanWrite       ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanDelete      ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanModify      ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanFullControl ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.ExpiryDate.HasValue ? perm.ExpiryDate.Value.ToString("dd/MM/yy") : "—");
+
+            if (isRevoked)
+            {
+                item.SubItems.Add("ยกเลิกแล้ว");
+                item.ForeColor = Color.Gray;
+                item.Font = new Font(aclListView.Font, FontStyle.Strikeout);
+            }
+            else if (isExpired)
+            {
+                item.SubItems.Add("⚠ หมดอายุ");
+                item.ForeColor = Color.FromArgb(160, 90, 0);
+                item.Font = new Font(aclListView.Font, FontStyle.Strikeout);
+                item.BackColor = Color.FromArgb(255, 248, 215);
+            }
+            else if (isDeny)
+            {
+                item.SubItems.Add("✔ ใช้งาน (Deny)");
+                item.ForeColor = Color.Crimson;
+                item.Font = new Font(aclListView.Font, FontStyle.Bold);
+            }
+            else
+            {
+                item.SubItems.Add("✔ ใช้งาน");
+                item.ForeColor = Color.FromArgb(0, 120, 0);
+            }
+
+            item.Tag = perm;
+            aclListView.Items.Add(item);
+        }
+
+        private void AddApprovalItemToListView(ApprovalRequest approval)
+        {
+            try
+            {
+                string dateStr = approval.RequestedDate.ToString("dd/MM/yy HH:mm");
+                string subject = approval.Subject ?? approval.RequestType;
+
+                var item = new ListViewItem($"⏳ {subject}");
+                item.SubItems.Add("รออนุมัติ");
+                item.SubItems.Add("—");
+                item.SubItems.Add("—");
+                item.SubItems.Add("—");
+                item.SubItems.Add("—");
+                item.SubItems.Add("—");
+                item.SubItems.Add(dateStr);
+                item.SubItems.Add("รออนุมัติ");
+
+                item.BackColor = Color.FromArgb(255, 248, 215);
+                item.ForeColor = Color.FromArgb(160, 90, 0);
+                item.Font = new Font(aclListView.Font, FontStyle.Italic);
+                item.Tag = approval;
+
+                aclListView.Items.Add(item);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"AddApprovalItemToListView Error: {ex.Message}");
+            }
+        }
+
+        private string GetPrincipalName(PrincipalType principalType, int principalId)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"GetPrincipalName: Type={principalType}, ID={principalId}");
+                
+                switch (principalType)
+                {
+                    case PrincipalType.User:
+                        bool userFound = _userDisplayMap.TryGetValue(principalId, out string userName);
+                        string userResult = userFound ? userName : $"User {principalId}";
+                        System.Diagnostics.Debug.WriteLine($"  User lookup: Found={userFound}, Result={userResult}");
+                        return userResult;
+                    
+                    case PrincipalType.Department:
+                        bool deptFound = _orgUnitNameMap.TryGetValue(principalId, out string deptName);
+                        string deptResult = deptFound ? deptName : $"Department {principalId}";
+                        System.Diagnostics.Debug.WriteLine($"  Department lookup: Found={deptFound}, Result={deptResult}");
+                        return deptResult;
+                    
+                    case PrincipalType.Division:
+                        bool divFound = _orgUnitNameMap.TryGetValue(principalId, out string divName);
+                        string divResult = divFound ? divName : $"Division {principalId}";
+                        System.Diagnostics.Debug.WriteLine($"  Division lookup: Found={divFound}, Result={divResult}");
+                        return divResult;
+                    
+                    default:
+                        string defaultResult = $"{principalType} {principalId}";
+                        System.Diagnostics.Debug.WriteLine($"  Default result: {defaultResult}");
+                        return defaultResult;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GetPrincipalName Error: {ex.Message}");
+                return $"ID: {principalId}";
+            }
+        }
+
+        private string GetPrincipalTypeText(PrincipalType principalType)
+        {
+            switch (principalType)
+            {
+                case PrincipalType.User: return "ผู้ใช้";
+                case PrincipalType.Department: return "แผนก";
+                case PrincipalType.Division: return "ฝ่าย";
+                default: return principalType.ToString();
+            }
+        }
+
+        private void UpdatePermissionStatusLabel(int permissionCount, int pendingCount)
+        {
+            try
+            {
+                int activeCount = _aclEntries?.Count(p => p.RevokedDate == null) ?? 0;
+                int revokedCount = permissionCount - activeCount;
+
+                if (permissionCount == 0 && pendingCount == 0)
+                {
+                    lblAclStatus.Text = "ยังไม่มีสิทธิ์ — กด + เพิ่ม เพื่อเพิ่มรายการ";
+                    lblAclStatus.ForeColor = Color.Gray;
+                }
+                else
+                {
+                    string statusText = $"{permissionCount + pendingCount} รายการ";
+                    if (activeCount > 0) statusText += $" (ใช้งาน {activeCount}";
+                    if (revokedCount > 0) statusText += $" / ยกเลิก {revokedCount}";
+                    if (pendingCount > 0) statusText += $" / รออนุมัติ {pendingCount}";
+                    if (activeCount > 0 || revokedCount > 0) statusText += ")";
+
+                    lblAclStatus.Text = statusText;
+                    lblAclStatus.ForeColor = pendingCount > 0 ? Color.FromArgb(160, 90, 0) : Color.FromArgb(0, 51, 102);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"UpdatePermissionStatusLabel Error: {ex.Message}");
+            }
+        }
+
+        private void btnForceLoad_Click(object sender, EventArgs e)
+        {
+            int folderId = 0;
+            string folderName = "Unknown";
+
+            // Try to get folder info from _folder first
+            if (_folder != null)
+            {
+                folderId = _folder.FolderID;
+                folderName = _folder.FolderName ?? _folder.Name ?? "Unknown";
+            }
+            else
+            {
+                // If _folder is null, prompt user for Folder ID
+                using (var inputForm = new Form())
+                {
+                    inputForm.Text = "ป้อน Folder ID";
+                    inputForm.Size = new Size(300, 150);
+                    inputForm.StartPosition = FormStartPosition.CenterParent;
+                    inputForm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                    inputForm.MaximizeBox = false;
+                    inputForm.MinimizeBox = false;
+
+                    var label = new Label() { Text = "กรุณาป้อน Folder ID:", Location = new Point(10, 20), Size = new Size(200, 20) };
+                    var textBox = new TextBox() { Location = new Point(10, 45), Size = new Size(260, 20) };
+                    var okButton = new Button() { Text = "OK", Location = new Point(115, 75), Size = new Size(75, 23), DialogResult = DialogResult.OK };
+                    var cancelButton = new Button() { Text = "Cancel", Location = new Point(195, 75), Size = new Size(75, 23), DialogResult = DialogResult.Cancel };
+
+                    inputForm.Controls.AddRange(new Control[] { label, textBox, okButton, cancelButton });
+                    inputForm.AcceptButton = okButton;
+                    inputForm.CancelButton = cancelButton;
+
+                    if (inputForm.ShowDialog(this) != DialogResult.OK || 
+                        string.IsNullOrEmpty(textBox.Text) || 
+                        !int.TryParse(textBox.Text, out folderId))
+                    {
+                        ShowError("กรุณาป้อน Folder ID ที่ถูกต้อง");
+                        return;
+                    }
+                }
+                folderName = $"Folder ID: {folderId}";
+            }
+
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"=== FORCE LOAD SIMPLE START ===");
+                System.Diagnostics.Debug.WriteLine($"Folder ID: {folderId}, Name: {folderName}");
+
+                // Simple direct database query - show ALL permissions including revoked
+                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
+                    new CMS.Infrastructure.ConfigManager());
+                
+                var allPermissions = permissionRepo.GetAllByFolder(folderId).ToList();
+                System.Diagnostics.Debug.WriteLine($"Found {allPermissions.Count} total permissions in database");
+
+                if (allPermissions.Count == 0)
+                {
+                    ShowInfo($"ไม่พบข้อมูลสิทธิ์ในฐานข้อมูลสำหรับ {folderName} (ID: {folderId})");
+                    return;
+                }
+
+                // Clear and populate ListView with ALL permissions (including revoked)
+                aclListView.Items.Clear();
+                _allAclEntries = allPermissions;
+                _aclEntries = allPermissions; // Show ALL including revoked
+
+                // Load display names
+                LoadDisplayNames();
+
+                // Populate ListView
+                foreach (var perm in allPermissions)
+                {
+                    AddPermissionItemToListView(perm);
+                }
+
+                // Update status
+                int activeCount = allPermissions.Count(p => p.RevokedDate == null);
+                int revokedCount = allPermissions.Count(p => p.RevokedDate.HasValue);
+                UpdatePermissionStatusLabel(allPermissions.Count, 0);
+
+                // Show result
+                string resultMessage = $"ดึงข้อมูลเรียบร้อยแล้ว!\n\n" +
+                                     $"📁 {folderName}\n" +
+                                     $"📊 สถิติข้อมูล:\n" +
+                                     $"• รายการทั้งหมด: {allPermissions.Count}\n" +
+                                     $"• สิทธิ์ที่ใช้งาน: {activeCount}\n" +
+                                     $"• สิทธิ์ที่ยกเลิก: {revokedCount}\n\n" +
+                                     $"✅ แสดงข้อมูลทั้งหมดในแท็บสิทธิ์แล้ว";
+                
+                ShowInfo(resultMessage);
+                System.Diagnostics.Debug.WriteLine($"=== FORCE LOAD SIMPLE END ===");
+            }
+            catch (Exception ex)
+            {
+                ShowError("เกิดข้อผิดพลาดในการบังคับดึงข้อมูล: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine($"btnForceLoad_Click Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+            }
+        }
+
+        // Helper method to parse approval remark (similar to ApprovalService.ParsePermissionRemark)
+        private SetPermissionRequest ParseApprovalRemark(string remark, int folderId)
+        {
+            if (string.IsNullOrEmpty(remark)) return null;
+
+            try
+            {
+                var parts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var token in remark.Split(' '))
+                {
+                    var idx = token.IndexOf(':');
+                    if (idx > 0)
+                    {
+                        string key = token.Substring(0, idx);
+                        string value = token.Substring(idx + 1);
+                        parts[key] = value;
+                    }
+                }
+
+                return new SetPermissionRequest
+                {
+                    FolderID = folderId,
+                    PrincipalType = (PrincipalType)GetIntValue(parts, "PrincipalType", 1),
+                    PrincipalID = GetIntValue(parts, "PrincipalID", 0),
+                    CanRead = GetBoolValue(parts, "Read", false),
+                    CanWrite = GetBoolValue(parts, "Write", false),
+                    CanDelete = GetBoolValue(parts, "Delete", false),
+                    CanModify = GetBoolValue(parts, "Modify", false),
+                    CanFullControl = GetBoolValue(parts, "FullControl", false),
+                    IsDeny = GetBoolValue(parts, "IsDeny", false)
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private int GetIntValue(Dictionary<string, string> parts, string key, int defaultValue)
+        {
+            if (parts.ContainsKey(key))
+            {
+                int result;
+                if (int.TryParse(parts[key], out result))
+                    return result;
+            }
+            return defaultValue;
+        }
+
+        private bool GetBoolValue(Dictionary<string, string> parts, string key, bool defaultValue)
+        {
+            if (parts.ContainsKey(key))
+            {
+                bool result;
+                if (bool.TryParse(parts[key], out result))
+                    return result;
+            }
+            return defaultValue;
+        }
+
+        private void ShowDiagnosticDialog(string summary)
+        {
+            var dlg = new Form
+            {
+                Text            = "🔍 Diagnostic & Trace Log",
+                Width           = 760,
+                Height          = 560,
+                StartPosition   = FormStartPosition.CenterParent,
+                MinimizeBox     = false,
+                MaximizeBox     = true,
+                FormBorderStyle = FormBorderStyle.Sizable
+            };
+
+            var tabCtrl = new System.Windows.Forms.TabControl { Dock = DockStyle.Fill };
+
+            // Tab 1 — Summary
+            var tabSum = new System.Windows.Forms.TabPage("📊 สรุป");
+            var rtbSum = new System.Windows.Forms.RichTextBox
+            {
+                Dock = DockStyle.Fill, ReadOnly = true,
+                Font = new Font("Consolas", 9f), Text = summary
+            };
+            tabSum.Controls.Add(rtbSum);
+
+            // Tab 2 — Full trace log
+            var tabLog = new System.Windows.Forms.TabPage("📋 Trace Log");
+            var rtbLog = new System.Windows.Forms.RichTextBox
+            {
+                Dock = DockStyle.Fill, ReadOnly = true,
+                Font = new Font("Consolas", 8.5f),
+                Text = _diagLog.Length > 0 ? _diagLog.ToString() : "(ยังไม่มี log)"
+            };
+            tabLog.Controls.Add(rtbLog);
+
+            tabCtrl.TabPages.Add(tabSum);
+            tabCtrl.TabPages.Add(tabLog);
+
+            var pnlBtn = new Panel { Dock = DockStyle.Bottom, Height = 36 };
+            var btnClose = new Button { Text = "ปิด", Width = 80, Height = 26, DialogResult = DialogResult.OK };
+            btnClose.Location = new System.Drawing.Point(dlg.ClientSize.Width - 90, 5);
+            btnClose.Anchor   = AnchorStyles.Right | AnchorStyles.Top;
+            var btnCopyLog = new Button { Text = "Copy Log", Width = 90, Height = 26 };
+            btnCopyLog.Location = new System.Drawing.Point(dlg.ClientSize.Width - 186, 5);
+            btnCopyLog.Anchor   = AnchorStyles.Right | AnchorStyles.Top;
+            btnCopyLog.Click   += (s, e2) => { Clipboard.SetText(_diagLog.ToString()); };
+            pnlBtn.Controls.Add(btnClose);
+            pnlBtn.Controls.Add(btnCopyLog);
+
+            dlg.Controls.Add(tabCtrl);
+            dlg.Controls.Add(pnlBtn);
+            dlg.ShowDialog(this);
+        }
+
+        private void btnDiagnostic_Click(object sender, EventArgs e)
+        {
+            if (_folder == null)
+            {
+                ShowError("ไม่มี Folder ที่เลือก");
+                return;
+            }
+
+            try
+            {
+                DiagLog("── Manual Diagnostic triggered ──");
+
+                // Run a fresh DB query and log every step
+                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
+                    new CMS.Infrastructure.ConfigManager());
+                var approvalRepo = new CMS.Data.Repositories.ApprovalRepository(
+                    new CMS.Infrastructure.ConfigManager());
+
+                // Test both methods to see which one works
+                var allPermissions = permissionRepo.GetAllByFolder(_folder.FolderID);
+                var activePermissions = permissionRepo.GetByFolder(_folder.FolderID);
+                var allApprovals = approvalRepo.GetAllRequestsByFolder(_folder.FolderID);
+                var pendingApprovals = allApprovals.Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION");
+                var approvedApprovals = allApprovals.Where(r => r.RequestStatus == 2 && r.RequestType == "CHANGE_PERMISSION");
+
+                // Debug: Check what's in _presenter
+                System.Diagnostics.Debug.WriteLine($"=== DIAGNOSTIC DEBUG ===");
+                System.Diagnostics.Debug.WriteLine($"Folder ID: {_folder.FolderID}");
+                System.Diagnostics.Debug.WriteLine($"Direct GetAllByFolder: {allPermissions.Count()} permissions");
+                System.Diagnostics.Debug.WriteLine($"Direct GetByFolder: {activePermissions.Count()} permissions");
+                System.Diagnostics.Debug.WriteLine($"All Approvals: {allApprovals.Count()}");
+                System.Diagnostics.Debug.WriteLine($"Pending Approvals: {pendingApprovals.Count()}");
+                System.Diagnostics.Debug.WriteLine($"Approved Approvals: {approvedApprovals.Count()}");
+                System.Diagnostics.Debug.WriteLine($"Current _allAclEntries: {_allAclEntries?.Count ?? 0}");
+                System.Diagnostics.Debug.WriteLine($"Current _aclEntries: {_aclEntries?.Count ?? 0}");
+
+                // Log approved approvals details
+                foreach (var approval in approvedApprovals)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Approved Request ID: {approval.RequestID}, Remark: {approval.Remark}");
+                }
+
+                // Force reload through presenter to see what happens
+                System.Diagnostics.Debug.WriteLine("=== FORCING PRESENTER RELOAD ===");
+                _presenter.LoadAclEntries(_folder);
+                System.Diagnostics.Debug.WriteLine($"After presenter reload - _allAclEntries: {_allAclEntries?.Count ?? 0}");
+
+                string diagnosticInfo = string.Format(
+                    "=== ข้อมูลการวินิจฉัยและดึงข้อมูล ===\n\n" +
+                    "Folder ID: {0}\n" +
+                    "Folder Name: {1}\n" +
+                    "Confidentiality Level: {2} ({3})\n" +
+                    "OrgUnit ID: {4}\n\n" +
+                    "=== ข้อมูลจากฐานข้อมูล (Direct Query) ===\n" +
+                    "GetAllByFolder(): {5} รายการ\n" +
+                    "GetByFolder() (Active only): {6} รายการ\n" +
+                    "จำนวน Approval Requests ทั้งหมด: {7}\n" +
+                    "จำนวน Pending Approvals: {8}\n" +
+                    "จำนวน Approved Approvals: {9}\n\n" +
+                    "=== สถานะการแสดงผลใน UI ===\n" +
+                    "จำนวนรายการใน ListView: {10}\n" +
+                    "จำนวนรายการที่เก็บไว้ (_aclEntries): {11}\n" +
+                    "จำนวนรายการทั้งหมด (_allAclEntries): {12}\n\n" +
+                    "=== รายละเอียด Permissions (GetAllByFolder) ===\n" +
+                    "{13}\n\n" +
+                    "=== รายละเอียด Active Permissions (GetByFolder) ===\n" +
+                    "{14}\n\n" +
+                    "=== รายละเอียด Approved Approvals ===\n" +
+                    "{15}\n\n" +
+                    "=== รายละเอียด Pending Approvals ===\n" +
+                    "{16}\n\n" +
+                    "🔄 กำลังดึงข้อมูลและแสดงผลอัตโนมัติ...",
+                    _folder.FolderID,
+                    _folder.FolderName,
+                    _folder.ConfidentialityLevel,
+                    _folder.ConfidentialityLevel == 1 ? "High Confidential" :
+                    _folder.ConfidentialityLevel == 2 ? "Secret" :
+                    _folder.ConfidentialityLevel == 3 ? "Normal Confidential" : "Public",
+                    _folder.OrgUnitID,
+                    allPermissions.Count(),
+                    activePermissions.Count(),
+                    allApprovals.Count(),
+                    pendingApprovals.Count(),
+                    approvedApprovals.Count(),
+                    aclListView.Items.Count,
+                    _aclEntries?.Count ?? 0,
+                    _allAclEntries?.Count ?? 0,
+                    allPermissions.Any() ? 
+                        string.Join("\n", allPermissions.Take(5).Select(p => 
+                            string.Format("- ID:{0}, Principal:{1}({2}), Read:{3}, Write:{4}, Revoked:{5}", 
+                                p.PermissionID, p.PrincipalID, p.PrincipalType, p.CanRead, p.CanWrite, p.RevokedDate.HasValue))) :
+                        "ไม่มี Permissions",
+                    activePermissions.Any() ? 
+                        string.Join("\n", activePermissions.Take(5).Select(p => 
+                            string.Format("- ID:{0}, Principal:{1}({2}), Read:{3}, Write:{4}, Revoked:{5}", 
+                                p.PermissionID, p.PrincipalID, p.PrincipalType, p.CanRead, p.CanWrite, p.RevokedDate.HasValue))) :
+                        "ไม่มี Active Permissions",
+                    approvedApprovals.Any() ?
+                        string.Join("\n", approvedApprovals.Take(5).Select(a =>
+                            string.Format("- ID:{0}, Status:{1}, Date:{2}, Remark:{3}",
+                                a.RequestID, a.RequestStatus, a.RequestedDate.ToString("dd/MM/yy HH:mm"), 
+                                (a.Remark != null ? a.Remark.Substring(0, Math.Min(50, a.Remark.Length)) : "") + "..."))) :
+                        "ไม่มี Approved Approvals",
+                    pendingApprovals.Any() ?
+                        string.Join("\n", pendingApprovals.Take(5).Select(a =>
+                            string.Format("- ID:{0}, Type:{1}, Status:{2}, Date:{3}",
+                                a.RequestID, a.RequestType, a.RequestStatus, a.RequestedDate.ToString("dd/MM/yy HH:mm")))) :
+                        "ไม่มี Pending Approvals"
+                );
+
+                // Append fresh diagnostic summary to log
+                DiagLog("── Fresh DB query results ──");
+                DiagLog(string.Format("  FolderID={0}  GetAllByFolder={1}  GetByFolder(Active)={2}",
+                    _folder.FolderID, allPermissions.Count(), activePermissions.Count()));
+                DiagLog(string.Format("  Approvals: Total={0} Pending={1} Approved={2}",
+                    allApprovals.Count(), pendingApprovals.Count(), approvedApprovals.Count()));
+                DiagLog(string.Format("  UI State: ListView={0} _aclEntries={1} _allAclEntries={2}",
+                    aclListView.Items.Count, _aclEntries?.Count ?? 0, _allAclEntries?.Count ?? 0));
+
+                // Show diagnostic info + full trace log in a scrollable dialog
+                ShowDiagnosticDialog(diagnosticInfo);
+
+                // If we have pending approvals, offer to auto-approve them
+                if (pendingApprovals.Any())
+                {
+                    var autoApproveResult = MessageBox.Show(
+                        $"พบ Pending Approval {pendingApprovals.Count()} รายการ\n\n" +
+                        "ต้องการอนุมัติอัตโนมัติเพื่อให้สิทธิ์มีผลหรือไม่?\n\n" +
+                        "หมายเหตุ: การอนุมัติจะทำให้สิทธิ์ถูก apply เข้าฐานข้อมูลทันที",
+                        "Auto-Approve Pending Requests",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Question);
+
+                    if (autoApproveResult == DialogResult.Yes)
+                    {
+                        try
+                        {
+                            int approvedCount = 0;
+                            foreach (var pendingApproval in pendingApprovals)
+                            {
+                                // Get all steps for this approval
+                                var steps = approvalRepo.GetAllSteps(pendingApproval.RequestID);
+                                var pendingSteps = steps.Where(s => s.StepStatus == 1).OrderBy(s => s.StepOrder);
+
+                                foreach (var step in pendingSteps)
+                                {
+                                    // Auto-approve each step
+                                    _approvalService.ApproveStep(step.StepID, "Auto-approved for testing", _presenter.User);
+                                    approvedCount++;
+                                    System.Diagnostics.Debug.WriteLine($"Auto-approved step {step.StepID} of request {pendingApproval.RequestID}");
+                                }
+                            }
+
+                            ShowInfo($"อนุมัติอัตโนมัติเรียบร้อยแล้ว {approvedCount} steps\n\nกำลังรีเฟรชข้อมูลสิทธิ์...");
+
+                            // Refresh permissions after approval
+                            LoadPermissionsImmediate();
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowError($"เกิดข้อผิดพลาดในการอนุมัติอัตโนมัติ: {ex.Message}");
+                            System.Diagnostics.Debug.WriteLine($"Auto-approve error: {ex.Message}");
+                        }
+                    }
+                }
+                else if (allPermissions.Any() && (_allAclEntries == null || _allAclEntries.Count == 0))
+                {
+                    System.Diagnostics.Debug.WriteLine("=== FORCE POPULATING _allAclEntries ===");
+                    ShowAclEntries(allPermissions);
+                    ShowInfo($"บังคับดึงข้อมูลเรียบร้อยแล้ว - พบ {allPermissions.Count()} รายการ");
+                }
+                else if (approvedApprovals.Any() && allPermissions.Count() == 0)
+                {
+                    ShowInfo($"พบ Approval ที่อนุมัติแล้ว {approvedApprovals.Count()} รายการ แต่ไม่มี Permission ในฐานข้อมูล\nอาจจะมีปัญหาในการ apply permission หลังจากอนุมัติ");
+                }
+                else
+                {
+                    ShowInfo("ดึงข้อมูลจากฐานข้อมูลเรียบร้อยแล้ว");
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowError("เกิดข้อผิดพลาดในการวินิจฉัย: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine($"Diagnostic Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+            }
         }
 
         private void btnSave_Click(object sender, EventArgs e)
@@ -589,56 +1539,36 @@ namespace CMS.Presentation
         // ── Permission dialog ────────────────────────────────────────────────
 
         /// <summary>
-        /// Shows the permission dialog and returns 1 or 2 SetPermissionRequest entries:
-        /// - If all selected are Allow → 1 Allow entry
-        /// - If all selected are Deny  → 1 Deny entry
-        /// - If mixed (some Allow, some Deny) → 2 entries: 1 Allow + 1 Deny
+        /// Shows the permission dialog and returns SetPermissionRequest entries
+        /// that handle mixed Allow/Deny permissions in a unified way
         /// </summary>
         private List<SetPermissionRequest> PromptForPermissionRequests(int folderId, FolderPermission existing)
         {
-            bool[] allowChecked = new bool[5];
-            bool[] denyChecked  = new bool[5];
+            bool[] permissionChecked = new bool[5];
             int principalType = 1;
             int principalId   = 0;
 
             // ShowPermissionDialog returns dlg with Tag = List<OrgUnitSelection> when multi-org selected
-            List<OrgUnitPickerDialog.OrgUnitSelection> multiOrg = null;
+            List<OrgUnitSelection> multiOrg = null;
 
             bool confirmed = ShowPermissionDialog(folderId, existing,
-                out allowChecked, out denyChecked, out principalType, out principalId,
+                out permissionChecked, out principalType, out principalId,
                 out multiOrg);
 
             if (!confirmed) return null;
 
             var results = new List<SetPermissionRequest>();
-            bool hasAllow = allowChecked[0] || allowChecked[1] || allowChecked[2] || allowChecked[3] || allowChecked[4];
-            bool hasDeny  = denyChecked[0]  || denyChecked[1]  || denyChecked[2]  || denyChecked[3]  || denyChecked[4];
 
             // ── Multi-org: สร้าง entry สำหรับแต่ละหน่วยงานที่เลือก ──────────
             if (multiOrg != null && multiOrg.Count > 0)
             {
                 foreach (var sel in multiOrg)
                 {
-                    if (hasAllow)
-                        results.Add(new SetPermissionRequest
-                        {
-                            FolderID       = folderId,
-                            PrincipalType  = sel.PrincipalType,
-                            PrincipalID    = sel.OrgUnit.OrgUnitID,
-                            CanRead        = allowChecked[0], CanWrite  = allowChecked[1],
-                            CanDelete      = allowChecked[2], CanModify = allowChecked[3],
-                            CanFullControl = allowChecked[4], IsDeny    = false
-                        });
-                    if (hasDeny)
-                        results.Add(new SetPermissionRequest
-                        {
-                            FolderID       = folderId,
-                            PrincipalType  = sel.PrincipalType,
-                            PrincipalID    = sel.OrgUnit.OrgUnitID,
-                            CanRead        = denyChecked[0], CanWrite  = denyChecked[1],
-                            CanDelete      = denyChecked[2], CanModify = denyChecked[3],
-                            CanFullControl = denyChecked[4], IsDeny    = true
-                        });
+                    // สร้าง entry สำหรับ permissions ที่เลือก (เฉพาะ Allow)
+                    var permissionEntry = CreatePermissionRequest(
+                        folderId, (PrincipalType)sel.PrincipalType, sel.OrgUnit.OrgUnitID,
+                        permissionChecked);
+                    if (permissionEntry != null) results.Add(permissionEntry);
                 }
                 return results.Count > 0 ? results : null;
             }
@@ -646,56 +1576,66 @@ namespace CMS.Presentation
             // ── Single principal ──────────────────────────────────────────────
             if (principalId <= 0) return null;
 
-            if (hasAllow)
-                results.Add(new SetPermissionRequest
-                {
-                    FolderID       = folderId,
-                    PrincipalType  = principalType,
-                    PrincipalID    = principalId,
-                    CanRead        = allowChecked[0], CanWrite  = allowChecked[1],
-                    CanDelete      = allowChecked[2], CanModify = allowChecked[3],
-                    CanFullControl = allowChecked[4], IsDeny    = false
-                });
-            if (hasDeny)
-                results.Add(new SetPermissionRequest
-                {
-                    FolderID       = folderId,
-                    PrincipalType  = principalType,
-                    PrincipalID    = principalId,
-                    CanRead        = denyChecked[0], CanWrite  = denyChecked[1],
-                    CanDelete      = denyChecked[2], CanModify = denyChecked[3],
-                    CanFullControl = denyChecked[4], IsDeny    = true
-                });
+            // สร้าง entry สำหรับ permissions ที่เลือก (เฉพาะ Allow)
+            var allowRequest = CreatePermissionRequest(
+                folderId, (PrincipalType)principalType, principalId,
+                permissionChecked);
+            if (allowRequest != null) results.Add(allowRequest);
 
             return results.Count > 0 ? results : null;
         }
 
-        private SetPermissionRequest PromptForPermissionRequest(int folderId, FolderPermission existing)
+        /// <summary>
+        /// สร้าง SetPermissionRequest สำหรับ permissions ที่เลือก (เฉพาะ Allow)
+        /// </summary>
+        private SetPermissionRequest CreatePermissionRequest(
+            int folderId, PrincipalType principalType, int principalId,
+            bool[] permissions)
         {
-            bool[] allowOut = new bool[5];
-            bool[] denyOut  = new bool[5];
-            int pt = 1, pid = 0;
-            List<OrgUnitPickerDialog.OrgUnitSelection> multiOrg;
-            if (!ShowPermissionDialog(folderId, existing, out allowOut, out denyOut, out pt, out pid, out multiOrg))
-                return null;
-            bool anyDeny = denyOut[0] || denyOut[1] || denyOut[2] || denyOut[3] || denyOut[4];
+            // ตรวจสอบว่ามี permission ใดถูกเลือกบ้าง
+            bool hasAnyPermission = permissions[0] || permissions[1] || permissions[2] || permissions[3] || permissions[4];
+
+            if (!hasAnyPermission) return null;
+
             return new SetPermissionRequest
             {
                 FolderID       = folderId,
-                PrincipalType  = pt,
+                PrincipalType  = principalType,
+                PrincipalID    = principalId,
+                CanRead        = permissions[0],
+                CanWrite       = permissions[1],
+                CanDelete      = permissions[2],
+                CanModify      = permissions[3],
+                CanFullControl = permissions[4],
+                IsDeny         = false  // Always Allow since we removed Deny option
+            };
+        }
+
+        private SetPermissionRequest PromptForPermissionRequest(int folderId, FolderPermission existing)
+        {
+            bool[] permissionChecked = new bool[5];
+            int pt = 1, pid = 0;
+            List<OrgUnitSelection> multiOrg;
+            if (!ShowPermissionDialog(folderId, existing, out permissionChecked, out pt, out pid, out multiOrg))
+                return null;
+            
+            return new SetPermissionRequest
+            {
+                FolderID       = folderId,
+                PrincipalType  = (PrincipalType)pt,
                 PrincipalID    = pid,
-                CanRead        = allowOut[0] || denyOut[0],
-                CanWrite       = allowOut[1] || denyOut[1],
-                CanDelete      = allowOut[2] || denyOut[2],
-                CanModify      = allowOut[3] || denyOut[3],
-                CanFullControl = allowOut[4] || denyOut[4],
-                IsDeny         = anyDeny
+                CanRead        = permissionChecked[0],
+                CanWrite       = permissionChecked[1],
+                CanDelete      = permissionChecked[2],
+                CanModify      = permissionChecked[3],
+                CanFullControl = permissionChecked[4],
+                IsDeny         = false  // Always Allow since we removed Deny option
             };
         }
 
         private bool ShowPermissionDialog(int folderId, FolderPermission existing,
-            out bool[] allowChecked, out bool[] denyChecked, out int principalType, out int principalId,
-            out List<OrgUnitPickerDialog.OrgUnitSelection> multiOrg)
+            out bool[] permissionChecked, out int principalType, out int principalId,
+            out List<OrgUnitSelection> multiOrg)
         {
             multiOrg = null;
             using (var dlg = new Form())
@@ -830,7 +1770,7 @@ namespace CMS.Presentation
                 };
 
                 // เก็บ OrgUnitSelection list ที่เลือก
-                var pickedOrgUnits = new List<OrgUnitPickerDialog.OrgUnitSelection>();
+                var pickedOrgUnits = new List<OrgUnitSelection>();
 
                 btnOrgPicker.Click += (s, e) =>
                 {
@@ -841,7 +1781,7 @@ namespace CMS.Presentation
                         catch { }
                     }
 
-                    using (var picker = new OrgUnitPickerDialog(allUnits))
+                    using (var picker = new OrgStructureSelectionDialog(allUnits))
                     {
                         if (picker.ShowDialog(dlg) == DialogResult.OK && picker.SelectedUnits.Count > 0)
                         {
@@ -1004,9 +1944,9 @@ namespace CMS.Presentation
                 {
                     switch (existing.PrincipalType)
                     {
-                        case 1:  rdUser.Checked  = true; break;
-                        case 3:  // Department
-                        case 4:  // Division
+                        case PrincipalType.User:  rdUser.Checked  = true; break;
+                        case PrincipalType.Department:  // Department
+                        case PrincipalType.Division:  // Division
                             rdGroup.Checked = true; break;
                         default: rdGroup.Checked = true; break;
                     }
@@ -1022,14 +1962,14 @@ namespace CMS.Presentation
                 // Set existing principal value
                 if (existing != null)
                 {
-                    if (existing.PrincipalType == 1 && _userList != null && _userList.Count > 0)
+                    if (existing.PrincipalType == PrincipalType.User && _userList != null && _userList.Count > 0)
                     {
                         var eu = _userList.FirstOrDefault(u => u.UserID == existing.PrincipalId);
                         cboSelect.Text = eu != null
                             ? string.Format("{0} — {1} (ID:{2})", eu.ADUserName, eu.DisplayName, eu.UserID)
                             : existing.PrincipalId.ToString();
                     }
-                    else if (existing.PrincipalType == 3)
+                    else if (existing.PrincipalType == PrincipalType.Department)
                     {
                         // Department
                         string deptName;
@@ -1038,7 +1978,7 @@ namespace CMS.Presentation
                         else
                             cboSelect.Text = string.Format("DeptID: {0}", existing.PrincipalId);
                     }
-                    else if (existing.PrincipalType == 4)
+                    else if (existing.PrincipalType == PrincipalType.Division)
                     {
                         // Division
                         string divName;
@@ -1081,22 +2021,20 @@ namespace CMS.Presentation
                     BackColor = Color.FromArgb(240, 244, 250)
                 };
                 pnlPermHdr.Controls.Add(new Label { Text = "สิทธิ์",  Location = new Point(10, 5), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60) });
-                pnlPermHdr.Controls.Add(new Label { Text = "Allow",   Location = new Point(272, 5), Size = new Size(60, 18), Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60), TextAlign = ContentAlignment.MiddleCenter });
-                pnlPermHdr.Controls.Add(new Label { Text = "Deny",    Location = new Point(365, 5), Size = new Size(55, 18), Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60), TextAlign = ContentAlignment.MiddleCenter });
+                pnlPermHdr.Controls.Add(new Label { Text = "เลือก",   Location = new Point(320, 5), Size = new Size(60, 18), Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60), TextAlign = ContentAlignment.MiddleCenter });
                 pnlPerm.Controls.Add(pnlPermHdr);
 
-                // Row data: label, existing allow, existing deny
+                // Row data: label, existing permission (checked if has permission and not denied)
                 var permDefs = new[]
                 {
-                    new { Label = "📖 อ่าน (Read)",      Allow = existing != null && existing.CanRead        && !existing.IsDeny, Deny = existing != null && existing.CanRead        && existing.IsDeny },
-                    new { Label = "✏️ เขียน (Write)",    Allow = existing != null && existing.CanWrite       && !existing.IsDeny, Deny = existing != null && existing.CanWrite       && existing.IsDeny },
-                    new { Label = "🗑 ลบ (Delete)",      Allow = existing != null && existing.CanDelete      && !existing.IsDeny, Deny = existing != null && existing.CanDelete      && existing.IsDeny },
-                    new { Label = "🔧 แก้ไข (Modify)",  Allow = existing != null && existing.CanModify      && !existing.IsDeny, Deny = existing != null && existing.CanModify      && existing.IsDeny },
-                    new { Label = "👑 Full Control",     Allow = existing != null && existing.CanFullControl && !existing.IsDeny, Deny = existing != null && existing.CanFullControl && existing.IsDeny },
+                    new { Label = "📖 อ่าน (Read)",      Checked = existing != null && existing.CanRead        && !existing.IsDeny },
+                    new { Label = "✏️ เขียน (Write)",    Checked = existing != null && existing.CanWrite       && !existing.IsDeny },
+                    new { Label = "🗑 ลบ (Delete)",      Checked = existing != null && existing.CanDelete      && !existing.IsDeny },
+                    new { Label = "🔧 แก้ไข (Modify)",  Checked = existing != null && existing.CanModify      && !existing.IsDeny },
+                    new { Label = "👑 Full Control",     Checked = existing != null && existing.CanFullControl && !existing.IsDeny },
                 };
 
-                var rdAllow = new RadioButton[5];
-                var rdDeny  = new RadioButton[5];
+                var chkPermissions = new CheckBox[5];
 
                 for (int i = 0; i < permDefs.Length; i++)
                 {
@@ -1112,16 +2050,19 @@ namespace CMS.Presentation
                     {
                         Text      = permDefs[i].Label,
                         Location  = new Point(10, 5),
-                        Size      = new Size(240, 20),
+                        Size      = new Size(280, 20),
                         Font      = new Font("Segoe UI", 9),
                         ForeColor = Color.FromArgb(40, 40, 40)
                     });
 
-                    // Allow/Deny radio buttons are inside the rowPnl so they auto-group per row
-                    rdAllow[i] = new RadioButton { Location = new Point(291, 5), Size = new Size(20, 20), Checked = permDefs[i].Allow };
-                    rdDeny[i]  = new RadioButton { Location = new Point(388, 5), Size = new Size(20, 20), Checked = permDefs[i].Deny  };
-                    rowPnl.Controls.Add(rdAllow[i]);
-                    rowPnl.Controls.Add(rdDeny[i]);
+                    // Single checkbox for permission
+                    chkPermissions[i] = new CheckBox 
+                    { 
+                        Location = new Point(335, 5), 
+                        Size = new Size(20, 20), 
+                        Checked = permDefs[i].Checked 
+                    };
+                    rowPnl.Controls.Add(chkPermissions[i]);
                     pnlPerm.Controls.Add(rowPnl);
                 }
                 dlg.Controls.Add(pnlPerm);
@@ -1169,7 +2110,7 @@ namespace CMS.Presentation
                 };
                 pnlWarn.Controls.Add(new Label
                 {
-                    Text      = "⚠ การเปลี่ยนแปลงนี้ต้องได้รับอนุมัติจาก Admin",
+                    Text      = "⚠ การเปลี่ยนแปลงนี้ต้องได้รับอนุมัติจาก Admin (เลือก = มีสิทธิ์, ไม่เลือก = ไม่มีสิทธิ์)",
                     Dock      = DockStyle.Fill,
                     Font      = new Font("Segoe UI", 9),
                     ForeColor = Color.FromArgb(160, 90, 0),
@@ -1251,8 +2192,7 @@ namespace CMS.Presentation
                 {
                     if (dlg.ShowDialog() != DialogResult.OK)
                     {
-                        allowChecked  = new bool[5];
-                        denyChecked   = new bool[5];
+                        permissionChecked = new bool[5];
                         principalType = 1;
                         principalId   = 0;
                         multiOrg      = null;
@@ -1262,12 +2202,11 @@ namespace CMS.Presentation
                     // ── กรณี rdGroup + pickedOrgUnits → ข้าม validation ปกติ ──
                     if (rdGroup.Checked && pickedOrgUnits.Count > 0)
                     {
-                        // ตรวจสอบว่าเลือก Allow หรือ Deny อย่างน้อย 1 รายการ
-                        bool anyPerm = rdAllow[0].Checked || rdAllow[1].Checked || rdAllow[2].Checked || rdAllow[3].Checked || rdAllow[4].Checked
-                                    || rdDeny[0].Checked  || rdDeny[1].Checked  || rdDeny[2].Checked  || rdDeny[3].Checked  || rdDeny[4].Checked;
+                        // ตรวจสอบว่าเลือกสิทธิ์อย่างน้อย 1 รายการ
+                        bool anyPerm = chkPermissions[0].Checked || chkPermissions[1].Checked || chkPermissions[2].Checked || chkPermissions[3].Checked || chkPermissions[4].Checked;
                         if (!anyPerm)
                         {
-                            MessageBox.Show("กรุณาเลือกสิทธิ์อย่างน้อย 1 รายการ (Allow หรือ Deny)",
+                            MessageBox.Show("กรุณาเลือกสิทธิ์อย่างน้อย 1 รายการ",
                                 "ข้อมูลไม่ครบ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             continue;
                         }
@@ -1360,8 +2299,7 @@ namespace CMS.Presentation
                 // กรณีเลือกจาก OrgUnitPickerDialog (หลายหน่วยงาน) — ส่ง list กลับผ่าน out parameter
                 if (rdGroup.Checked && pickedOrgUnits.Count > 0)
                 {
-                    allowChecked  = new bool[] { rdAllow[0].Checked, rdAllow[1].Checked, rdAllow[2].Checked, rdAllow[3].Checked, rdAllow[4].Checked };
-                    denyChecked   = new bool[] { rdDeny[0].Checked,  rdDeny[1].Checked,  rdDeny[2].Checked,  rdDeny[3].Checked,  rdDeny[4].Checked  };
+                    permissionChecked = new bool[] { chkPermissions[0].Checked, chkPermissions[1].Checked, chkPermissions[2].Checked, chkPermissions[3].Checked, chkPermissions[4].Checked };
                     var first     = pickedOrgUnits[0];
                     principalType = first.PrincipalType;
                     principalId   = first.OrgUnit.OrgUnitID;
@@ -1387,9 +2325,8 @@ namespace CMS.Presentation
                     }
                 }
 
-                // Set out parameters with per-permission allow/deny state
-                allowChecked  = new bool[] { rdAllow[0].Checked, rdAllow[1].Checked, rdAllow[2].Checked, rdAllow[3].Checked, rdAllow[4].Checked };
-                denyChecked   = new bool[] { rdDeny[0].Checked,  rdDeny[1].Checked,  rdDeny[2].Checked,  rdDeny[3].Checked,  rdDeny[4].Checked  };
+                // Set out parameters with per-permission checked state
+                permissionChecked = new bool[] { chkPermissions[0].Checked, chkPermissions[1].Checked, chkPermissions[2].Checked, chkPermissions[3].Checked, chkPermissions[4].Checked };
                 
                 // Determine principalType: 1=User, 3=Department, 4=Division
                 if (rdUser.Checked)
@@ -1408,7 +2345,7 @@ namespace CMS.Presentation
 
                 principalId = finalId;
                 // ดึง multiOrg จาก dlg.Tag (ถ้ามี)
-                multiOrg = dlg.Tag as List<OrgUnitPickerDialog.OrgUnitSelection>;
+                multiOrg = dlg.Tag as List<OrgUnitSelection>;
                 return true;
             }
         }
@@ -1426,7 +2363,7 @@ namespace CMS.Presentation
         private static string PermCheck(bool value, bool isDeny)
         {
             if (!value) return "—";
-            return isDeny ? "⊘" : "✓";
+            return isDeny ? "—" : "✓";  // Show hyphen (—) for Deny, checkmark (✓) for Allow
         }
 
         /// <summary>

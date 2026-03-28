@@ -7,6 +7,7 @@ namespace CMS.Data.Interfaces
     {
         int Insert(Folder folder);
         void Update(Folder folder);
+        void UpdateFileCount(int folderId);
         Folder GetById(int folderId);
         IEnumerable<Folder> GetChildren(int parentFolderId);
         IEnumerable<Folder> GetDescendants(int folderId);
@@ -16,6 +17,7 @@ namespace CMS.Data.Interfaces
         IEnumerable<Folder> GetDeletedByOrgUnit(int orgUnitId);
         IEnumerable<Folder> GetByOrgUnit(int orgUnitId);
         IEnumerable<Folder> GetAll();
+        IEnumerable<Folder> GetSiblings(int? parentFolderId, int orgUnitId);
         void SoftDelete(int folderId, int deletedBy);
         void Restore(int folderId);
         void PermanentDelete(int folderId);

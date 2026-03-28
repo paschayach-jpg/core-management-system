@@ -4,7 +4,6 @@ using CMS.Data.Repositories;
 using CMS.Domain.Models;
 using CMS.Infrastructure;
 using CMS.Services;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -34,6 +33,7 @@ namespace CMS.Presentation
                 var fileDocumentRepository   = new FileDocumentRepository(configManager);
                 var filePermissionRepository = new FilePermissionRepository(configManager);
                 var folderTemplateRepository = new FolderTemplateRepository(configManager);
+                var quickAccessRepository = new QuickAccessRepository(configManager);
 
                 var auditService        = new AuditService(auditRepository, loggingService);
                 var notificationService = new NotificationService(notificationRepository, loggingService);
@@ -86,6 +86,12 @@ namespace CMS.Presentation
                 // --- Employee API service ---
                 var employeeApiService = new EmployeeApiService(configManager);
 
+                // --- Upload checkpoint service ---
+                var uploadCheckpointService = new UploadCheckpointService(loggingService);
+
+                // --- Quick Access service ---
+                var quickAccessService = new QuickAccessService(quickAccessRepository, folderRepository);
+
                 // --- Resolve Windows identity ---
                 AdUserInfo adUser;
                 try
@@ -106,11 +112,51 @@ namespace CMS.Presentation
                 // --- Look up UserAccount in CMS database ---
                 UserAccount account = userAccountRepo.GetByADUserName(adUser.AdIdentity);
 
-                if (account == null || !account.IsActive)
+                if (account == null)
+                {
+                    // Auto-register new user
+                    try
+                    {
+                        var newAccount = new UserAccount
+                        {
+                            ADUserName = adUser.AdIdentity,
+                            DisplayName = adUser.DisplayName ?? adUser.AdIdentity,
+                            Email = null, // Will be set during PDPA consent
+                            AppRole = 1, // Default to Officer role
+                            OrgUnitID = 1, // Default OrgUnit - you may need to adjust this
+                            IsActive = true,
+                            ConsentGiven = false,
+                            CreatedDate = DateTime.Now
+                        };
+
+                        int newUserId = userAccountRepo.Create(newAccount);
+                        account = userAccountRepo.GetById(newUserId);
+
+                        loggingService.Info($"Auto-registered new user: {adUser.AdIdentity}");
+                        
+                        MessageBox.Show(
+                            $"Welcome! Your account has been automatically registered.\n\nUser: {adUser.DisplayName}\nRole: Officer (Default)\n\nYou will need to accept the PDPA policy to continue.",
+                            "CMS - Account Created",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        loggingService.Error($"Failed to auto-register user {adUser.AdIdentity}", ex);
+                        MessageBox.Show(
+                            "Failed to register your account automatically. Please contact your system administrator.",
+                            "CMS - Registration Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+
+                if (!account.IsActive)
                 {
                     MessageBox.Show(
-                        "Your account is not authorized to access this system.",
-                        "CMS - Access Denied",
+                        "Your account has been deactivated. Please contact your system administrator.",
+                        "CMS - Account Deactivated",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
                     return;
@@ -201,7 +247,9 @@ namespace CMS.Presentation
                     filePermissionRepository,
                     fileDocumentRepository,
                     folderTemplateRepository,
-                    employeeApiService);
+                    employeeApiService,
+                    uploadCheckpointService,
+                    quickAccessService);
                 Application.Run(mainForm);
             }
             catch (Exception ex)

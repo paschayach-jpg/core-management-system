@@ -1,4 +1,5 @@
 ﻿using System;
+using CMS.Domain.Enums;
 
 namespace CMS.Domain.Models
 {
@@ -27,5 +28,19 @@ namespace CMS.Domain.Models
         public DateTime CreatedDate { get; set; }
         // Aliases
         public string AdIdentity { get { return ADUserName; } set { ADUserName = value; } }
+
+        /// <summary>Alias for UserID.</summary>
+        public int UserId
+        {
+            get { return UserID; }
+            set { UserID = value; }
+        }
+
+        /// <summary>Alias for AppRole as UserRole enum.</summary>
+        public UserRole Role
+        {
+            get { return (UserRole)AppRole; }
+            set { AppRole = (int)value; }
+        }
     }
 }

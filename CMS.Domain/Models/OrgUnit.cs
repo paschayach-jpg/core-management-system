@@ -49,8 +49,8 @@ namespace CMS.Domain.Models
         /// <summary>Display name — falls back to OrgUnitNameEN then OrgUnitCode.</summary>
         public string Name
         {
-            get { return !string.IsNullOrEmpty(OrgUnitNameEN) ? OrgUnitNameEN : OrgUnitCode; }
-            set { OrgUnitNameEN = value; }
+            get { return !string.IsNullOrEmpty(OrgUnitNameTH) ? OrgUnitNameTH : (!string.IsNullOrEmpty(OrgUnitNameEN) ? OrgUnitNameEN : OrgUnitCode); }
+            set { OrgUnitNameTH = value; }
         }
 
         /// <summary>Tier derived from OrgUnitType.</summary>

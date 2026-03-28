@@ -432,12 +432,13 @@ namespace CMS.Tests
         public void DownloadFile_WithMatchingChecksum_Succeeds()
         {
             // Arrange
+            // SHA256 of bytes {1,2,3} = 039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81
             var doc = new FileDocument
             {
                 FileID = 1,
                 FolderID = FolderId,
                 OriginalFileName = "test.pdf",
-                Checksum = "abc123",
+                Checksum = "039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81",
                 FileStatus = 1,
                 PhysicalPath = "/path/to/file"
             };

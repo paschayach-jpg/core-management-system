@@ -14,19 +14,37 @@ namespace CMS.Presentation
     {
         private readonly List<OrgUnit>       _allUnits;
         private readonly IEmployeeApiService _employeeApiService;
+        private readonly IOrgStructureService _orgService;
         private readonly OrgUnitTier         _fixedTier;
+        private readonly OrgUnit             _selectedParent; // Context จาก TreeView
 
         public CreateOrgUnitRequest Result { get; private set; }
 
         public CreateOrgUnitDialog(IEnumerable<OrgUnit> allUnits,
             IEmployeeApiService employeeApiService = null,
-            OrgUnitTier? fixedTier = null)
+            OrgUnitTier? fixedTier = null,
+            IOrgStructureService orgService = null,
+            OrgUnit selectedParent = null)
         {
-            _allUnits           = allUnits == null ? new List<OrgUnit>() : allUnits.Where(u => u.IsActive).ToList();
+            // Include ALL units (active, inactive, deleted) to avoid code conflicts
+            _allUnits           = allUnits?.ToList() ?? new List<OrgUnit>();
             _employeeApiService = employeeApiService;
+            _orgService         = orgService;
             _fixedTier          = fixedTier ?? OrgUnitTier.SubCommittee;
+            _selectedParent     = selectedParent; // เก็บ context
+
+            // Debug: Show total units received
+            System.Diagnostics.Debug.WriteLine($"CreateOrgUnitDialog received {_allUnits.Count} units");
+            var divCodes = _allUnits.Where(u => u.OrgUnitCode != null && u.OrgUnitCode.StartsWith("DIV-"))
+                                   .Select(u => $"{u.OrgUnitCode} (Active:{u.IsActive}, Deleted:{u.IsDeleted})")
+                                   .ToList();
+            if (divCodes.Any())
+            {
+                System.Diagnostics.Debug.WriteLine($"Existing DIV codes: {string.Join(", ", divCodes)}");
+            }
 
             InitializeComponent();
+            SetupGoldBorderEffect(); // เพิ่ม gold border effect
 
             cboTier.Items.Clear();
             cboTier.Items.Add(OrgUnitTier.SubCommittee);
@@ -37,33 +55,74 @@ namespace CMS.Presentation
             {
                 cboTier.SelectedItem = fixedTier.Value;
                 cboTier.Enabled      = false;
+                RefreshParentList(fixedTier.Value);
+                ApplyTierUiRules(fixedTier.Value);
             }
             else
             {
                 cboTier.SelectedIndex = 0;
+                var initialTier = (OrgUnitTier)cboTier.Items[0];
+                RefreshParentList(initialTier);
+                ApplyTierUiRules(initialTier);
             }
-
-            RefreshParentList(_fixedTier);
-            ApplyTierUiRules(_fixedTier);
+            
+            // Add real-time validation for code field
+            txtCode.TextChanged += TxtCode_TextChanged;
+            
+            // Add event handler for tier changes
+            cboTier.SelectedIndexChanged += OnTierChanged;
+            
+            // Add event handler for parent selection changes
+            cboParent.SelectedIndexChanged += OnParentChanged;
         }
 
-        // ── ปรับ UI ตาม tier ──────────────────────────────────────────────────
+        // ── Gold Border Effect ────────────────────────────────────────────────
+
+        private void SetupGoldBorderEffect()
+        {
+            // เพิ่ม Paint event สำหรับ gradient effect
+            pnlGoldBorder.Paint += PnlGoldBorder_Paint;
+        }
+
+        private void PnlGoldBorder_Paint(object sender, PaintEventArgs e)
+        {
+            Panel panel = sender as Panel;
+            if (panel == null) return;
+
+            // สร้าง gradient brush สีทองหรูหรา
+            using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(0, 0, panel.Width, panel.Height),
+                Color.FromArgb(255, 223, 0),    // ทองสว่าง (Gold)
+                Color.FromArgb(184, 134, 11),   // ทองเข้ม (DarkGoldenrod)
+                System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+            {
+                e.Graphics.FillRectangle(brush, 0, 0, panel.Width, panel.Height);
+            }
+
+            // เพิ่ม highlight ด้านบน
+            using (var highlightPen = new Pen(Color.FromArgb(255, 235, 59), 1))
+            {
+                e.Graphics.DrawLine(highlightPen, 0, 0, panel.Width, 0);
+            }
+        }
+
+        /// <summary>ปรับ UI ตาม tier</summary>
         private void ApplyTierUiRules(OrgUnitTier tier)
         {
             switch (tier)
             {
                 case OrgUnitTier.SubCommittee:
-                    lblHeader.Text      = "สร้างหน่วยงานใหม่\n🏢  กำลังสร้าง SubCommittee  (ระดับสูงสุด)";
+                    lblHeader.Text      = "สร้างหน่วยงานใหม่\n🏢  กำลังสร้าง SubCommittee  (ระดับสูงสุด - ไม่มีหน่วยงานแม่)";
                     btnSearchTH.Visible = false;
                     btnSearchEN.Visible = false;
                     break;
                 case OrgUnitTier.Division:
-                    lblHeader.Text      = "สร้างหน่วยงานใหม่\n🏬  กำลังสร้างฝ่าย  (ค้นหาได้เฉพาะฝ่ายจาก API)";
+                    lblHeader.Text      = "สร้างหน่วยงานใหม่\n🏬  กำลังสร้างฝ่าย  (สามารถเลือกสังกัด SubCommittee หรือเป็นอิสระได้)";
                     btnSearchTH.Visible = true;
                     btnSearchEN.Visible = false;
                     break;
                 default: // Department
-                    lblHeader.Text      = "สร้างหน่วยงานใหม่\n🏪  กำลังสร้างแผนก  (ค้นหาได้เฉพาะแผนกจาก API)";
+                    lblHeader.Text      = "สร้างหน่วยงานใหม่\n🏪  กำลังสร้างแผนก  (ต้องสังกัดฝ่าย)";
                     btnSearchTH.Visible = true;
                     btnSearchEN.Visible = false;
                     break;
@@ -86,15 +145,125 @@ namespace CMS.Presentation
                 default:                       prefix = "DEPT"; break;
             }
 
-            int existing = _allUnits.Count(u => u.Tier == tier);
-            return string.Format("{0}-{1:D3}", prefix, existing + 1);
+            // Get fresh data from database if service is available
+            List<OrgUnit> allUnits;
+            if (_orgService != null)
+            {
+                try
+                {
+                    allUnits = _orgService.GetHierarchy().ToList();
+                    System.Diagnostics.Debug.WriteLine($"GenerateCode: Got fresh data from service - {allUnits.Count} units");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"GenerateCode: Failed to get fresh data, using cached: {ex.Message}");
+                    allUnits = _allUnits;
+                }
+            }
+            else
+            {
+                allUnits = _allUnits;
+                System.Diagnostics.Debug.WriteLine($"GenerateCode: No service available, using cached data - {allUnits.Count} units");
+            }
+
+            // Get all existing codes with this prefix (including deleted ones to avoid reuse)
+            var existingCodes = new HashSet<string>(allUnits
+                .Where(u => u.OrgUnitCode != null && u.OrgUnitCode.StartsWith(prefix + "-"))
+                .Select(u => u.OrgUnitCode)); // Use HashSet for faster lookup
+
+            // Debug: Show existing codes
+            if (existingCodes.Count > 0)
+            {
+                var codeList = string.Join(", ", existingCodes.OrderBy(c => c));
+                System.Diagnostics.Debug.WriteLine($"Existing {prefix} codes: {codeList}");
+            }
+
+            // Extract numbers from existing codes to find the highest
+            var existingNumbers = new List<int>();
+            foreach (var code in existingCodes)
+            {
+                var parts = code.Split('-');
+                if (parts.Length == 2 && int.TryParse(parts[1], out int number))
+                {
+                    existingNumbers.Add(number);
+                }
+            }
+
+            // Find the next available number
+            int nextNumber = existingNumbers.Count > 0 ? existingNumbers.Max() + 1 : 1;
+            
+            // Double-check that the generated code doesn't exist
+            string newCode;
+            do
+            {
+                newCode = string.Format("{0}-{1:D3}", prefix, nextNumber);
+                nextNumber++;
+            }
+            while (existingCodes.Contains(newCode) && nextNumber <= 999);
+
+            // Additional safety check - if we somehow reach 999, use timestamp
+            if (nextNumber > 999)
+            {
+                var timestamp = DateTime.Now.ToString("MMddHHmm");
+                newCode = string.Format("{0}-{1}", prefix, timestamp);
+            }
+
+            System.Diagnostics.Debug.WriteLine($"Generated code: {newCode}");
+            return newCode;
         }
 
         // ── Event handlers ────────────────────────────────────────────────────
+        private void TxtCode_TextChanged(object sender, EventArgs e)
+        {
+            string code = txtCode.Text.Trim();
+            if (string.IsNullOrWhiteSpace(code)) return;
+
+            // Get fresh data for validation
+            List<OrgUnit> allUnits;
+            if (_orgService != null)
+            {
+                try
+                {
+                    allUnits = _orgService.GetHierarchy().ToList();
+                }
+                catch
+                {
+                    allUnits = _allUnits;
+                }
+            }
+            else
+            {
+                allUnits = _allUnits;
+            }
+
+            // Check for duplicate code
+            var existingUnit = allUnits.FirstOrDefault(u => 
+                u.OrgUnitCode == code && u.IsActive && !u.IsDeleted);
+
+            if (existingUnit != null)
+            {
+                txtCode.BackColor = Color.FromArgb(255, 235, 235); // Light red
+                txtCode.ForeColor = Color.FromArgb(220, 53, 69);   // Red text
+            }
+            else
+            {
+                txtCode.BackColor = Color.White;
+                txtCode.ForeColor = Color.Black;
+            }
+        }
+
         private void OnTierChanged(object sender, EventArgs e)
         {
             if (cboTier.SelectedItem == null) return;
-            RefreshParentList((OrgUnitTier)cboTier.SelectedItem);
+            var selectedTier = (OrgUnitTier)cboTier.SelectedItem;
+            RefreshParentList(selectedTier);
+            ApplyTierUiRules(selectedTier);
+        }
+
+        private void OnParentChanged(object sender, EventArgs e)
+        {
+            // ไม่ต้อง lock tier เมื่อเลือก parent - ให้ผู้ใช้เลือกเองได้
+            // เพียงแค่ตรวจสอบความถูกต้องเมื่อกด OK
         }
 
         private void OnSearchNameClick(object sender, EventArgs e)
@@ -106,7 +275,9 @@ namespace CMS.Presentation
                 return;
             }
 
-            bool   isDivision = _fixedTier == OrgUnitTier.Division;
+            // ใช้ tier ที่เลือกจริงแทนที่จะใช้ _fixedTier
+            var currentTier = cboTier.SelectedItem != null ? (OrgUnitTier)cboTier.SelectedItem : OrgUnitTier.Division;
+            bool   isDivision = currentTier == OrgUnitTier.Division;
             string dlgTitle   = isDivision ? "เลือกฝ่าย" : "เลือกแผนก";
 
             using (var dlg = new Form())
@@ -243,20 +414,84 @@ namespace CMS.Presentation
                 return;
             }
 
-            var tier = (OrgUnitTier)cboTier.SelectedItem;
+            // Check for duplicate code - get fresh data
+            List<OrgUnit> allUnits;
+            if (_orgService != null)
+            {
+                try
+                {
+                    allUnits = _orgService.GetHierarchy().ToList();
+                }
+                catch
+                {
+                    allUnits = _allUnits;
+                }
+            }
+            else
+            {
+                allUnits = _allUnits;
+            }
 
-            if (tier != OrgUnitTier.SubCommittee && cboParent.SelectedItem == null)
+            var existingUnit = allUnits.FirstOrDefault(u => 
+                u.OrgUnitCode == code && u.IsActive && !u.IsDeleted);
+            
+            if (existingUnit != null)
             {
                 MessageBox.Show(
-                    string.Format("ระดับ {0} ต้องมีหน่วยงานแม่ กรุณาเลือก", tier),
-                    "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    string.Format("รหัสหน่วยงาน '{0}' มีอยู่ในระบบแล้ว\nหน่วยงาน: {1}\n\nกรุณาใช้รหัสอื่น", 
+                        code, existingUnit.OrgUnitNameTH ?? existingUnit.Name), 
+                    "รหัสซ้ำ", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtCode.Focus();
+                DialogResult = DialogResult.None;
+                return;
+            }
+
+            var tier = (OrgUnitTier)cboTier.SelectedItem;
+
+            // ตรวจสอบ hierarchy rules
+            if (cboParent.SelectedItem is OrgUnitItem parentItem && parentItem.OrgUnit != null)
+            {
+                var parentTier = parentItem.OrgUnit.Tier;
+                
+                // ตรวจสอบ hierarchy ที่ถูกต้อง
+                if (parentTier == OrgUnitTier.SubCommittee && tier != OrgUnitTier.Division)
+                {
+                    MessageBox.Show("SubCommittee สามารถมีได้แค่ Division เท่านั้น", "Hierarchy Error", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    DialogResult = DialogResult.None;
+                    return;
+                }
+                
+                if (parentTier == OrgUnitTier.Division && tier != OrgUnitTier.Department)
+                {
+                    MessageBox.Show("Division สามารถมีได้แค่ Department เท่านั้น", "Hierarchy Error", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    DialogResult = DialogResult.None;
+                    return;
+                }
+                
+                if (parentTier == OrgUnitTier.Department)
+                {
+                    MessageBox.Show("ไม่สามารถสร้างหน่วยงานใต้ Department ได้", "Hierarchy Error", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    DialogResult = DialogResult.None;
+                    return;
+                }
+            }
+
+            // Only Department requires parent, Division and SubCommittee are optional
+            if (tier == OrgUnitTier.Department && cboParent.SelectedItem == null)
+            {
+                MessageBox.Show("แผนกต้องมีฝ่ายแม่ กรุณาเลือก", "Validation", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 DialogResult = DialogResult.None;
                 return;
             }
 
             int? parentId = null;
-            if (tier != OrgUnitTier.SubCommittee && cboParent.SelectedItem is OrgUnitItem)
-                parentId = ((OrgUnitItem)cboParent.SelectedItem).OrgUnit.OrgUnitId;
+            if (cboParent.SelectedItem is OrgUnitItem selectedParent && selectedParent.OrgUnit != null)
+                parentId = selectedParent.OrgUnit.OrgUnitId;
 
             if (string.IsNullOrEmpty(nameEN))
                 nameEN = nameTH;
@@ -274,32 +509,117 @@ namespace CMS.Presentation
         // ── Helpers ───────────────────────────────────────────────────────────
         private void RefreshParentList(OrgUnitTier tier)
         {
+            // ปิด event handler ชั่วคราวเพื่อไม่ให้ trigger ระหว่าง refresh
+            cboParent.SelectedIndexChanged -= OnParentChanged;
+            
             cboParent.Items.Clear();
 
             if (tier == OrgUnitTier.SubCommittee)
             {
+                // SubCommittee ไม่มี parent
                 cboParent.Enabled = false;
+                cboParent.SelectedIndexChanged += OnParentChanged;
                 return;
             }
 
-            cboParent.Enabled = true;
+            if (tier == OrgUnitTier.Division)
+            {
+                // Division can choose to belong to a SubCommittee or be independent
+                cboParent.Enabled = true;
+                cboParent.Items.Add(new OrgUnitItem(null) { DisplayText = "🔗 เป็นอิสระ (ไม่สังกัด SubCommittee ใดโดยเฉพาะ)" });
+                
+                List<OrgUnit> availableSubCommittees;
+                
+                if (_selectedParent != null && _selectedParent.Tier == OrgUnitTier.Division)
+                {
+                    // ถ้าเลือก Division ใน TreeView ให้หา SubCommittee ที่เป็น parent ของ Division นั้น
+                    var parentSubCommittee = _allUnits.FirstOrDefault(u => 
+                        u.OrgUnitId == _selectedParent.ParentOrgUnitID && 
+                        u.Tier == OrgUnitTier.SubCommittee && 
+                        u.IsActive);
+                    
+                    if (parentSubCommittee != null)
+                    {
+                        availableSubCommittees = new List<OrgUnit> { parentSubCommittee };
+                        System.Diagnostics.Debug.WriteLine($"Found parent SubCommittee: {parentSubCommittee.Name} for Division: {_selectedParent.Name}");
+                    }
+                    else
+                    {
+                        // ถ้า Division ไม่มี parent SubCommittee (เป็นอิสระ) ให้แสดงทั้งหมด
+                        availableSubCommittees = _allUnits.Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive).ToList();
+                        System.Diagnostics.Debug.WriteLine($"Division {_selectedParent.Name} is independent, showing all SubCommittees");
+                    }
+                }
+                else
+                {
+                    // ถ้าไม่ได้เลือก Division ให้แสดงทั้งหมด
+                    availableSubCommittees = _allUnits.Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive).ToList();
+                }
 
-            OrgUnitTier requiredParentTier = tier == OrgUnitTier.Division
-                ? OrgUnitTier.SubCommittee
-                : OrgUnitTier.Division;
+                System.Diagnostics.Debug.WriteLine($"Found {availableSubCommittees.Count} available SubCommittees:");
+                foreach (var sc in availableSubCommittees)
+                {
+                    System.Diagnostics.Debug.WriteLine($"  - {sc.OrgUnitCode}: {sc.Name} (Active: {sc.IsActive}, Deleted: {sc.IsDeleted})");
+                    cboParent.Items.Add(new OrgUnitItem(sc));
+                }
 
-            foreach (var p in _allUnits.Where(u => u.Tier == requiredParentTier).OrderBy(u => u.Name))
-                cboParent.Items.Add(new OrgUnitItem(p));
+                cboParent.SelectedIndex = 0; // Select "independent" by default
+                
+                // Debug: แสดงจำนวน items ใน combobox
+                System.Diagnostics.Debug.WriteLine($"Parent ComboBox has {cboParent.Items.Count} items");
+                
+                cboParent.SelectedIndexChanged += OnParentChanged;
+                return;
+            }
 
-            if (cboParent.Items.Count > 0)
-                cboParent.SelectedIndex = 0;
+            if (tier == OrgUnitTier.Department)
+            {
+                // Department must belong to a Division
+                cboParent.Enabled = true;
+
+                List<OrgUnit> availableDivisions;
+                
+                if (_selectedParent != null && _selectedParent.Tier == OrgUnitTier.Division)
+                {
+                    // ถ้าเลือก Division ใน TreeView ให้แสดงเฉพาะ Division นั้น
+                    availableDivisions = new List<OrgUnit> { _selectedParent };
+                    System.Diagnostics.Debug.WriteLine($"Selected Division context: {_selectedParent.Name}");
+                }
+                else
+                {
+                    // ถ้าไม่ได้เลือก Division ให้แสดงทั้งหมด
+                    availableDivisions = _allUnits.Where(u => u.Tier == OrgUnitTier.Division && u.IsActive).ToList();
+                }
+
+                foreach (var p in availableDivisions.OrderBy(u => u.Name))
+                    cboParent.Items.Add(new OrgUnitItem(p));
+
+                if (cboParent.Items.Count > 0)
+                    cboParent.SelectedIndex = 0;
+                    
+                cboParent.SelectedIndexChanged += OnParentChanged;
+                return;
+            }
+                
+            // เปิด event handler กลับ
+            cboParent.SelectedIndexChanged += OnParentChanged;
         }
 
         private class OrgUnitItem
         {
             public OrgUnit OrgUnit { get; private set; }
-            public OrgUnitItem(OrgUnit unit) { OrgUnit = unit; }
-            public override string ToString() { return OrgUnit.Name; }
+            public string DisplayText { get; set; }
+            
+            public OrgUnitItem(OrgUnit unit) 
+            { 
+                OrgUnit = unit; 
+                DisplayText = unit?.Name;
+            }
+            
+            public override string ToString() 
+            { 
+                return DisplayText ?? OrgUnit?.Name ?? ""; 
+            }
         }
     }
 }

@@ -19,6 +19,9 @@ namespace CMS.Presentation
         private List<FolderTemplate> _templates = new List<FolderTemplate>();
         private List<OrgUnit>        _orgUnits  = new List<OrgUnit>();
 
+        // ── Result ────────────────────────────────────────────────────────────
+        public int? SelectedOrgUnitId { get; private set; }
+
         public ApplyTemplateDialog(
             IFolderService            folderService,
             IFolderTemplateRepository templateRepository,
@@ -152,10 +155,10 @@ namespace CMS.Presentation
                 return;
             }
 
-            int conf = cboConfidentiality.SelectedIndex + 1;
+            int conf = cboConfidentiality.SelectedIndex >= 0 ? cboConfidentiality.SelectedIndex + 1 : 4;
 
             if (MessageBox.Show(
-                string.Format("ยืนยันการสร้าง Folder?\n\nหน่วยงาน :  {0}\nTemplate  :  {1}\nRoot Folder :  {2}\nระดับความลับ :  {3}",
+                string.Format("ยืนยันการสร้าง Folder?\n\nหน่วยงาน :  {0}\nTemplate  :  {1}\nRoot Folder :  {2}\nระดับ :  {3}",
                     ou.Name, tmpl.TemplateName, txtRootName.Text.Trim(), cboConfidentiality.Text.Trim()),
                 "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
@@ -169,6 +172,8 @@ namespace CMS.Presentation
                 _folderService.ApplyTemplateToOrgUnit(
                     ou.OrgUnitId, tmpl.TemplateID,
                     txtRootName.Text.Trim(), conf, _currentUser);
+
+                SelectedOrgUnitId = ou.OrgUnitId;
 
                 lblStatus.Text      = "✅ สร้าง Folder เรียบร้อยแล้ว";
                 lblStatus.ForeColor = Color.FromArgb(0, 120, 0);

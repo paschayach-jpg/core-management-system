@@ -50,11 +50,28 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand("storage.sp_UpdateFolder", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@FolderID",           folder.FolderID);
-                    cmd.Parameters.AddWithValue("@FolderName",         folder.FolderName);
+                    cmd.Parameters.AddWithValue("@FolderID",            folder.FolderID);
+                    cmd.Parameters.AddWithValue("@FolderName",          folder.FolderName);
+                    cmd.Parameters.AddWithValue("@ParentFolderID",      (object)folder.ParentFolderID ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@FolderDepth",         folder.FolderDepth);
+                    cmd.Parameters.AddWithValue("@PhysicalPath",        (object)folder.PhysicalPath ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ConfidentialityLevel",(byte)folder.ConfidentialityLevel);
-                    cmd.Parameters.AddWithValue("@InheritPermission",  folder.InheritPermission);
-                    cmd.Parameters.AddWithValue("@UpdatedBy",          (object)folder.UpdatedBy ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@InheritPermission",   folder.InheritPermission);
+                    cmd.Parameters.AddWithValue("@UpdatedBy",           (object)folder.UpdatedBy ?? DBNull.Value);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void UpdateFileCount(int folderId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("storage.sp_UpdateFolderFileCount", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@FolderID", folderId);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -220,6 +237,26 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand("storage.sp_GetAllFolders", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read()) results.Add(MapFolder(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
+        public IEnumerable<Folder> GetSiblings(int? parentFolderId, int orgUnitId)
+        {
+            var results = new List<Folder>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("storage.sp_GetFolderSiblings", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ParentFolderID", (object)parentFolderId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@OrgUnitID",      orgUnitId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read()) results.Add(MapFolder(reader));

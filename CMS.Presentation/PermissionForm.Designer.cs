@@ -49,30 +49,10 @@ namespace CMS.Presentation
             this.btnAdd = new System.Windows.Forms.Button();
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnRemove = new System.Windows.Forms.Button();
+            this.btnRefresh = new System.Windows.Forms.Button();
+            this.btnDiagnostic = new System.Windows.Forms.Button();
+            this.btnForceLoad = new System.Windows.Forms.Button();
             this.lblAclStatus = new System.Windows.Forms.Label();
-            this.tabWorkflow = new System.Windows.Forms.TabPage();
-            this.tblWorkflow = new System.Windows.Forms.TableLayoutPanel();
-            this.lblWfUploadLabel = new System.Windows.Forms.Label();
-            this.chkWfUpload = new System.Windows.Forms.CheckBox();
-            this.lblWfDeleteLabel = new System.Windows.Forms.Label();
-            this.chkWfDelete = new System.Windows.Forms.CheckBox();
-            this.lblWfTimeoutLabel = new System.Windows.Forms.Label();
-            this.txtWfTimeout = new System.Windows.Forms.TextBox();
-            this.lblWfEscalateLabel = new System.Windows.Forms.Label();
-            this.cboWfEscalate = new System.Windows.Forms.ComboBox();
-            this.lblWfApproversLabel = new System.Windows.Forms.Label();
-            this.lvApprovers = new System.Windows.Forms.ListView();
-            this.colApvStep = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colApvName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colApvStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colApvDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colApvRemark = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.tabHistory = new System.Windows.Forms.TabPage();
-            this.historyListView = new System.Windows.Forms.ListView();
-            this.colHistDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colHistUser = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colHistAction = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colHistDetail = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.pnlFooter = new System.Windows.Forms.Panel();
             this.btnSave = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
@@ -83,9 +63,6 @@ namespace CMS.Presentation
             this.pnlColorRow.SuspendLayout();
             this.tabPermission.SuspendLayout();
             this.pnlPermToolbar.SuspendLayout();
-            this.tabWorkflow.SuspendLayout();
-            this.tblWorkflow.SuspendLayout();
-            this.tabHistory.SuspendLayout();
             this.pnlFooter.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -133,8 +110,6 @@ namespace CMS.Presentation
             // 
             this.tabControl.Controls.Add(this.tabGeneral);
             this.tabControl.Controls.Add(this.tabPermission);
-            this.tabControl.Controls.Add(this.tabWorkflow);
-            this.tabControl.Controls.Add(this.tabHistory);
             this.tabControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.tabControl.Location = new System.Drawing.Point(0, 40);
@@ -195,7 +170,7 @@ namespace CMS.Presentation
             this.lblLevelLabel.Name = "lblLevelLabel";
             this.lblLevelLabel.Size = new System.Drawing.Size(124, 34);
             this.lblLevelLabel.TabIndex = 0;
-            this.lblLevelLabel.Text = "ระดับความลับ:";
+            this.lblLevelLabel.Text = "ระดับ:";
             this.lblLevelLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // cboConfLevel
@@ -431,6 +406,8 @@ namespace CMS.Presentation
             this.pnlPermToolbar.Controls.Add(this.btnAdd);
             this.pnlPermToolbar.Controls.Add(this.btnEdit);
             this.pnlPermToolbar.Controls.Add(this.btnRemove);
+            this.pnlPermToolbar.Controls.Add(this.btnRefresh);
+            this.pnlPermToolbar.Controls.Add(this.btnForceLoad);
             this.pnlPermToolbar.Controls.Add(this.lblAclStatus);
             this.pnlPermToolbar.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlPermToolbar.Location = new System.Drawing.Point(0, 0);
@@ -476,6 +453,43 @@ namespace CMS.Presentation
             this.btnRemove.Text = "ลบ";
             this.btnRemove.Click += new System.EventHandler(this.btnRemove_Click);
             // 
+            // btnRefresh
+            // 
+            this.btnRefresh.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRefresh.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnRefresh.Location = new System.Drawing.Point(240, 4);
+            this.btnRefresh.Name = "btnRefresh";
+            this.btnRefresh.Size = new System.Drawing.Size(72, 26);
+            this.btnRefresh.TabIndex = 3;
+            this.btnRefresh.Text = "🔄 รีเฟรช";
+            this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
+            // 
+            // btnDiagnostic
+            // 
+            this.btnDiagnostic.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDiagnostic.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnDiagnostic.Location = new System.Drawing.Point(318, 4);
+            this.btnDiagnostic.Name = "btnDiagnostic";
+            this.btnDiagnostic.Size = new System.Drawing.Size(80, 26);
+            this.btnDiagnostic.TabIndex = 4;
+            this.btnDiagnostic.Text = "🔍 วินิจฉัย";
+            this.btnDiagnostic.Click += new System.EventHandler(this.btnDiagnostic_Click);
+            // 
+            // btnForceLoad
+            // 
+            this.btnForceLoad.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(120)))), ((int)(((byte)(0)))));
+            this.btnForceLoad.FlatAppearance.BorderSize = 0;
+            this.btnForceLoad.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnForceLoad.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.btnForceLoad.ForeColor = System.Drawing.Color.White;
+            this.btnForceLoad.Location = new System.Drawing.Point(318, 4);
+            this.btnForceLoad.Name = "btnForceLoad";
+            this.btnForceLoad.Size = new System.Drawing.Size(120, 26);
+            this.btnForceLoad.TabIndex = 5;
+            this.btnForceLoad.Text = "💾 บังคับดึงข้อมูล";
+            this.btnForceLoad.UseVisualStyleBackColor = false;
+            this.btnForceLoad.Click += new System.EventHandler(this.btnForceLoad_Click);
+            // 
             // lblAclStatus
             // 
             this.lblAclStatus.Dock = System.Windows.Forms.DockStyle.Right;
@@ -487,241 +501,6 @@ namespace CMS.Presentation
             this.lblAclStatus.TabIndex = 3;
             this.lblAclStatus.Text = "0 รายการ";
             this.lblAclStatus.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // tabWorkflow
-            // 
-            this.tabWorkflow.Controls.Add(this.tblWorkflow);
-            this.tabWorkflow.Location = new System.Drawing.Point(4, 26);
-            this.tabWorkflow.Name = "tabWorkflow";
-            this.tabWorkflow.Padding = new System.Windows.Forms.Padding(8);
-            this.tabWorkflow.Size = new System.Drawing.Size(826, 402);
-            this.tabWorkflow.TabIndex = 2;
-            this.tabWorkflow.Text = "Workflow";
-            // 
-            // tblWorkflow
-            // 
-            this.tblWorkflow.ColumnCount = 2;
-            this.tblWorkflow.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 130F));
-            this.tblWorkflow.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tblWorkflow.Controls.Add(this.lblWfUploadLabel, 0, 0);
-            this.tblWorkflow.Controls.Add(this.chkWfUpload, 1, 0);
-            this.tblWorkflow.Controls.Add(this.lblWfDeleteLabel, 0, 1);
-            this.tblWorkflow.Controls.Add(this.chkWfDelete, 1, 1);
-            this.tblWorkflow.Controls.Add(this.lblWfTimeoutLabel, 0, 2);
-            this.tblWorkflow.Controls.Add(this.txtWfTimeout, 1, 2);
-            this.tblWorkflow.Controls.Add(this.lblWfEscalateLabel, 0, 3);
-            this.tblWorkflow.Controls.Add(this.cboWfEscalate, 1, 3);
-            this.tblWorkflow.Controls.Add(this.lblWfApproversLabel, 0, 4);
-            this.tblWorkflow.Controls.Add(this.lvApprovers, 0, 5);
-            this.tblWorkflow.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tblWorkflow.Location = new System.Drawing.Point(8, 8);
-            this.tblWorkflow.Name = "tblWorkflow";
-            this.tblWorkflow.Padding = new System.Windows.Forms.Padding(8, 12, 8, 8);
-            this.tblWorkflow.RowCount = 7;
-            this.tblWorkflow.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
-            this.tblWorkflow.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
-            this.tblWorkflow.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
-            this.tblWorkflow.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
-            this.tblWorkflow.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-            this.tblWorkflow.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tblWorkflow.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 0F));
-            this.tblWorkflow.Size = new System.Drawing.Size(810, 386);
-            this.tblWorkflow.TabIndex = 0;
-            // 
-            // lblWfUploadLabel
-            // 
-            this.lblWfUploadLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblWfUploadLabel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblWfUploadLabel.Location = new System.Drawing.Point(11, 12);
-            this.lblWfUploadLabel.Name = "lblWfUploadLabel";
-            this.lblWfUploadLabel.Size = new System.Drawing.Size(124, 34);
-            this.lblWfUploadLabel.TabIndex = 0;
-            this.lblWfUploadLabel.Text = "อนุมัติ Upload:";
-            this.lblWfUploadLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // chkWfUpload
-            // 
-            this.chkWfUpload.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chkWfUpload.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.chkWfUpload.Location = new System.Drawing.Point(141, 15);
-            this.chkWfUpload.Name = "chkWfUpload";
-            this.chkWfUpload.Size = new System.Drawing.Size(658, 28);
-            this.chkWfUpload.TabIndex = 1;
-            this.chkWfUpload.Text = "ต้องการอนุมัติ";
-            // 
-            // lblWfDeleteLabel
-            // 
-            this.lblWfDeleteLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblWfDeleteLabel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblWfDeleteLabel.Location = new System.Drawing.Point(11, 46);
-            this.lblWfDeleteLabel.Name = "lblWfDeleteLabel";
-            this.lblWfDeleteLabel.Size = new System.Drawing.Size(124, 34);
-            this.lblWfDeleteLabel.TabIndex = 2;
-            this.lblWfDeleteLabel.Text = "อนุมัติ Delete:";
-            this.lblWfDeleteLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // chkWfDelete
-            // 
-            this.chkWfDelete.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chkWfDelete.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.chkWfDelete.Location = new System.Drawing.Point(141, 49);
-            this.chkWfDelete.Name = "chkWfDelete";
-            this.chkWfDelete.Size = new System.Drawing.Size(658, 28);
-            this.chkWfDelete.TabIndex = 3;
-            this.chkWfDelete.Text = "ต้องการอนุมัติ";
-            // 
-            // lblWfTimeoutLabel
-            // 
-            this.lblWfTimeoutLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblWfTimeoutLabel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblWfTimeoutLabel.Location = new System.Drawing.Point(11, 80);
-            this.lblWfTimeoutLabel.Name = "lblWfTimeoutLabel";
-            this.lblWfTimeoutLabel.Size = new System.Drawing.Size(124, 34);
-            this.lblWfTimeoutLabel.TabIndex = 4;
-            this.lblWfTimeoutLabel.Text = "Timeout (วัน):";
-            this.lblWfTimeoutLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // txtWfTimeout
-            // 
-            this.txtWfTimeout.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtWfTimeout.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.txtWfTimeout.Location = new System.Drawing.Point(141, 83);
-            this.txtWfTimeout.Name = "txtWfTimeout";
-            this.txtWfTimeout.Size = new System.Drawing.Size(658, 23);
-            this.txtWfTimeout.TabIndex = 5;
-            this.txtWfTimeout.Text = "7";
-            // 
-            // lblWfEscalateLabel
-            // 
-            this.lblWfEscalateLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblWfEscalateLabel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblWfEscalateLabel.Location = new System.Drawing.Point(11, 114);
-            this.lblWfEscalateLabel.Name = "lblWfEscalateLabel";
-            this.lblWfEscalateLabel.Size = new System.Drawing.Size(124, 34);
-            this.lblWfEscalateLabel.TabIndex = 6;
-            this.lblWfEscalateLabel.Text = "Escalate ไปหา:";
-            this.lblWfEscalateLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // cboWfEscalate
-            // 
-            this.cboWfEscalate.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.cboWfEscalate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboWfEscalate.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.cboWfEscalate.Items.AddRange(new object[] {
-            "— เลือกผู้รับ —"});
-            this.cboWfEscalate.Location = new System.Drawing.Point(141, 117);
-            this.cboWfEscalate.Name = "cboWfEscalate";
-            this.cboWfEscalate.Size = new System.Drawing.Size(658, 23);
-            this.cboWfEscalate.TabIndex = 7;
-            // 
-            // lblWfApproversLabel
-            // 
-            this.tblWorkflow.SetColumnSpan(this.lblWfApproversLabel, 2);
-            this.lblWfApproversLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblWfApproversLabel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblWfApproversLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
-            this.lblWfApproversLabel.Location = new System.Drawing.Point(11, 148);
-            this.lblWfApproversLabel.Name = "lblWfApproversLabel";
-            this.lblWfApproversLabel.Size = new System.Drawing.Size(788, 24);
-            this.lblWfApproversLabel.TabIndex = 8;
-            this.lblWfApproversLabel.Text = "รายชื่อผู้อนุมัติ (คำขอที่รออนุมัติ):";
-            this.lblWfApproversLabel.TextAlign = System.Drawing.ContentAlignment.BottomLeft;
-            // 
-            // lvApprovers
-            // 
-            this.lvApprovers.BackColor = System.Drawing.Color.White;
-            this.lvApprovers.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colApvStep,
-            this.colApvName,
-            this.colApvStatus,
-            this.colApvDate,
-            this.colApvRemark});
-            this.tblWorkflow.SetColumnSpan(this.lvApprovers, 2);
-            this.lvApprovers.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lvApprovers.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lvApprovers.FullRowSelect = true;
-            this.lvApprovers.GridLines = true;
-            this.lvApprovers.HideSelection = false;
-            this.lvApprovers.Location = new System.Drawing.Point(11, 175);
-            this.lvApprovers.Name = "lvApprovers";
-            this.lvApprovers.Size = new System.Drawing.Size(788, 200);
-            this.lvApprovers.TabIndex = 9;
-            this.lvApprovers.UseCompatibleStateImageBehavior = false;
-            this.lvApprovers.View = System.Windows.Forms.View.Details;
-            // 
-            // colApvStep
-            // 
-            this.colApvStep.Text = "ลำดับ";
-            this.colApvStep.Width = 50;
-            // 
-            // colApvName
-            // 
-            this.colApvName.Text = "ผู้อนุมัติ";
-            this.colApvName.Width = 160;
-            // 
-            // colApvStatus
-            // 
-            this.colApvStatus.Text = "สถานะ";
-            this.colApvStatus.Width = 90;
-            // 
-            // colApvDate
-            // 
-            this.colApvDate.Text = "วันที่อนุมัติ";
-            this.colApvDate.Width = 110;
-            // 
-            // colApvRemark
-            // 
-            this.colApvRemark.Text = "หมายเหตุ";
-            this.colApvRemark.Width = 200;
-            // 
-            // tabHistory
-            // 
-            this.tabHistory.Controls.Add(this.historyListView);
-            this.tabHistory.Location = new System.Drawing.Point(4, 26);
-            this.tabHistory.Name = "tabHistory";
-            this.tabHistory.Size = new System.Drawing.Size(826, 402);
-            this.tabHistory.TabIndex = 3;
-            this.tabHistory.Text = "ประวัติ";
-            // 
-            // historyListView
-            // 
-            this.historyListView.BackColor = System.Drawing.Color.White;
-            this.historyListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colHistDate,
-            this.colHistUser,
-            this.colHistAction,
-            this.colHistDetail});
-            this.historyListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.historyListView.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.historyListView.FullRowSelect = true;
-            this.historyListView.GridLines = true;
-            this.historyListView.HideSelection = false;
-            this.historyListView.Location = new System.Drawing.Point(0, 0);
-            this.historyListView.Name = "historyListView";
-            this.historyListView.Size = new System.Drawing.Size(826, 402);
-            this.historyListView.TabIndex = 0;
-            this.historyListView.UseCompatibleStateImageBehavior = false;
-            this.historyListView.View = System.Windows.Forms.View.Details;
-            // 
-            // colHistDate
-            // 
-            this.colHistDate.Text = "วันที่";
-            this.colHistDate.Width = 130;
-            // 
-            // colHistUser
-            // 
-            this.colHistUser.Text = "ผู้ใช้";
-            this.colHistUser.Width = 120;
-            // 
-            // colHistAction
-            // 
-            this.colHistAction.Text = "การกระทำ";
-            this.colHistAction.Width = 90;
-            // 
-            // colHistDetail
-            // 
-            this.colHistDetail.Text = "รายละเอียด";
-            this.colHistDetail.Width = 300;
             // 
             // pnlFooter
             // 
@@ -743,7 +522,7 @@ namespace CMS.Presentation
             this.btnSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSave.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnSave.ForeColor = System.Drawing.Color.White;
-            this.btnSave.Location = new System.Drawing.Point(1168, 9);
+            this.btnSave.Location = new System.Drawing.Point(668, 9);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(150, 30);
             this.btnSave.TabIndex = 0;
@@ -757,7 +536,7 @@ namespace CMS.Presentation
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCancel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnCancel.Location = new System.Drawing.Point(1254, 9);
+            this.btnCancel.Location = new System.Drawing.Point(744, 9);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(80, 30);
             this.btnCancel.TabIndex = 1;
@@ -787,10 +566,6 @@ namespace CMS.Presentation
             this.pnlColorRow.PerformLayout();
             this.tabPermission.ResumeLayout(false);
             this.pnlPermToolbar.ResumeLayout(false);
-            this.tabWorkflow.ResumeLayout(false);
-            this.tblWorkflow.ResumeLayout(false);
-            this.tblWorkflow.PerformLayout();
-            this.tabHistory.ResumeLayout(false);
             this.pnlFooter.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -803,8 +578,6 @@ namespace CMS.Presentation
         private System.Windows.Forms.TabControl         tabControl;
         private System.Windows.Forms.TabPage            tabGeneral;
         private System.Windows.Forms.TabPage            tabPermission;
-        private System.Windows.Forms.TabPage            tabWorkflow;
-        private System.Windows.Forms.TabPage            tabHistory;
         private System.Windows.Forms.TableLayoutPanel   tblGeneral;
         private System.Windows.Forms.Label              lblLevelLabel;
         private System.Windows.Forms.ComboBox           cboConfLevel;
@@ -825,6 +598,9 @@ namespace CMS.Presentation
         private System.Windows.Forms.Button             btnAdd;
         private System.Windows.Forms.Button             btnEdit;
         private System.Windows.Forms.Button             btnRemove;
+        private System.Windows.Forms.Button             btnRefresh;
+        private System.Windows.Forms.Button             btnDiagnostic;
+        private System.Windows.Forms.Button             btnForceLoad;
         private System.Windows.Forms.Label              lblAclStatus;
         private System.Windows.Forms.ListView           aclListView;
         private System.Windows.Forms.ColumnHeader       colPrincipal;
@@ -836,27 +612,6 @@ namespace CMS.Presentation
         private System.Windows.Forms.ColumnHeader       colFull;
         private System.Windows.Forms.ColumnHeader       colExpiry;
         private System.Windows.Forms.ColumnHeader       colStatus;
-        private System.Windows.Forms.TableLayoutPanel   tblWorkflow;
-        private System.Windows.Forms.Label              lblWfUploadLabel;
-        private System.Windows.Forms.CheckBox           chkWfUpload;
-        private System.Windows.Forms.Label              lblWfDeleteLabel;
-        private System.Windows.Forms.CheckBox           chkWfDelete;
-        private System.Windows.Forms.Label              lblWfTimeoutLabel;
-        private System.Windows.Forms.TextBox            txtWfTimeout;
-        private System.Windows.Forms.Label              lblWfEscalateLabel;
-        private System.Windows.Forms.ComboBox           cboWfEscalate;
-        private System.Windows.Forms.Label              lblWfApproversLabel;
-        private System.Windows.Forms.ListView           lvApprovers;
-        private System.Windows.Forms.ColumnHeader       colApvStep;
-        private System.Windows.Forms.ColumnHeader       colApvName;
-        private System.Windows.Forms.ColumnHeader       colApvStatus;
-        private System.Windows.Forms.ColumnHeader       colApvDate;
-        private System.Windows.Forms.ColumnHeader       colApvRemark;
-        private System.Windows.Forms.ListView           historyListView;
-        private System.Windows.Forms.ColumnHeader       colHistDate;
-        private System.Windows.Forms.ColumnHeader       colHistUser;
-        private System.Windows.Forms.ColumnHeader       colHistAction;
-        private System.Windows.Forms.ColumnHeader       colHistDetail;
         private System.Windows.Forms.Panel              pnlFooter;
         private System.Windows.Forms.Button             btnSave;
         private System.Windows.Forms.Button             btnCancel;

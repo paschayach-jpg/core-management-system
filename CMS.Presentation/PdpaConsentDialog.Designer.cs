@@ -13,17 +13,18 @@ namespace CMS.Presentation
 
         private void InitializeComponent()
         {
-            this.components  = new System.ComponentModel.Container();
-            this.pnlHeader   = new System.Windows.Forms.Panel();
-            this.lblTitle    = new System.Windows.Forms.Label();
-            this.pnlContent  = new System.Windows.Forms.Panel();
-            this.rtbPolicy   = new System.Windows.Forms.RichTextBox();
-            this.btnReadFull = new System.Windows.Forms.Button();
-            this.pnlConsent  = new System.Windows.Forms.Panel();
-            this.chkConsent  = new System.Windows.Forms.CheckBox();
-            this.pnlBottom   = new System.Windows.Forms.Panel();
-            this.btnConfirm  = new System.Windows.Forms.Button();
-            this.btnExit     = new System.Windows.Forms.Button();
+            this.components     = new System.ComponentModel.Container();
+            this.pnlHeader      = new System.Windows.Forms.Panel();
+            this.lblTitle       = new System.Windows.Forms.Label();
+            this.pnlGoldBorder  = new System.Windows.Forms.Panel(); // เส้นขอบสีทอง
+            this.pnlContent     = new System.Windows.Forms.Panel();
+            this.rtbPolicy      = new System.Windows.Forms.RichTextBox();
+            this.btnReadFull    = new System.Windows.Forms.Button();
+            this.pnlConsent     = new System.Windows.Forms.Panel();
+            this.chkConsent     = new System.Windows.Forms.CheckBox();
+            this.pnlBottom      = new System.Windows.Forms.Panel();
+            this.btnConfirm     = new System.Windows.Forms.Button();
+            this.btnExit        = new System.Windows.Forms.Button();
 
             this.pnlHeader.SuspendLayout();
             this.pnlContent.SuspendLayout();
@@ -33,9 +34,10 @@ namespace CMS.Presentation
 
             // ── pnlHeader ────────────────────────────────────────────────────
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(31, 73, 125);
+            this.pnlHeader.Controls.Add(this.pnlGoldBorder);
             this.pnlHeader.Controls.Add(this.lblTitle);
             this.pnlHeader.Dock      = System.Windows.Forms.DockStyle.Top;
-            this.pnlHeader.Height    = 44;
+            this.pnlHeader.Height    = 47; // เพิ่มขึ้น 3px สำหรับเส้นขอบ
             this.pnlHeader.Name      = "pnlHeader";
             this.pnlHeader.TabIndex  = 0;
 
@@ -48,6 +50,13 @@ namespace CMS.Presentation
             this.lblTitle.TabIndex  = 0;
             this.lblTitle.Text      = "🔒  นโยบายข้อมูลส่วนบุคคล (PDPA)";
             this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+
+            // ── pnlGoldBorder ────────────────────────────────────────────────
+            this.pnlGoldBorder.BackColor = System.Drawing.Color.FromArgb(218, 165, 32); // สีทองเข้มหรูหรา (DarkGoldenrod)
+            this.pnlGoldBorder.Dock      = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlGoldBorder.Height    = 3;
+            this.pnlGoldBorder.Name      = "pnlGoldBorder";
+            this.pnlGoldBorder.TabIndex  = 1;
 
             // ── pnlContent ────────────────────────────────────────────────────
             this.pnlContent.Controls.Add(this.rtbPolicy);
@@ -173,6 +182,7 @@ namespace CMS.Presentation
         #region Designer fields
         private System.Windows.Forms.Panel      pnlHeader;
         private System.Windows.Forms.Label      lblTitle;
+        private System.Windows.Forms.Panel      pnlGoldBorder;
         private System.Windows.Forms.Panel      pnlContent;
         private System.Windows.Forms.RichTextBox rtbPolicy;
         private System.Windows.Forms.Button     btnReadFull;

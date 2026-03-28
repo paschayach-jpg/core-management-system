@@ -21,6 +21,14 @@ CREATE PROCEDURE core.sp_InsertOrgUnit
 AS
 BEGIN
     SET NOCOUNT ON;
+    
+    -- Check for duplicate code
+    IF EXISTS (SELECT 1 FROM core.OrgUnit WHERE OrgUnitCode = @OrgUnitCode AND IsDeleted = 0)
+    BEGIN
+        RAISERROR('รหัสหน่วยงาน %s มีอยู่ในระบบแล้ว', 16, 1, @OrgUnitCode);
+        RETURN;
+    END
+    
     INSERT INTO core.OrgUnit (OrgUnitCode, OrgUnitNameTH, OrgUnitNameEN, OrgUnitType, ParentOrgUnitID, SortOrder, CreatedBy)
     VALUES (@OrgUnitCode, @OrgUnitNameTH, @OrgUnitNameEN, @OrgUnitType, @ParentOrgUnitID, @SortOrder, @CreatedBy);
     SELECT SCOPE_IDENTITY() AS NewOrgUnitID;

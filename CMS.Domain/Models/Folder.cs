@@ -33,6 +33,7 @@ namespace CMS.Domain.Models
         // Aliases
         public int FolderId { get { return FolderID; } set { FolderID = value; } }
         public int OrgUnitId { get { return OrgUnitID; } set { OrgUnitID = value; } }
+        public int? ParentFolderId { get { return ParentFolderID; } set { ParentFolderID = value; } }
         public string Name { get { return FolderName; } set { FolderName = value; } }
         public DateTime CreatedAt { get { return CreatedDate; } set { CreatedDate = value; } }
         public DateTime? DeletedAt { get { return DeletedDate; } set { DeletedDate = value; } }

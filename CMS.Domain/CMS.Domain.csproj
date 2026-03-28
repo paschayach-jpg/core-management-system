@@ -62,6 +62,8 @@
     <Compile Include="Models\FolderTemplateItem.cs" />
     <Compile Include="Models\PermissionGroup.cs" />
     <Compile Include="Models\UserGroupMember.cs" />
+    <Compile Include="Models\UploadCheckpoint.cs" />
+    <Compile Include="Models\QuickAccessFolder.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
