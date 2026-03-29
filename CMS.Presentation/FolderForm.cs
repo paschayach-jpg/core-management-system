@@ -3047,7 +3047,7 @@ namespace CMS.Presentation
                 
                 // Example path construction - adjust according to your storage scheme:
                 // C:\FileStorage\Folder_{FolderId}\{StoredFileName}
-                string baseStoragePath = @"C:\FileStorage"; // Default path - adjust as needed
+                string baseStoragePath = @"\\150.1.8.23\AppForUser\Cmd_LmportFile"; // Network storage path
                 
                 string folderPath = string.Format("Folder_{0}", file.FolderId);
                 string fileName = !string.IsNullOrEmpty(file.StoredFileName) ? file.StoredFileName : file.OriginalFileName;

@@ -22,3 +22,9 @@ C:\Users\pitakpong\Documents\cms_import\CMS.Domain\obj\Debug\CMS.Domain.csproj.A
 C:\Users\pitakpong\Documents\cms_import\CMS.Domain\obj\Debug\CMS.Domain.csproj.CoreCompileInputs.cache
 C:\Users\pitakpong\Documents\cms_import\CMS.Domain\obj\Debug\CMS.Domain.dll
 C:\Users\pitakpong\Documents\cms_import\CMS.Domain\obj\Debug\CMS.Domain.pdb
+C:\Users\KPG\Documents\cms_import\CMS.Domain\bin\Debug\CMS.Domain.dll
+C:\Users\KPG\Documents\cms_import\CMS.Domain\bin\Debug\CMS.Domain.pdb
+C:\Users\KPG\Documents\cms_import\CMS.Domain\obj\Debug\CMS.Domain.csproj.AssemblyReference.cache
+C:\Users\KPG\Documents\cms_import\CMS.Domain\obj\Debug\CMS.Domain.csproj.CoreCompileInputs.cache
+C:\Users\KPG\Documents\cms_import\CMS.Domain\obj\Debug\CMS.Domain.dll
+C:\Users\KPG\Documents\cms_import\CMS.Domain\obj\Debug\CMS.Domain.pdb

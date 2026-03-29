@@ -139,10 +139,11 @@ namespace CMS.Presentation
             this.pnlFilter.Controls.Add(this.cmbExtension);
             this.pnlFilter.Controls.Add(this.lblFilterExt);
             this.pnlFilter.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlFilter.Location = new System.Drawing.Point(0, 26);
+            this.pnlFilter.Location = new System.Drawing.Point(0, 32);
+            this.pnlFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlFilter.Name = "pnlFilter";
-            this.pnlFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlFilter.Size = new System.Drawing.Size(891, 32);
+            this.pnlFilter.Padding = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.pnlFilter.Size = new System.Drawing.Size(1189, 39);
             this.pnlFilter.TabIndex = 6;
             // 
             // lblFilterStatus
@@ -150,9 +151,10 @@ namespace CMS.Presentation
             this.lblFilterStatus.AutoSize = true;
             this.lblFilterStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblFilterStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.lblFilterStatus.Location = new System.Drawing.Point(836, 8);
+            this.lblFilterStatus.Location = new System.Drawing.Point(1115, 10);
+            this.lblFilterStatus.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFilterStatus.Name = "lblFilterStatus";
-            this.lblFilterStatus.Size = new System.Drawing.Size(0, 15);
+            this.lblFilterStatus.Size = new System.Drawing.Size(0, 18);
             this.lblFilterStatus.TabIndex = 10;
             this.lblFilterStatus.Visible = false;
             // 
@@ -161,9 +163,10 @@ namespace CMS.Presentation
             this.btnClearFilter.FlatAppearance.BorderSize = 0;
             this.btnClearFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClearFilter.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.btnClearFilter.Location = new System.Drawing.Point(758, 4);
+            this.btnClearFilter.Location = new System.Drawing.Point(1011, 5);
+            this.btnClearFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnClearFilter.Name = "btnClearFilter";
-            this.btnClearFilter.Size = new System.Drawing.Size(70, 23);
+            this.btnClearFilter.Size = new System.Drawing.Size(93, 28);
             this.btnClearFilter.TabIndex = 9;
             this.btnClearFilter.Text = "✕ ล้าง";
             this.btnClearFilter.Click += new System.EventHandler(this.btnClearFilter_Click);
@@ -175,9 +178,10 @@ namespace CMS.Presentation
             this.btnApplyFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnApplyFilter.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.btnApplyFilter.ForeColor = System.Drawing.Color.White;
-            this.btnApplyFilter.Location = new System.Drawing.Point(672, 4);
+            this.btnApplyFilter.Location = new System.Drawing.Point(896, 5);
+            this.btnApplyFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnApplyFilter.Name = "btnApplyFilter";
-            this.btnApplyFilter.Size = new System.Drawing.Size(80, 23);
+            this.btnApplyFilter.Size = new System.Drawing.Size(107, 28);
             this.btnApplyFilter.TabIndex = 8;
             this.btnApplyFilter.Text = "🔍 กรอง";
             this.btnApplyFilter.UseVisualStyleBackColor = false;
@@ -186,18 +190,20 @@ namespace CMS.Presentation
             // txtUploadedBy
             // 
             this.txtUploadedBy.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.txtUploadedBy.Location = new System.Drawing.Point(534, 5);
+            this.txtUploadedBy.Location = new System.Drawing.Point(712, 6);
+            this.txtUploadedBy.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.txtUploadedBy.Name = "txtUploadedBy";
-            this.txtUploadedBy.Size = new System.Drawing.Size(130, 21);
+            this.txtUploadedBy.Size = new System.Drawing.Size(172, 24);
             this.txtUploadedBy.TabIndex = 7;
             // 
             // lblFilterUploader
             // 
             this.lblFilterUploader.AutoSize = true;
             this.lblFilterUploader.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterUploader.Location = new System.Drawing.Point(470, 8);
+            this.lblFilterUploader.Location = new System.Drawing.Point(627, 10);
+            this.lblFilterUploader.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFilterUploader.Name = "lblFilterUploader";
-            this.lblFilterUploader.Size = new System.Drawing.Size(56, 15);
+            this.lblFilterUploader.Size = new System.Drawing.Size(68, 18);
             this.lblFilterUploader.TabIndex = 6;
             this.lblFilterUploader.Text = "ผู้อัพโหลด:";
             // 
@@ -206,19 +212,21 @@ namespace CMS.Presentation
             this.dtpTo.Checked = false;
             this.dtpTo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.dtpTo.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpTo.Location = new System.Drawing.Point(352, 5);
+            this.dtpTo.Location = new System.Drawing.Point(469, 6);
+            this.dtpTo.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.dtpTo.Name = "dtpTo";
             this.dtpTo.ShowCheckBox = true;
-            this.dtpTo.Size = new System.Drawing.Size(110, 21);
+            this.dtpTo.Size = new System.Drawing.Size(145, 24);
             this.dtpTo.TabIndex = 5;
             // 
             // lblFilterTo
             // 
             this.lblFilterTo.AutoSize = true;
             this.lblFilterTo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterTo.Location = new System.Drawing.Point(318, 8);
+            this.lblFilterTo.Location = new System.Drawing.Point(424, 10);
+            this.lblFilterTo.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFilterTo.Name = "lblFilterTo";
-            this.lblFilterTo.Size = new System.Drawing.Size(22, 15);
+            this.lblFilterTo.Size = new System.Drawing.Size(26, 18);
             this.lblFilterTo.TabIndex = 4;
             this.lblFilterTo.Text = "ถึง:";
             // 
@@ -227,37 +235,41 @@ namespace CMS.Presentation
             this.dtpFrom.Checked = false;
             this.dtpFrom.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.dtpFrom.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpFrom.Location = new System.Drawing.Point(200, 5);
+            this.dtpFrom.Location = new System.Drawing.Point(267, 6);
+            this.dtpFrom.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.dtpFrom.Name = "dtpFrom";
             this.dtpFrom.ShowCheckBox = true;
-            this.dtpFrom.Size = new System.Drawing.Size(110, 21);
+            this.dtpFrom.Size = new System.Drawing.Size(145, 24);
             this.dtpFrom.TabIndex = 3;
             // 
             // lblFilterFrom
             // 
             this.lblFilterFrom.AutoSize = true;
             this.lblFilterFrom.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterFrom.Location = new System.Drawing.Point(156, 8);
+            this.lblFilterFrom.Location = new System.Drawing.Point(208, 10);
+            this.lblFilterFrom.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFilterFrom.Name = "lblFilterFrom";
-            this.lblFilterFrom.Size = new System.Drawing.Size(37, 15);
+            this.lblFilterFrom.Size = new System.Drawing.Size(43, 18);
             this.lblFilterFrom.TabIndex = 2;
             this.lblFilterFrom.Text = "ตั้งแต่:";
             // 
             // cmbExtension
             // 
             this.cmbExtension.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.cmbExtension.Location = new System.Drawing.Point(58, 5);
+            this.cmbExtension.Location = new System.Drawing.Point(77, 6);
+            this.cmbExtension.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.cmbExtension.Name = "cmbExtension";
-            this.cmbExtension.Size = new System.Drawing.Size(90, 23);
+            this.cmbExtension.Size = new System.Drawing.Size(119, 26);
             this.cmbExtension.TabIndex = 1;
             // 
             // lblFilterExt
             // 
             this.lblFilterExt.AutoSize = true;
             this.lblFilterExt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterExt.Location = new System.Drawing.Point(4, 8);
+            this.lblFilterExt.Location = new System.Drawing.Point(5, 10);
+            this.lblFilterExt.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFilterExt.Name = "lblFilterExt";
-            this.lblFilterExt.Size = new System.Drawing.Size(49, 15);
+            this.lblFilterExt.Size = new System.Drawing.Size(59, 18);
             this.lblFilterExt.TabIndex = 0;
             this.lblFilterExt.Text = "นามสกุล:";
             // 
@@ -266,6 +278,7 @@ namespace CMS.Presentation
             this.toolStrip.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(250)))));
             this.toolStrip.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.toolStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.toolStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.toolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.btnNewFolder,
             this.btnAuto4Folders,
@@ -284,14 +297,14 @@ namespace CMS.Presentation
             this.lblConfidentialityBadge});
             this.toolStrip.Location = new System.Drawing.Point(0, 0);
             this.toolStrip.Name = "toolStrip";
-            this.toolStrip.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.toolStrip.Size = new System.Drawing.Size(1197, 26);
+            this.toolStrip.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
+            this.toolStrip.Size = new System.Drawing.Size(1596, 31);
             this.toolStrip.TabIndex = 0;
             // 
             // btnNewFolder
             // 
             this.btnNewFolder.Name = "btnNewFolder";
-            this.btnNewFolder.Size = new System.Drawing.Size(99, 23);
+            this.btnNewFolder.Size = new System.Drawing.Size(121, 28);
             this.btnNewFolder.Text = "📁 Folder ใหม่";
             this.btnNewFolder.ToolTipText = "สร้าง Folder ใหม่";
             this.btnNewFolder.Click += new System.EventHandler(this.btnNewFolder_Click);
@@ -299,7 +312,7 @@ namespace CMS.Presentation
             // btnAuto4Folders
             // 
             this.btnAuto4Folders.Name = "btnAuto4Folders";
-            this.btnAuto4Folders.Size = new System.Drawing.Size(126, 23);
+            this.btnAuto4Folders.Size = new System.Drawing.Size(152, 28);
             this.btnAuto4Folders.Text = "🎯 Auto 4 Folders";
             this.btnAuto4Folders.ToolTipText = "สร้าง Auto 4 Folders (1HC, 2SC, 3NC, 4PC)";
             this.btnAuto4Folders.Click += new System.EventHandler(this.btnAuto4Folders_Click);
@@ -307,7 +320,7 @@ namespace CMS.Presentation
             // btnRename
             // 
             this.btnRename.Name = "btnRename";
-            this.btnRename.Size = new System.Drawing.Size(86, 23);
+            this.btnRename.Size = new System.Drawing.Size(104, 28);
             this.btnRename.Text = "✏️ เปลี่ยนชื่อ";
             this.btnRename.ToolTipText = "เปลี่ยนชื่อ Folder ที่เลือก";
             this.btnRename.Click += new System.EventHandler(this.btnRename_Click);
@@ -315,12 +328,12 @@ namespace CMS.Presentation
             // sep1
             // 
             this.sep1.Name = "sep1";
-            this.sep1.Size = new System.Drawing.Size(6, 26);
+            this.sep1.Size = new System.Drawing.Size(6, 31);
             // 
             // btnArchive
             // 
             this.btnArchive.Name = "btnArchive";
-            this.btnArchive.Size = new System.Drawing.Size(81, 23);
+            this.btnArchive.Size = new System.Drawing.Size(98, 27);
             this.btnArchive.Text = "📦 Archive";
             this.btnArchive.ToolTipText = "Archive Folder และ sub-folders ทั้งหมด";
             this.btnArchive.Visible = false;
@@ -329,7 +342,7 @@ namespace CMS.Presentation
             // btnDelete
             // 
             this.btnDelete.Name = "btnDelete";
-            this.btnDelete.Size = new System.Drawing.Size(52, 23);
+            this.btnDelete.Size = new System.Drawing.Size(61, 28);
             this.btnDelete.Text = "🗑️ ลบ";
             this.btnDelete.ToolTipText = "ย้าย Folder ไปถังขยะ";
             this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
@@ -337,14 +350,14 @@ namespace CMS.Presentation
             // sep2
             // 
             this.sep2.Name = "sep2";
-            this.sep2.Size = new System.Drawing.Size(6, 26);
+            this.sep2.Size = new System.Drawing.Size(6, 31);
             // 
             // btnUploadFile
             // 
             this.btnUploadFile.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.btnUploadFile.ForeColor = System.Drawing.Color.White;
             this.btnUploadFile.Name = "btnUploadFile";
-            this.btnUploadFile.Size = new System.Drawing.Size(101, 23);
+            this.btnUploadFile.Size = new System.Drawing.Size(121, 28);
             this.btnUploadFile.Text = "📤 อัพโหลดไฟล์";
             this.btnUploadFile.ToolTipText = "อัพโหลดไฟล์ไปยัง Folder ที่เลือก";
             this.btnUploadFile.Click += new System.EventHandler(this.btnUploadFile_Click);
@@ -353,7 +366,7 @@ namespace CMS.Presentation
             // 
             this.btnMove.Enabled = false;
             this.btnMove.Name = "btnMove";
-            this.btnMove.Size = new System.Drawing.Size(56, 23);
+            this.btnMove.Size = new System.Drawing.Size(68, 28);
             this.btnMove.Text = "📦 ย้าย";
             this.btnMove.ToolTipText = "ย้าย Folder หรือไฟล์ที่เลือกไปยัง Folder ปลายทาง";
             this.btnMove.Click += new System.EventHandler(this.BtnMove_Click);
@@ -361,12 +374,12 @@ namespace CMS.Presentation
             // sep4
             // 
             this.sep4.Name = "sep4";
-            this.sep4.Size = new System.Drawing.Size(6, 26);
+            this.sep4.Size = new System.Drawing.Size(6, 31);
             // 
             // btnApplyTemplate
             // 
             this.btnApplyTemplate.Name = "btnApplyTemplate";
-            this.btnApplyTemplate.Size = new System.Drawing.Size(88, 23);
+            this.btnApplyTemplate.Size = new System.Drawing.Size(111, 28);
             this.btnApplyTemplate.Text = "📋 Template";
             this.btnApplyTemplate.ToolTipText = "Apply Template Folder";
             this.btnApplyTemplate.Click += new System.EventHandler(this.btnApplyTemplate_Click);
@@ -374,12 +387,12 @@ namespace CMS.Presentation
             // sep3
             // 
             this.sep3.Name = "sep3";
-            this.sep3.Size = new System.Drawing.Size(6, 26);
+            this.sep3.Size = new System.Drawing.Size(6, 31);
             // 
             // btnChangeLevel
             // 
             this.btnChangeLevel.Name = "btnChangeLevel";
-            this.btnChangeLevel.Size = new System.Drawing.Size(95, 23);
+            this.btnChangeLevel.Size = new System.Drawing.Size(118, 27);
             this.btnChangeLevel.Text = "🔒 เปลี่ยนระดับ";
             this.btnChangeLevel.ToolTipText = "เปลี่ยน Confidentiality Level (Manager/Admin)";
             this.btnChangeLevel.Visible = false;
@@ -388,7 +401,7 @@ namespace CMS.Presentation
             // btnCopyStructure
             // 
             this.btnCopyStructure.Name = "btnCopyStructure";
-            this.btnCopyStructure.Size = new System.Drawing.Size(123, 23);
+            this.btnCopyStructure.Size = new System.Drawing.Size(150, 27);
             this.btnCopyStructure.Text = "📂 คัดลอกโครงสร้าง";
             this.btnCopyStructure.ToolTipText = "คัดลอกโครงสร้าง Folder ไปยัง Parent ใหม่ (Manager/Admin)";
             this.btnCopyStructure.Visible = false;
@@ -399,7 +412,7 @@ namespace CMS.Presentation
             this.lblConfidentialityBadge.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblConfidentialityBadge.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             this.lblConfidentialityBadge.Name = "lblConfidentialityBadge";
-            this.lblConfidentialityBadge.Size = new System.Drawing.Size(0, 26);
+            this.lblConfidentialityBadge.Size = new System.Drawing.Size(0, 31);
             // 
             // pnlNavBar
             // 
@@ -415,19 +428,21 @@ namespace CMS.Presentation
             this.pnlNavBar.Controls.Add(this.txtSearch);
             this.pnlNavBar.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlNavBar.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.pnlNavBar.Location = new System.Drawing.Point(0, 26);
+            this.pnlNavBar.Location = new System.Drawing.Point(0, 31);
+            this.pnlNavBar.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlNavBar.Name = "pnlNavBar";
-            this.pnlNavBar.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.pnlNavBar.Size = new System.Drawing.Size(1197, 32);
+            this.pnlNavBar.Padding = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            this.pnlNavBar.Size = new System.Drawing.Size(1596, 39);
             this.pnlNavBar.TabIndex = 5;
             // 
             // btnNavBack
             // 
             this.btnNavBack.FlatAppearance.BorderSize = 0;
             this.btnNavBack.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNavBack.Location = new System.Drawing.Point(4, 4);
+            this.btnNavBack.Location = new System.Drawing.Point(5, 5);
+            this.btnNavBack.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnNavBack.Name = "btnNavBack";
-            this.btnNavBack.Size = new System.Drawing.Size(26, 24);
+            this.btnNavBack.Size = new System.Drawing.Size(35, 30);
             this.btnNavBack.TabIndex = 0;
             this.btnNavBack.Text = "◀";
             // 
@@ -435,9 +450,10 @@ namespace CMS.Presentation
             // 
             this.btnNavForward.FlatAppearance.BorderSize = 0;
             this.btnNavForward.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNavForward.Location = new System.Drawing.Point(32, 4);
+            this.btnNavForward.Location = new System.Drawing.Point(43, 5);
+            this.btnNavForward.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnNavForward.Name = "btnNavForward";
-            this.btnNavForward.Size = new System.Drawing.Size(26, 24);
+            this.btnNavForward.Size = new System.Drawing.Size(35, 30);
             this.btnNavForward.TabIndex = 1;
             this.btnNavForward.Text = "▶";
             // 
@@ -445,9 +461,10 @@ namespace CMS.Presentation
             // 
             this.btnNavUp.FlatAppearance.BorderSize = 0;
             this.btnNavUp.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNavUp.Location = new System.Drawing.Point(60, 4);
+            this.btnNavUp.Location = new System.Drawing.Point(80, 5);
+            this.btnNavUp.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnNavUp.Name = "btnNavUp";
-            this.btnNavUp.Size = new System.Drawing.Size(26, 24);
+            this.btnNavUp.Size = new System.Drawing.Size(35, 30);
             this.btnNavUp.TabIndex = 2;
             this.btnNavUp.Text = "▲";
             // 
@@ -455,9 +472,10 @@ namespace CMS.Presentation
             // 
             this.btnNavRefresh.FlatAppearance.BorderSize = 0;
             this.btnNavRefresh.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNavRefresh.Location = new System.Drawing.Point(88, 4);
+            this.btnNavRefresh.Location = new System.Drawing.Point(117, 5);
+            this.btnNavRefresh.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnNavRefresh.Name = "btnNavRefresh";
-            this.btnNavRefresh.Size = new System.Drawing.Size(26, 24);
+            this.btnNavRefresh.Size = new System.Drawing.Size(35, 30);
             this.btnNavRefresh.TabIndex = 3;
             this.btnNavRefresh.Text = "↺";
             this.btnNavRefresh.Click += new System.EventHandler(this.btnNavRefresh_Click);
@@ -469,10 +487,11 @@ namespace CMS.Presentation
             this.txtBreadcrumb.BackColor = System.Drawing.Color.White;
             this.txtBreadcrumb.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtBreadcrumb.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.txtBreadcrumb.Location = new System.Drawing.Point(120, 5);
+            this.txtBreadcrumb.Location = new System.Drawing.Point(160, 6);
+            this.txtBreadcrumb.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.txtBreadcrumb.Name = "txtBreadcrumb";
             this.txtBreadcrumb.ReadOnly = true;
-            this.txtBreadcrumb.Size = new System.Drawing.Size(857, 23);
+            this.txtBreadcrumb.Size = new System.Drawing.Size(1142, 26);
             this.txtBreadcrumb.TabIndex = 4;
             this.txtBreadcrumb.Text = "🏠 ราก";
             // 
@@ -480,9 +499,10 @@ namespace CMS.Presentation
             // 
             this.btnViewList.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnViewList.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewList.Location = new System.Drawing.Point(997, 0);
+            this.btnViewList.Location = new System.Drawing.Point(1329, 0);
+            this.btnViewList.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnViewList.Name = "btnViewList";
-            this.btnViewList.Size = new System.Drawing.Size(26, 24);
+            this.btnViewList.Size = new System.Drawing.Size(35, 30);
             this.btnViewList.TabIndex = 5;
             this.btnViewList.Text = "☰";
             // 
@@ -490,9 +510,10 @@ namespace CMS.Presentation
             // 
             this.btnViewGrid.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnViewGrid.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewGrid.Location = new System.Drawing.Point(997, 0);
+            this.btnViewGrid.Location = new System.Drawing.Point(1329, 0);
+            this.btnViewGrid.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnViewGrid.Name = "btnViewGrid";
-            this.btnViewGrid.Size = new System.Drawing.Size(26, 24);
+            this.btnViewGrid.Size = new System.Drawing.Size(35, 30);
             this.btnViewGrid.TabIndex = 6;
             this.btnViewGrid.Text = "⊞";
             // 
@@ -500,9 +521,10 @@ namespace CMS.Presentation
             // 
             this.lblSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblSearch.AutoSize = true;
-            this.lblSearch.Location = new System.Drawing.Point(997, 0);
+            this.lblSearch.Location = new System.Drawing.Point(1329, 0);
+            this.lblSearch.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblSearch.Name = "lblSearch";
-            this.lblSearch.Size = new System.Drawing.Size(24, 17);
+            this.lblSearch.Size = new System.Drawing.Size(25, 20);
             this.lblSearch.TabIndex = 7;
             this.lblSearch.Text = "🔍";
             // 
@@ -510,9 +532,10 @@ namespace CMS.Presentation
             // 
             this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.txtSearch.ForeColor = System.Drawing.Color.Gray;
-            this.txtSearch.Location = new System.Drawing.Point(997, 0);
+            this.txtSearch.Location = new System.Drawing.Point(1329, 0);
+            this.txtSearch.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(160, 23);
+            this.txtSearch.Size = new System.Drawing.Size(212, 26);
             this.txtSearch.TabIndex = 8;
             this.txtSearch.Text = "ค้นหาใน Folder...";
             // 
@@ -525,19 +548,21 @@ namespace CMS.Presentation
             this.pnlFilterBar.Controls.Add(this.chk3NC);
             this.pnlFilterBar.Controls.Add(this.chk4PC);
             this.pnlFilterBar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlFilterBar.Location = new System.Drawing.Point(0, 58);
+            this.pnlFilterBar.Location = new System.Drawing.Point(0, 70);
+            this.pnlFilterBar.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlFilterBar.Name = "pnlFilterBar";
-            this.pnlFilterBar.Padding = new System.Windows.Forms.Padding(4, 4, 4, 2);
-            this.pnlFilterBar.Size = new System.Drawing.Size(1197, 28);
+            this.pnlFilterBar.Padding = new System.Windows.Forms.Padding(5, 5, 5, 2);
+            this.pnlFilterBar.Size = new System.Drawing.Size(1596, 34);
             this.pnlFilterBar.TabIndex = 4;
             // 
             // lblFilterInfo
             // 
             this.lblFilterInfo.AutoSize = true;
             this.lblFilterInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFilterInfo.Location = new System.Drawing.Point(4, 6);
+            this.lblFilterInfo.Location = new System.Drawing.Point(5, 7);
+            this.lblFilterInfo.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFilterInfo.Name = "lblFilterInfo";
-            this.lblFilterInfo.Size = new System.Drawing.Size(69, 17);
+            this.lblFilterInfo.Size = new System.Drawing.Size(85, 20);
             this.lblFilterInfo.TabIndex = 0;
             this.lblFilterInfo.Text = "กรองระดับ:";
             // 
@@ -548,9 +573,10 @@ namespace CMS.Presentation
             this.chk1HC.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chk1HC.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chk1HC.ForeColor = System.Drawing.Color.DarkRed;
-            this.chk1HC.Location = new System.Drawing.Point(80, 5);
+            this.chk1HC.Location = new System.Drawing.Point(107, 6);
+            this.chk1HC.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.chk1HC.Name = "chk1HC";
-            this.chk1HC.Size = new System.Drawing.Size(68, 21);
+            this.chk1HC.Size = new System.Drawing.Size(82, 24);
             this.chk1HC.TabIndex = 1;
             this.chk1HC.Text = "■ 1HC";
             // 
@@ -561,9 +587,10 @@ namespace CMS.Presentation
             this.chk2SC.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chk2SC.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chk2SC.ForeColor = System.Drawing.Color.OrangeRed;
-            this.chk2SC.Location = new System.Drawing.Point(154, 5);
+            this.chk2SC.Location = new System.Drawing.Point(205, 6);
+            this.chk2SC.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.chk2SC.Name = "chk2SC";
-            this.chk2SC.Size = new System.Drawing.Size(67, 21);
+            this.chk2SC.Size = new System.Drawing.Size(80, 24);
             this.chk2SC.TabIndex = 2;
             this.chk2SC.Text = "■ 2SC";
             // 
@@ -574,9 +601,10 @@ namespace CMS.Presentation
             this.chk3NC.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chk3NC.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chk3NC.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.chk3NC.Location = new System.Drawing.Point(228, 5);
+            this.chk3NC.Location = new System.Drawing.Point(304, 6);
+            this.chk3NC.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.chk3NC.Name = "chk3NC";
-            this.chk3NC.Size = new System.Drawing.Size(68, 21);
+            this.chk3NC.Size = new System.Drawing.Size(81, 24);
             this.chk3NC.TabIndex = 3;
             this.chk3NC.Text = "■ 3NC";
             // 
@@ -587,16 +615,18 @@ namespace CMS.Presentation
             this.chk4PC.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chk4PC.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.chk4PC.ForeColor = System.Drawing.Color.DarkGreen;
-            this.chk4PC.Location = new System.Drawing.Point(301, 5);
+            this.chk4PC.Location = new System.Drawing.Point(401, 6);
+            this.chk4PC.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.chk4PC.Name = "chk4PC";
-            this.chk4PC.Size = new System.Drawing.Size(67, 21);
+            this.chk4PC.Size = new System.Drawing.Size(80, 24);
             this.chk4PC.TabIndex = 4;
             this.chk4PC.Text = "■ 4PC";
             // 
             // splitMain
             // 
             this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitMain.Location = new System.Drawing.Point(0, 86);
+            this.splitMain.Location = new System.Drawing.Point(0, 104);
+            this.splitMain.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.splitMain.Name = "splitMain";
             this.splitMain.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -607,8 +637,9 @@ namespace CMS.Presentation
             // splitMain.Panel2
             // 
             this.splitMain.Panel2.Controls.Add(this.recycleBinGroupBox);
-            this.splitMain.Size = new System.Drawing.Size(1197, 716);
-            this.splitMain.SplitterDistance = 506;
+            this.splitMain.Size = new System.Drawing.Size(1596, 883);
+            this.splitMain.SplitterDistance = 624;
+            this.splitMain.SplitterWidth = 5;
             this.splitMain.TabIndex = 3;
             // 
             // splitLR
@@ -616,6 +647,7 @@ namespace CMS.Presentation
             this.splitLR.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitLR.IsSplitterFixed = true;
             this.splitLR.Location = new System.Drawing.Point(0, 0);
+            this.splitLR.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.splitLR.Name = "splitLR";
             // 
             // splitLR.Panel1
@@ -626,8 +658,9 @@ namespace CMS.Presentation
             // splitLR.Panel2
             // 
             this.splitLR.Panel2.Controls.Add(this.splitContent);
-            this.splitLR.Size = new System.Drawing.Size(1197, 506);
-            this.splitLR.SplitterDistance = 300;
+            this.splitLR.Size = new System.Drawing.Size(1596, 624);
+            this.splitLR.SplitterDistance = 400;
+            this.splitLR.SplitterWidth = 5;
             this.splitLR.TabIndex = 0;
             // 
             // pnlExplorer
@@ -641,8 +674,9 @@ namespace CMS.Presentation
             this.pnlExplorer.Controls.Add(this.pnlRecycleBinNode);
             this.pnlExplorer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlExplorer.Location = new System.Drawing.Point(0, 0);
+            this.pnlExplorer.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlExplorer.Name = "pnlExplorer";
-            this.pnlExplorer.Size = new System.Drawing.Size(300, 506);
+            this.pnlExplorer.Size = new System.Drawing.Size(400, 624);
             this.pnlExplorer.TabIndex = 0;
             // 
             // folderTreeView
@@ -650,9 +684,10 @@ namespace CMS.Presentation
             this.folderTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.folderTreeView.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.folderTreeView.HotTracking = true;
-            this.folderTreeView.Location = new System.Drawing.Point(0, 371);
+            this.folderTreeView.Location = new System.Drawing.Point(0, 454);
+            this.folderTreeView.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.folderTreeView.Name = "folderTreeView";
-            this.folderTreeView.Size = new System.Drawing.Size(300, 107);
+            this.folderTreeView.Size = new System.Drawing.Size(400, 136);
             this.folderTreeView.TabIndex = 0;
             this.folderTreeView.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.folderTreeView_AfterSelect);
             // 
@@ -660,9 +695,10 @@ namespace CMS.Presentation
             // 
             this.txtFolderSearch.Dock = System.Windows.Forms.DockStyle.Top;
             this.txtFolderSearch.ForeColor = System.Drawing.Color.Gray;
-            this.txtFolderSearch.Location = new System.Drawing.Point(0, 351);
+            this.txtFolderSearch.Location = new System.Drawing.Point(0, 432);
+            this.txtFolderSearch.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.txtFolderSearch.Name = "txtFolderSearch";
-            this.txtFolderSearch.Size = new System.Drawing.Size(300, 20);
+            this.txtFolderSearch.Size = new System.Drawing.Size(400, 22);
             this.txtFolderSearch.TabIndex = 1;
             this.txtFolderSearch.Text = "ค้นหา Folder...";
             // 
@@ -672,10 +708,11 @@ namespace CMS.Presentation
             this.lblOrgUnitStatus.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblOrgUnitStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lblOrgUnitStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
-            this.lblOrgUnitStatus.Location = new System.Drawing.Point(0, 331);
+            this.lblOrgUnitStatus.Location = new System.Drawing.Point(0, 407);
+            this.lblOrgUnitStatus.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblOrgUnitStatus.Name = "lblOrgUnitStatus";
-            this.lblOrgUnitStatus.Padding = new System.Windows.Forms.Padding(6, 0, 0, 0);
-            this.lblOrgUnitStatus.Size = new System.Drawing.Size(300, 20);
+            this.lblOrgUnitStatus.Padding = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.lblOrgUnitStatus.Size = new System.Drawing.Size(400, 25);
             this.lblOrgUnitStatus.TabIndex = 5;
             this.lblOrgUnitStatus.Text = "📂 กำลังดู: — ทั้งหมด —";
             this.lblOrgUnitStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -685,10 +722,11 @@ namespace CMS.Presentation
             this.pnlOrgFilter.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(238)))), ((int)(((byte)(242)))), ((int)(((byte)(248)))));
             this.pnlOrgFilter.Controls.Add(this.treeOrgUnit);
             this.pnlOrgFilter.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlOrgFilter.Location = new System.Drawing.Point(0, 26);
+            this.pnlOrgFilter.Location = new System.Drawing.Point(0, 32);
+            this.pnlOrgFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlOrgFilter.Name = "pnlOrgFilter";
-            this.pnlOrgFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlOrgFilter.Size = new System.Drawing.Size(300, 305);
+            this.pnlOrgFilter.Padding = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.pnlOrgFilter.Size = new System.Drawing.Size(400, 375);
             this.pnlOrgFilter.TabIndex = 2;
             // 
             // treeOrgUnit
@@ -698,9 +736,10 @@ namespace CMS.Presentation
             this.treeOrgUnit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeOrgUnit.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.treeOrgUnit.HotTracking = true;
-            this.treeOrgUnit.Location = new System.Drawing.Point(4, 4);
+            this.treeOrgUnit.Location = new System.Drawing.Point(5, 5);
+            this.treeOrgUnit.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.treeOrgUnit.Name = "treeOrgUnit";
-            this.treeOrgUnit.Size = new System.Drawing.Size(292, 297);
+            this.treeOrgUnit.Size = new System.Drawing.Size(390, 365);
             this.treeOrgUnit.TabIndex = 1;
             this.treeOrgUnit.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeOrgUnit_AfterSelect);
             // 
@@ -711,8 +750,9 @@ namespace CMS.Presentation
             this.lblExplorerHeader.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblExplorerHeader.ForeColor = System.Drawing.Color.White;
             this.lblExplorerHeader.Location = new System.Drawing.Point(0, 0);
+            this.lblExplorerHeader.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblExplorerHeader.Name = "lblExplorerHeader";
-            this.lblExplorerHeader.Size = new System.Drawing.Size(300, 26);
+            this.lblExplorerHeader.Size = new System.Drawing.Size(400, 32);
             this.lblExplorerHeader.TabIndex = 3;
             this.lblExplorerHeader.Text = "  📁 Folder Explorer";
             this.lblExplorerHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -723,19 +763,21 @@ namespace CMS.Presentation
             this.pnlRecycleBinNode.Controls.Add(this.lblRecycleBin);
             this.pnlRecycleBinNode.Controls.Add(this.lblRecycleBinCount);
             this.pnlRecycleBinNode.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlRecycleBinNode.Location = new System.Drawing.Point(0, 478);
+            this.pnlRecycleBinNode.Location = new System.Drawing.Point(0, 590);
+            this.pnlRecycleBinNode.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlRecycleBinNode.Name = "pnlRecycleBinNode";
-            this.pnlRecycleBinNode.Padding = new System.Windows.Forms.Padding(8, 4, 4, 4);
-            this.pnlRecycleBinNode.Size = new System.Drawing.Size(300, 28);
+            this.pnlRecycleBinNode.Padding = new System.Windows.Forms.Padding(11, 5, 5, 5);
+            this.pnlRecycleBinNode.Size = new System.Drawing.Size(400, 34);
             this.pnlRecycleBinNode.TabIndex = 4;
             // 
             // lblRecycleBin
             // 
             this.lblRecycleBin.AutoSize = true;
             this.lblRecycleBin.ForeColor = System.Drawing.Color.Gray;
-            this.lblRecycleBin.Location = new System.Drawing.Point(8, 5);
+            this.lblRecycleBin.Location = new System.Drawing.Point(11, 6);
+            this.lblRecycleBin.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblRecycleBin.Name = "lblRecycleBin";
-            this.lblRecycleBin.Size = new System.Drawing.Size(52, 13);
+            this.lblRecycleBin.Size = new System.Drawing.Size(53, 16);
             this.lblRecycleBin.TabIndex = 0;
             this.lblRecycleBin.Text = "🗑️ ถังขยะ";
             // 
@@ -745,10 +787,11 @@ namespace CMS.Presentation
             this.lblRecycleBinCount.BackColor = System.Drawing.Color.Gray;
             this.lblRecycleBinCount.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.5F, System.Drawing.FontStyle.Bold);
             this.lblRecycleBinCount.ForeColor = System.Drawing.Color.White;
-            this.lblRecycleBinCount.Location = new System.Drawing.Point(80, 5);
+            this.lblRecycleBinCount.Location = new System.Drawing.Point(107, 6);
+            this.lblRecycleBinCount.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblRecycleBinCount.Name = "lblRecycleBinCount";
-            this.lblRecycleBinCount.Padding = new System.Windows.Forms.Padding(3, 1, 3, 1);
-            this.lblRecycleBinCount.Size = new System.Drawing.Size(20, 15);
+            this.lblRecycleBinCount.Padding = new System.Windows.Forms.Padding(4, 1, 4, 1);
+            this.lblRecycleBinCount.Size = new System.Drawing.Size(23, 18);
             this.lblRecycleBinCount.TabIndex = 1;
             this.lblRecycleBinCount.Text = "0";
             // 
@@ -757,6 +800,7 @@ namespace CMS.Presentation
             this.splitContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContent.IsSplitterFixed = true;
             this.splitContent.Location = new System.Drawing.Point(0, 0);
+            this.splitContent.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.splitContent.Name = "splitContent";
             // 
             // splitContent.Panel1
@@ -768,8 +812,9 @@ namespace CMS.Presentation
             this.splitContent.Panel2.Controls.Add(this.pnlDetail);
             this.splitContent.Panel2Collapsed = true;
             this.splitContent.Panel2MinSize = 100;
-            this.splitContent.Size = new System.Drawing.Size(893, 506);
+            this.splitContent.Size = new System.Drawing.Size(1191, 624);
             this.splitContent.SplitterDistance = 25;
+            this.splitContent.SplitterWidth = 5;
             this.splitContent.TabIndex = 0;
             // 
             // pnlContent
@@ -780,8 +825,9 @@ namespace CMS.Presentation
             this.pnlContent.Controls.Add(this.pnlContentHeader);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(0, 0);
+            this.pnlContent.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Size = new System.Drawing.Size(893, 506);
+            this.pnlContent.Size = new System.Drawing.Size(1191, 624);
             this.pnlContent.TabIndex = 0;
             // 
             // contentsListView
@@ -799,9 +845,10 @@ namespace CMS.Presentation
             this.contentsListView.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.contentsListView.FullRowSelect = true;
             this.contentsListView.HideSelection = false;
-            this.contentsListView.Location = new System.Drawing.Point(0, 58);
+            this.contentsListView.Location = new System.Drawing.Point(0, 71);
+            this.contentsListView.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.contentsListView.Name = "contentsListView";
-            this.contentsListView.Size = new System.Drawing.Size(891, 446);
+            this.contentsListView.Size = new System.Drawing.Size(1189, 551);
             this.contentsListView.TabIndex = 1;
             this.contentsListView.UseCompatibleStateImageBehavior = false;
             this.contentsListView.View = System.Windows.Forms.View.Details;
@@ -852,18 +899,20 @@ namespace CMS.Presentation
             this.pnlContentHeader.Controls.Add(this.lblContentInfo);
             this.pnlContentHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlContentHeader.Location = new System.Drawing.Point(0, 0);
+            this.pnlContentHeader.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlContentHeader.Name = "pnlContentHeader";
-            this.pnlContentHeader.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.pnlContentHeader.Size = new System.Drawing.Size(891, 26);
+            this.pnlContentHeader.Padding = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            this.pnlContentHeader.Size = new System.Drawing.Size(1189, 32);
             this.pnlContentHeader.TabIndex = 2;
             // 
             // lblContentInfo
             // 
             this.lblContentInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblContentInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblContentInfo.Location = new System.Drawing.Point(4, 3);
+            this.lblContentInfo.Location = new System.Drawing.Point(5, 4);
+            this.lblContentInfo.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblContentInfo.Name = "lblContentInfo";
-            this.lblContentInfo.Size = new System.Drawing.Size(881, 18);
+            this.lblContentInfo.Size = new System.Drawing.Size(1177, 22);
             this.lblContentInfo.TabIndex = 0;
             this.lblContentInfo.Text = "— | — | ไม่มีรายการที่เลือก";
             this.lblContentInfo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -875,9 +924,10 @@ namespace CMS.Presentation
             this.pnlDetail.Controls.Add(this.lblDetailHeader);
             this.pnlDetail.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlDetail.Location = new System.Drawing.Point(0, 0);
+            this.pnlDetail.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlDetail.Name = "pnlDetail";
-            this.pnlDetail.Padding = new System.Windows.Forms.Padding(8);
-            this.pnlDetail.Size = new System.Drawing.Size(96, 100);
+            this.pnlDetail.Padding = new System.Windows.Forms.Padding(11, 10, 11, 10);
+            this.pnlDetail.Size = new System.Drawing.Size(128, 123);
             this.pnlDetail.TabIndex = 0;
             // 
             // lblDetailContent
@@ -885,9 +935,10 @@ namespace CMS.Presentation
             this.lblDetailContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblDetailContent.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblDetailContent.ForeColor = System.Drawing.Color.Gray;
-            this.lblDetailContent.Location = new System.Drawing.Point(8, 34);
+            this.lblDetailContent.Location = new System.Drawing.Point(11, 42);
+            this.lblDetailContent.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblDetailContent.Name = "lblDetailContent";
-            this.lblDetailContent.Size = new System.Drawing.Size(80, 58);
+            this.lblDetailContent.Size = new System.Drawing.Size(106, 71);
             this.lblDetailContent.TabIndex = 0;
             this.lblDetailContent.Text = "เลือกรายการเพื่อดูรายละเอียด";
             this.lblDetailContent.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -898,10 +949,11 @@ namespace CMS.Presentation
             this.lblDetailHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblDetailHeader.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblDetailHeader.ForeColor = System.Drawing.Color.White;
-            this.lblDetailHeader.Location = new System.Drawing.Point(8, 8);
+            this.lblDetailHeader.Location = new System.Drawing.Point(11, 10);
+            this.lblDetailHeader.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblDetailHeader.Name = "lblDetailHeader";
-            this.lblDetailHeader.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.lblDetailHeader.Size = new System.Drawing.Size(80, 26);
+            this.lblDetailHeader.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
+            this.lblDetailHeader.Size = new System.Drawing.Size(106, 32);
             this.lblDetailHeader.TabIndex = 1;
             this.lblDetailHeader.Text = "📋 ตัวอย่าง";
             this.lblDetailHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -912,9 +964,10 @@ namespace CMS.Presentation
             this.recycleBinGroupBox.Controls.Add(this.recycleBinToolStrip);
             this.recycleBinGroupBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.recycleBinGroupBox.Location = new System.Drawing.Point(0, 0);
+            this.recycleBinGroupBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.recycleBinGroupBox.Name = "recycleBinGroupBox";
-            this.recycleBinGroupBox.Padding = new System.Windows.Forms.Padding(4);
-            this.recycleBinGroupBox.Size = new System.Drawing.Size(1197, 206);
+            this.recycleBinGroupBox.Padding = new System.Windows.Forms.Padding(5, 5, 5, 5);
+            this.recycleBinGroupBox.Size = new System.Drawing.Size(1596, 254);
             this.recycleBinGroupBox.TabIndex = 0;
             this.recycleBinGroupBox.TabStop = false;
             this.recycleBinGroupBox.Text = "🗑️ ถังขยะ";
@@ -932,13 +985,13 @@ namespace CMS.Presentation
             this.recycleBinListView.FullRowSelect = true;
             this.recycleBinListView.GridLines = true;
             this.recycleBinListView.HideSelection = false;
-            this.recycleBinListView.Location = new System.Drawing.Point(4, 43);
+            this.recycleBinListView.Location = new System.Drawing.Point(5, 51);
+            this.recycleBinListView.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.recycleBinListView.Name = "recycleBinListView";
-            this.recycleBinListView.Size = new System.Drawing.Size(1189, 159);
+            this.recycleBinListView.Size = new System.Drawing.Size(1586, 198);
             this.recycleBinListView.TabIndex = 1;
             this.recycleBinListView.UseCompatibleStateImageBehavior = false;
             this.recycleBinListView.View = System.Windows.Forms.View.Details;
-            // recycleBinListView.ItemChecked handler removed (recycle bin moved to RecycleBinForm)
             // 
             // colRbName
             // 
@@ -959,6 +1012,7 @@ namespace CMS.Presentation
             // 
             this.recycleBinToolStrip.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.recycleBinToolStrip.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.recycleBinToolStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.recycleBinToolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.btnRbSelectAll,
             this.lblRbSelCount,
@@ -966,65 +1020,62 @@ namespace CMS.Presentation
             this.btnRestore,
             this.btnRestoreToParent,
             this.btnPermanentDelete});
-            this.recycleBinToolStrip.Location = new System.Drawing.Point(4, 17);
+            this.recycleBinToolStrip.Location = new System.Drawing.Point(5, 20);
             this.recycleBinToolStrip.Name = "recycleBinToolStrip";
-            this.recycleBinToolStrip.Size = new System.Drawing.Size(1189, 26);
+            this.recycleBinToolStrip.Size = new System.Drawing.Size(1586, 31);
             this.recycleBinToolStrip.TabIndex = 2;
             // 
             // btnRbSelectAll
             // 
             this.btnRbSelectAll.CheckOnClick = true;
             this.btnRbSelectAll.Name = "btnRbSelectAll";
-            this.btnRbSelectAll.Size = new System.Drawing.Size(100, 23);
+            this.btnRbSelectAll.Size = new System.Drawing.Size(122, 28);
             this.btnRbSelectAll.Text = "☑ เลือกทั้งหมด";
             this.btnRbSelectAll.ToolTipText = "เลือก/ยกเลิกทั้งหมด";
-            // btnRbSelectAll.CheckedChanged handler removed (recycle bin moved to RecycleBinForm)
             // 
             // lblRbSelCount
             // 
             this.lblRbSelCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
             this.lblRbSelCount.Name = "lblRbSelCount";
-            this.lblRbSelCount.Size = new System.Drawing.Size(112, 23);
+            this.lblRbSelCount.Size = new System.Drawing.Size(136, 28);
             this.lblRbSelCount.Text = "เลือกแล้ว 0 รายการ";
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 26);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 31);
             // 
             // btnRestore
             // 
             this.btnRestore.Name = "btnRestore";
-            this.btnRestore.Size = new System.Drawing.Size(59, 23);
+            this.btnRestore.Size = new System.Drawing.Size(72, 28);
             this.btnRestore.Text = "♻️ กู้คืน";
             this.btnRestore.ToolTipText = "กู้คืน Folder ไปยัง Parent เดิม";
-            // btnRestore.Click handler removed (recycle bin moved to RecycleBinForm)
             // 
             // btnRestoreToParent
             // 
             this.btnRestoreToParent.Name = "btnRestoreToParent";
-            this.btnRestoreToParent.Size = new System.Drawing.Size(93, 23);
+            this.btnRestoreToParent.Size = new System.Drawing.Size(115, 28);
             this.btnRestoreToParent.Text = "📂 กู้คืนไปยัง...";
             this.btnRestoreToParent.ToolTipText = "กู้คืน Folder ไปยัง Parent อื่น";
-            // btnRestoreToParent.Click handler removed (recycle bin moved to RecycleBinForm)
             // 
             // btnPermanentDelete
             // 
             this.btnPermanentDelete.Name = "btnPermanentDelete";
-            this.btnPermanentDelete.Size = new System.Drawing.Size(78, 23);
+            this.btnPermanentDelete.Size = new System.Drawing.Size(94, 28);
             this.btnPermanentDelete.Text = "❌ ลบถาวร";
             this.btnPermanentDelete.ToolTipText = "ลบถาวร (Manager/Admin)";
-            // btnPermanentDelete.Click handler removed (recycle bin moved to RecycleBinForm)
             // 
             // FolderForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1197, 802);
+            this.ClientSize = new System.Drawing.Size(1596, 987);
             this.Controls.Add(this.splitMain);
             this.Controls.Add(this.pnlFilterBar);
             this.Controls.Add(this.pnlNavBar);
             this.Controls.Add(this.toolStrip);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "FolderForm";
             this.Text = "MOD-002: จัดการ Folder";
             this.Load += new System.EventHandler(this.FolderForm_Load);

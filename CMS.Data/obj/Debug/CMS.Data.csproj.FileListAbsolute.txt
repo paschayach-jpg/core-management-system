@@ -50,3 +50,16 @@ C:\Users\pitakpong\Documents\cms_import\CMS.Data\obj\Debug\CMS.Data.csproj.CoreC
 C:\Users\pitakpong\Documents\cms_import\CMS.Data\obj\Debug\CMS.Data.csproj.Up2Date
 C:\Users\pitakpong\Documents\cms_import\CMS.Data\obj\Debug\CMS.Data.dll
 C:\Users\pitakpong\Documents\cms_import\CMS.Data\obj\Debug\CMS.Data.pdb
+C:\Users\KPG\Documents\cms_import\CMS.Data\bin\Debug\CMS.Data.dll
+C:\Users\KPG\Documents\cms_import\CMS.Data\bin\Debug\CMS.Data.pdb
+C:\Users\KPG\Documents\cms_import\CMS.Data\bin\Debug\CMS.Domain.dll
+C:\Users\KPG\Documents\cms_import\CMS.Data\bin\Debug\CMS.Infrastructure.dll
+C:\Users\KPG\Documents\cms_import\CMS.Data\bin\Debug\log4net.dll
+C:\Users\KPG\Documents\cms_import\CMS.Data\bin\Debug\CMS.Domain.pdb
+C:\Users\KPG\Documents\cms_import\CMS.Data\bin\Debug\CMS.Infrastructure.pdb
+C:\Users\KPG\Documents\cms_import\CMS.Data\bin\Debug\log4net.xml
+C:\Users\KPG\Documents\cms_import\CMS.Data\obj\Debug\CMS.Data.csproj.AssemblyReference.cache
+C:\Users\KPG\Documents\cms_import\CMS.Data\obj\Debug\CMS.Data.csproj.CoreCompileInputs.cache
+C:\Users\KPG\Documents\cms_import\CMS.Data\obj\Debug\CMS.Data.csproj.Up2Date
+C:\Users\KPG\Documents\cms_import\CMS.Data\obj\Debug\CMS.Data.dll
+C:\Users\KPG\Documents\cms_import\CMS.Data\obj\Debug\CMS.Data.pdb

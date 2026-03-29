@@ -661,34 +661,47 @@ GO
 -- AuditLog Stored Procedures (INSERT ONLY — immutable)
 -- ============================================================
 
-CREATE PROCEDURE sp_InsertAuditLog
-    @EventType        NVARCHAR(100),
-    @ActorUserId      INT,
-    @TargetEntityType NVARCHAR(100),
-    @TargetEntityId   NVARCHAR(100),
-    @Outcome          NVARCHAR(20),
-    @WorkstationId    NVARCHAR(200),
-    @Details          NVARCHAR(MAX)
+CREATE PROCEDURE audit.sp_InsertAuditLog
+    @UserID       INT,
+    @UserName     NVARCHAR(200),
+    @UserRole     TINYINT,
+    @Module       NVARCHAR(100),
+    @Action       NVARCHAR(100),
+    @TableName    NVARCHAR(100),
+    @RecordID     INT,
+    @OldValue     NVARCHAR(MAX),
+    @NewValue     NVARCHAR(MAX),
+    @IPAddress    NVARCHAR(50),
+    @MachineName  NVARCHAR(200),
+    @SessionID    NVARCHAR(100),
+    @Result       TINYINT,
+    @ErrorMessage NVARCHAR(MAX)
 AS
 BEGIN
     SET NOCOUNT ON;
-    INSERT INTO AuditLog (EventType, ActorUserId, TargetEntityType,
-                          TargetEntityId, Outcome, WorkstationId, Details)
-    VALUES (@EventType, @ActorUserId, @TargetEntityType,
-            @TargetEntityId, @Outcome, @WorkstationId, @Details);
-    SELECT SCOPE_IDENTITY() AS NewAuditLogId;
+    INSERT INTO AuditLog (
+        UserID, UserName, UserRole, Module, Action,
+        TableName, RecordID, OldValue, NewValue,
+        IPAddress, MachineName, SessionID, Result, ErrorMessage
+    )
+    VALUES (
+        @UserID, @UserName, @UserRole, @Module, @Action,
+        @TableName, @RecordID, @OldValue, @NewValue,
+        @IPAddress, @MachineName, @SessionID, @Result, @ErrorMessage
+    );
+    SELECT SCOPE_IDENTITY() AS AuditID;
 END
 GO
 
-CREATE PROCEDURE sp_QueryAuditLog
-    @FromDate         DATETIME2,
-    @ToDate           DATETIME2,
-    @ActorUserId      INT,
-    @EventType        NVARCHAR(100),
-    @TargetEntityType NVARCHAR(100),
-    @TargetEntityId   NVARCHAR(100),
-    @PageNumber       INT,
-    @PageSize         INT
+CREATE PROCEDURE audit.sp_QueryAuditLog
+    @FromDate   DATETIME2,
+    @ToDate     DATETIME2,
+    @UserID     INT,
+    @Module     NVARCHAR(100),
+    @Action     NVARCHAR(100),
+    @Result     TINYINT,
+    @PageNumber INT,
+    @PageSize   INT
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -696,16 +709,18 @@ BEGIN
     DECLARE @Offset INT = (@PageNumber - 1) * @PageSize;
 
     SELECT COUNT(*) OVER () AS TotalCount,
-           AuditLogId, EventType, ActorUserId, TargetEntityType,
-           TargetEntityId, Outcome, WorkstationId, EventTimestamp, Details
+           AuditID, AuditDate, UserID, UserName, UserRole,
+           Module, Action, TableName, RecordID,
+           OldValue, NewValue, IPAddress, MachineName,
+           SessionID, Result, ErrorMessage
     FROM   AuditLog
-    WHERE  EventTimestamp >= @FromDate
-      AND  EventTimestamp <= @ToDate
-      AND  (@ActorUserId      IS NULL OR ActorUserId      = @ActorUserId)
-      AND  (@EventType        IS NULL OR EventType        = @EventType)
-      AND  (@TargetEntityType IS NULL OR TargetEntityType = @TargetEntityType)
-      AND  (@TargetEntityId   IS NULL OR TargetEntityId   = @TargetEntityId)
-    ORDER  BY EventTimestamp DESC
+    WHERE  AuditDate >= @FromDate
+      AND  AuditDate <= @ToDate
+      AND  (@UserID  IS NULL OR UserID  = @UserID)
+      AND  (@Module  IS NULL OR Module  = @Module)
+      AND  (@Action  IS NULL OR Action  = @Action)
+      AND  (@Result  IS NULL OR Result  = @Result)
+    ORDER  BY AuditDate DESC
     OFFSET @Offset ROWS
     FETCH  NEXT @PageSize ROWS ONLY;
 END

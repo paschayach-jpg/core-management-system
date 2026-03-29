@@ -87,15 +87,22 @@ GO
 
 -- Step 7: Create AuditLog (immutable — no UPDATE/DELETE SPs)
 CREATE TABLE AuditLog (
-    AuditLogId       BIGINT IDENTITY PRIMARY KEY,
-    EventType        NVARCHAR(100) NOT NULL,
-    ActorUserId      INT NOT NULL,
-    TargetEntityType NVARCHAR(100) NOT NULL,
-    TargetEntityId   NVARCHAR(100) NOT NULL,
-    Outcome          NVARCHAR(20) NOT NULL,
-    WorkstationId    NVARCHAR(200) NOT NULL,
-    EventTimestamp   DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    Details          NVARCHAR(MAX) NULL
+    AuditID      BIGINT IDENTITY PRIMARY KEY,
+    AuditDate    DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    UserID       INT NOT NULL,
+    UserName     NVARCHAR(200) NOT NULL,
+    UserRole     TINYINT NULL,
+    Module       NVARCHAR(100) NOT NULL,
+    Action       NVARCHAR(100) NOT NULL,
+    TableName    NVARCHAR(100) NULL,
+    RecordID     INT NULL,
+    OldValue     NVARCHAR(MAX) NULL,
+    NewValue     NVARCHAR(MAX) NULL,
+    IPAddress    NVARCHAR(50) NULL,
+    MachineName  NVARCHAR(200) NULL,
+    SessionID    NVARCHAR(100) NULL,
+    Result       TINYINT NOT NULL,  -- 1=Success, 2=Failure, 3=Denied
+    ErrorMessage NVARCHAR(MAX) NULL
 );
 GO
 

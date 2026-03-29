@@ -214,6 +214,8 @@ namespace CMS.Presentation
                             Module      = "Auth",
                             Action      = "LOGOUT",
                             UserID      = userContext.UserID,
+                            UserName    = userContext.ADUserName ?? string.Empty,
+                            UserRole    = userContext.AppRole,
                             TableName   = "core.UserAccount",
                             RecordID    = userContext.UserID,
                             MachineName = userContext.MachineName,

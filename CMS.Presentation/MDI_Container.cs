@@ -419,7 +419,7 @@ namespace CMS.Presentation
             menuItemFavorites.Click      += (s, e) => OpenFolderStructure();
             menuItemFolderSettings.Click += (s, e) => OpenFolderSettings();
             menuItemPermission.Click     += (s, e) => OpenFolderSettings();
-            menuItemAuditLog.Click       += (s, e) => OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService));
+            menuItemAuditLog.Click       += (s, e) => OpenAuditLog();
             menuItemApproval.Click       += (s, e) => OpenApprovalInbox();
             // แทรก
             menuItemInsertDoc.Click      += (s, e) => OpenFileUpload();
@@ -478,7 +478,7 @@ namespace CMS.Presentation
             btnRibbonFavorites.Click      += (s, e) => OpenFolderStructure();
             btnRibbonFolderSettings.Click += (s, e) => OpenFolderSettings();
             btnRibbonPermission.Click     += (s, e) => OpenFolderSettings();
-            btnRibbonAuditLog.Click       += (s, e) => OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService));
+            btnRibbonAuditLog.Click       += (s, e) => OpenAuditLog();
             btnRibbonApproval.Click       += (s, e) => OpenApprovalInbox();
             // มุมมอง
             btnRibbonViewList.Click       += (s, e) => OpenFolderStructure();
@@ -658,6 +658,11 @@ namespace CMS.Presentation
             folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
             OpenChildForm(folderForm);
+        }
+
+        private void OpenAuditLog()
+        {
+            OpenChildForm(new AuditLogForm(_auditService, _currentUser));
         }
 
         private void OpenSysConfig()

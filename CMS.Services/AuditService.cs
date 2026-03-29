@@ -89,6 +89,7 @@ namespace CMS.Services
                 AuditDate   = entry.AuditDate == default(DateTime) ? DateTime.Now : entry.AuditDate,
                 UserID      = entry.UserID,
                 UserName    = entry.UserName,
+                UserRole    = entry.UserRole,
                 Module      = entry.Module,
                 Action      = entry.Action,
                 TableName   = entry.TableName,

@@ -136,6 +136,14 @@
     <Compile Include="ApprovalInboxForm.Designer.cs">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="AuditLogForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AuditLogForm.Designer.cs">
+      <DependentUpon>AuditLogForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Presenters\IAuditLogView.cs" />
+    <Compile Include="Presenters\AuditLogPresenter.cs" />
     <Compile Include="ConfigAdminForm.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -278,24 +278,22 @@ namespace CMS.Services
                          int recordId, int result, string newValue = null)
         {
             if (_auditService == null) return;
-            try
+            _auditService.Log(new AuditEntry
             {
-                _auditService.Log(new AuditEntry
-                {
-                    Module      = module,
-                    Action      = action,
-                    UserID      = user.UserID,
-                    TableName   = tableName,
-                    RecordID    = recordId,
-                    NewValue    = newValue,
-                    MachineName = user.MachineName,
-                    IPAddress   = user.IPAddress,
-                    SessionID   = user.SessionID,
-                    Result      = result,
-                    AuditDate   = DateTime.Now
-                });
-            }
-            catch { }
+                Module      = module,
+                Action      = action,
+                UserID      = user.UserID,
+                UserName    = user.ADUserName ?? string.Empty,
+                UserRole    = user.AppRole,
+                TableName   = tableName,
+                RecordID    = recordId,
+                NewValue    = newValue,
+                MachineName = user.MachineName,
+                IPAddress   = user.IPAddress,
+                SessionID   = user.SessionID,
+                Result      = result,
+                AuditDate   = DateTime.Now
+            });
         }
 
         /// <summary>Server-side code generation with database-level uniqueness guarantee</summary>
