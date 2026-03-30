@@ -19,6 +19,8 @@ C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentat
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.EmployeeSearchDialog.resources
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.FolderTemplateForm.resources
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.MDI_Container.resources
+C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.OrgUnitPickerDialog.resources
+C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.OrgUnitSelectorDialog.resources
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.PermissionForm.resources
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.GenerateResource.cache
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.CoreCompileInputs.cache
@@ -27,5 +29,3 @@ C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentat
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\bin\Debug\CMS.Presentation.exe.config
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\bin\Debug\CMS.Presentation.pdb
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Pres.F339C674.Up2Date
-C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.OrgUnitPickerDialog.resources
-C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.OrgUnitSelectorDialog.resources
