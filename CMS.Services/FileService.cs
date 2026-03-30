@@ -211,6 +211,37 @@ namespace CMS.Services
                 throw new UnauthorizedAccessException(string.Format(
                     "User {0} does not have Delete permission on folder {1}.", user.UserID, doc.FolderID));
 
+            // File-level permissions override folder permissions when present
+            if (_filePermissionRepository != null)
+            {
+                var filePerms = _filePermissionRepository.GetByFile(fileId).ToList();
+                if (filePerms.Count > 0)
+                {
+                    var account   = _userAccountRepository.GetById(user.UserID);
+                    int? userRole = account != null ? (int?)account.AppRole : null;
+
+                    var applicable = filePerms.Where(e =>
+                        (e.PrincipalType == 1 && e.PrincipalID == user.UserID) ||
+                        (e.PrincipalType == 2 && userRole.HasValue && e.PrincipalID == userRole.Value)
+                    ).ToList();
+
+                    if (applicable.Count > 0)
+                    {
+                        // Explicit DENY blocks everyone including Admin/Manager
+                        bool fileDeny = applicable.Any(e => e.IsDeny && (e.CanDelete || e.CanFullControl));
+                        if (fileDeny)
+                            throw new UnauthorizedAccessException(string.Format(
+                                "User {0} is denied Delete permission on file {1}.", user.UserID, fileId));
+
+                        // File permission exists but Delete is not granted → block
+                        bool fileAllowDelete = applicable.Any(e => !e.IsDeny && (e.CanDelete || e.CanFullControl));
+                        if (!fileAllowDelete)
+                            throw new UnauthorizedAccessException(string.Format(
+                                "User {0} does not have Delete permission on file {1}.", user.UserID, fileId));
+                    }
+                }
+            }
+
             _fileDocumentRepository.SoftDelete(fileId, user.UserID);
 
             Log(user, "File", "DELETE", "storage.FileDocument", fileId, 1,
@@ -390,6 +421,8 @@ namespace CMS.Services
                     Module      = "File",
                     Action      = "MoveFile",
                     UserID      = user.UserID,
+                    UserName    = user.ADUserName ?? string.Empty,
+                    UserRole    = user.AppRole,
                     TableName   = "storage.FileDocument",
                     RecordID    = fileId,
                     OldValue    = string.Format("FolderID={0} Path={1}", oldFolderId, oldPhysicalPath),
@@ -601,24 +634,22 @@ namespace CMS.Services
         private void Log(UserContext user, string module, string action, string tableName,
                          int recordId, int result, string newValue = null)
         {
-            try
+            _auditService.Log(new AuditEntry
             {
-                _auditService.Log(new AuditEntry
-                {
-                    Module      = module,
-                    Action      = action,
-                    UserID      = user.UserID,
-                    TableName   = tableName,
-                    RecordID    = recordId > 0 ? (int?)recordId : null,
-                    NewValue    = newValue,
-                    MachineName = user.MachineName,
-                    IPAddress   = user.IPAddress,
-                    SessionID   = user.SessionID,
-                    Result      = result,
-                    AuditDate   = DateTime.Now
-                });
-            }
-            catch { }
+                Module      = module,
+                Action      = action,
+                UserID      = user.UserID,
+                UserName    = user.ADUserName ?? string.Empty,
+                UserRole    = user.AppRole,
+                TableName   = tableName,
+                RecordID    = recordId > 0 ? (int?)recordId : null,
+                NewValue    = newValue,
+                MachineName = user.MachineName,
+                IPAddress   = user.IPAddress,
+                SessionID   = user.SessionID,
+                Result      = result,
+                AuditDate   = DateTime.Now
+            });
         }
 
         private static UploadResult Fail(string fileName, string message)

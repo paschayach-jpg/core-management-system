@@ -693,6 +693,8 @@ namespace CMS.Services
                 Module      = "Folder",
                 Action      = "MoveFolder",
                 UserID      = user.UserID,
+                UserName    = user.ADUserName ?? string.Empty,
+                UserRole    = user.AppRole,
                 TableName   = "storage.Folder",
                 RecordID    = sourceFolderId,
                 OldValue    = oldParentFolderId.HasValue ? oldParentFolderId.Value.ToString() : null,
@@ -810,24 +812,22 @@ namespace CMS.Services
         private void Log(UserContext user, string module, string action, string tableName,
                          int recordId, int result, string newValue = null)
         {
-            try
+            _auditService.Log(new AuditEntry
             {
-                _auditService.Log(new AuditEntry
-                {
-                    Module      = module,
-                    Action      = action,
-                    UserID      = user.UserID,
-                    TableName   = tableName,
-                    RecordID    = recordId,
-                    NewValue    = newValue,
-                    MachineName = user.MachineName,
-                    IPAddress   = user.IPAddress,
-                    SessionID   = user.SessionID,
-                    Result      = result,
-                    AuditDate   = DateTime.Now
-                });
-            }
-            catch { }
+                Module      = module,
+                Action      = action,
+                UserID      = user.UserID,
+                UserName    = user.ADUserName ?? string.Empty,
+                UserRole    = user.AppRole,
+                TableName   = tableName,
+                RecordID    = recordId,
+                NewValue    = newValue,
+                MachineName = user.MachineName,
+                IPAddress   = user.IPAddress,
+                SessionID   = user.SessionID,
+                Result      = result,
+                AuditDate   = DateTime.Now
+            });
         }
     }
 }

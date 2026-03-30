@@ -419,7 +419,7 @@ namespace CMS.Presentation
             menuItemFavorites.Click      += (s, e) => OpenFolderStructure();
             menuItemFolderSettings.Click += (s, e) => OpenFolderSettings();
             menuItemPermission.Click     += (s, e) => OpenFolderSettings();
-            menuItemAuditLog.Click       += (s, e) => OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService));
+            menuItemAuditLog.Click       += (s, e) => OpenAuditLog();
             menuItemApproval.Click       += (s, e) => OpenApprovalInbox();
             // แทรก
             menuItemInsertDoc.Click      += (s, e) => OpenFileUpload();
@@ -478,7 +478,7 @@ namespace CMS.Presentation
             btnRibbonFavorites.Click      += (s, e) => OpenFolderStructure();
             btnRibbonFolderSettings.Click += (s, e) => OpenFolderSettings();
             btnRibbonPermission.Click     += (s, e) => OpenFolderSettings();
-            btnRibbonAuditLog.Click       += (s, e) => OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService));
+            btnRibbonAuditLog.Click       += (s, e) => OpenAuditLog();
             btnRibbonApproval.Click       += (s, e) => OpenApprovalInbox();
             // มุมมอง
             btnRibbonViewList.Click       += (s, e) => OpenFolderStructure();
@@ -658,6 +658,11 @@ namespace CMS.Presentation
             folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
             OpenChildForm(folderForm);
+        }
+
+        private void OpenAuditLog()
+        {
+            OpenChildForm(new AuditLogForm(_auditService, _currentUser));
         }
 
         private void OpenSysConfig()
@@ -2132,7 +2137,7 @@ namespace CMS.Presentation
             }
         }
 
-        private void OnDetailOpenClick(object sender, EventArgs e)
+        private async void OnDetailOpenClick(object sender, EventArgs e)
         {
             // เฉพาะ FileDocument เท่านั้น — Folder item จะถูกกรองออกที่นี่
             var file = _fileDetailPanel.Tag as FileDocument;
@@ -2156,11 +2161,21 @@ namespace CMS.Presentation
                     return;
                 }
 
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                string ext = (file.FileExtension ?? System.IO.Path.GetExtension(pathToOpen) ?? string.Empty)
+                             .ToLowerInvariant().TrimStart('.');
+
+                if (ext == "pdf")
                 {
-                    FileName        = pathToOpen,
-                    UseShellExecute = true
-                });
+                    await PdfSecurityHelper.OpenSecurePdfAsync(pathToOpen, this, print: false);
+                }
+                else
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName        = pathToOpen,
+                        UseShellExecute = true
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -2350,7 +2365,7 @@ namespace CMS.Presentation
             return lvRecentFiles.SelectedItems[0].Tag as FileDocument;
         }
 
-        private void CtxDash_Open_Click(object sender, EventArgs e)
+        private async void CtxDash_Open_Click(object sender, EventArgs e)
         {
             var file = GetDashSelectedFile();
             if (file == null) return;
@@ -2364,10 +2379,21 @@ namespace CMS.Presentation
                         "เปิดไฟล์ไม่ได้", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+
+                string ext = (file.FileExtension ?? System.IO.Path.GetExtension(path) ?? string.Empty)
+                             .ToLowerInvariant().TrimStart('.');
+
+                if (ext == "pdf")
                 {
-                    FileName = path, UseShellExecute = true
-                });
+                    await PdfSecurityHelper.OpenSecurePdfAsync(path, this, print: false);
+                }
+                else
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = path, UseShellExecute = true
+                    });
+                }
             }
             catch (Exception ex)
             {

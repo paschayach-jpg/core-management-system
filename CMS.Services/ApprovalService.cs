@@ -635,45 +635,40 @@ namespace CMS.Services
         private void Log(UserContext user, string module, string action, string tableName,
                          int recordId, int result, string newValue = null)
         {
-            try
+            _auditService.Log(new AuditEntry
             {
-                _auditService.Log(new AuditEntry
-                {
-                    Module      = module,
-                    Action      = action,
-                    UserID      = user.UserID,
-                    TableName   = tableName,
-                    RecordID    = recordId > 0 ? (int?)recordId : null,
-                    NewValue    = newValue,
-                    MachineName = user.MachineName,
-                    IPAddress   = user.IPAddress,
-                    SessionID   = user.SessionID,
-                    Result      = result,
-                    AuditDate   = DateTime.Now
-                });
-            }
-            catch { }
+                Module      = module,
+                Action      = action,
+                UserID      = user.UserID,
+                UserName    = user.ADUserName ?? string.Empty,
+                UserRole    = user.AppRole,
+                TableName   = tableName,
+                RecordID    = recordId > 0 ? (int?)recordId : null,
+                NewValue    = newValue,
+                MachineName = user.MachineName,
+                IPAddress   = user.IPAddress,
+                SessionID   = user.SessionID,
+                Result      = result,
+                AuditDate   = DateTime.Now
+            });
         }
 
         private void LogSystem(string module, string action, string tableName,
                                int recordId, int result, string newValue = null)
         {
-            try
+            _auditService.Log(new AuditEntry
             {
-                _auditService.Log(new AuditEntry
-                {
-                    Module      = module,
-                    Action      = action,
-                    UserID      = 0,
-                    TableName   = tableName,
-                    RecordID    = recordId > 0 ? (int?)recordId : null,
-                    NewValue    = newValue,
-                    MachineName = "SYSTEM",
-                    Result      = result,
-                    AuditDate   = DateTime.Now
-                });
-            }
-            catch { }
+                Module      = module,
+                Action      = action,
+                UserID      = 0,
+                UserName    = "SYSTEM",
+                TableName   = tableName,
+                RecordID    = recordId > 0 ? (int?)recordId : null,
+                NewValue    = newValue,
+                MachineName = "SYSTEM",
+                Result      = result,
+                AuditDate   = DateTime.Now
+            });
         }
     }
 }

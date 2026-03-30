@@ -12,6 +12,7 @@ namespace CMS.Domain.Models
         public string Action { get; set; }
         public int UserID { get; set; }
         public string UserName { get; set; }
+        public int? UserRole { get; set; }
         public string TableName { get; set; }
         public int? RecordID { get; set; }
         public string OldValue { get; set; }

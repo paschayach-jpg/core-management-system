@@ -394,11 +394,11 @@ namespace CMS.Presentation
             };
         }
 
-        private void CtxFileOpen_Click(object sender, EventArgs e)
+        private async void CtxFileOpen_Click(object sender, EventArgs e)
         {
             var file = SelectedFile;
             if (file == null) return;
-            
+
             try
             {
                 // Get the file path from the file service
@@ -407,15 +407,24 @@ namespace CMS.Presentation
                     // Assuming the file service has a method to get the physical file path
                     // or we can construct it from the file's stored path
                     string filePath = GetFilePhysicalPath(file);
-                    
+
                     if (!string.IsNullOrEmpty(filePath) && System.IO.File.Exists(filePath))
                     {
-                        // Open the file with the default application
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        string ext = (file.FileExtension ?? System.IO.Path.GetExtension(filePath) ?? string.Empty)
+                                     .ToLowerInvariant().TrimStart('.');
+
+                        if (ext == "pdf")
                         {
-                            FileName = filePath,
-                            UseShellExecute = true
-                        });
+                            await PdfSecurityHelper.OpenSecurePdfAsync(filePath, this, print: false);
+                        }
+                        else
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = filePath,
+                                UseShellExecute = true
+                            });
+                        }
                     }
                     else
                     {
@@ -429,7 +438,7 @@ namespace CMS.Presentation
             }
             catch (Exception ex)
             {
-                ShowError(string.Format("ไม่สามารถเปิดไฟล์ได้: {0}\nข้อผิดพลาด: {1}", 
+                ShowError(string.Format("ไม่สามารถเปิดไฟล์ได้: {0}\nข้อผิดพลาด: {1}",
                     file.OriginalFileName, ex.Message));
             }
         }
@@ -3047,7 +3056,7 @@ namespace CMS.Presentation
                 
                 // Example path construction - adjust according to your storage scheme:
                 // C:\FileStorage\Folder_{FolderId}\{StoredFileName}
-                string baseStoragePath = @"C:\FileStorage"; // Default path - adjust as needed
+                string baseStoragePath = @"\\150.1.8.23\AppForUser\Cmd_LmportFile"; // Network storage path
                 
                 string folderPath = string.Format("Folder_{0}", file.FolderId);
                 string fileName = !string.IsNullOrEmpty(file.StoredFileName) ? file.StoredFileName : file.OriginalFileName;

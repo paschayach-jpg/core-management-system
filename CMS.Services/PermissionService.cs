@@ -101,25 +101,23 @@ namespace CMS.Services
 
             if (_auditService != null)
             {
-                try
+                _auditService.Log(new AuditEntry
                 {
-                    _auditService.Log(new AuditEntry
-                    {
-                        Module      = "Permission",
-                        Action      = request.IsDeny ? "DENY" : "GRANT",
-                        UserID      = user.UserID,
-                        TableName   = "security.FolderPermission",
-                        RecordID    = request.FolderID,
-                        NewValue    = string.Format("Principal {0} (type {1}) on folder {2}.",
-                                          request.PrincipalID, request.PrincipalType, request.FolderID),
-                        MachineName = user.MachineName,
-                        IPAddress   = user.IPAddress,
-                        SessionID   = user.SessionID,
-                        Result      = 1,
-                        AuditDate   = DateTime.Now
-                    });
-                }
-                catch { }
+                    Module      = "Permission",
+                    Action      = request.IsDeny ? "DENY" : "GRANT",
+                    UserID      = user.UserID,
+                    UserName    = user.ADUserName ?? string.Empty,
+                    UserRole    = user.AppRole,
+                    TableName   = "security.FolderPermission",
+                    RecordID    = request.FolderID,
+                    NewValue    = string.Format("Principal {0} (type {1}) on folder {2}.",
+                                      request.PrincipalID, request.PrincipalType, request.FolderID),
+                    MachineName = user.MachineName,
+                    IPAddress   = user.IPAddress,
+                    SessionID   = user.SessionID,
+                    Result      = 1,
+                    AuditDate   = DateTime.Now
+                });
             }
         }
         public int PropagatePermissionsToFiles(int folderId, UserContext user)
@@ -168,26 +166,24 @@ namespace CMS.Services
                 }
             }
 
-            try
-            {
-                if (_auditService != null)
-                    _auditService.Log(new AuditEntry
-                    {
-                        Module      = "Permission",
-                        Action      = "PROPAGATE_TO_FILES",
-                        UserID      = user.UserID,
-                        TableName   = "security.FilePermission",
-                        RecordID    = folderId,
-                        NewValue    = string.Format("Propagated {0} permission(s) to {1} file(s) in folder {2}.",
-                                          folderPerms.Count, files.Count, folderId),
-                        MachineName = user.MachineName,
-                        IPAddress   = user.IPAddress,
-                        SessionID   = user.SessionID,
-                        Result      = 1,
-                        AuditDate   = DateTime.Now
-                    });
-            }
-            catch { }
+            if (_auditService != null)
+                _auditService.Log(new AuditEntry
+                {
+                    Module      = "Permission",
+                    Action      = "PROPAGATE_TO_FILES",
+                    UserID      = user.UserID,
+                    UserName    = user.ADUserName ?? string.Empty,
+                    UserRole    = user.AppRole,
+                    TableName   = "security.FilePermission",
+                    RecordID    = folderId,
+                    NewValue    = string.Format("Propagated {0} permission(s) to {1} file(s) in folder {2}.",
+                                      folderPerms.Count, files.Count, folderId),
+                    MachineName = user.MachineName,
+                    IPAddress   = user.IPAddress,
+                    SessionID   = user.SessionID,
+                    Result      = 1,
+                    AuditDate   = DateTime.Now
+                });
 
             return files.Count;
         }
@@ -195,11 +191,25 @@ namespace CMS.Services
 
         public bool CheckPermission(int userId, int folderId, string permissionType)
         {
-            // Admin (4) and Manager (3) always have full access — no permission row required
             var account = _userAccountRepository.GetById(userId);
-            if (account != null && account.AppRole >= 3)
-                return true;
 
+            // Admin (4) and Manager (3): check only for explicit DENY (one DB call), then bypass
+            if (account != null && account.AppRole >= 3)
+            {
+                int? userRole  = (int?)account.AppRole;
+                var allEntries = _permissionRepository.GetAclEntries(folderId).ToList();
+                var applicable = allEntries.Where(e =>
+                    (e.PrincipalType == PrincipalType.User && e.PrincipalID == userId) ||
+                    (e.PrincipalType == PrincipalType.Role && e.PrincipalID == userRole.Value)
+                ).ToList();
+
+                bool hasDeny = applicable.Any(e => e.IsDeny && MatchesFlag(e, permissionType));
+                if (hasDeny) return false;
+
+                return true; // Admin/Manager bypass (no explicit deny found)
+            }
+
+            // Regular users: EvaluatePermission handles DENY + ALLOW + inheritance (one DB call)
             return EvaluatePermission(userId, folderId, permissionType);
         }
 
