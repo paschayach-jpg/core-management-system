@@ -35,9 +35,16 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="BouncyCastle.Crypto">
+      <HintPath>..\packages\BouncyCastle.1.8.9\lib\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
+    <Reference Include="itextsharp">
+      <HintPath>..\packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FilePermissionForm.Designer.cs">
@@ -49,6 +56,7 @@
     <Compile Include="PdpaConsentDialog.Designer.cs">
       <DependentUpon>PdpaConsentDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="PdfSecurityHelper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="MDI_Container.cs">
       <SubType>Form</SubType>
