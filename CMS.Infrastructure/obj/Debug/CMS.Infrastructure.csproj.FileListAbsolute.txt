@@ -50,6 +50,6 @@ C:\Users\pitakpong\Documents\cms_import\CMS.Infrastructure\bin\Debug\CMS.Domain.
 C:\Users\pitakpong\Documents\cms_import\CMS.Infrastructure\bin\Debug\log4net.xml
 C:\Users\pitakpong\Documents\cms_import\CMS.Infrastructure\obj\Debug\CMS.Infrastructure.csproj.AssemblyReference.cache
 C:\Users\pitakpong\Documents\cms_import\CMS.Infrastructure\obj\Debug\CMS.Infrastructure.csproj.CoreCompileInputs.cache
-C:\Users\pitakpong\Documents\cms_import\CMS.Infrastructure\obj\Debug\CMS.Infr.72BD7BD3.Up2Date
 C:\Users\pitakpong\Documents\cms_import\CMS.Infrastructure\obj\Debug\CMS.Infrastructure.dll
 C:\Users\pitakpong\Documents\cms_import\CMS.Infrastructure\obj\Debug\CMS.Infrastructure.pdb
+C:\Users\pitakpong\Documents\cms_import\CMS.Infrastructure\obj\Debug\CMS.Infr.72BD7BD3.Up2Date

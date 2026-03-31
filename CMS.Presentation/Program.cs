@@ -39,7 +39,11 @@ namespace CMS.Presentation
                 var notificationService = new NotificationService(notificationRepository, loggingService);
                 var permissionService   = new PermissionService(permissionRepository, folderRepository, userAccountRepo, auditService, fileDocumentRepository, filePermissionRepository);
                 var filePermissionService = new FilePermissionService(filePermissionRepository, auditService);
-                var orgStructureService = new OrgStructureService(orgUnitRepository, auditService);
+
+                var userOrgVisibilityRepo    = new UserOrgVisibilityRepository(configManager);
+                var userOrgVisibilityService = new UserOrgVisibilityService(userOrgVisibilityRepo, orgUnitRepository, auditService);
+
+                var orgStructureService = new OrgStructureService(orgUnitRepository, auditService, userOrgVisibilityService);
                 var approvalService     = new ApprovalService(
                     approvalRepository,
                     folderRepository,
@@ -67,7 +71,8 @@ namespace CMS.Presentation
                     networkDriveHelper,
                     auditService,
                     folderTemplateRepository,
-                    approvalRepository);
+                    approvalRepository,
+                    userOrgVisibilityService);
 
                 var fileService = new FileService(
                     fileDocumentRepository,
@@ -258,7 +263,8 @@ namespace CMS.Presentation
                     folderTemplateRepository,
                     employeeApiService,
                     uploadCheckpointService,
-                    quickAccessService);
+                    quickAccessService,
+                    userOrgVisibilityService);
                 Application.Run(mainForm);
             }
             catch (Exception ex)

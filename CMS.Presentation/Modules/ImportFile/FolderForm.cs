@@ -397,6 +397,7 @@ namespace CMS.Presentation
             var ctx = new ContextMenuStrip();
 
             var mnuUpload     = new ToolStripMenuItem("⬆️  อัพโหลดไฟล์...",   null, (s, e) => OpenUploadForSelectedFolder());
+            var mnuNewFolder  = new ToolStripMenuItem("📁  Folder ใหม่...",    null, (s, e) => btnNewFolder_Click(s, e));
             var mnuOpen       = new ToolStripMenuItem("เปิดดู",              null, CtxFileOpen_Click);
             var mnuDownload   = new ToolStripMenuItem("ดาวน์โหลด",           null, CtxFileDownload_Click);
             var mnuCut        = new ToolStripMenuItem("ตัด",                 null, (s, e) => ShowInfo("ฟีเจอร์ตัด/ย้ายไฟล์จะพร้อมใช้งานในเวอร์ชันถัดไป")) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.X, ShowShortcutKeys = true, Enabled = false };
@@ -409,6 +410,7 @@ namespace CMS.Presentation
             var mnuProperties = new ToolStripMenuItem("คุณสมบัติ",           null, CtxFileProperties_Click)                                               { ShortcutKeys = System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.Enter, ShowShortcutKeys = true };
 
             ctx.Items.Add(mnuUpload);
+            ctx.Items.Add(mnuNewFolder);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuOpen);
             ctx.Items.Add(mnuDownload);
@@ -429,13 +431,16 @@ namespace CMS.Presentation
             ctx.Opening += (s, e) =>
             {
                 bool hasFile          = (SelectedFile != null);
-                bool hasFolder        = (_currentNavFolderId.HasValue || SelectedFolder != null);
+                // isAtRoot = กำลังดู 4 folder หลัก (ยังไม่ได้เข้า folder ใดๆ)
+                bool isAtRoot         = !_currentNavFolderId.HasValue;
+                bool hasFolder        = !isAtRoot && (_currentNavFolderId.HasValue || SelectedFolder != null);
                 // ตรวจสอบ folder ในรายการ content (กรณีที่ tag เป็น Folder)
                 Folder contentFolder  = null;
                 if (contentsListView.SelectedItems.Count > 0)
                     contentFolder = contentsListView.SelectedItems[0].Tag as Folder;
                 bool canDeleteContent = hasFile || (contentFolder != null && CanDeleteFolder(contentFolder));
                 mnuUpload.Enabled     = hasFolder && _fileService != null;
+                mnuNewFolder.Enabled  = hasFolder;
                 mnuOpen.Enabled       = hasFile;
                 mnuDownload.Enabled   = hasFile;
                 mnuRename.Enabled     = hasFile;
@@ -776,8 +781,8 @@ namespace CMS.Presentation
         }
 
         /// <summary>
-        /// สร้าง "ตามความลับ" tree โดยดึงข้อมูลจากทุก OrgUnit ไม่ใช่แค่ที่เลือกอยู่
-        /// จัดกลุ่มตาม 1HC/2SC/3NC/4PC
+        /// สร้าง "ตามความลับ" tree แสดงโครงสร้างองค์กร Sub → Div → Dep แบบ Windows Explorer
+        /// จัดกลุ่มตาม 1HC/2SC/3NC/4PC แล้วแสดง SubCommittee → Division → Department → Folder
         /// </summary>
         private void BuildConfidentialityTreeFromAllFolders()
         {
@@ -791,83 +796,185 @@ namespace CMS.Presentation
                     .Where(f => !f.IsDeleted && !f.IsArchived)
                     .ToList();
 
-                // ดึง OrgUnit names สำหรับ display
-                var orgUnitNames = new Dictionary<int, string>();
+                // ดึง OrgUnit hierarchy เพื่อแสดง Sub → Div → Dep
+                var allOrgUnits = new List<OrgUnit>();
                 if (_orgStructureService != null)
+                    allOrgUnits = _orgStructureService.GetHierarchy()
+                        .Where(u => u.IsActive && !u.IsDeleted)
+                        .ToList();
+
+                // Group folders by OrgUnitID for quick lookup
+                var foldersByOrgUnit = allRootFolders
+                    .GroupBy(f => f.OrgUnitID)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                // Helper: collect all OrgUnitIDs in a subtree (self + all descendants)
+                Func<int, IEnumerable<int>> getSubtreeIds = null;
+                getSubtreeIds = (parentId) =>
                 {
-                    foreach (var ou in _orgStructureService.GetHierarchy())
-                        orgUnitNames[ou.OrgUnitID] = ou.OrgUnitNameTH ?? ou.OrgUnitNameEN ?? ou.OrgUnitCode;
-                }
+                    var ids = new List<int> { parentId };
+                    foreach (var child in allOrgUnits.Where(u => u.ParentOrgUnitID == parentId))
+                        ids.AddRange(getSubtreeIds(child.OrgUnitID));
+                    return ids;
+                };
+
+                // Helper: does this OrgUnit subtree have any folders at this conf level?
+                Func<int, int, bool> subtreeHasFolders = (orgId, level) =>
+                    getSubtreeIds(orgId).Any(id =>
+                    {
+                        List<Folder> fl;
+                        return foldersByOrgUnit.TryGetValue(id, out fl) &&
+                               fl.Any(f => f.ConfidentialityLevel == level);
+                    });
 
                 var groups = new[]
                 {
-                    new { Level = 1, Label = "1HC — High Confidential",   Color = Color.FromArgb(180, 0, 0) },
-                    new { Level = 2, Label = "2SC — Semi Confidential",   Color = Color.FromArgb(200, 80, 0) },
-                    new { Level = 3, Label = "3NC — Normal Confidential", Color = Color.FromArgb(0, 80, 160) },
-                    new { Level = 4, Label = "4PC — Public / เปิดเผย",   Color = Color.FromArgb(0, 130, 60) },
+                    new { Level = 1, Label = "1HC — High Confidential",   Color = Color.FromArgb(180, 0, 0),    BookKey = "book_red"    },
+                    new { Level = 2, Label = "2SC — Semi Confidential",   Color = Color.FromArgb(200, 80, 0),   BookKey = "book_orange" },
+                    new { Level = 3, Label = "3NC — Normal Confidential", Color = Color.FromArgb(0, 80, 160),   BookKey = "book_bule"   },
+                    new { Level = 4, Label = "4PC — Public / เปิดเผย",   Color = Color.FromArgb(0, 130, 60),   BookKey = "book_green"  },
                 };
 
                 foreach (var group in groups)
                 {
-                    var foldersInGroup = allRootFolders
-                        .Where(f => f.ConfidentialityLevel == group.Level)
-                        .ToList();
-
+                    var foldersInGroup = allRootFolders.Where(f => f.ConfidentialityLevel == group.Level).ToList();
                     if (!foldersInGroup.Any()) continue;
 
                     int totalFiles = foldersInGroup.Sum(f => f.FileCount);
-                    string header = totalFiles > 0
+                    string header  = totalFiles > 0
                         ? string.Format("{0}   {1} ไฟล์", group.Label, totalFiles)
                         : group.Label;
 
                     var groupNode = new TreeNode(header)
                     {
-                        ForeColor = group.Color,
-                        NodeFont  = new Font(_treeConfidentiality.Font, FontStyle.Bold)
+                        ForeColor        = group.Color,
+                        NodeFont         = new Font(_treeConfidentiality.Font, FontStyle.Bold),
+                        ImageKey         = group.BookKey,
+                        SelectedImageKey = group.BookKey,
+                        Tag              = null // group header — no Tag
                     };
 
-                    // จัดกลุ่มตาม OrgUnit เพื่อไม่ให้ซ้ำ
-                    var byOrgUnit = foldersInGroup
-                        .GroupBy(f => f.OrgUnitID)
-                        .OrderBy(g => g.Key);
+                    // ── SubCommittee nodes ────────────────────────────────────────
+                    var subCommittees = allOrgUnits
+                        .Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.SubCommittee &&
+                                    subtreeHasFolders(u.OrgUnitID, group.Level))
+                        .OrderBy(u => u.SortOrder).ThenBy(u => u.Name)
+                        .ToList();
 
-                    foreach (var orgGroup in byOrgUnit)
+                    if (subCommittees.Any())
                     {
-                        string ouName;
-                        orgUnitNames.TryGetValue(orgGroup.Key, out ouName);
-                        ouName = ouName ?? string.Format("OrgUnit {0}", orgGroup.Key);
-
-                        int ouFiles = orgGroup.Sum(f => f.FileCount);
-                        string ouLabel = ouFiles > 0
-                            ? string.Format("🏢 {0}   {1} ไฟล์", ouName, ouFiles)
-                            : string.Format("🏢 {0}", ouName);
-
-                        // เก็บ OrgUnitID ใน Tag เพื่อใช้ navigate
-                        var ouNode = new TreeNode(ouLabel)
+                        foreach (var sc in subCommittees)
                         {
-                            Tag       = orgGroup.Key,   // int OrgUnitID
-                            ForeColor = group.Color,
-                            NodeFont  = new Font(_treeConfidentiality.Font, FontStyle.Regular)
-                        };
-
-                        // เพิ่ม root folders ของ OrgUnit นี้ พร้อม sub-folders
-                        foreach (var rootFolder in orgGroup)
-                        {
-                            int fc = rootFolder.FileCount;
-                            string rlabel = fc > 0
-                                ? string.Format("{0}  [{1}]", rootFolder.FolderName, fc)
-                                : rootFolder.FolderName;
-
-                            var rootNode = new TreeNode(rlabel)
+                            string scCode  = string.IsNullOrEmpty(sc.OrgUnitCode) ? string.Empty
+                                           : string.Format(" ({0})", sc.OrgUnitCode);
+                            var scNode = new TreeNode(string.Format("♦ {0}{1}", sc.Name, scCode))
                             {
-                                Tag       = rootFolder,
-                                ForeColor = group.Color
+                                Tag              = sc.OrgUnitID,
+                                ForeColor        = group.Color,
+                                NodeFont         = new Font(_treeConfidentiality.Font, FontStyle.Regular),
+                                ImageKey         = "folder",
+                                SelectedImageKey = "open_folder"
                             };
-                            AddConfChildNodes(rootNode, rootFolder.FolderId, group.Color);
-                            ouNode.Nodes.Add(rootNode);
-                        }
 
-                        groupNode.Nodes.Add(ouNode);
+                            // ── Division nodes ───────────────────────────────────
+                            var divisions = allOrgUnits
+                                .Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division &&
+                                            u.ParentOrgUnitID == sc.OrgUnitID &&
+                                            subtreeHasFolders(u.OrgUnitID, group.Level))
+                                .OrderBy(u => u.SortOrder).ThenBy(u => u.Name)
+                                .ToList();
+
+                            foreach (var div in divisions)
+                            {
+                                string divCode = string.IsNullOrEmpty(div.OrgUnitCode) ? string.Empty
+                                               : string.Format(" ({0})", div.OrgUnitCode);
+                                var divNode = new TreeNode(string.Format("◇ {0}{1}", div.Name, divCode))
+                                {
+                                    Tag              = div.OrgUnitID,
+                                    ForeColor        = Color.FromArgb(0, 80, 160),
+                                    ImageKey         = "folder",
+                                    SelectedImageKey = "open_folder"
+                                };
+
+                                // ── Department nodes ─────────────────────────────
+                                var departments = allOrgUnits
+                                    .Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Department &&
+                                                u.ParentOrgUnitID == div.OrgUnitID &&
+                                                subtreeHasFolders(u.OrgUnitID, group.Level))
+                                    .OrderBy(u => u.SortOrder).ThenBy(u => u.Name)
+                                    .ToList();
+
+                                foreach (var dept in departments)
+                                {
+                                    string deptCode = string.IsNullOrEmpty(dept.OrgUnitCode) ? string.Empty
+                                                    : string.Format(" ({0})", dept.OrgUnitCode);
+                                    var deptNode = new TreeNode(dept.Name + deptCode)
+                                    {
+                                        Tag              = dept.OrgUnitID,
+                                        ForeColor        = Color.FromArgb(60, 60, 60),
+                                        ImageKey         = "folder",
+                                        SelectedImageKey = "open_folder"
+                                    };
+                                    BuildConfFolderNodes(deptNode, dept.OrgUnitID, group.Level, group.Color, foldersByOrgUnit);
+                                    if (deptNode.Nodes.Count > 0)
+                                        divNode.Nodes.Add(deptNode);
+                                }
+
+                                // Folders owned directly by this Division (no Dept layer)
+                                BuildConfFolderNodes(divNode, div.OrgUnitID, group.Level, group.Color, foldersByOrgUnit);
+
+                                if (divNode.Nodes.Count > 0)
+                                    scNode.Nodes.Add(divNode);
+                            }
+
+                            // Folders owned directly by this SubCommittee
+                            BuildConfFolderNodes(scNode, sc.OrgUnitID, group.Level, group.Color, foldersByOrgUnit);
+
+                            if (scNode.Nodes.Count > 0)
+                                groupNode.Nodes.Add(scNode);
+                        }
+                    }
+                    else
+                    {
+                        // Fallback: no org hierarchy available — flat OrgUnit grouping
+                        var byOrgUnit = foldersInGroup.GroupBy(f => f.OrgUnitID).OrderBy(g => g.Key);
+                        foreach (var orgGroup in byOrgUnit)
+                        {
+                            string ouName;
+                            if (_orgUnitNameCache == null || !_orgUnitNameCache.TryGetValue(orgGroup.Key, out ouName))
+                                ouName = string.Format("OrgUnit {0}", orgGroup.Key);
+
+                            int ouFiles = orgGroup.Sum(f => f.FileCount);
+                            string ouLabel = ouFiles > 0
+                                ? string.Format("🏢 {0}   {1} ไฟล์", ouName, ouFiles)
+                                : string.Format("🏢 {0}", ouName);
+
+                            var ouNode = new TreeNode(ouLabel)
+                            {
+                                Tag              = orgGroup.Key,
+                                ForeColor        = group.Color,
+                                NodeFont         = new Font(_treeConfidentiality.Font, FontStyle.Regular),
+                                ImageKey         = "folder",
+                                SelectedImageKey = "open_folder"
+                            };
+                            foreach (var rootFolder in orgGroup)
+                            {
+                                int fc = rootFolder.FileCount;
+                                string rlabel = fc > 0
+                                    ? string.Format("{0}  [{1}]", rootFolder.FolderName, fc)
+                                    : rootFolder.FolderName;
+                                var rootNode = new TreeNode(rlabel)
+                                {
+                                    Tag              = rootFolder,
+                                    ForeColor        = group.Color,
+                                    ImageKey         = "folder",
+                                    SelectedImageKey = "open_folder"
+                                };
+                                AddConfChildNodes(rootNode, rootFolder.FolderId, group.Color);
+                                ouNode.Nodes.Add(rootNode);
+                            }
+                            groupNode.Nodes.Add(ouNode);
+                        }
                     }
 
                     _treeConfidentiality.Nodes.Add(groupNode);
@@ -877,11 +984,35 @@ namespace CMS.Presentation
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"BuildConfidentialityTreeFromAllFolders error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine("BuildConfidentialityTreeFromAllFolders error: " + ex.Message);
             }
             finally
             {
                 _treeConfidentiality.EndUpdate();
+            }
+        }
+
+        /// <summary>
+        /// เพิ่ม folder nodes (ของ OrgUnit นี้ที่มี conf level ตรง) เข้าไปใน parentNode
+        /// </summary>
+        private void BuildConfFolderNodes(TreeNode parentNode, int orgUnitId, int confLevel,
+            Color color, Dictionary<int, List<Folder>> foldersByOrgUnit)
+        {
+            List<Folder> folders;
+            if (!foldersByOrgUnit.TryGetValue(orgUnitId, out folders)) return;
+            foreach (var f in folders.Where(f => f.ConfidentialityLevel == confLevel).OrderBy(f => f.FolderName))
+            {
+                int fc = f.FileCount;
+                string lbl = fc > 0 ? string.Format("{0}  [{1}]", f.FolderName, fc) : f.FolderName;
+                var fNode = new TreeNode(lbl)
+                {
+                    Tag              = f,
+                    ForeColor        = color,
+                    ImageKey         = "folder",
+                    SelectedImageKey = "open_folder"
+                };
+                AddConfChildNodes(fNode, f.FolderId, color);
+                parentNode.Nodes.Add(fNode);
             }
         }
 
@@ -989,27 +1120,29 @@ namespace CMS.Presentation
             }
             else if (e.Node.Tag is int)
             {
-                // คลิก OrgUnit node (Tag = OrgUnitID)
-                // แสดง root folders ของ OrgUnit นี้ (child nodes ที่เป็น Folder)
-                var rootFolders = new List<Folder>();
-                foreach (TreeNode child in e.Node.Nodes)
-                {
-                    var f = child.Tag as Folder;
-                    if (f != null) rootFolders.Add(f);
-                }
+                // คลิก OrgUnit node (Sub / Div / Dep) → รวบรวม Folder ทั้งหมดใต้โหนดนี้แบบ recursive
+                var allFolders = new List<Folder>();
+                CollectFoldersFromConfNode(e.Node, allFolders);
 
-                if (rootFolders.Any())
+                if (allFolders.Any())
                 {
-                    ShowFolderContents(rootFolders, Enumerable.Empty<FileDocument>());
+                    ShowFolderContents(allFolders, Enumerable.Empty<FileDocument>());
 
+                    // ตัด prefix ♦ / ◇ / 🏢 และ suffix (code) / filecount ออก
                     string nodeName = e.Node.Text;
-                    if (nodeName.StartsWith("🏢 ")) nodeName = nodeName.Substring(2).Trim();
+                    if (nodeName.Length >= 2 && (nodeName.StartsWith("♦ ") || nodeName.StartsWith("◇ ")))
+                        nodeName = nodeName.Substring(2).Trim();
+                    else if (nodeName.StartsWith("🏢 "))
+                        nodeName = nodeName.Substring(2).Trim();
+
+                    int parenIdx = nodeName.IndexOf(" (");
+                    if (parenIdx > 0) nodeName = nodeName.Substring(0, parenIdx).Trim();
                     int spaceIdx = nodeName.IndexOf("   ");
                     if (spaceIdx > 0) nodeName = nodeName.Substring(0, spaceIdx).Trim();
 
                     ApplyBreadcrumb("🏠 PC  ›  " + nodeName, new List<int?>());
                     lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", nodeName);
-                    lblContentInfo.Text   = string.Format("{0} Folder", rootFolders.Count);
+                    lblContentInfo.Text   = string.Format("{0} Folder", allFolders.Count);
                 }
             }
             else
@@ -1065,10 +1198,13 @@ namespace CMS.Presentation
                     u => u.OrgUnitID,
                     u => u.OrgUnitNameTH ?? u.OrgUnitNameEN ?? u.OrgUnitCode);
 
+                // กรอง OrgUnit ตาม role ของ current user
+                var visibleUnits = FilterVisibleOrgUnits(units);
+
                 treeOrgUnit.BeginUpdate();
                 treeOrgUnit.Nodes.Clear();
 
-                // "ทั้งหมด" root node (null tag = no filter)
+                // "ทั้งหมด" root node — Admin เห็นทั้งหมด, role อื่นเห็นเฉพาะของตัวเอง
                 var allNode = new System.Windows.Forms.TreeNode("— ทั้งหมด —")
                 {
                     Tag              = null,
@@ -1079,7 +1215,7 @@ namespace CMS.Presentation
                 };
                 treeOrgUnit.Nodes.Add(allNode);
 
-                foreach (var sc in units.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.SubCommittee).OrderBy(u => u.Name))
+                foreach (var sc in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.SubCommittee).OrderBy(u => u.Name))
                 {
                     var scNode = new System.Windows.Forms.TreeNode(sc.Name)
                     {
@@ -1089,7 +1225,7 @@ namespace CMS.Presentation
                         SelectedImageKey = "open_folder"
                     };
 
-                    foreach (var div in units.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division && u.ParentId == sc.OrgUnitId).OrderBy(u => u.Name))
+                    foreach (var div in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division && u.ParentId == sc.OrgUnitId).OrderBy(u => u.Name))
                     {
                         var divNode = new System.Windows.Forms.TreeNode(div.Name)
                         {
@@ -1099,7 +1235,7 @@ namespace CMS.Presentation
                             SelectedImageKey = "open_folder"
                         };
 
-                        foreach (var dept in units.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Department && u.ParentId == div.OrgUnitId).OrderBy(u => u.Name))
+                        foreach (var dept in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Department && u.ParentId == div.OrgUnitId).OrderBy(u => u.Name))
                         {
                             var deptNode = new System.Windows.Forms.TreeNode(dept.Name)
                             {
@@ -1125,6 +1261,38 @@ namespace CMS.Presentation
             {
                 ShowError("โหลดหน่วยงานไม่สำเร็จ: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// กรอง OrgUnit ที่ current user มีสิทธิ์มองเห็น:
+        /// Admin(4)        → ทั้งหมด
+        /// Manager(3)      → OrgUnit ของตัวเองและ sub-units ทั้งหมดใต้มัน
+        /// Officer/Sr(1,2) → เฉพาะ OrgUnit ของตัวเองเท่านั้น
+        /// </summary>
+        private List<OrgUnit> FilterVisibleOrgUnits(List<OrgUnit> all)
+        {
+            if (_user == null || _user.AppRole >= 4)
+                return all; // Admin เห็นทั้งหมด
+
+            if (_user.OrgUnitID <= 0)
+                return new List<OrgUnit>();
+
+            var visibleIds = new HashSet<int> { _user.OrgUnitID };
+
+            if (_user.AppRole >= 3) // Manager — เพิ่ม sub-units ทั้งหมด
+            {
+                var queue = new Queue<int>();
+                queue.Enqueue(_user.OrgUnitID);
+                while (queue.Count > 0)
+                {
+                    int parentId = queue.Dequeue();
+                    foreach (var child in all.Where(o => o.ParentOrgUnitID == parentId))
+                        if (visibleIds.Add(child.OrgUnitID))
+                            queue.Enqueue(child.OrgUnitID);
+                }
+            }
+
+            return all.Where(o => visibleIds.Contains(o.OrgUnitID)).ToList();
         }
 
         private void treeOrgUnit_AfterSelect(object sender, System.Windows.Forms.TreeViewEventArgs e)
@@ -1264,6 +1432,29 @@ namespace CMS.Presentation
             treeOrgUnit.SelectedImageKey = "open_folder";
             treeOrgUnit.BeforeExpand  += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder"; };
             treeOrgUnit.BeforeCollapse += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder"; };
+
+            // Confidentiality TreeView — same image list (WinForms requires a SEPARATE ImageList instance per TreeView)
+            var confImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
+            confImageList.Images.Add("folder",      Properties.Resources.folder);
+            confImageList.Images.Add("open_folder", Properties.Resources.open_folder);
+            confImageList.Images.Add("book_red",    Properties.Resources.book_red1.ToBitmap());
+            confImageList.Images.Add("book_orange", Properties.Resources.book_orange1.ToBitmap());
+            confImageList.Images.Add("book_bule",   Properties.Resources.book_bule1.ToBitmap());
+            confImageList.Images.Add("book_green",  Properties.Resources.book_green1.ToBitmap());
+            _treeConfidentiality.ImageList        = confImageList;
+            _treeConfidentiality.ImageKey         = "folder";
+            _treeConfidentiality.SelectedImageKey = "open_folder";
+            _treeConfidentiality.BeforeExpand  += (s, ev) =>
+            {
+                // Level-header nodes (group) and OrgUnit nodes keep their icon; only folder nodes change
+                if (ev.Node.Tag is Folder)
+                    ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder";
+            };
+            _treeConfidentiality.BeforeCollapse += (s, ev) =>
+            {
+                if (ev.Node.Tag is Folder)
+                    ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder";
+            };
 
             // ListView needs its own separate ImageList (WinForms does not allow sharing with TreeView)
             var listImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
@@ -2638,7 +2829,24 @@ namespace CMS.Presentation
 
         private void btnNewFolder_Click(object sender, EventArgs e)
         {
-            var parent = SelectedFolder;
+            // ใช้ folder ที่กำลังดูใน content panel เป็น parent ก่อน
+            // ถ้าไม่มี (_currentNavFolderId == null) ค่อย fallback ไปที่ tree selection
+            Folder parent = null;
+            if (_currentNavFolderId.HasValue)
+            {
+                var node = FindNodeByFolderId(folderTreeView.Nodes, _currentNavFolderId.Value);
+                if (node != null) parent = node.Tag as Folder;
+                if (parent == null) parent = _lastSelectedFolder;
+            }
+            if (parent == null) parent = SelectedFolder;
+
+            // ถ้า content panel อยู่ที่ root level → ห้ามสร้าง folder จาก context menu ของ content
+            if (!_currentNavFolderId.HasValue && parent != null
+                && (!parent.ParentFolderID.HasValue || parent.ParentFolderID == 0))
+            {
+                ShowError("กรุณาเปิด Folder ก่อนสร้าง Sub-folder\nไม่สามารถสร้าง Folder ที่ระดับ Root ได้จากรายการนี้");
+                return;
+            }
 
             if (parent == null)
             {
@@ -2835,6 +3043,13 @@ namespace CMS.Presentation
         /// </summary>
         public void OpenUploadForSelectedFolder()
         {
+            // ห้าม upload เมื่ออยู่ที่ root level (content panel แสดง 4 folder หลัก)
+            if (!_currentNavFolderId.HasValue)
+            {
+                ShowError("กรุณาเปิด Folder ก่อนอัพโหลด\nไม่สามารถอัพโหลดไฟล์ที่ระดับ Root ได้");
+                return;
+            }
+
             // หา folder ที่กำลังดูอยู่จริงๆ จาก _currentNavFolderId ก่อน
             Folder folder = null;
             
@@ -5021,6 +5236,23 @@ namespace CMS.Presentation
         }
 
         /// <summary>
+        /// Updates state and content panel after navigating to a folder via Quick Access.
+        /// Mirrors the logic in FolderTreeView_NodeMouseClick so that the right panel refreshes.
+        /// </summary>
+        private void NavigateToQuickAccessFolder(Folder folder)
+        {
+            _lastSelectedFolder = folder;
+            _currentNavFolderId = folder.FolderID;
+            PushNavigation(folder.FolderID);
+            UpdateNavButtons();
+            _presenter.GetFolderContents(folder.FolderID);
+            lblConfidentialityBadge.Text      = ConfidentialityLabel(folder.ConfidentialityLevel);
+            lblConfidentialityBadge.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
+            lblContentInfo.Text   = string.Format("กำลังดู: {0}", folder.FolderName);
+            lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", folder.FolderName);
+        }
+
+        /// <summary>
         /// Click handler: navigate folderTreeView ไปยัง Folder ที่เลือกใน Quick Access (Req 7.3)
         /// </summary>
         private void LstQuickAccess_Click(object sender, EventArgs e)
@@ -5061,21 +5293,29 @@ namespace CMS.Presentation
                 t.Tick += (s, args) =>
                 {
                     t.Stop(); t.Dispose();
-                    if (!RestoreSelectedNode(folderTreeView.Nodes, qa.Folder.FolderID))
+                    if (RestoreSelectedNode(folderTreeView.Nodes, qa.Folder.FolderID))
+                        NavigateToQuickAccessFolder(qa.Folder);
+                    else
                         ShowInfo(string.Format("ไม่สามารถนำทางไปยังโฟลเดอร์ '{0}' ได้", qa.Folder.FolderName));
                 };
                 t.Start();
             }
             else
             {
-                if (!RestoreSelectedNode(folderTreeView.Nodes, qa.Folder.FolderID))
+                if (RestoreSelectedNode(folderTreeView.Nodes, qa.Folder.FolderID))
+                {
+                    NavigateToQuickAccessFolder(qa.Folder);
+                }
+                else
                 {
                     _presenter.LoadFolderTree(_selectedOrgUnitId);
                     var t = new System.Windows.Forms.Timer { Interval = 100 };
                     t.Tick += (s, args) =>
                     {
                         t.Stop(); t.Dispose();
-                        if (!RestoreSelectedNode(folderTreeView.Nodes, qa.Folder.FolderID))
+                        if (RestoreSelectedNode(folderTreeView.Nodes, qa.Folder.FolderID))
+                            NavigateToQuickAccessFolder(qa.Folder);
+                        else
                             ShowInfo(string.Format("ไม่สามารถนำทางไปยังโฟลเดอร์ '{0}' ได้", qa.Folder.FolderName));
                     };
                     t.Start();

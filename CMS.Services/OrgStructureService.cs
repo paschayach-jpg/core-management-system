@@ -15,14 +15,19 @@ namespace CMS.Services
     /// </summary>
     public class OrgStructureService : IOrgStructureService
     {
-        private readonly IOrgUnitRepository _orgUnitRepository;
-        private readonly IAuditService      _auditService;
+        private readonly IOrgUnitRepository        _orgUnitRepository;
+        private readonly IAuditService             _auditService;
+        private readonly IUserOrgVisibilityService _visibilityService;
 
-        public OrgStructureService(IOrgUnitRepository orgUnitRepository, IAuditService auditService = null)
+        public OrgStructureService(
+            IOrgUnitRepository        orgUnitRepository,
+            IAuditService             auditService      = null,
+            IUserOrgVisibilityService visibilityService = null)
         {
             if (orgUnitRepository == null) throw new ArgumentNullException("orgUnitRepository");
             _orgUnitRepository = orgUnitRepository;
             _auditService      = auditService;
+            _visibilityService = visibilityService;
         }
 
         public OrgUnit CreateOrgUnit(CreateOrgUnitRequest request, UserContext user)
@@ -217,6 +222,17 @@ namespace CMS.Services
 
         public IEnumerable<OrgUnit> GetHierarchy()
         {
+            return _orgUnitRepository.GetHierarchy();
+        }
+
+        public IEnumerable<OrgUnit> GetVisibleHierarchy(UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            if (_visibilityService != null)
+                return _visibilityService.GetVisibleOrgUnits(user.UserID, user);
+
+            // Fallback: no visibility service wired — Admin-only internal use
             return _orgUnitRepository.GetHierarchy();
         }
 

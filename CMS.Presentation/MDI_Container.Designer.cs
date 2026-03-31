@@ -88,6 +88,7 @@ namespace CMS.Presentation
             this.btnRibbonApproval = new System.Windows.Forms.ToolStripButton();
             this.lblApprovalBadge = new System.Windows.Forms.ToolStripLabel();
             this.btnRibbonUserAccess = new System.Windows.Forms.ToolStripButton();
+            this.btnRibbonUserMgmt   = new System.Windows.Forms.ToolStripButton();
             this.ribbonStripAdmin = new System.Windows.Forms.ToolStrip();
             this.btnRibbonFolderArchive = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonChangeLevel = new System.Windows.Forms.ToolStripButton();
@@ -809,6 +810,7 @@ namespace CMS.Presentation
             this.sepRibbon3,
             // ── กลุ่ม 3: สิทธิ์ ──────────────────────────────────────────
             this.btnRibbonUserAccess,
+            this.btnRibbonUserMgmt,
             this.btnRibbonPermission,
             this.btnRibbonFolderSettings});
             this.ribbonStripAdmin.Location = new System.Drawing.Point(0, 49);
@@ -834,10 +836,17 @@ namespace CMS.Presentation
             // 
             // btnRibbonUserAccess
             // 
-            this.btnRibbonUserAccess.Name = "btnRibbonUserAccess";
-            this.btnRibbonUserAccess.Size = new System.Drawing.Size(99, 22);
-            this.btnRibbonUserAccess.Text = "👤 จัดการสิทธิ์ผู้ใช้";
+            this.btnRibbonUserAccess.Name        = "btnRibbonUserAccess";
+            this.btnRibbonUserAccess.Size        = new System.Drawing.Size(99, 22);
+            this.btnRibbonUserAccess.Text        = "👤 จัดการสิทธิ์ผู้ใช้";
             this.btnRibbonUserAccess.ToolTipText = "จัดการสิทธิ์และบัญชีผู้ใช้";
+            //
+            // btnRibbonUserMgmt
+            //
+            this.btnRibbonUserMgmt.Name        = "btnRibbonUserMgmt";
+            this.btnRibbonUserMgmt.Size        = new System.Drawing.Size(110, 22);
+            this.btnRibbonUserMgmt.Text        = "🗂️ จัดการบัญชีผู้ใช้";
+            this.btnRibbonUserMgmt.ToolTipText = "เพิ่ม/แก้ไข/ปิดใช้งานบัญชีผู้ใช้";
             // 
             // btnRibbonFolderArchive
             //
@@ -1113,6 +1122,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ToolStripButton        btnRibbonSysConfig;
         private System.Windows.Forms.ToolStripButton        btnRibbonOrgAdmin;
         private System.Windows.Forms.ToolStripButton        btnRibbonUserAccess;
+        private System.Windows.Forms.ToolStripButton        btnRibbonUserMgmt;
         private System.Windows.Forms.ToolStripButton        btnRibbonReportExcel;
         private System.Windows.Forms.ToolStripButton        btnRibbonPDPA;
 

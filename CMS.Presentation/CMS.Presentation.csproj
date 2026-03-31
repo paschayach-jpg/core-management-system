@@ -48,16 +48,7 @@
     <None Include="Resources\BRD2.md" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FilePermissionForm.Designer.cs">
-      <DependentUpon>FilePermissionForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="PdpaConsentDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="PdpaConsentDialog.Designer.cs">
-      <DependentUpon>PdpaConsentDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="PdfSecurityHelper.cs" />
+    <!-- Root: Shell -->
     <Compile Include="Program.cs" />
     <Compile Include="MDI_Container.cs">
       <SubType>Form</SubType>
@@ -65,142 +56,170 @@
     <Compile Include="MDI_Container.Designer.cs">
       <DependentUpon>MDI_Container.cs</DependentUpon>
     </Compile>
-    <Compile Include="OrgStructureForm.cs">
+    <!-- Module: ImportFile — Forms -->
+    <Compile Include="Modules\ImportFile\ApplyTemplateDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="OrgStructureForm.Designer.cs">
-      <DependentUpon>OrgStructureForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="CreateOrgUnitDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="CreateOrgUnitDialog.Designer.cs">
-      <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="OrgUnitPickerDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="OrgUnitPickerDialog.Designer.cs">
-      <DependentUpon>OrgUnitPickerDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="OrgUnitSelectorDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="OrgUnitSelectorDialog.Designer.cs">
-      <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="OrgStructureSelectionDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="OrgStructureSelectionDialog.Designer.cs">
-      <DependentUpon>OrgStructureSelectionDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="EmployeeOrgSelectionDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="EmployeeOrgSelectionDialog.Designer.cs">
-      <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Presenters\IOrgStructureView.cs" />
-    <Compile Include="Presenters\OrgStructurePresenter.cs" />
-    <Compile Include="Presenters\IFolderView.cs" />
-    <Compile Include="Presenters\FolderPresenter.cs" />
-    <Compile Include="Presenters\IFileUploadView.cs" />
-    <Compile Include="Presenters\FilePresenter.cs" />
-    <Compile Include="Presenters\IPermissionView.cs" />
-    <Compile Include="Presenters\PermissionPresenter.cs" />
-    <Compile Include="FolderForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FolderForm.Designer.cs">
-      <DependentUpon>FolderForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="FileUploadForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FileUploadForm.Designer.cs">
-      <DependentUpon>FileUploadForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="PermissionForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="PermissionForm.Designer.cs">
-      <DependentUpon>PermissionForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="FilePermissionAddDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FilePermissionAddDialog.Designer.cs">
-      <DependentUpon>FilePermissionAddDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="FilePermissionForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="ApplyTemplateDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="ApplyTemplateDialog.Designer.cs">
+    <Compile Include="Modules\ImportFile\ApplyTemplateDialog.Designer.cs">
       <DependentUpon>ApplyTemplateDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="FolderTemplateForm.cs">
+    <Compile Include="Modules\ImportFile\ApprovalInboxForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FolderTemplateForm.Designer.cs">
-      <DependentUpon>FolderTemplateForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="ApprovalInboxForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="ApprovalInboxForm.Designer.cs">
+    <Compile Include="Modules\ImportFile\ApprovalInboxForm.Designer.cs">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="AuditLogForm.cs">
+    <Compile Include="Modules\ImportFile\AuditLogForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="AuditLogForm.Designer.cs">
+    <Compile Include="Modules\ImportFile\AuditLogForm.Designer.cs">
       <DependentUpon>AuditLogForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Presenters\IAuditLogView.cs" />
-    <Compile Include="Presenters\AuditLogPresenter.cs" />
-    <Compile Include="ConfigAdminForm.cs">
+    <Compile Include="Modules\ImportFile\ConfigAdminForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ConfigAdminForm.Designer.cs">
+    <Compile Include="Modules\ImportFile\ConfigAdminForm.Designer.cs">
       <DependentUpon>ConfigAdminForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="UserAccessForm.cs">
+    <Compile Include="Modules\ImportFile\CreateOrgUnitDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="EmployeeSearchDialog.cs">
+    <Compile Include="Modules\ImportFile\CreateOrgUnitDialog.Designer.cs">
+      <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\EmployeeOrgSelectionDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="EmployeeSearchDialog.Designer.cs">
+    <Compile Include="Modules\ImportFile\EmployeeOrgSelectionDialog.Designer.cs">
+      <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\EmployeeSearchDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\EmployeeSearchDialog.Designer.cs">
       <DependentUpon>EmployeeSearchDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="PdpaReportForm.cs">
+    <Compile Include="Modules\ImportFile\FilePermissionAddDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="PdpaReportForm.Designer.cs">
-      <DependentUpon>PdpaReportForm.cs</DependentUpon>
+    <Compile Include="Modules\ImportFile\FilePermissionAddDialog.Designer.cs">
+      <DependentUpon>FilePermissionAddDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Presenters\IConfigAdminView.cs" />
-    <Compile Include="Presenters\ConfigAdminPresenter.cs" />
-    <Compile Include="FolderPickerDialog.cs">
+    <Compile Include="Modules\ImportFile\FilePermissionForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FolderPickerDialog.Designer.cs">
-      <DependentUpon>FolderPickerDialog.cs</DependentUpon>
+    <Compile Include="Modules\ImportFile\FilePermissionForm.Designer.cs">
+      <DependentUpon>FilePermissionForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="FilePreviewPanel.cs">
+    <Compile Include="Modules\ImportFile\FilePreviewPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Modules\ImportFile\FileUploadForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FileUploadForm.Designer.cs">
+      <DependentUpon>FileUploadForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FilesByFolderForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FilesByFolderForm.Designer.cs">
+      <DependentUpon>FilesByFolderForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FolderForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FolderForm.Designer.cs">
+      <DependentUpon>FolderForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FolderPickerDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FolderPickerDialog.Designer.cs">
+      <DependentUpon>FolderPickerDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FolderTemplateForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FolderTemplateForm.Designer.cs">
+      <DependentUpon>FolderTemplateForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\OrgStructureForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\OrgStructureForm.Designer.cs">
+      <DependentUpon>OrgStructureForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\OrgStructureSelectionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\OrgStructureSelectionDialog.Designer.cs">
+      <DependentUpon>OrgStructureSelectionDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\OrgUnitPickerDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\OrgUnitPickerDialog.Designer.cs">
+      <DependentUpon>OrgUnitPickerDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\OrgUnitSelectorDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\OrgUnitSelectorDialog.Designer.cs">
+      <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\PdfSecurityHelper.cs" />
+    <Compile Include="Modules\ImportFile\PdpaConsentDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\PdpaConsentDialog.Designer.cs">
+      <DependentUpon>PdpaConsentDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\PdpaReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\PdpaReportForm.Designer.cs">
+      <DependentUpon>PdpaReportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\PermissionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\PermissionForm.Designer.cs">
+      <DependentUpon>PermissionForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\RecycleBinForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\UserAccessForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\UserAccessForm.Designer.cs">
+      <DependentUpon>UserAccessForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\UserManagementForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\UserManagementForm.Designer.cs">
+      <DependentUpon>UserManagementForm.cs</DependentUpon>
+    </Compile>
+    <!-- Module: ImportFile — Presenters -->
+    <Compile Include="Modules\ImportFile\Presenters\IOrgStructureView.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\OrgStructurePresenter.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\IFolderView.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\FolderPresenter.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\IFileUploadView.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\FilePresenter.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\IPermissionView.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\PermissionPresenter.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\IAuditLogView.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\AuditLogPresenter.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\IConfigAdminView.cs" />
+    <Compile Include="Modules\ImportFile\Presenters\ConfigAdminPresenter.cs" />
+    <!-- Properties -->
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="RecycleBinForm.cs">
-      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -223,50 +242,54 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="ApplyTemplateDialog.resx">
-      <DependentUpon>ApplyTemplateDialog.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="ApprovalInboxForm.resx">
-      <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="ConfigAdminForm.resx">
-      <DependentUpon>ConfigAdminForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="CreateOrgUnitDialog.resx">
-      <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="EmployeeOrgSelectionDialog.resx">
-      <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FolderPickerDialog.resx">
-      <DependentUpon>FolderPickerDialog.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FilePermissionAddDialog.resx">
-      <DependentUpon>FilePermissionAddDialog.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FileUploadForm.resx">
-      <DependentUpon>FileUploadForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FolderForm.resx">
-      <DependentUpon>FolderForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="EmployeeSearchDialog.resx">
-      <DependentUpon>EmployeeSearchDialog.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FolderTemplateForm.resx">
-      <DependentUpon>FolderTemplateForm.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="MDI_Container.resx">
       <DependentUpon>MDI_Container.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="OrgUnitPickerDialog.resx">
+    <!-- Module: ImportFile — EmbeddedResources -->
+    <EmbeddedResource Include="Modules\ImportFile\ApplyTemplateDialog.resx">
+      <DependentUpon>ApplyTemplateDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\ApprovalInboxForm.resx">
+      <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\ConfigAdminForm.resx">
+      <DependentUpon>ConfigAdminForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\CreateOrgUnitDialog.resx">
+      <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\EmployeeOrgSelectionDialog.resx">
+      <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\EmployeeSearchDialog.resx">
+      <DependentUpon>EmployeeSearchDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\FilePermissionAddDialog.resx">
+      <DependentUpon>FilePermissionAddDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\FileUploadForm.resx">
+      <DependentUpon>FileUploadForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\FolderForm.resx">
+      <DependentUpon>FolderForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\FolderPickerDialog.resx">
+      <DependentUpon>FolderPickerDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\FolderTemplateForm.resx">
+      <DependentUpon>FolderTemplateForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\OrgUnitPickerDialog.resx">
       <DependentUpon>OrgUnitPickerDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="OrgUnitSelectorDialog.resx">
+    <EmbeddedResource Include="Modules\ImportFile\OrgUnitSelectorDialog.resx">
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="PermissionForm.resx">
+    <EmbeddedResource Include="Modules\ImportFile\PermissionForm.resx">
       <DependentUpon>PermissionForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\UserAccessForm.resx">
+      <DependentUpon>UserAccessForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

@@ -39,6 +39,7 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
         private readonly IUploadCheckpointService _uploadCheckpointService;
         private readonly IQuickAccessService _quickAccessService;
+        private readonly IUserOrgVisibilityService _userOrgVisibilityService;
 
         // Notification inbox controls (built programmatically)
         private Panel    _notificationPanel;
@@ -61,6 +62,21 @@ namespace CMS.Presentation
 
         // Tracks whether the logout audit has already been recorded
         private bool _logoutRecorded;
+
+        // ── Grouped admin toolbar buttons (built in BuildGroupedAdminToolbar) ──
+        private ToolStripDropDownButton _grpDocument;
+        private ToolStripButton         _grpApproval;
+        private ToolStripDropDownButton _grpOrg;
+        private ToolStripDropDownButton _grpPermission;
+        private ToolStripDropDownButton _grpReport;
+        private ToolStripDropDownButton _grpSystem;
+        // Admin-only sub-items inside _grpPermission
+        private ToolStripMenuItem _mnuUserAccess;
+        private ToolStripMenuItem _mnuUserMgmt;
+        // Ribbon collapse toggle
+        private ToolStripMenuItem _mnuToggleRibbon;
+        private bool              _ribbonCollapsed  = false;
+        private bool              _adminTabActive   = false;
 
         // File detail panel controls
         private Panel _fileDetailPanel;
@@ -99,7 +115,8 @@ namespace CMS.Presentation
             IFolderTemplateRepository folderTemplateRepository  = null,
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
             IUploadCheckpointService uploadCheckpointService = null,
-            IQuickAccessService quickAccessService = null)
+            IQuickAccessService quickAccessService = null,
+            IUserOrgVisibilityService userOrgVisibilityService = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
             if (auditService        == null) throw new ArgumentNullException("auditService");
@@ -127,6 +144,7 @@ namespace CMS.Presentation
             _employeeApiService       = employeeApiService;
             _uploadCheckpointService  = uploadCheckpointService;
             _quickAccessService       = quickAccessService;
+            _userOrgVisibilityService = userOrgVisibilityService;
 
             InitializeComponent();
             BuildFileDetailPanel();
@@ -147,6 +165,7 @@ namespace CMS.Presentation
             this.WindowState = FormWindowState.Maximized;
 
             Text = string.Format("CMS — {0}", _currentUser.AdIdentity);
+            BuildGroupedAdminToolbar();
             ApplyRoleBasedMenuVisibility();
             WireRibbonHandlers();
             WireDashboardHandlers();
@@ -381,25 +400,16 @@ namespace CMS.Presentation
             // Admin ribbon visibility
             ribbonStripAdmin.Visible = canManage && ribbonStripAdmin.Visible;
 
-            // ── กลุ่ม 1: ตั้งค่าโครงการ ──────────────────────────────────
-            btnRibbonSysConfig.Visible    = isAdmin;
-            btnRibbonOrgAdmin.Visible     = canManage;
-            btnRibbonAuditLog.Visible     = canManage;
-            btnRibbonReportExcel.Visible  = canManage;
-            btnRibbonPDPA.Visible         = canManage;
-
-            // ── กลุ่ม 2: จัดการ Folder ───────────────────────────────────
-            btnRibbonTemplate.Visible       = canManage;
-            btnRibbonFolderArchive.Visible  = canManage;
-            btnRibbonCopyStructure.Visible  = canManage;
-            btnRibbonApproval.Visible       = canManage;
-            btnRibbonChangeLevel.Visible    = canManage;
-            btnRibbonRecycleBin.Visible     = canManage;
-
-            // ── กลุ่ม 3: สิทธิ์ ──────────────────────────────────────────
-            btnRibbonUserAccess.Visible     = isAdmin;
-            btnRibbonPermission.Visible     = canManage;
-            btnRibbonFolderSettings.Visible = canManage;
+            // ── Grouped admin toolbar visibility ──────────────────────────
+            if (_grpDocument   != null) _grpDocument.Visible   = canManage;
+            if (_grpApproval   != null) _grpApproval.Visible   = canManage;
+            if (_grpOrg        != null) _grpOrg.Visible        = canManage;
+            if (_grpPermission != null) _grpPermission.Visible = canManage;
+            if (_grpReport     != null) _grpReport.Visible     = canManage;
+            if (_grpSystem     != null) _grpSystem.Visible     = isAdmin;
+            // Admin-only sub-items inside สิทธิ์ group
+            if (_mnuUserAccess != null) _mnuUserAccess.Visible = isAdmin;
+            if (_mnuUserMgmt   != null) _mnuUserMgmt.Visible   = isAdmin;
 
             // User access rights menu item — Admin only
             menuItemMod001.Visible = isAdmin;
@@ -459,11 +469,13 @@ namespace CMS.Presentation
             menuItemMod001.Text   = "จัดการสิทธิ์ผู้ใช้";
             menuItemMod001.Click += (s, e) => OpenUserAccess();
             btnRibbonUserAccess.Click += (s, e) => OpenUserAccess();
+            btnRibbonUserMgmt.Click   += (s, e) => OpenUserManagement();
         }
 
         private void SwitchToHomeRibbon()
         {
-            ribbonStrip.Visible = true;
+            _adminTabActive          = false;
+            ribbonStrip.Visible      = !_ribbonCollapsed;
             ribbonStripAdmin.Visible = false;
 
             // Update tab appearance - Office 2021 Navy Blue Light style
@@ -475,14 +487,131 @@ namespace CMS.Presentation
 
         private void SwitchToAdminRibbon()
         {
-            ribbonStrip.Visible = false;
-            ribbonStripAdmin.Visible = true;
+            _adminTabActive          = true;
+            ribbonStrip.Visible      = false;
+            ribbonStripAdmin.Visible = !_ribbonCollapsed;
 
             // Update tab appearance - Office 2021 Navy Blue Light style
             menuItemHome.BackColor = System.Drawing.Color.FromArgb(31, 56, 100);
             menuItemHome.ForeColor = System.Drawing.Color.FromArgb(180, 200, 230);
             menuItemAdmin.BackColor = System.Drawing.Color.White;
             menuItemAdmin.ForeColor = System.Drawing.Color.FromArgb(31, 56, 100);
+        }
+
+        /// <summary>
+        /// แทนที่ flat buttons ใน ribbonStripAdmin ด้วย ToolStripDropDownButton แบบจัดกลุ่ม
+        /// กลุ่ม: เอกสาร | อนุมัติ | องค์กร | สิทธิ์ | รายงาน | ระบบ
+        /// </summary>
+        private void BuildGroupedAdminToolbar()
+        {
+            ribbonStripAdmin.Items.Clear();
+
+            // ── กลุ่ม 1: เอกสาร ──────────────────────────────────────────────
+            _grpDocument = new ToolStripDropDownButton("📁 เอกสาร");
+            _grpDocument.AutoToolTip = false;
+            _grpDocument.ToolTipText = "จัดการโครงสร้างและ Template";
+            _grpDocument.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                new ToolStripMenuItem("📋 Template",          null, (s, e) => OpenFolderTemplateManagement()),
+                new ToolStripMenuItem("📦 Archive Folder",    null, (s, e) => TriggerOnActiveFolderForm(ff => ff.TriggerArchive())),
+                new ToolStripMenuItem("📂 คัดลอกโครงสร้าง",  null, (s, e) => TriggerOnActiveFolderForm(ff => ff.TriggerCopyStructure())),
+                new ToolStripSeparator(),
+                new ToolStripMenuItem("🗑️ ถังขยะ",            null, (s, e) => OpenRecycleBin()),
+            });
+
+            // ── กลุ่ม 2: อนุมัติ (direct button) ────────────────────────────
+            _grpApproval = new ToolStripButton("✅ อนุมัติ");
+            _grpApproval.ToolTipText = "รายการรออนุมัติ";
+            _grpApproval.Click += (s, e) => OpenApprovalInbox();
+
+            // ── กลุ่ม 3: องค์กร ──────────────────────────────────────────────
+            _grpOrg = new ToolStripDropDownButton("🏢 องค์กร");
+            _grpOrg.AutoToolTip = false;
+            _grpOrg.ToolTipText = "จัดการโครงสร้างองค์กร";
+            _grpOrg.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                new ToolStripMenuItem("🏢 โครงสร้างองค์กร",  null, (s, e) => OpenOrgStructure()),
+                new ToolStripMenuItem("🔒 เปลี่ยนระดับความลับ", null, (s, e) => TriggerOnActiveFolderForm(ff => ff.TriggerChangeLevel())),
+            });
+
+            // ── กลุ่ม 4: สิทธิ์ ──────────────────────────────────────────────
+            _mnuUserAccess = new ToolStripMenuItem("👤 จัดการสิทธิ์ผู้ใช้",  null, (s, e) => OpenUserAccess());
+            _mnuUserMgmt   = new ToolStripMenuItem("🗂️ จัดการบัญชีผู้ใช้",   null, (s, e) => OpenUserManagement());
+
+            _grpPermission = new ToolStripDropDownButton("🔐 สิทธิ์");
+            _grpPermission.AutoToolTip = false;
+            _grpPermission.ToolTipText = "จัดการสิทธิ์การเข้าถึง";
+            _grpPermission.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                _mnuUserAccess,
+                _mnuUserMgmt,
+                new ToolStripSeparator(),
+                new ToolStripMenuItem("🔒 สิทธิ์ Folder",    null, (s, e) => OpenFolderSettings()),
+                new ToolStripMenuItem("⚙️ ตั้งค่า Folder",   null, (s, e) => OpenFolderSettings()),
+            });
+
+            // ── กลุ่ม 5: รายงาน ──────────────────────────────────────────────
+            _grpReport = new ToolStripDropDownButton("📊 รายงาน");
+            _grpReport.AutoToolTip = false;
+            _grpReport.ToolTipText = "รายงานและ Log การใช้งาน";
+            _grpReport.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                new ToolStripMenuItem("📊 รายงาน Excel",  null, (s, e) => OpenSysConfig()),
+                new ToolStripMenuItem("🔏 PDPA Consent",  null, (s, e) => OpenPdpaConsent()),
+                new ToolStripMenuItem("📜 Audit Log",     null, (s, e) => OpenAuditLog()),
+            });
+
+            // ── กลุ่ม 6: ระบบ (Admin only) ───────────────────────────────────
+            _grpSystem = new ToolStripDropDownButton("⚙️ ระบบ");
+            _grpSystem.AutoToolTip = false;
+            _grpSystem.ToolTipText = "ตั้งค่าระบบ (Admin เท่านั้น)";
+            _grpSystem.DropDownItems.AddRange(new ToolStripItem[]
+            {
+                new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",  null, (s, e) => OpenSysConfig()),
+            });
+
+            ribbonStripAdmin.Items.AddRange(new ToolStripItem[]
+            {
+                _grpDocument,
+                new ToolStripSeparator(),
+                _grpApproval,
+                new ToolStripSeparator(),
+                _grpOrg,
+                new ToolStripSeparator(),
+                _grpPermission,
+                new ToolStripSeparator(),
+                _grpReport,
+                new ToolStripSeparator(),
+                _grpSystem,
+            });
+
+            // ── ปุ่มซ่อน/แสดงแถบ ribbon (ชิดขวาของ menuStrip) ──────────────
+            // ลบปุ่มเดิมออกก่อน (กรณี BuildGroupedAdminToolbar ถูกเรียกซ้ำ)
+            if (_mnuToggleRibbon != null)
+                menuStrip.Items.Remove(_mnuToggleRibbon);
+
+            _mnuToggleRibbon = new ToolStripMenuItem("▲ ซ่อนแถบ");
+            _mnuToggleRibbon.Alignment  = ToolStripItemAlignment.Right;
+            _mnuToggleRibbon.ForeColor  = System.Drawing.Color.FromArgb(180, 200, 230);
+            _mnuToggleRibbon.BackColor  = System.Drawing.Color.Transparent;
+            _mnuToggleRibbon.AutoToolTip = false;
+            _mnuToggleRibbon.ToolTipText = "ซ่อน/แสดงแถบเครื่องมือ";
+            _mnuToggleRibbon.Click += (s, e) =>
+            {
+                _ribbonCollapsed = !_ribbonCollapsed;
+                if (_adminTabActive)
+                {
+                    ribbonStrip.Visible      = false;
+                    ribbonStripAdmin.Visible = !_ribbonCollapsed;
+                }
+                else
+                {
+                    ribbonStrip.Visible      = !_ribbonCollapsed;
+                    ribbonStripAdmin.Visible = false;
+                }
+                _mnuToggleRibbon.Text = _ribbonCollapsed ? "▼ แสดงแถบ" : "▲ ซ่อนแถบ";
+            };
+            menuStrip.Items.Add(_mnuToggleRibbon);
         }
 
         private void WireRibbonHandlers()
@@ -601,7 +730,7 @@ namespace CMS.Presentation
                 _permissionService, _approvalService, _folderService,
                 _permissionRepository, _currentUser, selectedFolder,
                 _userAccountRepository, _folderRepository, _employeeApiService,
-                _orgStructureService, _fileDocumentRepository))
+                _orgStructureService, _fileDocumentRepository, _auditService))
             {
                 dlg.ShowDialog(this);
             }
@@ -622,7 +751,7 @@ namespace CMS.Presentation
             using (var dlg = new FilePermissionForm(
                 _filePermissionService, _filePermissionRepository,
                 _currentUser, file, _userAccountRepository, _permissionRepository,
-                _orgStructureService))
+                _orgStructureService, _auditService))
             {
                 dlg.ShowDialog(this);
             }
@@ -702,7 +831,18 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenChildForm(new UserAccessForm(_userAccountRepository, _orgStructureService, _currentUser));
+            OpenChildForm(new UserAccessForm(_userAccountRepository, _orgStructureService, _currentUser, visibilityService: _userOrgVisibilityService, auditService: _auditService));
+        }
+
+        private void OpenUserManagement()
+        {
+            if (_userAccountRepository == null)
+            {
+                MessageBox.Show("ไม่พบ service สำหรับจัดการบัญชีผู้ใช้", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new UserManagementForm(_userAccountRepository, _currentUser, _auditService));
         }
 
         private void OpenPdpaConsent()

@@ -13,6 +13,7 @@ namespace CMS.Services.Interfaces
         void DeactivateOrgUnit(int orgUnitId, UserContext user);
         void DeleteOrgUnit(int orgUnitId, UserContext user);
         IEnumerable<OrgUnit> GetHierarchy();
+        IEnumerable<OrgUnit> GetVisibleHierarchy(UserContext user);
         IEnumerable<OrgUnit> GetByConfidentialityLevel(ConfidentialityLevel level);
     }
 }

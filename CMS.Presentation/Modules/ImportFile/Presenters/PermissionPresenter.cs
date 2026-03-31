@@ -17,6 +17,7 @@ namespace CMS.Presentation.Presenters
         private readonly IPermissionView         _view;
         private readonly UserContext             _user;
         private readonly IFileDocumentRepository _fileDocumentRepository;
+        private readonly IAuditService           _auditService;
 
         private Folder _currentFolder;
 
@@ -31,7 +32,8 @@ namespace CMS.Presentation.Presenters
             IPermissionRepository   permissionRepo,
             IPermissionView         view,
             UserContext             user,
-            IFileDocumentRepository fileDocumentRepository = null)
+            IFileDocumentRepository fileDocumentRepository = null,
+            IAuditService           auditService           = null)
         {
             if (permissionService == null) throw new ArgumentNullException("permissionService");
             if (approvalService   == null) throw new ArgumentNullException("approvalService");
@@ -47,6 +49,7 @@ namespace CMS.Presentation.Presenters
             _view                   = view;
             _user                   = user;
             _fileDocumentRepository = fileDocumentRepository;
+            _auditService           = auditService;
         }
 
         public void LoadAclEntries(Folder folder)
@@ -158,6 +161,21 @@ namespace CMS.Presentation.Presenters
                 // บันทึกสิทธิ์ทันที — ไม่ผ่านขั้นตอนอนุมัติ
                 _permissionService.SetFolderPermission(request, _user);
                 System.Diagnostics.Debug.WriteLine($"[PRESENTER] SetPermission: SaveOK — reloading ACL...");
+                if (_auditService != null)
+                    _auditService.Log(new AuditEntry
+                    {
+                        Module      = "Permission",
+                        Action      = "SET_FOLDER_PERMISSION",
+                        UserID      = _user.UserID,
+                        TableName   = "FolderPermission",
+                        RecordID    = _currentFolder.FolderID,
+                        NewValue    = BuildPermissionRemark(request),
+                        MachineName = _user.MachineName,
+                        IPAddress   = _user.IPAddress,
+                        SessionID   = _user.SessionID,
+                        Result      = 1,
+                        AuditDate   = DateTime.Now
+                    });
                 LoadAclEntries(_currentFolder);
                 PromptPropagateToFiles();
             }
@@ -194,6 +212,21 @@ namespace CMS.Presentation.Presenters
             try
             {
                 _permissionRepo.Revoke(permissionId, _user.UserID, "Removed by user");
+                if (_auditService != null)
+                    _auditService.Log(new AuditEntry
+                    {
+                        Module      = "Permission",
+                        Action      = "REMOVE_FOLDER_PERMISSION",
+                        UserID      = _user.UserID,
+                        TableName   = "FolderPermission",
+                        RecordID    = _currentFolder.FolderID,
+                        OldValue    = string.Format("PermissionID:{0}", permissionId),
+                        MachineName = _user.MachineName,
+                        IPAddress   = _user.IPAddress,
+                        SessionID   = _user.SessionID,
+                        Result      = 1,
+                        AuditDate   = DateTime.Now
+                    });
                 // Reload list first so the row disappears immediately, then notify
                 LoadAclEntries(_currentFolder);
                 _view.ShowInfo("ลบรายการสิทธิ์เรียบร้อยแล้ว");
@@ -213,6 +246,22 @@ namespace CMS.Presentation.Presenters
             try
             {
                 _folderService.ChangeConfidentialityLevel(folderId, newLevel, _user);
+                if (_auditService != null)
+                    _auditService.Log(new AuditEntry
+                    {
+                        Module      = "Permission",
+                        Action      = "CHANGE_CONF_LEVEL",
+                        UserID      = _user.UserID,
+                        TableName   = "Folder",
+                        RecordID    = folderId,
+                        OldValue    = _currentFolder != null ? string.Format("Level:{0}", _currentFolder.ConfidentialityLevel) : null,
+                        NewValue    = string.Format("Level:{0}", newLevel),
+                        MachineName = _user.MachineName,
+                        IPAddress   = _user.IPAddress,
+                        SessionID   = _user.SessionID,
+                        Result      = 1,
+                        AuditDate   = DateTime.Now
+                    });
                 _view.ShowInfo(string.Format(
                     "Confidentiality level changed to {0} and propagated to all inheriting descendants.",
                     ConfidentialityLabel(newLevel)));

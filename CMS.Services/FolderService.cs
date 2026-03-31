@@ -23,14 +23,15 @@ namespace CMS.Services
                     string.Format("ชื่อ Folder ไม่อนุญาตให้ใช้อักขระ: {0}", string.Join(" ", found)));
         }
 
-        private readonly IFolderRepository       _folderRepository;
-        private readonly IFileDocumentRepository _fileDocumentRepository;
-        private readonly IPermissionRepository   _permissionRepository;
-        private readonly IPermissionService      _permissionService;
-        private readonly INetworkDriveHelper     _networkDriveHelper;
-        private readonly IAuditService           _auditService;
-        private readonly IFolderTemplateRepository _folderTemplateRepository;
-        private readonly IApprovalRepository     _approvalRepository;
+        private readonly IFolderRepository            _folderRepository;
+        private readonly IFileDocumentRepository      _fileDocumentRepository;
+        private readonly IPermissionRepository        _permissionRepository;
+        private readonly IPermissionService           _permissionService;
+        private readonly INetworkDriveHelper          _networkDriveHelper;
+        private readonly IAuditService                _auditService;
+        private readonly IFolderTemplateRepository    _folderTemplateRepository;
+        private readonly IApprovalRepository          _approvalRepository;
+        private readonly IUserOrgVisibilityService    _visibilityService;
 
         public FolderService(
             IFolderRepository          folderRepository,
@@ -40,7 +41,8 @@ namespace CMS.Services
             INetworkDriveHelper        networkDriveHelper,
             IAuditService              auditService,
             IFolderTemplateRepository  folderTemplateRepository = null,
-            IApprovalRepository        approvalRepository       = null)
+            IApprovalRepository        approvalRepository       = null,
+            IUserOrgVisibilityService  visibilityService        = null)
         {
             if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
             if (fileDocumentRepository == null) throw new ArgumentNullException("fileDocumentRepository");
@@ -57,6 +59,7 @@ namespace CMS.Services
             _auditService              = auditService;
             _folderTemplateRepository  = folderTemplateRepository;
             _approvalRepository        = approvalRepository;
+            _visibilityService         = visibilityService;
         }
 
         public Folder CreateFolder(CreateFolderRequest request, UserContext user)
@@ -469,13 +472,24 @@ namespace CMS.Services
         {
             if (user == null) throw new ArgumentNullException("user");
 
-            IEnumerable<Folder> roots;
-            if (orgUnitId.HasValue)
-                roots = _folderRepository.GetRootFoldersByOrgUnit(orgUnitId.Value)
-                    .Where(f => !f.IsDeleted);
-            else
-                roots = _folderRepository.GetAllRootFolders()
-                    .Where(f => !f.IsDeleted);
+            // Resolve visible OrgUnit IDs via visibility service (Req 5.1, 5.4)
+            HashSet<int> visibleIds = null;
+            if (_visibilityService != null)
+            {
+                visibleIds = new HashSet<int>(
+                    _visibilityService.GetVisibleOrgUnits(user.UserID, user)
+                                      .Select(o => o.OrgUnitID));
+            }
+
+            IEnumerable<Folder> roots = orgUnitId.HasValue
+                ? _folderRepository.GetRootFoldersByOrgUnit(orgUnitId.Value)
+                : _folderRepository.GetAllRootFolders();
+
+            roots = roots.Where(f => !f.IsDeleted);
+
+            // Filter to visible OrgUnits when service is wired (Req 5.2, 5.3)
+            if (visibleIds != null)
+                roots = roots.Where(f => visibleIds.Contains(f.OrgUnitID));
 
             // กรองเฉพาะ folder ที่ user มีสิทธิ์ Read (Admin/Manager ผ่านโดยอัตโนมัติเว้นแต่ถูก Deny)
             return roots.Where(f => _permissionService.CheckPermission(user.UserID, f.FolderID, "Read"));

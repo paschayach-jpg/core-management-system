@@ -22,6 +22,7 @@ namespace CMS.Presentation.Presenters
         private readonly IFolderRepository _folderRepository;
 
         private int? _currentOrgUnitId;
+        private int? _currentFolderId;   // tracks the folder currently shown in content panel
 
         public FolderPresenter(
             IFolderService    service,
@@ -93,6 +94,7 @@ namespace CMS.Presentation.Presenters
         /// </summary>
         public void ShowOrgUnitRootFolders(int? orgUnitId)
         {
+            _currentFolderId = null; // viewing root level — no specific folder selected
             try
             {
                 IEnumerable<Folder> roots = _service.GetRootFolders(orgUnitId, _user);
@@ -176,6 +178,7 @@ namespace CMS.Presentation.Presenters
         /// </summary>
         public void GetFolderContents(int folderId)
         {
+            _currentFolderId = folderId;
             try
             {
                 IEnumerable<Folder>       subFolders = _service.GetFolderContents(folderId, _user);
@@ -252,6 +255,19 @@ namespace CMS.Presentation.Presenters
         // -----------------------------------------------------------------------
 
         /// <summary>
+        /// Re-renders the content panel after a mutating operation (create/delete/rename).
+        /// If a specific folder was open → reload its contents.
+        /// If at root level → reload root folders for the current OrgUnit.
+        /// </summary>
+        private void RefreshContentPanel()
+        {
+            if (_currentFolderId.HasValue)
+                GetFolderContents(_currentFolderId.Value);
+            else
+                ShowOrgUnitRootFolders(_currentOrgUnitId);
+        }
+
+        /// <summary>
         /// Creates a new root folder (no parent) under the given OrgUnit.
         /// </summary>
         public void CreateRootFolder(string name, int orgUnitId, int confidentialityLevel = 1, bool showSuccessMessage = true)
@@ -267,10 +283,9 @@ namespace CMS.Presentation.Presenters
                 };
                 Folder created = _service.CreateFolder(request, _user);
 
-                // ใช้ orgUnitId ที่รับมาเพื่อ reload ให้แน่ใจว่าถูกต้อง
                 _currentOrgUnitId = orgUnitId;
                 LoadFolderTree(_currentOrgUnitId);
-                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
+                RefreshContentPanel();
 
                 if (showSuccessMessage)
                 {
@@ -310,7 +325,7 @@ namespace CMS.Presentation.Presenters
 
                 // Reload the folder tree and recycle bin, then show success message
                 LoadFolderTree(_currentOrgUnitId);
-                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
+                RefreshContentPanel();
 
                 if (showSuccessMessage)
                 {
@@ -400,8 +415,9 @@ namespace CMS.Presentation.Presenters
             {
                 _service.DeleteFolder(folderId, _user);
 
-                // Reload ก่อนเพื่อยืนยันว่าลบสำเร็จ
+                // Reload tree then refresh content panel
                 LoadFolderTree(_currentOrgUnitId);
+                RefreshContentPanel();
 
                 // ตรวจสอบว่า Folder ถูกลบออกจากระบบแล้ว (IsDeleted == true)
                 var deleted = _service.GetFolder(folderId, _user);

@@ -64,6 +64,7 @@
     <Compile Include="Models\UserGroupMember.cs" />
     <Compile Include="Models\UploadCheckpoint.cs" />
     <Compile Include="Models\QuickAccessFolder.cs" />
+    <Compile Include="Models\UserOrgVisibility.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

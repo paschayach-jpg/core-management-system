@@ -60,10 +60,11 @@ C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentat
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.PermissionForm.resources
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.GenerateResource.cache
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.csproj.CoreCompileInputs.cache
-C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Pres.F339C674.Up2Date
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.exe
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.pdb
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.FilePermissionAddDialog.resources
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.EmployeeOrgSelectionDialog.resources
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.FolderPickerDialog.resources
 C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.Properties.Resources.resources
+C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Presentation.UserAccessForm.resources
+C:\Users\pitakpong\Documents\cms_import\CMS.Presentation\obj\Debug\CMS.Pres.F339C674.Up2Date

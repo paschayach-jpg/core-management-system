@@ -19,6 +19,8 @@ namespace CMS.Presentation
     public partial class PermissionForm : Form, IPermissionView
     {
         private PermissionPresenter _presenter;
+        private IAuditService       _auditService;
+        private UserContext         _currentUser;
         private Folder _folder;
         private List<FolderPermission> _aclEntries = new List<FolderPermission>();
         private List<FolderPermission> _allAclEntries = new List<FolderPermission>(); // includes revoked
@@ -47,7 +49,8 @@ namespace CMS.Presentation
             IFolderRepository  folderRepository = null,
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
             CMS.Services.Interfaces.IOrgStructureService orgStructureService = null,
-            IFileDocumentRepository fileDocumentRepository = null)
+            IFileDocumentRepository fileDocumentRepository = null,
+            IAuditService       auditService = null)
         {
             if (permissionService == null) throw new ArgumentNullException("permissionService");
             if (approvalService   == null) throw new ArgumentNullException("approvalService");
@@ -55,7 +58,9 @@ namespace CMS.Presentation
             if (permissionRepo    == null) throw new ArgumentNullException("permissionRepo");
             if (user              == null) throw new ArgumentNullException("user");
 
-            _folder = folder;
+            _folder        = folder;
+            _auditService  = auditService;
+            _currentUser   = user;
             _userAccountRepository = userAccountRepository;
             _userList = new List<UserAccount>();
             _approvalService = approvalService;
@@ -122,7 +127,7 @@ namespace CMS.Presentation
 
             _presenter = new PermissionPresenter(
                 permissionService, approvalService, folderService, permissionRepo, this, user,
-                fileDocumentRepository);
+                fileDocumentRepository, auditService);
         }
 
         // ── Form load ────────────────────────────────────────────────────────
@@ -1521,6 +1526,22 @@ namespace CMS.Presentation
                 {
                     _folder.UpdatedBy = null; // set to current user ID if available
                     _folderRepository.Update(_folder);
+                    if (_auditService != null && _currentUser != null)
+                        _auditService.Log(new AuditEntry
+                        {
+                            Module      = "Permission",
+                            Action      = "SAVE_FOLDER_SETTINGS",
+                            UserID      = _currentUser.UserID,
+                            TableName   = "Folder",
+                            RecordID    = _folder.FolderID,
+                            NewValue    = string.Format("Name:{0} Level:{1} Inherit:{2}",
+                                             _folder.FolderName, _folder.ConfidentialityLevel, _folder.InheritPermission),
+                            MachineName = _currentUser.MachineName,
+                            IPAddress   = _currentUser.IPAddress,
+                            SessionID   = _currentUser.SessionID,
+                            Result      = 1,
+                            AuditDate   = DateTime.Now
+                        });
                 }
 
                 DialogResult = DialogResult.OK;

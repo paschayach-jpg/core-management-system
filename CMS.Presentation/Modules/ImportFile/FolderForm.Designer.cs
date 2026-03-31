@@ -13,7 +13,6 @@ namespace CMS.Presentation
 
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FolderForm));
             this.pnlFilter = new System.Windows.Forms.Panel();
             this.lblFilterStatus = new System.Windows.Forms.Label();
             this.btnClearFilter = new System.Windows.Forms.Button();
@@ -655,9 +654,9 @@ namespace CMS.Presentation
             this.folderTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.folderTreeView.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.folderTreeView.HotTracking = true;
-            this.folderTreeView.Location = new System.Drawing.Point(0, 371);
+            this.folderTreeView.Location = new System.Drawing.Point(0, 505);
             this.folderTreeView.Name = "folderTreeView";
-            this.folderTreeView.Size = new System.Drawing.Size(304, 317);
+            this.folderTreeView.Size = new System.Drawing.Size(304, 183);
             this.folderTreeView.TabIndex = 0;
             this.folderTreeView.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.folderTreeView_AfterSelect);
             // 
@@ -665,7 +664,7 @@ namespace CMS.Presentation
             // 
             this.txtFolderSearch.Dock = System.Windows.Forms.DockStyle.Top;
             this.txtFolderSearch.ForeColor = System.Drawing.Color.Gray;
-            this.txtFolderSearch.Location = new System.Drawing.Point(0, 351);
+            this.txtFolderSearch.Location = new System.Drawing.Point(0, 485);
             this.txtFolderSearch.Name = "txtFolderSearch";
             this.txtFolderSearch.Size = new System.Drawing.Size(304, 20);
             this.txtFolderSearch.TabIndex = 1;
@@ -677,7 +676,7 @@ namespace CMS.Presentation
             this.lblOrgUnitStatus.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblOrgUnitStatus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.lblOrgUnitStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
-            this.lblOrgUnitStatus.Location = new System.Drawing.Point(0, 331);
+            this.lblOrgUnitStatus.Location = new System.Drawing.Point(0, 465);
             this.lblOrgUnitStatus.Name = "lblOrgUnitStatus";
             this.lblOrgUnitStatus.Padding = new System.Windows.Forms.Padding(6, 0, 0, 0);
             this.lblOrgUnitStatus.Size = new System.Drawing.Size(304, 20);
@@ -693,7 +692,7 @@ namespace CMS.Presentation
             this.pnlOrgFilter.Location = new System.Drawing.Point(0, 26);
             this.pnlOrgFilter.Name = "pnlOrgFilter";
             this.pnlOrgFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlOrgFilter.Size = new System.Drawing.Size(304, 305);
+            this.pnlOrgFilter.Size = new System.Drawing.Size(304, 439);
             this.pnlOrgFilter.TabIndex = 2;
             // 
             // treeOrgUnit
@@ -705,7 +704,7 @@ namespace CMS.Presentation
             this.treeOrgUnit.HotTracking = true;
             this.treeOrgUnit.Location = new System.Drawing.Point(4, 4);
             this.treeOrgUnit.Name = "treeOrgUnit";
-            this.treeOrgUnit.Size = new System.Drawing.Size(296, 297);
+            this.treeOrgUnit.Size = new System.Drawing.Size(296, 431);
             this.treeOrgUnit.TabIndex = 1;
             this.treeOrgUnit.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeOrgUnit_AfterSelect);
             // 
@@ -1028,7 +1027,6 @@ namespace CMS.Presentation
             this.Controls.Add(this.pnlNavBar);
             this.Controls.Add(this.toolStrip);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "FolderForm";
             this.Text = "MOD-002: จัดการ Folder";
             this.Load += new System.EventHandler(this.FolderForm_Load);

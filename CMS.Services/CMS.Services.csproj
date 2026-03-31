@@ -61,7 +61,9 @@
     <Compile Include="Interfaces\IVirusScanService.cs" />
     <Compile Include="Interfaces\IUploadCheckpointService.cs" />
     <Compile Include="Interfaces\IQuickAccessService.cs" />
+    <Compile Include="Interfaces\IUserOrgVisibilityService.cs" />
     <Compile Include="UploadCheckpointService.cs" />
+    <Compile Include="UserOrgVisibilityService.cs" />
     <Compile Include="QuickAccessService.cs" />
     <Compile Include="EmployeeApiService.cs" />
     <Compile Include="ApprovalService.cs" />

@@ -22,6 +22,7 @@ namespace CMS.Presentation
         private readonly IPermissionRepository     _permissionRepository;
         private readonly UserContext               _currentUser;
         private readonly FileDocument              _file;
+        private readonly IAuditService             _auditService;
 
         private List<FilePermission>    _aclEntries     = new List<FilePermission>();
         private Dictionary<int, string> _userDisplayMap  = new Dictionary<int, string>();
@@ -34,7 +35,8 @@ namespace CMS.Presentation
             FileDocument              file,
             IUserAccountRepository    userAccountRepository = null,
             IPermissionRepository     permissionRepository  = null,
-            CMS.Services.Interfaces.IOrgStructureService orgStructureService = null)
+            CMS.Services.Interfaces.IOrgStructureService orgStructureService = null,
+            IAuditService             auditService          = null)
         {
             if (filePermissionService    == null) throw new ArgumentNullException("filePermissionService");
             if (filePermissionRepository == null) throw new ArgumentNullException("filePermissionRepository");
@@ -47,6 +49,7 @@ namespace CMS.Presentation
             _file                     = file;
             _userAccountRepository    = userAccountRepository;
             _permissionRepository     = permissionRepository;
+            _auditService             = auditService;
 
             InitializeComponent();
 
@@ -148,6 +151,22 @@ namespace CMS.Presentation
                         IsDeny         = dlg.IsDeny
                     };
                     _filePermissionService.SetFilePermission(req, _currentUser);
+                    if (_auditService != null)
+                        _auditService.Log(new AuditEntry
+                        {
+                            Module      = "FilePermission",
+                            Action      = "SET_FILE_PERMISSION",
+                            UserID      = _currentUser.UserID,
+                            TableName   = "FilePermission",
+                            RecordID    = _file.FileID,
+                            NewValue    = string.Format("File:{0} PrincipalType:{1} PrincipalID:{2} IsDeny:{3}",
+                                             _file.OriginalFileName, req.PrincipalType, req.PrincipalID, req.IsDeny),
+                            MachineName = _currentUser.MachineName,
+                            IPAddress   = _currentUser.IPAddress,
+                            SessionID   = _currentUser.SessionID,
+                            Result      = 1,
+                            AuditDate   = DateTime.Now
+                        });
                     LoadAcl();
                     MessageBox.Show("✅ บันทึกสิทธิ์เรียบร้อยแล้ว", "สำเร็จ",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -189,6 +208,22 @@ namespace CMS.Presentation
             {
                 _filePermissionService.RevokeFilePermission(
                     entry.FilePermissionID, _currentUser, "ลบโดยผู้ดูแล");
+                if (_auditService != null)
+                    _auditService.Log(new AuditEntry
+                    {
+                        Module      = "FilePermission",
+                        Action      = "REVOKE_FILE_PERMISSION",
+                        UserID      = _currentUser.UserID,
+                        TableName   = "FilePermission",
+                        RecordID    = _file.FileID,
+                        OldValue    = string.Format("File:{0} FilePermissionID:{1}",
+                                         _file.OriginalFileName, entry.FilePermissionID),
+                        MachineName = _currentUser.MachineName,
+                        IPAddress   = _currentUser.IPAddress,
+                        SessionID   = _currentUser.SessionID,
+                        Result      = 1,
+                        AuditDate   = DateTime.Now
+                    });
                 LoadAcl();
                 MessageBox.Show("ลบรายการสิทธิ์เรียบร้อยแล้ว", "สำเร็จ",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -255,6 +290,22 @@ namespace CMS.Presentation
                     });
                 }
 
+                if (_auditService != null)
+                    _auditService.Log(new AuditEntry
+                    {
+                        Module      = "FilePermission",
+                        Action      = "SYNC_FILE_PERMISSION",
+                        UserID      = _currentUser.UserID,
+                        TableName   = "FilePermission",
+                        RecordID    = _file.FileID,
+                        NewValue    = string.Format("File:{0} SyncedFromFolder:{1} Count:{2}",
+                                         _file.OriginalFileName, _file.FolderID, folderPerms.Count),
+                        MachineName = _currentUser.MachineName,
+                        IPAddress   = _currentUser.IPAddress,
+                        SessionID   = _currentUser.SessionID,
+                        Result      = 1,
+                        AuditDate   = DateTime.Now
+                    });
                 LoadAcl();
                 MessageBox.Show(string.Format("✅ ซิงค์สิทธิ์เรียบร้อยแล้ว ({0} รายการ)", folderPerms.Count),
                     "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);

@@ -70,6 +70,6 @@ C:\Users\pitakpong\Documents\cms_import\CMS.Services\bin\Debug\CMS.Infrastructur
 C:\Users\pitakpong\Documents\cms_import\CMS.Services\bin\Debug\log4net.xml
 C:\Users\pitakpong\Documents\cms_import\CMS.Services\obj\Debug\CMS.Services.csproj.AssemblyReference.cache
 C:\Users\pitakpong\Documents\cms_import\CMS.Services\obj\Debug\CMS.Services.csproj.CoreCompileInputs.cache
-C:\Users\pitakpong\Documents\cms_import\CMS.Services\obj\Debug\CMS.Serv.0C7545D2.Up2Date
 C:\Users\pitakpong\Documents\cms_import\CMS.Services\obj\Debug\CMS.Services.dll
 C:\Users\pitakpong\Documents\cms_import\CMS.Services\obj\Debug\CMS.Services.pdb
+C:\Users\pitakpong\Documents\cms_import\CMS.Services\obj\Debug\CMS.Serv.0C7545D2.Up2Date
