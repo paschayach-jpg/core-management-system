@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
@@ -14,28 +15,30 @@ namespace CMS.Presentation.Presenters
     /// </summary>
     public class FolderPresenter
     {
-        private readonly IFolderService _service;
-        private readonly IFileService   _fileService;
-        private readonly IFolderView    _view;
-        private readonly UserContext    _user;
+        private readonly IFolderService    _service;
+        private readonly IFileService      _fileService;
+        private readonly IFolderView       _view;
+        private readonly UserContext       _user;
+        private readonly IFolderRepository _folderRepository;
 
-        // OrgUnit scope for the current session (null = show all accessible)
         private int? _currentOrgUnitId;
 
         public FolderPresenter(
-            IFolderService service,
-            IFolderView    view,
-            UserContext    user,
-            IFileService   fileService = null)
+            IFolderService    service,
+            IFolderView       view,
+            UserContext       user,
+            IFileService      fileService      = null,
+            IFolderRepository folderRepository = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (view    == null) throw new ArgumentNullException("view");
             if (user    == null) throw new ArgumentNullException("user");
 
-            _service     = service;
-            _fileService = fileService;
-            _view        = view;
-            _user        = user;
+            _service          = service;
+            _fileService      = fileService;
+            _view             = view;
+            _user             = user;
+            _folderRepository = folderRepository;
         }
 
         // -----------------------------------------------------------------------
@@ -44,16 +47,16 @@ namespace CMS.Presentation.Presenters
 
         /// <summary>
         /// Loads the folder tree for the given OrgUnit (or all accessible folders when null).
+        /// Fetches ALL folders in one query and passes them to the view, which builds the
+        /// hierarchy in-memory — eliminates N+1 per-node DB calls.
         /// </summary>
         public void LoadFolderTree(int? orgUnitId)
         {
             _currentOrgUnitId = orgUnitId;
             try
             {
-                // GetFolderContents returns children; for the tree root we pass the orgUnit root.
-                // The view receives root-level folders; it builds the hierarchy by expanding nodes.
-                IEnumerable<Folder> roots = _service.GetRootFolders(orgUnitId, _user);
-                _view.ShowFolderTree(roots);
+                var allFolders = _service.GetAllFolders(orgUnitId, _user);
+                _view.ShowFolderTree(allFolders);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -66,6 +69,26 @@ namespace CMS.Presentation.Presenters
         }
 
         /// <summary>
+        /// Fetches all folders for the given OrgUnit without touching the view.
+        /// Used by FolderForm for async loading (Task.Run), so data comes back
+        /// on a background thread and the caller updates UI controls itself.
+        /// </summary>
+        public List<Folder> FetchAllFolders(int? orgUnitId)
+        {
+            _currentOrgUnitId = orgUnitId;
+            try
+            {
+                return _service.GetAllFolders(orgUnitId, _user)
+                    .Where(f => !f.IsDeleted && !f.IsArchived)
+                    .ToList();
+            }
+            catch
+            {
+                return new List<Folder>();
+            }
+        }
+
+        /// <summary>
         /// แสดง root folders ของ OrgUnit ใน content area (เมื่อเลือก OrgUnit จาก tree ซ้าย)
         /// </summary>
         public void ShowOrgUnitRootFolders(int? orgUnitId)
@@ -74,6 +97,38 @@ namespace CMS.Presentation.Presenters
             {
                 IEnumerable<Folder> roots = _service.GetRootFolders(orgUnitId, _user);
                 _view.ShowFolderContents(roots, Enumerable.Empty<FileDocument>());
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("โหลด Folder ไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        /// <summary>แสดงเฉพาะ sub-folders ภายใน folder (ไม่แสดง files) — ใช้เมื่อเลือก folder จาก tree</summary>
+        public void ShowFolderSubFolders(int folderId)
+        {
+            try
+            {
+                IEnumerable<Folder> subFolders;
+                
+                if (_folderRepository != null)
+                {
+                    // ใช้ repository โดยตรง — ไม่มี permission check ขวางกั้น
+                    subFolders = _folderRepository.GetChildren(folderId)
+                        .Where(f => !f.IsDeleted && !f.IsArchived);
+                }
+                else
+                {
+                    // Fallback: ใช้ service (อาจถูก block โดย permission)
+                    subFolders = _service.GetFolderContents(folderId, _user);
+                }
+                
+                _view.ShowFolderContents(subFolders, Enumerable.Empty<FileDocument>());
+            }
+            catch (UnauthorizedAccessException)
+            {
+                _view.ShowFolderContents(new List<Folder>(), new List<FileDocument>());
+                _view.ShowInfo("🔒 ไม่มีสิทธิ์เข้าถึง Folder นี้");
             }
             catch (Exception ex)
             {
@@ -199,7 +254,7 @@ namespace CMS.Presentation.Presenters
         /// <summary>
         /// Creates a new root folder (no parent) under the given OrgUnit.
         /// </summary>
-        public void CreateRootFolder(string name, int orgUnitId, int confidentialityLevel = 1)
+        public void CreateRootFolder(string name, int orgUnitId, int confidentialityLevel = 1, bool showSuccessMessage = true)
         {
             try
             {
@@ -217,7 +272,10 @@ namespace CMS.Presentation.Presenters
                 LoadFolderTree(_currentOrgUnitId);
                 // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
 
-                _view.ShowInfo(string.Format("Root folder '{0}' สร้างสำเร็จ", created.FolderName));
+                if (showSuccessMessage)
+                {
+                    _view.ShowInfo(string.Format("Root folder '{0}' สร้างสำเร็จ", created.FolderName));
+                }
             }
             catch (InvalidOperationException ex)
             {
@@ -237,7 +295,7 @@ namespace CMS.Presentation.Presenters
         /// Creates a new folder under the given parent.
         /// Shows a descriptive error if the depth limit (10) would be exceeded (Req 4.3).
         /// </summary>
-        public void CreateFolder(int parentFolderId, string name, int orgUnitId, int? confidentialityLevel = null)
+        public void CreateFolder(int parentFolderId, string name, int orgUnitId, int? confidentialityLevel = null, bool showSuccessMessage = true)
         {
             try
             {
@@ -254,7 +312,10 @@ namespace CMS.Presentation.Presenters
                 LoadFolderTree(_currentOrgUnitId);
                 // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
 
-                _view.ShowInfo(string.Format("Folder '{0}' สร้างสำเร็จ", created.FolderName));
+                if (showSuccessMessage)
+                {
+                    _view.ShowInfo(string.Format("Folder '{0}' สร้างสำเร็จ", created.FolderName));
+                }
             }
             catch (InvalidOperationException ex)
             {
@@ -338,20 +399,24 @@ namespace CMS.Presentation.Presenters
             try
             {
                 _service.DeleteFolder(folderId, _user);
-                
-                // Reload data first, then show success message
+
+                // Reload ก่อนเพื่อยืนยันว่าลบสำเร็จ
                 LoadFolderTree(_currentOrgUnitId);
-                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
-                
-                _view.ShowInfo("Folder moved to recycle bin.");
+
+                // ตรวจสอบว่า Folder ถูกลบออกจากระบบแล้ว (IsDeleted == true)
+                var deleted = _service.GetFolder(folderId, _user);
+                if (deleted == null || deleted.IsDeleted)
+                    _view.ShowInfo("ย้าย Folder ไปยังถังขยะเรียบร้อยแล้ว");
+                else
+                    _view.ShowError("ไม่สามารถยืนยันการลบ Folder\nกรุณาตรวจสอบอีกครั้ง");
             }
             catch (InvalidOperationException ex)
             {
-                _view.ShowError("Cannot delete folder: " + ex.Message);
+                _view.ShowError("ไม่สามารถลบ Folder ได้: " + ex.Message);
             }
             catch (Exception ex)
             {
-                _view.ShowError("Failed to delete folder: " + ex.Message);
+                _view.ShowError("เกิดข้อผิดพลาดในการลบ Folder: " + ex.Message);
             }
         }
 

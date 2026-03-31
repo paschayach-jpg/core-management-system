@@ -2,63 +2,88 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CMS.Domain.Models;
 using iTextSharp.text.pdf;
 
 namespace CMS.Presentation
 {
     /// <summary>
+    /// PDF permission options derived from the user's effective folder/file permission.
+    /// </summary>
+    internal struct PdfViewOptions
+    {
+        public bool CanPrint { get; set; }
+        public bool CanSave  { get; set; }
+        public bool CanCopy  { get; set; }
+
+        /// <summary>
+        /// View-only preset — blocks print, save, and copy.
+        /// </summary>
+        public static PdfViewOptions ViewOnly
+        {
+            get { return new PdfViewOptions { CanPrint = false, CanSave = false, CanCopy = false }; }
+        }
+
+        /// <summary>
+        /// Derives PDF view options from the user's effective permission on the folder.
+        /// Mapping:
+        ///   Manager / Admin (AppRole ≥ 3)         → full access
+        ///   HasFullControl / CanModify / CanWrite  → print + save + copy
+        ///   CanRead only                           → view only
+        /// </summary>
+        public static PdfViewOptions FromEffective(EffectivePermission eff, UserContext user)
+        {
+            if (eff == null || user == null)
+                return ViewOnly;
+
+            bool isManager = user.AppRole >= 3;
+            bool hasWrite  = eff.HasFullControl || eff.CanModify || eff.CanWrite;
+
+            return new PdfViewOptions
+            {
+                CanPrint = isManager || hasWrite,
+                CanSave  = isManager || hasWrite,
+                CanCopy  = isManager || hasWrite,
+            };
+        }
+    }
+
+    /// <summary>
     /// Utility class for opening PDF files with iTextSharp encryption-based security.
-    /// Encrypts to a temp file, opens with the system viewer, then cleans up.
+    /// Encrypts to a temp file using permissions derived from the user's effective rights,
+    /// opens with the system viewer, then cleans up.
     /// </summary>
     internal static class PdfSecurityHelper
     {
         // ── Public API ─────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Opens a PDF with configurable print permission.
-        /// print=true  → Allow printing only (block save/copy/edit)
-        /// print=false → Block all (view only)
+        /// Opens a PDF applying print/save/copy restrictions from <paramref name="options"/>.
         /// </summary>
-        public static async Task OpenSecurePdfAsync(string sourcePath, Form form, bool print)
+        public static async Task OpenSecurePdfAsync(string sourcePath, Form form, PdfViewOptions options)
         {
             int permissions = PdfWriter.ALLOW_SCREENREADERS
                             | PdfWriter.ALLOW_ASSEMBLY;
 
-            if (print)
-                permissions |= PdfWriter.ALLOW_PRINTING;
+            if (options.CanPrint)
+                permissions |= PdfWriter.ALLOW_PRINTING | PdfWriter.ALLOW_DEGRADED_PRINTING;
+
+            if (options.CanSave || options.CanCopy)
+                permissions |= PdfWriter.ALLOW_COPY;
 
             await OpenWithPermissionsAsync(sourcePath, form, permissions);
         }
 
         /// <summary>
-        /// Opens a PDF with both Print and Save blocked.
-        /// Restrictions applied:
-        ///   • No ALLOW_PRINTING           → block print dialog
-        ///   • No ALLOW_DEGRADED_PRINTING  → block low-quality print
-        ///   • No ALLOW_COPY               → block copy text / "Save as PDF" via print-to-PDF
-        ///   • No ALLOW_MODIFY_CONTENTS    → block editing
-        ///   • No ALLOW_FILL_IN            → block form fill
-        /// Only screen reading and page navigation are permitted.
+        /// Opens a PDF with both Print and Save blocked (view only).
         /// </summary>
         public static async Task OpenBlockPrintSaveAsync(string sourcePath, Form form)
         {
-            int permissions = PdfWriter.ALLOW_SCREENREADERS
-                            | PdfWriter.ALLOW_ASSEMBLY;
-            // ❌ ALLOW_PRINTING            — blocks Print menu
-            // ❌ ALLOW_DEGRADED_PRINTING   — blocks low-res print
-            // ❌ ALLOW_COPY               — blocks text copy & "Print to PDF" workaround
-            // ❌ ALLOW_MODIFY_CONTENTS    — blocks edit
-            // ❌ ALLOW_FILL_IN            — blocks form fill
-
-            await OpenWithPermissionsAsync(sourcePath, form, permissions);
+            await OpenSecurePdfAsync(sourcePath, form, PdfViewOptions.ViewOnly);
         }
 
         // ── Core logic ─────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Encrypts <paramref name="sourcePath"/> to a temp file using the given
-        /// permission flags, opens it in the default viewer, then cleans up.
-        /// </summary>
         private static async Task OpenWithPermissionsAsync(string sourcePath, Form form, int permissions)
         {
             if (!File.Exists(sourcePath))
@@ -77,12 +102,10 @@ namespace CMS.Presentation
                     string.Format("restricted_{0:N}_{1}", Guid.NewGuid(), Path.GetFileName(sourcePath))
                 );
 
-                // ── Encrypt to temp file via PdfStamper ───────────────────────
+                // ── Encrypt to temp file ───────────────────────────────────────
                 byte[] userPw  = new byte[0];
                 byte[] ownerPw = System.Text.Encoding.UTF8.GetBytes(Guid.NewGuid().ToString("N"));
 
-                // Read source into byte[] first — avoids file-lock and internal null issues
-                // when iTextSharp processes PDFs with non-standard internal structures
                 PdfReader.unethicalreading = true;
                 byte[] sourceBytes = File.ReadAllBytes(sourcePath);
 

@@ -326,6 +326,21 @@ namespace CMS.Presentation
                     btnOk.Top   = btnCnl.Top = (pnlFooter.Height - btnOk.Height) / 2;
                 };
 
+                // ── Search box ───────────────────────────────────────────────
+                var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 36,
+                    BackColor = Color.White, Padding = new Padding(6, 4, 6, 4) };
+                var txtSearch = new TextBox {
+                    Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10f),
+                    ForeColor = Color.Gray, Text = "ค้นหารหัสหรือชื่อ..."
+                };
+                txtSearch.GotFocus  += (s, e2) => {
+                    if (txtSearch.ForeColor == Color.Gray) { txtSearch.Text = ""; txtSearch.ForeColor = Color.Black; }
+                };
+                txtSearch.LostFocus += (s, e2) => {
+                    if (string.IsNullOrWhiteSpace(txtSearch.Text)) { txtSearch.Text = "ค้นหารหัสหรือชื่อ..."; txtSearch.ForeColor = Color.Gray; }
+                };
+                pnlSearch.Controls.Add(txtSearch);
+
                 // ── ListView ──────────────────────────────────────────────────
                 var lv = new ListView {
                     Dock = DockStyle.Fill, View = View.Details,
@@ -334,6 +349,9 @@ namespace CMS.Presentation
                 };
                 lv.Columns.Add("รหัส",     70);
                 lv.Columns.Add("ชื่อ (TH)", 320);
+
+                // Keep all items for filtering
+                var allItems = new List<ListViewItem>();
 
                 try
                 {
@@ -344,7 +362,7 @@ namespace CMS.Presentation
                             var row = new ListViewItem(v.DivisionCode ?? "");
                             row.SubItems.Add(v.NameTh ?? "");
                             row.Tag = new OrgUnitData { Type = "ฝ่าย", Code = v.DivisionCode, NameTh = v.NameTh };
-                            lv.Items.Add(row);
+                            allItems.Add(row);
                         }
                     }
                     else
@@ -354,7 +372,7 @@ namespace CMS.Presentation
                             var row = new ListViewItem(d.DepartmentCode ?? "");
                             row.SubItems.Add(d.NameTh ?? "");
                             row.Tag = new OrgUnitData { Type = "แผนก", Code = d.DepartmentCode, NameTh = d.NameTh };
-                            lv.Items.Add(row);
+                            allItems.Add(row);
                         }
                     }
                 }
@@ -363,6 +381,24 @@ namespace CMS.Presentation
                     MessageBox.Show("โหลดข้อมูลไม่สำเร็จ: " + ex.Message, "Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
+
+                // Populate ListView initially
+                lv.Items.AddRange(allItems.ToArray());
+
+                // Filter on text change
+                txtSearch.TextChanged += (s, e2) => {
+                    if (txtSearch.ForeColor == Color.Gray) return; // placeholder active
+                    string kw = txtSearch.Text.Trim().ToLower();
+                    lv.BeginUpdate();
+                    lv.Items.Clear();
+                    var filtered = string.IsNullOrEmpty(kw)
+                        ? allItems
+                        : allItems.Where(r =>
+                            r.Text.ToLower().Contains(kw) ||
+                            (r.SubItems.Count > 1 && r.SubItems[1].Text.ToLower().Contains(kw))).ToList();
+                    lv.Items.AddRange(filtered.ToArray());
+                    lv.EndUpdate();
+                };
 
                 // ── Confirm ───────────────────────────────────────────────────
                 Action confirm = () => {
@@ -379,8 +415,10 @@ namespace CMS.Presentation
 
                 // ── Add controls: Fill ก่อน → Bottom → Top ────────────────────
                 dlg.Controls.Add(lv);
+                dlg.Controls.Add(pnlSearch);
                 dlg.Controls.Add(pnlFooter);
                 dlg.Controls.Add(pnlHdr);
+                dlg.Shown += (s, e2) => txtSearch.Focus();
                 dlg.ShowDialog(this);
             }
         }

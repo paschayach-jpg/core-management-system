@@ -92,75 +92,73 @@ namespace CMS.Presentation
             this.pnlFilter.Padding   = new System.Windows.Forms.Padding(10, 8, 10, 8);
 
             // Row 1: date range + module + action
-            int y1 = 10, x = 10;
 
             this.lblFrom.AutoSize = true;
             this.lblFrom.Font     = new System.Drawing.Font("Segoe UI", 9f);
-            this.lblFrom.Location = new System.Drawing.Point(x, y1 + 3);
+            this.lblFrom.Location = new System.Drawing.Point(10, 13);
             this.lblFrom.Text     = "ตั้งแต่";
 
             this.dtpFrom.Format   = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpFrom.Location = new System.Drawing.Point(x + 46, y1);
+            this.dtpFrom.Location = new System.Drawing.Point(56, 10);
             this.dtpFrom.Size     = new System.Drawing.Size(110, 22);
             this.dtpFrom.Font     = new System.Drawing.Font("Segoe UI", 9f);
 
             this.lblTo.AutoSize = true;
             this.lblTo.Font     = new System.Drawing.Font("Segoe UI", 9f);
-            this.lblTo.Location = new System.Drawing.Point(x + 166, y1 + 3);
+            this.lblTo.Location = new System.Drawing.Point(176, 13);
             this.lblTo.Text     = "ถึง";
 
             this.dtpTo.Format   = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpTo.Location = new System.Drawing.Point(x + 190, y1);
+            this.dtpTo.Location = new System.Drawing.Point(200, 10);
             this.dtpTo.Size     = new System.Drawing.Size(110, 22);
             this.dtpTo.Font     = new System.Drawing.Font("Segoe UI", 9f);
 
             this.lblModule.AutoSize = true;
             this.lblModule.Font     = new System.Drawing.Font("Segoe UI", 9f);
-            this.lblModule.Location = new System.Drawing.Point(x + 316, y1 + 3);
+            this.lblModule.Location = new System.Drawing.Point(326, 13);
             this.lblModule.Text     = "Module";
 
             this.cmbModule.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbModule.Font          = new System.Drawing.Font("Segoe UI", 9f);
-            this.cmbModule.Location      = new System.Drawing.Point(x + 366, y1);
+            this.cmbModule.Location      = new System.Drawing.Point(376, 10);
             this.cmbModule.Size          = new System.Drawing.Size(130, 22);
 
             this.lblAction.AutoSize = true;
             this.lblAction.Font     = new System.Drawing.Font("Segoe UI", 9f);
-            this.lblAction.Location = new System.Drawing.Point(x + 506, y1 + 3);
+            this.lblAction.Location = new System.Drawing.Point(516, 13);
             this.lblAction.Text     = "Action";
 
             this.cmbAction.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbAction.Font          = new System.Drawing.Font("Segoe UI", 9f);
-            this.cmbAction.Location      = new System.Drawing.Point(x + 550, y1);
+            this.cmbAction.Location      = new System.Drawing.Point(560, 10);
             this.cmbAction.Size          = new System.Drawing.Size(130, 22);
 
             // Row 2: user + result + buttons
-            int y2 = 44;
 
             this.lblUserName.AutoSize = true;
             this.lblUserName.Font     = new System.Drawing.Font("Segoe UI", 9f);
-            this.lblUserName.Location = new System.Drawing.Point(x, y2 + 3);
+            this.lblUserName.Location = new System.Drawing.Point(10, 47);
             this.lblUserName.Text     = "ผู้ใช้";
 
             this.txtUserName.Font     = new System.Drawing.Font("Segoe UI", 9f);
-            this.txtUserName.Location = new System.Drawing.Point(x + 36, y2);
+            this.txtUserName.Location = new System.Drawing.Point(46, 44);
             this.txtUserName.Size     = new System.Drawing.Size(170, 22);
 
             this.lblResult.AutoSize = true;
             this.lblResult.Font     = new System.Drawing.Font("Segoe UI", 9f);
-            this.lblResult.Location = new System.Drawing.Point(x + 216, y2 + 3);
+            this.lblResult.Location = new System.Drawing.Point(226, 47);
             this.lblResult.Text     = "ผลลัพธ์";
 
             this.cmbResult.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbResult.Font          = new System.Drawing.Font("Segoe UI", 9f);
-            this.cmbResult.Location      = new System.Drawing.Point(x + 264, y2);
+            this.cmbResult.Location      = new System.Drawing.Point(274, 44);
             this.cmbResult.Size          = new System.Drawing.Size(120, 22);
 
             this.btnSearch.BackColor = System.Drawing.Color.FromArgb(31, 56, 100);
             this.btnSearch.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSearch.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
             this.btnSearch.ForeColor = System.Drawing.Color.White;
-            this.btnSearch.Location  = new System.Drawing.Point(x + 396, y2 - 1);
+            this.btnSearch.Location  = new System.Drawing.Point(406, 43);
             this.btnSearch.Size      = new System.Drawing.Size(90, 26);
             this.btnSearch.Text      = "🔍 ค้นหา";
             this.btnSearch.Click    += new System.EventHandler(this.btnSearch_Click);
@@ -169,7 +167,7 @@ namespace CMS.Presentation
             this.btnClearFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClearFilter.Font      = new System.Drawing.Font("Segoe UI", 9f);
             this.btnClearFilter.ForeColor = System.Drawing.Color.FromArgb(60, 60, 60);
-            this.btnClearFilter.Location  = new System.Drawing.Point(x + 494, y2 - 1);
+            this.btnClearFilter.Location  = new System.Drawing.Point(504, 43);
             this.btnClearFilter.Size      = new System.Drawing.Size(80, 26);
             this.btnClearFilter.Text      = "ล้างตัวกรอง";
             this.btnClearFilter.Click    += new System.EventHandler(this.btnClearFilter_Click);
@@ -178,7 +176,7 @@ namespace CMS.Presentation
             this.btnExport.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnExport.Font      = new System.Drawing.Font("Segoe UI", 9f);
             this.btnExport.ForeColor = System.Drawing.Color.White;
-            this.btnExport.Location  = new System.Drawing.Point(x + 582, y2 - 1);
+            this.btnExport.Location  = new System.Drawing.Point(592, 43);
             this.btnExport.Size      = new System.Drawing.Size(100, 26);
             this.btnExport.Text      = "📥 Export CSV";
             this.btnExport.Click    += new System.EventHandler(this.btnExport_Click);

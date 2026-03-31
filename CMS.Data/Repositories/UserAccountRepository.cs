@@ -170,9 +170,80 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public IEnumerable<UserAccount> GetByDepartmentId(int departmentId)
+        {
+            var result = new List<UserAccount>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT * FROM core.UserAccount WHERE DepartmentId = @DepartmentId AND IsActive = 1", conn))
+                {
+                    cmd.Parameters.AddWithValue("@DepartmentId", departmentId);
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                            result.Add(MapUserAccount(reader));
+                }
+            }
+            return result;
+        }
+
+        public IEnumerable<UserAccount> GetByDivisionId(int divisionId)
+        {
+            var result = new List<UserAccount>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT * FROM core.UserAccount WHERE DivisionId = @DivisionId AND IsActive = 1", conn))
+                {
+                    cmd.Parameters.AddWithValue("@DivisionId", divisionId);
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                            result.Add(MapUserAccount(reader));
+                }
+            }
+            return result;
+        }
+
+        public void UpdateEmployeeInfo(int userId, string employeeCode,
+            int? departmentId, string departmentCode, string departmentName,
+            int? divisionId, string divisionCode, string divisionName,
+            string positionName)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(@"
+                    UPDATE core.UserAccount SET
+                        EmployeeCode   = @EmployeeCode,
+                        DepartmentId   = @DepartmentId,
+                        DepartmentCode = @DepartmentCode,
+                        DepartmentName = @DepartmentName,
+                        DivisionId     = @DivisionId,
+                        DivisionCode   = @DivisionCode,
+                        DivisionName   = @DivisionName,
+                        PositionName   = @PositionName,
+                        UpdatedAt      = GETUTCDATE()
+                    WHERE UserID = @UserID", conn))
+                {
+                    cmd.Parameters.AddWithValue("@UserID",         userId);
+                    cmd.Parameters.AddWithValue("@EmployeeCode",   (object)employeeCode   ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DepartmentId",   (object)departmentId   ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DepartmentCode", (object)departmentCode ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DepartmentName", (object)departmentName ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DivisionId",     (object)divisionId     ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DivisionCode",   (object)divisionCode   ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DivisionName",   (object)divisionName   ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PositionName",   (object)positionName   ?? DBNull.Value);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         private static UserAccount MapUserAccount(SqlDataReader reader)
         {
-            return new UserAccount
+            var ua = new UserAccount
             {
                 UserID        = (int)reader["UserID"],
                 ADUserName    = (string)reader["ADUserName"],
@@ -187,6 +258,19 @@ namespace CMS.Data.Repositories
                 CreatedBy     = reader["CreatedBy"] == DBNull.Value ? (int?)null : (int)reader["CreatedBy"],
                 CreatedDate   = (DateTime)reader["CreatedDate"]
             };
+
+            // Employee API fields (nullable — columns may not exist in older DB)
+            try { ua.EmployeeCode   = reader["EmployeeCode"]   == DBNull.Value ? null : (string)reader["EmployeeCode"];   } catch { }
+            try { ua.DepartmentId   = reader["DepartmentId"]   == DBNull.Value ? (int?)null : (int)reader["DepartmentId"]; } catch { }
+            try { ua.DepartmentCode = reader["DepartmentCode"] == DBNull.Value ? null : (string)reader["DepartmentCode"]; } catch { }
+            try { ua.DepartmentName = reader["DepartmentName"] == DBNull.Value ? null : (string)reader["DepartmentName"]; } catch { }
+            try { ua.DivisionId     = reader["DivisionId"]     == DBNull.Value ? (int?)null : (int)reader["DivisionId"];   } catch { }
+            try { ua.DivisionCode   = reader["DivisionCode"]   == DBNull.Value ? null : (string)reader["DivisionCode"];   } catch { }
+            try { ua.DivisionName   = reader["DivisionName"]   == DBNull.Value ? null : (string)reader["DivisionName"];   } catch { }
+            try { ua.PositionName   = reader["PositionName"]   == DBNull.Value ? null : (string)reader["PositionName"];   } catch { }
+            try { ua.UpdatedAt      = reader["UpdatedAt"]      == DBNull.Value ? (DateTime?)null : (DateTime)reader["UpdatedAt"]; } catch { }
+
+            return ua;
         }
     }
 }

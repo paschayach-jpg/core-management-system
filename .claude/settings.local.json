@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe -Command \"Get-Command msbuild -ErrorAction SilentlyContinue; Get-ChildItem ''C:\\\\Program Files\\\\Microsoft Visual Studio'' -Recurse -Filter ''MSBuild.exe'' -ErrorAction SilentlyContinue | Select-Object -First 3 FullName\")",
+      "Bash(powershell.exe -Command \"& ''C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe'' ''c:\\\\Users\\\\pitakpong\\\\Documents\\\\cms_import\\\\CMS.Presentation\\\\CMS.Presentation.csproj'' /p:Configuration=Debug /v:minimal 2>&1 | Select-Object -Last 20\")",
+      "Bash(powershell.exe -Command \"& ''C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe'' ''c:\\\\Users\\\\pitakpong\\\\Documents\\\\cms_import\\\\CMS.Presentation\\\\CMS.Presentation.csproj'' /p:Configuration=Debug /v:minimal 2>&1 | Select-Object -Last 15\")",
+      "Bash(\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"c:\\\\Users\\\\pitakpong\\\\Documents\\\\cms_import\\\\CMS.sln\" /p:Configuration=Debug /nologo /v:minimal)",
+      "Bash(\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" CMS.sln /p:Configuration=Debug /nologo /v:minimal)",
+      "Bash(powershell -Command \"& ''C:/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe'' ''c:/Users/pitakpong/Documents/cms_import/CMS.sln'' ''/p:Configuration=Debug'' ''/nologo'' ''/v:minimal''; exit $LASTEXITCODE\")",
+      "Read(//c/Users/pitakpong/Documents/cms_import/CMS.Domain/Enums//**)",
+      "Read(//c/Users/pitakpong/Documents/cms_import/CMS.Domain/enums//**)",
+      "Bash(find /c/Users/pitakpong/Documents/cms_import/CMS.Presentation -name *Presenter* -o -name *View*)"
+    ]
+  }
+}

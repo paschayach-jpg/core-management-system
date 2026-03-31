@@ -98,8 +98,27 @@ namespace CMS.Presentation
                 catch { }
             }
 
+            // เพิ่มชื่อ Department/Division จาก Employee API เข้า _orgUnitNameMap
+            // เพื่อให้แสดงชื่อแทน "Department ID: X"
+            if (_employeeApiService != null)
+            {
+                try
+                {
+                    foreach (var dept in _employeeApiService.GetDepartments())
+                        if (!_orgUnitNameMap.ContainsKey(dept.DepartmentId))
+                            _orgUnitNameMap[dept.DepartmentId] = dept.DisplayName ?? dept.NameTh ?? dept.DepartmentCode;
+
+                    foreach (var div in _employeeApiService.GetDivisions())
+                        if (!_orgUnitNameMap.ContainsKey(div.DivisionId))
+                            _orgUnitNameMap[div.DivisionId] = div.DisplayName ?? div.NameTh ?? div.DivisionCode;
+                }
+                catch { }
+            }
+
             InitializeComponent();
             BuildTracePanel();
+            // ซ่อน column Full Control — ไม่มีการใช้งาน
+            colFull.Width = 0;
 
             _presenter = new PermissionPresenter(
                 permissionService, approvalService, folderService, permissionRepo, this, user,
@@ -358,11 +377,11 @@ namespace CMS.Presentation
 
                 var item = new ListViewItem(isDeny ? "⊘ " + principalName : principalName);
                 item.SubItems.Add(PrincipalTypeLabel((int)entry.PrincipalType));
-                item.SubItems.Add(PermCheck(entry.CanRead,        isDeny));
-                item.SubItems.Add(PermCheck(entry.CanWrite,       isDeny));
-                item.SubItems.Add(PermCheck(entry.CanDelete,      isDeny));
-                item.SubItems.Add(PermCheck(entry.CanModify,      isDeny));
-                item.SubItems.Add(PermCheck(entry.CanFullControl, isDeny));
+                item.SubItems.Add(PermCheck(entry.CanRead,   isDeny));
+                item.SubItems.Add(PermCheck(entry.CanWrite,  isDeny));
+                item.SubItems.Add(PermCheck(entry.CanDelete, isDeny));
+                item.SubItems.Add(PermCheck(entry.CanModify, isDeny));
+                item.SubItems.Add("—"); // colFull — ซ่อน (Width=0)
                 item.SubItems.Add(entry.ExpiryDate.HasValue ? entry.ExpiryDate.Value.ToString("dd/MM/yy") : "—");
 
                 // Status column
@@ -601,30 +620,7 @@ namespace CMS.Presentation
         {
             if (_folder == null) 
             {
-                // Fallback: ให้ผู้ใช้กรอก Folder ID ด้วยตนเอง
-                string input = Microsoft.VisualBasic.Interaction.InputBox(
-                    "ไม่พบ Folder ที่เลือก\nกรุณากรอก Folder ID ที่ต้องการตั้งสิทธิ์:",
-                    "กรอก Folder ID",
-                    "");
-                
-                if (string.IsNullOrEmpty(input)) return;
-                
-                if (!int.TryParse(input, out int folderId) || folderId <= 0)
-                {
-                    ShowError("Folder ID ไม่ถูกต้อง");
-                    return;
-                }
-                
-                // ใช้ folderId ที่กรอกมา
-                var fallbackReqs = PromptForPermissionRequests(folderId, null);
-                if (fallbackReqs != null)
-                {
-                    foreach (var req in fallbackReqs)
-                        _presenter.SetPermission(req);
-                    
-                    // Refresh permissions immediately after adding
-                    LoadPermissionsImmediate();
-                }
+                ShowError("กรุณาเลือก Folder ก่อนเพิ่มสิทธิ์");
                 return;
             }
             
@@ -938,11 +934,11 @@ namespace CMS.Presentation
 
             var item = new ListViewItem(isDeny ? "⊘ " + principalName : principalName);
             item.SubItems.Add(GetPrincipalTypeText(perm.PrincipalType));
-            item.SubItems.Add(perm.CanRead        ? (isDeny ? "—" : "✓") : "—");
-            item.SubItems.Add(perm.CanWrite       ? (isDeny ? "—" : "✓") : "—");
-            item.SubItems.Add(perm.CanDelete      ? (isDeny ? "—" : "✓") : "—");
-            item.SubItems.Add(perm.CanModify      ? (isDeny ? "—" : "✓") : "—");
-            item.SubItems.Add(perm.CanFullControl ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanRead   ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanWrite  ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanDelete ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanModify ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add("—"); // colFull — ซ่อน (Width=0)
             item.SubItems.Add(perm.ExpiryDate.HasValue ? perm.ExpiryDate.Value.ToString("dd/MM/yy") : "—");
 
             if (isRevoked)
@@ -1593,7 +1589,7 @@ namespace CMS.Presentation
             bool[] permissions)
         {
             // ตรวจสอบว่ามี permission ใดถูกเลือกบ้าง
-            bool hasAnyPermission = permissions[0] || permissions[1] || permissions[2] || permissions[3] || permissions[4];
+            bool hasAnyPermission = permissions[0] || permissions[1] || permissions[2] || permissions[3];
 
             if (!hasAnyPermission) return null;
 
@@ -1606,7 +1602,7 @@ namespace CMS.Presentation
                 CanWrite       = permissions[1],
                 CanDelete      = permissions[2],
                 CanModify      = permissions[3],
-                CanFullControl = permissions[4],
+                CanFullControl = false,
                 IsDeny         = false  // Always Allow since we removed Deny option
             };
         }
@@ -1628,7 +1624,7 @@ namespace CMS.Presentation
                 CanWrite       = permissionChecked[1],
                 CanDelete      = permissionChecked[2],
                 CanModify      = permissionChecked[3],
-                CanFullControl = permissionChecked[4],
+                CanFullControl = false,
                 IsDeny         = false  // Always Allow since we removed Deny option
             };
         }
@@ -1640,7 +1636,7 @@ namespace CMS.Presentation
             multiOrg = null;
             using (var dlg = new Form())
             {
-                dlg.Text            = "";
+                dlg.Text            = "🔒 เพิ่ม/แก้ไข Permission";
                 dlg.ClientSize      = new Size(460, 530);
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.StartPosition   = FormStartPosition.CenterParent;
@@ -1781,20 +1777,53 @@ namespace CMS.Presentation
                         catch { }
                     }
 
-                    using (var picker = new OrgStructureSelectionDialog(allUnits))
+                    using (var picker = _employeeApiService != null
+                        ? (Form)new EmployeeOrgSelectionDialog(_employeeApiService)
+                        : (Form)new OrgStructureSelectionDialog(allUnits))
                     {
-                        if (picker.ShowDialog(dlg) == DialogResult.OK && picker.SelectedUnits.Count > 0)
+                        if (picker.ShowDialog(dlg) == DialogResult.OK)
                         {
                             pickedOrgUnits.Clear();
-                            pickedOrgUnits.AddRange(picker.SelectedUnits);
                             lstSelectedOrg.Items.Clear();
-                            foreach (var sel in pickedOrgUnits)
-                                lstSelectedOrg.Items.Add(sel.DisplayName);
-                            lblSelectedOrg.Visible = true;
-                            lstSelectedOrg.Visible = true;
-                            // ปรับขนาด ListBox ตามจำนวนรายการ (max 4 rows)
-                            int rows = Math.Min(pickedOrgUnits.Count, 4);
-                            lstSelectedOrg.Height = rows * 18 + 8;
+
+                            // รองรับทั้ง EmployeeOrgSelectionDialog และ OrgStructureSelectionDialog
+                            var empDlg = picker as EmployeeOrgSelectionDialog;
+                            var orgDlg = picker as OrgStructureSelectionDialog;
+
+                            if (empDlg != null && empDlg.SelectedUnits.Count > 0)
+                            {
+                                foreach (var sel in empDlg.SelectedUnits)
+                                {
+                                    // สร้าง OrgUnit stub เพื่อให้ OrgUnitSelection.OrgUnit ไม่เป็น null
+                                    var orgUnitStub = new CMS.Domain.Models.OrgUnit
+                                    {
+                                        OrgUnitID   = sel.Id,
+                                        OrgUnitCode = sel.Code,
+                                        OrgUnitNameTH = sel.NameTh
+                                    };
+                                    pickedOrgUnits.Add(new OrgUnitSelection
+                                    {
+                                        OrgUnit       = orgUnitStub,
+                                        DisplayName   = string.Format("[{0}] {1}", sel.Code, sel.NameTh),
+                                        PrincipalType = sel.Type == "Division" ? 4 : 3
+                                    });
+                                    lstSelectedOrg.Items.Add(string.Format("[{0}] {1}", sel.Code, sel.NameTh));
+                                }
+                            }
+                            else if (orgDlg != null && orgDlg.SelectedUnits.Count > 0)
+                            {
+                                pickedOrgUnits.AddRange(orgDlg.SelectedUnits);
+                                foreach (var sel in orgDlg.SelectedUnits)
+                                    lstSelectedOrg.Items.Add(sel.DisplayName);
+                            }
+
+                            if (pickedOrgUnits.Count > 0)
+                            {
+                                lblSelectedOrg.Visible = true;
+                                lstSelectedOrg.Visible = true;
+                                int rows = Math.Min(pickedOrgUnits.Count, 4);
+                                lstSelectedOrg.Height = rows * 18 + 8;
+                            }
                         }
                     }
                 };
@@ -2027,14 +2056,13 @@ namespace CMS.Presentation
                 // Row data: label, existing permission (checked if has permission and not denied)
                 var permDefs = new[]
                 {
-                    new { Label = "📖 อ่าน (Read)",      Checked = existing != null && existing.CanRead        && !existing.IsDeny },
-                    new { Label = "✏️ เขียน (Write)",    Checked = existing != null && existing.CanWrite       && !existing.IsDeny },
-                    new { Label = "🗑 ลบ (Delete)",      Checked = existing != null && existing.CanDelete      && !existing.IsDeny },
-                    new { Label = "🔧 แก้ไข (Modify)",  Checked = existing != null && existing.CanModify      && !existing.IsDeny },
-                    new { Label = "👑 Full Control",     Checked = existing != null && existing.CanFullControl && !existing.IsDeny },
+                    new { Label = "📖 อ่าน (Read)",      Checked = existing != null && existing.CanRead   && !existing.IsDeny },
+                    new { Label = "✏️ เขียน (Write)",    Checked = existing != null && existing.CanWrite  && !existing.IsDeny },
+                    new { Label = "🗑 ลบ (Delete)",      Checked = existing != null && existing.CanDelete && !existing.IsDeny },
+                    new { Label = "🔧 แก้ไข (Modify)",  Checked = existing != null && existing.CanModify && !existing.IsDeny },
                 };
 
-                var chkPermissions = new CheckBox[5];
+                var chkPermissions = new CheckBox[4];
 
                 for (int i = 0; i < permDefs.Length; i++)
                 {
@@ -2203,7 +2231,7 @@ namespace CMS.Presentation
                     if (rdGroup.Checked && pickedOrgUnits.Count > 0)
                     {
                         // ตรวจสอบว่าเลือกสิทธิ์อย่างน้อย 1 รายการ
-                        bool anyPerm = chkPermissions[0].Checked || chkPermissions[1].Checked || chkPermissions[2].Checked || chkPermissions[3].Checked || chkPermissions[4].Checked;
+                        bool anyPerm = chkPermissions[0].Checked || chkPermissions[1].Checked || chkPermissions[2].Checked || chkPermissions[3].Checked;
                         if (!anyPerm)
                         {
                             MessageBox.Show("กรุณาเลือกสิทธิ์อย่างน้อย 1 รายการ",
@@ -2299,7 +2327,7 @@ namespace CMS.Presentation
                 // กรณีเลือกจาก OrgUnitPickerDialog (หลายหน่วยงาน) — ส่ง list กลับผ่าน out parameter
                 if (rdGroup.Checked && pickedOrgUnits.Count > 0)
                 {
-                    permissionChecked = new bool[] { chkPermissions[0].Checked, chkPermissions[1].Checked, chkPermissions[2].Checked, chkPermissions[3].Checked, chkPermissions[4].Checked };
+                    permissionChecked = new bool[] { chkPermissions[0].Checked, chkPermissions[1].Checked, chkPermissions[2].Checked, chkPermissions[3].Checked };
                     var first     = pickedOrgUnits[0];
                     principalType = first.PrincipalType;
                     principalId   = first.OrgUnit.OrgUnitID;
@@ -2326,7 +2354,7 @@ namespace CMS.Presentation
                 }
 
                 // Set out parameters with per-permission checked state
-                permissionChecked = new bool[] { chkPermissions[0].Checked, chkPermissions[1].Checked, chkPermissions[2].Checked, chkPermissions[3].Checked, chkPermissions[4].Checked };
+                permissionChecked = new bool[] { chkPermissions[0].Checked, chkPermissions[1].Checked, chkPermissions[2].Checked, chkPermissions[3].Checked };
                 
                 // Determine principalType: 1=User, 3=Department, 4=Division
                 if (rdUser.Checked)

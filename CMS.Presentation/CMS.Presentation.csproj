@@ -45,6 +45,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
+    <None Include="Resources\BRD2.md" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FilePermissionForm.Designer.cs">
@@ -90,6 +91,15 @@
     </Compile>
     <Compile Include="OrgStructureSelectionDialog.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="OrgStructureSelectionDialog.Designer.cs">
+      <DependentUpon>OrgStructureSelectionDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="EmployeeOrgSelectionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="EmployeeOrgSelectionDialog.Designer.cs">
+      <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Presenters\IOrgStructureView.cs" />
     <Compile Include="Presenters\OrgStructurePresenter.cs" />
@@ -158,6 +168,9 @@
     <Compile Include="ConfigAdminForm.Designer.cs">
       <DependentUpon>ConfigAdminForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="UserAccessForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="EmployeeSearchDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -175,8 +188,16 @@
     <Compile Include="FolderPickerDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FolderPickerDialog.Designer.cs">
+      <DependentUpon>FolderPickerDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="FilePreviewPanel.cs">
       <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="RecycleBinForm.cs">
       <SubType>Form</SubType>
@@ -214,6 +235,15 @@
     <EmbeddedResource Include="CreateOrgUnitDialog.resx">
       <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="EmployeeOrgSelectionDialog.resx">
+      <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FolderPickerDialog.resx">
+      <DependentUpon>FolderPickerDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FilePermissionAddDialog.resx">
+      <DependentUpon>FilePermissionAddDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FileUploadForm.resx">
       <DependentUpon>FileUploadForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -238,6 +268,43 @@
     <EmbeddedResource Include="PermissionForm.resx">
       <DependentUpon>PermissionForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\folder.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\open-folder.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\folder.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-orange.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-red.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-green.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-bule.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-red.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-green.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-bule.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book-orange.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -28,7 +28,7 @@ namespace CMS.Presentation
             this.lblTemplateDesc = new System.Windows.Forms.Label();
             this.lblTemplate = new System.Windows.Forms.Label();
             this.sepOrgTemplate = new System.Windows.Forms.Panel();
-            this.cboOrgUnit = new System.Windows.Forms.ComboBox();
+            this.treeOrgUnit = new System.Windows.Forms.TreeView();
             this.lblOrgUnit = new System.Windows.Forms.Label();
             this.pnlRight = new System.Windows.Forms.Panel();
             this.pnlTree = new System.Windows.Forms.Panel();
@@ -184,7 +184,7 @@ namespace CMS.Presentation
             this.pnlLeft.Controls.Add(this.lblTemplateDesc);
             this.pnlLeft.Controls.Add(this.lblTemplate);
             this.pnlLeft.Controls.Add(this.sepOrgTemplate);
-            this.pnlLeft.Controls.Add(this.cboOrgUnit);
+            this.pnlLeft.Controls.Add(this.treeOrgUnit);
             this.pnlLeft.Controls.Add(this.lblOrgUnit);
             this.pnlLeft.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlLeft.Location = new System.Drawing.Point(0, 0);
@@ -248,16 +248,19 @@ namespace CMS.Presentation
             this.sepOrgTemplate.Size = new System.Drawing.Size(475, 10);
             this.sepOrgTemplate.TabIndex = 3;
             // 
-            // cboOrgUnit
+            // treeOrgUnit
             // 
-            this.cboOrgUnit.Dock = System.Windows.Forms.DockStyle.Top;
-            this.cboOrgUnit.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboOrgUnit.Font = new System.Drawing.Font("Segoe UI", 9.5F);
-            this.cboOrgUnit.Location = new System.Drawing.Point(12, 34);
-            this.cboOrgUnit.Name = "cboOrgUnit";
-            this.cboOrgUnit.Size = new System.Drawing.Size(475, 25);
-            this.cboOrgUnit.TabIndex = 0;
-            this.cboOrgUnit.SelectedIndexChanged += new System.EventHandler(this.CboOrgUnit_Changed);
+            this.treeOrgUnit.Dock         = System.Windows.Forms.DockStyle.Top;
+            this.treeOrgUnit.Font         = new System.Drawing.Font("Segoe UI", 9.5f);
+            this.treeOrgUnit.Height       = 200;
+            this.treeOrgUnit.HideSelection = false;
+            this.treeOrgUnit.FullRowSelect = true;
+            this.treeOrgUnit.ShowLines    = true;
+            this.treeOrgUnit.ShowPlusMinus = true;
+            this.treeOrgUnit.BorderStyle  = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.treeOrgUnit.Name         = "treeOrgUnit";
+            this.treeOrgUnit.TabIndex     = 0;
+            this.treeOrgUnit.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeOrgUnit_AfterSelect);
             // 
             // lblOrgUnit
             // 
@@ -433,7 +436,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.SplitContainer splitMain;
         private System.Windows.Forms.Panel          pnlLeft;
         private System.Windows.Forms.Label          lblOrgUnit;
-        private System.Windows.Forms.ComboBox       cboOrgUnit;
+        private System.Windows.Forms.TreeView       treeOrgUnit;
         private System.Windows.Forms.Panel          sepOrgTemplate;
         private System.Windows.Forms.Label          lblTemplate;
         private System.Windows.Forms.Panel          pnlListBox;

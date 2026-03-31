@@ -135,8 +135,7 @@ namespace CMS.Presentation
             {
                 lblStatus.Text      = "โหลดข้อมูลไม่สำเร็จ";
                 lblStatus.ForeColor = System.Drawing.Color.Red;
-                MessageBox.Show("ไม่สามารถโหลดข้อมูลหน่วยงาน: " + ex.Message,
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("ไม่สามารถโหลดข้อมูลหน่วยงาน: " + ex.Message,"Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
