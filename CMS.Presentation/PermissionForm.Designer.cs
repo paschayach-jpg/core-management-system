@@ -50,9 +50,9 @@ namespace CMS.Presentation
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnRemove = new System.Windows.Forms.Button();
             this.btnRefresh = new System.Windows.Forms.Button();
-            this.btnDiagnostic = new System.Windows.Forms.Button();
             this.btnForceLoad = new System.Windows.Forms.Button();
             this.lblAclStatus = new System.Windows.Forms.Label();
+            this.btnDiagnostic = new System.Windows.Forms.Button();
             this.pnlFooter = new System.Windows.Forms.Panel();
             this.btnSave = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
@@ -464,17 +464,6 @@ namespace CMS.Presentation
             this.btnRefresh.Text = "🔄 รีเฟรช";
             this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
             // 
-            // btnDiagnostic
-            // 
-            this.btnDiagnostic.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnDiagnostic.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.btnDiagnostic.Location = new System.Drawing.Point(318, 4);
-            this.btnDiagnostic.Name = "btnDiagnostic";
-            this.btnDiagnostic.Size = new System.Drawing.Size(80, 26);
-            this.btnDiagnostic.TabIndex = 4;
-            this.btnDiagnostic.Text = "🔍 วินิจฉัย";
-            this.btnDiagnostic.Click += new System.EventHandler(this.btnDiagnostic_Click);
-            // 
             // btnForceLoad
             // 
             this.btnForceLoad.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(120)))), ((int)(((byte)(0)))));
@@ -501,6 +490,17 @@ namespace CMS.Presentation
             this.lblAclStatus.TabIndex = 3;
             this.lblAclStatus.Text = "0 รายการ";
             this.lblAclStatus.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // btnDiagnostic
+            // 
+            this.btnDiagnostic.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDiagnostic.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnDiagnostic.Location = new System.Drawing.Point(318, 4);
+            this.btnDiagnostic.Name = "btnDiagnostic";
+            this.btnDiagnostic.Size = new System.Drawing.Size(80, 26);
+            this.btnDiagnostic.TabIndex = 4;
+            this.btnDiagnostic.Text = "🔍 วินิจฉัย";
+            this.btnDiagnostic.Click += new System.EventHandler(this.btnDiagnostic_Click);
             // 
             // pnlFooter
             // 
@@ -550,7 +550,7 @@ namespace CMS.Presentation
             this.Controls.Add(this.tabControl);
             this.Controls.Add(this.pnlFooter);
             this.Controls.Add(this.pnlHeader);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "PermissionForm";

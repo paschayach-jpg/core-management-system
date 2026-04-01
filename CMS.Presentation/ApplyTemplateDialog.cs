@@ -15,18 +15,19 @@ namespace CMS.Presentation
         private readonly IFolderTemplateRepository _templateRepository;
         private readonly IOrgStructureService      _orgStructureService;
         private readonly UserContext               _currentUser;
+        private readonly Folder                    _parentFolder;  // folder ที่เข้ามาสร้าง
 
         private List<FolderTemplate> _templates = new List<FolderTemplate>();
         private List<OrgUnit>        _orgUnits  = new List<OrgUnit>();
 
-        // ── Result ────────────────────────────────────────────────────────────
         public int? SelectedOrgUnitId { get; private set; }
 
         public ApplyTemplateDialog(
             IFolderService            folderService,
             IFolderTemplateRepository templateRepository,
             IOrgStructureService      orgStructureService,
-            UserContext               currentUser)
+            UserContext               currentUser,
+            Folder                    parentFolder = null)
         {
             if (folderService       == null) throw new ArgumentNullException("folderService");
             if (templateRepository  == null) throw new ArgumentNullException("templateRepository");
@@ -37,6 +38,7 @@ namespace CMS.Presentation
             _templateRepository  = templateRepository;
             _orgStructureService = orgStructureService;
             _currentUser         = currentUser;
+            _parentFolder        = parentFolder;
 
             InitializeComponent();
         }
@@ -44,12 +46,29 @@ namespace CMS.Presentation
         // ── Form Load ─────────────────────────────────────────────────────────
         private void ApplyTemplateDialog_Load(object sender, EventArgs e)
         {
-            // ต้องรอให้ layout เสร็จก่อน จึงใช้ BeginInvoke
             BeginInvoke(new Action(() => {
                 if (splitMain.Width > splitMain.Panel1MinSize + splitMain.Panel2MinSize)
                     splitMain.SplitterDistance = 280;
             }));
+
             LoadData();
+
+            // Lock ระดับตาม parent folder ที่เข้ามาสร้าง
+            if (_parentFolder != null)
+            {
+                int level = _parentFolder.ConfidentialityLevel;
+                // SelectedIndex: 0=1HC, 1=2SC, 2=3NC, 3=4PC
+                cboConfidentiality.SelectedIndex = level - 1;
+                cboConfidentiality.Enabled       = false;
+                cboConfidentiality.BackColor      = System.Drawing.Color.FromArgb(240, 240, 240);
+
+                // แสดงชื่อ folder ที่เข้ามาสร้างใน title
+                this.Text = string.Format("สร้าง Folder จาก Template ใต้ \"{0}\"", _parentFolder.FolderName);
+
+                // Set root name ตาม parent
+                if (string.IsNullOrWhiteSpace(txtRootName.Text))
+                    txtRootName.Text = _parentFolder.FolderName;
+            }
         }
 
         // ── Data loading ──────────────────────────────────────────────────────
@@ -61,16 +80,49 @@ namespace CMS.Presentation
 
                 _orgUnits = _orgStructureService.GetHierarchy()
                     .Where(u => u.IsActive && !u.IsDeleted)
-                    .OrderBy(u => u.OrgUnitType).ThenBy(u => u.Name)
                     .ToList();
 
-                cboOrgUnit.Items.Clear();
-                foreach (var ou in _orgUnits)
+                // สร้าง TreeView แทน ComboBox flat list
+                treeOrgUnit.BeginUpdate();
+                treeOrgUnit.Nodes.Clear();
+
+                // จัดกลุ่มตาม Tier: SubCommittee → Division → Department
+                var subCommittees = _orgUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.SubCommittee)
+                                             .OrderBy(u => u.Name).ToList();
+
+                foreach (var sc in subCommittees)
                 {
-                    string icon = ou.OrgUnitType == 1 ? "🏢" : ou.OrgUnitType == 2 ? "🏬" : "🏪";
-                    cboOrgUnit.Items.Add(string.Format("{0}  {1}", icon, ou.Name));
+                    var scNode = new TreeNode(string.Format("🏢 {0}", sc.Name)) { Tag = sc };
+                    scNode.ForeColor = Color.FromArgb(31, 56, 100);
+
+                    var divisions = _orgUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division
+                                                      && u.ParentId == sc.OrgUnitId)
+                                            .OrderBy(u => u.Name).ToList();
+                    foreach (var div in divisions)
+                    {
+                        var divNode = new TreeNode(string.Format("📁 {0}", div.Name)) { Tag = div };
+                        divNode.ForeColor = Color.FromArgb(0, 80, 160);
+
+                        var depts = _orgUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Department
+                                                      && u.ParentId == div.OrgUnitId)
+                                            .OrderBy(u => u.Name).ToList();
+                        foreach (var dept in depts)
+                        {
+                            var deptNode = new TreeNode(string.Format("📋 {0}", dept.Name)) { Tag = dept };
+                            deptNode.ForeColor = Color.FromArgb(60, 60, 60);
+                            divNode.Nodes.Add(deptNode);
+                        }
+                        scNode.Nodes.Add(divNode);
+                    }
+                    treeOrgUnit.Nodes.Add(scNode);
                 }
-                if (cboOrgUnit.Items.Count > 0) cboOrgUnit.SelectedIndex = 0;
+
+                treeOrgUnit.ExpandAll();
+                treeOrgUnit.EndUpdate();
+
+                // Select first node
+                if (treeOrgUnit.Nodes.Count > 0)
+                    treeOrgUnit.SelectedNode = treeOrgUnit.Nodes[0];
 
                 _templates = _templateRepository.GetAll()
                     .Where(t => t.IsActive)
@@ -92,9 +144,9 @@ namespace CMS.Presentation
             }
         }
 
-        private void CboOrgUnit_Changed(object sender, EventArgs e)
+        private void TreeOrgUnit_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            var ou = GetSelectedOrgUnit();
+            var ou = e.Node?.Tag as OrgUnit;
             if (ou != null && string.IsNullOrWhiteSpace(txtRootName.Text))
                 txtRootName.Text = ou.Name;
         }
@@ -144,18 +196,73 @@ namespace CMS.Presentation
         // ── Apply ─────────────────────────────────────────────────────────────
         private void BtnApply_Click(object sender, EventArgs e)
         {
-            var ou   = GetSelectedOrgUnit();
             var tmpl = GetSelectedTemplate();
 
-            if (ou == null)   { MessageBox.Show("กรุณาเลือกหน่วยงาน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-            if (tmpl == null) { MessageBox.Show("กรุณาเลือก Template", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (tmpl == null)
+            {
+                MessageBox.Show("กรุณาเลือก Template", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int conf = _parentFolder != null
+                ? _parentFolder.ConfidentialityLevel
+                : (cboConfidentiality.SelectedIndex >= 0 ? cboConfidentiality.SelectedIndex + 1 : 4);
+
+            // ถ้ามี parentFolder → สร้างภายใต้ folder นั้น (ไม่ต้องเลือก OrgUnit)
+            if (_parentFolder != null)
+            {
+                if (MessageBox.Show(
+                    string.Format("ยืนยันการสร้าง Folder?\n\nสร้างใต้ :  {0}\nTemplate  :  {1}\nระดับ :  {2}",
+                        _parentFolder.FolderName, tmpl.TemplateName, cboConfidentiality.Text.Trim()),
+                    "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+
+                try
+                {
+                    btnApply.Enabled = false;
+                    btnApply.Text    = "⏳  กำลังสร้าง...";
+                    lblStatus.Text   = "⏳ กำลังสร้าง Folder...";
+                    Application.DoEvents();
+
+                    // สร้างภายใต้ parentFolder โดยตรง
+                    _folderService.ApplyTemplateToFolder(
+                        _parentFolder.FolderId,
+                        tmpl.TemplateID,
+                        _parentFolder.ConfidentialityLevel,
+                        _currentUser);
+
+                    SelectedOrgUnitId = null;
+                    lblStatus.Text      = "✅ สร้าง Folder เรียบร้อยแล้ว";
+                    lblStatus.ForeColor = Color.FromArgb(0, 120, 0);
+                    DialogResult = DialogResult.OK;
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    MessageBox.Show("ไม่มีสิทธิ์ดำเนินการ:\n" + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("ไม่สามารถสร้าง Folder ได้:\n" + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    btnApply.Enabled = true;
+                    btnApply.Text    = "✅  สร้าง Folder";
+                }
+                return;
+            }
+
+            // ไม่มี parentFolder → ใช้ OrgUnit (legacy mode)
+            var ou = GetSelectedOrgUnit();
+            if (ou == null)
+            {
+                MessageBox.Show("กรุณาเลือกหน่วยงาน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             if (string.IsNullOrWhiteSpace(txtRootName.Text))
             {
                 MessageBox.Show("กรุณาระบุชื่อ Root Folder", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
-            int conf = cboConfidentiality.SelectedIndex >= 0 ? cboConfidentiality.SelectedIndex + 1 : 4;
 
             if (MessageBox.Show(
                 string.Format("ยืนยันการสร้าง Folder?\n\nหน่วยงาน :  {0}\nTemplate  :  {1}\nRoot Folder :  {2}\nระดับ :  {3}",
@@ -174,15 +281,8 @@ namespace CMS.Presentation
                     txtRootName.Text.Trim(), conf, _currentUser);
 
                 SelectedOrgUnitId = ou.OrgUnitId;
-
                 lblStatus.Text      = "✅ สร้าง Folder เรียบร้อยแล้ว";
                 lblStatus.ForeColor = Color.FromArgb(0, 120, 0);
-
-                MessageBox.Show(
-                    string.Format("✅ สร้าง Folder เรียบร้อยแล้ว\n\nRoot: {0}\nTemplate: {1}",
-                        txtRootName.Text.Trim(), tmpl.TemplateName),
-                    "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
                 DialogResult = DialogResult.OK;
             }
             catch (UnauthorizedAccessException ex)
@@ -203,8 +303,7 @@ namespace CMS.Presentation
         // ── Helpers ───────────────────────────────────────────────────────────
         private OrgUnit GetSelectedOrgUnit()
         {
-            int idx = cboOrgUnit.SelectedIndex;
-            return (idx >= 0 && idx < _orgUnits.Count) ? _orgUnits[idx] : null;
+            return treeOrgUnit.SelectedNode?.Tag as OrgUnit;
         }
 
         private FolderTemplate GetSelectedTemplate()

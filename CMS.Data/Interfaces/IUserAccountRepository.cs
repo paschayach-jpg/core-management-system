@@ -14,5 +14,17 @@ namespace CMS.Data.Interfaces
         void UpdateLastLogin(int userId);
         void UpdateConsent(int userId, string email, bool consentGiven);
         void Deactivate(int userId);
+
+        /// <summary>ดึง users ทั้งหมดที่อยู่ใน department เดียวกัน</summary>
+        IEnumerable<UserAccount> GetByDepartmentId(int departmentId);
+
+        /// <summary>ดึง users ทั้งหมดที่อยู่ใน division เดียวกัน</summary>
+        IEnumerable<UserAccount> GetByDivisionId(int divisionId);
+
+        /// <summary>อัพเดทข้อมูล Employee API (department/division/position)</summary>
+        void UpdateEmployeeInfo(int userId, string employeeCode,
+            int? departmentId, string departmentCode, string departmentName,
+            int? divisionId, string divisionCode, string divisionName,
+            string positionName);
     }
 }

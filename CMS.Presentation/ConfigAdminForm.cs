@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Windows.Forms;
 using CMS.Data.Interfaces;
 using CMS.Domain.Models;
@@ -110,15 +111,128 @@ namespace CMS.Presentation
             IAuditService  auditService,
             UserContext    user,
             IFileService   fileService = null,
-            IUserAccountRepository userAccountRepository = null)
+            IUserAccountRepository userAccountRepository = null,
+            CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null)
         {
             if (configManager == null) throw new ArgumentNullException("configManager");
             if (auditService  == null) throw new ArgumentNullException("auditService");
             if (user          == null) throw new ArgumentNullException("user");
 
+            _employeeApiService    = employeeApiService;
+            _userAccountRepository = userAccountRepository;
+
             InitializeComponent();
 
             _presenter = new ConfigAdminPresenter(this, configManager, auditService, user, fileService, userAccountRepository);
+
+            // เพิ่มปุ่ม Sync Employee Info
+            AddSyncEmployeeButton();
+        }
+
+        private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
+        private readonly IUserAccountRepository _userAccountRepository;
+
+        private void AddSyncEmployeeButton()
+        {
+            var btnSync = new Button
+            {
+                Text      = "🔄 Sync ข้อมูลพนักงานจาก API",
+                Width     = 220,
+                Height    = 32,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(31, 56, 100),
+                ForeColor = System.Drawing.Color.White,
+                Font      = new System.Drawing.Font("Segoe UI", 9f),
+                Cursor    = Cursors.Hand,
+                Dock      = DockStyle.Bottom,
+                Margin    = new Padding(10)
+            };
+            btnSync.FlatAppearance.BorderSize = 0;
+            btnSync.Click += BtnSyncEmployee_Click;
+            this.Controls.Add(btnSync);
+            btnSync.BringToFront();
+        }
+
+        private void BtnSyncEmployee_Click(object sender, EventArgs e)
+        {
+            if (_employeeApiService == null || _userAccountRepository == null)
+            {
+                MessageBox.Show("Employee API service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                "ต้องการ Sync ข้อมูลพนักงานจาก API สำหรับ users ทั้งหมดหรือไม่?\n\n" +
+                "ระบบจะ match ADUserName กับ EmployeeCode จาก API\n" +
+                "และอัพเดท Department/Division/Position",
+                "Sync Employee Info",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                int updated = 0, skipped = 0, failed = 0;
+
+                var allUsers = _userAccountRepository.GetAll().ToList();
+                var allEmployees = _employeeApiService.GetAllEmployees().ToList();
+
+                // สร้าง lookup: employeeCode → EmployeeSummary
+                var empLookup = new System.Collections.Generic.Dictionary<string, CMS.Domain.Models.EmployeeSummary>(
+                    System.StringComparer.OrdinalIgnoreCase);
+                foreach (var emp in allEmployees)
+                    if (!string.IsNullOrEmpty(emp.EmployeeCode))
+                        empLookup[emp.EmployeeCode] = emp;
+
+                foreach (var user in allUsers)
+                {
+                    try
+                    {
+                        string adUser = user.ADUserName ?? "";
+                        CMS.Domain.Models.EmployeeSummary emp = null;
+
+                        // ลอง match ตรงๆ
+                        if (!empLookup.TryGetValue(adUser, out emp))
+                        {
+                            // ลอง strip domain prefix
+                            if (adUser.Contains("\\"))
+                            {
+                                string username = adUser.Substring(adUser.LastIndexOf('\\') + 1);
+                                empLookup.TryGetValue(username, out emp);
+                            }
+                        }
+
+                        if (emp == null) { skipped++; continue; }
+
+                        _userAccountRepository.UpdateEmployeeInfo(
+                            user.UserID,
+                            emp.EmployeeCode,
+                            emp.DepartmentId,   emp.DepartmentCode, emp.DepartmentNameTh,
+                            emp.DivisionId,     emp.DivisionCode,   emp.DivisionNameTh,
+                            null); // PositionName ไม่มีใน EmployeeSummary
+
+                        updated++;
+                    }
+                    catch { failed++; }
+                }
+
+                Cursor = Cursors.Default;
+                MessageBox.Show(
+                    string.Format("Sync เสร็จสิ้น\n\n✓ อัพเดท: {0} คน\n— ไม่พบใน API: {1} คน\n✗ ผิดพลาด: {2} คน",
+                        updated, skipped, failed),
+                    "Sync Employee Info",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                Cursor = Cursors.Default;
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // ── Event handlers ────────────────────────────────────────────────────

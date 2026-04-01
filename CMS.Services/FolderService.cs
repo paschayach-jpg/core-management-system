@@ -469,13 +469,16 @@ namespace CMS.Services
         {
             if (user == null) throw new ArgumentNullException("user");
 
+            IEnumerable<Folder> roots;
             if (orgUnitId.HasValue)
-                return _folderRepository.GetRootFoldersByOrgUnit(orgUnitId.Value)
+                roots = _folderRepository.GetRootFoldersByOrgUnit(orgUnitId.Value)
+                    .Where(f => !f.IsDeleted);
+            else
+                roots = _folderRepository.GetAllRootFolders()
                     .Where(f => !f.IsDeleted);
 
-            // No org unit filter — return all root folders
-            return _folderRepository.GetAllRootFolders()
-                .Where(f => !f.IsDeleted);
+            // กรองเฉพาะ folder ที่ user มีสิทธิ์ Read (Admin/Manager ผ่านโดยอัตโนมัติเว้นแต่ถูก Deny)
+            return roots.Where(f => _permissionService.CheckPermission(user.UserID, f.FolderID, "Read"));
         }
 
         public IEnumerable<Folder> GetDeletedFolders(int? orgUnitId, UserContext user)
@@ -541,6 +544,38 @@ namespace CMS.Services
 
             Log(user, "Folder", "CREATE", "storage.Folder", rootId, 1,
                 string.Format("สร้าง Folder '{0}' จาก Template ID {1} สำหรับ OrgUnit {2}", rootFolderName, templateId, orgUnitId));
+        }
+
+        /// <summary>
+        /// สร้าง sub-folders จาก Template ภายใต้ folder ที่มีอยู่แล้ว
+        /// ใช้เมื่อต้องการสร้างภายใต้ 1HC/2SC/3NC/4PC
+        /// </summary>
+        public void ApplyTemplateToFolder(int parentFolderId, int templateId, int confidentialityLevel, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (user.AppRole < 3)
+                throw new UnauthorizedAccessException("การสร้าง Folder จาก Template ต้องการสิทธิ์ระดับ Manager หรือ Admin");
+            if (_folderTemplateRepository == null)
+                throw new InvalidOperationException("FolderTemplateRepository is not configured.");
+
+            var parentFolder = _folderRepository.GetById(parentFolderId);
+            if (parentFolder == null)
+                throw new InvalidOperationException(string.Format("Parent folder with ID {0} was not found.", parentFolderId));
+            if (parentFolder.IsDeleted)
+                throw new InvalidOperationException("Cannot apply a template to a deleted folder.");
+
+            var items = _folderTemplateRepository.GetItems(templateId).ToList();
+            if (items.Count == 0)
+                throw new InvalidOperationException("Template นี้ไม่มี Sub-Folder กำหนดไว้");
+
+            if (confidentialityLevel < 1 || confidentialityLevel > 4)
+                confidentialityLevel = parentFolder.ConfidentialityLevel;
+
+            // สร้าง sub-folders ตาม template items ภายใต้ parentFolder
+            CreateFoldersFromItems(items, null, parentFolderId, parentFolder.FolderDepth, parentFolder.OrgUnitID, confidentialityLevel, user);
+
+            Log(user, "Folder", "CREATE", "storage.Folder", parentFolderId, 1,
+                string.Format("สร้าง Sub-Folders จาก Template ID {0} ภายใต้ Folder '{1}'", templateId, parentFolder.FolderName));
         }
 
         private void CreateFoldersFromItems(

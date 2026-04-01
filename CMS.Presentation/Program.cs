@@ -165,6 +165,13 @@ namespace CMS.Presentation
                 // Update last login
                 userAccountRepo.UpdateLastLogin(account.UserID);
 
+                // --- Sync Employee Info from API (background, non-blocking) ---
+                try
+                {
+                    SyncEmployeeInfoFromApi(account, userAccountRepo, employeeApiService);
+                }
+                catch { /* ไม่ block login ถ้า sync ไม่สำเร็จ */ }
+
                 // --- PDPA Consent check ---
                 if (!account.ConsentGiven)
                 {
@@ -262,6 +269,70 @@ namespace CMS.Presentation
                     "CMS - Fatal Error",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Sync ข้อมูล Employee จาก API เข้า UserAccount
+        /// Match ด้วย ADUserName = EmployeeCode
+        /// เรียกทุกครั้งที่ login เพื่อให้ข้อมูลเป็นปัจจุบัน
+        /// </summary>
+        private static void SyncEmployeeInfoFromApi(
+            UserAccount account,
+            CMS.Data.Interfaces.IUserAccountRepository userAccountRepo,
+            CMS.Services.Interfaces.IEmployeeApiService employeeApiService)
+        {
+            if (employeeApiService == null || account == null) return;
+
+            try
+            {
+                // ลอง match ด้วย ADUserName (อาจเป็น employeeCode หรือ domain\username)
+                string adUser = account.ADUserName ?? "";
+
+                // ลอง exact match ก่อน
+                var emp = employeeApiService.GetByCode(adUser);
+
+                // ถ้าไม่เจอ ลอง strip domain prefix (domain\username → username)
+                if (emp == null && adUser.Contains("\\"))
+                {
+                    string username = adUser.Substring(adUser.LastIndexOf('\\') + 1);
+                    emp = employeeApiService.GetByCode(username);
+                }
+
+                if (emp == null) return; // ไม่พบข้อมูลพนักงาน
+
+                var pos = emp.PrimaryPosition;
+                if (pos == null) return;
+
+                // Update เฉพาะถ้าข้อมูลเปลี่ยน
+                bool needsUpdate =
+                    account.EmployeeCode   != emp.EmployeeCode      ||
+                    account.DepartmentId   != pos.DepartmentId      ||
+                    account.DepartmentCode != pos.DepartmentCode    ||
+                    account.DepartmentName != pos.DepartmentNameTh  ||
+                    account.DivisionId     != pos.DivisionId        ||
+                    account.DivisionCode   != pos.DivisionCode      ||
+                    account.DivisionName   != pos.DivisionNameTh    ||
+                    account.PositionName   != pos.PositionName;
+
+                if (needsUpdate)
+                {
+                    userAccountRepo.UpdateEmployeeInfo(
+                        account.UserID,
+                        emp.EmployeeCode,
+                        pos.DepartmentId,   pos.DepartmentCode, pos.DepartmentNameTh,
+                        pos.DivisionId,     pos.DivisionCode,   pos.DivisionNameTh,
+                        pos.PositionName);
+
+                    System.Diagnostics.Debug.WriteLine(
+                        string.Format("SyncEmployeeInfo: Updated user {0} → Dept:{1} Div:{2}",
+                            account.ADUserName, pos.DepartmentNameTh, pos.DivisionNameTh));
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("SyncEmployeeInfo error: " + ex.Message);
+                // ไม่ throw — ไม่ block login
             }
         }
     }

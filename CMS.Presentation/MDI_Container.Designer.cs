@@ -87,6 +87,7 @@ namespace CMS.Presentation
             this.btnRibbonAuditLog = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonApproval = new System.Windows.Forms.ToolStripButton();
             this.lblApprovalBadge = new System.Windows.Forms.ToolStripLabel();
+            this.btnRibbonUserAccess = new System.Windows.Forms.ToolStripButton();
             this.ribbonStripAdmin = new System.Windows.Forms.ToolStrip();
             this.btnRibbonFolderArchive = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonChangeLevel = new System.Windows.Forms.ToolStripButton();
@@ -790,22 +791,26 @@ namespace CMS.Presentation
             this.ribbonStripAdmin.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.ribbonStripAdmin.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.ribbonStripAdmin.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.btnRibbonFolderSettings,
-            this.btnRibbonPermission,
-            this.btnRibbonAuditLog,
-            this.btnRibbonApproval,
-            this.lblApprovalBadge,
-            this.btnRibbonTemplate,
-            this.btnRibbonFolderArchive,
-            this.btnRibbonChangeLevel,
-            this.btnRibbonCopyStructure,
-            this.btnRibbonRecycleBin,
-            this.sepRibbon1,
+            // ── กลุ่ม 1: ตั้งค่าโครงการ ──────────────────────────────────
             this.btnRibbonSysConfig,
             this.btnRibbonOrgAdmin,
-            this.sepRibbon3,
+            this.btnRibbonAuditLog,
             this.btnRibbonReportExcel,
-            this.btnRibbonPDPA});
+            this.btnRibbonPDPA,
+            this.sepRibbon1,
+            // ── กลุ่ม 2: จัดการ Folder ───────────────────────────────────
+            this.btnRibbonTemplate,
+            this.btnRibbonFolderArchive,
+            this.btnRibbonCopyStructure,
+            this.btnRibbonApproval,
+            this.lblApprovalBadge,
+            this.btnRibbonChangeLevel,
+            this.btnRibbonRecycleBin,
+            this.sepRibbon3,
+            // ── กลุ่ม 3: สิทธิ์ ──────────────────────────────────────────
+            this.btnRibbonUserAccess,
+            this.btnRibbonPermission,
+            this.btnRibbonFolderSettings});
             this.ribbonStripAdmin.Location = new System.Drawing.Point(0, 49);
             this.ribbonStripAdmin.Name = "ribbonStripAdmin";
             this.ribbonStripAdmin.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
@@ -826,6 +831,13 @@ namespace CMS.Presentation
             this.btnRibbonOrgAdmin.Size = new System.Drawing.Size(99, 22);
             this.btnRibbonOrgAdmin.Text = "🏢 โครงสร้างองค์กร";
             this.btnRibbonOrgAdmin.ToolTipText = "จัดการโครงสร้างองค์กร";
+            // 
+            // btnRibbonUserAccess
+            // 
+            this.btnRibbonUserAccess.Name = "btnRibbonUserAccess";
+            this.btnRibbonUserAccess.Size = new System.Drawing.Size(99, 22);
+            this.btnRibbonUserAccess.Text = "👤 จัดการสิทธิ์ผู้ใช้";
+            this.btnRibbonUserAccess.ToolTipText = "จัดการสิทธิ์และบัญชีผู้ใช้";
             // 
             // btnRibbonFolderArchive
             //
@@ -1100,6 +1112,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ToolStripSeparator     sepRibbon5;
         private System.Windows.Forms.ToolStripButton        btnRibbonSysConfig;
         private System.Windows.Forms.ToolStripButton        btnRibbonOrgAdmin;
+        private System.Windows.Forms.ToolStripButton        btnRibbonUserAccess;
         private System.Windows.Forms.ToolStripButton        btnRibbonReportExcel;
         private System.Windows.Forms.ToolStripButton        btnRibbonPDPA;
 

@@ -52,6 +52,16 @@ namespace CMS.Presentation
 
         private void OrgStructureForm_Load(object sender, EventArgs e)
         {
+            // Set up folder open/closed icons from Resources
+            var folderImageList = new ImageList { ImageSize = new Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
+            folderImageList.Images.Add("folder",      Properties.Resources.folder);
+            folderImageList.Images.Add("open_folder", Properties.Resources.open_folder);
+            treeView.ImageList        = folderImageList;
+            treeView.ImageKey         = "folder";
+            treeView.SelectedImageKey = "open_folder";
+            treeView.BeforeExpand  += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder"; };
+            treeView.BeforeCollapse += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder"; };
+
             _presenter.SetActiveView(false);
             _presenter.LoadOrganizationView();
         }
@@ -551,8 +561,10 @@ namespace CMS.Presentation
 
             var node = new TreeNode(label)
             {
-                Tag       = unit,
-                ForeColor = unit.IsActive ? SystemColors.WindowText : SystemColors.GrayText
+                Tag              = unit,
+                ForeColor        = unit.IsActive ? SystemColors.WindowText : SystemColors.GrayText,
+                ImageKey         = "folder",
+                SelectedImageKey = "open_folder"
             };
 
             // Add special styling for Many-to-Many divisions

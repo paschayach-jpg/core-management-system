@@ -55,6 +55,10 @@ namespace CMS.Presentation
         // Track expanded folder IDs in lvRecentFiles
         private readonly HashSet<int> _expandedFolderIds = new HashSet<int>();
 
+        // Cache ข้อมูลที่ใช้บ่อยในหน้า Dashboard เพื่อลด DB round-trips
+        private List<OrgUnit> _cachedOrgUnits;
+        private List<FileDocument> _cachedAllFiles;
+
         // Tracks whether the logout audit has already been recorded
         private bool _logoutRecorded;
 
@@ -247,6 +251,8 @@ namespace CMS.Presentation
         /// </summary>
         private void RefreshDashboardFiles()
         {
+            // Invalidate file cache เพื่อให้ดึงข้อมูลล่าสุดจาก DB
+            _cachedAllFiles = null;
             var selectedNode = treeViewFolders.SelectedNode;
             if (selectedNode != null)
             {
@@ -281,6 +287,9 @@ namespace CMS.Presentation
         /// </summary>
         private void ReloadRecentFilesData()
         {
+            // Invalidate caches เพื่อให้ดึงข้อมูลใหม่จาก DB
+            _cachedAllFiles = null;
+            _cachedOrgUnits = null;
             lvRecentFiles.Items.Clear();
             _fileDetailPanel.Visible = false;
             LoadRecentFiles();
@@ -372,24 +381,30 @@ namespace CMS.Presentation
             // Admin ribbon visibility
             ribbonStripAdmin.Visible = canManage && ribbonStripAdmin.Visible;
 
-            // ปุ่มผู้ดูแล — จัดการ Folder / สิทธิ์ / Audit / อนุมัติ / Template
-            btnRibbonFolderSettings.Visible = canManage;
-            btnRibbonPermission.Visible     = canManage;
-            btnRibbonAuditLog.Visible       = canManage;
-            btnRibbonApproval.Visible       = canManage;
-            btnRibbonTemplate.Visible       = canManage;
-            btnRibbonFolderArchive.Visible  = canManage;
-            btnRibbonChangeLevel.Visible    = canManage;
-            btnRibbonCopyStructure.Visible  = canManage;
-
-            // ปุ่มระบบ
+            // ── กลุ่ม 1: ตั้งค่าโครงการ ──────────────────────────────────
             btnRibbonSysConfig.Visible    = isAdmin;
             btnRibbonOrgAdmin.Visible     = canManage;
+            btnRibbonAuditLog.Visible     = canManage;
             btnRibbonReportExcel.Visible  = canManage;
             btnRibbonPDPA.Visible         = canManage;
 
+            // ── กลุ่ม 2: จัดการ Folder ───────────────────────────────────
+            btnRibbonTemplate.Visible       = canManage;
+            btnRibbonFolderArchive.Visible  = canManage;
+            btnRibbonCopyStructure.Visible  = canManage;
+            btnRibbonApproval.Visible       = canManage;
+            btnRibbonChangeLevel.Visible    = canManage;
+            btnRibbonRecycleBin.Visible     = canManage;
+
+            // ── กลุ่ม 3: สิทธิ์ ──────────────────────────────────────────
+            btnRibbonUserAccess.Visible     = isAdmin;
+            btnRibbonPermission.Visible     = canManage;
+            btnRibbonFolderSettings.Visible = canManage;
+
+            // User access rights menu item — Admin only
+            menuItemMod001.Visible = isAdmin;
+
             // legacy hidden items
-            menuItemMod001.Visible = false;
             menuItemMod002.Visible = false;
             menuItemMod003.Visible = false;
             menuItemMod004.Visible = false;
@@ -439,6 +454,11 @@ namespace CMS.Presentation
             menuItemOrgAdmin.Click       += (s, e) => OpenOrgStructure();
             menuItemReportExcel.Click    += (s, e) => OpenSysConfig();
             menuItemPDPA.Click           += (s, e) => OpenPdpaConsent();
+
+            // User access rights management (Admin only)
+            menuItemMod001.Text   = "จัดการสิทธิ์ผู้ใช้";
+            menuItemMod001.Click += (s, e) => OpenUserAccess();
+            btnRibbonUserAccess.Click += (s, e) => OpenUserAccess();
         }
 
         private void SwitchToHomeRibbon()
@@ -525,7 +545,7 @@ namespace CMS.Presentation
         {
             if (_folderService != null)
             {
-                var ff = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService);
+                var ff = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository);
                 ff.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
                 ff.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
                 ff.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
@@ -653,7 +673,7 @@ namespace CMS.Presentation
             }
 
             // ยังไม่มี FolderForm — เปิดให้เลย พร้อมแจ้ง
-            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService);
+            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository);
             folderForm.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
@@ -668,10 +688,21 @@ namespace CMS.Presentation
         private void OpenSysConfig()
         {
             if (_configManager != null)
-                OpenChildForm(new ConfigAdminForm(_configManager, _auditService, _currentUser, _fileService, _userAccountRepository));
+                OpenChildForm(new ConfigAdminForm(_configManager, _auditService, _currentUser, _fileService, _userAccountRepository, _employeeApiService));
             else
                 MessageBox.Show("Config service is not available.", "Admin",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private void OpenUserAccess()
+        {
+            if (_userAccountRepository == null && _orgStructureService == null)
+            {
+                MessageBox.Show("ไม่พบ service สำหรับจัดการสิทธิ์ผู้ใช้", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new UserAccessForm(_userAccountRepository, _orgStructureService, _currentUser));
         }
 
         private void OpenPdpaConsent()
@@ -762,8 +793,10 @@ namespace CMS.Presentation
                 {
                     try
                     {
-                        totalFiles = _fileService.GetAllFilesGroupedByFolder(_currentUser)
-                            .Where(f => !f.IsDeleted).Count();
+                        // ใช้ cache จาก LoadRecentFiles ถ้ามี เพื่อหลีกเลี่ยง DB call ซ้ำ
+                        var files = _cachedAllFiles
+                            ?? _fileService.GetAllFilesGroupedByFolder(_currentUser).Where(f => !f.IsDeleted).ToList();
+                        totalFiles = files.Count;
                     }
                     catch { }
                 }
@@ -1432,8 +1465,11 @@ namespace CMS.Presentation
                 if (_orgStructureService == null)
                     return;
 
-                // Get all OrgUnits using GetHierarchy()
-                var allUnits = _orgStructureService.GetHierarchy().ToList();
+                // Cache hierarchy — reused by BuildOrgUnitNameLookup (eliminates duplicate DB call)
+                if (_cachedOrgUnits == null)
+                    _cachedOrgUnits = _orgStructureService.GetHierarchy().ToList();
+
+                var allUnits = _cachedOrgUnits;
                 if (allUnits.Count == 0)
                     return;
 
@@ -1442,50 +1478,58 @@ namespace CMS.Presentation
                     .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive)
                     .OrderBy(u => u.Name);
 
-                foreach (var sc in subCommittees)
+                treeViewFolders.BeginUpdate();
+                try
                 {
-                    var scNode = new TreeNode(string.Format("🏢 {0} [SubCommittee]", sc.Name))
+                    foreach (var sc in subCommittees)
                     {
-                        Tag = sc,
-                        ImageIndex = 0,
-                        SelectedImageIndex = 0
-                    };
-
-                    var divisions = allUnits
-                        .Where(u => u.Tier == OrgUnitTier.Division && u.ParentId == sc.OrgUnitId && u.IsActive)
-                        .OrderBy(u => u.Name);
-
-                    foreach (var div in divisions)
-                    {
-                        var divNode = new TreeNode(string.Format("📂 {0} [Division]", div.Name))
+                        var scNode = new TreeNode(string.Format("🏢 {0} [SubCommittee]", sc.Name))
                         {
-                            Tag = div,
-                            ImageIndex = 1,
-                            SelectedImageIndex = 1
+                            Tag = sc,
+                            ImageIndex = 0,
+                            SelectedImageIndex = 0
                         };
 
-                        var departments = allUnits
-                            .Where(u => u.Tier == OrgUnitTier.Department && u.ParentId == div.OrgUnitId && u.IsActive)
+                        var divisions = allUnits
+                            .Where(u => u.Tier == OrgUnitTier.Division && u.ParentId == sc.OrgUnitId && u.IsActive)
                             .OrderBy(u => u.Name);
 
-                        foreach (var dept in departments)
+                        foreach (var div in divisions)
                         {
-                            var deptNode = new TreeNode(string.Format("📋 {0} [Department]", dept.Name))
+                            var divNode = new TreeNode(string.Format("📂 {0} [Division]", div.Name))
                             {
-                                Tag = dept,
-                                ImageIndex = 2,
-                                SelectedImageIndex = 2
+                                Tag = div,
+                                ImageIndex = 1,
+                                SelectedImageIndex = 1
                             };
-                            divNode.Nodes.Add(deptNode);
+
+                            var departments = allUnits
+                                .Where(u => u.Tier == OrgUnitTier.Department && u.ParentId == div.OrgUnitId && u.IsActive)
+                                .OrderBy(u => u.Name);
+
+                            foreach (var dept in departments)
+                            {
+                                var deptNode = new TreeNode(string.Format("📋 {0} [Department]", dept.Name))
+                                {
+                                    Tag = dept,
+                                    ImageIndex = 2,
+                                    SelectedImageIndex = 2
+                                };
+                                divNode.Nodes.Add(deptNode);
+                            }
+
+                            scNode.Nodes.Add(divNode);
                         }
 
-                        scNode.Nodes.Add(divNode);
+                        treeViewFolders.Nodes.Add(scNode);
                     }
 
-                    treeViewFolders.Nodes.Add(scNode);
+                    treeViewFolders.ExpandAll();
                 }
-
-                treeViewFolders.ExpandAll();
+                finally
+                {
+                    treeViewFolders.EndUpdate();
+                }
             }
             catch (Exception ex)
             {
@@ -1885,6 +1929,9 @@ namespace CMS.Presentation
                 IEnumerable<FileDocument> files;
                 if (orgUnitId.HasValue)
                     files = _fileService.GetFilesByOrgUnit(orgUnitId.Value, _currentUser);
+                else if (_cachedAllFiles != null)
+                    // ใช้ cache ถ้ามี เพื่อหลีกเลี่ยง DB call ซ้ำจาก LoadDashboardStats
+                    files = _cachedAllFiles;
                 else
                     files = _fileService.GetAllFilesGroupedByFolder(_currentUser);
 
@@ -1915,7 +1962,9 @@ namespace CMS.Presentation
             if (_orgStructureService == null) return dict;
             try
             {
-                foreach (var ou in _orgStructureService.GetHierarchy())
+                // ใช้ cache ที่โหลดไว้แล้วใน LoadDashboardFolderTree เพื่อหลีกเลี่ยง DB call ซ้ำ
+                var units = _cachedOrgUnits ?? _orgStructureService.GetHierarchy().ToList();
+                foreach (var ou in units)
                     if (!dict.ContainsKey(ou.OrgUnitID))
                         dict[ou.OrgUnitID] = ou.Name;
             }
@@ -1976,24 +2025,35 @@ namespace CMS.Presentation
             {
                 var orgNames = BuildOrgUnitNameLookup();
 
-                var allFiles = _fileService.GetAllFilesGroupedByFolder(_currentUser)
+                // Cache allFiles เพื่อให้ LoadDashboardStats/CountFilesByType ใช้ต่อได้โดยไม่ต้องเรียก DB ซ้ำ
+                _cachedAllFiles = _fileService.GetAllFilesGroupedByFolder(_currentUser)
                     .Where(f => !f.IsDeleted)
                     .ToList();
 
-                var byFolder = allFiles
+                var byFolder = _cachedAllFiles
                     .GroupBy(f => f.FolderID)
                     .OrderByDescending(g => g.Max(f => f.UploadedDate))
-                    .Take(10);
+                    .Take(10)
+                    .ToList();
 
-                foreach (var group in byFolder)
+                // Build folder lookup ด้วย DB call เดียว แทนที่จะเรียก GetFolder() ทีละ folder (N+1 fix)
+                var folderLookup = new Dictionary<int, Folder>();
+                try
                 {
-                    var firstFile = group.First();
+                    foreach (var f in _folderService.GetAllFolders(null, _currentUser))
+                        folderLookup[f.FolderID] = f;
+                }
+                catch { }
 
-                    Folder headerFolder;
-                    try
+                lvRecentFiles.BeginUpdate();
+                try
+                {
+                    foreach (var group in byFolder)
                     {
-                        headerFolder = _folderService.GetFolder(firstFile.FolderID, _currentUser);
-                        if (headerFolder == null)
+                        var firstFile = group.First();
+
+                        Folder headerFolder;
+                        if (!folderLookup.TryGetValue(firstFile.FolderID, out headerFolder) || headerFolder == null)
                         {
                             headerFolder = new Folder
                             {
@@ -2007,30 +2067,24 @@ namespace CMS.Presentation
                         {
                             headerFolder.FileCount = group.Count();
                         }
-                    }
-                    catch
-                    {
-                        headerFolder = new Folder
+
+                        headerFolder.OrgUnitName = orgNames.TryGetValue(headerFolder.OrgUnitID, out var ouN3) ? ouN3 : "—";
+
+                        AddFolderHeaderRow(headerFolder);
+
+                        if (_expandedFolderIds.Contains(headerFolder.FolderID))
                         {
-                            FolderID             = firstFile.FolderID,
-                            FolderName           = firstFile.FolderName ?? string.Format("Folder {0}", firstFile.FolderID),
-                            ConfidentialityLevel = 0,
-                            FileCount            = group.Count()
-                        };
-                    }
-
-                    headerFolder.OrgUnitName = orgNames.TryGetValue(headerFolder.OrgUnitID, out var ouN3) ? ouN3 : "—";
-
-                    AddFolderHeaderRow(headerFolder);
-
-                    if (_expandedFolderIds.Contains(headerFolder.FolderID))
-                    {
-                        foreach (var file in group.OrderBy(f => f.OriginalFileName))
-                        {
-                            file.OrgUnitName = headerFolder.OrgUnitName;
-                            AddFileRow(file, headerFolder.ConfidentialityLevel);
+                            foreach (var file in group.OrderBy(f => f.OriginalFileName))
+                            {
+                                file.OrgUnitName = headerFolder.OrgUnitName;
+                                AddFileRow(file, headerFolder.ConfidentialityLevel);
+                            }
                         }
                     }
+                }
+                finally
+                {
+                    lvRecentFiles.EndUpdate();
                 }
             }
             catch (Exception ex)
@@ -2166,7 +2220,13 @@ namespace CMS.Presentation
 
                 if (ext == "pdf")
                 {
-                    await PdfSecurityHelper.OpenSecurePdfAsync(pathToOpen, this, print: false);
+                    PdfViewOptions options = PdfViewOptions.ViewOnly;
+                    if (_permissionService != null)
+                    {
+                        var eff = _permissionService.GetEffectivePermission(_currentUser.UserID, file.FolderID);
+                        options = PdfViewOptions.FromEffective(eff, _currentUser);
+                    }
+                    await PdfSecurityHelper.OpenSecurePdfAsync(pathToOpen, this, options);
                 }
                 else
                 {
@@ -2385,7 +2445,13 @@ namespace CMS.Presentation
 
                 if (ext == "pdf")
                 {
-                    await PdfSecurityHelper.OpenSecurePdfAsync(path, this, print: false);
+                    PdfViewOptions options = PdfViewOptions.ViewOnly;
+                    if (_permissionService != null)
+                    {
+                        var eff = _permissionService.GetEffectivePermission(_currentUser.UserID, file.FolderID);
+                        options = PdfViewOptions.FromEffective(eff, _currentUser);
+                    }
+                    await PdfSecurityHelper.OpenSecurePdfAsync(path, this, options);
                 }
                 else
                 {
