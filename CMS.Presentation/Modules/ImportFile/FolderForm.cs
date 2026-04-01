@@ -1188,8 +1188,11 @@ namespace CMS.Presentation
 
             try
             {
+                // ใช้ GetVisibleHierarchy เพื่อให้ explicit grants มีผล
+                // ถ้า user มี explicit grants → คืนเฉพาะ granted set
+                // ถ้าไม่มี → fallback role-based (เหมือนเดิม)
                 var units = await System.Threading.Tasks.Task.Run(() =>
-                    _orgStructureService.GetHierarchy()
+                    _orgStructureService.GetVisibleHierarchy(_user)
                         .Where(u => u.IsActive && !u.IsDeleted)
                         .ToList());
 
@@ -1198,8 +1201,8 @@ namespace CMS.Presentation
                     u => u.OrgUnitID,
                     u => u.OrgUnitNameTH ?? u.OrgUnitNameEN ?? u.OrgUnitCode);
 
-                // กรอง OrgUnit ตาม role ของ current user
-                var visibleUnits = FilterVisibleOrgUnits(units);
+                // visibleUnits คือผลลัพธ์จาก GetVisibleHierarchy แล้ว ไม่ต้องกรองซ้ำ
+                var visibleUnits = units;
 
                 treeOrgUnit.BeginUpdate();
                 treeOrgUnit.Nodes.Clear();
@@ -3262,10 +3265,19 @@ namespace CMS.Presentation
                             }, _user);
                             MessageBox.Show("ย้าย Folder สำเร็จ", "สำเร็จ",
                                             MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                            // Reload tree ของ OrgUnit ปลายทาง (อาจต่างจาก OrgUnit ต้นทาง)
+                            // ใช้ null เพื่อ reload ทั้งหมดให้ครอบคลุมทั้ง 2 OrgUnit
+                            _presenter.LoadFolderTree(null);
+                            _selectedOrgUnitId = null;
+                            _selectedOrgUnitName = "— ทั้งหมด —";
+
+                            // Reload content panel ของ parent folder ต้นทาง
                             var currentFolder = SelectedFolder;
-                            if (currentFolder != null)
-                                _presenter.GetFolderContents(currentFolder.FolderId);
-                            _presenter.LoadFolderTree(_selectedOrgUnitId);
+                            if (currentFolder != null && currentFolder.FolderID != selectedFolderFromList.FolderID)
+                                _presenter.GetFolderContents(currentFolder.FolderID);
+                            else
+                                _presenter.ShowOrgUnitRootFolders(null);
                         }
                         catch (UnauthorizedAccessException ex) { ShowError("ไม่มีสิทธิ์: " + ex.Message); }
                         catch (InvalidOperationException ex)   { ShowError(ex.Message); }
@@ -3300,7 +3312,12 @@ namespace CMS.Presentation
                             }, _user);
                             MessageBox.Show("ย้าย Folder สำเร็จ", "สำเร็จ",
                                             MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            _presenter.LoadFolderTree(_selectedOrgUnitId);
+
+                            // Reload ทั้งหมดเพื่อให้เห็น folder ในทั้ง OrgUnit ต้นทางและปลายทาง
+                            _presenter.LoadFolderTree(null);
+                            _selectedOrgUnitId = null;
+                            _selectedOrgUnitName = "— ทั้งหมด —";
+                            _presenter.ShowOrgUnitRootFolders(null);
                         }
                         catch (UnauthorizedAccessException ex)
                         {

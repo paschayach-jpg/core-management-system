@@ -24,6 +24,9 @@ namespace CMS.Presentation
         public int?         SelectedFolderId  { get; private set; }
 
         // ── Constructor ───────────────────────────────────────────────────────
+        // Guard flag — ป้องกัน AfterSelect fire จาก programmatic selection
+        private bool _suppressSelect = false;
+
         public FolderPickerDialog()
         {
             ExcludedFolderIds = new HashSet<int>();
@@ -49,6 +52,29 @@ namespace CMS.Presentation
                     _txtSearch.Text      = "🔍 พิมพ์ค้นหา folder...";
                     _txtSearch.ForeColor = Color.FromArgb(80, 80, 80);
                 }
+            };
+
+            // ใช้ NodeMouseClick แทน AfterSelect เพื่อ fire เฉพาะเมื่อ user คลิกจริงๆ
+            // AfterSelect fire ได้จากหลายสาเหตุ (expand, keyboard, programmatic) ทำให้ selection กระโดด
+            _treeView.NodeMouseClick += (s, e) =>
+            {
+                if (e.Button != MouseButtons.Left) return;
+                var folder = e.Node?.Tag as Folder;
+                if (folder == null) return; // OrgUnit node — ไม่ทำอะไร
+                _suppressSelect = true;
+                try { _treeView.SelectedNode = e.Node; }
+                finally { _suppressSelect = false; }
+                SelectedFolderId = folder.FolderID;
+                UpdateSummary(folder.FolderID);
+                _btnOk.Enabled = true;
+            };
+
+            // ป้องกัน OrgUnit node (tag=null) ถูก select จาก keyboard/programmatic
+            _treeView.BeforeSelect += (s, e) =>
+            {
+                if (_suppressSelect) return;
+                if (e.Node?.Tag == null)
+                    e.Cancel = true;
             };
 
             _treeView.DoubleClick += (s, e) => { if (_btnOk.Enabled) BtnOk_Click(s, e); };
@@ -93,14 +119,76 @@ namespace CMS.Presentation
             _treeView.Nodes.Clear();
 
             var visibleIds = new HashSet<int>(visible.Select(f => f.FolderID));
-            var roots = visible.Where(f => f.ParentFolderID == null || !visibleIds.Contains(f.ParentFolderID.Value))
-                               .OrderBy(f => f.FolderName).ToList();
 
-            foreach (var root in roots)
+            if (_orgUnits.Count > 0)
             {
-                var node = CreateNode(root);
-                _treeView.Nodes.Add(node);
-                AddChildren(node, root.FolderID, visible);
+                // สร้าง OrgUnit hierarchy: SubCommittee → Division → Department → Folders
+                // ใช้ OrgUnitType: 1=SubCommittee, 2=Division, 3=Department
+                var ouById = _orgUnits.ToDictionary(u => u.OrgUnitID);
+
+                // Build OrgUnit tree nodes recursively
+                Func<OrgUnit, TreeNode> buildOuNode = null;
+                buildOuNode = (ou) =>
+                {
+                    string icon = ou.OrgUnitType == 1 ? "🏢 "
+                                : ou.OrgUnitType == 2 ? "📂 "
+                                : "📋 ";
+                    var ouNode = new TreeNode(icon + ou.Name)
+                    {
+                        Tag      = null,  // OrgUnit — not selectable
+                        ForeColor = ou.OrgUnitType == 1
+                            ? Color.FromArgb(31, 56, 100)
+                            : ou.OrgUnitType == 2
+                                ? Color.FromArgb(0, 80, 160)
+                                : Color.FromArgb(60, 60, 60),
+                        NodeFont = ou.OrgUnitType == 1
+                            ? new Font(_treeView.Font, FontStyle.Bold)
+                            : _treeView.Font
+                    };
+
+                    // Add child OrgUnits
+                    var children = _orgUnits
+                        .Where(c => c.ParentOrgUnitID == ou.OrgUnitID)
+                        .OrderBy(c => c.Name);
+                    foreach (var child in children)
+                        ouNode.Nodes.Add(buildOuNode(child));
+
+                    // Add folders belonging to this OrgUnit
+                    var rootFolders = visible
+                        .Where(f => f.OrgUnitID == ou.OrgUnitID
+                               && (f.ParentFolderID == null || !visibleIds.Contains(f.ParentFolderID.Value)))
+                        .OrderBy(f => f.FolderName);
+                    foreach (var folder in rootFolders)
+                    {
+                        var fNode = CreateNode(folder);
+                        ouNode.Nodes.Add(fNode);
+                        AddChildren(fNode, folder.FolderID, visible);
+                    }
+
+                    return ouNode;
+                };
+
+                // Start from SubCommittee roots (no parent or parent not in list)
+                var ouIds = new HashSet<int>(_orgUnits.Select(u => u.OrgUnitID));
+                var roots = _orgUnits
+                    .Where(u => !u.ParentOrgUnitID.HasValue || !ouIds.Contains(u.ParentOrgUnitID.Value))
+                    .OrderBy(u => u.Name);
+
+                foreach (var sc in roots)
+                    _treeView.Nodes.Add(buildOuNode(sc));
+            }
+            else
+            {
+                // Fallback: ไม่มี OrgUnit → flat tree
+                var roots = visible
+                    .Where(f => f.ParentFolderID == null || !visibleIds.Contains(f.ParentFolderID.Value))
+                    .OrderBy(f => f.FolderName).ToList();
+                foreach (var root in roots)
+                {
+                    var node = CreateNode(root);
+                    _treeView.Nodes.Add(node);
+                    AddChildren(node, root.FolderID, visible);
+                }
             }
 
             ExpandToLevel(_treeView.Nodes, 0, 2);
@@ -154,13 +242,13 @@ namespace CMS.Presentation
         }
 
         // ── Event handlers ────────────────────────────────────────────────────
+        // TreeView_AfterSelect — ยังคงอยู่เพราะ Designer wire ไว้
+        // แต่ logic จริงย้ายไปอยู่ใน NodeMouseClick แล้ว
+        // ใช้ _suppressSelect เพื่อป้องกัน double-fire
         private void TreeView_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            var folder = e.Node?.Tag as Folder;
-            if (folder == null) return;
-            SelectedFolderId = folder.FolderID;
-            UpdateSummary(folder.FolderID);
-            _btnOk.Enabled = true;
+            if (_suppressSelect) return;
+            // ไม่ทำอะไร — NodeMouseClick จัดการแทนแล้ว
         }
 
         private void ListView_SelectedIndexChanged(object sender, EventArgs e)
@@ -172,13 +260,20 @@ namespace CMS.Presentation
             UpdateSummary(folder.FolderID);
             _btnOk.Enabled = true;
 
+            // Sync tree selection — suppress AfterSelect to avoid double-update
             var node = FindTreeNode(_treeView.Nodes, folder.FolderID);
             if (node != null)
             {
-                _treeView.AfterSelect -= TreeView_AfterSelect;
-                _treeView.SelectedNode = node;
-                node.EnsureVisible();
-                _treeView.AfterSelect += TreeView_AfterSelect;
+                _suppressSelect = true;
+                try
+                {
+                    _treeView.SelectedNode = node;
+                    node.EnsureVisible();
+                }
+                finally
+                {
+                    _suppressSelect = false;
+                }
             }
         }
 
@@ -250,6 +345,9 @@ namespace CMS.Presentation
         // ── Helpers ───────────────────────────────────────────────────────────
         private Dictionary<int, string> BuildPathMap(Dictionary<int, Folder> map)
         {
+            // Build OrgUnit name lookup
+            var ouNames = _orgUnits.ToDictionary(u => u.OrgUnitID, u => u.Name);
+
             var result = new Dictionary<int, string>();
             foreach (var f in map.Values)
             {
@@ -261,6 +359,11 @@ namespace CMS.Presentation
                     cur = cur.ParentFolderID.HasValue && map.ContainsKey(cur.ParentFolderID.Value)
                         ? map[cur.ParentFolderID.Value] : null;
                 }
+
+                // Prepend OrgUnit name if available
+                if (f.OrgUnitID > 0 && ouNames.ContainsKey(f.OrgUnitID))
+                    parts.Insert(0, ouNames[f.OrgUnitID]);
+
                 result[f.FolderID] = string.Join(" › ", parts);
             }
             return result;

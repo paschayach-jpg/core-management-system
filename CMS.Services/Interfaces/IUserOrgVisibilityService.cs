@@ -35,5 +35,12 @@ namespace CMS.Services.Interfaces
         /// OrgUnitName and GrantedByName populated.
         /// </summary>
         IEnumerable<UserOrgVisibility> GetGrantsForOrgUnit(int orgUnitId, UserContext caller);
+
+        /// <summary>
+        /// Returns only the explicit grant records for a given user
+        /// (does NOT apply role-based fallback).
+        /// Used by UI to determine which nodes are already granted.
+        /// </summary>
+        IEnumerable<UserOrgVisibility> GetExplicitGrantsForUser(int userId, UserContext caller);
     }
 }

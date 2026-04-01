@@ -526,7 +526,7 @@ namespace CMS.Presentation
                 ? _orgService.GetHierarchy() ?? Enumerable.Empty<OrgUnit>()
                 : _allOrgs).ToList();
 
-            // Collect already-granted IDs
+            // Collect already-granted IDs — use explicit grants only (no role-based fallback)
             var alreadyGrantedIds = new HashSet<int>();
             if (_visibilityService != null)
             {
@@ -535,8 +535,8 @@ namespace CMS.Presentation
                 {
                     try
                     {
-                        foreach (var o in _visibilityService.GetVisibleOrgUnits(selectedUser.UserID, _currentUser))
-                            alreadyGrantedIds.Add(o.OrgUnitID);
+                        foreach (var g in _visibilityService.GetExplicitGrantsForUser(selectedUser.UserID, _currentUser))
+                            alreadyGrantedIds.Add(g.OrgUnitID);
                     }
                     catch { }
                 }

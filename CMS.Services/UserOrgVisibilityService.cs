@@ -97,6 +97,16 @@ namespace CMS.Services
         }
 
         // -----------------------------------------------------------------------
+        // GetExplicitGrantsForUser  (UI helper — no fallback)
+        // -----------------------------------------------------------------------
+
+        public IEnumerable<UserOrgVisibility> GetExplicitGrantsForUser(int userId, UserContext caller)
+        {
+            if (caller == null) throw new ArgumentNullException("caller");
+            return _visibilityRepo.GetByUser(userId).ToList();
+        }
+
+        // -----------------------------------------------------------------------
         // GetGrantsForOrgUnit  (Req 4.7)
         // -----------------------------------------------------------------------
 

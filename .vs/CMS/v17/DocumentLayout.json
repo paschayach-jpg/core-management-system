@@ -5,6 +5,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|c:\\users\\pitakpong\\documents\\cms_import\\cms.presentation\\modules\\importfile\\folderform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|solutionrelative:cms.presentation\\modules\\importfile\\folderform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|c:\\users\\pitakpong\\documents\\cms_import\\cms.presentation\\modules\\importfile\\folderform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{598277F1-1DF7-4C37-88F2-CF817D829251}|CMS.Presentation\\CMS.Presentation.csproj|solutionrelative:cms.presentation\\modules\\importfile\\folderform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -14,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 255,
-          "SelectedChildIndex": 34,
+          "SelectedChildIndex": 35,
           "Children": [
             {
               "$type": "Bookmark",
@@ -151,6 +155,19 @@
             {
               "$type": "Bookmark",
               "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "FolderForm.cs",
+              "DocumentMoniker": "C:\\Users\\pitakpong\\Documents\\cms_import\\CMS.Presentation\\Modules\\ImportFile\\FolderForm.cs",
+              "RelativeDocumentMoniker": "CMS.Presentation\\Modules\\ImportFile\\FolderForm.cs",
+              "ToolTip": "C:\\Users\\pitakpong\\Documents\\cms_import\\CMS.Presentation\\Modules\\ImportFile\\FolderForm.cs",
+              "RelativeToolTip": "CMS.Presentation\\Modules\\ImportFile\\FolderForm.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-01T02:24:41.152Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",

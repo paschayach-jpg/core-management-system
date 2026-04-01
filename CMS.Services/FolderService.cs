@@ -702,20 +702,26 @@ namespace CMS.Services
             int  depthDelta = (destination.FolderDepth + 1) - originalSourceDepth;
 
             // 3.3 — Update source folder
-            source.ParentFolderID = destinationParentFolderId;
-            source.FolderDepth    = destination.FolderDepth + 1;
-            source.PhysicalPath   = _networkDriveHelper.BuildPath(source.OrgUnitID, source.FolderID, source.FolderName);
-            source.UpdatedBy      = user.UserID;
-            source.UpdatedDate    = DateTime.Now;
+            int newConfidentialityLevel = destination.ConfidentialityLevel; // inherit from destination
+            int newOrgUnitId            = destination.OrgUnitID;            // inherit OrgUnit from destination
+            source.ParentFolderID       = destinationParentFolderId;
+            source.FolderDepth          = destination.FolderDepth + 1;
+            source.ConfidentialityLevel = newConfidentialityLevel;
+            source.OrgUnitID            = newOrgUnitId;
+            source.PhysicalPath         = _networkDriveHelper.BuildPath(newOrgUnitId, source.FolderID, source.FolderName);
+            source.UpdatedBy            = user.UserID;
+            source.UpdatedDate          = DateTime.Now;
             _folderRepository.Update(source);
 
             // 3.4 — Update all descendants
             foreach (var descendant in descendants)
             {
-                descendant.FolderDepth  += depthDelta;
-                descendant.PhysicalPath  = _networkDriveHelper.BuildPath(descendant.OrgUnitID, descendant.FolderID, descendant.FolderName);
-                descendant.UpdatedBy     = user.UserID;
-                descendant.UpdatedDate   = DateTime.Now;
+                descendant.FolderDepth          += depthDelta;
+                descendant.ConfidentialityLevel  = newConfidentialityLevel;
+                descendant.OrgUnitID             = newOrgUnitId;
+                descendant.PhysicalPath          = _networkDriveHelper.BuildPath(newOrgUnitId, descendant.FolderID, descendant.FolderName);
+                descendant.UpdatedBy             = user.UserID;
+                descendant.UpdatedDate           = DateTime.Now;
                 _folderRepository.Update(descendant);
             }
 
@@ -730,7 +736,7 @@ namespace CMS.Services
                 {
                     if (file.FileStatus == 1) // Active only
                     {
-                        file.PhysicalPath = _networkDriveHelper.BuildPath(source.OrgUnitID, file.FolderID, file.StoredFileName);
+                        file.PhysicalPath = _networkDriveHelper.BuildPath(newOrgUnitId, file.FolderID, file.StoredFileName);
                         _fileDocumentRepository.Update(file);
                     }
                 }
