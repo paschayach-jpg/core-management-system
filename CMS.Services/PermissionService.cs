@@ -23,6 +23,12 @@ namespace CMS.Services
         private readonly IFileDocumentRepository   _fileDocumentRepository;
         private readonly IFilePermissionRepository _filePermissionRepository;
 
+        // Session-level permission cache: key = "userId:folderId:permType"
+        // ลด DB calls จาก N+1 เหลือ 1 ต่อ folder ต่อ session
+        private readonly Dictionary<string, bool> _permCache = new Dictionary<string, bool>();
+        // ACL entries cache: key = folderId
+        private readonly Dictionary<int, List<FolderPermission>> _aclCache = new Dictionary<int, List<FolderPermission>>();
+
         public PermissionService(
             IPermissionRepository     permissionRepository,
             IFolderRepository         folderRepository,
@@ -191,16 +197,29 @@ namespace CMS.Services
 
         public bool CheckPermission(int userId, int folderId, string permissionType)
         {
+            string cacheKey = string.Format("{0}:{1}:{2}", userId, folderId, permissionType);
+            bool cached;
+            if (_permCache.TryGetValue(cacheKey, out cached)) return cached;
+
+            bool result = CheckPermissionInternal(userId, folderId, permissionType);
+            _permCache[cacheKey] = result;
+            return result;
+        }
+
+        private bool CheckPermissionInternal(int userId, int folderId, string permissionType)
+        {
             var account = _userAccountRepository.GetById(userId);
 
             // Admin (4) and Manager (3): check only for explicit DENY (one DB call), then bypass
             if (account != null && account.AppRole >= 3)
             {
                 int? userRole  = (int?)account.AppRole;
-                var allEntries = _permissionRepository.GetAclEntries(folderId).ToList();
+                var allEntries = GetCachedAclEntries(folderId);
                 var applicable = allEntries.Where(e =>
-                    (e.PrincipalType == PrincipalType.User && e.PrincipalID == userId) ||
-                    (e.PrincipalType == PrincipalType.Role && e.PrincipalID == userRole.Value)
+                    (e.PrincipalType == PrincipalType.User       && e.PrincipalID == userId) ||
+                    (e.PrincipalType == PrincipalType.Role       && e.PrincipalID == userRole.Value) ||
+                    (e.PrincipalType == PrincipalType.Department && account.DepartmentId.HasValue && e.PrincipalID == account.DepartmentId.Value) ||
+                    (e.PrincipalType == PrincipalType.Division   && account.DivisionId.HasValue   && e.PrincipalID == account.DivisionId.Value)
                 ).ToList();
 
                 bool hasDeny = applicable.Any(e => e.IsDeny && MatchesFlag(e, permissionType));
@@ -211,6 +230,28 @@ namespace CMS.Services
 
             // Regular users: EvaluatePermission handles DENY + ALLOW + inheritance (one DB call)
             return EvaluatePermission(userId, folderId, permissionType);
+        }
+
+        /// <summary>Cache ACL entries per folder to avoid repeated DB calls in N+1 scenarios.</summary>
+        private List<FolderPermission> GetCachedAclEntries(int folderId)
+        {
+            List<FolderPermission> entries;
+            if (!_aclCache.TryGetValue(folderId, out entries))
+            {
+                entries = _permissionRepository.GetAclEntries(folderId).ToList();
+                _aclCache[folderId] = entries;
+            }
+            return entries;
+        }
+
+        /// <summary>Invalidate cache for a folder (call after permission changes).</summary>
+        public void InvalidateCache(int folderId)
+        {
+            _aclCache.Remove(folderId);
+            var keysToRemove = _permCache.Keys
+                .Where(k => k.StartsWith(":" + folderId + ":") || k.Contains(":" + folderId + ":"))
+                .ToList();
+            foreach (var k in keysToRemove) _permCache.Remove(k);
         }
 
         /// <summary>Overload that accepts PermissionType enum.</summary>
@@ -238,15 +279,22 @@ namespace CMS.Services
             var folder = _folderRepository.GetById(folderId);
             if (folder == null) return false;
 
-            var allEntries = _permissionRepository.GetAclEntries(folderId).ToList();
+            var allEntries = GetCachedAclEntries(folderId);
 
             var userAccount = _userAccountRepository.GetById(userId);
             int? userRole = userAccount != null ? (int?)userAccount.AppRole : null;
 
-            // Entries applicable to this user (direct user or role match)
+            // Entries applicable to this user:
+            //   เงื่อนไขที่ 2 — ตรวจ FolderPermission/FilePermission โดยใช้ข้อมูล UserAccount:
+            //     • User     : ตรงกับ UserID โดยตรง
+            //     • Role     : ตรงกับ AppRole (1=Officer, 2=SrOfficer, 3=Manager, 4=Admin)
+            //     • Department: ตรงกับ DepartmentId ของ user (จาก Employee API)
+            //     • Division  : ตรงกับ DivisionId  ของ user (จาก Employee API)
             var applicable = allEntries.Where(e =>
-                (e.PrincipalType == PrincipalType.User && e.PrincipalID == userId) ||
-                (e.PrincipalType == PrincipalType.Role && userRole.HasValue && e.PrincipalID == userRole.Value)
+                (e.PrincipalType == PrincipalType.User       && e.PrincipalID == userId) ||
+                (e.PrincipalType == PrincipalType.Role       && userRole.HasValue && e.PrincipalID == userRole.Value) ||
+                (e.PrincipalType == PrincipalType.Department && userAccount != null && userAccount.DepartmentId.HasValue && e.PrincipalID == userAccount.DepartmentId.Value) ||
+                (e.PrincipalType == PrincipalType.Division   && userAccount != null && userAccount.DivisionId.HasValue   && e.PrincipalID == userAccount.DivisionId.Value)
             ).ToList();
 
             // IsDeny overrides everything
@@ -271,12 +319,27 @@ namespace CMS.Services
 
             switch (permissionType)
             {
-                case "Read":        return entry.CanRead;
-                case "Write":       return entry.CanWrite;
-                case "Delete":      return entry.CanDelete;
-                case "Modify":      return entry.CanModify;
-                case "FullControl": return entry.CanFullControl;
-                default:            return false;
+                case "Read":
+                    // View: เห็น folder/file
+                    return entry.CanRead;
+
+                case "Write":
+                    // Add/Edit: สร้าง sub-folder, upload, rename file/sub-folder
+                    return entry.CanWrite || entry.CanModify;
+
+                case "Delete":
+                    // Delete: ลบได้เฉพาะ "ไฟล์" เท่านั้น
+                    return entry.CanDelete || entry.CanModify;
+
+                case "Modify":
+                    // Modify: ลบ "Folder" และจัดการโครงสร้าง (สิทธิ์สูงสุด รองจาก FullControl)
+                    return entry.CanModify;
+
+                case "FullControl":
+                    return entry.CanFullControl;
+
+                default:
+                    return false;
             }
         }
     }

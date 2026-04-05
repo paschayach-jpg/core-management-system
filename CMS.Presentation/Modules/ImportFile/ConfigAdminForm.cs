@@ -112,7 +112,8 @@ namespace CMS.Presentation
             UserContext    user,
             IFileService   fileService = null,
             IUserAccountRepository userAccountRepository = null,
-            CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null)
+            CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
+            CMS.Services.Interfaces.IFolderAuthorityService folderAuthorityService = null)
         {
             if (configManager == null) throw new ArgumentNullException("configManager");
             if (auditService  == null) throw new ArgumentNullException("auditService");
@@ -120,17 +121,61 @@ namespace CMS.Presentation
 
             _employeeApiService    = employeeApiService;
             _userAccountRepository = userAccountRepository;
+            _folderAuthorityService = folderAuthorityService;
+            _user = user;
 
             InitializeComponent();
 
             _presenter = new ConfigAdminPresenter(this, configManager, auditService, user, fileService, userAccountRepository);
 
-            // เพิ่มปุ่ม Sync Employee Info
             AddSyncEmployeeButton();
+            AddAuthorityConfigButton();
         }
 
-        private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
+        private readonly CMS.Services.Interfaces.IEmployeeApiService    _employeeApiService;
+        private readonly CMS.Services.Interfaces.IFolderAuthorityService _folderAuthorityService;
         private readonly IUserAccountRepository _userAccountRepository;
+        private readonly UserContext            _user;
+
+        private void AddAuthorityConfigButton()
+        {
+            var btnAuthority = new Button
+            {
+                Text      = "🔐 จัดการสิทธิ์ Authority Config",
+                Width     = 240,
+                Height    = 32,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(50, 80, 130),
+                ForeColor = System.Drawing.Color.White,
+                Font      = new System.Drawing.Font("Segoe UI", 9f),
+                Cursor    = Cursors.Hand,
+                Dock      = DockStyle.Bottom,
+                Margin    = new Padding(10)
+            };
+            btnAuthority.FlatAppearance.BorderSize = 0;
+            btnAuthority.Click += (s, e) =>
+            {
+                if (_folderAuthorityService == null)
+                {
+                    MessageBox.Show("Authority service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                try
+                {
+                    using (var form = new AuthorityConfigForm(_folderAuthorityService, _user))
+                        form.ShowDialog(this);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        "ไม่สามารถเปิดหน้า Authority Config ได้\n\n" + ex.Message,
+                        "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+            this.Controls.Add(btnAuthority);
+            btnAuthority.BringToFront();
+        }
 
         private void AddSyncEmployeeButton()
         {
@@ -210,9 +255,11 @@ namespace CMS.Presentation
                         _userAccountRepository.UpdateEmployeeInfo(
                             user.UserID,
                             emp.EmployeeCode,
-                            emp.DepartmentId,   emp.DepartmentCode, emp.DepartmentNameTh,
-                            emp.DivisionId,     emp.DivisionCode,   emp.DivisionNameTh,
-                            null); // PositionName ไม่มีใน EmployeeSummary
+                            null, null, null,           // titleEn, firstEn, lastEn
+                            null, null, null,           // titleTh, firstTh, lastTh
+                            emp.DepartmentId,   emp.DepartmentCode, emp.DepartmentNameEn, emp.DepartmentNameTh,
+                            emp.DivisionId,     emp.DivisionCode,   emp.DivisionNameEn,   emp.DivisionNameTh,
+                            null);                      // PositionName ไม่มีใน EmployeeSummary
 
                         updated++;
                     }

@@ -32,6 +32,9 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="Microsoft.VisualBasic" />
@@ -50,6 +53,12 @@
   <ItemGroup>
     <!-- Root: Shell -->
     <Compile Include="Program.cs" />
+    <Compile Include="Modules\ImportFile\LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\LoginForm.Designer.cs">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="MDI_Container.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -74,6 +83,12 @@
     </Compile>
     <Compile Include="Modules\ImportFile\AuditLogForm.Designer.cs">
       <DependentUpon>AuditLogForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\AuthorityConfigForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\AuthorityConfigForm.Designer.cs">
+      <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\ImportFile\ConfigAdminForm.cs">
       <SubType>Form</SubType>
@@ -187,8 +202,14 @@
     <Compile Include="Modules\ImportFile\PermissionForm.Designer.cs">
       <DependentUpon>PermissionForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\ImportFile\UserPermissionSummaryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\ImportFile\RecycleBinForm.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\RecycleBinForm.Designer.cs">
+      <DependentUpon>RecycleBinForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\ImportFile\UserAccessForm.cs">
       <SubType>Form</SubType>
@@ -215,6 +236,28 @@
     <Compile Include="Modules\ImportFile\Presenters\AuditLogPresenter.cs" />
     <Compile Include="Modules\ImportFile\Presenters\IConfigAdminView.cs" />
     <Compile Include="Modules\ImportFile\Presenters\ConfigAdminPresenter.cs" />
+    <!-- Share Forms -->
+    <Compile Include="SharedFileViewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ShareDialogInternal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ShareDialogExternal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ShareManagementForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SharedWithMeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AccessLogView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AccessShareForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <!-- Properties -->
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -252,6 +295,9 @@
     <EmbeddedResource Include="Modules\ImportFile\ApprovalInboxForm.resx">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\AuthorityConfigForm.resx">
+      <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\ConfigAdminForm.resx">
       <DependentUpon>ConfigAdminForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -279,6 +325,12 @@
     <EmbeddedResource Include="Modules\ImportFile\FolderTemplateForm.resx">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\LoginForm.resx">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\OrgStructureForm.resx">
+      <DependentUpon>OrgStructureForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\OrgUnitPickerDialog.resx">
       <DependentUpon>OrgUnitPickerDialog.cs</DependentUpon>
     </EmbeddedResource>
@@ -287,6 +339,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\PermissionForm.resx">
       <DependentUpon>PermissionForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\RecycleBinForm.resx">
+      <DependentUpon>RecycleBinForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\UserAccessForm.resx">
       <DependentUpon>UserAccessForm.cs</DependentUpon>
@@ -328,6 +383,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\book-orange.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\File-docs.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\login.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\login1.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -50,6 +50,8 @@ namespace CMS.Presentation
             this.menuItemPermission = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemAuditLog = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemApproval = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuItemShare = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuItemManageShares = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemInsert = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemInsertDoc = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemInsertImage = new System.Windows.Forms.ToolStripMenuItem();
@@ -432,7 +434,9 @@ namespace CMS.Presentation
             this.menuStrip.ForeColor = System.Drawing.Color.White;
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuItemHome,
-            this.menuItemAdmin});
+            this.menuItemAdmin,
+            this.menuItemShare,
+            this.menuItemManageShares});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
             this.menuStrip.Size = new System.Drawing.Size(1469, 27);
@@ -521,6 +525,18 @@ namespace CMS.Presentation
             this.menuItemApproval.Name = "menuItemApproval";
             this.menuItemApproval.Size = new System.Drawing.Size(149, 22);
             this.menuItemApproval.Text = "✅ อนุมัติ";
+            // 
+            // menuItemShare
+            // 
+            this.menuItemShare.Name = "menuItemShare";
+            this.menuItemShare.Size = new System.Drawing.Size(149, 22);
+            this.menuItemShare.Text = "📤 Share";
+            // 
+            // menuItemManageShares
+            // 
+            this.menuItemManageShares.Name = "menuItemManageShares";
+            this.menuItemManageShares.Size = new System.Drawing.Size(149, 22);
+            this.menuItemManageShares.Text = "📋 Manage Shares";
             // 
             // menuItemInsert
             // 
@@ -1060,6 +1076,8 @@ namespace CMS.Presentation
         private System.Windows.Forms.ToolStripMenuItem      menuItemPermission;
         private System.Windows.Forms.ToolStripMenuItem      menuItemAuditLog;
         private System.Windows.Forms.ToolStripMenuItem      menuItemApproval;
+        private System.Windows.Forms.ToolStripMenuItem      menuItemShare;
+        private System.Windows.Forms.ToolStripMenuItem      menuItemManageShares;
         // แทรก
         private System.Windows.Forms.ToolStripMenuItem      menuItemInsert;
         private System.Windows.Forms.ToolStripMenuItem      menuItemInsertDoc;

@@ -30,29 +30,59 @@ namespace CMS.Domain.Models
         public DateTime CreatedDate { get; set; }
 
         // ── Employee API fields ──────────────────────────────────────────────
-        /// <summary>รหัสพนักงาน (employeeCode จาก Employee API)</summary>
+        /// <summary>รหัสพนักงาน (employeeCode จาก AD API)</summary>
         public string EmployeeCode { get; set; }
 
-        /// <summary>ID แผนก (departmentId จาก Employee API)</summary>
+        /// <summary>คำนำหน้าชื่อ EN (Mr., Miss, Mrs.)</summary>
+        public string EmployeeTitleNameEn { get; set; }
+
+        /// <summary>ชื่อ EN</summary>
+        public string EmployeeFirstNameEn { get; set; }
+
+        /// <summary>นามสกุล EN</summary>
+        public string EmployeeLastNameEn { get; set; }
+
+        /// <summary>คำนำหน้าชื่อ TH (นาย, นางสาว)</summary>
+        public string EmployeeTitleNameTh { get; set; }
+
+        /// <summary>ชื่อ TH</summary>
+        public string EmployeeFirstNameTh { get; set; }
+
+        /// <summary>นามสกุล TH</summary>
+        public string EmployeeLastNameTh { get; set; }
+
+        /// <summary>ID แผนก (departmentId จาก AD API)</summary>
         public int? DepartmentId { get; set; }
 
-        /// <summary>รหัสแผนก (departmentCode)</summary>
+        /// <summary>รหัสแผนก</summary>
         public string DepartmentCode { get; set; }
 
-        /// <summary>ชื่อแผนก (departmentNameTh)</summary>
+        /// <summary>ชื่อแผนก TH</summary>
         public string DepartmentName { get; set; }
 
-        /// <summary>ID ฝ่าย (divisionId จาก Employee API)</summary>
+        /// <summary>ชื่อแผนก EN</summary>
+        public string DepartmentNameEn { get; set; }
+
+        /// <summary>ID ฝ่าย (divisionId จาก AD API)</summary>
         public int? DivisionId { get; set; }
 
-        /// <summary>รหัสฝ่าย (divisionCode)</summary>
+        /// <summary>รหัสฝ่าย</summary>
         public string DivisionCode { get; set; }
 
-        /// <summary>ชื่อฝ่าย (divisionNameTh)</summary>
+        /// <summary>ชื่อฝ่าย TH</summary>
         public string DivisionName { get; set; }
+
+        /// <summary>ชื่อฝ่าย EN</summary>
+        public string DivisionNameEn { get; set; }
 
         /// <summary>ตำแหน่งงาน</summary>
         public string PositionName { get; set; }
+
+        /// <summary>รหัสระดับตำแหน่ง เช่น 2B, 3A — ใช้ match กับ FolderAuthorityConfig</summary>
+        public string LevelCode { get; set; }
+
+        /// <summary>IP Address ล่าสุดที่ login หรือ register</summary>
+        public string LastLoginIP { get; set; }
 
         /// <summary>วันที่อัพเดทข้อมูลล่าสุด</summary>
         public DateTime? UpdatedAt { get; set; }
@@ -70,6 +100,30 @@ namespace CMS.Domain.Models
         {
             get { return (UserRole)AppRole; }
             set { AppRole = (int)value; }
+        }
+
+        /// <summary>ชื่อเต็ม TH (คำนำหน้า + ชื่อ + นามสกุล)</summary>
+        public string FullNameTh
+        {
+            get
+            {
+                return string.Format("{0}{1} {2}",
+                    EmployeeTitleNameTh ?? "",
+                    EmployeeFirstNameTh ?? "",
+                    EmployeeLastNameTh  ?? "").Trim();
+            }
+        }
+
+        /// <summary>ชื่อเต็ม EN (Title + First + Last)</summary>
+        public string FullNameEn
+        {
+            get
+            {
+                return string.Format("{0}{1} {2}",
+                    EmployeeTitleNameEn ?? "",
+                    EmployeeFirstNameEn ?? "",
+                    EmployeeLastNameEn  ?? "").Trim();
+            }
         }
 
         /// <summary>ชื่อแผนก/ฝ่ายสำหรับแสดงผล</summary>

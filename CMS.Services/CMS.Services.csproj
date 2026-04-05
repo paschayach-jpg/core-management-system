@@ -49,6 +49,10 @@
     <Compile Include="DTOs\StorageUsageReport.cs" />
     <Compile Include="DTOs\SubmitApprovalRequest.cs" />
     <Compile Include="DTOs\UpdateOrgUnitRequest.cs" />
+    <Compile Include="DTOs\AdAuthResult.cs" />
+    <Compile Include="DTOs\AdLoginResponse.cs" />
+    <Compile Include="Interfaces\IAdAuthService.cs" />
+    <Compile Include="AdAuthService.cs" />
     <Compile Include="Interfaces\IEmployeeApiService.cs" />
     <Compile Include="Interfaces\IApprovalService.cs" />
     <Compile Include="Interfaces\IAuditService.cs" />
@@ -62,6 +66,14 @@
     <Compile Include="Interfaces\IUploadCheckpointService.cs" />
     <Compile Include="Interfaces\IQuickAccessService.cs" />
     <Compile Include="Interfaces\IUserOrgVisibilityService.cs" />
+    <Compile Include="Interfaces\IFolderAuthorityService.cs" />
+    <Compile Include="Interfaces\IShareService.cs" />
+    <Compile Include="Interfaces\IShareTokenService.cs" />
+    <Compile Include="Interfaces\IShareAccessService.cs" />
+    <Compile Include="DTOs\ShareAccessResult.cs" />
+    <Compile Include="DTOs\CreateExternalShareRequest.cs" />
+    <Compile Include="DTOs\CreateInternalShareRequest.cs" />
+    <Compile Include="DTOs\ModifyExternalShareRequest.cs" />
     <Compile Include="UploadCheckpointService.cs" />
     <Compile Include="UserOrgVisibilityService.cs" />
     <Compile Include="QuickAccessService.cs" />
@@ -75,6 +87,10 @@
     <Compile Include="PermissionService.cs" />
     <Compile Include="FilePermissionService.cs" />
     <Compile Include="VirusScanService.cs" />
+    <Compile Include="FolderAuthorityService.cs" />
+    <Compile Include="ShareService.cs" />
+    <Compile Include="ShareTokenService.cs" />
+    <Compile Include="ShareAccessService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">

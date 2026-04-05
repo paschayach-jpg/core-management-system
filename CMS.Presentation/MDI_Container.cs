@@ -7,6 +7,7 @@ using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
+using CMS.Presentation.Modules.ImportFile;
 using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
@@ -36,10 +37,18 @@ namespace CMS.Presentation
         private readonly IFilePermissionRepository _filePermissionRepository;
         private readonly IFileDocumentRepository   _fileDocumentRepository;
         private readonly IFolderTemplateRepository _folderTemplateRepository;
-        private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
-        private readonly IUploadCheckpointService _uploadCheckpointService;
-        private readonly IQuickAccessService _quickAccessService;
+        private readonly CMS.Services.Interfaces.IEmployeeApiService     _employeeApiService;
+        private readonly CMS.Services.Interfaces.IFolderAuthorityService _folderAuthorityService;
+        private readonly IUploadCheckpointService  _uploadCheckpointService;
+        private readonly IQuickAccessService       _quickAccessService;
         private readonly IUserOrgVisibilityService _userOrgVisibilityService;
+        private readonly CMS.Data.Interfaces.IHrDivisionRepository    _hrDivisionRepository;
+        private readonly CMS.Data.Interfaces.IHrDepartmentRepository  _hrDepartmentRepository;
+        private readonly CMS.Data.Interfaces.IHrPositionRepository    _hrPositionRepository;
+        private readonly CMS.Data.Interfaces.IHrPositionLevelRepository _hrPositionLevelRepository;
+        private readonly CMS.Data.Interfaces.IHrPositionMappingRepository _hrPositionMappingRepository;
+        private readonly IShareService _shareService;
+        private readonly IShareAccessService _shareAccessService;
 
         // Notification inbox controls (built programmatically)
         private Panel    _notificationPanel;
@@ -63,6 +72,9 @@ namespace CMS.Presentation
         // Tracks whether the logout audit has already been recorded
         private bool _logoutRecorded;
 
+        /// <summary>Set to true เมื่อ user กด Logout — Program.cs ใช้ตรวจว่าต้อง re-login หรือไม่</summary>
+        public bool LogoutRequested { get; private set; }
+
         // ── Grouped admin toolbar buttons (built in BuildGroupedAdminToolbar) ──
         private ToolStripDropDownButton _grpDocument;
         private ToolStripButton         _grpApproval;
@@ -77,6 +89,9 @@ namespace CMS.Presentation
         private ToolStripMenuItem _mnuToggleRibbon;
         private bool              _ribbonCollapsed  = false;
         private bool              _adminTabActive   = false;
+
+        // ── "Shared With Me" badge (Home ribbon) ────────────────────────────
+        private ToolStripLabel _lblSharedBadge;
 
         // File detail panel controls
         private Panel _fileDetailPanel;
@@ -116,7 +131,15 @@ namespace CMS.Presentation
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
             IUploadCheckpointService uploadCheckpointService = null,
             IQuickAccessService quickAccessService = null,
-            IUserOrgVisibilityService userOrgVisibilityService = null)
+            IUserOrgVisibilityService userOrgVisibilityService = null,
+            CMS.Services.Interfaces.IFolderAuthorityService folderAuthorityService = null,
+            CMS.Data.Interfaces.IHrDivisionRepository hrDivisionRepository = null,
+            CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepository = null,
+            CMS.Data.Interfaces.IHrPositionRepository hrPositionRepository = null,
+            CMS.Data.Interfaces.IHrPositionLevelRepository hrPositionLevelRepository = null,
+            CMS.Data.Interfaces.IHrPositionMappingRepository hrPositionMappingRepository = null,
+            IShareService shareService = null,
+            IShareAccessService shareAccessService = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
             if (auditService        == null) throw new ArgumentNullException("auditService");
@@ -142,9 +165,17 @@ namespace CMS.Presentation
             _fileDocumentRepository   = fileDocumentRepository;
             _folderTemplateRepository = folderTemplateRepository;
             _employeeApiService       = employeeApiService;
+            _folderAuthorityService   = folderAuthorityService;
             _uploadCheckpointService  = uploadCheckpointService;
             _quickAccessService       = quickAccessService;
             _userOrgVisibilityService = userOrgVisibilityService;
+            _hrDivisionRepository       = hrDivisionRepository;
+            _hrDepartmentRepository     = hrDepartmentRepository;
+            _hrPositionRepository       = hrPositionRepository;
+            _hrPositionLevelRepository  = hrPositionLevelRepository;
+            _hrPositionMappingRepository = hrPositionMappingRepository;
+            _shareService = shareService;
+            _shareAccessService = shareAccessService;
 
             InitializeComponent();
             BuildFileDetailPanel();
@@ -446,6 +477,9 @@ namespace CMS.Presentation
             menuItemPermission.Click     += (s, e) => OpenFolderSettings();
             menuItemAuditLog.Click       += (s, e) => OpenAuditLog();
             menuItemApproval.Click       += (s, e) => OpenApprovalInbox();
+            // Share menu items
+            menuItemShare.Click          += (s, e) => OpenShareDialog();
+            menuItemManageShares.Click   += (s, e) => OpenShareManagement();
             // แทรก
             menuItemInsertDoc.Click      += (s, e) => OpenFileUpload();
             menuItemInsertImage.Click    += (s, e) => OpenFileUpload();
@@ -558,6 +592,7 @@ namespace CMS.Presentation
             {
                 new ToolStripMenuItem("📊 รายงาน Excel",  null, (s, e) => OpenSysConfig()),
                 new ToolStripMenuItem("🔏 PDPA Consent",  null, (s, e) => OpenPdpaConsent()),
+                new ToolStripMenuItem("📋 PDPA Report",   null, (s, e) => OpenPdpaReport()),
                 new ToolStripMenuItem("📜 Audit Log",     null, (s, e) => OpenAuditLog()),
             });
 
@@ -567,7 +602,8 @@ namespace CMS.Presentation
             _grpSystem.ToolTipText = "ตั้งค่าระบบ (Admin เท่านั้น)";
             _grpSystem.DropDownItems.AddRange(new ToolStripItem[]
             {
-                new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",  null, (s, e) => OpenSysConfig()),
+                new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",       null, (s, e) => OpenSysConfig()),
+                new ToolStripMenuItem("🔐 จัดการสิทธิ์ Authority", null, (s, e) => OpenAuthorityConfig()),
             });
 
             ribbonStripAdmin.Items.AddRange(new ToolStripItem[]
@@ -612,6 +648,60 @@ namespace CMS.Presentation
                 _mnuToggleRibbon.Text = _ribbonCollapsed ? "▼ แสดงแถบ" : "▲ ซ่อนแถบ";
             };
             menuStrip.Items.Add(_mnuToggleRibbon);
+
+            // ── ปุ่ม Logout (ชิดขวา ถัดจาก toggle ribbon) ───────────────────
+            var mnuLogout = new ToolStripMenuItem(
+                string.Format("🚪 ออกจากระบบ ({0})", _currentUser.ADUserName ?? _currentUser.AdIdentity));
+            mnuLogout.Alignment   = ToolStripItemAlignment.Right;
+            mnuLogout.ForeColor   = System.Drawing.Color.FromArgb(255, 180, 180);
+            mnuLogout.BackColor   = System.Drawing.Color.Transparent;
+            mnuLogout.AutoToolTip = false;
+            mnuLogout.ToolTipText = "ออกจากระบบและ Login ด้วยผู้ใช้อื่น";
+            mnuLogout.Click += (s, e) => PerformLogout();
+            menuStrip.Items.Add(mnuLogout);
+        }
+
+        /// <summary>Logout: audit → ปิด form → Program.cs จะแสดง LoginForm ใหม่</summary>
+        private void PerformLogout()
+        {
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการออกจากระบบ?\n\nผู้ใช้: {0}", _currentUser.ADUserName ?? _currentUser.AdIdentity),
+                "ยืนยันการออกจากระบบ",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes) return;
+
+            LogoutRequested = true;
+
+            // บันทึก audit logout ก่อนปิด
+            if (!_logoutRecorded)
+            {
+                _logoutRecorded = true;
+                try
+                {
+                    _auditService.Log(new AuditEntry
+                    {
+                        Module      = "Auth",
+                        Action      = "LOGOUT",
+                        UserID      = _currentUser.UserID,
+                        UserName    = _currentUser.ADUserName ?? string.Empty,
+                        UserRole    = _currentUser.AppRole,
+                        TableName   = "core.UserAccount",
+                        RecordID    = _currentUser.UserID,
+                        MachineName = _currentUser.MachineName,
+                        IPAddress   = _currentUser.IPAddress,
+                        Result      = 1,
+                        AuditDate   = DateTime.Now
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error("Failed to record logout audit.", ex);
+                }
+            }
+
+            this.Close();
         }
 
         private void WireRibbonHandlers()
@@ -647,6 +737,133 @@ namespace CMS.Presentation
             btnRibbonOrgAdmin.Click       += (s, e) => OpenOrgStructure();
             btnRibbonReportExcel.Click    += (s, e) => OpenSysConfig();
             btnRibbonPDPA.Click           += (s, e) => OpenPdpaConsent();
+
+            // ── ปุ่ม "สิทธิ์ของฉัน" — แสดงใน ribbonStrip (Home tab) สำหรับทุก user ──
+            var sepMyPerm = new ToolStripSeparator();
+            var btnMyPerm = new ToolStripButton
+            {
+                Name         = "btnMyPermission",
+                Text         = "🔐 สิทธิ์ของฉัน",
+                ToolTipText  = "แสดงสิทธิ์การเข้าใช้งาน folder ของคุณ",
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                Font         = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor    = Color.FromArgb(25, 55, 105),
+            };
+            btnMyPerm.Click += (s, e) =>
+            {
+                using (var frm = new UserPermissionSummaryForm(_currentUser, _permissionRepository, _folderRepository,
+                    _filePermissionRepository, _fileDocumentRepository, _userAccountRepository))
+                    frm.ShowDialog(this);
+            };
+            ribbonStrip.Items.Add(sepMyPerm);
+            ribbonStrip.Items.Add(btnMyPerm);
+
+            // ── ปุ่ม "📥 แบ่งปันให้ฉัน" + badge ────────────────────────────
+            var sepShared = new ToolStripSeparator();
+            var btnShared = new ToolStripButton
+            {
+                Name         = "btnSharedWithMe",
+                Text         = "📥 แบ่งปันให้ฉัน",
+                ToolTipText  = "ดูรายการ Folder / File ที่แบ่งปันให้คุณ",
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                Font         = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor    = Color.FromArgb(25, 55, 105),
+            };
+            btnShared.Click += (s, e) => OpenSharedWithMe();
+
+            _lblSharedBadge = new ToolStripLabel
+            {
+                BackColor = Color.Crimson,
+                ForeColor = Color.White,
+                Font      = new Font("Microsoft Sans Serif", 7.5f, FontStyle.Bold),
+                Padding   = new Padding(3, 1, 3, 1),
+                Visible   = false,
+                ToolTipText = "รายการแบ่งปันใหม่ภายใน 7 วัน",
+            };
+
+            ribbonStrip.Items.Add(sepShared);
+            ribbonStrip.Items.Add(btnShared);
+            ribbonStrip.Items.Add(_lblSharedBadge);
+
+            // โหลด badge count ตอนเริ่มต้น
+            RefreshSharedWithMeBadge();
+        }
+
+        private void OpenSharedWithMe()
+        {
+            if (_permissionRepository == null)
+            {
+                MessageBox.Show("ไม่สามารถโหลดข้อมูลได้ — Permission service ไม่พร้อมใช้งาน",
+                    "แบ่งปันให้ฉัน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            using (var frm = new SharedWithMeForm(_currentUser, _permissionRepository, _folderRepository,
+                _userAccountRepository, _filePermissionRepository, _fileDocumentRepository))
+            {
+                // เมื่อ user ดับเบิลคลิก Folder: navigate FolderForm
+                frm.OpenFolderRequested += folderId =>
+                {
+                    var ff = MdiChildren.OfType<FolderForm>().FirstOrDefault();
+                    if (ff == null)
+                    {
+                        OpenFolderStructure();
+                        ff = MdiChildren.OfType<FolderForm>().FirstOrDefault();
+                    }
+                    if (ff != null)
+                    {
+                        frm.Hide();
+                        ff.NavigateToFolderById(folderId);
+                        ff.BringToFront();
+                        ff.Focus();
+                    }
+                };
+
+                // เมื่อ user ดับเบิลคลิก ไฟล์: เปิด SharedFileViewForm
+                frm.OpenFileRequested += (folderId, fileId) =>
+                {
+                    using (var fileView = new SharedFileViewForm(
+                        fileId, _fileService, _fileDocumentRepository, _currentUser))
+                    {
+                        fileView.ShowDialog(this);
+                    }
+                };
+
+                frm.ShowDialog(this);
+                // อัพเดต badge หลังปิด
+                UpdateSharedWithMeBadge(frm.NewItemCount);
+            }
+        }
+
+        /// <summary>โหลด badge count จากฐานข้อมูลโดยไม่เปิด form</summary>
+        private void RefreshSharedWithMeBadge()
+        {
+            if (_permissionRepository == null) return;
+            try
+            {
+                var cutoff = DateTime.Today.AddDays(-7);
+                int count = _permissionRepository
+                    .GetByPrincipal((int)PrincipalType.User, _currentUser.UserID)
+                    .Count(p => p.RevokedDate == null
+                             && !p.IsDeny
+                             && p.GrantedDate.Date >= cutoff
+                             && (!p.ExpiryDate.HasValue || p.ExpiryDate.Value.Date >= DateTime.Today));
+                UpdateSharedWithMeBadge(count);
+            }
+            catch { /* ไม่ให้ crash ถ้า DB ไม่พร้อม */ }
+        }
+
+        private void UpdateSharedWithMeBadge(int count)
+        {
+            if (_lblSharedBadge == null) return;
+            if (count > 0)
+            {
+                _lblSharedBadge.Text    = count.ToString();
+                _lblSharedBadge.Visible = true;
+            }
+            else
+            {
+                _lblSharedBadge.Visible = false;
+            }
         }
 
         private void OpenFolderTemplateManagement()
@@ -664,7 +881,7 @@ namespace CMS.Presentation
         private void OpenOrgStructure()
         {
             if (_orgStructureService != null)
-                OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService));
+                OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService, _hrDivisionRepository, _hrDepartmentRepository));
             else
                 MessageBox.Show("Org Structure service is not available.", "MOD-001",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -674,7 +891,7 @@ namespace CMS.Presentation
         {
             if (_folderService != null)
             {
-                var ff = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository);
+                var ff = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository, _permissionRepository);
                 ff.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
                 ff.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
                 ff.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
@@ -766,6 +983,154 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
+        private void OpenShareDialog()
+        {
+            if (_shareService == null)
+            {
+                MessageBox.Show("Share service is not available.", "Share File",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Get selected file/folder from active FolderForm
+            FileDocument selectedFile = null;
+            Folder selectedFolder = null;
+
+            foreach (Form child in MdiChildren)
+            {
+                var ff = child as FolderForm;
+                if (ff != null)
+                {
+                    selectedFile = ff.SelectedFile;
+                    selectedFolder = ff.SelectedFolder;
+                    break;
+                }
+            }
+
+            if (selectedFile == null && selectedFolder == null)
+            {
+                MessageBox.Show(
+                    "Please select a file or folder in Folder Explorer first.",
+                    "Select File/Folder",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+                return;
+            }
+
+            // Show dialog to choose share type — modern style
+            using (var dlg = new Form())
+            {
+                Color navyDark  = Color.FromArgb(25, 55, 105);
+                Color navyMid   = Color.FromArgb(50, 90, 150);
+                Color navyLight = Color.FromArgb(215, 228, 248);
+                Color bodyBg    = Color.FromArgb(243, 246, 251);
+
+                dlg.Text            = "เลือกประเภทการแบ่งปัน";
+                dlg.ClientSize      = new System.Drawing.Size(340, 170);
+                dlg.StartPosition   = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox     = false;
+                dlg.MinimizeBox     = false;
+                dlg.BackColor       = bodyBg;
+                dlg.Font            = new Font("Segoe UI", 9f);
+
+                // Header bar
+                var pnlH = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = navyDark };
+                var lblH = new Label
+                {
+                    Text      = "🔗  เลือกประเภทการแบ่งปัน",
+                    Font      = new Font("Segoe UI", 11f, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    AutoSize  = true,
+                    Location  = new Point(14, 14),
+                };
+                pnlH.Controls.Add(lblH);
+
+                // Hint label
+                var lblHint = new Label
+                {
+                    Text      = "  เลือกแบ่งปันภายในองค์กร หรือสร้าง link สำหรับบุคคลภายนอก",
+                    Font      = new Font("Segoe UI", 8.5f),
+                    ForeColor = Color.FromArgb(70, 85, 110),
+                    BackColor = navyLight,
+                    Dock      = DockStyle.None,
+                    Size      = new Size(340, 26),
+                    Location  = new Point(0, 52),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                };
+
+                // Internal button
+                var btnInternal = new Button
+                {
+                    Text         = "🏢  ภายใน (Internal)",
+                    Size         = new Size(148, 56),
+                    Location     = new Point(14, 88),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = navyDark,
+                    ForeColor    = Color.White,
+                    Font         = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    DialogResult = DialogResult.Yes,
+                };
+                btnInternal.FlatAppearance.BorderSize = 0;
+
+                // External button
+                var btnExternal = new Button
+                {
+                    Text         = "🌐  ภายนอก (External)",
+                    Size         = new Size(148, 56),
+                    Location     = new Point(174, 88),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = Color.FromArgb(220, 228, 245),
+                    ForeColor    = navyDark,
+                    Font         = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    DialogResult = DialogResult.No,
+                };
+                btnExternal.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
+                btnExternal.FlatAppearance.BorderSize  = 1;
+
+                dlg.Controls.AddRange(new Control[] { pnlH, lblHint, btnInternal, btnExternal });
+                dlg.AcceptButton = btnInternal;
+                dlg.CancelButton = btnExternal;
+
+                if (dlg.ShowDialog(this) == DialogResult.Yes)
+                {
+                    // Internal share
+                    using (var shareDialog = new ShareDialogInternal(
+                        _shareService, _fileService, _folderService, _permissionService,
+                        _userAccountRepository, _orgStructureService, _currentUser,
+                        selectedFile, selectedFolder))
+                    {
+                        shareDialog.ShowDialog(this);
+                    }
+                }
+                else
+                {
+                    // External share
+                    using (var shareDialog = new ShareDialogExternal(
+                        _shareService, _fileService, _folderService, _currentUser,
+                        selectedFile, selectedFolder))
+                    {
+                        shareDialog.ShowDialog(this);
+                    }
+                }
+            }
+        }
+
+        private void OpenShareManagement()
+        {
+            if (_shareService == null)
+            {
+                MessageBox.Show("Share service is not available.", "Manage Shares",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = new ShareManagementForm(_shareService, _currentUser, _userAccountRepository, _fileDocumentRepository))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
         private void OpenFileUpload()
         {
             if (_fileService == null || _folderService == null)
@@ -802,7 +1167,7 @@ namespace CMS.Presentation
             }
 
             // ยังไม่มี FolderForm — เปิดให้เลย พร้อมแจ้ง
-            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository);
+            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository, _permissionRepository);
             folderForm.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
@@ -817,9 +1182,24 @@ namespace CMS.Presentation
         private void OpenSysConfig()
         {
             if (_configManager != null)
-                OpenChildForm(new ConfigAdminForm(_configManager, _auditService, _currentUser, _fileService, _userAccountRepository, _employeeApiService));
+            {
+                var form = new ConfigAdminForm(_configManager, _auditService, _currentUser, _fileService, _userAccountRepository, _employeeApiService, _folderAuthorityService);
+                form.GeneratePdpaReportRequested += (s, e) => OpenPdpaReport();
+                OpenChildForm(form);
+            }
             else
                 MessageBox.Show("Config service is not available.", "Admin",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private void OpenAuthorityConfig()
+        {
+            if (_folderAuthorityService != null)
+                OpenChildForm(new AuthorityConfigForm(_folderAuthorityService, _currentUser,
+                    _hrDivisionRepository, _hrDepartmentRepository, _hrPositionRepository,
+                    _userAccountRepository, _hrPositionMappingRepository));
+            else
+                MessageBox.Show("FolderAuthority service ไม่พร้อมใช้งาน", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
@@ -842,7 +1222,9 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenChildForm(new UserManagementForm(_userAccountRepository, _currentUser, _auditService));
+            OpenChildForm(new UserManagementForm(_userAccountRepository, _currentUser, _auditService,
+                _hrDivisionRepository, _hrDepartmentRepository,
+                _hrPositionRepository, _hrPositionLevelRepository));
         }
 
         private void OpenPdpaConsent()
@@ -854,14 +1236,85 @@ namespace CMS.Presentation
                     var result = pdpaDialog.ShowDialog(this);
                     if (result == DialogResult.OK)
                     {
-                        MessageBox.Show("ขอบคุณสำหรับการยืนยันนโยบายข้อมูลส่วนบุคคล", 
+                        MessageBox.Show("ขอบคุณสำหรับการยืนยันนโยบายข้อมูลส่วนบุคคล",
                             "PDPA Consent", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"เกิดข้อผิดพลาดในการเปิด PDPA Consent: {ex.Message}", 
+                MessageBox.Show($"เกิดข้อผิดพลาดในการเปิด PDPA Consent: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void OpenPdpaReport()
+        {
+            if (_userAccountRepository == null || _fileDocumentRepository == null || _auditService == null)
+            {
+                MessageBox.Show("ไม่พบ service ที่จำเป็นสำหรับ PDPA Report", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var users = _userAccountRepository.GetAll().OrderBy(u => u.DisplayName).ToList();
+            if (!users.Any())
+            {
+                MessageBox.Show("ไม่พบข้อมูลผู้ใช้", "PDPA Report", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            UserAccount selectedUser = null;
+            using (var dlg = new Form())
+            {
+                dlg.Text = "เลือกผู้ใช้สำหรับ PDPA Report";
+                dlg.Size = new Size(380, 280);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+
+                var lb        = new ListBox { Left = 12, Top = 12, Width = 340, Height = 160 };
+                var btnOk     = new Button { Text = "ตกลง",   DialogResult = DialogResult.OK,     Left = 192, Top = 188, Width = 80 };
+                var btnCancel = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Left = 278, Top = 188, Width = 80 };
+
+                lb.Items.AddRange(users.Cast<object>().ToArray());
+                lb.DisplayMember = "DisplayName";
+
+                dlg.Controls.AddRange(new Control[] { lb, btnOk, btnCancel });
+                dlg.AcceptButton = btnOk;
+                dlg.CancelButton = btnCancel;
+
+                if (dlg.ShowDialog(this) != DialogResult.OK || lb.SelectedItem == null) return;
+                selectedUser = (UserAccount)lb.SelectedItem;
+            }
+
+            try
+            {
+                var files = _fileDocumentRepository.GetAllGroupedByFolder()
+                    .Where(f => f.UploadedBy == selectedUser.UserID)
+                    .ToList();
+
+                var auditResult = _auditService.Query(new CMS.Data.Models.AuditQuery
+                {
+                    UserID     = selectedUser.UserID,
+                    FromDate   = DateTime.MinValue,
+                    ToDate     = DateTime.Now,
+                    PageNumber = 1,
+                    PageSize   = 5000
+                }, _currentUser);
+
+                var report = new CMS.Services.DTOs.PdpaReport
+                {
+                    Subject       = selectedUser,
+                    FileDocuments = files,
+                    AuditLogs     = auditResult?.Items ?? Enumerable.Empty<AuditLog>()
+                };
+
+                OpenChildForm(new PdpaReportForm(report));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("เกิดข้อผิดพลาดในการสร้าง PDPA Report: " + ex.Message,
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -882,8 +1335,28 @@ namespace CMS.Presentation
 
         private void UpdateStatusBar()
         {
-            lblStatusUser.Text   = string.Format("👤 {0} ({1})", _currentUser.AdIdentity, _currentUser.Role);
-            lblStatusDept.Text   = "🏢 —";
+            // แสดง: 👤 username (Role) | LevelCode
+            string levelInfo = !string.IsNullOrEmpty(_currentUser.LevelCode)
+                ? string.Format(" | Level: {0}", _currentUser.LevelCode)
+                : "";
+            lblStatusUser.Text = string.Format("👤 {0} ({1}){2}",
+                _currentUser.AdIdentity, _currentUser.Role, levelInfo);
+
+            // แสดง: 🏢 ตำแหน่ง — แผนก
+            string deptInfo = "";
+            if (!string.IsNullOrEmpty(_currentUser.PositionName) || !string.IsNullOrEmpty(_currentUser.DepartmentName))
+            {
+                string pos  = _currentUser.PositionName   ?? "";
+                string dept = _currentUser.DepartmentName ?? _currentUser.DepartmentCode ?? "";
+                deptInfo = string.Format("🏢 {0}{1}",
+                    pos,
+                    !string.IsNullOrEmpty(dept) ? " — " + dept : "");
+            }
+            else
+            {
+                deptInfo = "🏢 —";
+            }
+            lblStatusDept.Text   = deptInfo;
             lblStatusFolder.Text = "📁 —";
             lblStatusPath.Text   = "🖥️ —";
             UpdateStatusBarDateTime();
@@ -1472,9 +1945,7 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            var form = new RecycleBinForm(_folderService, _currentUser, _orgStructureService);
-            form.MdiParent = this;
-            form.Show();
+            OpenChildForm(new RecycleBinForm(_folderService, _currentUser, _orgStructureService));
         }
 
         // ── Dashboard Handlers ────────────────────────────────────────────────

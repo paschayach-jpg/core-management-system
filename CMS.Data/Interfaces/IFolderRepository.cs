@@ -17,6 +17,7 @@ namespace CMS.Data.Interfaces
         IEnumerable<Folder> GetDeletedByOrgUnit(int orgUnitId);
         IEnumerable<Folder> GetByOrgUnit(int orgUnitId);
         IEnumerable<Folder> GetAll();
+        IEnumerable<Folder> GetActiveFolders();
         IEnumerable<Folder> GetSiblings(int? parentFolderId, int orgUnitId);
         void SoftDelete(int folderId, int deletedBy);
         void Restore(int folderId);

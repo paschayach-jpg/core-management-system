@@ -205,16 +205,58 @@ namespace CMS.Presentation
 
         private void btnSearchTH_Click(object sender, EventArgs e)
         {
-            // TODO: Implement search functionality for Thai name
-            MessageBox.Show("ฟีเจอร์ค้นหาจะพัฒนาในอนาคต", "แจ้งเตือน", 
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            string keyword = txtOrgNameTH.Text.Trim();
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                MessageBox.Show("กรุณากรอกชื่อหน่วยงาน (ภาษาไทย) ที่ต้องการค้นหา", "ค้นหา",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var matches = _allUnits
+                .Where(u => u.OrgUnitNameTH != null &&
+                            u.OrgUnitNameTH.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToList();
+
+            ShowSearchResults(matches, string.Format("ผลการค้นหา (ไทย): \"{0}\"", keyword));
         }
 
         private void btnSearchEN_Click(object sender, EventArgs e)
         {
-            // TODO: Implement search functionality for English name
-            MessageBox.Show("Search feature will be implemented in the future", "Information", 
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            string keyword = txtOrgNameEN.Text.Trim();
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                MessageBox.Show("Please enter an English name to search.", "Search",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var matches = _allUnits
+                .Where(u => (u.OrgUnitNameEN != null &&
+                             u.OrgUnitNameEN.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                            (u.Name != null &&
+                             u.Name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0))
+                .ToList();
+
+            ShowSearchResults(matches, string.Format("Search results (EN): \"{0}\"", keyword));
+        }
+
+        private void ShowSearchResults(List<OrgUnit> matches, string title)
+        {
+            if (!matches.Any())
+            {
+                MessageBox.Show("ไม่พบหน่วยงานที่ตรงกัน", title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine(string.Format("พบ {0} หน่วยงาน:\n", matches.Count));
+            foreach (var u in matches)
+            {
+                string tier = u.OrgUnitType == 1 ? "คณะกรรมการ" : u.OrgUnitType == 2 ? "ฝ่าย" : "แผนก";
+                sb.AppendLine(string.Format("  [{0}] {1}  (รหัส: {2})", tier, u.OrgUnitNameTH ?? u.Name, u.OrgUnitCode));
+            }
+            MessageBox.Show(sb.ToString(), title, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void pnlFooter_Resize(object sender, EventArgs e)

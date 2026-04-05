@@ -238,7 +238,7 @@ namespace CMS.Data.Repositories
 
         private static FileDocument MapFileDocument(SqlDataReader reader)
         {
-            return new FileDocument
+            var doc = new FileDocument
             {
                 FileID           = (int)reader["FileID"],
                 FileGUID         = (Guid)reader["FileGUID"],
@@ -261,6 +261,11 @@ namespace CMS.Data.Repositories
                 DeletedDate      = reader["DeletedDate"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["DeletedDate"],
                 Version          = (int)reader["Version"]
             };
+
+            // FolderName — optional column (present in newer SPs)
+            try { doc.FolderName = reader["FolderName"] as string; } catch { }
+
+            return doc;
         }
     }
 }

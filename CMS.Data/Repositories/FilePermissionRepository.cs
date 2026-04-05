@@ -41,6 +41,28 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public FilePermission GetById(int filePermissionId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    @"SELECT FilePermissionID, FileID, PrincipalType, PrincipalID, CanRead, CanWrite, CanDelete,
+                             CanModify, CanFullControl, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
+                      FROM security.FilePermission
+                      WHERE FilePermissionID = @FilePermissionID", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@FilePermissionID", filePermissionId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read()) return MapPermission(reader);
+                        return null;
+                    }
+                }
+            }
+        }
+
         public IEnumerable<FilePermission> GetByFile(int fileId)
         {
             var results = new List<FilePermission>();
@@ -70,6 +92,58 @@ namespace CMS.Data.Repositories
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@FileID", fileId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read()) results.Add(MapPermission(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
+        public IEnumerable<FilePermission> GetByGrantedBy(int userId)
+        {
+            var results = new List<FilePermission>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    @"SELECT FilePermissionID, FileID, PrincipalType, PrincipalID, CanRead, CanWrite, CanDelete,
+                             CanModify, CanFullControl, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
+                      FROM security.FilePermission
+                      WHERE GrantedBy = @UserID AND RevokedDate IS NULL
+                      ORDER BY GrantedDate DESC", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@UserID", userId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read()) results.Add(MapPermission(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
+        public IEnumerable<FilePermission> GetByPrincipal(int principalType, int principalId)
+        {
+            var results = new List<FilePermission>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql =
+                    @"SELECT FilePermissionID, FileID, PrincipalType, PrincipalID,
+                             CanRead, CanWrite, CanDelete, CanModify, CanFullControl, IsDeny,
+                             ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
+                      FROM   security.FilePermission
+                      WHERE  PrincipalType = @PrincipalType
+                        AND  PrincipalID   = @PrincipalID
+                        AND  RevokedDate   IS NULL
+                      ORDER  BY GrantedDate DESC";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@PrincipalType", (byte)principalType);
+                    cmd.Parameters.AddWithValue("@PrincipalID",   principalId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read()) results.Add(MapPermission(reader));

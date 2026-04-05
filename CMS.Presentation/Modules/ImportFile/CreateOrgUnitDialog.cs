@@ -6,17 +6,23 @@ using System.Windows.Forms;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
+using CMS.Data.Interfaces;
 using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
     internal partial class CreateOrgUnitDialog : Form
     {
-        private readonly List<OrgUnit>       _allUnits;
-        private readonly IEmployeeApiService _employeeApiService;
-        private readonly IOrgStructureService _orgService;
-        private readonly OrgUnitTier         _fixedTier;
-        private readonly OrgUnit             _selectedParent; // Context จาก TreeView
+        private readonly List<OrgUnit>           _allUnits;
+        private readonly IEmployeeApiService      _employeeApiService;
+        private readonly IOrgStructureService     _orgService;
+        private readonly OrgUnitTier              _fixedTier;
+        private readonly OrgUnit                  _selectedParent;
+        private readonly IHrDivisionRepository    _hrDivisionRepo;
+        private readonly IHrDepartmentRepository  _hrDepartmentRepo;
+
+        // เก็บ DivisionID ที่เลือกไว้ เพื่อ filter แผนก
+        private int _selectedDivisionID = 0;
 
         public CreateOrgUnitRequest Result { get; private set; }
 
@@ -24,14 +30,18 @@ namespace CMS.Presentation
             IEmployeeApiService employeeApiService = null,
             OrgUnitTier? fixedTier = null,
             IOrgStructureService orgService = null,
-            OrgUnit selectedParent = null)
+            OrgUnit selectedParent = null,
+            IHrDivisionRepository hrDivisionRepo = null,
+            IHrDepartmentRepository hrDepartmentRepo = null)
         {
             // Include ALL units (active, inactive, deleted) to avoid code conflicts
             _allUnits           = allUnits?.ToList() ?? new List<OrgUnit>();
             _employeeApiService = employeeApiService;
             _orgService         = orgService;
             _fixedTier          = fixedTier ?? OrgUnitTier.SubCommittee;
-            _selectedParent     = selectedParent; // เก็บ context
+            _selectedParent     = selectedParent;
+            _hrDivisionRepo     = hrDivisionRepo;
+            _hrDepartmentRepo   = hrDepartmentRepo;
 
             // Debug: Show total units received
             System.Diagnostics.Debug.WriteLine($"CreateOrgUnitDialog received {_allUnits.Count} units");
@@ -134,122 +144,73 @@ namespace CMS.Presentation
             txtCode.Text = GenerateCode(tier);
         }
 
-        /// <summary>สร้างรหัสอัตโนมัติ เช่น SC-001, DIV-003, DEPT-007</summary>
+        /// <summary>
+        /// SubCommittee → auto-generate SC-001, SC-002, ... ต่อเนื่อง
+        /// Division     → ใช้ DivisionCode จาก HR_Division (user เลือกจาก dialog)
+        /// Department   → ใช้ DepartmentCode จาก HR_Department (user เลือกจาก dialog)
+        /// </summary>
         private string GenerateCode(OrgUnitTier tier)
         {
-            string prefix;
-            switch (tier)
+            if (tier == OrgUnitTier.Division || tier == OrgUnitTier.Department)
             {
-                case OrgUnitTier.SubCommittee: prefix = "SC";   break;
-                case OrgUnitTier.Division:     prefix = "DIV";  break;
-                default:                       prefix = "DEPT"; break;
+                // ให้ user เลือกจาก HR table ผ่าน dialog "ค้นหา" — คืนค่าว่างไว้ก่อน
+                return string.Empty;
             }
 
-            // Get fresh data from database if service is available
+            // SubCommittee → auto-generate SC-NNN ต่อเนื่อง
+            const string prefix = "SC";
             List<OrgUnit> allUnits;
             if (_orgService != null)
             {
-                try
-                {
-                    allUnits = _orgService.GetHierarchy().ToList();
-                    System.Diagnostics.Debug.WriteLine($"GenerateCode: Got fresh data from service - {allUnits.Count} units");
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"GenerateCode: Failed to get fresh data, using cached: {ex.Message}");
-                    allUnits = _allUnits;
-                }
+                try   { allUnits = _orgService.GetHierarchy().ToList(); }
+                catch { allUnits = _allUnits; }
             }
             else
             {
                 allUnits = _allUnits;
-                System.Diagnostics.Debug.WriteLine($"GenerateCode: No service available, using cached data - {allUnits.Count} units");
             }
 
-            // Get all existing codes with this prefix (including deleted ones to avoid reuse)
-            var existingCodes = new HashSet<string>(allUnits
+            var existingNumbers = allUnits
                 .Where(u => u.OrgUnitCode != null && u.OrgUnitCode.StartsWith(prefix + "-"))
-                .Select(u => u.OrgUnitCode)); // Use HashSet for faster lookup
-
-            // Debug: Show existing codes
-            if (existingCodes.Count > 0)
-            {
-                var codeList = string.Join(", ", existingCodes.OrderBy(c => c));
-                System.Diagnostics.Debug.WriteLine($"Existing {prefix} codes: {codeList}");
-            }
-
-            // Extract numbers from existing codes to find the highest
-            var existingNumbers = new List<int>();
-            foreach (var code in existingCodes)
-            {
-                var parts = code.Split('-');
-                if (parts.Length == 2 && int.TryParse(parts[1], out int number))
+                .Select(u =>
                 {
-                    existingNumbers.Add(number);
-                }
-            }
+                    var parts = u.OrgUnitCode.Split('-');
+                    int n;
+                    return parts.Length == 2 && int.TryParse(parts[1], out n) ? n : 0;
+                })
+                .Where(n => n > 0)
+                .ToList();
 
-            // Find the next available number
-            int nextNumber = existingNumbers.Count > 0 ? existingNumbers.Max() + 1 : 1;
-            
-            // Double-check that the generated code doesn't exist
-            string newCode;
-            do
-            {
-                newCode = string.Format("{0}-{1:D3}", prefix, nextNumber);
-                nextNumber++;
-            }
-            while (existingCodes.Contains(newCode) && nextNumber <= 999);
-
-            // Additional safety check - if we somehow reach 999, use timestamp
-            if (nextNumber > 999)
-            {
-                var timestamp = DateTime.Now.ToString("MMddHHmm");
-                newCode = string.Format("{0}-{1}", prefix, timestamp);
-            }
-
-            System.Diagnostics.Debug.WriteLine($"Generated code: {newCode}");
-            return newCode;
+            int next = existingNumbers.Count > 0 ? existingNumbers.Max() + 1 : 1;
+            return string.Format("{0}-{1:D3}", prefix, next);
         }
 
         // ── Event handlers ────────────────────────────────────────────────────
         private void TxtCode_TextChanged(object sender, EventArgs e)
         {
             string code = txtCode.Text.Trim();
-            if (string.IsNullOrWhiteSpace(code)) return;
+            if (string.IsNullOrWhiteSpace(code)) { txtCode.BackColor = Color.White; txtCode.ForeColor = Color.Black; return; }
 
-            // Get fresh data for validation
-            List<OrgUnit> allUnits;
-            if (_orgService != null)
-            {
-                try
-                {
-                    allUnits = _orgService.GetHierarchy().ToList();
-                }
-                catch
-                {
-                    allUnits = _allUnits;
-                }
-            }
-            else
-            {
-                allUnits = _allUnits;
-            }
-
-            // Check for duplicate code
-            var existingUnit = allUnits.FirstOrDefault(u => 
-                u.OrgUnitCode == code && u.IsActive && !u.IsDeleted);
-
-            if (existingUnit != null)
-            {
-                txtCode.BackColor = Color.FromArgb(255, 235, 235); // Light red
-                txtCode.ForeColor = Color.FromArgb(220, 53, 69);   // Red text
-            }
-            else
+            // แสดงสีแดงเฉพาะ SubCommittee เท่านั้น
+            var currentTier = cboTier.SelectedItem is OrgUnitTier t ? t : OrgUnitTier.SubCommittee;
+            if (currentTier != OrgUnitTier.SubCommittee)
             {
                 txtCode.BackColor = Color.White;
                 txtCode.ForeColor = Color.Black;
+                return;
             }
+
+            List<OrgUnit> allUnits;
+            if (_orgService != null)
+            {
+                try   { allUnits = _orgService.GetHierarchy().ToList(); }
+                catch { allUnits = _allUnits; }
+            }
+            else { allUnits = _allUnits; }
+
+            var exists = allUnits.Any(u => u.OrgUnitCode == code && u.IsActive && !u.IsDeleted);
+            txtCode.BackColor = exists ? Color.FromArgb(255, 235, 235) : Color.White;
+            txtCode.ForeColor = exists ? Color.FromArgb(220, 53, 69)   : Color.Black;
         }
 
         private void OnTierChanged(object sender, EventArgs e)
@@ -268,17 +229,24 @@ namespace CMS.Presentation
 
         private void OnSearchNameClick(object sender, EventArgs e)
         {
-            if (_employeeApiService == null)
+            var currentTier = cboTier.SelectedItem != null ? (OrgUnitTier)cboTier.SelectedItem : OrgUnitTier.Division;
+            bool   isDivision = currentTier == OrgUnitTier.Division;
+
+            // ต้องมี data source อย่างน้อย 1 อย่าง
+            if (isDivision && _hrDivisionRepo == null && _employeeApiService == null)
             {
-                MessageBox.Show("Employee API service ไม่พร้อมใช้งาน",
+                MessageBox.Show("ไม่มีแหล่งข้อมูลฝ่าย กรุณาตรวจสอบการตั้งค่า",
+                    "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!isDivision && _hrDepartmentRepo == null && _employeeApiService == null)
+            {
+                MessageBox.Show("ไม่มีแหล่งข้อมูลแผนก กรุณาตรวจสอบการตั้งค่า",
                     "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // ใช้ tier ที่เลือกจริงแทนที่จะใช้ _fixedTier
-            var currentTier = cboTier.SelectedItem != null ? (OrgUnitTier)cboTier.SelectedItem : OrgUnitTier.Division;
-            bool   isDivision = currentTier == OrgUnitTier.Division;
-            string dlgTitle   = isDivision ? "เลือกฝ่าย" : "เลือกแผนก";
+            string dlgTitle = isDivision ? "เลือกฝ่าย" : "เลือกแผนก";
 
             using (var dlg = new Form())
             {
@@ -329,15 +297,22 @@ namespace CMS.Presentation
                 // ── Search box ───────────────────────────────────────────────
                 var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 36,
                     BackColor = Color.White, Padding = new Padding(6, 4, 6, 4) };
+                bool isPlaceholder = true;
                 var txtSearch = new TextBox {
                     Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10f),
                     ForeColor = Color.Gray, Text = "ค้นหารหัสหรือชื่อ..."
                 };
                 txtSearch.GotFocus  += (s, e2) => {
-                    if (txtSearch.ForeColor == Color.Gray) { txtSearch.Text = ""; txtSearch.ForeColor = Color.Black; }
+                    if (!isPlaceholder) return;
+                    isPlaceholder = false;
+                    txtSearch.Text      = "";
+                    txtSearch.ForeColor = Color.Black;
                 };
                 txtSearch.LostFocus += (s, e2) => {
-                    if (string.IsNullOrWhiteSpace(txtSearch.Text)) { txtSearch.Text = "ค้นหารหัสหรือชื่อ..."; txtSearch.ForeColor = Color.Gray; }
+                    if (!string.IsNullOrWhiteSpace(txtSearch.Text)) return;
+                    isPlaceholder       = true;
+                    txtSearch.Text      = "ค้นหารหัสหรือชื่อ...";
+                    txtSearch.ForeColor = Color.Gray;
                 };
                 pnlSearch.Controls.Add(txtSearch);
 
@@ -357,22 +332,68 @@ namespace CMS.Presentation
                 {
                     if (isDivision)
                     {
-                        foreach (var v in _employeeApiService.GetDivisions().OrderBy(x => x.DivisionCode))
+                        // ดึงจาก core.HR_Division ถ้ามี repo, fallback ไป Employee API
+                        if (_hrDivisionRepo != null)
                         {
-                            var row = new ListViewItem(v.DivisionCode ?? "");
-                            row.SubItems.Add(v.NameTh ?? "");
-                            row.Tag = new OrgUnitData { Type = "ฝ่าย", Code = v.DivisionCode, NameTh = v.NameTh };
-                            allItems.Add(row);
+                            foreach (var v in _hrDivisionRepo.GetAll().OrderBy(x => x.DivisionCode))
+                            {
+                                var row = new ListViewItem(v.DivisionCode ?? "");
+                                row.SubItems.Add(v.DivisionName ?? "");
+                                row.Tag = new OrgUnitData { Type = "ฝ่าย", Code = v.DivisionCode, NameTh = v.DivisionName };
+                                allItems.Add(row);
+                            }
+                        }
+                        else if (_employeeApiService != null)
+                        {
+                            foreach (var v in _employeeApiService.GetDivisions().OrderBy(x => x.DivisionCode))
+                            {
+                                var row = new ListViewItem(v.DivisionCode ?? "");
+                                row.SubItems.Add(v.NameTh ?? "");
+                                row.Tag = new OrgUnitData { Type = "ฝ่าย", Code = v.DivisionCode, NameTh = v.NameTh };
+                                allItems.Add(row);
+                            }
                         }
                     }
                     else
                     {
-                        foreach (var d in _employeeApiService.GetDepartments().OrderBy(x => x.DepartmentCode))
+                        // หา DivisionID จาก cboParent ที่เลือกไว้
+                        int divisionId = 0;
+                        if (_hrDepartmentRepo != null)
                         {
-                            var row = new ListViewItem(d.DepartmentCode ?? "");
-                            row.SubItems.Add(d.NameTh ?? "");
-                            row.Tag = new OrgUnitData { Type = "แผนก", Code = d.DepartmentCode, NameTh = d.NameTh };
-                            allItems.Add(row);
+                            // ดึง DivisionCode จาก cboParent แล้ว map ไปหา DivisionID ใน HR_Division
+                            string selectedDivCode = null;
+                            if (cboParent.SelectedItem is OrgUnitItem parentItem && parentItem.OrgUnit != null)
+                                selectedDivCode = parentItem.OrgUnit.OrgUnitCode;
+
+                            if (_hrDivisionRepo != null && !string.IsNullOrEmpty(selectedDivCode))
+                            {
+                                var div = _hrDivisionRepo.GetAll()
+                                    .FirstOrDefault(d => string.Equals(d.DivisionCode, selectedDivCode,
+                                        StringComparison.OrdinalIgnoreCase));
+                                if (div != null) divisionId = div.DivisionID;
+                            }
+
+                            var depts = divisionId > 0
+                                ? _hrDepartmentRepo.GetByDivisionID(divisionId)
+                                : _hrDepartmentRepo.GetAll();
+
+                            foreach (var d in depts.OrderBy(x => x.DepartmentCode))
+                            {
+                                var row = new ListViewItem(d.DepartmentCode ?? "");
+                                row.SubItems.Add(d.DepartmentName ?? "");
+                                row.Tag = new OrgUnitData { Type = "แผนก", Code = d.DepartmentCode, NameTh = d.DepartmentName };
+                                allItems.Add(row);
+                            }
+                        }
+                        else if (_employeeApiService != null)
+                        {
+                            foreach (var d in _employeeApiService.GetDepartments().OrderBy(x => x.DepartmentCode))
+                            {
+                                var row = new ListViewItem(d.DepartmentCode ?? "");
+                                row.SubItems.Add(d.NameTh ?? "");
+                                row.Tag = new OrgUnitData { Type = "แผนก", Code = d.DepartmentCode, NameTh = d.NameTh };
+                                allItems.Add(row);
+                            }
                         }
                     }
                 }
@@ -387,7 +408,7 @@ namespace CMS.Presentation
 
                 // Filter on text change
                 txtSearch.TextChanged += (s, e2) => {
-                    if (txtSearch.ForeColor == Color.Gray) return; // placeholder active
+                    if (isPlaceholder) return;
                     string kw = txtSearch.Text.Trim().ToLower();
                     lv.BeginUpdate();
                     lv.Items.Clear();
@@ -405,8 +426,8 @@ namespace CMS.Presentation
                     if (lv.SelectedItems.Count == 0) return;
                     var data = lv.SelectedItems[0].Tag as OrgUnitData;
                     if (data == null) return;
-                    txtName.Text     = data.NameTh;
-                    // ไม่ override txtCode — ใช้ค่าที่ generate ไว้แล้ว
+                    txtName.Text = data.NameTh ?? string.Empty;
+                    txtCode.Text = data.Code   ?? string.Empty;
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                 };
@@ -452,40 +473,34 @@ namespace CMS.Presentation
                 return;
             }
 
-            // Check for duplicate code - get fresh data
-            List<OrgUnit> allUnits;
-            if (_orgService != null)
-            {
-                try
-                {
-                    allUnits = _orgService.GetHierarchy().ToList();
-                }
-                catch
-                {
-                    allUnits = _allUnits;
-                }
-            }
-            else
-            {
-                allUnits = _allUnits;
-            }
-
-            var existingUnit = allUnits.FirstOrDefault(u => 
-                u.OrgUnitCode == code && u.IsActive && !u.IsDeleted);
-            
-            if (existingUnit != null)
-            {
-                MessageBox.Show(
-                    string.Format("รหัสหน่วยงาน '{0}' มีอยู่ในระบบแล้ว\nหน่วยงาน: {1}\n\nกรุณาใช้รหัสอื่น", 
-                        code, existingUnit.OrgUnitNameTH ?? existingUnit.Name), 
-                    "รหัสซ้ำ", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtCode.Focus();
-                DialogResult = DialogResult.None;
-                return;
-            }
-
+            // SubCommittee ห้ามซ้ำ (auto-generate)
+            // Division/Department ซ้ำได้ เพราะใช้รหัสจาก HR และอาจอยู่ใต้หลาย parent
             var tier = (OrgUnitTier)cboTier.SelectedItem;
+
+            if (tier == OrgUnitTier.SubCommittee)
+            {
+                List<OrgUnit> allUnitsForCheck;
+                if (_orgService != null)
+                {
+                    try   { allUnitsForCheck = _orgService.GetHierarchy().ToList(); }
+                    catch { allUnitsForCheck = _allUnits; }
+                }
+                else { allUnitsForCheck = _allUnits; }
+
+                var existingByCode = allUnitsForCheck.FirstOrDefault(u =>
+                    u.OrgUnitCode == code && u.IsActive && !u.IsDeleted);
+
+                if (existingByCode != null)
+                {
+                    MessageBox.Show(
+                        string.Format("รหัส \"{0}\" มีอยู่ในระบบแล้ว\nหน่วยงาน: {1}\n\nกรุณาใช้รหัสอื่น",
+                            code, existingByCode.OrgUnitNameTH ?? existingByCode.Name),
+                        "รหัสซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtCode.Focus();
+                    DialogResult = DialogResult.None;
+                    return;
+                }
+            }
 
             // ตรวจสอบ hierarchy rules
             if (cboParent.SelectedItem is OrgUnitItem parentItem && parentItem.OrgUnit != null)

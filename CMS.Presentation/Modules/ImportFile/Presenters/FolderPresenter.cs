@@ -204,6 +204,7 @@ namespace CMS.Presentation.Presenters
                     catch (UnauthorizedAccessException)
                     {
                         files = new List<FileDocument>();
+                        _view.ShowInfo("🔒 ไม่มีสิทธิ์อ่านไฟล์ใน Folder นี้");
                     }
                     catch (Exception ex)
                     {

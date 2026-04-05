@@ -5,7 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CMS.Data.Interfaces;
-using CMS.Domain.Enums;using CMS.Domain.Models;
+using CMS.Domain.Enums;
+using CMS.Domain.Models;
+using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Presenters;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
@@ -38,8 +40,9 @@ namespace CMS.Presentation
         private readonly IFolderTemplateRepository _folderTemplateRepository;
         private readonly IUploadCheckpointService  _checkpointService;
         private readonly IQuickAccessService  _quickAccessService;
-        private readonly IPermissionService   _permissionService;
-        private readonly IFolderRepository    _folderRepository;
+        private readonly IPermissionService    _permissionService;
+        private readonly IFolderRepository     _folderRepository;
+        private          IPermissionRepository _permissionRepository;
         private readonly UserContext          _user;
 
         // Quick Access panel (Req 7)
@@ -64,10 +67,6 @@ namespace CMS.Presentation
         // Track selected file in content list
         private List<FileDocument> _currentFiles = new List<FileDocument>();
 
-        // File preview panel (Req 9)
-        private FilePreviewPanel _previewPanel;
-        private Button _btnTogglePreview;
-
         // Inline rename (เหมือน Windows Explorer)
         private TextBox      _inlineRenameBox;
         private ListViewItem _renamingItem;
@@ -75,6 +74,8 @@ namespace CMS.Presentation
         // Track active confidentiality level filter (0 = no filter, 1-4 = filtered level)
         private int _activeConfidentialityFilter = 0;
 
+        // View mode toggle (Details / Large Icons / Tile)
+        private View _currentView = View.Details;
         // OrgFilter view switcher (ตามองค์กร / ตามความลับ)
         private Panel    _pnlViewButtons;
         private Button   _btnOrgView;
@@ -93,7 +94,8 @@ namespace CMS.Presentation
                           IQuickAccessService quickAccessService = null,
                           IApprovalService approvalService = null,
                           IPermissionService permissionService = null,
-                          IFolderRepository folderRepository = null)
+                          IFolderRepository folderRepository = null,
+                          IPermissionRepository permissionRepository = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
@@ -108,9 +110,12 @@ namespace CMS.Presentation
             _quickAccessService       = quickAccessService;
             _approvalService          = approvalService;
             _permissionService        = permissionService;
+            _permissionRepository     = permissionRepository;
             _user                     = user;
 
             InitializeComponent();
+
+            BuildContentImageList();
 
             _presenter = new FolderPresenter(service, this, user, fileService, folderRepository);
             _folderRepository = folderRepository;
@@ -165,21 +170,15 @@ namespace CMS.Presentation
                 }
             };
 
-            // Red border on breadcrumb textbox via parent panel Paint
-            pnlNavBar.Paint += (s, e) =>
-            {
-                var r = new Rectangle(
-                    txtBreadcrumb.Left - 1, txtBreadcrumb.Top - 1,
-                    txtBreadcrumb.Width + 1, txtBreadcrumb.Height + 1);
-                using (var pen = new Pen(Color.Red, 1))
-                    e.Graphics.DrawRectangle(pen, r);
-            };
-
             // Alternating row colors for readability
             contentsListView.OwnerDraw = true;
             contentsListView.DrawColumnHeader += (s, e) => e.DrawDefault = true;
             contentsListView.DrawSubItem      += ContentsListView_DrawSubItem;
             contentsListView.DrawItem         += (s, e) => { /* handled in DrawSubItem */ };
+
+            // ปรับ colName ให้เต็มพื้นที่เมื่อขนาดเปลี่ยน
+            contentsListView.Resize += (s, e) => AdjustNameColumnWidth();
+            this.Load += (s, e) => AdjustNameColumnWidth();
 
             // Wire OrgUnit inline treeview — load on form Load
             this.Load += (s, e2) => LoadOrgUnitTree();
@@ -205,9 +204,6 @@ namespace CMS.Presentation
             // Handle คลิก OrgUnit node ที่ selected อยู่แล้ว → force reload content
             treeOrgUnit.NodeMouseClick += treeOrgUnit_NodeMouseClick;
             contentsListView.SelectedIndexChanged += (s, e2) => { UpdateMoveButtonState(); OnSelectionChanged(); };
-
-            // Initialize file preview panel (Req 9)
-            InitializePreviewPanel();
 
             // Initialize Quick Access panel (Req 7)
             InitializeQuickAccessPanel();
@@ -255,73 +251,6 @@ namespace CMS.Presentation
 
 
         // -----------------------------------------------------------------------
-        // File Preview Panel initialisation (Req 9)
-        // -----------------------------------------------------------------------
-
-        private void InitializePreviewPanel()
-        {
-            // Preview panel — create as a separate form for popup display
-            _previewPanel = new FilePreviewPanel
-            {
-                Width   = 400,
-                Height  = 500,
-                Visible = false
-            };
-
-            // Toggle button — added to pnlContentHeader with icon only
-            _btnTogglePreview = new Button
-            {
-                Text      = "👁",
-                FlatStyle = FlatStyle.Flat,
-                Font      = new System.Drawing.Font("Microsoft Sans Serif", 12f),
-                Size      = new System.Drawing.Size(30, 22),
-                Dock      = DockStyle.Right,
-                Cursor    = Cursors.Hand
-            };
-            _btnTogglePreview.FlatAppearance.BorderSize = 0;
-            _btnTogglePreview.Click += BtnTogglePreview_Click;
-
-            // Add tooltip
-            var tooltip = new ToolTip();
-            tooltip.SetToolTip(_btnTogglePreview, "แสดง Preview");
-
-            pnlContentHeader.Controls.Add(_btnTogglePreview);
-        }
-
-        private void BtnTogglePreview_Click(object sender, EventArgs e)
-        {
-            var file = SelectedFile;
-            if (file == null)
-            {
-                MessageBox.Show("กรุณาเลือกไฟล์ก่อนดู Preview", "แจ้งเตือน", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            // Create popup form for preview
-            var previewForm = new Form
-            {
-                Text = $"Preview - {file.OriginalFileName}",
-                Size = new Size(500, 600),
-                StartPosition = FormStartPosition.CenterParent,
-                ShowInTaskbar = false,
-                MaximizeBox = true,
-                MinimizeBox = false
-            };
-
-            var previewPanel = new FilePreviewPanel
-            {
-                Dock = DockStyle.Fill
-            };
-
-            previewForm.Controls.Add(previewPanel);
-            
-            string path = GetFilePhysicalPath(file);
-            previewPanel.ShowFile(file, path);
-            
-            previewForm.ShowDialog(this);
-        }
-
         private void BuildFolderTreeContextMenu()
         {
             var ctx = new ContextMenuStrip();
@@ -345,35 +274,44 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuNewFolder);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuOpen);
-            ctx.Items.Add(mnuDownload);
+            //ctx.Items.Add(mnuDownload);
             ctx.Items.Add(new ToolStripSeparator());
-            ctx.Items.Add(mnuCut);
-            ctx.Items.Add(mnuCopy);
-            ctx.Items.Add(mnuPaste);
+            //ctx.Items.Add(mnuCut);
+            //ctx.Items.Add(mnuCopy);
+            //ctx.Items.Add(mnuPaste);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuRename);
             ctx.Items.Add(mnuDelete);
-            ctx.Items.Add(mnuArchive);
+            //ctx.Items.Add(mnuArchive);
             ctx.Items.Add(mnuPermission);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuAddQuickAccess);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuProperties);
 
-            // enable/disable ตาม selection
+            // enable/disable ตาม selection + FolderAuthorityConfig
             ctx.Opening += (s, e) =>
             {
-                bool hasFolder        = (SelectedFolder != null);
-                bool canDeleteFolder  = hasFolder && CanDeleteFolder(SelectedFolder);
-                mnuOpen.Enabled       = hasFolder;
-                mnuDownload.Enabled   = hasFolder;
-                mnuRename.Enabled     = hasFolder;
-                mnuDelete.Enabled     = canDeleteFolder;
-                mnuArchive.Enabled    = hasFolder;
-                mnuPermission.Enabled = hasFolder;
-                mnuProperties.Enabled = hasFolder;
-                mnuAddQuickAccess.Enabled = hasFolder && _quickAccessService != null;
-                // mnuReload และ mnuNewFolder ใช้ได้เสมอ
+                bool hasFolder       = (SelectedFolder != null);
+                int  level           = hasFolder ? SelectedFolder.ConfidentialityLevel : 0;
+                bool isPrivileged    = _user.AppRole >= 3;
+
+                bool canView = isPrivileged || (hasFolder && _user.CanViewFolder(level));
+                bool canAdd  = isPrivileged || (hasFolder && _user.CanAddToFolder(level));
+                bool canEdit = isPrivileged || (hasFolder && _user.CanEditFolder(level));
+
+                bool canDeleteFolder = hasFolder && canEdit && CanDeleteFolder(SelectedFolder);
+
+                mnuNewFolder.Enabled      = hasFolder && canAdd;
+                mnuOpen.Enabled           = hasFolder && canView;
+                mnuDownload.Enabled       = hasFolder && canView;
+                mnuRename.Enabled         = hasFolder && canEdit;
+                mnuDelete.Enabled         = canDeleteFolder;
+                mnuArchive.Enabled        = hasFolder && canEdit;
+                mnuPermission.Enabled     = hasFolder && isPrivileged;
+                mnuProperties.Enabled     = hasFolder && canView;
+                mnuAddQuickAccess.Enabled = hasFolder && canView && _quickAccessService != null;
+                // mnuReload ใช้ได้เสมอ
             };
 
             folderTreeView.ContextMenuStrip = ctx;
@@ -405,6 +343,7 @@ namespace CMS.Presentation
             var mnuPaste      = new ToolStripMenuItem("วาง",                 null, (s, e) => ShowInfo("ฟีเจอร์วางไฟล์จะพร้อมใช้งานในเวอร์ชันถัดไป"))   { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V, ShowShortcutKeys = true, Enabled = false };
             var mnuRename     = new ToolStripMenuItem("เปลี่ยนชื่อ",         null, (s, e) => btnRename_Click(s, e))                                      { ShortcutKeys = System.Windows.Forms.Keys.F2, ShowShortcutKeys = true };
             var mnuDelete     = new ToolStripMenuItem("ลบ",                  null, (s, e) => btnDelete_Click(s, e))                                       { ShortcutKeys = System.Windows.Forms.Keys.Delete, ShowShortcutKeys = true };
+            var mnuClearFolder = new ToolStripMenuItem("🗑️  ล้างไฟล์ทั้งหมดใน Folder...", null, (s, e) => ClearFolderContents());
             var mnuArchive    = new ToolStripMenuItem("Archive",             null, (s, e) => btnArchive_Click(s, e));
             var mnuPermission = new ToolStripMenuItem("ตั้งค่าสิทธิ์...",   null, CtxPermission_Click);
             var mnuProperties = new ToolStripMenuItem("คุณสมบัติ",           null, CtxFileProperties_Click)                                               { ShortcutKeys = System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.Enter, ShowShortcutKeys = true };
@@ -421,33 +360,44 @@ namespace CMS.Presentation
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuRename);
             ctx.Items.Add(mnuDelete);
+            ctx.Items.Add(mnuClearFolder);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuArchive);
             ctx.Items.Add(mnuPermission);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuProperties);
 
-            // enable/disable based on selection
+            // enable/disable based on selection + FolderAuthorityConfig
             ctx.Opening += (s, e) =>
             {
-                bool hasFile          = (SelectedFile != null);
-                // isAtRoot = กำลังดู 4 folder หลัก (ยังไม่ได้เข้า folder ใดๆ)
-                bool isAtRoot         = !_currentNavFolderId.HasValue;
-                bool hasFolder        = !isAtRoot && (_currentNavFolderId.HasValue || SelectedFolder != null);
-                // ตรวจสอบ folder ในรายการ content (กรณีที่ tag เป็น Folder)
-                Folder contentFolder  = null;
+                bool hasFile   = (SelectedFile != null);
+                bool isAtRoot  = !_currentNavFolderId.HasValue;
+                bool hasFolder = !isAtRoot && (_currentNavFolderId.HasValue || SelectedFolder != null);
+
+                // level ของ folder ที่กำลังดูอยู่
+                int  level        = _lastSelectedFolder != null ? _lastSelectedFolder.ConfidentialityLevel : 0;
+                bool isPrivileged = _user.AppRole >= 3;
+
+                bool canView = isPrivileged || _user.CanViewFolder(level);
+                bool canAdd  = isPrivileged || _user.CanAddToFolder(level);
+                bool canEdit = isPrivileged || _user.CanEditFolder(level);
+
+                // folder ที่เลือกใน content list (กรณี tag เป็น Folder)
+                Folder contentFolder = null;
                 if (contentsListView.SelectedItems.Count > 0)
                     contentFolder = contentsListView.SelectedItems[0].Tag as Folder;
-                bool canDeleteContent = hasFile || (contentFolder != null && CanDeleteFolder(contentFolder));
-                mnuUpload.Enabled     = hasFolder && _fileService != null;
-                mnuNewFolder.Enabled  = hasFolder;
-                mnuOpen.Enabled       = hasFile;
-                mnuDownload.Enabled   = hasFile;
-                mnuRename.Enabled     = hasFile;
-                mnuDelete.Enabled     = canDeleteContent;
-                mnuArchive.Enabled    = hasFile;
-                mnuPermission.Enabled = hasFile;
-                mnuProperties.Enabled = hasFile;
+                bool canDeleteContent = canEdit && (hasFile || (contentFolder != null && CanDeleteFolder(contentFolder)));
+
+                mnuUpload.Enabled      = hasFolder && canAdd  && _fileService != null;
+                mnuNewFolder.Enabled   = hasFolder && canAdd;
+                mnuOpen.Enabled        = hasFile   && canView;
+                mnuDownload.Enabled    = hasFile   && canView;
+                mnuRename.Enabled      = hasFile   && canEdit;
+                mnuDelete.Enabled      = canDeleteContent;
+                mnuClearFolder.Enabled = _fileService != null && _currentNavFolderId.HasValue && canEdit;
+                mnuArchive.Enabled     = hasFile   && canEdit;
+                mnuPermission.Enabled  = isPrivileged;
+                mnuProperties.Enabled  = hasFile   && canView;
             };
 
             contentsListView.ContextMenuStrip = ctx;
@@ -777,31 +727,74 @@ namespace CMS.Presentation
             _btnOrgView.ForeColor  = Color.FromArgb(31, 56, 100);
             _btnConfView.BackColor = Color.FromArgb(31, 56, 100);
             _btnConfView.ForeColor = Color.White;
-            BuildConfidentialityTreeFromAllFolders();
+            BuildConfidentialityTreeFromAllFoldersAsync();
+        }
+
+        private async void BuildConfidentialityTreeFromAllFoldersAsync()
+        {
+            _treeConfidentiality.BeginUpdate();
+            _treeConfidentiality.Nodes.Clear();
+            lblOrgUnitStatus.Text = "⏳ กำลังโหลด ตามความลับ...";
+            this.Cursor = Cursors.WaitCursor;
+
+            try
+            {
+                // ดึงข้อมูลทั้งหมดแบบ async เพื่อไม่ block UI
+                var result = await System.Threading.Tasks.Task.Run(() =>
+                {
+                    var allFolders = (_folderRepository != null
+                        ? _folderRepository.GetActiveFolders()
+                        : _folderService.GetRootFolders(null, _user))
+                        .ToList();
+
+                    var childrenByParent = allFolders
+                        .Where(f => f.ParentFolderID.HasValue)
+                        .GroupBy(f => f.ParentFolderID.Value)
+                        .ToDictionary(g => g.Key, g => g.ToList());
+
+                    var allRootFolders = allFolders
+                        .Where(f => !f.ParentFolderID.HasValue)
+                        .ToList();
+
+                    var allOrgUnits = new List<OrgUnit>();
+                    if (_orgStructureService != null)
+                        allOrgUnits = _orgStructureService.GetHierarchy()
+                            .Where(u => u.IsActive && !u.IsDeleted)
+                            .ToList();
+
+                    return new
+                    {
+                        AllFolders = allFolders,
+                        ChildrenByParent = childrenByParent,
+                        AllRootFolders = allRootFolders,
+                        AllOrgUnits = allOrgUnits
+                    };
+                });
+
+                BuildConfidentialityTreeFromAllFolders(result.AllRootFolders, result.AllOrgUnits, result.ChildrenByParent);
+                lblOrgUnitStatus.Text = "✓ โหลดเสร็จ";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("BuildConfidentialityTreeFromAllFoldersAsync error: " + ex.Message);
+                lblOrgUnitStatus.Text = "✗ เกิดข้อผิดพลาด";
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+                _treeConfidentiality.EndUpdate();
+            }
         }
 
         /// <summary>
         /// สร้าง "ตามความลับ" tree แสดงโครงสร้างองค์กร Sub → Div → Dep แบบ Windows Explorer
         /// จัดกลุ่มตาม 1HC/2SC/3NC/4PC แล้วแสดง SubCommittee → Division → Department → Folder
         /// </summary>
-        private void BuildConfidentialityTreeFromAllFolders()
+        private void BuildConfidentialityTreeFromAllFolders(List<Folder> allRootFolders, List<OrgUnit> allOrgUnits,
+            Dictionary<int, List<Folder>> childrenByParent)
         {
-            _treeConfidentiality.BeginUpdate();
-            _treeConfidentiality.Nodes.Clear();
-
             try
             {
-                // ดึง root folders จากทุก OrgUnit
-                var allRootFolders = _folderService.GetRootFolders(null, _user)
-                    .Where(f => !f.IsDeleted && !f.IsArchived)
-                    .ToList();
-
-                // ดึง OrgUnit hierarchy เพื่อแสดง Sub → Div → Dep
-                var allOrgUnits = new List<OrgUnit>();
-                if (_orgStructureService != null)
-                    allOrgUnits = _orgStructureService.GetHierarchy()
-                        .Where(u => u.IsActive && !u.IsDeleted)
-                        .ToList();
 
                 // Group folders by OrgUnitID for quick lookup
                 var foldersByOrgUnit = allRootFolders
@@ -915,20 +908,20 @@ namespace CMS.Presentation
                                         ImageKey         = "folder",
                                         SelectedImageKey = "open_folder"
                                     };
-                                    BuildConfFolderNodes(deptNode, dept.OrgUnitID, group.Level, group.Color, foldersByOrgUnit);
+                                    BuildConfFolderNodes(deptNode, dept.OrgUnitID, group.Level, group.Color, foldersByOrgUnit, childrenByParent);
                                     if (deptNode.Nodes.Count > 0)
                                         divNode.Nodes.Add(deptNode);
                                 }
 
                                 // Folders owned directly by this Division (no Dept layer)
-                                BuildConfFolderNodes(divNode, div.OrgUnitID, group.Level, group.Color, foldersByOrgUnit);
+                                BuildConfFolderNodes(divNode, div.OrgUnitID, group.Level, group.Color, foldersByOrgUnit, childrenByParent);
 
                                 if (divNode.Nodes.Count > 0)
                                     scNode.Nodes.Add(divNode);
                             }
 
                             // Folders owned directly by this SubCommittee
-                            BuildConfFolderNodes(scNode, sc.OrgUnitID, group.Level, group.Color, foldersByOrgUnit);
+                            BuildConfFolderNodes(scNode, sc.OrgUnitID, group.Level, group.Color, foldersByOrgUnit, childrenByParent);
 
                             if (scNode.Nodes.Count > 0)
                                 groupNode.Nodes.Add(scNode);
@@ -970,7 +963,7 @@ namespace CMS.Presentation
                                     ImageKey         = "folder",
                                     SelectedImageKey = "open_folder"
                                 };
-                                AddConfChildNodes(rootNode, rootFolder.FolderId, group.Color);
+                                AddConfChildNodes(rootNode, rootFolder.FolderId, group.Color, childrenByParent);
                                 ouNode.Nodes.Add(rootNode);
                             }
                             groupNode.Nodes.Add(ouNode);
@@ -986,24 +979,20 @@ namespace CMS.Presentation
             {
                 System.Diagnostics.Debug.WriteLine("BuildConfidentialityTreeFromAllFolders error: " + ex.Message);
             }
-            finally
-            {
-                _treeConfidentiality.EndUpdate();
-            }
         }
 
         /// <summary>
         /// เพิ่ม folder nodes (ของ OrgUnit นี้ที่มี conf level ตรง) เข้าไปใน parentNode
         /// </summary>
         private void BuildConfFolderNodes(TreeNode parentNode, int orgUnitId, int confLevel,
-            Color color, Dictionary<int, List<Folder>> foldersByOrgUnit)
+            Color color, Dictionary<int, List<Folder>> foldersByOrgUnit,
+            Dictionary<int, List<Folder>> childrenByParent = null)
         {
             List<Folder> folders;
             if (!foldersByOrgUnit.TryGetValue(orgUnitId, out folders)) return;
             foreach (var f in folders.Where(f => f.ConfidentialityLevel == confLevel).OrderBy(f => f.FolderName))
             {
-                int fc = f.FileCount;
-                string lbl = fc > 0 ? string.Format("{0}  [{1}]", f.FolderName, fc) : f.FolderName;
+                string lbl = f.FolderName;
                 var fNode = new TreeNode(lbl)
                 {
                     Tag              = f,
@@ -1011,42 +1000,48 @@ namespace CMS.Presentation
                     ImageKey         = "folder",
                     SelectedImageKey = "open_folder"
                 };
-                AddConfChildNodes(fNode, f.FolderId, color);
+                AddConfChildNodes(fNode, f.FolderId, color, childrenByParent);
                 parentNode.Nodes.Add(fNode);
             }
         }
 
-        private void AddConfChildNodes(TreeNode parentNode, int folderId, Color color)
+        private void AddConfChildNodes(TreeNode parentNode, int folderId, Color color,
+            Dictionary<int, List<Folder>> childrenByParent = null)
         {
             try
             {
-                if (_folderRepository == null) return;
-                
-                var children = _folderRepository.GetChildren(folderId)
-                    .Where(f => !f.IsDeleted && !f.IsArchived)
-                    .ToList();
+                List<Folder> children;
+
+                if (childrenByParent != null)
+                {
+                    // Fast path: ใช้ in-memory lookup แทน DB query
+                    if (!childrenByParent.TryGetValue(folderId, out children))
+                        return;
+                }
+                else
+                {
+                    if (_folderRepository == null) return;
+                    children = _folderRepository.GetChildren(folderId)
+                        .Where(f => !f.IsDeleted && !f.IsArchived)
+                        .ToList();
+                }
 
                 foreach (var child in children)
                 {
-                    int fileCount = child.FileCount;
-                    string label = fileCount > 0
-                        ? string.Format("{0}  [{1}]", child.FolderName, fileCount)
-                        : child.FolderName;
-
+                    string label = child.FolderName;
                     var childNode = new TreeNode(label)
                     {
                         Tag       = child,
                         ForeColor = color
                     };
 
-                    // Recursive
-                    AddConfChildNodes(childNode, child.FolderId, color);
+                    AddConfChildNodes(childNode, child.FolderId, color, childrenByParent);
                     parentNode.Nodes.Add(childNode);
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"AddConfChildNodes error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine("AddConfChildNodes error: " + ex.Message);
             }
         }
 
@@ -1104,10 +1099,9 @@ namespace CMS.Presentation
             if (folder != null)
             {
                 // คลิก Folder node → แสดงเนื้อหาภายใน
+                if (!_isNavigating) PushNavigation(folder.FolderId);
                 _lastSelectedFolder = folder;
                 _currentNavFolderId = folder.FolderId;
-
-                if (!_isNavigating) PushNavigation(folder.FolderId);
                 UpdateNavButtons();
 
                 _presenter.GetFolderContents(folder.FolderId);
@@ -1336,6 +1330,7 @@ namespace CMS.Presentation
             try
             {
                 PushNavigation(null);
+                _currentNavFolderId = null;
                 UpdateNavButtons();
 
                 folderTreeView.AfterSelect -= folderTreeView_AfterSelect;
@@ -1344,8 +1339,23 @@ namespace CMS.Presentation
 
                 // Fetch ALL folders in one DB round-trip, off the UI thread
                 var orgUnitId = _selectedOrgUnitId;
-                var allFolders = await System.Threading.Tasks.Task.Run(
-                    () => _presenter.FetchAllFolders(orgUnitId));
+                var allFolders = await System.Threading.Tasks.Task.Run(() =>
+                {
+                    // ถ้าเลือก OrgUnit ให้ค้นหา Folder ของ OrgUnit นั้นและ parent OrgUnit
+                    if (orgUnitId.HasValue)
+                    {
+                        // ค้นหา Folder ของ OrgUnit ที่เลือก
+                        var folders = _folderService.GetFoldersByOrgUnit(orgUnitId.Value, _user).ToList();
+                        // ไม่ fallback ไป OrgUnit อื่น — ถ้าไม่มี folder ให้คืน list ว่าง
+                        // เพื่อให้ PromptToCreateFirstFolder ทำงานถูกต้องสำหรับ OrgUnit นี้โดยเฉพาะ
+                        return folders;
+                    }
+                    else
+                    {
+                        // ถ้าไม่เลือก OrgUnit ให้ค้นหา Folder ทั้งหมด
+                        return _presenter.FetchAllFolders(null);
+                    }
+                });
 
                 // Build tree and content panel on UI thread (no further DB calls)
                 ShowFolderTree(allFolders);
@@ -1466,7 +1476,112 @@ namespace CMS.Presentation
             listImageList.Images.Add("book_orange", Properties.Resources.book_orange1.ToBitmap());
             listImageList.Images.Add("book_bule",   Properties.Resources.book_bule1.ToBitmap());
             listImageList.Images.Add("book_green",  Properties.Resources.book_green1.ToBitmap());
+            listImageList.Images.Add("file_docs",   Properties.Resources.File_docs.ToBitmap());
             contentsListView.SmallImageList = listImageList;
+
+            // ── LargeImageList (32×32) for Large Icon view ────────────────────
+            var largeImageList = new ImageList { ImageSize = new Size(32, 32), ColorDepth = ColorDepth.Depth32Bit };
+            largeImageList.Images.Add("folder",      new Bitmap(Properties.Resources.folder,      32, 32));
+            largeImageList.Images.Add("book_red",    new Bitmap(Properties.Resources.book_red1.ToBitmap(),    32, 32));
+            largeImageList.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange1.ToBitmap(), 32, 32));
+            largeImageList.Images.Add("book_bule",   new Bitmap(Properties.Resources.book_bule1.ToBitmap(),   32, 32));
+            largeImageList.Images.Add("book_green",  new Bitmap(Properties.Resources.book_green1.ToBitmap(),  32, 32));
+            largeImageList.Images.Add("file_docs",   new Bitmap(Properties.Resources.File_docs.ToBitmap(),    32, 32));
+            contentsListView.LargeImageList = largeImageList;
+
+            // ── View toggle buttons (Details / Tile / Large Icons) ───────────
+            Color activeColor   = Color.FromArgb(31, 56, 100);
+            Color inactiveColor = Color.FromArgb(220, 220, 220);
+            Color activeFg      = Color.White;
+            Color inactiveFg    = Color.FromArgb(60, 60, 60);
+
+            var btnViewDetails = new Button
+            {
+                Text      = "☰",
+                Size      = new Size(28, 22),
+                FlatStyle = FlatStyle.Flat,
+                Font      = new Font("Segoe UI", 10f),
+                Cursor    = Cursors.Hand,
+                Dock      = DockStyle.Right,
+                BackColor = activeColor,
+                ForeColor = activeFg,
+                TabStop   = false
+            };
+            btnViewDetails.FlatAppearance.BorderSize = 0;
+
+            var btnViewTile = new Button
+            {
+                Text      = "▤",
+                Size      = new Size(28, 22),
+                FlatStyle = FlatStyle.Flat,
+                Font      = new Font("Segoe UI", 10f),
+                Cursor    = Cursors.Hand,
+                Dock      = DockStyle.Right,
+                BackColor = inactiveColor,
+                ForeColor = inactiveFg,
+                TabStop   = false
+            };
+            btnViewTile.FlatAppearance.BorderSize = 0;
+
+            var btnViewLarge = new Button
+            {
+                Text      = "⊞",
+                Size      = new Size(28, 22),
+                FlatStyle = FlatStyle.Flat,
+                Font      = new Font("Segoe UI", 10f),
+                Cursor    = Cursors.Hand,
+                Dock      = DockStyle.Right,
+                BackColor = inactiveColor,
+                ForeColor = inactiveFg,
+                TabStop   = false
+            };
+            btnViewLarge.FlatAppearance.BorderSize = 0;
+
+            var viewTip = new ToolTip();
+            viewTip.SetToolTip(btnViewDetails, "รายการ (Details)");
+            viewTip.SetToolTip(btnViewTile,    "Tile");
+            viewTip.SetToolTip(btnViewLarge,   "ไอคอนใหญ่");
+
+            // helper: reset all buttons then highlight active one
+            Action<Button> setActive = (active) =>
+            {
+                foreach (var b in new[] { btnViewDetails, btnViewTile, btnViewLarge })
+                {
+                    b.BackColor = (b == active) ? activeColor   : inactiveColor;
+                    b.ForeColor = (b == active) ? activeFg      : inactiveFg;
+                }
+            };
+
+            btnViewDetails.Click += (s, ev) =>
+            {
+                _currentView = View.Details;
+                contentsListView.View      = View.Details;
+                contentsListView.OwnerDraw = true;
+                setActive(btnViewDetails);
+            };
+
+            btnViewTile.Click += (s, ev) =>
+            {
+                _currentView = View.Tile;
+                contentsListView.OwnerDraw = false;
+                contentsListView.View      = View.Tile;
+                // Tile size: icon(32) + padding + text area
+                contentsListView.TileSize  = new Size(260, 42);
+                setActive(btnViewTile);
+            };
+
+            btnViewLarge.Click += (s, ev) =>
+            {
+                _currentView = View.LargeIcon;
+                contentsListView.OwnerDraw = false;
+                contentsListView.View      = View.LargeIcon;
+                setActive(btnViewLarge);
+            };
+
+            // Add right-to-left so Details is rightmost
+            pnlContentHeader.Controls.Add(btnViewDetails);
+            pnlContentHeader.Controls.Add(btnViewTile);
+            pnlContentHeader.Controls.Add(btnViewLarge);
 
             // Wire confidentiality level filter checkboxes
             chk1HC.CheckedChanged += new EventHandler(this.OnConfidentialityLevelChanged);
@@ -1571,7 +1686,7 @@ namespace CMS.Presentation
 
             // ถ้ากำลังแสดง "ตามความลับ" → rebuild conf tree ด้วย
             if (_showingConfView && _treeConfidentiality != null)
-                BuildConfidentialityTreeFromAllFolders();
+                BuildConfidentialityTreeFromAllFoldersAsync();
         }
 
         /// <summary>
@@ -1669,8 +1784,7 @@ namespace CMS.Presentation
                 }
 
                 string icon = FileIcon(file.FileExtension);
-                string nameText = string.Format("{0}  {1}", icon, file.OriginalFileName);
-                var item = new ListViewItem(nameText);
+                var item = new ListViewItem(file.OriginalFileName) { ImageKey = icon };
                 item.SubItems.Add(file.FileExtension.TrimStart('.').ToUpper()); // ประเภท
                 item.SubItems.Add(ConfidentialityShort(file.ConfidentialityLevel)); // ระดับ
                 item.SubItems.Add(FormatBytes(file.FileSizeBytes));              // ขนาด
@@ -1696,6 +1810,17 @@ namespace CMS.Presentation
             }
 
             contentsListView.EndUpdate();
+
+            // Apply Tile columns when in Tile view (ชื่อ + ประเภท + ขนาด)
+            if (_currentView == View.Tile)
+            {
+                contentsListView.TileSize = new Size(260, 42);
+                if (contentsListView.Columns.Count >= 4)
+                {
+                    contentsListView.Columns[1].Width = 80;  // ประเภท
+                    contentsListView.Columns[3].Width = 70;  // ขนาด
+                }
+            }
 
             // Populate extension ComboBox with distinct extensions from current files (Req 6.1)
             cmbExtension.Items.Clear();
@@ -1926,9 +2051,11 @@ namespace CMS.Presentation
         {
             try
             {
+                // PushNavigation ก่อน — ต้อง push _currentNavFolderId เก่าเข้า stack ก่อนที่จะ update
+                PushNavigation(folder.FolderId);
+
                 _lastSelectedFolder = folder;
                 _currentNavFolderId = folder.FolderId;
-                PushNavigation(folder.FolderId);
                 
                 // แสดงทั้ง sub-folders และ files
                 _presenter.GetFolderContents(folder.FolderId);
@@ -2125,6 +2252,7 @@ namespace CMS.Presentation
                         ? "🏠 PC  ›  " + _clickFolder.Name
                         : _currentBreadcrumb + "  ›  " + _clickFolder.Name;
                     PushNavigation(_clickFolder.FolderId);
+                    _currentNavFolderId = _clickFolder.FolderId;
                     _presenter.GetFolderContents(_clickFolder.FolderId);
                     ApplyBreadcrumb(newBreadcrumb, new List<int?> { _clickFolder.FolderId });
                     UpdateNavButtons();
@@ -2175,28 +2303,64 @@ namespace CMS.Presentation
 
         private void ContentsListView_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
         {
+            // Skip custom drawing when not in Details mode
+            if (_currentView != View.Details)
+            {
+                e.DrawDefault = true;
+                return;
+            }
             // Alternating row background
             bool isSelected = e.Item.Selected;
             bool isEven     = e.ItemIndex % 2 == 0;
 
             Color backColor = isSelected
-                ? Color.FromArgb(204, 228, 247)                          // selected: light blue
-                : isEven ? Color.White : Color.FromArgb(248, 249, 252);  // alternating white / very light gray
+                ? Color.FromArgb(204, 228, 247)
+                : isEven ? Color.White : Color.FromArgb(248, 249, 252);
 
             using (var brush = new SolidBrush(backColor))
                 e.Graphics.FillRectangle(brush, e.Bounds);
 
-            // Determine text color: use item's sub-item color if set, else item color
             Color textColor = isSelected ? Color.Black : e.SubItem.ForeColor;
             if (textColor == Color.Empty || textColor == SystemColors.WindowText)
                 textColor = isSelected ? Color.Black : e.Item.ForeColor;
             if (textColor == Color.Empty) textColor = Color.Black;
 
-            var flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
-                        TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine;
-            var textBounds = Rectangle.Inflate(e.Bounds, -2, 0);
-            TextRenderer.DrawText(e.Graphics, e.SubItem.Text, e.Item.ListView.Font,
-                                  textBounds, textColor, flags);
+            // ── Column 0: draw icon + name ────────────────────────────────────
+            if (e.ColumnIndex == 0)
+            {
+                var il = contentsListView.SmallImageList;
+                int iconW = 0;
+                int iconX = e.Bounds.X + 2;
+                int iconY = e.Bounds.Y + (e.Bounds.Height - 16) / 2;
+
+                if (il != null && !string.IsNullOrEmpty(e.Item.ImageKey)
+                    && il.Images.ContainsKey(e.Item.ImageKey))
+                {
+                    int imgIdx = il.Images.IndexOfKey(e.Item.ImageKey);
+                    if (imgIdx >= 0)
+                        il.Draw(e.Graphics, iconX, iconY, 16, 16, imgIdx);
+                    iconW = 20; // 16px icon + 4px gap
+                }
+
+                var textBounds = new Rectangle(
+                    e.Bounds.X + 2 + iconW,
+                    e.Bounds.Y,
+                    e.Bounds.Width - 2 - iconW,
+                    e.Bounds.Height);
+
+                var flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
+                            TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine;
+                TextRenderer.DrawText(e.Graphics, e.SubItem.Text,
+                                      e.Item.ListView.Font, textBounds, textColor, flags);
+                return;
+            }
+
+            // ── Other columns ─────────────────────────────────────────────────
+            var flags2 = TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
+                         TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine;
+            var bounds2 = Rectangle.Inflate(e.Bounds, -2, 0);
+            TextRenderer.DrawText(e.Graphics, e.SubItem.Text,
+                                  e.Item.ListView.Font, bounds2, textColor, flags2);
         }
 
         // -----------------------------------------------------------------------
@@ -2258,6 +2422,16 @@ namespace CMS.Presentation
         // TreeView — node selection loads contents
         // -----------------------------------------------------------------------
 
+        private void AdjustNameColumnWidth()
+        {
+            // คอลัมน์คงที่: ประเภท(70) + ระดับ(60) + ขนาด(80) + วันที่(110) + โดย(80) + Ver(36) + หน่วยงาน(130)
+            int fixedWidth = 70 + 60 + 80 + 110 + 80 + 36 + 130;
+            int scrollBar = SystemInformation.VerticalScrollBarWidth;
+            int nameWidth = contentsListView.ClientSize.Width - fixedWidth - scrollBar;
+            if (nameWidth > 100)
+                colName.Width = nameWidth;
+        }
+
         private void ClearContentPanel()
         {
             contentsListView.Items.Clear();
@@ -2281,16 +2455,19 @@ namespace CMS.Presentation
             var folder = e.Node?.Tag as Folder;
             if (folder == null) return;
             
-            _lastSelectedFolder = folder;
-            _currentNavFolderId = folder.FolderId;
-            
+            // PushNavigation ก่อน — ต้อง push _currentNavFolderId เก่าเข้า stack ก่อนที่จะ update
             if (!_isNavigating)
                 PushNavigation(folder.FolderId);
+
+            _lastSelectedFolder = folder;
+            _currentNavFolderId = folder.FolderId;
             UpdateNavButtons();
             
             _presenter.GetFolderContents(folder.FolderId);
 
-            string breadcrumbPath = BuildBreadcrumbPath(treeOrgUnit.SelectedNode, e.Node);
+            // Build breadcrumb: OrgUnit path (from _selectedOrgUnit) + folder path (walk up tree node)
+            // ใช้ _selectedOrgUnit แทน treeOrgUnit.SelectedNode เพราะ async load อาจทำให้ SelectedNode เป็น null
+            string breadcrumbPath = BuildBreadcrumbPathFromOrgUnit(_selectedOrgUnit, e.Node);
             var folderIdPath = BuildFolderIdPathAligned(breadcrumbPath, e.Node);
             
             // อัพเดท _breadcrumbFolderIds ก่อน ApplyBreadcrumb
@@ -2338,24 +2515,44 @@ namespace CMS.Presentation
         private void BtnNavBack_Click(object sender, EventArgs e)
         {
             if (_backStack.Count == 0) return;
+
+            // เก็บ current ลง forward stack ก่อน
             _forwardStack.Push(_currentNavFolderId);
             _forwardBreadcrumbs.Push(_currentBreadcrumb);
-            _currentNavFolderId = _backStack.Pop();
-            _currentBreadcrumb  = _backBreadcrumbs.Count > 0 ? _backBreadcrumbs.Pop() : "";
+
+            // pop previous state
+            var prevFolderId   = _backStack.Pop();
+            var prevBreadcrumb = _backBreadcrumbs.Count > 0 ? _backBreadcrumbs.Pop() : "";
+
             _isNavigating = true;
-            try   { ExecuteNavigation(_currentNavFolderId, _currentBreadcrumb); }
+            try
+            {
+                _currentNavFolderId = prevFolderId;
+                _currentBreadcrumb  = prevBreadcrumb;
+                ExecuteNavigation(_currentNavFolderId, _currentBreadcrumb);
+            }
             finally { _isNavigating = false; UpdateNavButtons(); }
         }
 
         private void BtnNavForward_Click(object sender, EventArgs e)
         {
             if (_forwardStack.Count == 0) return;
+
+            // เก็บ current ลง back stack ก่อน
             _backStack.Push(_currentNavFolderId);
             _backBreadcrumbs.Push(_currentBreadcrumb);
-            _currentNavFolderId = _forwardStack.Pop();
-            _currentBreadcrumb  = _forwardBreadcrumbs.Count > 0 ? _forwardBreadcrumbs.Pop() : "";
+
+            // pop next state
+            var nextFolderId   = _forwardStack.Pop();
+            var nextBreadcrumb = _forwardBreadcrumbs.Count > 0 ? _forwardBreadcrumbs.Pop() : "";
+
             _isNavigating = true;
-            try   { ExecuteNavigation(_currentNavFolderId, _currentBreadcrumb); }
+            try
+            {
+                _currentNavFolderId = nextFolderId;
+                _currentBreadcrumb  = nextBreadcrumb;
+                ExecuteNavigation(_currentNavFolderId, _currentBreadcrumb);
+            }
             finally { _isNavigating = false; UpdateNavButtons(); }
         }
 
@@ -2397,8 +2594,8 @@ namespace CMS.Presentation
                 // Sync tree selection (ไม่ trigger content reload เพราะ AfterSelect แค่ sync state)
                 RestoreSelectedNode(folderTreeView.Nodes, folderId.Value);
                 
-                // แสดง sub-folders ของ folder ที่ navigate ไป
-                _presenter.ShowFolderSubFolders(folderId.Value);
+                // โหลดทั้ง sub-folders และ files เหมือน Windows Explorer (Back/Forward ต้องแสดงไฟล์ด้วย)
+                _presenter.GetFolderContents(folderId.Value);
                 ApplyBreadcrumb(breadcrumbOverride ?? _currentBreadcrumb, null);
                 
                 // Update UI
@@ -2413,14 +2610,22 @@ namespace CMS.Presentation
             }
             else
             {
-                // Navigate กลับไป OrgUnit root
+                // Navigate กลับไป OrgUnit root — restore breadcrumb และ content ให้ตรงกัน
                 folderTreeView.AfterSelect -= folderTreeView_AfterSelect;
                 folderTreeView.SelectedNode = null;
                 folderTreeView.AfterSelect += folderTreeView_AfterSelect;
                 _currentNavFolderId = null;
                 _lastSelectedFolder = null;
+
+                // ถ้า breadcrumbOverride มีค่า (restore จาก back/forward) ให้ใช้ค่านั้น
+                // และแสดง root folders ของ OrgUnit ที่ selected อยู่
+                string bc = breadcrumbOverride ?? BuildBreadcrumbPath(treeOrgUnit.SelectedNode, null);
+                ApplyBreadcrumb(bc, new List<int?>());
+
+                // แสดง root folders ของ OrgUnit ที่ selected (ไม่ใช่ ShowOrgUnitRootFolders ที่แสดง 4 folders)
+                // ถ้า _selectedOrgUnitId มีค่า → แสดง folders ของ OrgUnit นั้น
+                // ถ้าไม่มี → แสดง root folders ทั้งหมด
                 _presenter.ShowOrgUnitRootFolders(_selectedOrgUnitId);
-                ApplyBreadcrumb(breadcrumbOverride ?? BuildBreadcrumbPath(treeOrgUnit.SelectedNode, null), new List<int?>());
             }
         }
 
@@ -2659,24 +2864,34 @@ namespace CMS.Presentation
             return null;
         }
         
-        private void NavigateToFolderById(int folderId)
+        /// <summary>Public entry point — เปิด folder โดยตรงจาก FolderID ใช้โดย SharedWithMeForm</summary>
+        public void NavigateToFolderById(int folderId)
         {
             Folder folder = null;
-            
+
             if (_folderRepository != null)
                 folder = _folderRepository.GetById(folderId);
-            
-            if (folder == null)
+
+            if (folder != null)
             {
-                var node = FindNodeByFolderId(folderTreeView.Nodes, folderId);
-                if (node != null) folder = node.Tag as Folder;
+                // bring to front ก่อน navigate
+                if (WindowState == FormWindowState.Minimized)
+                    WindowState = FormWindowState.Normal;
+                BringToFront();
+                Focus();
+                NavigateToFolder(folder);
+                return;
             }
-            
+
+            // fallback: ลองหาใน tree
+            var node = FindNodeByFolderId(folderTreeView.Nodes, folderId);
+            if (node != null) folder = node.Tag as Folder;
+
             if (folder == null) return;
             
             _lastSelectedFolder = folder;
-            _currentNavFolderId = folderId;
             PushNavigation(folderId);
+            _currentNavFolderId = folderId;
             UpdateNavButtons();
             
             _presenter.GetFolderContents(folderId);
@@ -2756,6 +2971,7 @@ namespace CMS.Presentation
             }
             
             PushNavigation(null); // null = OrgUnit root
+            _currentNavFolderId = null;
             ApplyBreadcrumb(orgUnitPath, new List<int?>());
             UpdateNavButtons();
             lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", _selectedOrgUnitName);
@@ -2792,11 +3008,18 @@ namespace CMS.Presentation
         private void PushNavigation(int? newFolderId)
         {
             if (_isNavigating) return;
+            // ไม่ push initial state (null, "") — ไม่มีประโยชน์ที่จะ back ไปหน้าว่าง
+            if (_currentNavFolderId == null && string.IsNullOrEmpty(_currentBreadcrumb)) return;
+            // ไม่ push ถ้า current state เหมือนกับ top ของ stack (ป้องกัน duplicate entries)
+            if (_backStack.Count > 0 && _backStack.Peek() == _currentNavFolderId
+                && _backBreadcrumbs.Count > 0 && _backBreadcrumbs.Peek() == _currentBreadcrumb)
+                return;
+            // Push ค่า current (เก่า) เข้า back stack ก่อนที่ caller จะ update _currentNavFolderId
             _backStack.Push(_currentNavFolderId);
             _backBreadcrumbs.Push(_currentBreadcrumb);
             _forwardStack.Clear();
             _forwardBreadcrumbs.Clear();
-            _currentNavFolderId = newFolderId;
+            // ไม่ set _currentNavFolderId ที่นี่ — caller จัดการเอง
         }
 
         private void UpdateNavButtons()
@@ -2857,33 +3080,15 @@ namespace CMS.Presentation
 
                 if (HasAuto4RootFolders())
                 {
-                    ShowError("ไม่สามารถสร้าง Folder ที่ Root ได้\nเนื่องจากมี 1HC/2SC/3NC/4PC อยู่แล้ว\nกรุณาเลือก Folder ภายใต้ 1HC, 2SC, 3NC หรือ 4PC ก่อนสร้าง");
+                    // มี 4 folder หลักแล้ว → ต้องสร้าง sub-folder ภายใต้ 1HC/2SC/3NC/4PC เท่านั้น
+                    ShowError("กรุณาเลือก Folder ภายใต้ 1HC, 2SC, 3NC หรือ 4PC ก่อนสร้าง Sub-folder");
                     return;
                 }
 
-                // ยังไม่มี Auto4 → SubCommittee สร้างอัตโนมัติ, อื่นๆ ถามก่อน
-                bool isSubCommittee = _selectedOrgUnit != null &&
-                                      _selectedOrgUnit.Tier == CMS.Domain.Enums.OrgUnitTier.SubCommittee;
-                if (isSubCommittee)
-                {
-                    string baseName = PromptForBaseName("สร้าง Auto 4 Folders");
-                    if (baseName == null) return;
-                    CreateAuto4Folders(baseName, null, _selectedOrgUnitId.Value);
-                }
-                else
-                {
-                    var confirm = MessageBox.Show(
-                        "ต้องการสร้าง Auto 4 Folders (1HC, 2SC, 3NC, 4PC) หรือไม่?\n\nFolder เดี่ยวต้องสร้างภายใต้ 4 Folder หลักเท่านั้น",
-                        "สร้าง Root Folder",
-                        MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Question);
-                    if (confirm == DialogResult.Yes)
-                    {
-                        string baseName = PromptForBaseName("สร้าง Auto 4 Folders");
-                        if (baseName == null) return;
-                        CreateAuto4Folders(baseName, null, _selectedOrgUnitId.Value);
-                    }
-                }
+                // ยังไม่มี 4 folder หลัก → สร้างก่อน
+                string baseName = PromptForBaseName("สร้าง 4 Folder หลัก (1HC, 2SC, 3NC, 4PC)");
+                if (baseName == null) return;
+                CreateAuto4Folders(baseName, null, _selectedOrgUnitId.Value);
                 return;
             }
 
@@ -2976,7 +3181,7 @@ namespace CMS.Presentation
                         return;
                     }
                     
-                    string baseName = "เอกสาร";
+                    string baseName = "";
                     CreateAuto4FoldersQuiet(baseName, null, _selectedOrgUnitId.Value);
                     return;
                 }
@@ -2999,7 +3204,7 @@ namespace CMS.Presentation
                 else
                 {
                     // ถ้าไม่ใช่ Auto 4 Folder ให้สร้างเป็น child ปกติ
-                    string baseName = selected.FolderName ?? selected.Name ?? "เอกสาร";
+                    string baseName = selected.FolderName ?? selected.Name ?? "";
                     CreateAuto4FoldersQuiet(baseName, selected.FolderId, selected.OrgUnitId);
                 }
             }
@@ -3016,24 +3221,19 @@ namespace CMS.Presentation
         {
             if (!_selectedOrgUnitId.HasValue) return;
 
-            // SubCommittee → สร้าง Auto 4 Folders อัตโนมัติ ไม่ถาม
-            bool isSubCommittee = _selectedOrgUnit != null &&
-                                  _selectedOrgUnit.Tier == CMS.Domain.Enums.OrgUnitTier.SubCommittee;
-            if (isSubCommittee)
-            {
-                CreateAuto4FoldersQuiet("เอกสาร", null, _selectedOrgUnitId.Value);
-                return;
-            }
+            // ตรวจสอบว่ามี 4 folder หลัก (1HC/2SC/3NC/4PC) หรือยัง
+            bool has4Folders = HasAuto4RootFolders();
+            if (has4Folders) return; // มีแล้ว ไม่ต้องถาม
 
-            // Division / Department → ถามแค่ว่าจะสร้าง Auto 4 Folders หรือไม่
+            string orgName = _selectedOrgUnitName ?? "หน่วยงานนี้";
             var result = MessageBox.Show(
-                string.Format("หน่วยงาน \"{0}\" ยังไม่มีโฟลเดอร์\n\nต้องการสร้าง Auto 4 Folders (1HC, 2SC, 3NC, 4PC) หรือไม่?", _selectedOrgUnitName),
-                "สร้างโฟลเดอร์",
+                string.Format("หน่วยงาน \"{0}\" ยังไม่มีโฟลเดอร์หลัก\n\nต้องการสร้าง 4 Folder หลัก (1HC, 2SC, 3NC, 4PC) หรือไม่?", orgName),
+                "สร้างโฟลเดอร์หลัก",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
             if (result == DialogResult.Yes)
-                CreateAuto4FoldersQuiet("เอกสาร", null, _selectedOrgUnitId.Value);
+                CreateAuto4FoldersQuiet("", null, _selectedOrgUnitId.Value);
         }
 
         // -----------------------------------------------------------------------
@@ -3642,6 +3842,99 @@ namespace CMS.Presentation
                 _presenter.DeleteFolder(folder.FolderId);
         }
 
+        // -----------------------------------------------------------------------
+        // Clear Folder — ลบไฟล์ทั้งหมดใน folder ปัจจุบัน (รวม sub-folders)
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Soft-deletes ไฟล์ทุกไฟล์ใน folder ปัจจุบันและ sub-folders ทั้งหมด
+        /// โดยไม่ลบ folder structure (เหลือแค่ folder เปล่า)
+        /// เฉพาะ Manager/Admin เท่านั้น
+        /// </summary>
+        private void ClearFolderContents()
+        {
+            if (_fileService == null || !_currentNavFolderId.HasValue) return;
+
+            int rootFolderId = _currentNavFolderId.Value;
+
+            // รวบรวม folder IDs ทั้งหมด (ตัวเองและ descendants)
+            var allFolderIds = new List<int> { rootFolderId };
+            try
+            {
+                var descendants = _folderService.GetDescendants(rootFolderId);
+                if (descendants != null)
+                    foreach (var d in descendants)
+                        allFolderIds.Add(d.FolderID);
+            }
+            catch { /* ถ้า GetDescendants ไม่ได้ ใช้แค่ folder ปัจจุบัน */ }
+
+            // นับไฟล์ทั้งหมดก่อนแสดง confirm
+            int totalFiles = 0;
+            var filesByFolder = new Dictionary<int, List<FileDocument>>();
+            foreach (int fid in allFolderIds)
+            {
+                try
+                {
+                    var files = _fileService.GetFilesInFolder(fid, _user).ToList();
+                    if (files.Count > 0)
+                    {
+                        filesByFolder[fid] = files;
+                        totalFiles += files.Count;
+                    }
+                }
+                catch { }
+            }
+
+            if (totalFiles == 0)
+            {
+                MessageBox.Show("ไม่มีไฟล์ใน Folder นี้", "ล้าง Folder",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // Confirm
+            var confirm = MessageBox.Show(
+                string.Format(
+                    "ต้องการลบไฟล์ทั้งหมด {0} ไฟล์\nใน {1} Folder (รวม sub-folders) ใช่หรือไม่?\n\n" +
+                    "⚠️  ไฟล์จะถูกย้ายไป Recycle Bin (Soft Delete)\nFolder structure จะยังคงอยู่",
+                    totalFiles, filesByFolder.Count),
+                "ยืนยันการล้าง Folder",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning,
+                MessageBoxDefaultButton.Button2);
+
+            if (confirm != DialogResult.Yes) return;
+
+            // ลบทีละไฟล์
+            int deleted = 0, failed = 0;
+            foreach (var kvp in filesByFolder)
+            {
+                foreach (var file in kvp.Value)
+                {
+                    try
+                    {
+                        _fileService.DeleteFile(file.FileID, _user);
+                        deleted++;
+                    }
+                    catch
+                    {
+                        failed++;
+                    }
+                }
+            }
+
+            // Reload content
+            _presenter.GetFolderContents(rootFolderId);
+
+            string msg = failed == 0
+                ? string.Format("ล้าง Folder สำเร็จ — ลบ {0} ไฟล์", deleted)
+                : string.Format("ล้าง Folder เสร็จสิ้น — สำเร็จ {0} ไฟล์, ล้มเหลว {1} ไฟล์", deleted, failed);
+
+            MessageBox.Show(msg, "ล้าง Folder",
+                MessageBoxButtons.OK,
+                failed == 0 ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+        }
+
         /// <summary>
         /// ตรวจสอบว่า user ปัจจุบันมีสิทธิ์ลบ folder นี้หรือไม่
         /// 4 Folder หลัก (root folder ที่ ParentFolderID == null) ลบได้เฉพาะ Admin เท่านั้น
@@ -4013,10 +4306,10 @@ namespace CMS.Presentation
                 input.Size = new Size(376, 23);
 
                 lblInfo.Text = "ระบบจะสร้าง 4 Folders อัตโนมัติ:\n" +
-                              "• 1HC - [ชื่อ] (High Confidential) - สีแดง\n" +
-                              "• 2SC - [ชื่อ] (Semi Confidential) - สีส้ม\n" +
-                              "• 3NC - [ชื่อ] (Normal Confidential) - สีน้ำเงิน\n" +
-                              "• 4PC - [ชื่อ] (Public Confidential) - สีเขียว";
+                              "• 1HC - [ชื่อ] [1HC] - สีแดง\n" +
+                              "• 2SC - [ชื่อ] [2SC] - สีส้ม\n" +
+                              "• 3NC - [ชื่อ] [3NC] - สีน้ำเงิน\n" +
+                              "• 4PC - [ชื่อ] [4PC] - สีเขียว";
                 lblInfo.Location = new Point(12, 72);
                 lblInfo.Size = new Size(376, 80);
                 lblInfo.ForeColor = Color.FromArgb(60, 60, 60);
@@ -4062,19 +4355,15 @@ namespace CMS.Presentation
                 {
                     try
                     {
-                        string folderName = string.Format("{0} - {1} ({2})", config.Code, baseName, config.Name);
-                        
+                        string folderName = string.IsNullOrWhiteSpace(baseName)
+                            ? string.Format("{0} - ({1})", config.Code, config.Name)
+                            : string.Format("{0} - {1} [{0}]", config.Code, baseName);
+
                         if (parentFolderId.HasValue)
-                        {
-                            // สร้าง sub-folder
                             _presenter.CreateFolder(parentFolderId.Value, folderName, orgUnitId, config.Level, false);
-                        }
                         else
-                        {
-                            // สร้าง root folder
                             _presenter.CreateRootFolder(folderName, orgUnitId, config.Level, false);
-                        }
-                        
+
                         successCount++;
                     }
                     catch (Exception ex)
@@ -4118,8 +4407,13 @@ namespace CMS.Presentation
             // ตรวจสอบว่าเป็น Auto 4 Folders format หรือไม่
             var auto4Patterns = new[]
             {
+                @"^1HC\s*-\s*.+?\s*\[1HC\]",
+                @"^2SC\s*-\s*.+?\s*\[2SC\]",
+                @"^3NC\s*-\s*.+?\s*\[3NC\]",
+                @"^4PC\s*-\s*.+?\s*\[4PC\]",
+                // รองรับ format เก่า
                 @"^1HC\s*-\s*.+?\s*\(High Confidential\)",
-                @"^2SC\s*-\s*.+?\s*\(Semi Confidential\)", 
+                @"^2SC\s*-\s*.+?\s*\(Semi Confidential\)",
                 @"^3NC\s*-\s*.+?\s*\(Normal Confidential\)",
                 @"^4PC\s*-\s*.+?\s*\(Public Confidential\)"
             };
@@ -4174,11 +4468,15 @@ namespace CMS.Presentation
             string folderName = folder.FolderName ?? folder.Name ?? "เอกสาร";
             
             // ตรวจสอบว่าเป็น Auto 4 Folders format หรือไม่
-            // Format: "1HC - ชื่อ (High Confidential)" หรือ "2SC - ชื่อ (Semi Confidential)" เป็นต้น
+            // Format ใหม่: "1HC - ชื่อ [1HC]"  |  Format เก่า: "1HC - ชื่อ (High Confidential)"
             var auto4Patterns = new[]
             {
+                @"^1HC\s*-\s*(.+?)\s*\[1HC\]",
+                @"^2SC\s*-\s*(.+?)\s*\[2SC\]",
+                @"^3NC\s*-\s*(.+?)\s*\[3NC\]",
+                @"^4PC\s*-\s*(.+?)\s*\[4PC\]",
                 @"^1HC\s*-\s*(.+?)\s*\(High Confidential\)",
-                @"^2SC\s*-\s*(.+?)\s*\(Semi Confidential\)", 
+                @"^2SC\s*-\s*(.+?)\s*\(Semi Confidential\)",
                 @"^3NC\s*-\s*(.+?)\s*\(Normal Confidential\)",
                 @"^4PC\s*-\s*(.+?)\s*\(Public Confidential\)"
             };
@@ -4204,12 +4502,12 @@ namespace CMS.Presentation
                         }
                     }
                     
-                    return string.IsNullOrWhiteSpace(baseName) ? "เอกสาร" : baseName;
+                    return string.IsNullOrWhiteSpace(baseName) ? "" : baseName;
                 }
             }
 
             // ถ้าไม่ใช่ Auto 4 format ให้ใช้ชื่อเดิม
-            return string.IsNullOrWhiteSpace(folderName) ? "เอกสาร" : folderName;
+            return string.IsNullOrWhiteSpace(folderName) ? "" : folderName;
         }
 
         /// <summary>ตรวจสอบว่ามี folder ชื่อนี้อยู่แล้วหรือไม่</summary>
@@ -4268,10 +4566,9 @@ namespace CMS.Presentation
                 {
                     try
                     {
-                        string folderName = string.Format("{0} - {1} ({2})", config.Code, baseName, config.Name);
-                        
-                        // Debug: Show folder name being created
-                        System.Diagnostics.Debug.WriteLine($"Attempting to create folder: '{folderName}'");
+                        string folderName = string.IsNullOrWhiteSpace(baseName)
+                            ? string.Format("{0} - ({1})", config.Code, config.Name)
+                            : string.Format("{0} - {1} [{0}]", config.Code, baseName);
                         
                         // ตรวจสอบว่ามี folder นี้อยู่แล้วหรือไม่
                         if (IsFolderExists(folderName, parentFolderId, orgUnitId))
@@ -4416,6 +4713,52 @@ namespace CMS.Presentation
             return BuildBreadcrumbPath(null, node);
         }
 
+        /// <summary>
+        /// Build breadcrumb using OrgUnit object (not TreeNode) + folder TreeNode.
+        /// ใช้เมื่อ treeOrgUnit.SelectedNode อาจเป็น null เนื่องจาก async load
+        /// แต่ _selectedOrgUnit ยังคงมีค่าถูกต้องอยู่
+        /// </summary>
+        private string BuildBreadcrumbPathFromOrgUnit(OrgUnit orgUnit, TreeNode folderNode)
+        {
+            var parts = new List<string>();
+
+            // 1) Walk up folderTreeView to get folder path
+            var cur = folderNode;
+            while (cur != null)
+            {
+                parts.Insert(0, CleanNodeText(cur.Text));
+                cur = cur.Parent;
+            }
+
+            // 2) Prepend OrgUnit path — ค้นหา node ใน treeOrgUnit ที่ตรงกับ _selectedOrgUnit
+            //    แล้ว walk up เหมือน BuildBreadcrumbPath ปกติ
+            //    ถ้าหา node ไม่เจอ ใช้ชื่อ OrgUnit ตรงๆ แทน
+            if (orgUnit != null)
+            {
+                var ouNode = FindOrgUnitNode(treeOrgUnit.Nodes, orgUnit.OrgUnitID);
+                if (ouNode != null)
+                {
+                    // Walk up treeOrgUnit node เหมือน BuildBreadcrumbPath
+                    var ouParts = new List<string>();
+                    var ouCur = ouNode;
+                    while (ouCur != null && ouCur.Tag is OrgUnit)
+                    {
+                        ouParts.Insert(0, CleanNodeText(ouCur.Text));
+                        ouCur = ouCur.Parent;
+                    }
+                    parts.InsertRange(0, ouParts);
+                }
+                else
+                {
+                    // Fallback: ใช้ชื่อ OrgUnit ตรงๆ
+                    parts.Insert(0, orgUnit.Name);
+                }
+            }
+
+            if (parts.Count == 0) return "🏠 PC";
+            return "🏠 PC  ›  " + string.Join("  ›  ", parts);
+        }
+
         /// <summary>Strips badge/count decorations from a tree node label.</summary>
         private static string CleanNodeText(string text)
         {
@@ -4440,10 +4783,8 @@ namespace CMS.Presentation
         private static TreeNode CreateFolderNode(Folder folder)
         {
             string badge = ConfidentialityBadge(folder.ConfidentialityLevel);
-            string fileCountText = string.Format(" ({0})", folder.FileCount);
-            string label = string.Format("{0}{1} {2}{3}",
+            string label = string.Format("{0} {1}{2}",
                 folder.Name,
-                fileCountText,
                 badge,
                 folder.IsArchived ? " [Archived]" : string.Empty);
 
@@ -4556,19 +4897,128 @@ namespace CMS.Presentation
             }
         }
 
+        /// <summary>Returns the ImageList key for a file based on its extension.</summary>
         private static string FileIcon(string ext)
         {
-            if (ext == null) return "📄";
-            switch (ext.ToLower().TrimStart('.'))
+            return "file_docs";
+        }
+
+        // -----------------------------------------------------------------------
+        // ImageList for contentsListView icons
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Builds and assigns a 16×16 ImageList to contentsListView.
+        /// Uses PNG resources for book/folder icons and draws file-type icons
+        /// programmatically so no external icon files are required.
+        /// </summary>
+        private void BuildContentImageList()
+        {
+            var il = new ImageList { ImageSize = new Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
+
+            // ── Folder icons from embedded PNG resources ──────────────────────
+            il.Images.Add("folder",      LoadPng("folder"));
+            il.Images.Add("book_red",    LoadPng("book-red"));
+            il.Images.Add("book_orange", LoadPng("book-orange"));
+            il.Images.Add("book_bule",   LoadPng("book-bule"));
+            il.Images.Add("book_green",  LoadPng("book-green"));
+
+            // ── File icon from File-docs.ico resource ─────────────────────────
+            il.Images.Add("file_docs", LoadIco("File-docs"));
+
+            contentsListView.SmallImageList = il;
+        }
+
+        /// <summary>Loads a 16×16 PNG from the Resources folder by base name.</summary>
+        private static Image LoadPng(string baseName)
+        {
+            try
             {
-                case "pdf":  return "📕";
-                case "doc": case "docx": return "📘";
-                case "xls": case "xlsx": return "📗";
-                case "ppt": case "pptx": return "📙";
-                case "jpg": case "jpeg": case "png": case "gif": return "🖼️";
-                case "zip": return "🗜️";
-                default:    return "📄";
+                string path = System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(
+                        System.Reflection.Assembly.GetExecutingAssembly().Location),
+                    "Resources", baseName + ".png");
+
+                if (System.IO.File.Exists(path))
+                    return new Bitmap(Image.FromFile(path), 16, 16);
             }
+            catch { /* fall through to fallback */ }
+
+            // Fallback: draw a plain yellow folder
+            return DrawFileIcon(Color.FromArgb(255, 200, 50), "DIR");
+        }
+
+        /// <summary>Loads a 16×16 image from an .ico file in the Resources folder.</summary>
+        private static Image LoadIco(string baseName)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(
+                    System.IO.Path.GetDirectoryName(
+                        System.Reflection.Assembly.GetExecutingAssembly().Location),
+                    "Resources", baseName + ".ico");
+
+                if (System.IO.File.Exists(path))
+                {
+                    using (var icon = new Icon(path, 16, 16))
+                        return icon.ToBitmap();
+                }
+            }
+            catch { /* fall through to fallback */ }
+
+            return DrawFileIcon(Color.FromArgb(120, 120, 140), "FILE");
+        }
+
+        /// <summary>
+        /// Draws a compact 16×16 file-type badge:
+        /// a white page with a folded corner, filled label bar at bottom.
+        /// </summary>
+        private static Image DrawFileIcon(Color labelColor, string label)
+        {
+            var bmp = new Bitmap(16, 16);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                g.Clear(Color.Transparent);
+
+                // Page body
+                var pageRect = new Rectangle(1, 0, 12, 15);
+                using (var fill = new SolidBrush(Color.White))
+                    g.FillRectangle(fill, pageRect);
+
+                // Folded corner (top-right)
+                var corner = new Point[] {
+                    new Point(9, 0), new Point(13, 0),
+                    new Point(13, 4), new Point(9, 4)
+                };
+                using (var fold = new SolidBrush(Color.FromArgb(200, 200, 200)))
+                    g.FillPolygon(fold, corner);
+
+                // Page border
+                using (var pen = new Pen(Color.FromArgb(160, 160, 160), 1))
+                    g.DrawRectangle(pen, pageRect);
+
+                // Color label bar at bottom
+                var bar = new Rectangle(1, 10, 12, 5);
+                using (var barFill = new SolidBrush(labelColor))
+                    g.FillRectangle(barFill, bar);
+
+                // Label text (tiny, 5pt)
+                if (!string.IsNullOrEmpty(label) && label.Length <= 4)
+                {
+                    using (var font = new Font("Arial", 4.5f, FontStyle.Bold))
+                    using (var textBrush = new SolidBrush(Color.White))
+                    {
+                        var sf = new StringFormat
+                        {
+                            Alignment     = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Center
+                        };
+                        g.DrawString(label, font, textBrush, new RectangleF(1, 10, 12, 5), sf);
+                    }
+                }
+            }
+            return bmp;
         }
 
         private static string FormatBytes(long bytes)
@@ -4614,6 +5064,7 @@ namespace CMS.Presentation
                 form.StartPosition   = FormStartPosition.CenterParent;
                 form.MaximizeBox     = false;
                 form.MinimizeBox     = false;
+                form.Font            = new System.Drawing.Font("Tahoma", 9f);
 
                 label.Text     = "ชื่อ Folder:";
                 label.Location = new Point(12, 12);
@@ -4621,6 +5072,7 @@ namespace CMS.Presentation
 
                 input.Location = new Point(12, 36);
                 input.Size     = new Size(336, 23);
+                input.Font     = new System.Drawing.Font("Tahoma", 9f);
 
                 lblLv.Text     = "ระดับ:";
                 lblLv.Location = new Point(12, 72);
@@ -4629,6 +5081,7 @@ namespace CMS.Presentation
                 combo.DropDownStyle = ComboBoxStyle.DropDownList;
                 combo.Location      = new Point(12, 94);
                 combo.Size          = new Size(336, 23);
+                combo.Font          = new System.Drawing.Font("Tahoma", 9f);
                 combo.Items.AddRange(new object[]
                 {
                     "1HC — High Confidential",
@@ -4686,6 +5139,7 @@ namespace CMS.Presentation
                 form.StartPosition   = FormStartPosition.CenterParent;
                 form.MaximizeBox     = false;
                 form.MinimizeBox     = false;
+                form.Font            = new System.Drawing.Font("Tahoma", 9f);
 
                 label.Text     = prompt;
                 label.Location = new Point(12, 12);
@@ -4694,6 +5148,7 @@ namespace CMS.Presentation
                 input.Text     = defaultValue ?? string.Empty;
                 input.Location = new Point(12, 36);
                 input.Size     = new Size(336, 23);
+                input.Font     = new System.Drawing.Font("Tahoma", 9f);
                 input.SelectAll();
 
                 ok.Text           = "OK";
@@ -4940,9 +5395,8 @@ namespace CMS.Presentation
             // Add filtered file items
             foreach (var file in filesToShow)
             {
-                string icon     = FileIcon(file.FileExtension);
-                string nameText = string.Format("{0}  {1}", icon, file.OriginalFileName);
-                var item        = new ListViewItem(nameText);
+                string icon = FileIcon(file.FileExtension);
+                var item    = new ListViewItem(file.OriginalFileName) { ImageKey = icon };
                 item.SubItems.Add(file.FileExtension.TrimStart('.').ToUpper());
                 item.SubItems.Add(ConfidentialityShort(file.ConfidentialityLevel));
                 item.SubItems.Add(FormatBytes(file.FileSizeBytes));
@@ -5259,8 +5713,8 @@ namespace CMS.Presentation
         private void NavigateToQuickAccessFolder(Folder folder)
         {
             _lastSelectedFolder = folder;
-            _currentNavFolderId = folder.FolderID;
             PushNavigation(folder.FolderID);
+            _currentNavFolderId = folder.FolderID;
             UpdateNavButtons();
             _presenter.GetFolderContents(folder.FolderID);
             lblConfidentialityBadge.Text      = ConfidentialityLabel(folder.ConfidentialityLevel);

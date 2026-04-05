@@ -13,32 +13,17 @@ namespace CMS.Presentation
     /// Recycle Bin form — shows soft-deleted folders with Restore / Permanently Delete.
     /// Accessible from the Admin ribbon tab.
     /// </summary>
-    public class RecycleBinForm : Form
+    public partial class RecycleBinForm : Form
     {
         // ── Services ────────────────────────────────────────────────────────────
         private readonly IFolderService       _folderService;
         private readonly IOrgStructureService _orgService;
         private readonly UserContext          _user;
 
-        // ── Controls ────────────────────────────────────────────────────────────
-        private ToolStrip      _toolbar;
-        private ToolStripButton _btnRestore;
-        private ToolStripButton _btnDelete;
-        private ToolStripButton _btnRefresh;
-        private ToolStripButton _btnEmptyBin;
-        private ToolStripSeparator _sep1;
-        private ToolStripLabel  _lblOrgUnit;
-        private ToolStripComboBox _cmbOrgUnit;
-
-        private ListView       _listView;
-        private StatusStrip    _statusBar;
-        private ToolStripStatusLabel _lblStatus;
-        private Panel          _emptyPanel;   // shown when list is empty
-
         // ── State ───────────────────────────────────────────────────────────────
-        private List<Folder>   _folders      = new List<Folder>();
-        private List<OrgUnit>  _orgUnits     = new List<OrgUnit>();
-        private int?           _filterOrgUnit = null;
+        private List<Folder>  _folders       = new List<Folder>();
+        private List<OrgUnit> _orgUnits      = new List<OrgUnit>();
+        private int?          _filterOrgUnit = null;
 
         // ────────────────────────────────────────────────────────────────────────
         public RecycleBinForm(
@@ -53,181 +38,9 @@ namespace CMS.Presentation
             _user          = user;
             _orgService    = orgService;
 
-            BuildUI();
+            InitializeComponent();
             LoadOrgUnits();
             LoadData();
-        }
-
-        // ── UI Construction ──────────────────────────────────────────────────────
-
-        private void BuildUI()
-        {
-            Text            = "🗑️ ถังขยะ — Recycle Bin";
-            Size            = new Size(900, 600);
-            MinimumSize     = new Size(700, 450);
-            StartPosition   = FormStartPosition.CenterParent;
-            Font            = new Font("Segoe UI", 9f);
-            BackColor       = Color.White;
-
-            BuildToolbar();
-            BuildListView();
-            BuildEmptyPanel();
-            BuildStatusBar();
-        }
-
-        private void BuildToolbar()
-        {
-            _toolbar = new ToolStrip
-            {
-                BackColor = Color.FromArgb(240, 244, 250),
-                GripStyle = ToolStripGripStyle.Hidden,
-                Padding   = new Padding(4, 0, 0, 0),
-                Dock      = DockStyle.Top
-            };
-
-            _btnRestore = new ToolStripButton("♻️  คืนค่า (Restore)")
-            {
-                ToolTipText = "คืน Folder ที่เลือกกลับไปยังตำแหน่งเดิม",
-                Enabled     = false
-            };
-            _btnRestore.Click += BtnRestore_Click;
-
-            _btnDelete = new ToolStripButton("🗑️  ลบถาวร")
-            {
-                ToolTipText = "ลบ Folder ที่เลือกออกจากระบบถาวร (ไม่สามารถกู้คืนได้)",
-                Enabled     = false,
-                ForeColor   = Color.FromArgb(180, 30, 30)
-            };
-            _btnDelete.Click += BtnDelete_Click;
-
-            _sep1 = new ToolStripSeparator();
-
-            _btnEmptyBin = new ToolStripButton("🗑️  ล้างถังขยะทั้งหมด")
-            {
-                ToolTipText = "ลบ Folder ทั้งหมดในถังขยะออกถาวร",
-                ForeColor   = Color.FromArgb(180, 30, 30),
-                Enabled     = false
-            };
-            _btnEmptyBin.Click += BtnEmptyBin_Click;
-
-            _btnRefresh = new ToolStripButton("↻  Refresh")
-            {
-                ToolTipText = "โหลดข้อมูลใหม่",
-                Alignment   = ToolStripItemAlignment.Right
-            };
-            _btnRefresh.Click += (s, e) => LoadData();
-
-            _lblOrgUnit = new ToolStripLabel("หน่วยงาน:")
-            {
-                Alignment = ToolStripItemAlignment.Right
-            };
-            _cmbOrgUnit = new ToolStripComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Width         = 180,
-                Alignment     = ToolStripItemAlignment.Right,
-                ToolTipText   = "กรองตามหน่วยงาน"
-            };
-            _cmbOrgUnit.SelectedIndexChanged += CmbOrgUnit_SelectedIndexChanged;
-
-            _toolbar.Items.AddRange(new ToolStripItem[]
-            {
-                _btnRestore, _btnDelete, _sep1, _btnEmptyBin,
-                _btnRefresh, _lblOrgUnit, _cmbOrgUnit
-            });
-
-            Controls.Add(_toolbar);
-        }
-
-        private void BuildListView()
-        {
-            _listView = new ListView
-            {
-                Dock          = DockStyle.Fill,
-                View          = View.Details,
-                FullRowSelect = true,
-                GridLines     = false,
-                MultiSelect   = true,
-                CheckBoxes    = false,
-                Font          = new Font("Segoe UI", 9f),
-                BorderStyle   = BorderStyle.None,
-                BackColor     = Color.White
-            };
-
-            _listView.Columns.Add("ชื่อ Folder",       250);
-            _listView.Columns.Add("หน่วยงาน",           160);
-            _listView.Columns.Add("ตำแหน่งเดิม",        200);
-            _listView.Columns.Add("วันที่ลบ",           140);
-            _listView.Columns.Add("ระดับ",               80);
-
-            _listView.OwnerDraw = true;
-            _listView.DrawColumnHeader += (s, e) => e.DrawDefault = true;
-            _listView.DrawItem         += (s, e) => { /* handled in DrawSubItem */ };
-            _listView.DrawSubItem      += ListViewDrawSubItem;
-
-            _listView.SelectedIndexChanged += ListView_SelectedIndexChanged;
-            _listView.DoubleClick          += ListView_DoubleClick;
-
-            // Column header click sorts
-            _listView.ColumnClick += ListView_ColumnClick;
-            _listView.ListViewItemSorter = new ListViewColumnSorter();
-
-            Controls.Add(_listView);
-        }
-
-        private void BuildEmptyPanel()
-        {
-            _emptyPanel = new Panel
-            {
-                Dock      = DockStyle.Fill,
-                BackColor = Color.White,
-                Visible   = false
-            };
-
-            var icon = new Label
-            {
-                Text      = "🗑️",
-                Font      = new Font("Segoe UI", 48f),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock      = DockStyle.Top,
-                Height    = 120
-            };
-            var msg = new Label
-            {
-                Text      = "ถังขยะว่างเปล่า",
-                Font      = new Font("Segoe UI", 14f),
-                ForeColor = Color.Gray,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock      = DockStyle.Top,
-                Height    = 36
-            };
-            var sub = new Label
-            {
-                Text      = "Folder ที่ถูกลบจะปรากฏที่นี่",
-                Font      = new Font("Segoe UI", 9f),
-                ForeColor = Color.LightGray,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock      = DockStyle.Top,
-                Height    = 24
-            };
-
-            _emptyPanel.Controls.Add(sub);
-            _emptyPanel.Controls.Add(msg);
-            _emptyPanel.Controls.Add(icon);
-
-            Controls.Add(_emptyPanel);
-        }
-
-        private void BuildStatusBar()
-        {
-            _statusBar = new StatusStrip { BackColor = Color.FromArgb(240, 244, 250) };
-            _lblStatus = new ToolStripStatusLabel("พร้อมใช้งาน")
-            {
-                Spring    = true,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            _statusBar.Items.Add(_lblStatus);
-            Controls.Add(_statusBar);
         }
 
         // ── Data Loading ─────────────────────────────────────────────────────────
@@ -281,7 +94,13 @@ namespace CMS.Presentation
                 string deletedAt   = folder.DeletedAt.HasValue
                     ? folder.DeletedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                     : "—";
-                string level       = ConfidentialityBadge(folder.ConfidentialityLevel);
+
+                int daysRemaining = folder.DeletedAt.HasValue
+                    ? Math.Max(0, 30 - (int)(DateTime.Now - folder.DeletedAt.Value).TotalDays)
+                    : 30;
+                string remaining = daysRemaining == 0 ? "หมดอายุ" : daysRemaining + " วัน";
+
+                string level = ConfidentialityBadge(folder.ConfidentialityLevel);
 
                 var item = new ListViewItem(new[]
                 {
@@ -289,10 +108,17 @@ namespace CMS.Presentation
                     orgUnitName,
                     parentPath,
                     deletedAt,
+                    remaining,
                     level
                 });
-                item.Tag       = folder;
-                item.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
+                item.Tag = folder;
+
+                // เตือนด้วยสีเมื่อเหลือน้อยกว่า 7 วัน
+                if (daysRemaining <= 7)
+                    item.ForeColor = Color.FromArgb(180, 60, 0);
+                else
+                    item.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
+
                 _listView.Items.Add(item);
             }
 
@@ -417,7 +243,6 @@ namespace CMS.Presentation
                 }
                 catch (InvalidOperationException ex)
                 {
-                    // Original parent no longer exists — ask for new location
                     var choice = MessageBox.Show(
                         string.Format("ไม่พบตำแหน่งเดิมของ '{0}'\n\n{1}\n\nต้องการคืนค่าเป็น Root Folder แทนหรือไม่?",
                             folder.FolderName, ex.Message),
@@ -475,8 +300,8 @@ namespace CMS.Presentation
 
         private void UpdateActionButtons()
         {
-            bool canManage   = _user.Role == UserRole.Manager || _user.Role == UserRole.Admin;
-            int  selCount    = _listView.SelectedItems.Count;
+            bool canManage = _user.Role == UserRole.Manager || _user.Role == UserRole.Admin;
+            int  selCount  = _listView.SelectedItems.Count;
 
             _btnRestore.Enabled  = selCount > 0;
             _btnDelete.Enabled   = selCount > 0 && canManage;

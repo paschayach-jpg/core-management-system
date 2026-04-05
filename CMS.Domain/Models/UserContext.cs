@@ -1,4 +1,5 @@
-﻿using CMS.Domain.Enums;
+﻿using System.Collections.Generic;
+using CMS.Domain.Enums;
 
 namespace CMS.Domain.Models
 {
@@ -18,6 +19,61 @@ namespace CMS.Domain.Models
         public string MachineName { get; set; }
         public string IPAddress { get; set; }
         public string SessionID { get; set; }
+
+        /// <summary>LevelCode ของตำแหน่ง เช่น 1A, 2B — ใช้ resolve FolderAuthority</summary>
+        public string LevelCode { get; set; }
+
+        /// <summary>ชื่อตำแหน่งงาน</summary>
+        public string PositionName { get; set; }
+
+        /// <summary>รหัสแผนก</summary>
+        public string DepartmentCode { get; set; }
+
+        /// <summary>ชื่อแผนก</summary>
+        public string DepartmentName { get; set; }
+
+        /// <summary>
+        /// สิทธิ์ที่ Resolve แล้วจาก FolderAuthorityConfig ตาม ตำแหน่ง/แผนก/ฝ่าย
+        /// Key = ConfidentialityLevel (1=HC, 2=SC, 3=NC, 4=PC)
+        /// Populated ใน Program.cs หลัง login สำเร็จ
+        /// </summary>
+        public Dictionary<int, FolderAuthorityConfig> Authority { get; set; }
+
+        private FolderAuthorityConfig GetAuthority(int level)
+        {
+            if (Authority == null) return null;
+            FolderAuthorityConfig cfg;
+            Authority.TryGetValue(level, out cfg);
+            return cfg;
+        }
+
+        /// <summary>ตรวจสอบว่า User มีสิทธิ์ View folder ที่มี ConfidentialityLevel นี้</summary>
+        public bool CanViewFolder(int confidentialityLevel)
+        {
+            var cfg = GetAuthority(confidentialityLevel);
+            return cfg != null && cfg.CanView;
+        }
+
+        /// <summary>ตรวจสอบว่า User มีสิทธิ์ Add ใน folder ที่มี ConfidentialityLevel นี้</summary>
+        public bool CanAddToFolder(int confidentialityLevel)
+        {
+            var cfg = GetAuthority(confidentialityLevel);
+            return cfg != null && cfg.CanAdd;
+        }
+
+        /// <summary>ตรวจสอบว่า User มีสิทธิ์ Edit ใน folder ที่มี ConfidentialityLevel นี้</summary>
+        public bool CanEditFolder(int confidentialityLevel)
+        {
+            var cfg = GetAuthority(confidentialityLevel);
+            return cfg != null && cfg.CanEdit;
+        }
+
+        /// <summary>ตรวจสอบว่า User มีสิทธิ์ Approve ใน folder ที่มี ConfidentialityLevel นี้</summary>
+        public bool CanApproveFolder(int confidentialityLevel)
+        {
+            var cfg = GetAuthority(confidentialityLevel);
+            return cfg != null && cfg.CanApprove;
+        }
 
         // -----------------------------------------------------------------------
         // Aliases

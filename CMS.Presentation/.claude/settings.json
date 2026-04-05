@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/KPG/Documents/cms_import/CMS.Services/**)",
+      "Bash(grep -v \"//\")",
+      "Read(//c/Users/KPG/Documents/cms_import/CMS.Data/Repositories/**)",
+      "Read(//c/Users/KPG/Documents/cms_import/CMS.Domain/Models/**)",
+      "Read(//c/Users/KPG/Documents/cms_import/**)"
+    ]
+  }
+}

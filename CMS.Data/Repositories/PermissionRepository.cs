@@ -122,14 +122,40 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("security.sp_GetPermissionsByPrincipal", conn))
+                try
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@PrincipalType", (byte)principalType);
-                    cmd.Parameters.AddWithValue("@PrincipalID",   principalId);
-                    using (var reader = cmd.ExecuteReader())
+                    using (var cmd = new SqlCommand("security.sp_GetPermissionsByPrincipal", conn))
                     {
-                        while (reader.Read()) results.Add(MapPermission(reader));
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@PrincipalType", (byte)principalType);
+                        cmd.Parameters.AddWithValue("@PrincipalID",   principalId);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read()) results.Add(MapPermission(reader));
+                        }
+                    }
+                }
+                catch (SqlException)
+                {
+                    // SP ยังไม่ถูก deploy — fallback ด้วย direct SQL
+                    results.Clear();
+                    const string sql =
+                        @"SELECT PermissionID, FolderID, PrincipalType, PrincipalID,
+                                 CanRead, CanWrite, CanDelete, CanModify, CanFullControl, IsDeny,
+                                 ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
+                          FROM   security.FolderPermission
+                          WHERE  PrincipalType = @PrincipalType
+                            AND  PrincipalID   = @PrincipalID
+                            AND  RevokedDate   IS NULL
+                          ORDER  BY GrantedDate DESC";
+                    using (var cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@PrincipalType", (byte)principalType);
+                        cmd.Parameters.AddWithValue("@PrincipalID",   principalId);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read()) results.Add(MapPermission(reader));
+                        }
                     }
                 }
             }

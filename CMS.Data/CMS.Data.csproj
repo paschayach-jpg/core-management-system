@@ -58,6 +58,15 @@
     <Compile Include="Interfaces\IPermissionGroupRepository.cs" />
     <Compile Include="Interfaces\IQuickAccessRepository.cs" />
     <Compile Include="Interfaces\IUserOrgVisibilityRepository.cs" />
+    <Compile Include="Interfaces\IFolderAuthorityRepository.cs" />
+    <Compile Include="Interfaces\IHrDivisionRepository.cs" />
+    <Compile Include="Interfaces\IHrDepartmentRepository.cs" />
+    <Compile Include="Interfaces\IHrPositionRepository.cs" />
+    <Compile Include="Interfaces\IHrPositionLevelRepository.cs" />
+    <Compile Include="Interfaces\IHrPositionMappingRepository.cs" />
+    <Compile Include="Interfaces\IExternalShareRepository.cs" />
+    <Compile Include="Interfaces\IShareAccessLogRepository.cs" />
+    <Compile Include="Interfaces\IShareTokenRepository.cs" />
     <Compile Include="Models\AuditQuery.cs" />
     <Compile Include="Models\PagedResult.cs" />
     <Compile Include="Repositories\UserAccountRepository.cs" />
@@ -72,6 +81,15 @@
     <Compile Include="Repositories\FolderTemplateRepository.cs" />
     <Compile Include="Repositories\QuickAccessRepository.cs" />
     <Compile Include="Repositories\UserOrgVisibilityRepository.cs" />
+    <Compile Include="Repositories\FolderAuthorityRepository.cs" />
+    <Compile Include="Repositories\HrDivisionRepository.cs" />
+    <Compile Include="Repositories\HrDepartmentRepository.cs" />
+    <Compile Include="Repositories\HrPositionRepository.cs" />
+    <Compile Include="Repositories\HrPositionLevelRepository.cs" />
+    <Compile Include="Repositories\HrPositionMappingRepository.cs" />
+    <Compile Include="Repositories\ExternalShareRepository.cs" />
+    <Compile Include="Repositories\ShareAccessLogRepository.cs" />
+    <Compile Include="Repositories\ShareTokenRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\001_CreateSchema.sql" />

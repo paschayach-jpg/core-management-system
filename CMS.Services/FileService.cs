@@ -105,11 +105,19 @@ namespace CMS.Services
             if (folder.IsArchived)
                 throw new InvalidOperationException("Cannot upload to an archived folder.");
 
-            // Admin (AppRole=4) and Manager (AppRole=3) bypass permission check
             bool isPrivileged = user.AppRole >= 3;
-            if (!isPrivileged && !_permissionService.CheckPermission(user.UserID, folderId, "Write"))
-                throw new UnauthorizedAccessException(string.Format(
-                    "User {0} does not have Write permission on folder {1}.", user.UserID, folderId));
+            if (!isPrivileged)
+            {
+                // เงื่อนไขที่ 1: FolderAuthorityConfig — CanAdd ตาม LevelCode/ตำแหน่ง/แผนก/ฝ่าย
+                bool hasAuthority = user.CanAddToFolder(folder.ConfidentialityLevel);
+
+                // เงื่อนไขที่ 2: FolderPermission — Write โดยใช้ UserAccount (User, Role, Dept, Div)
+                bool hasAclWrite = !hasAuthority && _permissionService.CheckPermission(user.UserID, folderId, "Write");
+
+                if (!hasAuthority && !hasAclWrite)
+                    throw new UnauthorizedAccessException(string.Format(
+                        "User {0} does not have permission to upload to folder {1}.", user.UserID, folderId));
+            }
 
             foreach (var request in fileList)
                 results.Add(UploadSingleFile(request, folder, user));
@@ -207,9 +215,21 @@ namespace CMS.Services
             if (doc.FileStatus == 3)
                 throw new InvalidOperationException("The file has already been deleted.");
 
-            if (!_permissionService.CheckPermission(user.UserID, doc.FolderID, "Delete"))
-                throw new UnauthorizedAccessException(string.Format(
-                    "User {0} does not have Delete permission on folder {1}.", user.UserID, doc.FolderID));
+            bool isPrivilegedDel = user.AppRole >= 3;
+            if (!isPrivilegedDel)
+            {
+                var parentFolder = _folderRepository.GetById(doc.FolderID);
+
+                // เงื่อนไขที่ 1: FolderAuthorityConfig — CanEdit ตาม LevelCode/ตำแหน่ง/แผนก/ฝ่าย
+                bool hasAuthority = parentFolder != null && user.CanEditFolder(parentFolder.ConfidentialityLevel);
+
+                // เงื่อนไขที่ 2: FolderPermission — Delete โดยใช้ UserAccount (User, Role, Dept, Div)
+                bool hasAclDelete = !hasAuthority && _permissionService.CheckPermission(user.UserID, doc.FolderID, "Delete");
+
+                if (!hasAuthority && !hasAclDelete)
+                    throw new UnauthorizedAccessException(string.Format(
+                        "User {0} does not have permission to delete file from folder {1}.", user.UserID, doc.FolderID));
+            }
 
             // File-level permissions override folder permissions when present
             if (_filePermissionRepository != null)
@@ -256,11 +276,21 @@ namespace CMS.Services
         {
             if (user == null) throw new ArgumentNullException("user");
 
-            // Admin (4) and Manager (3) bypass permission check
             bool isPrivileged = user.AppRole >= 3;
-            if (!isPrivileged && !_permissionService.CheckPermission(user.UserID, folderId, "Read"))
-                throw new UnauthorizedAccessException(string.Format(
-                    "User {0} does not have Read permission on folder {1}.", user.UserID, folderId));
+            if (!isPrivileged)
+            {
+                var folder = _folderRepository.GetById(folderId);
+
+                // เงื่อนไขที่ 1: ตรวจ FolderAuthorityConfig ด้วย LevelCode/ตำแหน่ง/แผนก/ฝ่าย ของ user
+                bool hasAuthority = folder != null && user.CanViewFolder(folder.ConfidentialityLevel);
+
+                // เงื่อนไขที่ 2: ตรวจ FolderPermission โดยใช้ UserAccount (UserID, Role, DepartmentId, DivisionId)
+                bool hasAclRead = !hasAuthority && _permissionService.CheckPermission(user.UserID, folderId, "Read");
+
+                if (!hasAuthority && !hasAclRead)
+                    throw new UnauthorizedAccessException(string.Format(
+                        "User {0} does not have permission to view files in folder {1}.", user.UserID, folderId));
+            }
 
             return _fileDocumentRepository.GetByFolder(folderId)
                 .Where(f => f.FileStatus != 3); // exclude deleted
@@ -331,6 +361,22 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format("ไม่พบไฟล์ ID {0}", fileId));
             if (file.IsDeleted)
                 throw new InvalidOperationException("ไม่สามารถเปลี่ยนชื่อไฟล์ที่ถูกลบแล้ว");
+
+            bool isPrivileged = user.AppRole >= 3;
+            if (!isPrivileged)
+            {
+                var parentFolder = _folderRepository.GetById(file.FolderID);
+
+                // เงื่อนไขที่ 1: FolderAuthorityConfig — CanEdit ตาม LevelCode/ตำแหน่ง/แผนก/ฝ่าย
+                bool hasAuthority = parentFolder != null && user.CanEditFolder(parentFolder.ConfidentialityLevel);
+
+                // เงื่อนไขที่ 2: FolderPermission — Write โดยใช้ UserAccount (User, Role, Dept, Div)
+                bool hasAclWrite = !hasAuthority && _permissionService.CheckPermission(user.UserID, file.FolderID, "Write");
+
+                if (!hasAuthority && !hasAclWrite)
+                    throw new UnauthorizedAccessException(
+                        string.Format("ไม่มีสิทธิ์เปลี่ยนชื่อไฟล์ '{0}' (ต้องการสิทธิ์ Edit)", file.OriginalFileName));
+            }
 
             string oldName = file.OriginalFileName;
             _fileDocumentRepository.RenameFile(fileId, newName.Trim());

@@ -359,9 +359,12 @@ namespace CMS.Presentation
                 string principalName;
                 if (entry.PrincipalType == PrincipalType.User)
                 {
-                    // User
+                    // User — try map first, then GetById (covers inactive users)
                     if (!_userDisplayMap.TryGetValue(entry.PrincipalId, out principalName))
-                        principalName = string.Format("UserID: {0}", entry.PrincipalId);
+                    {
+                        principalName = ResolveUserName(entry.PrincipalId);
+                        _userDisplayMap[entry.PrincipalId] = principalName; // cache
+                    }
                 }
                 else if (entry.PrincipalType == PrincipalType.Department)
                 {
@@ -840,14 +843,25 @@ namespace CMS.Presentation
                     System.Diagnostics.Debug.WriteLine("LoadDisplayNames: _orgStructureService is null");
                 }
 
-                // Fill in any remaining unknown IDs with fallback labels
+                // Fill in any remaining unknown IDs — try GetById first (covers inactive users)
                 foreach (var e in _allAclEntries)
                 {
                     if (e.PrincipalType == PrincipalType.User && !_userDisplayMap.ContainsKey(e.PrincipalID))
                     {
-                        string fallback = string.Format("UserID: {0}", e.PrincipalID);
+                        string resolved = null;
+                        if (_userAccountRepository != null)
+                        {
+                            try
+                            {
+                                var u = _userAccountRepository.GetById(e.PrincipalID);
+                                if (u != null)
+                                    resolved = string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
+                            }
+                            catch { }
+                        }
+                        string fallback = resolved ?? string.Format("UserID: {0}", e.PrincipalID);
                         _userDisplayMap[e.PrincipalID] = fallback;
-                        System.Diagnostics.Debug.WriteLine($"  Added fallback user {e.PrincipalID}: {fallback}");
+                        System.Diagnostics.Debug.WriteLine($"  Resolved user {e.PrincipalID}: {fallback}");
                     }
                     else if ((e.PrincipalType == PrincipalType.Department || e.PrincipalType == PrincipalType.Division)
                              && !_orgUnitNameMap.ContainsKey(e.PrincipalID))
@@ -1005,6 +1019,21 @@ namespace CMS.Presentation
             }
         }
 
+        private string ResolveUserName(int userId)
+        {
+            if (_userAccountRepository != null)
+            {
+                try
+                {
+                    var u = _userAccountRepository.GetById(userId);
+                    if (u != null)
+                        return string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
+                }
+                catch { }
+            }
+            return string.Format("UserID: {0}", userId);
+        }
+
         private string GetPrincipalName(PrincipalType principalType, int principalId)
         {
             try
@@ -1014,10 +1043,13 @@ namespace CMS.Presentation
                 switch (principalType)
                 {
                     case PrincipalType.User:
-                        bool userFound = _userDisplayMap.TryGetValue(principalId, out string userName);
-                        string userResult = userFound ? userName : $"User {principalId}";
-                        System.Diagnostics.Debug.WriteLine($"  User lookup: Found={userFound}, Result={userResult}");
-                        return userResult;
+                        if (!_userDisplayMap.TryGetValue(principalId, out string userName))
+                        {
+                            userName = ResolveUserName(principalId);
+                            _userDisplayMap[principalId] = userName; // cache
+                        }
+                        System.Diagnostics.Debug.WriteLine($"  User lookup: Result={userName}");
+                        return userName;
                     
                     case PrincipalType.Department:
                         bool deptFound = _orgUnitNameMap.TryGetValue(principalId, out string deptName);

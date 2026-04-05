@@ -246,6 +246,24 @@ namespace CMS.Data.Repositories
             return results;
         }
 
+        public IEnumerable<Folder> GetActiveFolders()
+        {
+            var results = new List<Folder>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("storage.sp_GetActiveFolders", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read()) results.Add(MapFolder(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
         public IEnumerable<Folder> GetSiblings(int? parentFolderId, int orgUnitId)
         {
             var results = new List<Folder>();

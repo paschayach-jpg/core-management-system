@@ -121,34 +121,43 @@
   <data name="book_bule" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\book-bule.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="book_bule1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\book-bule.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="book_green" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\book-green.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="book_green1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\book-green.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="book_orange" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\book-orange.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="book_orange1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\book-orange.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="book_red" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\book-red.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="book_red1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\book-red.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="BRD2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\BRD2.md;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="open_folder" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\open-folder.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="folder" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\folder.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="open_folder" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\open-folder.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="login" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\login.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_red" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\book-red.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_green1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\book-green.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="BRD2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\BRD2.md;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="book_orange" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\book-orange.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="File_docs" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\File-docs.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_bule1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\book-bule.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_orange1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\book-orange.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="book_red1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\book-red.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="login1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\login1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
+using CMS.Data.Interfaces;
 using CMS.Presentation.Presenters;
 using CMS.Services.Interfaces;
 
@@ -18,31 +19,28 @@ namespace CMS.Presentation
     /// </summary>
     public partial class OrgStructureForm : Form, IOrgStructureView
     {
-        private readonly OrgStructurePresenter _presenter;
-        private readonly IOrgStructureService _service;
-
-        // Backing list used when building dialogs (populated during ShowOrganizationView)
+        private readonly OrgStructurePresenter  _presenter;
+        private readonly IOrgStructureService   _service;
         private List<OrgUnit> _allUnits = new List<OrgUnit>();
-        private readonly IEmployeeApiService _employeeApiService;
-
-        // -----------------------------------------------------------------------
-        // Constructor
-        // -----------------------------------------------------------------------
+        private readonly IEmployeeApiService    _employeeApiService;
+        private readonly IHrDivisionRepository   _hrDivisionRepo;
+        private readonly IHrDepartmentRepository _hrDepartmentRepo;
 
         public OrgStructureForm(IOrgStructureService service, UserContext user,
-            IEmployeeApiService employeeApiService = null)
+            IEmployeeApiService employeeApiService = null,
+            IHrDivisionRepository hrDivisionRepo = null,
+            IHrDepartmentRepository hrDepartmentRepo = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
 
-            _service = service;
+            _service            = service;
             _employeeApiService = employeeApiService;
+            _hrDivisionRepo     = hrDivisionRepo;
+            _hrDepartmentRepo   = hrDepartmentRepo;
 
             InitializeComponent();
-
             _presenter = new OrgStructurePresenter(service, this, user);
-
-            // Default to Organization View on load
             radioOrgView.Checked = true;
         }
 
@@ -271,7 +269,7 @@ namespace CMS.Presentation
             }
 
             // Step 4: เปิด dialog สร้างหน่วยงาน พร้อมส่ง context ของ selected node
-            using (var dlg = new CreateOrgUnitDialog(_allUnits, _employeeApiService, null, _service, selectedOrgUnit))
+            using (var dlg = new CreateOrgUnitDialog(_allUnits, _employeeApiService, null, _service, selectedOrgUnit, _hrDivisionRepo, _hrDepartmentRepo))
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK && dlg.Result != null)
                     _presenter.CreateOrgUnit(dlg.Result);

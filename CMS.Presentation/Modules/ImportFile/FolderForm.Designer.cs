@@ -126,7 +126,6 @@ namespace CMS.Presentation
             // pnlFilter
             // 
             this.pnlFilter.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(252)))), ((int)(((byte)(255)))));
-            this.pnlFilter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlFilter.Controls.Add(this.lblFilterStatus);
             this.pnlFilter.Controls.Add(this.btnClearFilter);
             this.pnlFilter.Controls.Add(this.btnApplyFilter);
@@ -142,7 +141,7 @@ namespace CMS.Presentation
             this.pnlFilter.Location = new System.Drawing.Point(0, 26);
             this.pnlFilter.Name = "pnlFilter";
             this.pnlFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlFilter.Size = new System.Drawing.Size(887, 32);
+            this.pnlFilter.Size = new System.Drawing.Size(890, 32);
             this.pnlFilter.TabIndex = 6;
             // 
             // lblFilterStatus
@@ -288,6 +287,7 @@ namespace CMS.Presentation
             this.toolStrip.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
             this.toolStrip.Size = new System.Drawing.Size(1197, 26);
             this.toolStrip.TabIndex = 0;
+            this.toolStrip.Visible = false;
             // 
             // btnNewFolder
             // 
@@ -311,6 +311,7 @@ namespace CMS.Presentation
             this.btnRename.Size = new System.Drawing.Size(86, 23);
             this.btnRename.Text = "✏️ เปลี่ยนชื่อ";
             this.btnRename.ToolTipText = "เปลี่ยนชื่อ Folder ที่เลือก";
+            this.btnRename.Visible = false;
             this.btnRename.Click += new System.EventHandler(this.btnRename_Click);
             // 
             // sep1
@@ -333,6 +334,7 @@ namespace CMS.Presentation
             this.btnDelete.Size = new System.Drawing.Size(52, 23);
             this.btnDelete.Text = "🗑️ ลบ";
             this.btnDelete.ToolTipText = "ย้าย Folder ไปถังขยะ";
+            this.btnDelete.Visible = false;
             this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
             // 
             // sep2
@@ -367,7 +369,7 @@ namespace CMS.Presentation
             // btnApplyTemplate
             // 
             this.btnApplyTemplate.Name = "btnApplyTemplate";
-            this.btnApplyTemplate.Size = new System.Drawing.Size(88, 23);
+            this.btnApplyTemplate.Size = new System.Drawing.Size(91, 23);
             this.btnApplyTemplate.Text = "📋 Template";
             this.btnApplyTemplate.ToolTipText = "Apply Template Folder";
             this.btnApplyTemplate.Click += new System.EventHandler(this.btnApplyTemplate_Click);
@@ -380,7 +382,7 @@ namespace CMS.Presentation
             // btnChangeLevel
             // 
             this.btnChangeLevel.Name = "btnChangeLevel";
-            this.btnChangeLevel.Size = new System.Drawing.Size(95, 23);
+            this.btnChangeLevel.Size = new System.Drawing.Size(98, 23);
             this.btnChangeLevel.Text = "🔒 เปลี่ยนระดับ";
             this.btnChangeLevel.ToolTipText = "เปลี่ยน Confidentiality Level (Manager/Admin)";
             this.btnChangeLevel.Visible = false;
@@ -416,10 +418,10 @@ namespace CMS.Presentation
             this.pnlNavBar.Controls.Add(this.txtSearch);
             this.pnlNavBar.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlNavBar.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.pnlNavBar.Location = new System.Drawing.Point(0, 26);
+            this.pnlNavBar.Location = new System.Drawing.Point(0, 0);
             this.pnlNavBar.Name = "pnlNavBar";
             this.pnlNavBar.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.pnlNavBar.Size = new System.Drawing.Size(1197, 32);
+            this.pnlNavBar.Size = new System.Drawing.Size(1197, 40);
             this.pnlNavBar.TabIndex = 5;
             // 
             // btnNavBack
@@ -469,54 +471,61 @@ namespace CMS.Presentation
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtBreadcrumb.BackColor = System.Drawing.Color.White;
             this.txtBreadcrumb.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtBreadcrumb.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtBreadcrumb.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtBreadcrumb.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.txtBreadcrumb.Location = new System.Drawing.Point(120, 5);
+            this.txtBreadcrumb.Location = new System.Drawing.Point(120, 6);
+            this.txtBreadcrumb.Multiline = true;
             this.txtBreadcrumb.Name = "txtBreadcrumb";
             this.txtBreadcrumb.ReadOnly = true;
-            this.txtBreadcrumb.Size = new System.Drawing.Size(857, 23);
+            this.txtBreadcrumb.Size = new System.Drawing.Size(800, 28);
             this.txtBreadcrumb.TabIndex = 4;
             this.txtBreadcrumb.Text = "🏠 ราก";
             // 
             // btnViewList
             // 
             this.btnViewList.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnViewList.FlatAppearance.BorderSize = 0;
             this.btnViewList.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewList.Location = new System.Drawing.Point(997, 0);
+            this.btnViewList.Location = new System.Drawing.Point(-83, 0);
             this.btnViewList.Name = "btnViewList";
             this.btnViewList.Size = new System.Drawing.Size(26, 24);
             this.btnViewList.TabIndex = 5;
             this.btnViewList.Text = "☰";
+            this.btnViewList.Visible = false;
             // 
             // btnViewGrid
             // 
             this.btnViewGrid.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnViewGrid.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewGrid.Location = new System.Drawing.Point(997, 0);
+            this.btnViewGrid.Location = new System.Drawing.Point(-83, 0);
             this.btnViewGrid.Name = "btnViewGrid";
             this.btnViewGrid.Size = new System.Drawing.Size(26, 24);
             this.btnViewGrid.TabIndex = 6;
             this.btnViewGrid.Text = "⊞";
+            this.btnViewGrid.Visible = false;
             // 
             // lblSearch
             // 
             this.lblSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblSearch.AutoSize = true;
-            this.lblSearch.Location = new System.Drawing.Point(997, 0);
+            this.lblSearch.Location = new System.Drawing.Point(-83, 0);
             this.lblSearch.Name = "lblSearch";
             this.lblSearch.Size = new System.Drawing.Size(24, 17);
             this.lblSearch.TabIndex = 7;
             this.lblSearch.Text = "🔍";
+            this.lblSearch.Visible = false;
             // 
             // txtSearch
             // 
             this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtSearch.ForeColor = System.Drawing.Color.Gray;
-            this.txtSearch.Location = new System.Drawing.Point(997, 0);
+            this.txtSearch.Location = new System.Drawing.Point(-83, 0);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(160, 23);
+            this.txtSearch.Size = new System.Drawing.Size(160, 16);
             this.txtSearch.TabIndex = 8;
             this.txtSearch.Text = "ค้นหาใน Folder...";
+            this.txtSearch.Visible = false;
             // 
             // pnlFilterBar
             // 
@@ -527,7 +536,7 @@ namespace CMS.Presentation
             this.pnlFilterBar.Controls.Add(this.chk3NC);
             this.pnlFilterBar.Controls.Add(this.chk4PC);
             this.pnlFilterBar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlFilterBar.Location = new System.Drawing.Point(0, 58);
+            this.pnlFilterBar.Location = new System.Drawing.Point(0, 40);
             this.pnlFilterBar.Name = "pnlFilterBar";
             this.pnlFilterBar.Padding = new System.Windows.Forms.Padding(4, 4, 4, 2);
             this.pnlFilterBar.Size = new System.Drawing.Size(1197, 28);
@@ -598,7 +607,7 @@ namespace CMS.Presentation
             // splitMain
             // 
             this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitMain.Location = new System.Drawing.Point(0, 86);
+            this.splitMain.Location = new System.Drawing.Point(0, 68);
             this.splitMain.Name = "splitMain";
             this.splitMain.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -611,7 +620,7 @@ namespace CMS.Presentation
             this.splitMain.Panel2.Controls.Add(this.recycleBinGroupBox);
             this.splitMain.Panel2Collapsed = true;
             this.splitMain.Panel2MinSize = 0;
-            this.splitMain.Size = new System.Drawing.Size(1197, 716);
+            this.splitMain.Size = new System.Drawing.Size(1197, 734);
             this.splitMain.SplitterDistance = 533;
             this.splitMain.TabIndex = 3;
             // 
@@ -630,8 +639,8 @@ namespace CMS.Presentation
             // splitLR.Panel2
             // 
             this.splitLR.Panel2.Controls.Add(this.splitContent);
-            this.splitLR.Size = new System.Drawing.Size(1197, 716);
-            this.splitLR.SplitterDistance = 304;
+            this.splitLR.Size = new System.Drawing.Size(1197, 734);
+            this.splitLR.SplitterDistance = 303;
             this.splitLR.TabIndex = 0;
             // 
             // pnlExplorer
@@ -646,7 +655,7 @@ namespace CMS.Presentation
             this.pnlExplorer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlExplorer.Location = new System.Drawing.Point(0, 0);
             this.pnlExplorer.Name = "pnlExplorer";
-            this.pnlExplorer.Size = new System.Drawing.Size(304, 716);
+            this.pnlExplorer.Size = new System.Drawing.Size(303, 734);
             this.pnlExplorer.TabIndex = 0;
             // 
             // folderTreeView
@@ -656,7 +665,7 @@ namespace CMS.Presentation
             this.folderTreeView.HotTracking = true;
             this.folderTreeView.Location = new System.Drawing.Point(0, 505);
             this.folderTreeView.Name = "folderTreeView";
-            this.folderTreeView.Size = new System.Drawing.Size(304, 183);
+            this.folderTreeView.Size = new System.Drawing.Size(303, 201);
             this.folderTreeView.TabIndex = 0;
             this.folderTreeView.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.folderTreeView_AfterSelect);
             // 
@@ -666,7 +675,7 @@ namespace CMS.Presentation
             this.txtFolderSearch.ForeColor = System.Drawing.Color.Gray;
             this.txtFolderSearch.Location = new System.Drawing.Point(0, 485);
             this.txtFolderSearch.Name = "txtFolderSearch";
-            this.txtFolderSearch.Size = new System.Drawing.Size(304, 20);
+            this.txtFolderSearch.Size = new System.Drawing.Size(303, 20);
             this.txtFolderSearch.TabIndex = 1;
             this.txtFolderSearch.Text = "ค้นหา Folder...";
             // 
@@ -679,7 +688,7 @@ namespace CMS.Presentation
             this.lblOrgUnitStatus.Location = new System.Drawing.Point(0, 465);
             this.lblOrgUnitStatus.Name = "lblOrgUnitStatus";
             this.lblOrgUnitStatus.Padding = new System.Windows.Forms.Padding(6, 0, 0, 0);
-            this.lblOrgUnitStatus.Size = new System.Drawing.Size(304, 20);
+            this.lblOrgUnitStatus.Size = new System.Drawing.Size(303, 20);
             this.lblOrgUnitStatus.TabIndex = 5;
             this.lblOrgUnitStatus.Text = "📂 กำลังดู: — ทั้งหมด —";
             this.lblOrgUnitStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -692,19 +701,19 @@ namespace CMS.Presentation
             this.pnlOrgFilter.Location = new System.Drawing.Point(0, 26);
             this.pnlOrgFilter.Name = "pnlOrgFilter";
             this.pnlOrgFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlOrgFilter.Size = new System.Drawing.Size(304, 439);
+            this.pnlOrgFilter.Size = new System.Drawing.Size(303, 439);
             this.pnlOrgFilter.TabIndex = 2;
             // 
             // treeOrgUnit
             // 
             this.treeOrgUnit.BackColor = System.Drawing.Color.White;
-            this.treeOrgUnit.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.treeOrgUnit.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.treeOrgUnit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeOrgUnit.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.treeOrgUnit.HotTracking = true;
             this.treeOrgUnit.Location = new System.Drawing.Point(4, 4);
             this.treeOrgUnit.Name = "treeOrgUnit";
-            this.treeOrgUnit.Size = new System.Drawing.Size(296, 431);
+            this.treeOrgUnit.Size = new System.Drawing.Size(295, 431);
             this.treeOrgUnit.TabIndex = 1;
             this.treeOrgUnit.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeOrgUnit_AfterSelect);
             // 
@@ -716,7 +725,7 @@ namespace CMS.Presentation
             this.lblExplorerHeader.ForeColor = System.Drawing.Color.White;
             this.lblExplorerHeader.Location = new System.Drawing.Point(0, 0);
             this.lblExplorerHeader.Name = "lblExplorerHeader";
-            this.lblExplorerHeader.Size = new System.Drawing.Size(304, 26);
+            this.lblExplorerHeader.Size = new System.Drawing.Size(303, 26);
             this.lblExplorerHeader.TabIndex = 3;
             this.lblExplorerHeader.Text = "  📁 Folder Explorer";
             this.lblExplorerHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -727,10 +736,10 @@ namespace CMS.Presentation
             this.pnlRecycleBinNode.Controls.Add(this.lblRecycleBin);
             this.pnlRecycleBinNode.Controls.Add(this.lblRecycleBinCount);
             this.pnlRecycleBinNode.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlRecycleBinNode.Location = new System.Drawing.Point(0, 688);
+            this.pnlRecycleBinNode.Location = new System.Drawing.Point(0, 706);
             this.pnlRecycleBinNode.Name = "pnlRecycleBinNode";
             this.pnlRecycleBinNode.Padding = new System.Windows.Forms.Padding(8, 4, 4, 4);
-            this.pnlRecycleBinNode.Size = new System.Drawing.Size(304, 28);
+            this.pnlRecycleBinNode.Size = new System.Drawing.Size(303, 28);
             this.pnlRecycleBinNode.TabIndex = 4;
             // 
             // lblRecycleBin
@@ -772,20 +781,19 @@ namespace CMS.Presentation
             this.splitContent.Panel2.Controls.Add(this.pnlDetail);
             this.splitContent.Panel2Collapsed = true;
             this.splitContent.Panel2MinSize = 100;
-            this.splitContent.Size = new System.Drawing.Size(889, 716);
+            this.splitContent.Size = new System.Drawing.Size(890, 734);
             this.splitContent.SplitterDistance = 25;
             this.splitContent.TabIndex = 0;
             // 
             // pnlContent
             // 
-            this.pnlContent.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlContent.Controls.Add(this.contentsListView);
             this.pnlContent.Controls.Add(this.pnlFilter);
             this.pnlContent.Controls.Add(this.pnlContentHeader);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(0, 0);
             this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Size = new System.Drawing.Size(889, 716);
+            this.pnlContent.Size = new System.Drawing.Size(890, 734);
             this.pnlContent.TabIndex = 0;
             // 
             // contentsListView
@@ -805,7 +813,7 @@ namespace CMS.Presentation
             this.contentsListView.HideSelection = false;
             this.contentsListView.Location = new System.Drawing.Point(0, 58);
             this.contentsListView.Name = "contentsListView";
-            this.contentsListView.Size = new System.Drawing.Size(887, 656);
+            this.contentsListView.Size = new System.Drawing.Size(890, 676);
             this.contentsListView.TabIndex = 1;
             this.contentsListView.UseCompatibleStateImageBehavior = false;
             this.contentsListView.View = System.Windows.Forms.View.Details;
@@ -852,13 +860,12 @@ namespace CMS.Presentation
             // pnlContentHeader
             // 
             this.pnlContentHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(230)))), ((int)(((byte)(245)))));
-            this.pnlContentHeader.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlContentHeader.Controls.Add(this.lblContentInfo);
             this.pnlContentHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlContentHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlContentHeader.Name = "pnlContentHeader";
             this.pnlContentHeader.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.pnlContentHeader.Size = new System.Drawing.Size(887, 26);
+            this.pnlContentHeader.Size = new System.Drawing.Size(890, 26);
             this.pnlContentHeader.TabIndex = 2;
             // 
             // lblContentInfo
@@ -867,7 +874,7 @@ namespace CMS.Presentation
             this.lblContentInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblContentInfo.Location = new System.Drawing.Point(4, 3);
             this.lblContentInfo.Name = "lblContentInfo";
-            this.lblContentInfo.Size = new System.Drawing.Size(877, 18);
+            this.lblContentInfo.Size = new System.Drawing.Size(882, 20);
             this.lblContentInfo.TabIndex = 0;
             this.lblContentInfo.Text = "— | — | ไม่มีรายการที่เลือก";
             this.lblContentInfo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -999,7 +1006,7 @@ namespace CMS.Presentation
             // btnRestore
             // 
             this.btnRestore.Name = "btnRestore";
-            this.btnRestore.Size = new System.Drawing.Size(59, 23);
+            this.btnRestore.Size = new System.Drawing.Size(60, 23);
             this.btnRestore.Text = "♻️ กู้คืน";
             this.btnRestore.ToolTipText = "กู้คืน Folder ไปยัง Parent เดิม";
             // 

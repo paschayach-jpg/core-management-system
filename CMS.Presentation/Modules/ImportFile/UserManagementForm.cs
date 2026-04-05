@@ -14,21 +14,38 @@ namespace CMS.Presentation
     /// </summary>
     public partial class UserManagementForm : Form
     {
-        private readonly IUserAccountRepository _userRepo;
-        private readonly UserContext            _currentUser;
-        private readonly IAuditService          _auditService;
+        private readonly IUserAccountRepository      _userRepo;
+        private readonly UserContext                 _currentUser;
+        private readonly IAuditService               _auditService;
+        private readonly IHrDivisionRepository       _hrDivRepo;
+        private readonly IHrDepartmentRepository     _hrDeptRepo;
+        private readonly IHrPositionRepository       _hrPosRepo;
+        private readonly IHrPositionLevelRepository  _hrLevelRepo;
 
-        private List<UserAccount> _allUsers = new List<UserAccount>();
+        private List<UserAccount>      _allUsers    = new List<UserAccount>();
+        private List<HrDivision>       _divisions   = new List<HrDivision>();
+        private List<HrDepartment>     _departments = new List<HrDepartment>();
+        private List<HrPosition>       _positions   = new List<HrPosition>();
+        private List<HrPositionLevel>  _levels      = new List<HrPositionLevel>();
 
         public UserManagementForm(IUserAccountRepository userRepo, UserContext currentUser,
-                                   IAuditService auditService = null)
+                                   IAuditService auditService = null,
+                                   IHrDivisionRepository hrDivRepo = null,
+                                   IHrDepartmentRepository hrDeptRepo = null,
+                                   IHrPositionRepository hrPosRepo = null,
+                                   IHrPositionLevelRepository hrLevelRepo = null)
         {
             _userRepo     = userRepo;
             _currentUser  = currentUser;
             _auditService = auditService;
+            _hrDivRepo    = hrDivRepo;
+            _hrDeptRepo   = hrDeptRepo;
+            _hrPosRepo    = hrPosRepo;
+            _hrLevelRepo  = hrLevelRepo;
 
             InitializeComponent();
             WireEvents();
+            LoadHrData();
             LoadUsers();
         }
 
@@ -52,6 +69,14 @@ namespace CMS.Presentation
         // ─────────────────────────────────────────────────────────────────────
         // Data
         // ─────────────────────────────────────────────────────────────────────
+
+        private void LoadHrData()
+        {
+            if (_hrDivRepo   != null) _divisions   = _hrDivRepo.GetAll().OrderBy(d => d.DivisionCode).ToList();
+            if (_hrDeptRepo  != null) _departments = _hrDeptRepo.GetAll().OrderBy(d => d.DepartmentCode).ToList();
+            if (_hrPosRepo   != null) _positions   = _hrPosRepo.GetAll().OrderBy(p => p.PositionName).ToList();
+            if (_hrLevelRepo != null) _levels      = _hrLevelRepo.GetAll().OrderBy(l => l.LevelCode).ToList();
+        }
 
         private void LoadUsers()
         {
@@ -217,34 +242,115 @@ namespace CMS.Presentation
             var dlg = new Form
             {
                 Text            = isNew ? "เพิ่มผู้ใช้ใหม่" : "แก้ไขข้อมูลผู้ใช้",
-                Size            = new Size(420, 320),
+                Size            = new Size(500, 400),
                 StartPosition   = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 MaximizeBox     = false, MinimizeBox = false,
                 Font            = new Font("Segoe UI", 10F)
             };
 
-            int y = 16;
-            Func<string, int, Control> addRow = (label, top) =>
-            {
-                dlg.Controls.Add(new Label { Text = label, Left = 12, Top = top + 3, Width = 110, TextAlign = ContentAlignment.MiddleRight });
-                return null;
-            };
+            int lw = 120, fw = 300, lx = 12, tx = 138;
+            int y  = 16;
 
-            var txtAD      = AddField(dlg, "ชื่อผู้ใช้ AD:",   12, ref y, user.ADUserName   ?? "");
-            var txtDisplay = AddField(dlg, "ชื่อ-นามสกุล:",    12, ref y, user.DisplayName  ?? "");
-            var txtEmpCode = AddField(dlg, "รหัสพนักงาน:",     12, ref y, user.EmployeeCode ?? "");
+            // ── Basic info ───────────────────────────────────────────────────
+            var txtAD      = AddField(dlg, "ชื่อผู้ใช้ AD:",  lx, lw, tx, fw, ref y, user.ADUserName   ?? "");
+            var txtDisplay = AddField(dlg, "ชื่อ-นามสกุล:",   lx, lw, tx, fw, ref y, user.DisplayName  ?? "");
+            var txtEmpCode = AddField(dlg, "รหัสพนักงาน:",    lx, lw, tx, fw, ref y, user.EmployeeCode ?? "");
 
-            var lblRole = new Label { Text = "บทบาท:", Left = 12, Top = y + 3, Width = 110, TextAlign = ContentAlignment.MiddleRight };
-            var cmbRole = new ComboBox { Left = 130, Top = y, Width = 200, DropDownStyle = ComboBoxStyle.DropDownList };
+            // ── Role ────────────────────────────────────────────────────────
+            dlg.Controls.Add(new Label { Text = "บทบาท:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
+            var cmbRole = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
             cmbRole.Items.AddRange(new object[] { "Officer (1)", "SrOfficer (2)", "Manager (3)", "Admin (4)" });
             cmbRole.SelectedIndex = Math.Max(0, Math.Min(3, user.AppRole - 1));
-            dlg.Controls.Add(lblRole);
             dlg.Controls.Add(cmbRole);
             y += 34;
 
-            var btnOk  = new Button { Text = "บันทึก",  Left = 130, Top = y, Width = 90, Height = 28, DialogResult = DialogResult.OK };
-            var btnCan = new Button { Text = "ยกเลิก", Left = 228, Top = y, Width = 90, Height = 28, DialogResult = DialogResult.Cancel };
+            // ── Division ────────────────────────────────────────────────────
+            dlg.Controls.Add(new Label { Text = "ฝ่าย:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
+            var cmbDiv = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbDiv.Items.Add(new HrDivision { DivisionCode = "", DivisionName = "-- ไม่ระบุ --" });
+            foreach (var d in _divisions) cmbDiv.Items.Add(d);
+            cmbDiv.DisplayMember = "DivisionName";
+            cmbDiv.SelectedIndex = 0;
+            if (!string.IsNullOrEmpty(user.DivisionCode))
+                for (int i = 0; i < cmbDiv.Items.Count; i++)
+                    if (((HrDivision)cmbDiv.Items[i]).DivisionCode == user.DivisionCode)
+                    { cmbDiv.SelectedIndex = i; break; }
+            dlg.Controls.Add(cmbDiv);
+            y += 34;
+
+            // ── Department (cascades from Division) ─────────────────────────
+            dlg.Controls.Add(new Label { Text = "แผนก:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
+            var cmbDept = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbDept.DisplayMember = "DepartmentName";
+            dlg.Controls.Add(cmbDept);
+            y += 34;
+
+            Action<string> populateDept = (currentDeptCode) =>
+            {
+                cmbDept.Items.Clear();
+                cmbDept.Items.Add(new HrDepartment { DepartmentCode = "", DepartmentName = "-- ไม่ระบุ --" });
+                var selDiv = cmbDiv.SelectedItem as HrDivision;
+                var depts  = (selDiv != null && selDiv.DivisionID > 0)
+                    ? _departments.Where(d => d.DivisionID == selDiv.DivisionID)
+                    : _departments;
+                foreach (var d in depts) cmbDept.Items.Add(d);
+                cmbDept.SelectedIndex = 0;
+                if (!string.IsNullOrEmpty(currentDeptCode))
+                    for (int i = 0; i < cmbDept.Items.Count; i++)
+                        if (((HrDepartment)cmbDept.Items[i]).DepartmentCode == currentDeptCode)
+                        { cmbDept.SelectedIndex = i; break; }
+            };
+
+            populateDept(user.DepartmentCode ?? "");
+            cmbDiv.SelectedIndexChanged += (s, ev) => populateDept("");
+
+            // ── Position ────────────────────────────────────────────────────
+            dlg.Controls.Add(new Label { Text = "ตำแหน่ง:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
+            var cmbPos = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbPos.Items.Add(new HrPosition { PositionCode = "", PositionName = "-- ไม่ระบุ --" });
+            foreach (var p in _positions) cmbPos.Items.Add(p);
+            cmbPos.DisplayMember = "PositionName";
+            cmbPos.SelectedIndex = 0;
+            if (!string.IsNullOrEmpty(user.PositionName))
+                for (int i = 0; i < cmbPos.Items.Count; i++)
+                    if (((HrPosition)cmbPos.Items[i]).PositionName == user.PositionName)
+                    { cmbPos.SelectedIndex = i; break; }
+            dlg.Controls.Add(cmbPos);
+            y += 34;
+
+            // ── Level ───────────────────────────────────────────────────────
+            dlg.Controls.Add(new Label { Text = "Level:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
+            var cmbLevel = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbLevel.Items.Add(new HrPositionLevel { LevelCode = "", LevelName = "-- ไม่ระบุ --" });
+            foreach (var lv in _levels) cmbLevel.Items.Add(lv);
+            cmbLevel.DisplayMember = "LevelCode";
+            cmbLevel.SelectedIndex = 0;
+            if (!string.IsNullOrEmpty(user.LevelCode))
+                for (int i = 0; i < cmbLevel.Items.Count; i++)
+                    if (((HrPositionLevel)cmbLevel.Items[i]).LevelCode == user.LevelCode)
+                    { cmbLevel.SelectedIndex = i; break; }
+            dlg.Controls.Add(cmbLevel);
+            y += 34;
+
+            // Auto-select Level เมื่อเลือก Position — ใช้ HrPosition.Level ที่ตรงกับ LevelCode
+            Action<string> selectLevelByCode = (code) =>
+            {
+                if (string.IsNullOrEmpty(code)) return;
+                for (int i = 0; i < cmbLevel.Items.Count; i++)
+                    if (((HrPositionLevel)cmbLevel.Items[i]).LevelCode == code)
+                    { cmbLevel.SelectedIndex = i; return; }
+            };
+            cmbPos.SelectedIndexChanged += (s, ev) =>
+            {
+                var pos = cmbPos.SelectedItem as HrPosition;
+                if (pos != null && !string.IsNullOrEmpty(pos.Level))
+                    selectLevelByCode(pos.Level);
+            };
+
+            // ── Buttons ─────────────────────────────────────────────────────
+            var btnOk  = new Button { Text = "บันทึก",  Left = tx,       Top = y, Width = 100, Height = 30, DialogResult = DialogResult.OK };
+            var btnCan = new Button { Text = "ยกเลิก", Left = tx + 110, Top = y, Width = 100, Height = 30, DialogResult = DialogResult.Cancel };
             dlg.AcceptButton = btnOk;
             dlg.CancelButton = btnCan;
             dlg.Controls.Add(btnOk);
@@ -260,10 +366,35 @@ namespace CMS.Presentation
                 user.EmployeeCode = txtEmpCode.Text.Trim();
                 user.AppRole      = cmbRole.SelectedIndex + 1;
 
+                var selPos   = cmbPos.SelectedItem   as HrPosition;
+                var selLevel = cmbLevel.SelectedItem as HrPositionLevel;
+                user.PositionName = (selPos   != null && selPos.PositionID > 0)                     ? selPos.PositionName                    : null;
+                user.LevelCode    = (selLevel != null && !string.IsNullOrEmpty(selLevel.LevelCode)) ? selLevel.LevelCode : null;
+
+                var selDiv  = cmbDiv.SelectedItem  as HrDivision;
+                var selDept = cmbDept.SelectedItem as HrDepartment;
+
+                if (selDiv != null && selDiv.DivisionID > 0)
+                {
+                    user.DivisionId   = selDiv.DivisionID;
+                    user.DivisionCode = selDiv.DivisionCode;
+                    user.DivisionName = selDiv.DivisionName;
+                }
+                else { user.DivisionId = null; user.DivisionCode = null; user.DivisionName = null; }
+
+                if (selDept != null && selDept.DepartmentID > 0)
+                {
+                    user.DepartmentId   = selDept.DepartmentID;
+                    user.DepartmentCode = selDept.DepartmentCode;
+                    user.DepartmentName = selDept.DepartmentName;
+                }
+                else { user.DepartmentId = null; user.DepartmentCode = null; user.DepartmentName = null; }
+
                 try
                 {
                     if (isNew) _userRepo.Create(user);
                     else       _userRepo.Update(user);
+
                     if (_auditService != null)
                         _auditService.Log(new AuditEntry
                         {
@@ -272,8 +403,10 @@ namespace CMS.Presentation
                             UserID      = _currentUser.UserID,
                             TableName   = "UserAccount",
                             RecordID    = user.UserID,
-                            NewValue    = string.Format("AD:{0} Display:{1} Role:{2}",
-                                             user.ADUserName, user.DisplayName, user.AppRole),
+                            NewValue    = string.Format("AD:{0} Role:{1} Div:{2} Dept:{3} Pos:{4} Level:{5}",
+                                             user.ADUserName, user.AppRole,
+                                             user.DivisionCode, user.DepartmentCode,
+                                             user.PositionName, user.LevelCode),
                             MachineName = _currentUser.MachineName,
                             IPAddress   = _currentUser.IPAddress,
                             SessionID   = _currentUser.SessionID,
@@ -292,10 +425,10 @@ namespace CMS.Presentation
             return dlg;
         }
 
-        private static TextBox AddField(Form dlg, string label, int left, ref int y, string value)
+        private static TextBox AddField(Form dlg, string label, int lx, int lw, int tx, int fw, ref int y, string value)
         {
-            dlg.Controls.Add(new Label { Text = label, Left = left, Top = y + 3, Width = 110, TextAlign = ContentAlignment.MiddleRight });
-            var txt = new TextBox { Left = left + 118, Top = y, Width = 240, Text = value };
+            dlg.Controls.Add(new Label { Text = label, Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
+            var txt = new TextBox { Left = tx, Top = y, Width = fw, Text = value };
             dlg.Controls.Add(txt);
             y += 34;
             return txt;

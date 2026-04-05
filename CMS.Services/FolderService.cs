@@ -33,6 +33,24 @@ namespace CMS.Services
         private readonly IApprovalRepository          _approvalRepository;
         private readonly IUserOrgVisibilityService    _visibilityService;
 
+        // Session-level folder cache: key = orgUnitId (null = all), value = folder list
+        // ลด DB calls ซ้ำเมื่อ navigate ไปมาใน session เดียวกัน
+        private readonly Dictionary<int, List<Folder>> _folderCacheByOrg = new Dictionary<int, List<Folder>>();
+        private List<Folder> _allFoldersCache = null;
+        private static readonly int _cacheKeyAll = -1; // sentinel for "all orgunits"
+
+        /// <summary>Invalidate folder cache (เรียกหลัง create/rename/delete/move)</summary>
+        public void InvalidateFolderCache(int? orgUnitId = null)
+        {
+            if (orgUnitId.HasValue)
+                _folderCacheByOrg.Remove(orgUnitId.Value);
+            else
+            {
+                _folderCacheByOrg.Clear();
+                _allFoldersCache = null;
+            }
+        }
+
         public FolderService(
             IFolderRepository          folderRepository,
             IFileDocumentRepository    fileDocumentRepository,
@@ -70,6 +88,25 @@ namespace CMS.Services
                 throw new ArgumentException("Folder name is required.");
 
             ValidateFolderName(request.Name.Trim());
+
+            if (request.ParentFolderId.HasValue)
+            {
+                bool isPrivileged = user.AppRole >= 3;
+                if (!isPrivileged)
+                {
+                    var parent = _folderRepository.GetById(request.ParentFolderId.Value);
+
+                    // เงื่อนไขที่ 1: FolderAuthorityConfig — CanAdd ตาม LevelCode/ตำแหน่ง/แผนก/ฝ่าย
+                    bool hasAuthority = parent != null && user.CanAddToFolder(parent.ConfidentialityLevel);
+
+                    // เงื่อนไขที่ 2: FolderPermission — Write โดยใช้ UserAccount (User, Role, Dept, Div)
+                    bool hasAclWrite = !hasAuthority && _permissionService.CheckPermission(user.UserID, request.ParentFolderId.Value, "Write");
+
+                    if (!hasAuthority && !hasAclWrite)
+                        throw new UnauthorizedAccessException(
+                            string.Format("ไม่มีสิทธิ์สร้าง Folder ใน '{0}' (ต้องการสิทธิ์ Add)", request.ParentFolderId.Value));
+                }
+            }
 
             // Duplicate check: compare case-insensitive + trimmed against active siblings
             string trimmedName = request.Name.Trim();
@@ -134,6 +171,7 @@ namespace CMS.Services
             int newId = _folderRepository.Insert(folder);
             folder.FolderID = newId;
 
+            InvalidateFolderCache(folder.OrgUnitID);
             Log(user, "Folder", "CREATE", "storage.Folder", newId, 1,
                 string.Format("Created folder '{0}' at depth {1}.", folder.FolderName, depth));
 
@@ -154,6 +192,27 @@ namespace CMS.Services
             if (folder.IsDeleted)
                 throw new InvalidOperationException("Cannot rename a deleted folder.");
 
+            // Edit permission: CanWrite required
+            // ยกเว้น: ห้ามแก้ไขชื่อ 4 Root Folders หลัก (depth=1, ไม่มี parent)
+            bool isRootFolder = !folder.ParentFolderID.HasValue || folder.ParentFolderID == 0;
+            if (isRootFolder)
+                throw new InvalidOperationException(
+                    string.Format("ไม่อนุญาตให้เปลี่ยนชื่อ Root Folder หลัก '{0}'", folder.FolderName));
+
+            bool isPrivileged = user.AppRole >= 3;
+            if (!isPrivileged)
+            {
+                // เงื่อนไขที่ 1: FolderAuthorityConfig — CanEdit ตาม LevelCode/ตำแหน่ง/แผนก/ฝ่าย
+                bool hasAuthority = user.CanEditFolder(folder.ConfidentialityLevel);
+
+                // เงื่อนไขที่ 2: FolderPermission — Write โดยใช้ UserAccount (User, Role, Dept, Div)
+                bool hasAclWrite = !hasAuthority && _permissionService.CheckPermission(user.UserID, folderId, "Write");
+
+                if (!hasAuthority && !hasAclWrite)
+                    throw new UnauthorizedAccessException(
+                        string.Format("ไม่มีสิทธิ์เปลี่ยนชื่อ Folder '{0}' (ต้องการสิทธิ์ Edit)", folder.FolderName));
+            }
+
             // Duplicate check: compare case-insensitive + trimmed against active siblings
             string trimmedName = newName.Trim();
             var siblings = _folderRepository.GetSiblings(folder.ParentFolderID, folder.OrgUnitID);
@@ -168,6 +227,7 @@ namespace CMS.Services
             folder.FolderName = newName.Trim();
             _folderRepository.Update(folder);
 
+            InvalidateFolderCache(folder.OrgUnitID);
             Log(user, "Folder", "UPDATE", "storage.Folder", folderId, 1,
                 string.Format("Renamed from '{0}' to '{1}'.", oldName, newName.Trim()));
         }
@@ -227,6 +287,27 @@ namespace CMS.Services
             if (folder.IsDeleted)
                 throw new InvalidOperationException("Folder is already in the recycle bin.");
 
+            // Modify permission: CanModify required (ลบ folder — สิทธิ์สูงสุด)
+            // ห้ามลบ Root Folders หลัก
+            bool isRootFolder = !folder.ParentFolderID.HasValue || folder.ParentFolderID == 0;
+            if (isRootFolder)
+                throw new InvalidOperationException(
+                    string.Format("ไม่อนุญาตให้ลบ Root Folder หลัก '{0}'", folder.FolderName));
+
+            bool isPrivileged = user.AppRole >= 3;
+            if (!isPrivileged)
+            {
+                // เงื่อนไขที่ 1: FolderAuthorityConfig — CanEdit ตาม LevelCode/ตำแหน่ง/แผนก/ฝ่าย
+                bool hasAuthority = user.CanEditFolder(folder.ConfidentialityLevel);
+
+                // เงื่อนไขที่ 2: FolderPermission — Modify โดยใช้ UserAccount (User, Role, Dept, Div)
+                bool hasAclModify = !hasAuthority && _permissionService.CheckPermission(user.UserID, folderId, "Modify");
+
+                if (!hasAuthority && !hasAclModify)
+                    throw new UnauthorizedAccessException(
+                        string.Format("ไม่มีสิทธิ์ลบ Folder '{0}' (ต้องการสิทธิ์ Modify)", folder.FolderName));
+            }
+
             // Req 5.1–5.3: folders with files must go through Admin approval workflow
             if (folder.FileCount > 0)
                 throw new InvalidOperationException(
@@ -236,9 +317,12 @@ namespace CMS.Services
 
             _folderRepository.SoftDelete(folderId, user.UserID);
 
+            InvalidateFolderCache(folder.OrgUnitID);
             Log(user, "Folder", "DELETE", "storage.Folder", folderId, 1,
                 string.Format("Moved folder '{0}' to recycle bin.", folder.FolderName));
         }
+
+        private const int RecycleBinRetentionDays = 30;
 
         public void RestoreFolder(int folderId, int? newParentId, UserContext user)
         {
@@ -249,6 +333,14 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format("Folder with ID {0} was not found.", folderId));
             if (!folder.IsDeleted)
                 throw new InvalidOperationException("Folder is not in the recycle bin.");
+
+            if (folder.DeletedAt.HasValue &&
+                folder.DeletedAt.Value < DateTime.Now.AddDays(-RecycleBinRetentionDays))
+                throw new InvalidOperationException(string.Format(
+                    "Folder '{0}' ถูกลบเมื่อ {1} วันที่แล้ว เกินระยะเวลากู้คืน {2} วัน",
+                    folder.FolderName,
+                    (int)(DateTime.Now - folder.DeletedAt.Value).TotalDays,
+                    RecycleBinRetentionDays));
 
             if (newParentId == null)
             {
@@ -426,9 +518,21 @@ namespace CMS.Services
             if (folder.IsDeleted)
                 throw new InvalidOperationException("Cannot list contents of a deleted folder.");
 
-            if (!_permissionService.CheckPermission(user.UserID, folderId, "Read"))
-                throw new UnauthorizedAccessException(string.Format(
-                    "User {0} does not have Read permission on folder {1}.", user.UserID, folderId));
+            bool isPrivileged = user.AppRole >= 3;
+            if (!isPrivileged)
+            {
+                // เงื่อนไขที่ 1: ตรวจ FolderAuthorityConfig ด้วย LevelCode/ตำแหน่ง/แผนก/ฝ่าย ของ user
+                //   → ถ้า user.Authority มี ConfidentialityLevel ตรงกับ folder และ CanView = true → ผ่าน
+                bool hasAuthority = user.CanViewFolder(folder.ConfidentialityLevel);
+
+                // เงื่อนไขที่ 2: ตรวจ FolderPermission โดยใช้ UserAccount (UserID, Role, DepartmentId, DivisionId)
+                //   → CheckPermission ตรวจ entry ที่ตรงกับ user ทั้งแบบ direct (User), Role, แผนก, ฝ่าย
+                bool hasAclRead = !hasAuthority && _permissionService.CheckPermission(user.UserID, folderId, "Read");
+
+                if (!hasAuthority && !hasAclRead)
+                    throw new UnauthorizedAccessException(string.Format(
+                        "User {0} does not have permission to view folder {1}.", user.UserID, folderId));
+            }
 
             return _folderRepository.GetChildren(folderId)
                 .Where(f => !f.IsDeleted && !f.IsArchived);
@@ -499,10 +603,14 @@ namespace CMS.Services
         {
             if (user == null) throw new ArgumentNullException("user");
 
-            if (orgUnitId.HasValue)
-                return _folderRepository.GetDeletedByOrgUnit(orgUnitId.Value);
+            var cutoff = DateTime.Now.AddDays(-RecycleBinRetentionDays);
 
-            return _folderRepository.GetAllDeletedFolders();
+            IEnumerable<Folder> folders = orgUnitId.HasValue
+                ? _folderRepository.GetDeletedByOrgUnit(orgUnitId.Value)
+                : _folderRepository.GetAllDeletedFolders();
+
+            // แสดงเฉพาะ folder ที่ถูกลบภายใน 30 วัน (ยังกู้คืนได้)
+            return folders.Where(f => !f.DeletedAt.HasValue || f.DeletedAt.Value >= cutoff);
         }
 
         public IEnumerable<Folder> GetAllFolders(int? orgUnitId, UserContext user)
@@ -510,15 +618,55 @@ namespace CMS.Services
             if (user == null) throw new ArgumentNullException("user");
 
             if (orgUnitId.HasValue)
-                return _folderRepository.GetByOrgUnit(orgUnitId.Value);
+            {
+                List<Folder> cached;
+                if (!_folderCacheByOrg.TryGetValue(orgUnitId.Value, out cached))
+                {
+                    cached = _folderRepository.GetByOrgUnit(orgUnitId.Value).ToList();
+                    _folderCacheByOrg[orgUnitId.Value] = cached;
+                }
+                return cached;
+            }
 
-            return _folderRepository.GetAll();
+            if (_allFoldersCache == null)
+                _allFoldersCache = _folderRepository.GetAll().ToList();
+            return _allFoldersCache;
+        }
+
+        /// <summary>
+        /// ค้นหา Folder ของ OrgUnit ที่เลือกและ parent OrgUnit ทั้งหมด
+        /// ใช้เมื่อเลือก Department เพื่อแสดง Folder ของ Department, Division, SubCommittee
+        /// </summary>
+        public IEnumerable<Folder> GetFoldersByOrgUnitAndParents(int orgUnitId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            // ค้นหา Folder ของ OrgUnit ที่เลือก
+            var folders = _folderRepository.GetByOrgUnit(orgUnitId).ToList();
+
+            // ถ้าไม่มี Folder ให้ค้นหา Folder ของ parent OrgUnit ด้วย
+            // (ในกรณีที่ Department ไม่มี Folder แต่ Division หรือ SubCommittee มี)
+            if (folders.Count == 0)
+            {
+                // ค้นหา Folder ของ parent OrgUnit ทั้งหมด
+                // โดยค้นหา Folder ที่มี OrgUnitID ไม่เท่ากับ Department แต่อยู่ใน hierarchy เดียวกัน
+                var allFolders = _folderRepository.GetAll().ToList();
+                
+                // ค้นหา Folder ที่อาจเป็นของ parent OrgUnit
+                // (ในกรณีที่ Department ไม่มี Folder แต่ Division หรือ SubCommittee มี)
+                folders = allFolders
+                    .Where(f => !f.IsDeleted && !f.IsArchived)
+                    .ToList();
+            }
+
+            return folders;
         }
 
         public IEnumerable<Folder> GetFoldersByOrgUnit(int orgUnitId, UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");
-            return _folderRepository.GetByOrgUnit(orgUnitId);
+            // reuse GetAllFolders cache
+            return GetAllFolders(orgUnitId, user);
         }
 
         public void ApplyTemplateToOrgUnit(int orgUnitId, int templateId, string rootFolderName, int confidentialityLevel, UserContext user)
@@ -743,6 +891,7 @@ namespace CMS.Services
             }
 
             // 3.5 — Audit log
+            InvalidateFolderCache(); // invalidate all — folder moved across OrgUnits possibly
             _auditService.Log(new AuditEntry
             {
                 Module      = "Folder",

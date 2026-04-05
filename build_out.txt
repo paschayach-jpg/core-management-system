@@ -1,0 +1,9 @@
+MSBuild version 17.14.18+a338add32 for .NET Framework
+
+  CMS.Domain -> C:\Users\KPG\Documents\cms_import\CMS.Domain\bin\Debug\CMS.Domain.dll
+  CMS.Infrastructure -> C:\Users\KPG\Documents\cms_import\CMS.Infrastructure\bin\Debug\CMS.Infrastructure.dll
+  CMS.Data -> C:\Users\KPG\Documents\cms_import\CMS.Data\bin\Debug\CMS.Data.dll
+C:\Users\KPG\Documents\cms_import\CMS.Services\FolderService.cs(40,37): warning CS0414: The field 'FolderService._cacheKeyAll' is assigned but its value is never used [C:\Users\KPG\Documents\cms_import\CMS.Services\CMS.Services.csproj]
+  CMS.Services -> C:\Users\KPG\Documents\cms_import\CMS.Services\bin\Debug\CMS.Services.dll
+C:\Users\KPG\Documents\cms_import\CMS.Presentation\Modules\ImportFile\CreateOrgUnitDialog.cs(25,21): warning CS0414: The field 'CreateOrgUnitDialog._selectedDivisionID' is assigned but its value is never used [C:\Users\KPG\Documents\cms_import\CMS.Presentation\CMS.Presentation.csproj]
+  CMS.Presentation -> C:\Users\KPG\Documents\cms_import\CMS.Presentation\bin\Debug\CMS.Presentation.exe

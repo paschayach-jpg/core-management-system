@@ -4,13 +4,15 @@ using CMS.Data.Repositories;
 using CMS.Domain.Models;
 using CMS.Infrastructure;
 using CMS.Services;
+using CMS.Services.DTOs;
+using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
     static class Program
     {
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -29,11 +31,19 @@ namespace CMS.Presentation
                 var folderRepository       = new FolderRepository(configManager);
                 var permissionRepository   = new PermissionRepository(configManager);
                 var orgUnitRepository      = new OrgUnitRepository(configManager);
+                var hrDivisionRepository      = new HrDivisionRepository(configManager);
+                var hrDepartmentRepository    = new HrDepartmentRepository(configManager);
+                var hrPositionRepository      = new HrPositionRepository(configManager);
+                var hrPositionLevelRepository = new HrPositionLevelRepository(configManager);
+                var hrPositionMappingRepository = new HrPositionMappingRepository(configManager);
 
                 var fileDocumentRepository   = new FileDocumentRepository(configManager);
                 var filePermissionRepository = new FilePermissionRepository(configManager);
                 var folderTemplateRepository = new FolderTemplateRepository(configManager);
-                var quickAccessRepository = new QuickAccessRepository(configManager);
+                var quickAccessRepository    = new QuickAccessRepository(configManager);
+                var externalShareRepository  = new ExternalShareRepository(configManager);
+                var shareAccessLogRepository = new ShareAccessLogRepository(configManager);
+                var shareTokenRepository     = new ShareTokenRepository(configManager);
 
                 var auditService        = new AuditService(auditRepository, loggingService);
                 var notificationService = new NotificationService(notificationRepository, loggingService);
@@ -88,71 +98,153 @@ namespace CMS.Presentation
                     permissionRepository,
                     filePermissionRepository);
 
-                // --- Employee API service ---
-                var employeeApiService = new EmployeeApiService(configManager);
-
-                // --- Upload checkpoint service ---
+                var employeeApiService      = new EmployeeApiService(configManager);
                 var uploadCheckpointService = new UploadCheckpointService(loggingService);
+                var quickAccessService      = new QuickAccessService(quickAccessRepository, folderRepository);
 
-                // --- Quick Access service ---
-                var quickAccessService = new QuickAccessService(quickAccessRepository, folderRepository);
+                var folderAuthorityRepo    = new FolderAuthorityRepository(configManager);
+                var folderAuthorityService = new FolderAuthorityService(folderAuthorityRepo);
 
-                // --- Resolve Windows identity ---
-                AdUserInfo adUser;
-                try
+                // ── File Sharing Services ─────────────────────────────────────
+                var shareTokenService   = new ShareTokenService(shareTokenRepository, loggingService);
+                var shareAccessService  = new ShareAccessService(
+                    externalShareRepository,
+                    shareAccessLogRepository,
+                    shareTokenService,
+                    fileDocumentRepository,
+                    folderRepository,
+                    auditService,
+                    notificationService,
+                    loggingService);
+
+                var shareService = new ShareService(
+                    externalShareRepository,
+                    shareTokenRepository,
+                    shareAccessLogRepository,
+                    fileDocumentRepository,
+                    folderRepository,
+                    filePermissionRepository,
+                    permissionRepository,
+                    shareTokenService,
+                    permissionService,
+                    notificationService,
+                    auditService,
+                    loggingService);
+
+                // ── AD Auth Service ───────────────────────────────────────────
+                var adAuthService = new AdAuthService(configManager);
+
+                // ─────────────────────────────────────────────────────────────
+                // Parse command-line arguments
+                // รูปแบบ:
+                //   CMS.Presentation.exe /u:username /p:password   → login ด้วย credentials
+                //   CMS.Presentation.exe /token:eyJhbGci...        → validate token จากโปรแกรมอื่น
+                //   CMS.Presentation.exe (ไม่มี arg)               → แสดง LoginForm
+                // ─────────────────────────────────────────────────────────────
+                var startup = StartupArgs.Parse(args);
+
+                AdAuthResult authResult = null;
+
+                if (startup.Mode == AuthMode.Credentials)
                 {
-                    adUser = adHelper.GetCurrentUser();
+                    // โปรแกรมอื่นส่ง username/password มา — login ทันที
+                    loggingService.Info("Startup mode: Credentials (from command-line)");
+                    authResult = adAuthService.LoginAsync(startup.Username, startup.Password)
+                                              .GetAwaiter().GetResult();
+
+                    if (!authResult.Success)
+                    {
+                        MessageBox.Show(
+                            "ข้อมูล Username/Password ที่ส่งมาไม่ถูกต้อง\n\n" + authResult.ErrorMessage,
+                            "CMS - Authentication Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
                 }
-                catch (Exception ex)
+                else if (startup.Mode == AuthMode.Token)
                 {
-                    loggingService.Error("Failed to resolve Windows identity.", ex);
+                    // โปรแกรมอื่นส่ง token มา — validate แล้วดึงข้อมูลพนักงาน
+                    loggingService.Info("Startup mode: Token (from command-line)");
+                    authResult = adAuthService.ValidateTokenAsync(startup.Token)
+                                              .GetAwaiter().GetResult();
+
+                    if (!authResult.Success)
+                    {
+                        MessageBox.Show(
+                            "Token ที่ส่งมาไม่ valid หรือหมดอายุ\n\n" + authResult.ErrorMessage,
+                            "CMS - Authentication Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+                else
+                {
+                    // เปิดตรง — แสดง LoginForm ให้กรอก
+                    loggingService.Info("Startup mode: Manual login (no args)");
+                    using (var loginForm = new LoginForm(adAuthService, userAccountRepo))
+                    {
+                        if (loginForm.ShowDialog() != DialogResult.OK)
+                            return; // ผู้ใช้ปิด form
+
+                        authResult             = loginForm.AuthResult;
+                        startup.Username       = loginForm.EnteredUsername;
+                    }
+                }
+
+                // ─────────────────────────────────────────────────────────────
+                // ค้นหา UserAccount จาก DB
+                // ใช้ AdUserName จาก authResult ถ้ามี ไม่งั้นใช้ username ที่กรอก
+                // ─────────────────────────────────────────────────────────────
+                string adUserName = !string.IsNullOrEmpty(authResult.AdUserName)
+                    ? authResult.AdUserName
+                    : startup.Username;
+
+                if (string.IsNullOrEmpty(adUserName))
+                {
                     MessageBox.Show(
-                        "Unable to determine your Windows identity. Please contact your system administrator.",
+                        "ไม่สามารถระบุตัวตนผู้ใช้ได้ กรุณาติดต่อผู้ดูแลระบบ",
                         "CMS - Authentication Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                // --- Look up UserAccount in CMS database ---
-                UserAccount account = userAccountRepo.GetByADUserName(adUser.AdIdentity);
+                UserAccount account = userAccountRepo.GetByADUserName(adUserName);
 
                 if (account == null)
                 {
-                    // Auto-register new user
+                    // Auto-register ผู้ใช้ใหม่ — ใช้ข้อมูลจาก EmployeeInfo ที่ได้จาก AD API
                     try
                     {
+                        var emp = authResult.EmployeeInfo;
                         var newAccount = new UserAccount
                         {
-                            ADUserName = adUser.AdIdentity,
-                            DisplayName = adUser.DisplayName ?? adUser.AdIdentity,
-                            Email = null, // Will be set during PDPA consent
-                            AppRole = 1, // Default to Officer role
-                            OrgUnitID = 1, // Default OrgUnit - you may need to adjust this
-                            IsActive = true,
+                            ADUserName  = adUserName,
+                            DisplayName = emp != null ? emp.FullNameTh : adUserName,
+                            Email       = null,
+                            AppRole     = 1,      // Default: Officer
+                            OrgUnitID   = 1,
+                            IsActive    = true,
                             ConsentGiven = false,
                             CreatedDate = DateTime.Now
                         };
 
                         int newUserId = userAccountRepo.Create(newAccount);
                         account = userAccountRepo.GetById(newUserId);
+                        loggingService.Info("Auto-registered new user: " + adUserName);
 
-                        loggingService.Info($"Auto-registered new user: {adUser.AdIdentity}");
-                        
                         MessageBox.Show(
-                            $"Welcome! Your account has been automatically registered.\n\nUser: {adUser.DisplayName}\nRole: Officer (Default)\n\nYou will need to accept the PDPA policy to continue.",
+                            string.Format("ยินดีต้อนรับ! บัญชีของคุณถูกสร้างขึ้นอัตโนมัติ\n\nผู้ใช้: {0}\nRole: Officer (ค่าเริ่มต้น)\n\nกรุณายืนยัน PDPA เพื่อดำเนินการต่อ",
+                                newAccount.DisplayName),
                             "CMS - Account Created",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Information);
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        loggingService.Error($"Failed to auto-register user {adUser.AdIdentity}", ex);
+                        loggingService.Error("Failed to auto-register user: " + adUserName, ex);
                         MessageBox.Show(
-                            "Failed to register your account automatically. Please contact your system administrator.",
+                            "ไม่สามารถสร้างบัญชีอัตโนมัติได้ กรุณาติดต่อผู้ดูแลระบบ",
                             "CMS - Registration Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error);
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
                 }
@@ -160,48 +252,56 @@ namespace CMS.Presentation
                 if (!account.IsActive)
                 {
                     MessageBox.Show(
-                        "Your account has been deactivated. Please contact your system administrator.",
+                        "บัญชีของคุณถูกระงับ กรุณาติดต่อผู้ดูแลระบบ",
                         "CMS - Account Deactivated",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning);
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 // Update last login
                 userAccountRepo.UpdateLastLogin(account.UserID);
 
-                // --- Sync Employee Info from API (background, non-blocking) ---
-                try
+                // Sync Employee Info (ถ้าได้ข้อมูลจาก AD API ให้ใช้โดยตรง)
+                if (authResult.EmployeeInfo != null)
                 {
-                    SyncEmployeeInfoFromApi(account, userAccountRepo, employeeApiService);
+                    SyncEmployeeInfoFromAuthResult(account, userAccountRepo, authResult.EmployeeInfo);
                 }
-                catch { /* ไม่ block login ถ้า sync ไม่สำเร็จ */ }
+                else
+                {
+                    try { SyncEmployeeInfoFromApi(account, userAccountRepo, employeeApiService); }
+                    catch { /* ไม่ block login */ }
+                }
 
-                // --- PDPA Consent check ---
+                // ── PDPA Consent ──────────────────────────────────────────────
                 if (!account.ConsentGiven)
                 {
                     using (var pdpaDialog = new PdpaConsentDialog())
                     {
-                        if (pdpaDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                        {
-                            // User declined — exit application
+                        if (pdpaDialog.ShowDialog() != DialogResult.OK)
                             return;
-                        }
                     }
-                    // บันทึกการยืนยัน
                     userAccountRepo.UpdateConsent(account.UserID, account.Email, true);
                 }
 
-                // --- Build session context ---
+                // ── Reload account (รับ PositionName/DeptCode/DivCode ที่ Sync แล้ว) ──
+                account = userAccountRepo.GetById(account.UserID) ?? account;
+
+                // ── Build session context ──────────────────────────────────────
                 var userContext = new UserContext
                 {
-                    UserID      = account.UserID,
-                    ADUserName  = account.ADUserName,
-                    AppRole     = account.AppRole,
-                    MachineName = adUser.WorkstationId
+                    UserID         = account.UserID,
+                    ADUserName     = account.ADUserName,
+                    AppRole        = account.AppRole,
+                    MachineName    = System.Net.Dns.GetHostName(),
+                    LevelCode      = account.LevelCode,
+                    PositionName   = account.PositionName,
+                    DepartmentCode = account.DepartmentCode,
+                    DepartmentName = account.DepartmentName,
+                    // Resolve Authority จาก ตำแหน่ง/แผนก/ฝ่าย ของพนักงาน
+                    Authority      = TryResolveAuthority(folderAuthorityService, account, loggingService)
                 };
 
-                // --- Record login audit event ---
+                // ── Audit LOGIN ───────────────────────────────────────────────
                 auditService.Log(new AuditEntry
                 {
                     Module      = "Auth",
@@ -216,7 +316,6 @@ namespace CMS.Presentation
                     AuditDate   = DateTime.Now
                 });
 
-                // --- Fallback logout logger on unexpected process exit ---
                 Application.ApplicationExit += (s, e) =>
                 {
                     try
@@ -238,11 +337,11 @@ namespace CMS.Presentation
                     }
                     catch (Exception ex)
                     {
-                        loggingService.Error("Failed to record logout audit on ApplicationExit.", ex);
+                        loggingService.Error("Failed to record logout audit.", ex);
                     }
                 };
 
-                // --- Launch main form ---
+                // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(
                     loggingService,
                     auditService,
@@ -264,59 +363,114 @@ namespace CMS.Presentation
                     employeeApiService,
                     uploadCheckpointService,
                     quickAccessService,
-                    userOrgVisibilityService);
+                    userOrgVisibilityService,
+                    folderAuthorityService,
+                    hrDivisionRepository,
+                    hrDepartmentRepository,
+                    hrPositionRepository,
+                    hrPositionLevelRepository,
+                    hrPositionMappingRepository,
+                    shareService,
+                    shareAccessService);
                 Application.Run(mainForm);
+
+                // ถ้า user กด Logout → restart process เพื่อแสดง LoginForm ใหม่
+                if (mainForm.LogoutRequested)
+                    Application.Restart();
             }
             catch (Exception ex)
             {
                 loggingService.Fatal("Unhandled exception in application entry point.", ex);
                 MessageBox.Show(
-                    "An unexpected error occurred. Please contact your system administrator.\r\n\r\n" + ex.Message,
+                    "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาติดต่อผู้ดูแลระบบ\r\n\r\n" + ex.Message,
                     "CMS - Fatal Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        /// <summary>
-        /// Sync ข้อมูล Employee จาก API เข้า UserAccount
-        /// Match ด้วย ADUserName = EmployeeCode
-        /// เรียกทุกครั้งที่ login เพื่อให้ข้อมูลเป็นปัจจุบัน
-        /// </summary>
+        // ─────────────────────────────────────────────────────────────────────
+        // Sync จาก EmployeeInfo ที่ได้จาก AD API โดยตรง (ไม่ต้องเรียก EmployeeApiService)
+        // ─────────────────────────────────────────────────────────────────────
+        private static System.Collections.Generic.Dictionary<int, CMS.Domain.Models.FolderAuthorityConfig>
+            TryResolveAuthority(
+                CMS.Services.Interfaces.IFolderAuthorityService svc,
+                UserAccount account,
+                LoggingService log)
+        {
+            try
+            {
+                return svc.ResolveForUser(account);
+            }
+            catch (Exception ex)
+            {
+                log.Error("FolderAuthority resolve failed — stored procedures may not be deployed yet.", ex);
+                return new System.Collections.Generic.Dictionary<int, CMS.Domain.Models.FolderAuthorityConfig>();
+            }
+        }
+
+        private static void SyncEmployeeInfoFromAuthResult(
+            UserAccount account,
+            CMS.Data.Interfaces.IUserAccountRepository userAccountRepo,
+            EmployeeInfo emp)
+        {
+            if (emp == null || account == null) return;
+            try
+            {
+                bool needsUpdate =
+                    account.EmployeeCode        != emp.EmployeeCode        ||
+                    account.EmployeeFirstNameTh != emp.EmployeeFirstNameTh ||
+                    account.EmployeeLastNameTh  != emp.EmployeeLastNameTh  ||
+                    account.DepartmentCode      != emp.DepartmentCode      ||
+                    account.DepartmentName      != emp.DepartmentNameTh    ||
+                    account.DivisionCode        != emp.DivisionCode        ||
+                    account.DivisionName        != emp.DivisionNameTh      ||
+                    account.PositionName        != emp.Position;
+
+                if (needsUpdate)
+                {
+                    userAccountRepo.UpdateEmployeeInfo(
+                        account.UserID,
+                        emp.EmployeeCode,
+                        emp.EmployeeTitleNameEn, emp.EmployeeFirstNameEn, emp.EmployeeLastNameEn,
+                        emp.EmployeeTitleNameTh, emp.EmployeeFirstNameTh, emp.EmployeeLastNameTh,
+                        null, emp.DepartmentCode, emp.DepartmentNameEn, emp.DepartmentNameTh,
+                        null, emp.DivisionCode,   emp.DivisionNameEn,   emp.DivisionNameTh,
+                        emp.Position);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("SyncEmployeeInfoFromAuthResult error: " + ex.Message);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Sync จาก EmployeeApiService (fallback เมื่อไม่มี EmployeeInfo จาก AD API)
+        // ─────────────────────────────────────────────────────────────────────
         private static void SyncEmployeeInfoFromApi(
             UserAccount account,
             CMS.Data.Interfaces.IUserAccountRepository userAccountRepo,
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService)
         {
             if (employeeApiService == null || account == null) return;
-
             try
             {
-                // ลอง match ด้วย ADUserName (อาจเป็น employeeCode หรือ domain\username)
                 string adUser = account.ADUserName ?? "";
-
-                // ลอง exact match ก่อน
                 var emp = employeeApiService.GetByCode(adUser);
-
-                // ถ้าไม่เจอ ลอง strip domain prefix (domain\username → username)
                 if (emp == null && adUser.Contains("\\"))
                 {
                     string username = adUser.Substring(adUser.LastIndexOf('\\') + 1);
                     emp = employeeApiService.GetByCode(username);
                 }
-
-                if (emp == null) return; // ไม่พบข้อมูลพนักงาน
+                if (emp == null) return;
 
                 var pos = emp.PrimaryPosition;
                 if (pos == null) return;
 
-                // Update เฉพาะถ้าข้อมูลเปลี่ยน
                 bool needsUpdate =
                     account.EmployeeCode   != emp.EmployeeCode      ||
-                    account.DepartmentId   != pos.DepartmentId      ||
                     account.DepartmentCode != pos.DepartmentCode    ||
                     account.DepartmentName != pos.DepartmentNameTh  ||
-                    account.DivisionId     != pos.DivisionId        ||
                     account.DivisionCode   != pos.DivisionCode      ||
                     account.DivisionName   != pos.DivisionNameTh    ||
                     account.PositionName   != pos.PositionName;
@@ -326,20 +480,60 @@ namespace CMS.Presentation
                     userAccountRepo.UpdateEmployeeInfo(
                         account.UserID,
                         emp.EmployeeCode,
-                        pos.DepartmentId,   pos.DepartmentCode, pos.DepartmentNameTh,
-                        pos.DivisionId,     pos.DivisionCode,   pos.DivisionNameTh,
+                        null, null, null,
+                        null, null, null,
+                        pos.DepartmentId, pos.DepartmentCode, pos.DepartmentNameEn, pos.DepartmentNameTh,
+                        pos.DivisionId,   pos.DivisionCode,   pos.DivisionNameEn,   pos.DivisionNameTh,
                         pos.PositionName);
-
-                    System.Diagnostics.Debug.WriteLine(
-                        string.Format("SyncEmployeeInfo: Updated user {0} → Dept:{1} Div:{2}",
-                            account.ADUserName, pos.DepartmentNameTh, pos.DivisionNameTh));
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("SyncEmployeeInfo error: " + ex.Message);
-                // ไม่ throw — ไม่ block login
+                System.Diagnostics.Debug.WriteLine("SyncEmployeeInfoFromApi error: " + ex.Message);
             }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Command-line argument parser
+    // ─────────────────────────────────────────────────────────────────────────
+
+    internal enum AuthMode { None, Credentials, Token }
+
+    internal class StartupArgs
+    {
+        public AuthMode Mode     { get; private set; } = AuthMode.None;
+        public string   Username { get; set; }
+        public string   Password { get; private set; }
+        public string   Token    { get; private set; }
+
+        /// <summary>
+        /// Parse command-line args:
+        ///   /u:username   — username
+        ///   /p:password   — password
+        ///   /token:xxxxx  — access token
+        /// </summary>
+        public static StartupArgs Parse(string[] args)
+        {
+            var result = new StartupArgs();
+            if (args == null || args.Length == 0) return result;
+
+            foreach (string arg in args)
+            {
+                if (arg.StartsWith("/u:", StringComparison.OrdinalIgnoreCase))
+                    result.Username = arg.Substring(3);
+                else if (arg.StartsWith("/p:", StringComparison.OrdinalIgnoreCase))
+                    result.Password = arg.Substring(3);
+                else if (arg.StartsWith("/token:", StringComparison.OrdinalIgnoreCase))
+                    result.Token = arg.Substring(7);
+            }
+
+            if (!string.IsNullOrEmpty(result.Token))
+                result.Mode = AuthMode.Token;
+            else if (!string.IsNullOrEmpty(result.Username) && !string.IsNullOrEmpty(result.Password))
+                result.Mode = AuthMode.Credentials;
+
+            return result;
         }
     }
 }

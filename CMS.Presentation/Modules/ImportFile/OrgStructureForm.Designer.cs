@@ -13,269 +13,365 @@ namespace CMS.Presentation
 
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-
-            // Breadcrumb and navigation
-            this.pnlBreadcrumb  = new System.Windows.Forms.Panel();
-            this.lblBreadcrumb  = new System.Windows.Forms.Label();
-
-            this.toolStrip      = new System.Windows.Forms.ToolStrip();
-            this.btnCreate      = new System.Windows.Forms.ToolStripButton();
-            this.btnEdit        = new System.Windows.Forms.ToolStripButton();
-            this.btnMove        = new System.Windows.Forms.ToolStripButton();
-            this.btnDelete      = new System.Windows.Forms.ToolStripButton();
-            this.btnDeactivate  = new System.Windows.Forms.ToolStripButton();
-            this.separator1     = new System.Windows.Forms.ToolStripSeparator();
-
-            this.splitterMain   = new System.Windows.Forms.Splitter();
-            this.pnlLeft        = new System.Windows.Forms.Panel();
-            this.lblViewMode    = new System.Windows.Forms.Label();
-            this.viewPanel      = new System.Windows.Forms.Panel();
-            this.radioOrgView   = new System.Windows.Forms.RadioButton();
-            this.radioConfView  = new System.Windows.Forms.RadioButton();
-            this.lblConfLevel   = new System.Windows.Forms.Label();
-            this.pnlConfLevels  = new System.Windows.Forms.Panel();
-            this.chk1HC         = new System.Windows.Forms.CheckBox();
-            this.chk2SC         = new System.Windows.Forms.CheckBox();
-            this.chk3NC         = new System.Windows.Forms.CheckBox();
-            this.chk4PC         = new System.Windows.Forms.CheckBox();
-            this.lblSearch      = new System.Windows.Forms.Label();
-            this.txtSearch      = new System.Windows.Forms.TextBox();
-
-            this.pnlRight       = new System.Windows.Forms.Panel();
-            this.treeView       = new System.Windows.Forms.TreeView();
-
+            this.pnlBreadcrumb = new System.Windows.Forms.Panel();
+            this.lblBreadcrumb = new System.Windows.Forms.Label();
+            this.toolStrip = new System.Windows.Forms.ToolStrip();
+            this.btnCreate = new System.Windows.Forms.ToolStripButton();
+            this.btnEdit = new System.Windows.Forms.ToolStripButton();
+            this.btnMove = new System.Windows.Forms.ToolStripButton();
+            this.btnDelete = new System.Windows.Forms.ToolStripButton();
+            this.separator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnDeactivate = new System.Windows.Forms.ToolStripButton();
+            this.splitterMain = new System.Windows.Forms.Splitter();
+            this.pnlLeft = new System.Windows.Forms.Panel();
+            this.txtSearch = new System.Windows.Forms.TextBox();
+            this.lblSearch = new System.Windows.Forms.Label();
+            this.pnlConfLevels = new System.Windows.Forms.Panel();
+            this.chk1HC = new System.Windows.Forms.CheckBox();
+            this.chk2SC = new System.Windows.Forms.CheckBox();
+            this.chk3NC = new System.Windows.Forms.CheckBox();
+            this.chk4PC = new System.Windows.Forms.CheckBox();
+            this.lblConfLevel = new System.Windows.Forms.Label();
+            this.viewPanel = new System.Windows.Forms.Panel();
+            this.radioOrgView = new System.Windows.Forms.RadioButton();
+            this.radioConfView = new System.Windows.Forms.RadioButton();
+            this.lblViewMode = new System.Windows.Forms.Label();
+            this.pnlRight = new System.Windows.Forms.Panel();
+            this.treeView = new System.Windows.Forms.TreeView();
             this.pnlBreadcrumb.SuspendLayout();
             this.toolStrip.SuspendLayout();
             this.pnlLeft.SuspendLayout();
-            this.viewPanel.SuspendLayout();
             this.pnlConfLevels.SuspendLayout();
+            this.viewPanel.SuspendLayout();
             this.pnlRight.SuspendLayout();
             this.SuspendLayout();
-
-            // ---------------------------------------------------------------
-            // pnlBreadcrumb (Top breadcrumb panel)
-            // ---------------------------------------------------------------
-            this.pnlBreadcrumb.Dock       = System.Windows.Forms.DockStyle.Top;
-            this.pnlBreadcrumb.Height     = 35;
-            this.pnlBreadcrumb.BackColor  = System.Drawing.Color.FromArgb(248, 249, 250);
+            // 
+            // pnlBreadcrumb
+            // 
+            this.pnlBreadcrumb.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(249)))), ((int)(((byte)(250)))));
             this.pnlBreadcrumb.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlBreadcrumb.Padding    = new System.Windows.Forms.Padding(8, 6, 8, 6);
-
-            this.lblBreadcrumb.Dock      = System.Windows.Forms.DockStyle.Left;
-            this.lblBreadcrumb.AutoSize  = false;
-            this.lblBreadcrumb.Width     = 200;
-            this.lblBreadcrumb.Text      = "🏠 หน้าแรก > 📁 จัดการโครงสร้างองค์กร";
-            this.lblBreadcrumb.Font      = new System.Drawing.Font("Segoe UI", 9f);
-            this.lblBreadcrumb.ForeColor = System.Drawing.Color.FromArgb(108, 117, 125);
-            this.lblBreadcrumb.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-
             this.pnlBreadcrumb.Controls.Add(this.lblBreadcrumb);
-
-            // ---------------------------------------------------------------
+            this.pnlBreadcrumb.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlBreadcrumb.Location = new System.Drawing.Point(0, 0);
+            this.pnlBreadcrumb.Margin = new System.Windows.Forms.Padding(4);
+            this.pnlBreadcrumb.Name = "pnlBreadcrumb";
+            this.pnlBreadcrumb.Padding = new System.Windows.Forms.Padding(11, 7, 11, 7);
+            this.pnlBreadcrumb.Size = new System.Drawing.Size(1333, 43);
+            this.pnlBreadcrumb.TabIndex = 3;
+            // 
+            // lblBreadcrumb
+            // 
+            this.lblBreadcrumb.Dock = System.Windows.Forms.DockStyle.Left;
+            this.lblBreadcrumb.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblBreadcrumb.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(108)))), ((int)(((byte)(117)))), ((int)(((byte)(125)))));
+            this.lblBreadcrumb.Location = new System.Drawing.Point(11, 7);
+            this.lblBreadcrumb.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblBreadcrumb.Name = "lblBreadcrumb";
+            this.lblBreadcrumb.Size = new System.Drawing.Size(267, 27);
+            this.lblBreadcrumb.TabIndex = 0;
+            this.lblBreadcrumb.Text = "🏠 หน้าแรก > 📁 จัดการโครงสร้างองค์กร";
+            this.lblBreadcrumb.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
             // toolStrip
-            // ---------------------------------------------------------------
-            this.toolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[]
-            {
-                this.btnCreate,
-                this.btnEdit,
-                this.btnMove,
-                this.btnDelete,
-                this.separator1,
-                this.btnDeactivate
-            });
-            this.toolStrip.Location = new System.Drawing.Point(0, 35);
-            this.toolStrip.Name     = "toolStrip";
-            this.toolStrip.Size     = new System.Drawing.Size(1000, 28);
-            this.toolStrip.TabIndex = 0;
+            // 
             this.toolStrip.BackColor = System.Drawing.Color.White;
-
+            this.toolStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.toolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.btnCreate,
+            this.btnEdit,
+            this.btnMove,
+            this.btnDelete,
+            this.separator1,
+            this.btnDeactivate});
+            this.toolStrip.Location = new System.Drawing.Point(0, 43);
+            this.toolStrip.Name = "toolStrip";
+            this.toolStrip.Size = new System.Drawing.Size(1333, 27);
+            this.toolStrip.TabIndex = 0;
+            // 
             // btnCreate
-            this.btnCreate.Name        = "btnCreate";
-            this.btnCreate.Text        = "+ เพิ่ม";
+            // 
+            this.btnCreate.Name = "btnCreate";
+            this.btnCreate.Size = new System.Drawing.Size(49, 24);
+            this.btnCreate.Text = "+ เพิ่ม";
             this.btnCreate.ToolTipText = "สร้างหน่วยงานใหม่";
-            this.btnCreate.Click      += new System.EventHandler(this.btnCreate_Click);
-
+            this.btnCreate.Click += new System.EventHandler(this.btnCreate_Click);
+            // 
             // btnEdit
-            this.btnEdit.Name        = "btnEdit";
-            this.btnEdit.Text        = "✏️ แก้ไข";
+            // 
+            this.btnEdit.Name = "btnEdit";
+            this.btnEdit.Size = new System.Drawing.Size(69, 24);
+            this.btnEdit.Text = "✏️ แก้ไข";
             this.btnEdit.ToolTipText = "แก้ไขชื่อหน่วยงาน";
-            this.btnEdit.Click      += new System.EventHandler(this.btnEdit_Click);
-
+            this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
+            // 
             // btnMove
-            this.btnMove.Name        = "btnMove";
-            this.btnMove.Text        = "📁 ย้าย";
+            // 
+            this.btnMove.Name = "btnMove";
+            this.btnMove.Size = new System.Drawing.Size(61, 24);
+            this.btnMove.Text = "📁 ย้าย";
             this.btnMove.ToolTipText = "ย้ายหน่วยงาน";
-            this.btnMove.Click      += new System.EventHandler(this.btnMove_Click);
-
+            this.btnMove.Click += new System.EventHandler(this.btnMove_Click);
+            // 
             // btnDelete
-            this.btnDelete.Name        = "btnDelete";
-            this.btnDelete.Text        = "🗑️ ลบ";
+            // 
+            this.btnDelete.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(53)))), ((int)(((byte)(69)))));
+            this.btnDelete.Name = "btnDelete";
+            this.btnDelete.Size = new System.Drawing.Size(55, 24);
+            this.btnDelete.Text = "🗑️ ลบ";
             this.btnDelete.ToolTipText = "ลบหน่วยงาน";
-            this.btnDelete.ForeColor   = System.Drawing.Color.FromArgb(220, 53, 69);
-            this.btnDelete.Click      += new System.EventHandler(this.btnDelete_Click);
-
+            this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
+            // 
             // separator1
+            // 
             this.separator1.Name = "separator1";
-
+            this.separator1.Size = new System.Drawing.Size(6, 27);
+            // 
             // btnDeactivate
-            this.btnDeactivate.Name        = "btnDeactivate";
-            this.btnDeactivate.Text        = "⏸️ ปิดใช้งาน";
+            // 
+            this.btnDeactivate.Name = "btnDeactivate";
+            this.btnDeactivate.Size = new System.Drawing.Size(91, 24);
+            this.btnDeactivate.Text = "⏸️ ปิดใช้งาน";
             this.btnDeactivate.ToolTipText = "ปิดใช้งานหน่วยงาน";
-            this.btnDeactivate.Click      += new System.EventHandler(this.btnDeactivate_Click);
-
-            // ---------------------------------------------------------------
-            // pnlLeft (Left Panel with filters)
-            // ---------------------------------------------------------------
-            this.pnlLeft.Dock       = System.Windows.Forms.DockStyle.Left;
-            this.pnlLeft.Width      = 220;
-            this.pnlLeft.BackColor  = System.Drawing.Color.FromArgb(248, 249, 250);
+            this.btnDeactivate.Click += new System.EventHandler(this.btnDeactivate_Click);
+            // 
+            // splitterMain
+            // 
+            this.splitterMain.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
+            this.splitterMain.Location = new System.Drawing.Point(247, 70);
+            this.splitterMain.Margin = new System.Windows.Forms.Padding(4);
+            this.splitterMain.Name = "splitterMain";
+            this.splitterMain.Size = new System.Drawing.Size(5, 668);
+            this.splitterMain.TabIndex = 1;
+            this.splitterMain.TabStop = false;
+            // 
+            // pnlLeft
+            // 
+            this.pnlLeft.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(249)))), ((int)(((byte)(250)))));
             this.pnlLeft.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlLeft.Padding    = new System.Windows.Forms.Padding(8);
-
-            this.lblViewMode.Dock      = System.Windows.Forms.DockStyle.Top;
-            this.lblViewMode.Height    = 24;
-            this.lblViewMode.Text      = "มุมมอง:";
-            this.lblViewMode.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
-            this.lblViewMode.ForeColor = System.Drawing.Color.FromArgb(33, 37, 41);
-
-            this.viewPanel.Dock     = System.Windows.Forms.DockStyle.Top;
-            this.viewPanel.Height   = 60;
-            this.viewPanel.BackColor = System.Drawing.Color.Transparent;
-            this.viewPanel.Padding  = new System.Windows.Forms.Padding(4);
-
-            this.radioOrgView.AutoSize = true;
-            this.radioOrgView.Location = new System.Drawing.Point(8, 8);
-            this.radioOrgView.Text     = "⚫ ตามองค์กร";
-            this.radioOrgView.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
-            this.radioOrgView.Checked  = true;
-            this.radioOrgView.CheckedChanged += new System.EventHandler(this.radioOrgView_CheckedChanged);
-
-            this.radioConfView.AutoSize = true;
-            this.radioConfView.Location = new System.Drawing.Point(8, 32);
-            this.radioConfView.Text     = "⚫ ตามความลับ";
-            this.radioConfView.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
-            this.radioConfView.CheckedChanged += new System.EventHandler(this.radioConfView_CheckedChanged);
-
-            this.viewPanel.Controls.Add(this.radioOrgView);
-            this.viewPanel.Controls.Add(this.radioConfView);
-
-            this.lblConfLevel.Dock      = System.Windows.Forms.DockStyle.Top;
-            this.lblConfLevel.Height    = 24;
-            this.lblConfLevel.Text      = "ระดับระดับ:";
-            this.lblConfLevel.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
-            this.lblConfLevel.ForeColor = System.Drawing.Color.FromArgb(33, 37, 41);
-            this.lblConfLevel.Margin    = new System.Windows.Forms.Padding(0, 8, 0, 0);
-
-            this.pnlConfLevels.Dock       = System.Windows.Forms.DockStyle.Top;
-            this.pnlConfLevels.Height     = 100;
-            this.pnlConfLevels.BackColor  = System.Drawing.Color.Transparent;
-            this.pnlConfLevels.Padding    = new System.Windows.Forms.Padding(8);
-
-            this.chk1HC.AutoSize = true;
-            this.chk1HC.Location = new System.Drawing.Point(8, 8);
-            this.chk1HC.Text     = "☑️ 1HC";
-            this.chk1HC.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
-            this.chk1HC.Checked  = true;
-            this.chk1HC.CheckedChanged += new System.EventHandler(this.OnConfidentialityLevelChanged);
-
-            this.chk2SC.AutoSize = true;
-            this.chk2SC.Location = new System.Drawing.Point(8, 28);
-            this.chk2SC.Text     = "☑️ 2SC";
-            this.chk2SC.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
-            this.chk2SC.Checked  = true;
-            this.chk2SC.CheckedChanged += new System.EventHandler(this.OnConfidentialityLevelChanged);
-
-            this.chk3NC.AutoSize = true;
-            this.chk3NC.Location = new System.Drawing.Point(8, 48);
-            this.chk3NC.Text     = "☑️ 3NC";
-            this.chk3NC.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
-            this.chk3NC.Checked  = true;
-            this.chk3NC.CheckedChanged += new System.EventHandler(this.OnConfidentialityLevelChanged);
-
-            this.chk4PC.AutoSize = true;
-            this.chk4PC.Location = new System.Drawing.Point(8, 68);
-            this.chk4PC.Text     = "☑️ 4PC";
-            this.chk4PC.Font     = new System.Drawing.Font("Segoe UI", 8.5f);
-            this.chk4PC.Checked  = true;
-            this.chk4PC.CheckedChanged += new System.EventHandler(this.OnConfidentialityLevelChanged);
-
-            this.pnlConfLevels.Controls.Add(this.chk1HC);
-            this.pnlConfLevels.Controls.Add(this.chk2SC);
-            this.pnlConfLevels.Controls.Add(this.chk3NC);
-            this.pnlConfLevels.Controls.Add(this.chk4PC);
-
-            this.lblSearch.Dock      = System.Windows.Forms.DockStyle.Top;
-            this.lblSearch.Height    = 24;
-            this.lblSearch.Text      = "ค้นหา:";
-            this.lblSearch.Font      = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
-            this.lblSearch.ForeColor = System.Drawing.Color.FromArgb(33, 37, 41);
-            this.lblSearch.Margin    = new System.Windows.Forms.Padding(0, 8, 0, 0);
-
-            this.txtSearch.Dock   = System.Windows.Forms.DockStyle.Top;
-            this.txtSearch.Height = 28;
-            this.txtSearch.Margin = new System.Windows.Forms.Padding(0, 0, 0, 8);
-            this.txtSearch.Font   = new System.Drawing.Font("Segoe UI", 9f);
-            this.txtSearch.Text   = "ค้นหาหน่วยงาน";
-            this.txtSearch.ForeColor = System.Drawing.Color.Gray;
-
             this.pnlLeft.Controls.Add(this.txtSearch);
             this.pnlLeft.Controls.Add(this.lblSearch);
             this.pnlLeft.Controls.Add(this.pnlConfLevels);
             this.pnlLeft.Controls.Add(this.lblConfLevel);
             this.pnlLeft.Controls.Add(this.viewPanel);
             this.pnlLeft.Controls.Add(this.lblViewMode);
-
-            // ---------------------------------------------------------------
-            // splitterMain
-            // ---------------------------------------------------------------
-            this.splitterMain.Dock      = System.Windows.Forms.DockStyle.Left;
-            this.splitterMain.Width     = 4;
-            this.splitterMain.BackColor = System.Drawing.Color.FromArgb(200, 200, 200);
-
-            // ---------------------------------------------------------------
-            // pnlRight (Right Panel with TreeView)
-            // ---------------------------------------------------------------
-            this.pnlRight.Dock       = System.Windows.Forms.DockStyle.Fill;
-            this.pnlRight.BackColor  = System.Drawing.Color.White;
-            this.pnlRight.Padding    = new System.Windows.Forms.Padding(8);
-
-            this.treeView.Dock     = System.Windows.Forms.DockStyle.Fill;
-            this.treeView.Font     = new System.Drawing.Font("Segoe UI", 9f);
-            this.treeView.ShowLines = true;
-            this.treeView.ShowPlusMinus = true;
-            this.treeView.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.treeView.BackColor = System.Drawing.Color.FromArgb(248, 249, 250);
-
+            this.pnlLeft.Dock = System.Windows.Forms.DockStyle.Left;
+            this.pnlLeft.Location = new System.Drawing.Point(0, 70);
+            this.pnlLeft.Margin = new System.Windows.Forms.Padding(4);
+            this.pnlLeft.Name = "pnlLeft";
+            this.pnlLeft.Padding = new System.Windows.Forms.Padding(11, 10, 11, 10);
+            this.pnlLeft.Size = new System.Drawing.Size(247, 668);
+            this.pnlLeft.TabIndex = 2;
+            this.pnlLeft.Visible = false;
+            // 
+            // txtSearch
+            // 
+            this.txtSearch.Dock = System.Windows.Forms.DockStyle.Top;
+            this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtSearch.ForeColor = System.Drawing.Color.Gray;
+            this.txtSearch.Location = new System.Drawing.Point(11, 297);
+            this.txtSearch.Margin = new System.Windows.Forms.Padding(0, 0, 0, 10);
+            this.txtSearch.Name = "txtSearch";
+            this.txtSearch.Size = new System.Drawing.Size(223, 27);
+            this.txtSearch.TabIndex = 0;
+            this.txtSearch.Text = "ค้นหาหน่วยงาน";
+            // 
+            // lblSearch
+            // 
+            this.lblSearch.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblSearch.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblSearch.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(37)))), ((int)(((byte)(41)))));
+            this.lblSearch.Location = new System.Drawing.Point(11, 267);
+            this.lblSearch.Margin = new System.Windows.Forms.Padding(0, 10, 0, 0);
+            this.lblSearch.Name = "lblSearch";
+            this.lblSearch.Size = new System.Drawing.Size(223, 30);
+            this.lblSearch.TabIndex = 1;
+            this.lblSearch.Text = "ค้นหา:";
+            // 
+            // pnlConfLevels
+            // 
+            this.pnlConfLevels.BackColor = System.Drawing.Color.Transparent;
+            this.pnlConfLevels.Controls.Add(this.chk1HC);
+            this.pnlConfLevels.Controls.Add(this.chk2SC);
+            this.pnlConfLevels.Controls.Add(this.chk3NC);
+            this.pnlConfLevels.Controls.Add(this.chk4PC);
+            this.pnlConfLevels.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlConfLevels.Location = new System.Drawing.Point(11, 144);
+            this.pnlConfLevels.Margin = new System.Windows.Forms.Padding(4);
+            this.pnlConfLevels.Name = "pnlConfLevels";
+            this.pnlConfLevels.Padding = new System.Windows.Forms.Padding(11, 10, 11, 10);
+            this.pnlConfLevels.Size = new System.Drawing.Size(223, 123);
+            this.pnlConfLevels.TabIndex = 2;
+            // 
+            // chk1HC
+            // 
+            this.chk1HC.AutoSize = true;
+            this.chk1HC.Checked = true;
+            this.chk1HC.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chk1HC.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.chk1HC.Location = new System.Drawing.Point(11, 10);
+            this.chk1HC.Margin = new System.Windows.Forms.Padding(4);
+            this.chk1HC.Name = "chk1HC";
+            this.chk1HC.Size = new System.Drawing.Size(84, 24);
+            this.chk1HC.TabIndex = 0;
+            this.chk1HC.Text = "☑️ 1HC";
+            this.chk1HC.CheckedChanged += new System.EventHandler(this.OnConfidentialityLevelChanged);
+            // 
+            // chk2SC
+            // 
+            this.chk2SC.AutoSize = true;
+            this.chk2SC.Checked = true;
+            this.chk2SC.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chk2SC.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.chk2SC.Location = new System.Drawing.Point(11, 34);
+            this.chk2SC.Margin = new System.Windows.Forms.Padding(4);
+            this.chk2SC.Name = "chk2SC";
+            this.chk2SC.Size = new System.Drawing.Size(81, 24);
+            this.chk2SC.TabIndex = 1;
+            this.chk2SC.Text = "☑️ 2SC";
+            this.chk2SC.CheckedChanged += new System.EventHandler(this.OnConfidentialityLevelChanged);
+            // 
+            // chk3NC
+            // 
+            this.chk3NC.AutoSize = true;
+            this.chk3NC.Checked = true;
+            this.chk3NC.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chk3NC.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.chk3NC.Location = new System.Drawing.Point(11, 59);
+            this.chk3NC.Margin = new System.Windows.Forms.Padding(4);
+            this.chk3NC.Name = "chk3NC";
+            this.chk3NC.Size = new System.Drawing.Size(84, 24);
+            this.chk3NC.TabIndex = 2;
+            this.chk3NC.Text = "☑️ 3NC";
+            this.chk3NC.CheckedChanged += new System.EventHandler(this.OnConfidentialityLevelChanged);
+            // 
+            // chk4PC
+            // 
+            this.chk4PC.AutoSize = true;
+            this.chk4PC.Checked = true;
+            this.chk4PC.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chk4PC.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.chk4PC.Location = new System.Drawing.Point(11, 84);
+            this.chk4PC.Margin = new System.Windows.Forms.Padding(4);
+            this.chk4PC.Name = "chk4PC";
+            this.chk4PC.Size = new System.Drawing.Size(81, 24);
+            this.chk4PC.TabIndex = 3;
+            this.chk4PC.Text = "☑️ 4PC";
+            this.chk4PC.CheckedChanged += new System.EventHandler(this.OnConfidentialityLevelChanged);
+            // 
+            // lblConfLevel
+            // 
+            this.lblConfLevel.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblConfLevel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblConfLevel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(37)))), ((int)(((byte)(41)))));
+            this.lblConfLevel.Location = new System.Drawing.Point(11, 114);
+            this.lblConfLevel.Margin = new System.Windows.Forms.Padding(0, 10, 0, 0);
+            this.lblConfLevel.Name = "lblConfLevel";
+            this.lblConfLevel.Size = new System.Drawing.Size(223, 30);
+            this.lblConfLevel.TabIndex = 3;
+            this.lblConfLevel.Text = "ระดับระดับ:";
+            // 
+            // viewPanel
+            // 
+            this.viewPanel.BackColor = System.Drawing.Color.Transparent;
+            this.viewPanel.Controls.Add(this.radioOrgView);
+            this.viewPanel.Controls.Add(this.radioConfView);
+            this.viewPanel.Dock = System.Windows.Forms.DockStyle.Top;
+            this.viewPanel.Location = new System.Drawing.Point(11, 40);
+            this.viewPanel.Margin = new System.Windows.Forms.Padding(4);
+            this.viewPanel.Name = "viewPanel";
+            this.viewPanel.Padding = new System.Windows.Forms.Padding(5);
+            this.viewPanel.Size = new System.Drawing.Size(223, 74);
+            this.viewPanel.TabIndex = 4;
+            // 
+            // radioOrgView
+            // 
+            this.radioOrgView.AutoSize = true;
+            this.radioOrgView.Checked = true;
+            this.radioOrgView.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.radioOrgView.Location = new System.Drawing.Point(11, 10);
+            this.radioOrgView.Margin = new System.Windows.Forms.Padding(4);
+            this.radioOrgView.Name = "radioOrgView";
+            this.radioOrgView.Size = new System.Drawing.Size(117, 24);
+            this.radioOrgView.TabIndex = 0;
+            this.radioOrgView.TabStop = true;
+            this.radioOrgView.Text = "⚫ ตามองค์กร";
+            this.radioOrgView.CheckedChanged += new System.EventHandler(this.radioOrgView_CheckedChanged);
+            // 
+            // radioConfView
+            // 
+            this.radioConfView.AutoSize = true;
+            this.radioConfView.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.radioConfView.Location = new System.Drawing.Point(11, 39);
+            this.radioConfView.Margin = new System.Windows.Forms.Padding(4);
+            this.radioConfView.Name = "radioConfView";
+            this.radioConfView.Size = new System.Drawing.Size(127, 24);
+            this.radioConfView.TabIndex = 1;
+            this.radioConfView.Text = "⚫ ตามความลับ";
+            this.radioConfView.CheckedChanged += new System.EventHandler(this.radioConfView_CheckedChanged);
+            // 
+            // lblViewMode
+            // 
+            this.lblViewMode.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblViewMode.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblViewMode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(33)))), ((int)(((byte)(37)))), ((int)(((byte)(41)))));
+            this.lblViewMode.Location = new System.Drawing.Point(11, 10);
+            this.lblViewMode.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblViewMode.Name = "lblViewMode";
+            this.lblViewMode.Size = new System.Drawing.Size(223, 30);
+            this.lblViewMode.TabIndex = 5;
+            this.lblViewMode.Text = "มุมมอง:";
+            // 
+            // pnlRight
+            // 
+            this.pnlRight.BackColor = System.Drawing.Color.White;
             this.pnlRight.Controls.Add(this.treeView);
-
-            // ---------------------------------------------------------------
+            this.pnlRight.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlRight.Location = new System.Drawing.Point(252, 70);
+            this.pnlRight.Margin = new System.Windows.Forms.Padding(4);
+            this.pnlRight.Name = "pnlRight";
+            this.pnlRight.Padding = new System.Windows.Forms.Padding(11, 10, 11, 10);
+            this.pnlRight.Size = new System.Drawing.Size(1081, 668);
+            this.pnlRight.TabIndex = 0;
+            // 
+            // treeView
+            // 
+            this.treeView.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(249)))), ((int)(((byte)(250)))));
+            this.treeView.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.treeView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeView.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.treeView.Location = new System.Drawing.Point(11, 10);
+            this.treeView.Margin = new System.Windows.Forms.Padding(4);
+            this.treeView.Name = "treeView";
+            this.treeView.Size = new System.Drawing.Size(1059, 648);
+            this.treeView.TabIndex = 0;
+            // 
             // OrgStructureForm
-            // ---------------------------------------------------------------
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode       = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize          = new System.Drawing.Size(1000, 600);
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(1333, 738);
             this.Controls.Add(this.pnlRight);
             this.Controls.Add(this.splitterMain);
             this.Controls.Add(this.pnlLeft);
             this.Controls.Add(this.toolStrip);
             this.Controls.Add(this.pnlBreadcrumb);
-            this.Name  = "OrgStructureForm";
-            this.Text  = "จัดการโครงสร้างองค์กร";
+            this.Margin = new System.Windows.Forms.Padding(4);
+            this.Name = "OrgStructureForm";
+            this.Text = "จัดการโครงสร้างองค์กร";
             this.Load += new System.EventHandler(this.OrgStructureForm_Load);
-
             this.pnlBreadcrumb.ResumeLayout(false);
             this.toolStrip.ResumeLayout(false);
             this.toolStrip.PerformLayout();
             this.pnlLeft.ResumeLayout(false);
             this.pnlLeft.PerformLayout();
-            this.viewPanel.ResumeLayout(false);
-            this.viewPanel.PerformLayout();
             this.pnlConfLevels.ResumeLayout(false);
             this.pnlConfLevels.PerformLayout();
+            this.viewPanel.ResumeLayout(false);
+            this.viewPanel.PerformLayout();
             this.pnlRight.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
+
         }
 
         private System.Windows.Forms.Panel              pnlBreadcrumb;
