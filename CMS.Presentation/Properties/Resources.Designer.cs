@@ -171,6 +171,26 @@ namespace CMS.Presentation.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon lightning_bolt {
+            get {
+                object obj = ResourceManager.GetObject("lightning_bolt", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap lightning_bolt1 {
+            get {
+                object obj = ResourceManager.GetObject("lightning_bolt1", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap login {
@@ -196,6 +216,16 @@ namespace CMS.Presentation.Properties {
         internal static System.Drawing.Bitmap open_folder {
             get {
                 object obj = ResourceManager.GetObject("open_folder", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap organization {
+            get {
+                object obj = ResourceManager.GetObject("organization", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

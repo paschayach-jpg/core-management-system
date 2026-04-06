@@ -90,6 +90,9 @@
     <Compile Include="Modules\ImportFile\AuthorityConfigForm.Designer.cs">
       <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\ImportFile\AuthorityConfigEditDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\ImportFile\ConfigAdminForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -146,6 +149,9 @@
     </Compile>
     <Compile Include="Modules\ImportFile\FolderForm.Designer.cs">
       <DependentUpon>FolderForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\FolderCreationChoiceDialog.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Modules\ImportFile\FolderPickerDialog.cs">
       <SubType>Form</SubType>
@@ -392,6 +398,24 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\login1.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\lightning-bolt.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\lightning-bolt.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book_orange.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book_bule.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\book_green.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\organization.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

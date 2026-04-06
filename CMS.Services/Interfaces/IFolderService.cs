@@ -7,6 +7,7 @@ namespace CMS.Services.Interfaces
     public interface IFolderService
     {
         Folder CreateFolder(CreateFolderRequest request, UserContext user);
+        Folder CreateHCFolderAfterApproval(ApprovalRequest approvalRequest, UserContext user);
         void RenameFolder(int folderId, string newName, UserContext user);
         void ArchiveFolder(int folderId, UserContext user);
         void DeleteFolder(int folderId, UserContext user);

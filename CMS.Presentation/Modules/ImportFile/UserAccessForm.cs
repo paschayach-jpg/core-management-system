@@ -386,16 +386,66 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    var grants = _visibilityService.GetVisibleOrgUnits(user.UserID, _currentUser);
-                    foreach (var org in grants)
+                    // Get explicit grants with GrantedBy and GrantedDate information
+                    var grants = _visibilityService.GetExplicitGrantsForUser(user.UserID, _currentUser).ToList();
+                    
+                    // Build lookup for OrgUnit names
+                    var orgLookup = _allOrgs.ToDictionary(o => o.OrgUnitID, o => o);
+                    
+                    // Build lookup for user names (GrantedBy)
+                    var grantedByIds = grants.Select(g => g.GrantedBy).Distinct().ToList();
+                    var userLookup = _allUsers
+                        .Where(u => grantedByIds.Contains(u.UserID))
+                        .ToDictionary(u => u.UserID, u => u.DisplayName ?? u.ADUserName);
+                    
+                    foreach (var grant in grants)
                     {
-                        var item = new ListViewItem(org.OrgUnitNameTH ?? org.OrgUnitCode);
-                        item.SubItems.Add(org.OrgUnitCode ?? "");
-                        item.SubItems.Add("");   // GrantedByName — not available from OrgUnit
-                        item.SubItems.Add("");   // GrantedDate   — not available from OrgUnit
-                        item.Tag = org;
+                        // Get OrgUnit info
+                        OrgUnit org = null;
+                        orgLookup.TryGetValue(grant.OrgUnitID, out org);
+                        
+                        string orgName = org != null ? (org.OrgUnitNameTH ?? org.OrgUnitCode) : grant.OrgUnitName ?? string.Format("ID:{0}", grant.OrgUnitID);
+                        string orgCode = org != null ? (org.OrgUnitCode ?? "") : "";
+                        
+                        // Get GrantedBy user name
+                        string grantedByName = "";
+                        if (userLookup.TryGetValue(grant.GrantedBy, out grantedByName))
+                        {
+                            // Found in user list
+                        }
+                        else if (grant.GrantedBy == _currentUser.UserID)
+                        {
+                            grantedByName = _currentUser.ADUserName ?? string.Format("UserID:{0}", _currentUser.UserID);
+                        }
+                        else
+                        {
+                            grantedByName = string.Format("UserID:{0}", grant.GrantedBy);
+                        }
+                        
+                        var item = new ListViewItem(orgName);
+                        item.SubItems.Add(orgCode);
+                        item.SubItems.Add(grantedByName);
+                        item.SubItems.Add(grant.GrantedDate.ToString("dd/MM/yyyy HH:mm"));
+                        item.Tag = org ?? (object)grant; // Store OrgUnit if available, otherwise grant
                         _lvVisibility.Items.Add(item);
                     }
+                    
+                    // If no explicit grants, show role-based fallback info
+                    if (grants.Count == 0)
+                    {
+                        var visibleOrgs = _visibilityService.GetVisibleOrgUnits(user.UserID, _currentUser).ToList();
+                        foreach (var org in visibleOrgs)
+                        {
+                            var item = new ListViewItem(org.OrgUnitNameTH ?? org.OrgUnitCode);
+                            item.SubItems.Add(org.OrgUnitCode ?? "");
+                            item.SubItems.Add("(ตามบทบาท)");
+                            item.SubItems.Add("—");
+                            item.Tag = org;
+                            item.ForeColor = Color.Gray;
+                            _lvVisibility.Items.Add(item);
+                        }
+                    }
+                    
                     SetStatus(_lblVisibilityStatus,
                         string.Format("{0} หน่วยงาน", _lvVisibility.Items.Count), Color.Gray);
                 }
@@ -545,27 +595,54 @@ namespace CMS.Presentation
             using (var dlg = new Form())
             {
                 dlg.Text            = "เลือกหน่วยงานที่จะให้สิทธิ์";
-                dlg.Size            = new Size(420, 560);
+                dlg.Size            = new Size(440, 580);
                 dlg.StartPosition   = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox     = false;
                 dlg.MinimizeBox     = false;
-                dlg.Font            = new Font("Segoe UI", 10F);
+                dlg.Font            = new Font("Segoe UI", 9.5F);
+                dlg.BackColor       = Color.FromArgb(243, 246, 251);
 
-                var lbl = new Label
+                // ── Header ─────────────────────────────────────────────────────
+                var pnlHeader = new Panel
                 {
-                    Text   = "เลือกหน่วยงานที่ต้องการให้สิทธิ์:",
-                    Left   = 12, Top = 12, Width = 390
+                    Dock      = DockStyle.Top,
+                    Height    = 52,
+                    BackColor = Color.FromArgb(25, 55, 105),
+                    Padding   = new Padding(14, 0, 14, 0),
+                };
+                var lblTitle = new Label
+                {
+                    Dock      = DockStyle.Fill,
+                    Text      = "เลือกหน่วยงานที่จะให้สิทธิ์",
+                    ForeColor = Color.White,
+                    Font      = new Font("Segoe UI", 11.5F, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                };
+                pnlHeader.Controls.Add(lblTitle);
+
+                // ── TreeView (inside a white card panel) ──────────────────────
+                var pnlCard = new Panel
+                {
+                    Dock        = DockStyle.Fill,
+                    BackColor   = Color.White,
+                    Margin      = new Padding(12),
+                    Padding     = new Padding(2),
                 };
 
                 var tree = new TreeView
                 {
-                    Left       = 12, Top = 36,
-                    Width      = 390, Height = 412,
-                    CheckBoxes = true,
-                    ShowLines  = true,
-                    ShowPlusMinus = true
+                    Dock          = DockStyle.Fill,
+                    CheckBoxes    = true,
+                    ShowLines     = true,
+                    ShowPlusMinus = true,
+                    BorderStyle   = BorderStyle.None,
+                    BackColor     = Color.White,
+                    Font          = new Font("Segoe UI", 9.5F),
+                    HotTracking   = true,
+                    ItemHeight    = 22,
                 };
+                pnlCard.Controls.Add(tree);
 
                 // Recursively build TreeNodes
                 Func<OrgUnit, TreeNode> buildNode = null;
@@ -642,11 +719,47 @@ namespace CMS.Presentation
                     }
                 };
 
-                var pnlBtns = new Panel { Dock = DockStyle.Bottom, Height = 48 };
-                var btnOk  = new Button { Text = "เลือก",  Left = 12, Top = 10, Width = 90, Height = 28 };
-                var btnCan = new Button { Text = "ยกเลิก", Left = 110, Top = 10, Width = 90, Height = 28,
-                                          DialogResult = DialogResult.Cancel };
+                // ── Footer ────────────────────────────────────────────────────
+                var pnlBtns = new Panel
+                {
+                    Dock      = DockStyle.Bottom,
+                    Height    = 56,
+                    BackColor = Color.FromArgb(235, 239, 246),
+                    Padding   = new Padding(10),
+                };
+                var btnOk = new Button
+                {
+                    Text      = "เลือก",
+                    Width     = 100, Height = 34,
+                    BackColor = Color.FromArgb(25, 55, 105),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font      = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    Anchor    = AnchorStyles.Right | AnchorStyles.Top,
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+
+                var btnCan = new Button
+                {
+                    Text         = "ยกเลิก",
+                    Width        = 90, Height = 34,
+                    BackColor    = Color.White,
+                    ForeColor    = Color.FromArgb(80, 80, 80),
+                    FlatStyle    = FlatStyle.Flat,
+                    Font         = new Font("Segoe UI", 9.5F),
+                    DialogResult = DialogResult.Cancel,
+                    Anchor       = AnchorStyles.Right | AnchorStyles.Top,
+                };
+                btnCan.FlatAppearance.BorderColor = Color.FromArgb(180, 180, 180);
+
+                // position buttons on the right
                 pnlBtns.Controls.AddRange(new Control[] { btnOk, btnCan });
+                pnlBtns.Layout += (ls, le) =>
+                {
+                    int y   = (pnlBtns.ClientSize.Height - btnOk.Height) / 2;
+                    btnCan.Location = new Point(pnlBtns.ClientSize.Width - btnCan.Width - 8, y);
+                    btnOk.Location  = new Point(btnCan.Left - btnOk.Width - 8, y);
+                };
 
                 btnOk.Click += (bs, be) =>
                 {
@@ -675,7 +788,10 @@ namespace CMS.Presentation
                 };
 
                 dlg.CancelButton = btnCan;
-                dlg.Controls.AddRange(new Control[] { lbl, tree, pnlBtns });
+                // DockStyle order: Fill first, Bottom, Top last
+                dlg.Controls.Add(pnlCard);
+                dlg.Controls.Add(pnlBtns);
+                dlg.Controls.Add(pnlHeader);
                 dlg.ShowDialog(this);
             }
             return results;

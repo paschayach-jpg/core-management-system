@@ -489,25 +489,71 @@ namespace CMS.Presentation
 
         private string PromptForReason(string prompt)
         {
+            var uiFont   = new System.Drawing.Font("Tahoma", 9f);
+            var boldFont = new System.Drawing.Font("Tahoma", 9f, System.Drawing.FontStyle.Bold);
+            var navyDark = System.Drawing.Color.FromArgb(25, 55, 105);
+
             var form = new Form
             {
-                Text = "Enter Reason",
-                Width = 400,
-                Height = 150,
-                StartPosition = FormStartPosition.CenterParent,
+                Text            = "ระบุเหตุผล",
+                ClientSize      = new System.Drawing.Size(420, 150),
+                StartPosition   = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
-                MaximizeBox = false,
-                MinimizeBox = false
+                MaximizeBox     = false,
+                MinimizeBox     = false,
+                Font            = uiFont,
+                BackColor       = System.Drawing.Color.FromArgb(243, 246, 251),
             };
 
-            var label = new Label { Text = prompt, Left = 10, Top = 10, Width = 370 };
-            var textBox = new TextBox { Left = 10, Top = 40, Width = 370, Height = 60, Multiline = true };
-            var btnOK = new Button { Text = "OK", Left = 310, Top = 110, Width = 70, DialogResult = DialogResult.OK };
-            var btnCancel = new Button { Text = "Cancel", Left = 310, Top = 110, Width = 70, DialogResult = DialogResult.Cancel };
+            var label = new Label
+            {
+                Text     = prompt,
+                Left     = 14, Top = 14,
+                Width    = 392, Height = 32,
+                AutoSize = false,
+                Font     = uiFont,
+            };
+
+            var textBox = new TextBox
+            {
+                Left      = 14, Top = 50,
+                Width     = 392, Height = 52,
+                Multiline = true,
+                Font      = uiFont,
+            };
+
+            var btnOK = new Button
+            {
+                Text         = "ตกลง",
+                Left         = 230, Top = 110,
+                Width        = 82, Height = 28,
+                DialogResult = DialogResult.OK,
+                FlatStyle    = FlatStyle.Flat,
+                BackColor    = navyDark,
+                ForeColor    = System.Drawing.Color.White,
+                Font         = boldFont,
+            };
+            btnOK.FlatAppearance.BorderSize = 0;
+
+            var btnCancel = new Button
+            {
+                Text         = "ยกเลิก",
+                Left         = 324, Top = 110,
+                Width        = 82, Height = 28,
+                DialogResult = DialogResult.Cancel,
+                FlatStyle    = FlatStyle.Flat,
+                BackColor    = System.Drawing.Color.FromArgb(220, 228, 245),
+                ForeColor    = navyDark,
+                Font         = boldFont,
+            };
+            btnCancel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(180, 200, 235);
+            btnCancel.FlatAppearance.BorderSize  = 1;
 
             form.Controls.AddRange(new Control[] { label, textBox, btnOK, btnCancel });
+            form.AcceptButton = btnOK;
+            form.CancelButton = btnCancel;
 
-            return form.ShowDialog() == DialogResult.OK ? textBox.Text : null;
+            return form.ShowDialog(this) == DialogResult.OK ? textBox.Text.Trim() : null;
         }
     }
 }

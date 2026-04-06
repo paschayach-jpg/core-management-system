@@ -55,9 +55,50 @@ namespace CMS.Presentation.Presenters
         {
             try
             {
-                // Aggregate all units across all confidentiality levels
-                var all = _service.GetHierarchy();
-                _view.ShowConfidentialityView(all);
+                // ดึง OrgUnit ที่มี Folder แยกตาม ConfidentialityLevel
+                // แล้วกำหนด ConfidentialityLevelValue ก่อนส่งไป View เพื่อให้ grouping ถูกต้อง
+                var levels = new[]
+                {
+                    ConfidentialityLevel.HC,
+                    ConfidentialityLevel.SC,
+                    ConfidentialityLevel.NC,
+                    ConfidentialityLevel.PC
+                };
+
+                var allGrouped = new List<OrgUnit>();
+                foreach (var level in levels)
+                {
+                    try
+                    {
+                        var units = _service.GetByConfidentialityLevel(level);
+                        foreach (var u in units)
+                        {
+                            u.ConfidentialityLevelValue = (int)level;
+                            allGrouped.Add(u);
+                        }
+                    }
+                    catch
+                    {
+                        // SP อาจยังไม่มีใน DB — ข้ามไป
+                    }
+                }
+
+                // Fallback: ถ้าไม่มีข้อมูลจาก SP ใช้ GetHierarchy() แล้วกำหนด level จาก OrgUnitCode prefix
+                if (allGrouped.Count == 0)
+                {
+                    var all = _service.GetHierarchy().ToList();
+                    foreach (var u in all.Where(x => x.IsActive))
+                    {
+                        var code = u.OrgUnitCode ?? u.Name ?? "";
+                        if      (code.StartsWith("1HC", StringComparison.OrdinalIgnoreCase)) u.ConfidentialityLevelValue = (int)ConfidentialityLevel.HC;
+                        else if (code.StartsWith("2SC", StringComparison.OrdinalIgnoreCase)) u.ConfidentialityLevelValue = (int)ConfidentialityLevel.SC;
+                        else if (code.StartsWith("3NC", StringComparison.OrdinalIgnoreCase)) u.ConfidentialityLevelValue = (int)ConfidentialityLevel.NC;
+                        else if (code.StartsWith("4PC", StringComparison.OrdinalIgnoreCase)) u.ConfidentialityLevelValue = (int)ConfidentialityLevel.PC;
+                        allGrouped.Add(u);
+                    }
+                }
+
+                _view.ShowConfidentialityView(allGrouped);
             }
             catch (Exception ex)
             {

@@ -328,7 +328,7 @@ namespace CMS.Data.Repositories
 
         private static Folder MapFolder(SqlDataReader reader)
         {
-            return new Folder
+            var folder = new Folder
             {
                 FolderID             = (int)reader["FolderID"],
                 FolderGUID           = (Guid)reader["FolderGUID"],
@@ -354,6 +354,11 @@ namespace CMS.Data.Repositories
                 UpdatedBy            = reader["UpdatedBy"] == DBNull.Value ? (int?)null : (int)reader["UpdatedBy"],
                 UpdatedDate          = reader["UpdatedDate"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["UpdatedDate"]
             };
+
+            // CreatedByName — optional column (added in script 070)
+            try { folder.CreatedByName = reader["CreatedByName"] as string; } catch { }
+
+            return folder;
         }
     }
 }

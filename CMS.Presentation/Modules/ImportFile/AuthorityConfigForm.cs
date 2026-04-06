@@ -6,6 +6,8 @@ using System.Windows.Forms;
 using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
+using CMS.Presentation.Modules.ImportFile;
+
 namespace CMS.Presentation
 {
     public partial class AuthorityConfigForm : Form
@@ -19,7 +21,6 @@ namespace CMS.Presentation
         private readonly UserContext                _user;
 
         private List<FolderAuthorityConfig> _allConfigs = new List<FolderAuthorityConfig>();
-        private FolderAuthorityConfig       _editing;
 
         // Lookup สำหรับแสดงชื่อใน grid
         private Dictionary<string, string> _deptLookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -534,15 +535,73 @@ namespace CMS.Presentation
 
         // ── Toolbar ───────────────────────────────────────────────────────────
 
-        private void btnAdd_Click(object sender, EventArgs e)    { _editing = new FolderAuthorityConfig(); ShowEditPanel(false); }
-        private void btnClose_Click(object sender, EventArgs e)  { Close(); }
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new AuthorityConfigEditDialog(new FolderAuthorityConfig(), false))
+            {
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    SaveConfig(dialog.Config);
+                }
+            }
+        }
 
         private void btnEdit_Click(object sender, EventArgs e)
         {
-            if (dgv.SelectedRows.Count == 0) return;
-            _editing = (FolderAuthorityConfig)dgv.SelectedRows[0].Tag;
-            ShowEditPanel(true);
+            if (dgv.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("กรุณาเลือกรายการที่ต้องการแก้ไข", "แจ้งเตือน", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var config = (FolderAuthorityConfig)dgv.SelectedRows[0].Tag;
+            using (var dialog = new AuthorityConfigEditDialog(config, true))
+            {
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    SaveConfig(dialog.Config);
+                }
+            }
         }
+
+        private void SaveConfig(FolderAuthorityConfig config)
+        {
+            try
+            {
+                _service.Delete(config.ConfigLabel, _user.UserID);
+                foreach (var lv in new[] {
+                    new { L=1, C="1HC", V=config.HC_View, A=config.HC_Add, E=config.HC_Edit, Ap=config.HC_Approve },
+                    new { L=2, C="2SC", V=config.SC_View, A=config.SC_Add, E=config.SC_Edit, Ap=config.SC_Approve },
+                    new { L=3, C="3NC", V=config.NC_View, A=config.NC_Add, E=config.NC_Edit, Ap=config.NC_Approve },
+                    new { L=4, C="4PC", V=config.PC_View, A=config.PC_Add, E=config.PC_Edit, Ap=config.PC_Approve },
+                })
+                {
+                    _service.Save(new FolderAuthorityConfig
+                    {
+                        ConfigLabel = config.ConfigLabel,
+                        PositionName = config.PositionName,
+                        DepartmentCode = config.DepartmentCode,
+                        DivisionCode = config.DivisionCode,
+                        ConfidentialityLevel = lv.L,
+                        LevelCode = lv.C,
+                        CanView = lv.V,
+                        CanAdd = lv.A,
+                        CanEdit = lv.E,
+                        CanApprove = lv.Ap
+                    }, _user.UserID);
+                }
+                LoadData();
+                MessageBox.Show("บันทึกสำเร็จ", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ผิดพลาด", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)  { Close(); }
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
@@ -554,80 +613,17 @@ namespace CMS.Presentation
             LoadData();
         }
 
-        // ── Edit Panel ────────────────────────────────────────────────────────
-
-        private void ShowEditPanel(bool isEdit)
-        {
-            if (isEdit && _editing != null)
-            {
-                txtLabel.Text     = _editing.ConfigLabel    ?? "";
-                txtPosition.Text  = _editing.PositionName   ?? "";
-                txtLevelCode.Text = _editing.LevelCode       ?? "";
-                txtDept.Text      = _editing.DepartmentCode ?? "";
-                txtDiv.Text       = _editing.DivisionCode   ?? "";
-                chkHC_V.Checked=_editing.HC_View; chkHC_A.Checked=_editing.HC_Add; chkHC_E.Checked=_editing.HC_Edit; chkHC_Ap.Checked=_editing.HC_Approve;
-                chkSC_V.Checked=_editing.SC_View; chkSC_A.Checked=_editing.SC_Add; chkSC_E.Checked=_editing.SC_Edit; chkSC_Ap.Checked=_editing.SC_Approve;
-                chkNC_V.Checked=_editing.NC_View; chkNC_A.Checked=_editing.NC_Add; chkNC_E.Checked=_editing.NC_Edit; chkNC_Ap.Checked=_editing.NC_Approve;
-                chkPC_V.Checked=_editing.PC_View; chkPC_A.Checked=_editing.PC_Add; chkPC_E.Checked=_editing.PC_Edit; chkPC_Ap.Checked=_editing.PC_Approve;
-            }
-            else
-            {
-                txtLabel.Clear(); txtPosition.Clear(); txtLevelCode.Clear(); txtDept.Clear(); txtDiv.Clear();
-                foreach (CheckBox cb in new[] { chkHC_V,chkHC_A,chkHC_E,chkHC_Ap, chkSC_V,chkSC_A,chkSC_E,chkSC_Ap,
-                                                chkNC_V,chkNC_A,chkNC_E,chkNC_Ap, chkPC_V,chkPC_A,chkPC_E,chkPC_Ap })
-                    cb.Checked = false;
-            }
-            pnlEdit.Visible = true;
-            txtLabel.Focus();
-        }
-
-        private void btnSaveRow_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(txtLabel.Text))
-            {
-                MessageBox.Show("กรุณากรอก Label", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            _editing.ConfigLabel    = txtLabel.Text.Trim();
-            _editing.PositionName   = string.IsNullOrWhiteSpace(txtPosition.Text)  ? null : txtPosition.Text.Trim();
-            _editing.LevelCode      = string.IsNullOrWhiteSpace(txtLevelCode.Text) ? null : txtLevelCode.Text.Trim().ToUpper();
-            _editing.DepartmentCode = string.IsNullOrWhiteSpace(txtDept.Text)      ? null : txtDept.Text.Trim();
-            _editing.DivisionCode   = string.IsNullOrWhiteSpace(txtDiv.Text)       ? null : txtDiv.Text.Trim();
-            _editing.HC_View=chkHC_V.Checked; _editing.HC_Add=chkHC_A.Checked; _editing.HC_Edit=chkHC_E.Checked; _editing.HC_Approve=chkHC_Ap.Checked;
-            _editing.SC_View=chkSC_V.Checked; _editing.SC_Add=chkSC_A.Checked; _editing.SC_Edit=chkSC_E.Checked; _editing.SC_Approve=chkSC_Ap.Checked;
-            _editing.NC_View=chkNC_V.Checked; _editing.NC_Add=chkNC_A.Checked; _editing.NC_Edit=chkNC_E.Checked; _editing.NC_Approve=chkNC_Ap.Checked;
-            _editing.PC_View=chkPC_V.Checked; _editing.PC_Add=chkPC_A.Checked; _editing.PC_Edit=chkPC_E.Checked; _editing.PC_Approve=chkPC_Ap.Checked;
-
-            try
-            {
-                _service.Delete(_editing.ConfigLabel, _user.UserID);
-                foreach (var lv in new[] {
-                    new { L=1, C="1HC", V=_editing.HC_View, A=_editing.HC_Add, E=_editing.HC_Edit, Ap=_editing.HC_Approve },
-                    new { L=2, C="2SC", V=_editing.SC_View, A=_editing.SC_Add, E=_editing.SC_Edit, Ap=_editing.SC_Approve },
-                    new { L=3, C="3NC", V=_editing.NC_View, A=_editing.NC_Add, E=_editing.NC_Edit, Ap=_editing.NC_Approve },
-                    new { L=4, C="4PC", V=_editing.PC_View, A=_editing.PC_Add, E=_editing.PC_Edit, Ap=_editing.PC_Approve },
-                })
-                {
-                    _service.Save(new FolderAuthorityConfig
-                    {
-                        ConfigLabel=_editing.ConfigLabel, PositionName=_editing.PositionName,
-                        DepartmentCode=_editing.DepartmentCode, DivisionCode=_editing.DivisionCode,
-                        ConfidentialityLevel=lv.L, LevelCode=lv.C,
-                        CanView=lv.V, CanAdd=lv.A, CanEdit=lv.E, CanApprove=lv.Ap
-                    }, _user.UserID);
-                }
-                pnlEdit.Visible = false; _editing = null;
-                LoadData();
-                MessageBox.Show("บันทึกสำเร็จ", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-        }
-
-        private void btnCancelRow_Click(object sender, EventArgs e) { pnlEdit.Visible = false; _editing = null; }
+        // ── Dummy event handlers for Designer (not used anymore) ─────────────
+        private void btnSaveRow_Click(object sender, EventArgs e) { }
+        private void btnCancelRow_Click(object sender, EventArgs e) { }
 
         private void AuthorityConfigForm_Load(object sender, EventArgs e)
         {
             this.WindowState = FormWindowState.Maximized;
+            
+            // Hide old edit panel (now using dialog)
+            if (pnlEdit != null)
+                pnlEdit.Visible = false;
         }
     }
 }

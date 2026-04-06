@@ -33,8 +33,8 @@ namespace CMS.Presentation
             this.chk4PC = new System.Windows.Forms.CheckBox();
             this.lblConfLevel = new System.Windows.Forms.Label();
             this.viewPanel = new System.Windows.Forms.Panel();
-            this.radioOrgView = new System.Windows.Forms.RadioButton();
-            this.radioConfView = new System.Windows.Forms.RadioButton();
+            this.btnViewOrg = new System.Windows.Forms.Button();
+            this.btnViewConf = new System.Windows.Forms.Button();
             this.lblViewMode = new System.Windows.Forms.Label();
             this.pnlRight = new System.Windows.Forms.Panel();
             this.treeView = new System.Windows.Forms.TreeView();
@@ -161,7 +161,7 @@ namespace CMS.Presentation
             this.pnlLeft.Padding = new System.Windows.Forms.Padding(11, 10, 11, 10);
             this.pnlLeft.Size = new System.Drawing.Size(247, 668);
             this.pnlLeft.TabIndex = 2;
-            this.pnlLeft.Visible = false;
+            this.pnlLeft.Visible = true;
             // 
             // txtSearch
             // 
@@ -173,8 +173,11 @@ namespace CMS.Presentation
             this.txtSearch.Name = "txtSearch";
             this.txtSearch.Size = new System.Drawing.Size(223, 27);
             this.txtSearch.TabIndex = 0;
-            this.txtSearch.Text = "ค้นหาหน่วยงาน";
-            // 
+            this.txtSearch.Text = "ค้นหาหน่วยงาน...";
+            this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
+            this.txtSearch.Enter += new System.EventHandler(this.txtSearch_Enter);
+            this.txtSearch.Leave += new System.EventHandler(this.txtSearch_Leave);
+            //
             // lblSearch
             // 
             this.lblSearch.Dock = System.Windows.Forms.DockStyle.Top;
@@ -269,45 +272,54 @@ namespace CMS.Presentation
             this.lblConfLevel.Size = new System.Drawing.Size(223, 30);
             this.lblConfLevel.TabIndex = 3;
             this.lblConfLevel.Text = "ระดับระดับ:";
-            // 
+            //
             // viewPanel
-            // 
+            //
             this.viewPanel.BackColor = System.Drawing.Color.Transparent;
-            this.viewPanel.Controls.Add(this.radioOrgView);
-            this.viewPanel.Controls.Add(this.radioConfView);
+            this.viewPanel.Controls.Add(this.btnViewOrg);
+            this.viewPanel.Controls.Add(this.btnViewConf);
             this.viewPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.viewPanel.Location = new System.Drawing.Point(11, 40);
             this.viewPanel.Margin = new System.Windows.Forms.Padding(4);
             this.viewPanel.Name = "viewPanel";
-            this.viewPanel.Padding = new System.Windows.Forms.Padding(5);
-            this.viewPanel.Size = new System.Drawing.Size(223, 74);
+            this.viewPanel.Padding = new System.Windows.Forms.Padding(0, 4, 0, 4);
+            this.viewPanel.Size = new System.Drawing.Size(223, 84);
             this.viewPanel.TabIndex = 4;
-            // 
-            // radioOrgView
-            // 
-            this.radioOrgView.AutoSize = true;
-            this.radioOrgView.Checked = true;
-            this.radioOrgView.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.radioOrgView.Location = new System.Drawing.Point(11, 10);
-            this.radioOrgView.Margin = new System.Windows.Forms.Padding(4);
-            this.radioOrgView.Name = "radioOrgView";
-            this.radioOrgView.Size = new System.Drawing.Size(117, 24);
-            this.radioOrgView.TabIndex = 0;
-            this.radioOrgView.TabStop = true;
-            this.radioOrgView.Text = "⚫ ตามองค์กร";
-            this.radioOrgView.CheckedChanged += new System.EventHandler(this.radioOrgView_CheckedChanged);
-            // 
-            // radioConfView
-            // 
-            this.radioConfView.AutoSize = true;
-            this.radioConfView.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.radioConfView.Location = new System.Drawing.Point(11, 39);
-            this.radioConfView.Margin = new System.Windows.Forms.Padding(4);
-            this.radioConfView.Name = "radioConfView";
-            this.radioConfView.Size = new System.Drawing.Size(127, 24);
-            this.radioConfView.TabIndex = 1;
-            this.radioConfView.Text = "⚫ ตามความลับ";
-            this.radioConfView.CheckedChanged += new System.EventHandler(this.radioConfView_CheckedChanged);
+            //
+            // btnViewOrg
+            //
+            this.btnViewOrg.Dock = System.Windows.Forms.DockStyle.Top;
+            this.btnViewOrg.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnViewOrg.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnViewOrg.ForeColor = System.Drawing.Color.White;
+            this.btnViewOrg.BackColor = System.Drawing.Color.FromArgb(0, 51, 102);
+            this.btnViewOrg.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnViewOrg.Name = "btnViewOrg";
+            this.btnViewOrg.Padding = new System.Windows.Forms.Padding(6, 0, 0, 0);
+            this.btnViewOrg.Size = new System.Drawing.Size(223, 36);
+            this.btnViewOrg.TabIndex = 0;
+            this.btnViewOrg.Text = "🏢  ตามองค์กร";
+            this.btnViewOrg.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnViewOrg.UseVisualStyleBackColor = false;
+            this.btnViewOrg.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnViewOrg.Click += new System.EventHandler(this.btnViewOrg_Click);
+            //
+            // btnViewConf
+            //
+            this.btnViewConf.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.btnViewConf.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnViewConf.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnViewConf.ForeColor = System.Drawing.Color.FromArgb(50, 50, 50);
+            this.btnViewConf.BackColor = System.Drawing.Color.White;
+            this.btnViewConf.Name = "btnViewConf";
+            this.btnViewConf.Padding = new System.Windows.Forms.Padding(6, 0, 0, 0);
+            this.btnViewConf.Size = new System.Drawing.Size(223, 36);
+            this.btnViewConf.TabIndex = 1;
+            this.btnViewConf.Text = "🔒  ตามความลับ";
+            this.btnViewConf.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnViewConf.UseVisualStyleBackColor = false;
+            this.btnViewConf.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnViewConf.Click += new System.EventHandler(this.btnViewConf_Click);
             // 
             // lblViewMode
             // 
@@ -387,8 +399,8 @@ namespace CMS.Presentation
         private System.Windows.Forms.Panel              pnlLeft;
         private System.Windows.Forms.Label              lblViewMode;
         private System.Windows.Forms.Panel              viewPanel;
-        private System.Windows.Forms.RadioButton        radioOrgView;
-        private System.Windows.Forms.RadioButton        radioConfView;
+        private System.Windows.Forms.Button             btnViewOrg;
+        private System.Windows.Forms.Button             btnViewConf;
         private System.Windows.Forms.Label              lblConfLevel;
         private System.Windows.Forms.Panel              pnlConfLevels;
         private System.Windows.Forms.CheckBox           chk1HC;

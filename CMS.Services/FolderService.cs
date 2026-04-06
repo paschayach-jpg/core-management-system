@@ -32,6 +32,7 @@ namespace CMS.Services
         private readonly IFolderTemplateRepository    _folderTemplateRepository;
         private readonly IApprovalRepository          _approvalRepository;
         private readonly IUserOrgVisibilityService    _visibilityService;
+        private readonly IUserAccountRepository       _userAccountRepository;
 
         // Session-level folder cache: key = orgUnitId (null = all), value = folder list
         // ลด DB calls ซ้ำเมื่อ navigate ไปมาใน session เดียวกัน
@@ -60,7 +61,8 @@ namespace CMS.Services
             IAuditService              auditService,
             IFolderTemplateRepository  folderTemplateRepository = null,
             IApprovalRepository        approvalRepository       = null,
-            IUserOrgVisibilityService  visibilityService        = null)
+            IUserOrgVisibilityService  visibilityService        = null,
+            IUserAccountRepository     userAccountRepository    = null)
         {
             if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
             if (fileDocumentRepository == null) throw new ArgumentNullException("fileDocumentRepository");
@@ -78,6 +80,7 @@ namespace CMS.Services
             _folderTemplateRepository  = folderTemplateRepository;
             _approvalRepository        = approvalRepository;
             _visibilityService         = visibilityService;
+            _userAccountRepository     = userAccountRepository;
         }
 
         public Folder CreateFolder(CreateFolderRequest request, UserContext user)
@@ -154,6 +157,76 @@ namespace CMS.Services
                 inheritPermission = !request.ConfidentialityLevel.HasValue;
             }
 
+            // HC (ConfidentialityLevel=1) folders require approval before creation
+            if (confidentiality == 1)
+            {
+                // Store folder creation request data in Remark for later retrieval after approval
+                var folderData = new
+                {
+                    ParentFolderId = request.ParentFolderId,
+                    OrgUnitId = request.OrgUnitId,
+                    FolderName = request.Name.Trim(),
+                    FolderDepth = depth,
+                    ConfidentialityLevel = confidentiality,
+                    InheritPermission = inheritPermission
+                };
+
+                var approvalRequest = new ApprovalRequest
+                {
+                    RequestType = "CREATE_HC",
+                    RequestedBy = user.UserID,
+                    RequestedDate = DateTime.Now,
+                    RequestStatus = 1, // Pending
+                    Subject = string.Format("สร้าง HC Folder: {0}", request.Name.Trim()),
+                    Remark = string.Format("ParentFolderId={0}|OrgUnitId={1}|FolderName={2}|FolderDepth={3}|ConfidentialityLevel={4}|InheritPermission={5}",
+                        request.ParentFolderId ?? 0, request.OrgUnitId, request.Name.Trim(), depth, confidentiality, inheritPermission),
+                    ExpiryDate = DateTime.Now.AddDays(1)
+                };
+
+                int requestId = _approvalRepository.InsertRequest(approvalRequest);
+
+                // Get all admins to create approval steps
+                var admins = _userAccountRepository.GetByRole(4); // 4 = Admin
+                if (admins == null || !admins.Any())
+                    throw new InvalidOperationException("ไม่พบ Admin ในระบบ ไม่สามารถสร้าง HC Folder ได้");
+
+                int stepOrder = 1;
+                foreach (var admin in admins)
+                {
+                    var step = new ApprovalStep
+                    {
+                        RequestID = requestId,
+                        StepOrder = stepOrder,
+                        ApproverID = admin.UserID,
+                        StepStatus = 1 // Pending
+                    };
+                    _approvalRepository.InsertStep(step);
+                    stepOrder++;
+                }
+
+                Log(user, "Folder", "REQUEST_CREATE_HC", "workflow.ApprovalRequest", requestId, 1,
+                    string.Format("HC Folder creation request submitted. Subject: {0}", approvalRequest.Subject));
+
+                // Return a placeholder folder with RequestID in FolderID (temporary)
+                // This indicates the folder is pending approval
+                var placeholderFolder = new Folder
+                {
+                    FolderID = requestId * -1, // Negative ID to indicate pending approval
+                    FolderName = request.Name.Trim(),
+                    ParentFolderID = request.ParentFolderId,
+                    OrgUnitID = request.OrgUnitId,
+                    ConfidentialityLevel = confidentiality,
+                    FolderDepth = depth,
+                    IsDeleted = false,
+                    IsArchived = false,
+                    CreatedBy = user.UserID,
+                    CreatedDate = DateTime.Now
+                };
+
+                return placeholderFolder;
+            }
+
+            // Non-HC folders are created immediately
             var folder = new Folder
             {
                 ParentFolderID     = request.ParentFolderId,
@@ -176,6 +249,100 @@ namespace CMS.Services
                 string.Format("Created folder '{0}' at depth {1}.", folder.FolderName, depth));
 
             return folder;
+        }
+
+        /// <summary>
+        /// Creates an HC folder after approval. Called by ApprovalService when CREATE_HC request is approved.
+        /// Parses folder data from approval request Remark and creates the actual folder.
+        /// </summary>
+        public Folder CreateHCFolderAfterApproval(ApprovalRequest approvalRequest, UserContext user)
+        {
+            if (approvalRequest == null) throw new ArgumentNullException("approvalRequest");
+            if (user == null) throw new ArgumentNullException("user");
+            if (approvalRequest.RequestType != "CREATE_HC")
+                throw new InvalidOperationException("This method only handles CREATE_HC approval requests.");
+
+            // Parse folder data from Remark (format: ParentFolderId=X|OrgUnitId=Y|FolderName=Z|...)
+            int? parentFolderId = null;
+            int orgUnitId = 0;
+            string folderName = "";
+            int depth = 1;
+            int confidentiality = 1;
+            bool inheritPermission = false;
+
+            try
+            {
+                var parts = approvalRequest.Remark.Split('|');
+                var dict = new Dictionary<string, string>();
+                foreach (var part in parts)
+                {
+                    var kv = part.Split('=');
+                    if (kv.Length == 2)
+                        dict[kv[0]] = kv[1];
+                }
+
+                parentFolderId = dict.ContainsKey("ParentFolderId") && int.TryParse(dict["ParentFolderId"], out int pf) && pf > 0 ? (int?)pf : null;
+                orgUnitId = dict.ContainsKey("OrgUnitId") && int.TryParse(dict["OrgUnitId"], out int ou) ? ou : 0;
+                folderName = dict.ContainsKey("FolderName") ? dict["FolderName"] : "";
+                depth = dict.ContainsKey("FolderDepth") && int.TryParse(dict["FolderDepth"], out int d) ? d : 1;
+                confidentiality = dict.ContainsKey("ConfidentialityLevel") && int.TryParse(dict["ConfidentialityLevel"], out int c) ? c : 1;
+                inheritPermission = dict.ContainsKey("InheritPermission") && bool.TryParse(dict["InheritPermission"], out bool ip) ? ip : false;
+
+                if (orgUnitId == 0 || string.IsNullOrEmpty(folderName))
+                    throw new FormatException("Missing required folder data");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    string.Format("Failed to parse folder data from approval request {0}: {1}",
+                        approvalRequest.RequestID, ex.Message), ex);
+            }
+
+            // Validate parent folder still exists and is not deleted/archived
+            if (parentFolderId.HasValue)
+            {
+                var parent = _folderRepository.GetById(parentFolderId.Value);
+                if (parent == null)
+                    throw new InvalidOperationException(
+                        string.Format("Parent folder with ID {0} no longer exists.", parentFolderId.Value));
+                if (parent.IsDeleted)
+                    throw new InvalidOperationException("Cannot create folder under a deleted parent.");
+                if (parent.IsArchived)
+                    throw new InvalidOperationException("Cannot create folder under an archived parent.");
+            }
+
+            // Check for duplicate name again (in case it was created while approval was pending)
+            var siblings = _folderRepository.GetSiblings(parentFolderId, orgUnitId);
+            var duplicate = siblings.FirstOrDefault(
+                f => string.Equals(f.FolderName.Trim(), folderName.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (duplicate != null)
+                throw new InvalidOperationException(
+                    string.Format("A folder named '{0}' already exists in the same parent.", folderName));
+
+            // Create the folder
+            var folder = new Folder
+            {
+                ParentFolderID = parentFolderId,
+                OrgUnitID = orgUnitId,
+                FolderName = folderName,
+                FolderDepth = depth,
+                ConfidentialityLevel = confidentiality,
+                InheritPermission = inheritPermission,
+                IsDeleted = false,
+                IsArchived = false,
+                CreatedBy = approvalRequest.RequestedBy,
+                CreatedDate = DateTime.Now
+            };
+
+            int newId = _folderRepository.Insert(folder);
+            folder.FolderID = newId;
+
+            InvalidateFolderCache(folder.OrgUnitID);
+            Log(user, "Folder", "CREATE_HC_APPROVED", "storage.Folder", newId, 1,
+                string.Format("HC Folder '{0}' created after approval of request {1}.", folderName, approvalRequest.RequestID));
+
+            return folder;
+
         }
 
         public void RenameFolder(int folderId, string newName, UserContext user)

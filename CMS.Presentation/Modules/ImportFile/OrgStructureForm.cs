@@ -21,10 +21,14 @@ namespace CMS.Presentation
     {
         private readonly OrgStructurePresenter  _presenter;
         private readonly IOrgStructureService   _service;
+        private readonly UserContext            _currentUser;
         private List<OrgUnit> _allUnits = new List<OrgUnit>();
         private readonly IEmployeeApiService    _employeeApiService;
         private readonly IHrDivisionRepository   _hrDivisionRepo;
         private readonly IHrDepartmentRepository _hrDepartmentRepo;
+
+        // ตัวเลือกมุมมองปัจจุบัน: false = ตามองค์กร, true = ตามความลับ
+        private bool _isConfView = false;
 
         public OrgStructureForm(IOrgStructureService service, UserContext user,
             IEmployeeApiService employeeApiService = null,
@@ -35,13 +39,14 @@ namespace CMS.Presentation
             if (user    == null) throw new ArgumentNullException("user");
 
             _service            = service;
+            _currentUser        = user;
             _employeeApiService = employeeApiService;
             _hrDivisionRepo     = hrDivisionRepo;
             _hrDepartmentRepo   = hrDepartmentRepo;
 
             InitializeComponent();
             _presenter = new OrgStructurePresenter(service, this, user);
-            radioOrgView.Checked = true;
+            ApplyViewButtonStyle(orgSelected: true);
         }
 
         // -----------------------------------------------------------------------
@@ -60,6 +65,26 @@ namespace CMS.Presentation
             treeView.BeforeExpand  += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder"; };
             treeView.BeforeCollapse += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder"; };
 
+            // ── Admin-only: ปุ่มแก้ไขโครงสร้างเปิดได้เฉพาะ Admin (AppRole == 4) ──
+            bool isAdmin = _currentUser != null && _currentUser.AppRole == 4;
+            btnCreate.Enabled     = isAdmin;
+            btnEdit.Enabled       = isAdmin;
+            btnMove.Enabled       = isAdmin;
+            btnDelete.Enabled     = isAdmin;
+            btnDeactivate.Enabled = isAdmin;
+
+            if (!isAdmin)
+            {
+                btnCreate.ToolTipText     = "เฉพาะ Admin เท่านั้น";
+                btnEdit.ToolTipText       = "เฉพาะ Admin เท่านั้น";
+                btnMove.ToolTipText       = "เฉพาะ Admin เท่านั้น";
+                btnDelete.ToolTipText     = "เฉพาะ Admin เท่านั้น";
+                btnDeactivate.ToolTipText = "เฉพาะ Admin เท่านั้น";
+            }
+
+            // placeholder สี
+            txtSearch.ForeColor = Color.Gray;
+
             _presenter.SetActiveView(false);
             _presenter.LoadOrganizationView();
         }
@@ -68,18 +93,54 @@ namespace CMS.Presentation
         // View-switch handlers (Req 3.9 — reload data panel only)
         // -----------------------------------------------------------------------
 
-        private void radioOrgView_CheckedChanged(object sender, EventArgs e)
+        private void btnViewOrg_Click(object sender, EventArgs e)
         {
-            if (!radioOrgView.Checked) return;
+            if (_isConfView == false) return;   // already selected
+            _isConfView = false;
+            ApplyViewButtonStyle(orgSelected: true);
             _presenter.SetActiveView(false);
             _presenter.LoadOrganizationView();
         }
 
-        private void radioConfView_CheckedChanged(object sender, EventArgs e)
+        private void btnViewConf_Click(object sender, EventArgs e)
         {
-            if (!radioConfView.Checked) return;
+            if (_isConfView == true) return;    // already selected
+            _isConfView = true;
+            ApplyViewButtonStyle(orgSelected: false);
             _presenter.SetActiveView(true);
             _presenter.LoadConfidentialityView();
+        }
+
+        /// <summary>ปรับสีปุ่ม view ให้แสดง selected / unselected</summary>
+        private void ApplyViewButtonStyle(bool orgSelected)
+        {
+            // ─ Selected: สีน้ำเงินเข้ม พร้อมไฮไลต์ ─────────────────────────
+            var selBack  = System.Drawing.Color.FromArgb(0, 51, 102);
+            var selFore  = System.Drawing.Color.White;
+            var selFont  = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold);
+
+            // ─ Normal: ขาว ─────────────────────────────────────────────────
+            var normBack = System.Drawing.Color.White;
+            var normFore = System.Drawing.Color.FromArgb(60, 60, 60);
+            var normFont = new System.Drawing.Font("Segoe UI", 9f);
+
+            if (orgSelected)
+            {
+                btnViewOrg .BackColor = selBack;  btnViewOrg .ForeColor = selFore;  btnViewOrg .Font = selFont;
+                btnViewConf.BackColor = normBack; btnViewConf.ForeColor = normFore; btnViewConf.Font = normFont;
+            }
+            else
+            {
+                btnViewConf.BackColor = selBack;  btnViewConf.ForeColor = selFore;  btnViewConf.Font = selFont;
+                btnViewOrg .BackColor = normBack; btnViewOrg .ForeColor = normFore; btnViewOrg .Font = normFont;
+            }
+
+            btnViewOrg .FlatAppearance.BorderColor = orgSelected
+                ? System.Drawing.Color.FromArgb(0, 84, 166)
+                : System.Drawing.Color.FromArgb(200, 200, 200);
+            btnViewConf.FlatAppearance.BorderColor = !orgSelected
+                ? System.Drawing.Color.FromArgb(0, 84, 166)
+                : System.Drawing.Color.FromArgb(200, 200, 200);
         }
 
         // -----------------------------------------------------------------------
@@ -179,7 +240,6 @@ namespace CMS.Presentation
             treeView.BeginUpdate();
             treeView.Nodes.Clear();
 
-            // Group by ConfidentialityLevel in defined order
             var levels = new[]
             {
                 ConfidentialityLevel.HC,
@@ -190,25 +250,80 @@ namespace CMS.Presentation
 
             foreach (var level in levels)
             {
-                var groupNode = new TreeNode(ConfidentialityLevelLabel(level))
-                {
-                    ForeColor = ConfidentialityLevelColor(level),
-                    Tag       = null
-                };
-
                 var grouped = _allUnits
                     .Where(u => u.ConfidentialityLevelValue == (int)level)
                     .OrderBy(u => u.Tier)
-                    .ThenBy(u => u.Name);
+                    .ThenBy(u => u.Name)
+                    .ToList();
 
-                foreach (var unit in grouped)
-                    groupNode.Nodes.Add(CreateNode(unit));
+                string header = string.Format("{0}  ({1} หน่วยงาน)",
+                    ConfidentialityLevelLabel(level), grouped.Count);
+
+                var groupNode = new TreeNode(header)
+                {
+                    ForeColor = ConfidentialityLevelColor(level),
+                    NodeFont  = new Font(treeView.Font, FontStyle.Bold),
+                    Tag       = null
+                };
+
+                if (grouped.Count == 0)
+                {
+                    groupNode.Nodes.Add(new TreeNode("(ไม่มีหน่วยงานในระดับนี้)")
+                    {
+                        ForeColor = Color.Gray,
+                        NodeFont  = new Font(treeView.Font, FontStyle.Italic)
+                    });
+                }
+                else
+                {
+                    // SubCommittee → Division → Department
+                    foreach (var sc in grouped.Where(u => u.Tier == OrgUnitTier.SubCommittee))
+                    {
+                        var scNode = CreateConfNode(sc);
+                        foreach (var div in grouped.Where(u => u.Tier == OrgUnitTier.Division && u.ParentId == sc.OrgUnitId))
+                        {
+                            var divNode = CreateConfNode(div);
+                            foreach (var dept in grouped.Where(u => u.Tier == OrgUnitTier.Department && u.ParentId == div.OrgUnitId))
+                                divNode.Nodes.Add(CreateConfNode(dept));
+                            scNode.Nodes.Add(divNode);
+                        }
+                        groupNode.Nodes.Add(scNode);
+                    }
+
+                    // Division ที่ไม่มี SubCommittee parent
+                    foreach (var div in grouped.Where(u => u.Tier == OrgUnitTier.Division && u.ParentId == null))
+                    {
+                        var divNode = CreateConfNode(div);
+                        foreach (var dept in grouped.Where(u => u.Tier == OrgUnitTier.Department && u.ParentId == div.OrgUnitId))
+                            divNode.Nodes.Add(CreateConfNode(dept));
+                        groupNode.Nodes.Add(divNode);
+                    }
+                }
 
                 treeView.Nodes.Add(groupNode);
             }
 
             treeView.ExpandAll();
             treeView.EndUpdate();
+        }
+
+        /// <summary>สร้าง TreeNode สำหรับ Confidentiality view พร้อม tier badge</summary>
+        private static TreeNode CreateConfNode(OrgUnit unit)
+        {
+            string tierBadge = unit.Tier == OrgUnitTier.SubCommittee ? "🏢"
+                             : unit.Tier == OrgUnitTier.Division      ? "🏬"
+                             : "🏪";
+
+            string label = string.Format("{0} {1}  [{2}]",
+                tierBadge, unit.Name, unit.OrgUnitCode ?? "-");
+
+            return new TreeNode(label)
+            {
+                Tag              = unit,
+                ForeColor        = unit.IsActive ? SystemColors.WindowText : SystemColors.GrayText,
+                ImageKey         = "folder",
+                SelectedImageKey = "open_folder"
+            };
         }
 
         // -----------------------------------------------------------------------
@@ -644,6 +759,73 @@ namespace CMS.Presentation
                 }
                 return null;
             }
+        }
+
+        // ── Search ───────────────────────────────────────────────────────────
+        private const string SearchPlaceholder = "ค้นหาหน่วยงาน...";
+
+        private void txtSearch_Enter(object sender, EventArgs e)
+        {
+            if (txtSearch.Text == SearchPlaceholder)
+            {
+                txtSearch.Text      = string.Empty;
+                txtSearch.ForeColor = SystemColors.WindowText;
+            }
+        }
+
+        private void txtSearch_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtSearch.Text))
+            {
+                txtSearch.Text      = SearchPlaceholder;
+                txtSearch.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtSearch_TextChanged(object sender, EventArgs e)
+        {
+            string keyword = txtSearch.Text.Trim();
+            if (keyword == SearchPlaceholder || string.IsNullOrEmpty(keyword))
+            {
+                // ล้าง search → แสดง tree ปกติ
+                if (_isConfView)
+                    _presenter.LoadConfidentialityView();
+                else
+                    _presenter.LoadOrganizationView();
+                return;
+            }
+
+            // กรอง _allUnits ตาม keyword (ชื่อหน่วยงาน)
+            var matched = _allUnits
+                .Where(u => u.IsActive
+                    && (u.Name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0
+                     || (u.OrgUnitCode != null && u.OrgUnitCode.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)))
+                .ToList();
+
+            treeView.BeginUpdate();
+            treeView.Nodes.Clear();
+
+            if (matched.Count == 0)
+            {
+                treeView.Nodes.Add(new TreeNode("(ไม่พบหน่วยงานที่ค้นหา)")
+                {
+                    ForeColor = Color.Gray,
+                    NodeFont  = new Font(treeView.Font, FontStyle.Italic)
+                });
+            }
+            else
+            {
+                foreach (var u in matched.OrderBy(x => x.Tier).ThenBy(x => x.Name))
+                {
+                    var node = CreateNode(u);
+                    // เน้นข้อความที่ match
+                    node.BackColor = Color.FromArgb(255, 255, 176);
+                    treeView.Nodes.Add(node);
+                }
+            }
+
+            treeView.ExpandAll();
+            treeView.EndUpdate();
         }
 
         // ── Confidentiality Level Filter ──────────────────────────────────

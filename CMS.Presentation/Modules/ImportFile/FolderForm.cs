@@ -388,11 +388,15 @@ namespace CMS.Presentation
                     contentFolder = contentsListView.SelectedItems[0].Tag as Folder;
                 bool canDeleteContent = canEdit && (hasFile || (contentFolder != null && CanDeleteFolder(contentFolder)));
 
+                // Check if any item (file or folder) is selected in content list
+                bool hasSelection = contentsListView.SelectedItems.Count > 0 && 
+                                   (hasFile || contentFolder != null);
+
                 mnuUpload.Enabled      = hasFolder && canAdd  && _fileService != null;
                 mnuNewFolder.Enabled   = hasFolder && canAdd;
                 mnuOpen.Enabled        = hasFile   && canView;
                 mnuDownload.Enabled    = hasFile   && canView;
-                mnuRename.Enabled      = hasFile   && canEdit;
+                mnuRename.Enabled      = hasSelection && canEdit;
                 mnuDelete.Enabled      = canDeleteContent;
                 mnuClearFolder.Enabled = _fileService != null && _currentNavFolderId.HasValue && canEdit;
                 mnuArchive.Enabled     = hasFile   && canEdit;
@@ -715,6 +719,7 @@ namespace CMS.Presentation
             _btnOrgView.ForeColor  = Color.White;
             _btnConfView.BackColor = Color.FromArgb(240, 244, 250);
             _btnConfView.ForeColor = Color.FromArgb(31, 56, 100);
+            contentsListView.ShowGroups = false;
         }
 
         private void SwitchToConfView()
@@ -822,10 +827,10 @@ namespace CMS.Presentation
 
                 var groups = new[]
                 {
-                    new { Level = 1, Label = "1HC — High Confidential",   Color = Color.FromArgb(180, 0, 0),    BookKey = "book_red"    },
-                    new { Level = 2, Label = "2SC — Semi Confidential",   Color = Color.FromArgb(200, 80, 0),   BookKey = "book_orange" },
-                    new { Level = 3, Label = "3NC — Normal Confidential", Color = Color.FromArgb(0, 80, 160),   BookKey = "book_bule"   },
-                    new { Level = 4, Label = "4PC — Public / เปิดเผย",   Color = Color.FromArgb(0, 130, 60),   BookKey = "book_green"  },
+                    new { Level = 1, Label = "1HC — High Confidential",   Color = Color.FromArgb(180, 0, 0),    BookKey = "lightning_bolt" },
+                    new { Level = 2, Label = "2SC — Semi Confidential",   Color = Color.FromArgb(200, 80, 0),   BookKey = "book_orange"    },
+                    new { Level = 3, Label = "3NC — Normal Confidential", Color = Color.FromArgb(0, 80, 160),   BookKey = "book_bule"      },
+                    new { Level = 4, Label = "4PC — Public / เปิดเผย",   Color = Color.FromArgb(0, 130, 60),   BookKey = "book_green"     },
                 };
 
                 foreach (var group in groups)
@@ -1099,6 +1104,7 @@ namespace CMS.Presentation
             if (folder != null)
             {
                 // คลิก Folder node → แสดงเนื้อหาภายใน
+                contentsListView.ShowGroups = false;
                 if (!_isNavigating) PushNavigation(folder.FolderId);
                 _lastSelectedFolder = folder;
                 _currentNavFolderId = folder.FolderId;
@@ -1114,49 +1120,94 @@ namespace CMS.Presentation
             }
             else if (e.Node.Tag is int)
             {
-                // คลิก OrgUnit node (Sub / Div / Dep) → รวบรวม Folder ทั้งหมดใต้โหนดนี้แบบ recursive
-                var allFolders = new List<Folder>();
-                CollectFoldersFromConfNode(e.Node, allFolders);
+                int orgUnitId = (int)e.Node.Tag;
 
-                if (allFolders.Any())
-                {
-                    ShowFolderContents(allFolders, Enumerable.Empty<FileDocument>());
+                // ตัด prefix ♦ / ◇ / 🏢 และ suffix (code) / filecount ออก
+                string nodeName = e.Node.Text;
+                if (nodeName.Length >= 2 && (nodeName.StartsWith("♦ ") || nodeName.StartsWith("◇ ")))
+                    nodeName = nodeName.Substring(2).Trim();
+                else if (nodeName.StartsWith("🏢 "))
+                    nodeName = nodeName.Substring(2).Trim();
+                int parenIdx = nodeName.IndexOf(" (");
+                if (parenIdx > 0) nodeName = nodeName.Substring(0, parenIdx).Trim();
+                int spaceIdx = nodeName.IndexOf("   ");
+                if (spaceIdx > 0) nodeName = nodeName.Substring(0, spaceIdx).Trim();
 
-                    // ตัด prefix ♦ / ◇ / 🏢 และ suffix (code) / filecount ออก
-                    string nodeName = e.Node.Text;
-                    if (nodeName.Length >= 2 && (nodeName.StartsWith("♦ ") || nodeName.StartsWith("◇ ")))
-                        nodeName = nodeName.Substring(2).Trim();
-                    else if (nodeName.StartsWith("🏢 "))
-                        nodeName = nodeName.Substring(2).Trim();
+                // โหลด Folder จาก DB → ซ้ายขวา sync กัน (เหมือนคลิก OrgUnit ใน org view)
+                _selectedOrgUnitId   = orgUnitId;
+                _selectedOrgUnitName = nodeName;
+                _selectedOrgUnit     = null;
+                contentsListView.ShowGroups = false;
 
-                    int parenIdx = nodeName.IndexOf(" (");
-                    if (parenIdx > 0) nodeName = nodeName.Substring(0, parenIdx).Trim();
-                    int spaceIdx = nodeName.IndexOf("   ");
-                    if (spaceIdx > 0) nodeName = nodeName.Substring(0, spaceIdx).Trim();
-
-                    ApplyBreadcrumb("🏠 PC  ›  " + nodeName, new List<int?>());
-                    lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", nodeName);
-                    lblContentInfo.Text   = string.Format("{0} Folder", allFolders.Count);
-                }
+                ApplyBreadcrumb("🏠 PC  ›  " + nodeName, new List<int?>());
+                lblOrgUnitStatus.Text = string.Format("⏳ กำลังโหลด: {0}...", nodeName);
+                _presenter.LoadFolderTree(orgUnitId);
+                lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", nodeName);
+                lblContentInfo.Text   = "";
             }
             else
             {
-                // คลิก Group node (1HC/2SC/3NC/4PC) → รวบรวม folders ทั้งหมด
-                var subFolders = new List<Folder>();
-                CollectFoldersFromConfNode(e.Node, subFolders);
+                // คลิก Group node (1HC/2SC/3NC/4PC) → แสดง Folder แยก Group ตาม OrgUnit
+                // ทำให้ฝั่งซ้าย (N OrgUnit) และฝั่งขวา (N กลุ่ม) ตรงกัน
+                string nodeName = e.Node.Text;
+                int spaceIdx = nodeName.IndexOf("   ");
+                if (spaceIdx > 0) nodeName = nodeName.Substring(0, spaceIdx).Trim();
 
-                if (subFolders.Any())
+                contentsListView.BeginUpdate();
+                contentsListView.Items.Clear();
+                contentsListView.Groups.Clear();
+                contentsListView.ShowGroups = true;
+
+                int totalFolders = 0;
+                foreach (TreeNode ouNode in e.Node.Nodes)
                 {
-                    ShowFolderContents(subFolders, Enumerable.Empty<FileDocument>());
+                    // ชื่อ OrgUnit — ตัด prefix ♦/◇/🏢 และ suffix (code/count) ออก
+                    string ouName = ouNode.Text;
+                    if (ouName.Length >= 2 && (ouName.StartsWith("♦ ") || ouName.StartsWith("◇ ")))
+                        ouName = ouName.Substring(2).Trim();
+                    else if (ouName.StartsWith("🏢 "))
+                        ouName = ouName.Substring(2).Trim();
+                    int pi = ouName.IndexOf(" (");
+                    if (pi > 0) ouName = ouName.Substring(0, pi).Trim();
+                    int si = ouName.IndexOf("   ");
+                    if (si > 0) ouName = ouName.Substring(0, si).Trim();
 
-                    string nodeName = e.Node.Text;
-                    int spaceIdx = nodeName.IndexOf("   ");
-                    if (spaceIdx > 0) nodeName = nodeName.Substring(0, spaceIdx).Trim();
+                    var grpFolders = new List<Folder>();
+                    CollectFoldersFromConfNode(ouNode, grpFolders);
+                    grpFolders = grpFolders.Where(f => !f.IsDeleted).ToList();
+                    if (!grpFolders.Any()) continue;
 
-                    ApplyBreadcrumb("🏠 PC  ›  " + nodeName, new List<int?>());
-                    lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", nodeName);
-                    lblContentInfo.Text   = string.Format("{0} Folder", subFolders.Count);
+                    var lvGroup = new ListViewGroup(ouName, HorizontalAlignment.Left);
+                    contentsListView.Groups.Add(lvGroup);
+
+                    foreach (var f in grpFolders)
+                    {
+                        bool isRoot = !f.ParentFolderID.HasValue || f.ParentFolderID == 0;
+                        string iconKey = isRoot ? ConfidentialityBookIcon(f.ConfidentialityLevel) : "folder";
+                        var item = new ListViewItem(f.Name) { ImageKey = iconKey, Group = lvGroup };
+                        item.SubItems.Add(f.FileCount > 0
+                            ? string.Format("Folder  {0} ไฟล์", f.FileCount)
+                            : "Folder");
+                        item.SubItems.Add(ConfidentialityShort(f.ConfidentialityLevel));
+                        item.SubItems.Add(FormatBytes(f.FolderSizeBytes));
+                        item.SubItems.Add(f.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm"));
+                        item.SubItems.Add("—");
+                        item.SubItems.Add("—");
+                        item.SubItems.Add(ouName);
+                        item.Tag       = f;
+                        item.ForeColor = ConfidentialityColor(f.ConfidentialityLevel);
+                        item.UseItemStyleForSubItems = false;
+                        item.SubItems[2].ForeColor   = ConfidentialityColor(f.ConfidentialityLevel);
+                        contentsListView.Items.Add(item);
+                        totalFolders++;
+                    }
                 }
+
+                contentsListView.EndUpdate();
+
+                ApplyBreadcrumb("🏠 PC  ›  " + nodeName, new List<int?>());
+                lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", nodeName);
+                lblContentInfo.Text   = string.Format("{0} Folder", totalFolders);
             }
         }
 
@@ -1218,8 +1269,8 @@ namespace CMS.Presentation
                     {
                         Tag              = sc,
                         ForeColor        = System.Drawing.Color.FromArgb(31, 56, 100),
-                        ImageKey         = "folder",
-                        SelectedImageKey = "open_folder"
+                        ImageKey         = "organization",
+                        SelectedImageKey = "organization"
                     };
 
                     foreach (var div in visibleUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division && u.ParentId == sc.OrgUnitId).OrderBy(u => u.Name))
@@ -1414,12 +1465,31 @@ namespace CMS.Presentation
 
             // Set up folder open/closed icons from Resources (shared ImageList)
             var folderImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
-            folderImageList.Images.Add("folder",      Properties.Resources.folder);
-            folderImageList.Images.Add("open_folder", Properties.Resources.open_folder);
-            folderImageList.Images.Add("book_red",    Properties.Resources.book_red1.ToBitmap());
-            folderImageList.Images.Add("book_orange", Properties.Resources.book_orange1.ToBitmap());
-            folderImageList.Images.Add("book_bule",   Properties.Resources.book_bule1.ToBitmap());
-            folderImageList.Images.Add("book_green",  Properties.Resources.book_green1.ToBitmap());
+            folderImageList.Images.Add("folder",         Properties.Resources.folder);
+            folderImageList.Images.Add("open_folder",    Properties.Resources.open_folder);
+            folderImageList.Images.Add("organization",   Properties.Resources.organization);
+            
+            // Try to load lightning_bolt1, fallback to book_red if not available
+            try
+            {
+                if (Properties.Resources.lightning_bolt1 != null)
+                {
+                    folderImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1);
+                }
+                else
+                {
+                    folderImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
+                }
+            }
+            catch
+            {
+                folderImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
+            }
+            
+            folderImageList.Images.Add("book_red",       Properties.Resources.lightning_bolt1);
+            folderImageList.Images.Add("book_orange",    Properties.Resources.book_orange);
+            folderImageList.Images.Add("book_bule",      Properties.Resources.book_bule);
+            folderImageList.Images.Add("book_green",     Properties.Resources.book_green);
 
             // TreeView — closed/open on expand/collapse
             folderTreeView.ImageList        = folderImageList;
@@ -1443,17 +1513,36 @@ namespace CMS.Presentation
             treeOrgUnit.ImageList        = folderImageList;
             treeOrgUnit.ImageKey         = "folder";
             treeOrgUnit.SelectedImageKey = "open_folder";
-            treeOrgUnit.BeforeExpand  += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder"; };
-            treeOrgUnit.BeforeCollapse += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder"; };
+            treeOrgUnit.BeforeExpand  += (s, ev) => { if (ev.Node.ImageKey != "organization") ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder"; };
+            treeOrgUnit.BeforeCollapse += (s, ev) => { if (ev.Node.ImageKey != "organization") ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder"; };
 
             // Confidentiality TreeView — same image list (WinForms requires a SEPARATE ImageList instance per TreeView)
             var confImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
-            confImageList.Images.Add("folder",      Properties.Resources.folder);
-            confImageList.Images.Add("open_folder", Properties.Resources.open_folder);
-            confImageList.Images.Add("book_red",    Properties.Resources.book_red1.ToBitmap());
-            confImageList.Images.Add("book_orange", Properties.Resources.book_orange1.ToBitmap());
-            confImageList.Images.Add("book_bule",   Properties.Resources.book_bule1.ToBitmap());
-            confImageList.Images.Add("book_green",  Properties.Resources.book_green1.ToBitmap());
+            confImageList.Images.Add("folder",         Properties.Resources.folder);
+            confImageList.Images.Add("open_folder",    Properties.Resources.open_folder);
+            confImageList.Images.Add("organization",   Properties.Resources.organization);
+            
+            // Try to load lightning_bolt1, fallback to book_red if not available
+            try
+            {
+                if (Properties.Resources.lightning_bolt1 != null)
+                {
+                    confImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1);
+                }
+                else
+                {
+                    confImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
+                }
+            }
+            catch
+            {
+                confImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
+            }
+            
+            confImageList.Images.Add("book_red",       Properties.Resources.lightning_bolt);
+            confImageList.Images.Add("book_orange",    Properties.Resources.book_orange);
+            confImageList.Images.Add("book_bule",      Properties.Resources.book_bule);
+            confImageList.Images.Add("book_green",     Properties.Resources.book_green1);
             _treeConfidentiality.ImageList        = confImageList;
             _treeConfidentiality.ImageKey         = "folder";
             _treeConfidentiality.SelectedImageKey = "open_folder";
@@ -1472,20 +1561,24 @@ namespace CMS.Presentation
             // ListView needs its own separate ImageList (WinForms does not allow sharing with TreeView)
             var listImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
             listImageList.Images.Add("folder",      Properties.Resources.folder);
+            try { listImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1); }
+            catch { listImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap()); }
             listImageList.Images.Add("book_red",    Properties.Resources.book_red1.ToBitmap());
-            listImageList.Images.Add("book_orange", Properties.Resources.book_orange1.ToBitmap());
-            listImageList.Images.Add("book_bule",   Properties.Resources.book_bule1.ToBitmap());
-            listImageList.Images.Add("book_green",  Properties.Resources.book_green1.ToBitmap());
+            listImageList.Images.Add("book_orange", Properties.Resources.book_orange);
+            listImageList.Images.Add("book_bule",   Properties.Resources.book_bule);
+            listImageList.Images.Add("book_green",  Properties.Resources.book_green);
             listImageList.Images.Add("file_docs",   Properties.Resources.File_docs.ToBitmap());
             contentsListView.SmallImageList = listImageList;
 
             // ── LargeImageList (32×32) for Large Icon view ────────────────────
             var largeImageList = new ImageList { ImageSize = new Size(32, 32), ColorDepth = ColorDepth.Depth32Bit };
             largeImageList.Images.Add("folder",      new Bitmap(Properties.Resources.folder,      32, 32));
-            largeImageList.Images.Add("book_red",    new Bitmap(Properties.Resources.book_red1.ToBitmap(),    32, 32));
-            largeImageList.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange1.ToBitmap(), 32, 32));
-            largeImageList.Images.Add("book_bule",   new Bitmap(Properties.Resources.book_bule1.ToBitmap(),   32, 32));
-            largeImageList.Images.Add("book_green",  new Bitmap(Properties.Resources.book_green1.ToBitmap(),  32, 32));
+            try { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.lightning_bolt1, 32, 32)); }
+            catch { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.book_red1.ToBitmap(), 32, 32)); }
+            largeImageList.Images.Add("book_red",    new Bitmap(Properties.Resources.lightning_bolt1,    32, 32));
+            largeImageList.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange, 32, 32));
+            largeImageList.Images.Add("book_bule",   new Bitmap(Properties.Resources.book_bule,   32, 32));
+            largeImageList.Images.Add("book_green",  new Bitmap(Properties.Resources.book_green,  32, 32));
             largeImageList.Images.Add("file_docs",   new Bitmap(Properties.Resources.File_docs.ToBitmap(),    32, 32));
             contentsListView.LargeImageList = largeImageList;
 
@@ -1753,9 +1846,15 @@ namespace CMS.Presentation
                 item.SubItems.Add(ConfidentialityShort(folder.ConfidentialityLevel)); // ระดับ
                 item.SubItems.Add(FormatBytes(folder.FolderSizeBytes));              // ขนาด
                 item.SubItems.Add(folder.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")); // วันที่
-                item.SubItems.Add("—");                                              // โดย
+                item.SubItems.Add(folder.CreatedByName ?? "—");                      // โดย
                 item.SubItems.Add("—");                                              // Ver
                 item.SubItems.Add(folder.OrgUnitName ?? "—");                        // หน่วยงาน
+                
+                // Check permissions for this folder
+                string permissionText = GetFolderPermissionText(folder);
+                var permSubItem = item.SubItems.Add(permissionText);                 // สิทธิ์
+                permSubItem.ForeColor = GetPermissionColor(permissionText);
+                
                 item.Tag       = folder;
                 item.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
                 item.UseItemStyleForSubItems = false;
@@ -1792,6 +1891,7 @@ namespace CMS.Presentation
                 item.SubItems.Add(file.UploadedByName ?? "—");                  // โดย
                 item.SubItems.Add(file.Version.ToString());                      // Ver
                 item.SubItems.Add(file.OrgUnitName ?? "—");                      // หน่วยงาน
+                item.SubItems.Add("—");                                          // สิทธิ์ (files inherit from folder)
                 item.Tag = file;
                 item.UseItemStyleForSubItems = false;
 
@@ -2051,37 +2151,42 @@ namespace CMS.Presentation
         {
             try
             {
-                // PushNavigation ก่อน — ต้อง push _currentNavFolderId เก่าเข้า stack ก่อนที่จะ update
                 PushNavigation(folder.FolderId);
-
                 _lastSelectedFolder = folder;
                 _currentNavFolderId = folder.FolderId;
-                
-                // แสดงทั้ง sub-folders และ files
+
                 _presenter.GetFolderContents(folder.FolderId);
-                
-                // สร้าง breadcrumb ใหม่ต่อจาก current
-                string newBreadcrumb = string.IsNullOrEmpty(_currentBreadcrumb)
-                    ? "🏠 PC  ›  " + folder.FolderName
-                    : _currentBreadcrumb + "  ›  " + folder.FolderName;
-                
-                // สร้าง IDs ใหม่ = IDs เดิม + folder ID ปัจจุบัน
-                // ให้ขนาดตรงกับ parts ของ newBreadcrumb
+
+                // Build breadcrumb จาก tree hierarchy แทน string-append
+                // เพื่อป้องกัน breadcrumb ยาวซ้ำเมื่อ navigate หลายชั้น
+                bool found = RestoreSelectedNode(folderTreeView.Nodes, folder.FolderId);
+                string newBreadcrumb;
+                if (found && folderTreeView.SelectedNode != null)
+                {
+                    newBreadcrumb = _selectedOrgUnit != null
+                        ? BuildBreadcrumbPathFromOrgUnit(_selectedOrgUnit, folderTreeView.SelectedNode)
+                        : BuildBreadcrumbPath(treeOrgUnit.SelectedNode, folderTreeView.SelectedNode);
+                }
+                else
+                {
+                    // Fallback: node ไม่อยู่ใน tree (เช่น conf view) → append เหมือนเดิม
+                    newBreadcrumb = string.IsNullOrEmpty(_currentBreadcrumb)
+                        ? "🏠 PC  ›  " + folder.FolderName
+                        : _currentBreadcrumb + "  ›  " + folder.FolderName;
+                }
+
                 var newParts = newBreadcrumb.Split(new string[] { "  ›  " }, StringSplitOptions.RemoveEmptyEntries);
                 var newIds = new List<int?>();
                 for (int i = 0; i < newParts.Length - 1; i++)
-                {
-                    // ใช้ ID เดิมถ้ามี ไม่งั้นใส่ null
                     newIds.Add(i < _breadcrumbFolderIds.Count ? _breadcrumbFolderIds[i] : (int?)null);
-                }
-                newIds.Add(folder.FolderId); // part สุดท้าย = folder ปัจจุบัน
-                
+                newIds.Add(folder.FolderId);
+
                 _breadcrumbFolderIds.Clear();
                 _breadcrumbFolderIds.AddRange(newIds);
-                
+
                 ApplyBreadcrumb(newBreadcrumb, newIds);
                 UpdateNavButtons();
-                
+
                 lblContentInfo.Text = string.Format("{0} รายการ | {1} | {2}",
                     folder.FileCount, ConfidentialityLabel(folder.ConfidentialityLevel), folder.FolderName);
                 lblConfidentialityBadge.Text      = ConfidentialityLabel(folder.ConfidentialityLevel);
@@ -2414,6 +2519,7 @@ namespace CMS.Presentation
                 case 5: return "โดย";
                 case 6: return "Ver";
                 case 7: return "หน่วยงาน";
+                case 8: return "สิทธิ์";
                 default: return string.Empty;
             }
         }
@@ -2424,8 +2530,8 @@ namespace CMS.Presentation
 
         private void AdjustNameColumnWidth()
         {
-            // คอลัมน์คงที่: ประเภท(70) + ระดับ(60) + ขนาด(80) + วันที่(110) + โดย(80) + Ver(36) + หน่วยงาน(130)
-            int fixedWidth = 70 + 60 + 80 + 110 + 80 + 36 + 130;
+            // คอลัมน์คงที่: ประเภท(80) + ระดับ(50) + ขนาด(70) + วันที่(120) + โดย(70) + Ver(40) + หน่วยงาน(140) + สิทธิ์(90)
+            int fixedWidth = 80 + 50 + 70 + 120 + 70 + 40 + 140 + 90;
             int scrollBar = SystemInformation.VerticalScrollBarWidth;
             int nameWidth = contentsListView.ClientSize.Width - fixedWidth - scrollBar;
             if (nameWidth > 100)
@@ -2465,12 +2571,12 @@ namespace CMS.Presentation
             
             _presenter.GetFolderContents(folder.FolderId);
 
-            // Build breadcrumb: OrgUnit path (from _selectedOrgUnit) + folder path (walk up tree node)
-            // ใช้ _selectedOrgUnit แทน treeOrgUnit.SelectedNode เพราะ async load อาจทำให้ SelectedNode เป็น null
-            string breadcrumbPath = BuildBreadcrumbPathFromOrgUnit(_selectedOrgUnit, e.Node);
+            // Build breadcrumb จาก tree hierarchy พร้อม OrgUnit prefix (ไม่ใช้ string-append)
+            string breadcrumbPath = _selectedOrgUnit != null
+                ? BuildBreadcrumbPathFromOrgUnit(_selectedOrgUnit, e.Node)
+                : BuildBreadcrumbPath(treeOrgUnit.SelectedNode, e.Node);
+
             var folderIdPath = BuildFolderIdPathAligned(breadcrumbPath, e.Node);
-            
-            // อัพเดท _breadcrumbFolderIds ก่อน ApplyBreadcrumb
             _breadcrumbFolderIds.Clear();
             _breadcrumbFolderIds.AddRange(folderIdPath);
             ApplyBreadcrumb(breadcrumbPath, folderIdPath);
@@ -2660,7 +2766,7 @@ namespace CMS.Presentation
                 Size = txtBreadcrumb.Size,
                 Anchor = txtBreadcrumb.Anchor,
                 BackColor = Color.White,
-                BorderStyle = BorderStyle.None
+                BorderStyle = BorderStyle.None,                
             };
             
             // Add click handler to switch to text mode when clicking on empty area
@@ -2708,7 +2814,7 @@ namespace CMS.Presentation
                     Text     = part,
                     AutoSize = true,
                     Location = new Point(x, y),
-                    Font     = new Font("Segoe UI", 9f, isLast ? FontStyle.Bold : FontStyle.Regular),
+                    Font     = new Font("Segoe UI", 10f, isLast ? FontStyle.Bold : FontStyle.Regular),
                     ForeColor = isLast ? Color.Black : Color.FromArgb(0, 102, 204),
                     Cursor   = isLast ? Cursors.Default : Cursors.Hand,
                     Tag      = folderId  // เก็บ folder ID โดยตรง
@@ -2724,12 +2830,12 @@ namespace CMS.Presentation
                     lblPart.MouseEnter += (s, e) =>
                     {
                         ((Label)s).ForeColor = Color.FromArgb(0, 60, 160);
-                        ((Label)s).Font = new Font("Segoe UI", 9f, FontStyle.Underline);
+                        ((Label)s).Font = new Font("Segoe UI", 10f, FontStyle.Underline);
                     };
                     lblPart.MouseLeave += (s, e) =>
                     {
                         ((Label)s).ForeColor = Color.FromArgb(0, 102, 204);
-                        ((Label)s).Font = new Font("Segoe UI", 9f, FontStyle.Regular);
+                        ((Label)s).Font = new Font("Segoe UI", 10f, FontStyle.Regular);
                     };
                 }
                 
@@ -2742,7 +2848,7 @@ namespace CMS.Presentation
                     {
                         Text = "›", AutoSize = true,
                         Location = new Point(x, y),
-                        Font = new Font("Segoe UI", 9f),
+                        Font = new Font("Segoe UI", 10f),
                         ForeColor = Color.Gray
                     };
                     panel.Controls.Add(lblSep);
@@ -2778,17 +2884,34 @@ namespace CMS.Presentation
                 var orgNode = FindOrgUnitNodeByName(treeOrgUnit.Nodes, partText);
                 if (orgNode != null)
                 {
-                    treeOrgUnit.SelectedNode = orgNode;
                     orgNode.EnsureVisible();
+                    if (treeOrgUnit.SelectedNode != orgNode)
+                    {
+                        // เปลี่ยน selection → AfterSelect จะ fire และโหลด content อัตโนมัติ
+                        treeOrgUnit.SelectedNode = orgNode;
+                    }
+                    else
+                    {
+                        // Node ถูกเลือกอยู่แล้ว → AfterSelect ไม่ fire → โหลด content เอง
+                        LoadOrgUnitNode(orgNode);
+                        ApplyBreadcrumb(BuildBreadcrumbPath(orgNode, null), new List<int?>());
+                    }
                     return;
                 }
-                
+
                 // ลองหาจาก folder tree
                 var folderNode = FindNodeByName(folderTreeView.Nodes, partText);
                 if (folderNode != null)
                 {
-                    folderTreeView.SelectedNode = folderNode;
-                    folderNode.EnsureVisible();
+                    var f = folderNode.Tag as Folder;
+                    if (f != null)
+                    {
+                        if (folderTreeView.SelectedNode != folderNode)
+                            folderTreeView.SelectedNode = folderNode;
+                        else
+                            _presenter.GetFolderContents(f.FolderId);
+                        folderNode.EnsureVisible();
+                    }
                     return;
                 }
                 
@@ -3099,20 +3222,12 @@ namespace CMS.Presentation
                 if (IsAuto4Folder(parent))
                 {
                     // parent คือ 1HC/2SC/3NC/4PC → สร้าง sub-folder ได้ทันที ล็อค level ตาม parent
-                    string folderName; int folderLevel;
-                    if (!PromptForNameAndLevel(
-                        string.Format("สร้าง Folder ใหม่ใต้ \"{0}\"", parent.FolderName),
-                        out folderName, out folderLevel, parent.ConfidentialityLevel)) return;
-                    _presenter.CreateFolder(parent.FolderId, folderName, parent.OrgUnitId, folderLevel);
+                    CreateSubFolderWithChoice(parent, parent.ConfidentialityLevel);
                 }
                 else if (IsUnderAuto4Folder(parent))
                 {
                     // parent อยู่ภายใต้ Auto4 → สร้าง sub-folder ได้ ล็อค level ตาม parent
-                    string folderName; int folderLevel;
-                    if (!PromptForNameAndLevel(
-                        string.Format("สร้าง Folder ใหม่ใต้ \"{0}\"", parent.FolderName),
-                        out folderName, out folderLevel, parent.ConfidentialityLevel)) return;
-                    _presenter.CreateFolder(parent.FolderId, folderName, parent.OrgUnitId, folderLevel);
+                    CreateSubFolderWithChoice(parent, parent.ConfidentialityLevel);
                 }
                 else
                 {
@@ -3140,11 +3255,55 @@ namespace CMS.Presentation
             }
             else
             {
-                string folderName; int folderLevel;
-                if (!PromptForNameAndLevel(
-                    string.Format("สร้าง Folder ใหม่ใต้ \"{0}\"", parent.FolderName),
-                    out folderName, out folderLevel)) return;
-                _presenter.CreateFolder(parent.FolderId, folderName, parent.OrgUnitId, folderLevel);
+                CreateSubFolderWithChoice(parent, null);
+            }
+        }
+
+        /// <summary>
+        /// ถามผู้ใช้ว่าต้องการสร้าง Sub-folder แบบ Blank หรือจาก Template
+        /// ถ้ามี _folderTemplateRepository จะแสดงตัวเลือก Template ให้
+        /// </summary>
+        private void CreateSubFolderWithChoice(Folder parent, int? lockedLevel)
+        {
+            // ถ้ามี template repository → เสนอทางเลือก
+            if (_folderTemplateRepository != null && _folderService != null && _orgStructureService != null)
+            {
+                using (var dlg = new FolderCreationChoiceDialog(parent.FolderName))
+                {
+                    if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                    if (dlg.SelectedChoice == FolderCreationChoiceDialog.Choice.Template)
+                    {
+                        OpenApplyTemplateFor(parent);
+                        return;
+                    }
+                    // Choice.Blank → fall through to blank folder creation below
+                }
+            }
+
+            // Blank folder
+            string folderName; int folderLevel;
+            if (!PromptForNameAndLevel(
+                string.Format("สร้าง Folder ใหม่ใต้ \"{0}\"", parent.FolderName),
+                out folderName, out folderLevel, lockedLevel)) return;
+            _presenter.CreateFolder(parent.FolderId, folderName, parent.OrgUnitId, folderLevel);
+        }
+
+        /// <summary>
+        /// เปิด ApplyTemplateDialog โดยกำหนด parent folder ไว้ล่วงหน้า
+        /// </summary>
+        private void OpenApplyTemplateFor(Folder parent)
+        {
+            using (var dlg = new ApplyTemplateDialog(_folderService, _folderTemplateRepository, _orgStructureService, _user, parent))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    _presenter.LoadFolderTree(_selectedOrgUnitId);
+                    _presenter.GetFolderContents(parent.FolderId);
+                    lblContentInfo.Text   = string.Format("กำลังดู: {0}", parent.FolderName);
+                    lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", parent.FolderName);
+                    ShowInfo("✅ สร้าง Folder จาก Template เรียบร้อยแล้ว");
+                }
             }
         }
 
@@ -3658,6 +3817,9 @@ namespace CMS.Presentation
             {
                 if (newName == folderTag.Name) return;  // ไม่มีอะไรเปลี่ยน
                 _presenter.RenameFolder(folderTag.FolderId, newName);
+                // Reload content list to show updated folder name
+                if (_currentNavFolderId.HasValue)
+                    _presenter.GetFolderContents(_currentNavFolderId.Value);
             }
         }
 
@@ -3947,28 +4109,111 @@ namespace CMS.Presentation
             return _user.AppRole >= (int)CMS.Domain.Enums.UserRole.Admin;
         }
 
-        /// <summary>Shows a simple dialog to collect a reason string. Returns null if user cancels.</summary>
+        /// <summary>Shows a navy-styled dialog to collect a reason string. Returns null if user cancels.</summary>
         private string PromptForReason(string prompt)
         {
+            Color navyDark  = Color.FromArgb(25,  55,  105);
+            Color navyLight = Color.FromArgb(215, 228, 248);
+            Color bodyBg    = Color.FromArgb(243, 246, 251);
+            Color footerBg  = Color.FromArgb(228, 234, 245);
+
             using (var dlg = new Form())
             {
                 dlg.Text            = "ระบุเหตุผล";
-                dlg.Width           = 420;
-                dlg.Height          = 180;
+                dlg.ClientSize      = new Size(420, 220);
                 dlg.StartPosition   = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox     = false;
                 dlg.MinimizeBox     = false;
+                dlg.BackColor       = bodyBg;
+                dlg.Font            = new System.Drawing.Font("Segoe UI", 9f);
 
-                var lbl       = new Label    { Text = prompt, Left = 12, Top = 12,  Width = 380, Height = 32, AutoSize = false };
-                var txt       = new TextBox  {                Left = 12, Top = 48,  Width = 380, Height = 24 };
-                var btnOk     = new Button   { Text = "ตกลง",   Left = 220, Top = 100, Width = 80, DialogResult = DialogResult.OK };
-                var btnCancel = new Button   { Text = "ยกเลิก", Left = 308, Top = 100, Width = 80, DialogResult = DialogResult.Cancel };
+                // ── Header bar ────────────────────────────────────────────────
+                var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = navyDark };
+                var lblHeader = new Label
+                {
+                    Text      = "🗑  ระบุเหตุผล",
+                    Font      = new System.Drawing.Font("Segoe UI", 11f, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    AutoSize  = true,
+                    Location  = new Point(14, 14),
+                };
+                pnlHeader.Controls.Add(lblHeader);
 
-                dlg.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
+                // ── Sub-header hint bar ───────────────────────────────────────
+                var lblHint = new Label
+                {
+                    Text      = "  คำขออนุมัติจะถูกส่งให้ Admin พิจารณา",
+                    Font      = new System.Drawing.Font("Segoe UI", 8.5f),
+                    ForeColor = Color.FromArgb(50, 70, 110),
+                    BackColor = navyLight,
+                    Size      = new Size(420, 24),
+                    Location  = new Point(0, 52),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                };
+
+                // ── Body ──────────────────────────────────────────────────────
+                var lblPrompt = new Label
+                {
+                    Text      = prompt,
+                    Font      = new System.Drawing.Font("Segoe UI", 9f),
+                    ForeColor = Color.FromArgb(30, 40, 65),
+                    Size      = new Size(392, 36),
+                    Location  = new Point(14, 88),
+                    AutoSize  = false,
+                };
+
+                var txt = new TextBox
+                {
+                    Location    = new Point(14, 128),
+                    Size        = new Size(392, 24),
+                    Font        = new System.Drawing.Font("Segoe UI", 9.5f),
+                    BorderStyle = BorderStyle.FixedSingle,
+                    BackColor   = Color.White,
+                };
+
+                // ── Footer bar ────────────────────────────────────────────────
+                var pnlFooter = new Panel
+                {
+                    Dock      = DockStyle.Bottom,
+                    Height    = 46,
+                    BackColor = footerBg,
+                };
+
+                var btnOk = new Button
+                {
+                    Text         = "ตกลง",
+                    Size         = new Size(88, 30),
+                    Location     = new Point(228, 8),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = navyDark,
+                    ForeColor    = Color.White,
+                    Font         = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    DialogResult = DialogResult.OK,
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+
+                var btnCancel = new Button
+                {
+                    Text         = "ยกเลิก",
+                    Size         = new Size(88, 30),
+                    Location     = new Point(322, 8),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = Color.FromArgb(220, 228, 245),
+                    ForeColor    = navyDark,
+                    Font         = new System.Drawing.Font("Segoe UI", 9f),
+                    DialogResult = DialogResult.Cancel,
+                };
+                btnCancel.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
+                btnCancel.FlatAppearance.BorderSize  = 1;
+
+                pnlFooter.Controls.AddRange(new Control[] { btnOk, btnCancel });
+
+                dlg.Controls.AddRange(new Control[] { pnlHeader, lblHint, lblPrompt, txt, pnlFooter });
                 dlg.AcceptButton = btnOk;
                 dlg.CancelButton = btnCancel;
 
+                txt.Select();
                 return dlg.ShowDialog(this) == DialogResult.OK ? txt.Text.Trim() : null;
             }
         }
@@ -4231,50 +4476,141 @@ namespace CMS.Presentation
         /// </summary>
         private static int? PromptForConfidentialityLevel(int current)
         {
-            using (var dlg    = new Form())
-            using (var layout = new TableLayoutPanel())
+            Color navyDark  = Color.FromArgb(25,  55,  105);
+            Color navyLight = Color.FromArgb(215, 228, 248);
+            Color bodyBg    = Color.FromArgb(243, 246, 251);
+            Color footerBg  = Color.FromArgb(228, 234, 245);
+
+            var levelColors = new[]
             {
-                dlg.Text            = "Change Confidentiality Level";
-                dlg.ClientSize      = new Size(320, 120);
+                Color.FromArgb(204,   0,   0),  // 1HC — Red
+                Color.FromArgb(220,  90,   0),  // 2SC — Orange
+                Color.FromArgb(  0, 100, 200),  // 3NC — Blue
+                Color.FromArgb(  0, 150,  50),  // 4PC — Green
+            };
+
+            using (var dlg = new Form())
+            {
+                dlg.Text            = "เปลี่ยนระดับความลับ";
+                dlg.ClientSize      = new Size(400, 218);
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.StartPosition   = FormStartPosition.CenterParent;
                 dlg.MaximizeBox     = false;
                 dlg.MinimizeBox     = false;
+                dlg.BackColor       = bodyBg;
+                dlg.Font            = new System.Drawing.Font("Segoe UI", 9f);
 
-                layout.Dock        = DockStyle.Fill;
-                layout.ColumnCount = 2;
-                layout.RowCount    = 2;
-                layout.Padding     = new Padding(8);
-                layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
-                layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+                // ── Header ────────────────────────────────────────────────────
+                var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = navyDark };
+                var lblHeader = new Label
+                {
+                    Text      = "🔒  เปลี่ยนระดับความลับ",
+                    Font      = new System.Drawing.Font("Segoe UI", 11f, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    AutoSize  = true,
+                    Location  = new Point(14, 14),
+                };
+                pnlHeader.Controls.Add(lblHeader);
 
-                var lblLevel = new Label { Text = "New Level:", Dock = DockStyle.Fill, TextAlign = System.Drawing.ContentAlignment.MiddleLeft };
-                var cboLevel = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+                // ── Hint bar ──────────────────────────────────────────────────
+                var lblHint = new Label
+                {
+                    Text      = "  การเปลี่ยนระดับจะมีผลกับ Folder และไฟล์ภายใน",
+                    Font      = new System.Drawing.Font("Segoe UI", 8.5f),
+                    ForeColor = Color.FromArgb(50, 70, 110),
+                    BackColor = navyLight,
+                    Size      = new Size(400, 24),
+                    Location  = new Point(0, 52),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                };
+
+                // ── Body ──────────────────────────────────────────────────────
+                var lblLevel = new Label
+                {
+                    Text      = "ระดับใหม่:",
+                    Font      = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(30, 40, 65),
+                    Location  = new Point(14, 92),
+                    AutoSize  = true,
+                };
+
+                var cboLevel = new ComboBox
+                {
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    DrawMode      = DrawMode.OwnerDrawFixed,
+                    ItemHeight    = 22,
+                    Location      = new Point(14, 114),
+                    Size          = new Size(372, 22),
+                    Font          = new System.Drawing.Font("Segoe UI", 9f),
+                };
                 cboLevel.Items.AddRange(new object[]
                 {
-                    "1HC — Highly Confidential",
-                    "2SC — Secret",
-                    "3NC — Non-Confidential",
-                    "4PC — Public/Common"
+                    "1HC — High Confidential",
+                    "2SC — Semi Confidential",
+                    "3NC — Normal Confidential",
+                    "4PC — Public Confidential",
                 });
                 cboLevel.SelectedIndex = current - 1;
+                cboLevel.DrawItem += (s2, e2) =>
+                {
+                    if (e2.Index < 0) return;
+                    e2.DrawBackground();
+                    var rc = e2.Bounds;
+                    var sq = new Rectangle(rc.X + 4, rc.Y + 4, 14, 14);
+                    using (var b = new SolidBrush(levelColors[e2.Index]))
+                        e2.Graphics.FillRectangle(b, sq);
+                    e2.Graphics.DrawRectangle(Pens.DimGray, sq);
+                    using (var b = new SolidBrush(
+                        (e2.State & DrawItemState.Disabled) != 0
+                            ? SystemColors.GrayText : e2.ForeColor))
+                        e2.Graphics.DrawString(
+                            cboLevel.Items[e2.Index].ToString(), e2.Font, b,
+                            new RectangleF(rc.X + 24, rc.Y + 3, rc.Width - 28, rc.Height));
+                    if ((e2.State & DrawItemState.Focus) != 0) e2.DrawFocusRectangle();
+                };
 
-                var pnlButtons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
-                var btnOk     = new Button { Text = "OK",     DialogResult = DialogResult.OK,     Width = 75 };
-                var btnCancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Width = 75 };
-                pnlButtons.Controls.Add(btnCancel);
-                pnlButtons.Controls.Add(btnOk);
+                // ── Footer ────────────────────────────────────────────────────
+                var pnlFooter = new Panel
+                {
+                    Dock      = DockStyle.Bottom,
+                    Height    = 46,
+                    BackColor = footerBg,
+                };
+
+                var btnOk = new Button
+                {
+                    Text         = "ตกลง",
+                    Size         = new Size(88, 30),
+                    Location     = new Point(210, 8),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = navyDark,
+                    ForeColor    = Color.White,
+                    Font         = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    DialogResult = DialogResult.OK,
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+
+                var btnCancel = new Button
+                {
+                    Text         = "ยกเลิก",
+                    Size         = new Size(88, 30),
+                    Location     = new Point(304, 8),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = Color.FromArgb(220, 228, 245),
+                    ForeColor    = navyDark,
+                    Font         = new System.Drawing.Font("Segoe UI", 9f),
+                    DialogResult = DialogResult.Cancel,
+                };
+                btnCancel.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
+                btnCancel.FlatAppearance.BorderSize  = 1;
+
+                pnlFooter.Controls.AddRange(new Control[] { btnOk, btnCancel });
+
+                dlg.Controls.AddRange(new Control[] { pnlHeader, lblHint, lblLevel, cboLevel, pnlFooter });
                 dlg.AcceptButton = btnOk;
                 dlg.CancelButton = btnCancel;
 
-                layout.Controls.Add(lblLevel,   0, 0); layout.Controls.Add(cboLevel,   1, 0);
-                layout.Controls.Add(pnlButtons, 0, 1);
-                layout.SetColumnSpan(pnlButtons, 2);
-
-                dlg.Controls.Add(layout);
-
                 if (dlg.ShowDialog() != DialogResult.OK) return null;
-
                 return cboLevel.SelectedIndex + 1;
             }
         }
@@ -4853,7 +5189,7 @@ namespace CMS.Presentation
         {
             switch (level)
             {
-                case 1: return "book_red";
+                case 1: return "lightning_bolt";
                 case 2: return "book_orange";
                 case 3: return "book_bule";
                 case 4: return "book_green";
@@ -4897,6 +5233,75 @@ namespace CMS.Presentation
             }
         }
 
+        /// <summary>Gets permission text for a folder based on user's access rights.</summary>
+        private string GetFolderPermissionText(Folder folder)
+        {
+            if (folder == null) return "—";
+            
+            bool isPrivileged = _user.AppRole >= 3; // Manager or Admin
+            
+            // Check authority-based permissions (FolderAuthorityConfig)
+            bool canView = isPrivileged || _user.CanViewFolder(folder.ConfidentialityLevel);
+            bool canAdd = isPrivileged || _user.CanAddToFolder(folder.ConfidentialityLevel);
+            bool canEdit = isPrivileged || _user.CanEditFolder(folder.ConfidentialityLevel);
+            
+            // Check ACL permissions if permission service is available
+            if (_permissionService != null && !isPrivileged)
+            {
+                try
+                {
+                    bool hasRead = _permissionService.CheckPermission(_user.UserID, folder.FolderId, "Read");
+                    bool hasWrite = _permissionService.CheckPermission(_user.UserID, folder.FolderId, "Write");
+                    bool hasModify = _permissionService.CheckPermission(_user.UserID, folder.FolderId, "Modify");
+                    
+                    // ACL overrides authority
+                    if (hasRead || hasWrite || hasModify)
+                    {
+                        canView = hasRead || hasWrite || hasModify;
+                        canAdd = hasWrite || hasModify;
+                        canEdit = hasModify;
+                    }
+                }
+                catch
+                {
+                    // If permission check fails, use authority-based permissions
+                }
+            }
+            
+            // Build permission text
+            if (!canView)
+                return "🔒 ไม่มีสิทธิ์";
+            
+            if (isPrivileged)
+                return "👑 เต็ม";
+            
+            if (canEdit)
+                return "✏️ แก้ไข";
+            
+            if (canAdd)
+                return "➕ เพิ่ม";
+            
+            return "👁️ อ่าน";
+        }
+
+        /// <summary>Gets color for permission text.</summary>
+        private static Color GetPermissionColor(string permissionText)
+        {
+            if (permissionText.Contains("ไม่มีสิทธิ์"))
+                return Color.FromArgb(180, 0, 0); // Red
+            
+            if (permissionText.Contains("เต็ม"))
+                return Color.FromArgb(0, 120, 0); // Dark green
+            
+            if (permissionText.Contains("แก้ไข"))
+                return Color.FromArgb(0, 100, 200); // Blue
+            
+            if (permissionText.Contains("เพิ่ม"))
+                return Color.FromArgb(200, 100, 0); // Orange
+            
+            return Color.FromArgb(100, 100, 100); // Gray for read-only
+        }
+
         /// <summary>Returns the ImageList key for a file based on its extension.</summary>
         private static string FileIcon(string ext)
         {
@@ -4917,11 +5322,45 @@ namespace CMS.Presentation
             var il = new ImageList { ImageSize = new Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
 
             // ── Folder icons from embedded PNG resources ──────────────────────
-            il.Images.Add("folder",      LoadPng("folder"));
-            il.Images.Add("book_red",    LoadPng("book-red"));
-            il.Images.Add("book_orange", LoadPng("book-orange"));
-            il.Images.Add("book_bule",   LoadPng("book-bule"));
-            il.Images.Add("book_green",  LoadPng("book-green"));
+            il.Images.Add("folder",         LoadPng("folder"));
+            
+            // Load lightning bolt - try embedded resource first, then file, then fallback
+            Image lightningIcon = null;
+            try
+            {
+                // Try embedded resource (PNG)
+                if (Properties.Resources.lightning_bolt1 != null)
+                {
+                    lightningIcon = new Bitmap(Properties.Resources.lightning_bolt1, 16, 16);
+                }
+            }
+            catch { }
+            
+            if (lightningIcon == null)
+            {
+                try
+                {
+                    // Try embedded resource (ICO)
+                    if (Properties.Resources.lightning_bolt != null)
+                    {
+                        lightningIcon = Properties.Resources.lightning_bolt.ToBitmap();
+                        lightningIcon = new Bitmap(lightningIcon, 16, 16);
+                    }
+                }
+                catch { }
+            }
+            
+            if (lightningIcon == null)
+            {
+                // Final fallback: load from file
+                lightningIcon = LoadPng("lightning-bolt");
+            }
+            
+            il.Images.Add("lightning_bolt", lightningIcon);
+            il.Images.Add("book_red",       LoadPng("book-red"));
+            il.Images.Add("book_orange",    LoadPng("book-orange"));
+            il.Images.Add("book_bule",      LoadPng("book-bule"));
+            il.Images.Add("book_green",     LoadPng("book-green"));
 
             // ── File icon from File-docs.ico resource ─────────────────────────
             il.Images.Add("file_docs", LoadIco("File-docs"));
@@ -5044,75 +5483,175 @@ namespace CMS.Presentation
             }
         }
 
-        /// <summary>Dialog ที่รับชื่อ Folder พร้อมเลือกระดับ คืนค่า null เมื่อ Cancel</summary>
+        /// <summary>Dialog ที่รับชื่อ Folder พร้อมเลือกระดับ — navy palette style</summary>
         private bool PromptForNameAndLevel(string title, out string name, out int confidentialityLevel, int? lockedLevel = null)
         {
-            name                = null;
+            name                 = null;
             confidentialityLevel = lockedLevel ?? 1;
 
-            using (var form   = new Form())
-            using (var label  = new Label())
-            using (var input  = new TextBox())
-            using (var lblLv  = new Label())
-            using (var combo  = new ComboBox())
-            using (var ok     = new Button())
-            using (var cancel = new Button())
+            Color navyDark  = Color.FromArgb(25,  55,  105);
+            Color navyLight = Color.FromArgb(215, 228, 248);
+            Color bodyBg    = Color.FromArgb(243, 246, 251);
+            Color footerBg  = Color.FromArgb(228, 234, 245);
+
+            var levelColors = new[]
+            {
+                Color.FromArgb(204,   0,   0),  // 1HC — Red
+                Color.FromArgb(220,  90,   0),  // 2SC — Orange
+                Color.FromArgb(  0, 100, 200),  // 3NC — Blue
+                Color.FromArgb(  0, 150,  50),  // 4PC — Green
+            };
+
+            using (var form = new Form())
             {
                 form.Text            = title;
-                form.ClientSize      = new Size(360, 155);
+                form.ClientSize      = new Size(400, 262);
                 form.FormBorderStyle = FormBorderStyle.FixedDialog;
                 form.StartPosition   = FormStartPosition.CenterParent;
                 form.MaximizeBox     = false;
                 form.MinimizeBox     = false;
-                form.Font            = new System.Drawing.Font("Tahoma", 9f);
+                form.BackColor       = bodyBg;
+                form.Font            = new System.Drawing.Font("Segoe UI", 9f);
 
-                label.Text     = "ชื่อ Folder:";
-                label.Location = new Point(12, 12);
-                label.Size     = new Size(336, 20);
+                // ── Header ────────────────────────────────────────────────────
+                var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = navyDark };
+                var lblHeader = new Label
+                {
+                    Text      = "📁  สร้าง Folder ใหม่",
+                    Font      = new System.Drawing.Font("Segoe UI", 11f, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    AutoSize  = true,
+                    Location  = new Point(14, 14),
+                };
+                pnlHeader.Controls.Add(lblHeader);
 
-                input.Location = new Point(12, 36);
-                input.Size     = new Size(336, 23);
-                input.Font     = new System.Drawing.Font("Tahoma", 9f);
+                // ── Sub-header hint bar ───────────────────────────────────────
+                var lblHint = new Label
+                {
+                    Text      = "  " + title,
+                    Font      = new System.Drawing.Font("Segoe UI", 8.5f),
+                    ForeColor = Color.FromArgb(50, 70, 110),
+                    BackColor = navyLight,
+                    Size      = new Size(400, 24),
+                    Location  = new Point(0, 52),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                };
 
-                lblLv.Text     = "ระดับ:";
-                lblLv.Location = new Point(12, 72);
-                lblLv.Size     = new Size(336, 20);
+                // ── Body ──────────────────────────────────────────────────────
+                var lblName = new Label
+                {
+                    Text      = "ชื่อ Folder:",
+                    Font      = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(30, 40, 65),
+                    Location  = new Point(14, 90),
+                    AutoSize  = true,
+                };
 
-                combo.DropDownStyle = ComboBoxStyle.DropDownList;
-                combo.Location      = new Point(12, 94);
-                combo.Size          = new Size(336, 23);
-                combo.Font          = new System.Drawing.Font("Tahoma", 9f);
+                var input = new TextBox
+                {
+                    Location    = new Point(14, 110),
+                    Size        = new Size(372, 24),
+                    Font        = new System.Drawing.Font("Segoe UI", 9.5f),
+                    BorderStyle = BorderStyle.FixedSingle,
+                    BackColor   = Color.White,
+                };
+
+                // ── Level label ───────────────────────────────────────────────
+                var lblLv = new Label
+                {
+                    Text      = lockedLevel.HasValue
+                                    ? "ระดับ: (กำหนดโดย Folder แม่ — ไม่สามารถเปลี่ยนได้)"
+                                    : "ระดับความลับ:",
+                    Font      = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(30, 40, 65),
+                    Location  = new Point(14, 146),
+                    AutoSize  = true,
+                };
+
+                // ── Color-coded combo ─────────────────────────────────────────
+                var combo = new ComboBox
+                {
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    DrawMode      = DrawMode.OwnerDrawFixed,
+                    ItemHeight    = 22,
+                    Location      = new Point(14, 166),
+                    Size          = new Size(372, 22),
+                    Font          = new System.Drawing.Font("Segoe UI", 9f),
+                };
                 combo.Items.AddRange(new object[]
                 {
                     "1HC — High Confidential",
                     "2SC — Semi Confidential",
                     "3NC — Normal Confidential",
-                    "4PC — Public Confidential"
+                    "4PC — Public Confidential",
                 });
                 combo.SelectedIndex = (lockedLevel.HasValue ? lockedLevel.Value : 1) - 1;
+                combo.DrawItem += (s2, e2) =>
+                {
+                    if (e2.Index < 0) return;
+                    e2.DrawBackground();
+                    var rc = e2.Bounds;
+                    var sq = new Rectangle(rc.X + 4, rc.Y + 4, 14, 14);
+                    using (var b = new SolidBrush(levelColors[e2.Index]))
+                        e2.Graphics.FillRectangle(b, sq);
+                    e2.Graphics.DrawRectangle(Pens.DimGray, sq);
+                    using (var b = new SolidBrush(
+                        (e2.State & DrawItemState.Disabled) != 0
+                            ? SystemColors.GrayText : e2.ForeColor))
+                        e2.Graphics.DrawString(
+                            combo.Items[e2.Index].ToString(), e2.Font, b,
+                            new RectangleF(rc.X + 24, rc.Y + 3, rc.Width - 28, rc.Height));
+                    if ((e2.State & DrawItemState.Focus) != 0) e2.DrawFocusRectangle();
+                };
 
-                // ถ้ามี lockedLevel → ล็อค dropdown ไม่ให้เปลี่ยน
                 if (lockedLevel.HasValue)
                 {
                     combo.Enabled   = false;
-                    combo.BackColor = System.Drawing.Color.FromArgb(240, 240, 240);
-                    lblLv.Text      = string.Format("ระดับ: (กำหนดโดย Folder แม่ — ไม่สามารถเปลี่ยนได้)");
+                    combo.BackColor = Color.FromArgb(235, 238, 245);
                 }
 
-                ok.Text           = "OK";
-                ok.DialogResult   = DialogResult.OK;
-                ok.Location       = new Point(192, 118);
-                ok.Size           = new Size(75, 26);
-                form.AcceptButton = ok;
+                // ── Footer ────────────────────────────────────────────────────
+                var pnlFooter = new Panel
+                {
+                    Dock      = DockStyle.Bottom,
+                    Height    = 46,
+                    BackColor = footerBg,
+                };
 
-                cancel.Text         = "Cancel";
-                cancel.DialogResult = DialogResult.Cancel;
-                cancel.Location     = new Point(273, 118);
-                cancel.Size         = new Size(75, 26);
-                form.CancelButton   = cancel;
+                var btnOk = new Button
+                {
+                    Text         = "ตกลง",
+                    Size         = new Size(88, 30),
+                    Location     = new Point(210, 8),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = navyDark,
+                    ForeColor    = Color.White,
+                    Font         = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    DialogResult = DialogResult.OK,
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
 
-                form.Controls.AddRange(new Control[] { label, input, lblLv, combo, ok, cancel });
+                var btnCancel = new Button
+                {
+                    Text         = "ยกเลิก",
+                    Size         = new Size(88, 30),
+                    Location     = new Point(304, 8),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = Color.FromArgb(220, 228, 245),
+                    ForeColor    = navyDark,
+                    Font         = new System.Drawing.Font("Segoe UI", 9f),
+                    DialogResult = DialogResult.Cancel,
+                };
+                btnCancel.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
+                btnCancel.FlatAppearance.BorderSize  = 1;
 
+                pnlFooter.Controls.AddRange(new Control[] { btnOk, btnCancel });
+
+                form.Controls.AddRange(new Control[] { pnlHeader, lblHint, lblName, input, lblLv, combo, pnlFooter });
+                form.AcceptButton = btnOk;
+                form.CancelButton = btnCancel;
+
+                input.Select();
                 if (form.ShowDialog(this) != DialogResult.OK) return false;
 
                 string value = input.Text.Trim();
@@ -5127,43 +5666,115 @@ namespace CMS.Presentation
         /// <summary>Simple single-line input dialog.</summary>
         private string PromptForName(string title, string prompt, string defaultValue)
         {
-            using (var form   = new Form())
-            using (var label  = new Label())
-            using (var input  = new TextBox())
-            using (var ok     = new Button())
+            // Color palette
+            var navyDark = Color.FromArgb(25, 55, 105);  // #193769
+            var navyLight = Color.FromArgb(215, 228, 248); // #D7E4F8
+            var bodyBg = Color.FromArgb(243, 246, 251);    // #F3F6FB
+
+            using (var form = new Form())
+            using (var pnlHeader = new Panel())
+            using (var lblTitle = new Label())
+            using (var pnlHint = new Panel())
+            using (var lblHint = new Label())
+            using (var pnlBody = new Panel())
+            using (var label = new Label())
+            using (var input = new TextBox())
+            using (var ok = new Button())
             using (var cancel = new Button())
             {
-                form.Text            = title;
-                form.ClientSize      = new Size(360, 110);
-                form.FormBorderStyle = FormBorderStyle.FixedDialog;
-                form.StartPosition   = FormStartPosition.CenterParent;
-                form.MaximizeBox     = false;
-                form.MinimizeBox     = false;
-                form.Font            = new System.Drawing.Font("Tahoma", 9f);
+                // Form settings
+                form.Text = title;
+                form.ClientSize = new Size(500, 240);
+                form.FormBorderStyle = FormBorderStyle.None;
+                form.StartPosition = FormStartPosition.CenterParent;
+                form.MaximizeBox = false;
+                form.MinimizeBox = false;
+                form.BackColor = bodyBg;
+                form.Padding = new Padding(1);
 
-                label.Text     = prompt;
-                label.Location = new Point(12, 12);
-                label.Size     = new Size(336, 20);
+                // Header panel (navy dark background + white text bold)
+                pnlHeader.Dock = DockStyle.Top;
+                pnlHeader.Height = 60;
+                pnlHeader.BackColor = navyDark;
+                pnlHeader.Padding = new Padding(20, 0, 20, 0);
 
-                input.Text     = defaultValue ?? string.Empty;
-                input.Location = new Point(12, 36);
-                input.Size     = new Size(336, 23);
-                input.Font     = new System.Drawing.Font("Tahoma", 9f);
+                lblTitle.Text = "📝 " + title;
+                lblTitle.Font = new Font("Segoe UI", 13f, FontStyle.Bold);
+                lblTitle.ForeColor = Color.White;
+                lblTitle.Dock = DockStyle.Fill;
+                lblTitle.TextAlign = ContentAlignment.MiddleLeft;
+                pnlHeader.Controls.Add(lblTitle);
+
+                // Hint bar (navy light background + navy dark text)
+                pnlHint.Dock = DockStyle.Top;
+                pnlHint.Height = 40;
+                pnlHint.BackColor = navyLight;
+                pnlHint.Padding = new Padding(20, 0, 20, 0);
+
+                lblHint.Text = "💡 คำขอจะส่งไปยัง Admin เพื่อพิจารณาอนุมัติ";
+                lblHint.Font = new Font("Segoe UI", 9f);
+                lblHint.ForeColor = navyDark;
+                lblHint.Dock = DockStyle.Fill;
+                lblHint.TextAlign = ContentAlignment.MiddleLeft;
+                pnlHint.Controls.Add(lblHint);
+
+                // Body panel (light background)
+                pnlBody.Dock = DockStyle.Fill;
+                pnlBody.BackColor = bodyBg;
+                pnlBody.Padding = new Padding(20);
+
+                label.Text = prompt;
+                label.Location = new Point(0, 10);
+                label.Size = new Size(440, 25);
+                label.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+                label.ForeColor = navyDark;
+
+                input.Text = defaultValue ?? string.Empty;
+                input.Location = new Point(0, 40);
+                input.Size = new Size(440, 28);
+                input.Font = new Font("Segoe UI", 10f);
+                input.BorderStyle = BorderStyle.FixedSingle;
                 input.SelectAll();
 
-                ok.Text           = "OK";
-                ok.DialogResult   = DialogResult.OK;
-                ok.Location       = new Point(192, 72);
-                ok.Size           = new Size(75, 26);
+                // OK button (navy dark background + white text bold)
+                ok.Text = "ตกลง";
+                ok.DialogResult = DialogResult.OK;
+                ok.Location = new Point(240, 85);
+                ok.Size = new Size(95, 38);
+                ok.BackColor = navyDark;
+                ok.ForeColor = Color.White;
+                ok.Font = new Font("Segoe UI", 10f, FontStyle.Bold);
+                ok.FlatStyle = FlatStyle.Flat;
+                ok.FlatAppearance.BorderSize = 0;
+                ok.Cursor = Cursors.Hand;
                 form.AcceptButton = ok;
 
-                cancel.Text         = "Cancel";
+                // Cancel button (navy light background + navy dark text)
+                cancel.Text = "ยกเลิก";
                 cancel.DialogResult = DialogResult.Cancel;
-                cancel.Location     = new Point(273, 72);
-                cancel.Size         = new Size(75, 26);
-                form.CancelButton   = cancel;
+                cancel.Location = new Point(345, 85);
+                cancel.Size = new Size(95, 38);
+                cancel.BackColor = navyLight;
+                cancel.ForeColor = navyDark;
+                cancel.Font = new Font("Segoe UI", 10f);
+                cancel.FlatStyle = FlatStyle.Flat;
+                cancel.FlatAppearance.BorderSize = 0;
+                cancel.Cursor = Cursors.Hand;
+                form.CancelButton = cancel;
 
-                form.Controls.AddRange(new Control[] { label, input, ok, cancel });
+                pnlBody.Controls.AddRange(new Control[] { label, input, ok, cancel });
+                form.Controls.Add(pnlBody);
+                form.Controls.Add(pnlHint);
+                form.Controls.Add(pnlHeader);
+
+                // Add shadow effect
+                form.Paint += (s, e) =>
+                {
+                    using (var pen = new Pen(Color.FromArgb(100, 100, 100), 1))
+                    {
+                        e.Graphics.DrawRectangle(pen, 0, 0, form.Width - 1, form.Height - 1);
+                    }
+                };
 
                 if (form.ShowDialog(this) == DialogResult.OK)
                 {

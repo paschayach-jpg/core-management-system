@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -40,7 +41,7 @@ namespace CMS.Presentation
         // UI
         // ════════════════════════════════════════════════════════════════════
         private Label  _lblFileName, _lblSize, _lblType, _lblFolder, _lblStatus;
-        private Button _btnDownload;
+        private Button _btnDownload, _btnOpen;
 
         private void BuildUI()
         {
@@ -99,11 +100,25 @@ namespace CMS.Presentation
             AddRow(pnlInfo, 4, "สถานะ :",        _lblStatus);
 
             // Buttons
+            _btnOpen = new Button
+            {
+                Text      = "👁  เปิดดู",
+                Size      = new Size(110, 32),
+                Location  = new Point(20, 240),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(50, 90, 150),
+                ForeColor = Color.White,
+                Font      = boldFont,
+                Enabled   = false,
+            };
+            _btnOpen.FlatAppearance.BorderSize = 0;
+            _btnOpen.Click += (s, e) => DoOpen();
+
             _btnDownload = new Button
             {
                 Text      = "⬇  ดาวน์โหลด",
                 Size      = new Size(130, 32),
-                Location  = new Point(20, 240),
+                Location  = new Point(138, 240),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = navyDark,
                 ForeColor = Color.White,
@@ -127,7 +142,7 @@ namespace CMS.Presentation
             btnClose.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
             btnClose.FlatAppearance.BorderSize  = 1;
 
-            Controls.AddRange(new Control[] { pnlHeader, pnlInfo, _btnDownload, btnClose });
+            Controls.AddRange(new Control[] { pnlHeader, pnlInfo, _btnOpen, _btnDownload, btnClose });
             Load += (s, e) => LoadFileInfo();
         }
 
@@ -167,11 +182,39 @@ namespace CMS.Presentation
                 _lblStatus.Text   = _doc.IsDeleted ? "⚠ ถูกลบแล้ว" : "✔ พร้อมใช้งาน";
 
                 _btnDownload.Enabled = !_doc.IsDeleted;
+                _btnOpen.Enabled     = !_doc.IsDeleted;
             }
             catch (Exception ex)
             {
                 MessageBox.Show("โหลดข้อมูลไม่สำเร็จ: " + ex.Message, "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void DoOpen()
+        {
+            if (_doc == null) return;
+            try
+            {
+                var result = _fileService.DownloadFile(_fileId, _user);
+                if (result == null || !result.Success)
+                {
+                    MessageBox.Show("เปิดไฟล์ไม่สำเร็จ: " + (result?.ErrorMessage ?? "Unknown error"),
+                        "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // บันทึกลง temp folder แล้วเปิดด้วย default program
+                string tempPath = Path.Combine(Path.GetTempPath(), _doc.OriginalFileName);
+                using (var fs = File.Create(tempPath))
+                    result.FileStream.CopyTo(fs);
+
+                Process.Start(new ProcessStartInfo(tempPath) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

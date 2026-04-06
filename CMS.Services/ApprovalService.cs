@@ -19,6 +19,7 @@ namespace CMS.Services
     {
         private readonly IApprovalRepository     _approvalRepository;
         private readonly IFolderRepository       _folderRepository;
+        private readonly IFolderService          _folderService;
         private readonly IPermissionService      _permissionService;
         private readonly INotificationRepository _notificationRepository;
         private readonly IUserAccountRepository  _userAccountRepository;
@@ -28,6 +29,7 @@ namespace CMS.Services
         public ApprovalService(
             IApprovalRepository     approvalRepository,
             IFolderRepository       folderRepository,
+            IFolderService          folderService,
             IPermissionService      permissionService,
             INotificationRepository notificationRepository,
             IUserAccountRepository  userAccountRepository,
@@ -36,6 +38,7 @@ namespace CMS.Services
         {
             if (approvalRepository     == null) throw new ArgumentNullException("approvalRepository");
             if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
+            if (folderService          == null) throw new ArgumentNullException("folderService");
             if (permissionService      == null) throw new ArgumentNullException("permissionService");
             if (notificationRepository == null) throw new ArgumentNullException("notificationRepository");
             if (userAccountRepository  == null) throw new ArgumentNullException("userAccountRepository");
@@ -44,6 +47,7 @@ namespace CMS.Services
 
             _approvalRepository     = approvalRepository;
             _folderRepository       = folderRepository;
+            _folderService          = folderService;
             _permissionService      = permissionService;
             _notificationRepository = notificationRepository;
             _userAccountRepository  = userAccountRepository;
@@ -233,6 +237,21 @@ namespace CMS.Services
                             approvalRequest.FolderID.Value, step.RequestID, ex.Message), ex);
                     }
                 }
+                else if (approvalRequest.RequestType == "CREATE_HC")
+                {
+                    try
+                    {
+                        _folderService.CreateHCFolderAfterApproval(approvalRequest, user);
+                        Log(user, "Folder", "CREATE_HC_APPROVED", "workflow.ApprovalRequest", step.RequestID, 1,
+                            string.Format("HC Folder created after approval of request {0}.", step.RequestID));
+                    }
+                    catch (Exception ex)
+                    {
+                        _loggingService.Error(string.Format(
+                            "ApprovalService.ApproveStep: Failed to create HC folder for request {0}. {1}",
+                            step.RequestID, ex.Message), ex);
+                    }
+                }
 
                 NotifyUser(approvalRequest.RequestedBy, "ApprovalRequestApproved",
                     step.RequestID.ToString(),
@@ -395,22 +414,30 @@ namespace CMS.Services
             int requestId = _approvalRepository.InsertRequest(approvalRequest);
             approvalRequest.RequestID = requestId;
 
-            var firstAdmin = admins.First();
-            _approvalRepository.InsertStep(new ApprovalStep
+            // ส่ง step ให้ Admin ทุกคน (ยกเว้นตัวเอง) เพื่อให้ Admin คนใดก็ได้อนุมัติ
+            var approvers = admins.Where(a => a.UserID != user.UserID).ToList();
+            if (!approvers.Any())
+                approvers = admins; // ถ้ามีแค่ Admin คนเดียวและเป็นตัวเอง ให้อนุมัติตัวเองได้
+
+            int stepOrder = 1;
+            foreach (var admin in approvers)
             {
-                RequestID  = requestId,
-                StepOrder  = 1,
-                ApproverID = firstAdmin.UserID,
-                StepStatus = 1 // Pending
-            });
+                _approvalRepository.InsertStep(new ApprovalStep
+                {
+                    RequestID  = requestId,
+                    StepOrder  = stepOrder++,
+                    ApproverID = admin.UserID,
+                    StepStatus = 1
+                });
+
+                NotifyUser(admin.UserID, "DeleteFolderRequested", requestId.ToString(),
+                    string.Format("มีคำขออนุมัติลบ Folder '{0}' (คำขอ ID {1}) รออนุมัติจากคุณ",
+                        folder.FolderName, requestId));
+            }
 
             Log(user, "Workflow", "CREATE", "workflow.ApprovalRequest", requestId, 1,
                 string.Format("DELETE_FOLDER request created for Folder {0}. Subject: {1}",
                     folderId, approvalRequest.Subject));
-
-            NotifyUser(firstAdmin.UserID, "DeleteFolderRequested", requestId.ToString(),
-                string.Format("มีคำขออนุมัติลบ Folder '{0}' (คำขอ ID {1}) รออนุมัติจากคุณ",
-                    folder.FolderName, requestId));
 
             return approvalRequest;
         }

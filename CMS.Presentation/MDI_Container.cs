@@ -602,8 +602,9 @@ namespace CMS.Presentation
             _grpSystem.ToolTipText = "ตั้งค่าระบบ (Admin เท่านั้น)";
             _grpSystem.DropDownItems.AddRange(new ToolStripItem[]
             {
-                new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",       null, (s, e) => OpenSysConfig()),
+                new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",            null, (s, e) => OpenSysConfig()),
                 new ToolStripMenuItem("🔐 จัดการสิทธิ์ Authority", null, (s, e) => OpenAuthorityConfig()),
+                new ToolStripMenuItem("🔄 Sync ข้อมูลพนักงาน",    null, (s, e) => SyncEmployeeFromApi()),
             });
 
             ribbonStripAdmin.Items.AddRange(new ToolStripItem[]
@@ -1183,7 +1184,7 @@ namespace CMS.Presentation
         {
             if (_configManager != null)
             {
-                var form = new ConfigAdminForm(_configManager, _auditService, _currentUser, _fileService, _userAccountRepository, _employeeApiService, _folderAuthorityService);
+                var form = new ConfigAdminForm(_configManager, _auditService, _currentUser, _fileService, _userAccountRepository);
                 form.GeneratePdpaReportRequested += (s, e) => OpenPdpaReport();
                 OpenChildForm(form);
             }
@@ -1201,6 +1202,80 @@ namespace CMS.Presentation
             else
                 MessageBox.Show("FolderAuthority service ไม่พร้อมใช้งาน", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private void SyncEmployeeFromApi()
+        {
+            if (_employeeApiService == null || _userAccountRepository == null)
+            {
+                MessageBox.Show("Employee API service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                "ต้องการ Sync ข้อมูลพนักงานจาก API สำหรับ users ทั้งหมดหรือไม่?\n\n" +
+                "ระบบจะ match ADUserName กับ EmployeeCode จาก API\n" +
+                "และอัพเดท Department / Division / Position",
+                "Sync Employee Info",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                int updated = 0, skipped = 0, failed = 0;
+
+                var allUsers     = _userAccountRepository.GetAll().ToList();
+                var allEmployees = _employeeApiService.GetAllEmployees().ToList();
+
+                var empLookup = new Dictionary<string, CMS.Domain.Models.EmployeeSummary>(
+                    StringComparer.OrdinalIgnoreCase);
+                foreach (var emp in allEmployees)
+                    if (!string.IsNullOrEmpty(emp.EmployeeCode))
+                        empLookup[emp.EmployeeCode] = emp;
+
+                foreach (var u in allUsers)
+                {
+                    try
+                    {
+                        string adUser = u.ADUserName ?? "";
+                        CMS.Domain.Models.EmployeeSummary emp = null;
+
+                        if (!empLookup.TryGetValue(adUser, out emp) && adUser.Contains("\\"))
+                        {
+                            string username = adUser.Substring(adUser.LastIndexOf('\\') + 1);
+                            empLookup.TryGetValue(username, out emp);
+                        }
+
+                        if (emp == null) { skipped++; continue; }
+
+                        _userAccountRepository.UpdateEmployeeInfo(
+                            u.UserID, emp.EmployeeCode,
+                            null, null, null,
+                            null, null, null,
+                            emp.DepartmentId, emp.DepartmentCode, emp.DepartmentNameEn, emp.DepartmentNameTh,
+                            emp.DivisionId,   emp.DivisionCode,   emp.DivisionNameEn,   emp.DivisionNameTh,
+                            null);
+                        updated++;
+                    }
+                    catch { failed++; }
+                }
+
+                Cursor = Cursors.Default;
+                MessageBox.Show(
+                    string.Format("Sync เสร็จสิ้น\n\n✓ อัพเดท: {0} คน\n— ไม่พบใน API: {1} คน\n✗ ผิดพลาด: {2} คน",
+                        updated, skipped, failed),
+                    "Sync Employee Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                Cursor = Cursors.Default;
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void OpenUserAccess()
@@ -1267,25 +1342,153 @@ namespace CMS.Presentation
             UserAccount selectedUser = null;
             using (var dlg = new Form())
             {
-                dlg.Text = "เลือกผู้ใช้สำหรับ PDPA Report";
-                dlg.Size = new Size(380, 280);
-                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.Text            = "เลือกผู้ใช้สำหรับ PDPA Report";
+                dlg.ClientSize      = new Size(480, 380);
+                dlg.StartPosition   = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.MaximizeBox = false;
+                dlg.MaximizeBox     = false;
+                dlg.MinimizeBox     = false;
+                dlg.BackColor       = Color.FromArgb(245, 247, 250);
+                dlg.Font            = new Font("Segoe UI", 9f);
 
-                var lb        = new ListBox { Left = 12, Top = 12, Width = 340, Height = 160 };
-                var btnOk     = new Button { Text = "ตกลง",   DialogResult = DialogResult.OK,     Left = 192, Top = 188, Width = 80 };
-                var btnCancel = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Left = 278, Top = 188, Width = 80 };
+                // ── Header ────────────────────────────────────────────────────
+                var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = Color.FromArgb(0, 51, 102) };
+                pnlHdr.Controls.Add(new Label
+                {
+                    Text      = "📋  เลือกผู้ใช้สำหรับ PDPA Report",
+                    Dock      = DockStyle.Fill,
+                    ForeColor = Color.White,
+                    Font      = new Font("Segoe UI", 11f, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding   = new Padding(16, 0, 0, 0)
+                });
 
-                lb.Items.AddRange(users.Cast<object>().ToArray());
-                lb.DisplayMember = "DisplayName";
+                // ── Footer ────────────────────────────────────────────────────
+                var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 52, BackColor = Color.FromArgb(238, 240, 245) };
+                var footerLine = new Panel { Dock = DockStyle.Top, Height = 1, BackColor = Color.FromArgb(210, 215, 225) };
 
-                dlg.Controls.AddRange(new Control[] { lb, btnOk, btnCancel });
+                var btnOk = new Button
+                {
+                    Text      = "ตกลง",
+                    Size      = new Size(90, 30),
+                    BackColor = Color.FromArgb(0, 51, 102),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    Enabled   = false,
+                    Anchor    = AnchorStyles.Right | AnchorStyles.Top
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+
+                var btnCancel = new Button
+                {
+                    Text         = "ยกเลิก",
+                    Size         = new Size(80, 30),
+                    BackColor    = Color.White,
+                    ForeColor    = Color.FromArgb(60, 60, 60),
+                    FlatStyle    = FlatStyle.Flat,
+                    DialogResult = DialogResult.Cancel,
+                    Anchor       = AnchorStyles.Right | AnchorStyles.Top
+                };
+                btnCancel.FlatAppearance.BorderColor = Color.FromArgb(190, 190, 190);
+
+                pnlFooter.Controls.Add(footerLine);
+                pnlFooter.Controls.Add(btnOk);
+                pnlFooter.Controls.Add(btnCancel);
+                pnlFooter.Resize += (s, e) =>
+                {
+                    btnCancel.Left = pnlFooter.ClientSize.Width - btnCancel.Width - 12;
+                    btnOk.Left     = btnCancel.Left - btnOk.Width - 8;
+                    btnOk.Top      = btnCancel.Top = (pnlFooter.Height - btnOk.Height) / 2 + 1;
+                };
+
+                // ── Search box ────────────────────────────────────────────────
+                var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 38, BackColor = Color.White, Padding = new Padding(8, 5, 8, 5) };
+                bool isPlaceholder = true;
+                var txtSearch = new TextBox
+                {
+                    Dock      = DockStyle.Fill,
+                    Font      = new Font("Segoe UI", 10f),
+                    ForeColor = Color.Gray,
+                    Text      = "🔍  ค้นหาชื่อผู้ใช้..."
+                };
+                txtSearch.GotFocus  += (s, e) => { if (!isPlaceholder) return; isPlaceholder = false; txtSearch.Text = ""; txtSearch.ForeColor = Color.Black; };
+                txtSearch.LostFocus += (s, e) => { if (!string.IsNullOrWhiteSpace(txtSearch.Text)) return; isPlaceholder = true; txtSearch.Text = "🔍  ค้นหาชื่อผู้ใช้..."; txtSearch.ForeColor = Color.Gray; };
+                pnlSearch.Controls.Add(txtSearch);
+
+                // ── ListView ──────────────────────────────────────────────────
+                var lv = new ListView
+                {
+                    Dock          = DockStyle.Fill,
+                    View          = View.Details,
+                    FullRowSelect = true,
+                    GridLines     = false,
+                    MultiSelect   = false,
+                    Font          = new Font("Segoe UI", 10f),
+                    BackColor     = Color.White,
+                    BorderStyle   = BorderStyle.None
+                };
+                lv.Columns.Add("ชื่อ-นามสกุล", 220);
+                lv.Columns.Add("AD Username",  140);
+                lv.Columns.Add("ตำแหน่ง",      100);
+
+                var allItems = new List<ListViewItem>();
+                foreach (var u in users)
+                {
+                    string displayName = !string.IsNullOrEmpty(u.FullNameTh) ? u.FullNameTh
+                                       : !string.IsNullOrEmpty(u.DisplayName) ? u.DisplayName
+                                       : u.ADUserName ?? "-";
+                    var item = new ListViewItem(displayName);
+                    item.SubItems.Add(u.ADUserName ?? "-");
+                    item.SubItems.Add(!string.IsNullOrEmpty(u.PositionName) ? u.PositionName
+                                     : u.AppRole == 4 ? "Admin" : "User");
+                    item.Tag = u;
+                    allItems.Add(item);
+                }
+                lv.Items.AddRange(allItems.ToArray());
+
+                // search filter
+                txtSearch.TextChanged += (s, e) =>
+                {
+                    if (isPlaceholder) return;
+                    string kw = txtSearch.Text.Trim().ToLower();
+                    lv.BeginUpdate();
+                    lv.Items.Clear();
+                    var filtered = string.IsNullOrEmpty(kw)
+                        ? allItems
+                        : allItems.Where(r =>
+                            r.Text.ToLower().Contains(kw) ||
+                            (r.SubItems.Count > 1 && r.SubItems[1].Text.ToLower().Contains(kw))).ToList();
+                    lv.Items.AddRange(filtered.ToArray());
+                    lv.EndUpdate();
+                    btnOk.Enabled = lv.SelectedItems.Count > 0;
+                };
+
+                lv.SelectedIndexChanged += (s, e) => btnOk.Enabled = lv.SelectedItems.Count > 0;
+
+                Action confirm = () =>
+                {
+                    if (lv.SelectedItems.Count == 0) return;
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                };
+                btnOk.Click    += (s, e) => confirm();
+                lv.DoubleClick += (s, e) => confirm();
+
+                // ── Assemble ──────────────────────────────────────────────────
+                var pnlBody = new Panel { Dock = DockStyle.Fill, Padding = new Padding(1) };
+                pnlBody.Controls.Add(lv);
+                pnlBody.Controls.Add(pnlSearch);
+
+                dlg.Controls.Add(pnlBody);
+                dlg.Controls.Add(pnlFooter);
+                dlg.Controls.Add(pnlHdr);
                 dlg.AcceptButton = btnOk;
                 dlg.CancelButton = btnCancel;
+                dlg.Shown += (s, e) => txtSearch.Focus();
 
-                if (dlg.ShowDialog(this) != DialogResult.OK || lb.SelectedItem == null) return;
-                selectedUser = (UserAccount)lb.SelectedItem;
+                if (dlg.ShowDialog(this) != DialogResult.OK || lv.SelectedItems.Count == 0) return;
+                selectedUser = (UserAccount)lv.SelectedItems[0].Tag;
             }
 
             try

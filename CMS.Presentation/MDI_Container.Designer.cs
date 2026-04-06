@@ -709,6 +709,7 @@ namespace CMS.Presentation
             this.btnRibbonNewFolder.Size = new System.Drawing.Size(99, 23);
             this.btnRibbonNewFolder.Text = "📁 Folder ใหม่";
             this.btnRibbonNewFolder.ToolTipText = "สร้าง Folder ใหม่";
+            this.btnRibbonNewFolder.Visible = false;
             // 
             // btnRibbonDownload
             // 
@@ -716,6 +717,7 @@ namespace CMS.Presentation
             this.btnRibbonDownload.Size = new System.Drawing.Size(83, 23);
             this.btnRibbonDownload.Text = "⬇ ดาวน์โหลด";
             this.btnRibbonDownload.ToolTipText = "ดาวน์โหลดไฟล์ที่เลือก";
+            this.btnRibbonDownload.Visible = false;
             // 
             // btnRibbonRename
             // 

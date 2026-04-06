@@ -54,15 +54,7 @@ namespace CMS.Presentation
                 var userOrgVisibilityService = new UserOrgVisibilityService(userOrgVisibilityRepo, orgUnitRepository, auditService);
 
                 var orgStructureService = new OrgStructureService(orgUnitRepository, auditService, userOrgVisibilityService);
-                var approvalService     = new ApprovalService(
-                    approvalRepository,
-                    folderRepository,
-                    permissionService,
-                    notificationRepository,
-                    userAccountRepo,
-                    auditService,
-                    loggingService);
-
+                
                 var networkDriveHelper  = new NetworkDriveHelper(configManager);
                 var clamAvAdapter       = new ClamAVAdapter(configManager);
                 var virusScanService    = new VirusScanService(
@@ -82,7 +74,18 @@ namespace CMS.Presentation
                     auditService,
                     folderTemplateRepository,
                     approvalRepository,
-                    userOrgVisibilityService);
+                    userOrgVisibilityService,
+                    userAccountRepo);
+
+                var approvalService     = new ApprovalService(
+                    approvalRepository,
+                    folderRepository,
+                    folderService,
+                    permissionService,
+                    notificationRepository,
+                    userAccountRepo,
+                    auditService,
+                    loggingService);
 
                 var fileService = new FileService(
                     fileDocumentRepository,

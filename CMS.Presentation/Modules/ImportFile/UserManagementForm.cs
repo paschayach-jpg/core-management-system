@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using CMS.Data.Interfaces;
@@ -128,6 +129,7 @@ namespace CMS.Presentation
                 item.SubItems.Add(u.DepartmentName ?? "");
                 item.SubItems.Add(u.DivisionName   ?? "");
                 item.SubItems.Add(u.PositionName   ?? "");
+                item.SubItems.Add(u.LevelCode      ?? "");
                 item.SubItems.Add(RoleName(u.AppRole));
                 item.SubItems.Add(u.IsActive ? "ใช้งาน" : "ปิดใช้");
                 item.SubItems.Add(u.LastLoginDate.HasValue
@@ -137,7 +139,12 @@ namespace CMS.Presentation
                 lvUsers.Items.Add(item);
             }
             lvUsers.EndUpdate();
-            SetStatus(string.Format("{0} รายการ", users.Count), Color.Gray);
+            
+            // แสดง status พร้อมจำนวนรายการ
+            if (users.Count == _allUsers.Count)
+                SetStatus(string.Format("แสดงทั้งหมด {0} รายการ", users.Count), Color.Gray);
+            else
+                SetStatus(string.Format("แสดง {0} จาก {1} รายการ (กรองแล้ว)", users.Count, _allUsers.Count), Color.FromArgb(25, 55, 105));
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -153,10 +160,21 @@ namespace CMS.Presentation
                 var u = lvUsers.SelectedItems[0].Tag as UserAccount;
                 btnToggle.Text    = (u != null && u.IsActive) ? "🔒 ปิดใช้งาน" : "🔓 เปิดใช้งาน";
                 btnToggle.Enabled = u != null;
+                
+                // แสดงข้อมูลที่เลือก
+                if (u != null)
+                {
+                    string selectionInfo = string.Format("เลือก: {0} ({1}) - {2}", 
+                        u.DisplayName ?? u.ADUserName, 
+                        u.EmployeeCode ?? "ไม่มีรหัส",
+                        u.OrgDisplay ?? "ไม่ระบุหน่วยงาน");
+                    SetStatus(selectionInfo, Color.FromArgb(25, 55, 105));
+                }
             }
             else
             {
                 btnToggle.Enabled = false;
+                SetStatus(string.Format("ทั้งหมด {0} รายการ", lvUsers.Items.Count), Color.Gray);
             }
         }
 
@@ -239,52 +257,201 @@ namespace CMS.Presentation
             bool isNew = user == null;
             if (isNew) user = new UserAccount { IsActive = true, AppRole = 1 };
 
+            // ── Palette (เหมือน UserPermissionSummaryForm) ──────────────────
+            var navyDark  = Color.FromArgb(25,  55,  105);
+            var navyMid   = Color.FromArgb(50,  90,  150);
+            var navyLight = Color.FromArgb(215, 228, 248);
+            var bodyBg    = Color.FromArgb(243, 246, 251);
+            var footerBg  = Color.FromArgb(228, 234, 245);
+            var lblColor  = Color.FromArgb(55,  65,  90);
+            var uiFont    = new Font("Segoe UI", 10.5f);
+            var boldFont  = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            var lblFont   = new Font("Segoe UI", 10f);
+
             var dlg = new Form
             {
                 Text            = isNew ? "เพิ่มผู้ใช้ใหม่" : "แก้ไขข้อมูลผู้ใช้",
-                Size            = new Size(500, 400),
+                Size            = new Size(480, 520),
                 StartPosition   = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
-                MaximizeBox     = false, MinimizeBox = false,
-                Font            = new Font("Segoe UI", 10F)
+                MaximizeBox     = false,
+                MinimizeBox     = false,
+                BackColor       = bodyBg,
+                Font            = uiFont,
             };
 
-            int lw = 120, fw = 300, lx = 12, tx = 138;
-            int y  = 16;
+            // ── Header ──────────────────────────────────────────────────────
+            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = navyDark };
 
-            // ── Basic info ───────────────────────────────────────────────────
-            var txtAD      = AddField(dlg, "ชื่อผู้ใช้ AD:",  lx, lw, tx, fw, ref y, user.ADUserName   ?? "");
-            var txtDisplay = AddField(dlg, "ชื่อ-นามสกุล:",   lx, lw, tx, fw, ref y, user.DisplayName  ?? "");
-            var txtEmpCode = AddField(dlg, "รหัสพนักงาน:",    lx, lw, tx, fw, ref y, user.EmployeeCode ?? "");
+            var pnlIcon = new Panel { Size = new Size(36, 36), Location = new Point(14, 11), BackColor = Color.Transparent };
+            pnlIcon.Paint += (s, e) =>
+            {
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                e.Graphics.FillEllipse(new SolidBrush(navyMid), 0, 0, 35, 35);
+                using (var f = new Font("Segoe UI", 17f))
+                using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                    e.Graphics.DrawString(isNew ? "+" : "✎", f, Brushes.White, new RectangleF(0, 0, 36, 36), sf);
+            };
+            var lblTitle = new Label
+            {
+                Text      = isNew ? "เพิ่มผู้ใช้ใหม่" : "แก้ไขข้อมูลผู้ใช้",
+                Font      = new Font("Segoe UI", 13f, FontStyle.Bold),
+                ForeColor = Color.White,
+                AutoSize  = true,
+                Location  = new Point(58, 16),
+            };
+            pnlHeader.Controls.Add(pnlIcon);
+            pnlHeader.Controls.Add(lblTitle);
 
-            // ── Role ────────────────────────────────────────────────────────
-            dlg.Controls.Add(new Label { Text = "บทบาท:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
-            var cmbRole = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
+            // ── Body ────────────────────────────────────────────────────────
+            var pnlBody = new Panel
+            {
+                Left      = 0,
+                Top       = 58,
+                Width     = 480,
+                Height    = 358,
+                BackColor = bodyBg,
+            };
+
+            int lw = 112, fw = 290, lx = 16, tx = 138, rowH = 36;
+            int y = 18;
+
+            // helper: label
+            Action<string, int> addLbl = (text, yy) =>
+                pnlBody.Controls.Add(new Label
+                {
+                    Text      = text,
+                    Left      = lx,
+                    Top       = yy + 3,
+                    Width     = lw,
+                    Font      = lblFont,
+                    ForeColor = lblColor,
+                    TextAlign = ContentAlignment.MiddleRight,
+                });
+
+            // helper: textbox
+            Func<string, int, TextBox> addTxt = (val, yy) =>
+            {
+                var t = new TextBox
+                {
+                    Left        = tx,
+                    Top         = yy,
+                    Width       = fw,
+                    Text        = val,
+                    Font        = uiFont,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    BackColor   = Color.White,
+                };
+                pnlBody.Controls.Add(t);
+                return t;
+            };
+
+            // helper: combobox
+            Func<int, ComboBox> addCmb = (yy) =>
+            {
+                var c = new ComboBox
+                {
+                    Left          = tx,
+                    Top           = yy,
+                    Width         = fw,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Font          = uiFont,
+                    FlatStyle     = FlatStyle.Flat,
+                    BackColor     = Color.White,
+                };
+                pnlBody.Controls.Add(c);
+                return c;
+            };
+
+            // ── Section: ข้อมูลพื้นฐาน ────────────────────────────────────────
+            var barBasic = new Panel { Left = lx, Top = y, Width = lw + fw + 12, Height = 22, BackColor = navyLight };
+            barBasic.Controls.Add(new Label
+            {
+                Text      = "  ข้อมูลพื้นฐาน",
+                Font      = boldFont,
+                ForeColor = navyDark,
+                Dock      = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+            });
+            pnlBody.Controls.Add(barBasic);
+            y += 28;
+
+            addLbl("ชื่อผู้ใช้ AD:", y);
+            var txtAD = addTxt(user.ADUserName ?? "", y);
+            y += rowH;
+
+            addLbl("ชื่อ-นามสกุล:", y);
+            var txtDisplay = addTxt(user.DisplayName ?? "", y);
+            y += rowH;
+
+            addLbl("รหัสพนักงาน:", y);
+            var txtEmpCode = addTxt(user.EmployeeCode ?? "", y);
+            y += rowH;
+
+            addLbl("บทบาท:", y);
+            var cmbRole = addCmb(y);
             cmbRole.Items.AddRange(new object[] { "Officer (1)", "SrOfficer (2)", "Manager (3)", "Admin (4)" });
             cmbRole.SelectedIndex = Math.Max(0, Math.Min(3, user.AppRole - 1));
-            dlg.Controls.Add(cmbRole);
-            y += 34;
+            y += rowH + 4;
 
-            // ── Division ────────────────────────────────────────────────────
-            dlg.Controls.Add(new Label { Text = "ฝ่าย:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
-            var cmbDiv = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
+            // ── Section: ข้อมูลองค์กร ─────────────────────────────────────────
+            var barOrg = new Panel { Left = lx, Top = y, Width = lw + fw + 12, Height = 22, BackColor = navyLight };
+            barOrg.Controls.Add(new Label
+            {
+                Text      = "  ข้อมูลองค์กร",
+                Font      = boldFont,
+                ForeColor = navyDark,
+                Dock      = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+            });
+            pnlBody.Controls.Add(barOrg);
+            y += 28;
+
+            addLbl("ฝ่าย:", y);
+            var cmbDiv = addCmb(y);
             cmbDiv.Items.Add(new HrDivision { DivisionCode = "", DivisionName = "-- ไม่ระบุ --" });
             foreach (var d in _divisions) cmbDiv.Items.Add(d);
             cmbDiv.DisplayMember = "DivisionName";
             cmbDiv.SelectedIndex = 0;
-            if (!string.IsNullOrEmpty(user.DivisionCode))
+            
+            // Set division by DivisionId (more reliable than DivisionCode)
+            if (user.DivisionId.HasValue && user.DivisionId.Value > 0)
+            {
                 for (int i = 0; i < cmbDiv.Items.Count; i++)
-                    if (((HrDivision)cmbDiv.Items[i]).DivisionCode == user.DivisionCode)
+                {
+                    var div = cmbDiv.Items[i] as HrDivision;
+                    if (div != null && div.DivisionID == user.DivisionId.Value)
+                    {
+                        cmbDiv.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            else if (!string.IsNullOrEmpty(user.DivisionCode))
+            {
+                for (int i = 0; i < cmbDiv.Items.Count; i++)
+                {
+                    var div = cmbDiv.Items[i] as HrDivision;
+                    if (div != null && div.DivisionCode == user.DivisionCode)
                     { cmbDiv.SelectedIndex = i; break; }
-            dlg.Controls.Add(cmbDiv);
-            y += 34;
+                }
+            }
+            else if (!string.IsNullOrEmpty(user.DivisionName))
+            {
+                // Fallback: match by name (when ID/code not in master data)
+                for (int i = 0; i < cmbDiv.Items.Count; i++)
+                {
+                    var div = cmbDiv.Items[i] as HrDivision;
+                    if (div != null && div.DivisionName == user.DivisionName)
+                    { cmbDiv.SelectedIndex = i; break; }
+                }
+            }
+            y += rowH;
 
-            // ── Department (cascades from Division) ─────────────────────────
-            dlg.Controls.Add(new Label { Text = "แผนก:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
-            var cmbDept = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
+            addLbl("แผนก:", y);
+            var cmbDept = addCmb(y);
             cmbDept.DisplayMember = "DepartmentName";
-            dlg.Controls.Add(cmbDept);
-            y += 34;
+            y += rowH;
 
             Action<string> populateDept = (currentDeptCode) =>
             {
@@ -296,18 +463,45 @@ namespace CMS.Presentation
                     : _departments;
                 foreach (var d in depts) cmbDept.Items.Add(d);
                 cmbDept.SelectedIndex = 0;
-                if (!string.IsNullOrEmpty(currentDeptCode))
+                
+                // Set department by DepartmentId (more reliable than DepartmentCode)
+                if (user.DepartmentId.HasValue && user.DepartmentId.Value > 0)
+                {
                     for (int i = 0; i < cmbDept.Items.Count; i++)
-                        if (((HrDepartment)cmbDept.Items[i]).DepartmentCode == currentDeptCode)
+                    {
+                        var dept = cmbDept.Items[i] as HrDepartment;
+                        if (dept != null && dept.DepartmentID == user.DepartmentId.Value)
+                        {
+                            cmbDept.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                else if (!string.IsNullOrEmpty(currentDeptCode))
+                {
+                    for (int i = 0; i < cmbDept.Items.Count; i++)
+                    {
+                        var dept = cmbDept.Items[i] as HrDepartment;
+                        if (dept != null && dept.DepartmentCode == currentDeptCode)
                         { cmbDept.SelectedIndex = i; break; }
+                    }
+                }
+                else if (!string.IsNullOrEmpty(user.DepartmentName))
+                {
+                    // Fallback: match by name
+                    for (int i = 0; i < cmbDept.Items.Count; i++)
+                    {
+                        var dept = cmbDept.Items[i] as HrDepartment;
+                        if (dept != null && dept.DepartmentName == user.DepartmentName)
+                        { cmbDept.SelectedIndex = i; break; }
+                    }
+                }
             };
-
             populateDept(user.DepartmentCode ?? "");
             cmbDiv.SelectedIndexChanged += (s, ev) => populateDept("");
 
-            // ── Position ────────────────────────────────────────────────────
-            dlg.Controls.Add(new Label { Text = "ตำแหน่ง:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
-            var cmbPos = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
+            addLbl("ตำแหน่ง:", y);
+            var cmbPos = addCmb(y);
             cmbPos.Items.Add(new HrPosition { PositionCode = "", PositionName = "-- ไม่ระบุ --" });
             foreach (var p in _positions) cmbPos.Items.Add(p);
             cmbPos.DisplayMember = "PositionName";
@@ -316,12 +510,10 @@ namespace CMS.Presentation
                 for (int i = 0; i < cmbPos.Items.Count; i++)
                     if (((HrPosition)cmbPos.Items[i]).PositionName == user.PositionName)
                     { cmbPos.SelectedIndex = i; break; }
-            dlg.Controls.Add(cmbPos);
-            y += 34;
+            y += rowH;
 
-            // ── Level ───────────────────────────────────────────────────────
-            dlg.Controls.Add(new Label { Text = "Level:", Left = lx, Top = y + 3, Width = lw, TextAlign = ContentAlignment.MiddleRight });
-            var cmbLevel = new ComboBox { Left = tx, Top = y, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList };
+            addLbl("Level:", y);
+            var cmbLevel = addCmb(y);
             cmbLevel.Items.Add(new HrPositionLevel { LevelCode = "", LevelName = "-- ไม่ระบุ --" });
             foreach (var lv in _levels) cmbLevel.Items.Add(lv);
             cmbLevel.DisplayMember = "LevelCode";
@@ -330,10 +522,7 @@ namespace CMS.Presentation
                 for (int i = 0; i < cmbLevel.Items.Count; i++)
                     if (((HrPositionLevel)cmbLevel.Items[i]).LevelCode == user.LevelCode)
                     { cmbLevel.SelectedIndex = i; break; }
-            dlg.Controls.Add(cmbLevel);
-            y += 34;
 
-            // Auto-select Level เมื่อเลือก Position — ใช้ HrPosition.Level ที่ตรงกับ LevelCode
             Action<string> selectLevelByCode = (code) =>
             {
                 if (string.IsNullOrEmpty(code)) return;
@@ -348,14 +537,53 @@ namespace CMS.Presentation
                     selectLevelByCode(pos.Level);
             };
 
-            // ── Buttons ─────────────────────────────────────────────────────
-            var btnOk  = new Button { Text = "บันทึก",  Left = tx,       Top = y, Width = 100, Height = 30, DialogResult = DialogResult.OK };
-            var btnCan = new Button { Text = "ยกเลิก", Left = tx + 110, Top = y, Width = 100, Height = 30, DialogResult = DialogResult.Cancel };
+            // ── Footer ──────────────────────────────────────────────────────
+            var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = footerBg };
+
+            var btnOk = new Button
+            {
+                Text         = "บันทึก",
+                Size         = new Size(110, 34),
+                FlatStyle    = FlatStyle.Flat,
+                BackColor    = navyDark,
+                ForeColor    = Color.White,
+                Font         = boldFont,
+                DialogResult = DialogResult.OK,
+            };
+            btnOk.FlatAppearance.BorderSize = 0;
+
+            var btnCan = new Button
+            {
+                Text         = "ยกเลิก",
+                Size         = new Size(90, 34),
+                FlatStyle    = FlatStyle.Flat,
+                BackColor    = Color.FromArgb(220, 228, 245),
+                ForeColor    = navyDark,
+                Font         = boldFont,
+                DialogResult = DialogResult.Cancel,
+            };
+            btnCan.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
+            btnCan.FlatAppearance.BorderSize  = 1;
+
+            pnlFooter.Resize += (s, e) =>
+            {
+                btnOk.Location  = new Point(pnlFooter.Width - btnOk.Width - btnCan.Width - 20, 10);
+                btnCan.Location = new Point(pnlFooter.Width - btnCan.Width - 10, 10);
+            };
+            btnOk.Location  = new Point(480 - btnOk.Width - btnCan.Width - 20, 10);
+            btnCan.Location = new Point(480 - btnCan.Width - 10, 10);
+
             dlg.AcceptButton = btnOk;
             dlg.CancelButton = btnCan;
-            dlg.Controls.Add(btnOk);
-            dlg.Controls.Add(btnCan);
+            pnlFooter.Controls.Add(btnOk);
+            pnlFooter.Controls.Add(btnCan);
 
+            // ── Compose ─────────────────────────────────────────────────────
+            dlg.Controls.Add(pnlBody);
+            dlg.Controls.Add(pnlHeader);
+            dlg.Controls.Add(pnlFooter);
+
+            // ── Save logic ──────────────────────────────────────────────────
             btnOk.Click += (s, ev) =>
             {
                 if (string.IsNullOrWhiteSpace(txtAD.Text))
@@ -368,7 +596,7 @@ namespace CMS.Presentation
 
                 var selPos   = cmbPos.SelectedItem   as HrPosition;
                 var selLevel = cmbLevel.SelectedItem as HrPositionLevel;
-                user.PositionName = (selPos   != null && selPos.PositionID > 0)                     ? selPos.PositionName                    : null;
+                user.PositionName = (selPos   != null && selPos.PositionID > 0)                     ? selPos.PositionName    : null;
                 user.LevelCode    = (selLevel != null && !string.IsNullOrEmpty(selLevel.LevelCode)) ? selLevel.LevelCode : null;
 
                 var selDiv  = cmbDiv.SelectedItem  as HrDivision;

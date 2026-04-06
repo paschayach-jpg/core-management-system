@@ -59,8 +59,12 @@ namespace CMS.Presentation
 
             if (checkBox1.Checked == true)
             {
-                  username = "khanitthac";
-                  password = "Knid_poonpun@1412K";
+                  //username = "khanitthac";
+                  //password = "Knid_poonpun@1412K";
+
+                username = "thitirat";
+                password = "8;k,legiH0l^'l6f";
+                 
             }
             else {
                   //username = txtUsername.Text.Trim();

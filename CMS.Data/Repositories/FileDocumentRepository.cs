@@ -265,6 +265,9 @@ namespace CMS.Data.Repositories
             // FolderName — optional column (present in newer SPs)
             try { doc.FolderName = reader["FolderName"] as string; } catch { }
 
+            // UploadedByName — optional column (added in script 070)
+            try { doc.UploadedByName = reader["UploadedByName"] as string; } catch { }
+
             return doc;
         }
     }

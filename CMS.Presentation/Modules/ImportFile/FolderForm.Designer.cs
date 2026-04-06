@@ -80,6 +80,7 @@ namespace CMS.Presentation
             this.colUploadedBy = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colVersion = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colOrgUnit = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colPermissions = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.pnlContentHeader = new System.Windows.Forms.Panel();
             this.lblContentInfo = new System.Windows.Forms.Label();
             this.pnlDetail = new System.Windows.Forms.Panel();
@@ -471,7 +472,7 @@ namespace CMS.Presentation
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtBreadcrumb.BackColor = System.Drawing.Color.White;
             this.txtBreadcrumb.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtBreadcrumb.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtBreadcrumb.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtBreadcrumb.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.txtBreadcrumb.Location = new System.Drawing.Point(120, 6);
             this.txtBreadcrumb.Multiline = true;
@@ -806,7 +807,8 @@ namespace CMS.Presentation
             this.colDate,
             this.colUploadedBy,
             this.colVersion,
-            this.colOrgUnit});
+            this.colOrgUnit,
+            this.colPermissions});
             this.contentsListView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.contentsListView.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.contentsListView.FullRowSelect = true;
@@ -826,36 +828,42 @@ namespace CMS.Presentation
             // colType
             // 
             this.colType.Text = "ประเภท";
-            this.colType.Width = 70;
+            this.colType.Width = 80;
             // 
             // colConfidentiality
             // 
             this.colConfidentiality.Text = "ระดับ";
+            this.colConfidentiality.Width = 50;
             // 
             // colSize
             // 
             this.colSize.Text = "ขนาด";
-            this.colSize.Width = 80;
+            this.colSize.Width = 70;
             // 
             // colDate
             // 
             this.colDate.Text = "วันที่";
-            this.colDate.Width = 110;
+            this.colDate.Width = 120;
             // 
             // colUploadedBy
             // 
             this.colUploadedBy.Text = "โดย";
-            this.colUploadedBy.Width = 80;
+            this.colUploadedBy.Width = 70;
             // 
             // colVersion
             // 
             this.colVersion.Text = "Ver";
-            this.colVersion.Width = 36;
+            this.colVersion.Width = 40;
             // 
             // colOrgUnit
             // 
             this.colOrgUnit.Text = "หน่วยงาน";
-            this.colOrgUnit.Width = 130;
+            this.colOrgUnit.Width = 140;
+            // 
+            // colPermissions
+            // 
+            this.colPermissions.Text = "สิทธิ์";
+            this.colPermissions.Width = 90;
             // 
             // pnlContentHeader
             // 
@@ -1135,6 +1143,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ColumnHeader       colUploadedBy;
         private System.Windows.Forms.ColumnHeader       colVersion;
         private System.Windows.Forms.ColumnHeader       colOrgUnit;
+        private System.Windows.Forms.ColumnHeader       colPermissions;
 
         private System.Windows.Forms.Panel              pnlDetail;
         private System.Windows.Forms.Label              lblDetailHeader;

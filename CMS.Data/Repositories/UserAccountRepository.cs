@@ -114,14 +114,36 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_UpdateUserAccount", conn))
+                using (var cmd = new SqlCommand(@"
+                    UPDATE core.UserAccount SET
+                        DisplayName     = @DisplayName,
+                        AppRole         = @AppRole,
+                        OrgUnitID       = @OrgUnitID,
+                        EmployeeCode    = @EmployeeCode,
+                        DivisionId      = @DivisionId,
+                        DivisionCode    = @DivisionCode,
+                        DivisionName    = @DivisionName,
+                        DepartmentId    = @DepartmentId,
+                        DepartmentCode  = @DepartmentCode,
+                        DepartmentName  = @DepartmentName,
+                        PositionName    = @PositionName,
+                        LevelCode       = @LevelCode,
+                        UpdatedAt       = GETUTCDATE()
+                    WHERE UserID = @UserID", conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@UserID",       account.UserID);
-                    cmd.Parameters.AddWithValue("@DisplayName",  account.DisplayName);
-                    cmd.Parameters.AddWithValue("@AppRole",      (byte)account.AppRole);
-                    cmd.Parameters.AddWithValue("@OrgUnitID",    account.OrgUnitID);
-                    cmd.Parameters.AddWithValue("@EmployeeCode", (object)account.EmployeeCode ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@UserID",        account.UserID);
+                    cmd.Parameters.AddWithValue("@DisplayName",   (object)account.DisplayName  ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@AppRole",       (byte)account.AppRole);
+                    cmd.Parameters.AddWithValue("@OrgUnitID",     account.OrgUnitID);
+                    cmd.Parameters.AddWithValue("@EmployeeCode",  (object)account.EmployeeCode ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DivisionId",    (object)account.DivisionId   ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DivisionCode",  (object)account.DivisionCode ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DivisionName",  (object)account.DivisionName ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DepartmentId",  (object)account.DepartmentId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DepartmentCode",(object)account.DepartmentCode ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DepartmentName",(object)account.DepartmentName ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@PositionName",  (object)account.PositionName ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@LevelCode",     (object)account.LevelCode    ?? DBNull.Value);
                     cmd.ExecuteNonQuery();
                 }
             }

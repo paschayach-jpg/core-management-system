@@ -34,6 +34,11 @@ namespace CMS.Presentation
 
         private void FolderTemplateForm_Load(object sender, EventArgs e)
         {
+            // ปุ่ม ยกเลิก ชิดขวาเสมอ
+            _btnCancel.Left = pnlBottom.ClientSize.Width - _btnCancel.Width - 16;
+            pnlBottom.Resize += (s, ev) =>
+                _btnCancel.Left = pnlBottom.ClientSize.Width - _btnCancel.Width - 16;
+
             LoadTemplates();
         }
 
@@ -45,21 +50,33 @@ namespace CMS.Presentation
             var  tmpl     = _templates[e.Index];
             bool selected = (e.State & DrawItemState.Selected) != 0;
 
-            e.Graphics.FillRectangle(
-                selected ? new SolidBrush(Color.FromArgb(31, 56, 100)) : Brushes.White,
-                e.Bounds);
+            var bgColor  = selected ? Color.FromArgb(0, 51, 102) : Color.White;
+            var altColor = selected ? Color.FromArgb(0, 51, 102) : Color.FromArgb(249, 250, 252);
+            e.Graphics.FillRectangle(new SolidBrush(e.Index % 2 == 0 ? bgColor : altColor), e.Bounds);
+
+            // accent bar ด้านซ้ายเมื่อ selected
+            if (selected)
+                e.Graphics.FillRectangle(new SolidBrush(Color.FromArgb(0, 170, 255)),
+                    new Rectangle(e.Bounds.X, e.Bounds.Y, 4, e.Bounds.Height));
+
+            int textX = e.Bounds.X + (selected ? 12 : 10);
 
             e.Graphics.DrawString(
-                "📋 " + tmpl.TemplateName,
-                new Font("Segoe UI", 9, FontStyle.Bold),
-                selected ? Brushes.White : new SolidBrush(Color.FromArgb(30, 30, 30)),
-                new PointF(e.Bounds.X + 8, e.Bounds.Y + 4));
+                "📋  " + tmpl.TemplateName,
+                new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                selected ? Brushes.White : new SolidBrush(Color.FromArgb(20, 20, 20)),
+                new PointF(textX, e.Bounds.Y + 5));
 
             e.Graphics.DrawString(
                 tmpl.TargetType,
-                new Font("Segoe UI", 8),
-                selected ? new SolidBrush(Color.FromArgb(180, 220, 255)) : new SolidBrush(Color.FromArgb(100, 100, 100)),
-                new PointF(e.Bounds.X + 8, e.Bounds.Y + 20));
+                new Font("Segoe UI", 8f),
+                selected ? new SolidBrush(Color.FromArgb(160, 210, 255)) : new SolidBrush(Color.FromArgb(110, 110, 110)),
+                new PointF(textX + 2, e.Bounds.Y + 21));
+
+            // bottom separator line
+            if (!selected)
+                e.Graphics.DrawLine(new Pen(Color.FromArgb(230, 232, 238)),
+                    e.Bounds.X, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
         }
 
         // ── Data loading ──────────────────────────────────────────────────────

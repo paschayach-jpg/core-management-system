@@ -31,6 +31,7 @@ namespace CMS.Presentation
             this.colDept        = new System.Windows.Forms.ColumnHeader();
             this.colDiv         = new System.Windows.Forms.ColumnHeader();
             this.colPosition    = new System.Windows.Forms.ColumnHeader();
+            this.colLevel       = new System.Windows.Forms.ColumnHeader();
             this.colRole        = new System.Windows.Forms.ColumnHeader();
             this.colStatus      = new System.Windows.Forms.ColumnHeader();
             this.colLastLogin   = new System.Windows.Forms.ColumnHeader();
@@ -151,7 +152,7 @@ namespace CMS.Presentation
             // ── lvUsers ──────────────────────────────────────────────────────
             this.lvUsers.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
                 this.colID, this.colAD, this.colDisplay, this.colEmployee,
-                this.colDept, this.colDiv, this.colPosition,
+                this.colDept, this.colDiv, this.colPosition, this.colLevel,
                 this.colRole, this.colStatus, this.colLastLogin });
             this.lvUsers.Dock          = System.Windows.Forms.DockStyle.Fill;
             this.lvUsers.Font          = new System.Drawing.Font("Segoe UI", 9.5F);
@@ -169,6 +170,7 @@ namespace CMS.Presentation
             this.colDept.Text      = "แผนก";          this.colDept.Width      = 150;
             this.colDiv.Text       = "ฝ่าย";          this.colDiv.Width       = 140;
             this.colPosition.Text  = "ตำแหน่ง";       this.colPosition.Width  = 130;
+            this.colLevel.Text     = "Level";          this.colLevel.Width     =  65;
             this.colRole.Text      = "บทบาท";         this.colRole.Width      =  90;
             this.colStatus.Text    = "สถานะ";         this.colStatus.Width    =  70;
             this.colLastLogin.Text = "เข้าสู่ระบบล่าสุด"; this.colLastLogin.Width = 130;
@@ -224,6 +226,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ColumnHeader   colDept;
         private System.Windows.Forms.ColumnHeader   colDiv;
         private System.Windows.Forms.ColumnHeader   colPosition;
+        private System.Windows.Forms.ColumnHeader   colLevel;
         private System.Windows.Forms.ColumnHeader   colRole;
         private System.Windows.Forms.ColumnHeader   colStatus;
         private System.Windows.Forms.ColumnHeader   colLastLogin;
