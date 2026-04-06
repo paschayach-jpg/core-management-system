@@ -67,11 +67,11 @@ namespace CMS.Presentation
                  
             }
             else {
-                  //username = txtUsername.Text.Trim();
-                  //password = txtPassword.Text;
+                username = txtUsername.Text.Trim();
+                password = txtPassword.Text;
 
-                username = "pitakpong";
-                password = "P@takpong01714";
+                //username = "pitakpong";
+                //password = "P@takpong01714";
             }
 
             if (username.Length == 0)
