@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CMS.Domain.Enums;
@@ -6,7 +6,7 @@ using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 
-namespace CMS.Presentation.Presenters
+namespace CMS.Controllers.DMS.Document
 {
     public class OrgStructurePresenter
     {
@@ -36,13 +36,6 @@ namespace CMS.Presentation.Presenters
             {
                 IEnumerable<OrgUnit> units = _service.GetHierarchy();
                 var unitsList = units.ToList();
-                
-                // Debug logging
-                System.Diagnostics.Debug.WriteLine($"LoadOrganizationView: Loaded {unitsList.Count} units");
-                var divisionCount = unitsList.Count(u => u.Tier == OrgUnitTier.Division && u.IsActive);
-                var subCommitteeCount = unitsList.Count(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive);
-                System.Diagnostics.Debug.WriteLine($"Active SubCommittees: {subCommitteeCount}, Active Divisions: {divisionCount}");
-                
                 _view.ShowOrganizationView(unitsList);
             }
             catch (Exception ex)
@@ -55,8 +48,6 @@ namespace CMS.Presentation.Presenters
         {
             try
             {
-                // ดึง OrgUnit ที่มี Folder แยกตาม ConfidentialityLevel
-                // แล้วกำหนด ConfidentialityLevelValue ก่อนส่งไป View เพื่อให้ grouping ถูกต้อง
                 var levels = new[]
                 {
                     ConfidentialityLevel.HC,
@@ -83,7 +74,6 @@ namespace CMS.Presentation.Presenters
                     }
                 }
 
-                // Fallback: ถ้าไม่มีข้อมูลจาก SP ใช้ GetHierarchy() แล้วกำหนด level จาก OrgUnitCode prefix
                 if (allGrouped.Count == 0)
                 {
                     var all = _service.GetHierarchy().ToList();
@@ -106,9 +96,6 @@ namespace CMS.Presentation.Presenters
             }
         }
 
-        /// <summary>
-        /// Creates a new OrgUnit. Accepts the friendly OrgUnitTier enum and single name.
-        /// </summary>
         public void CreateOrgUnit(string name, string code, OrgUnitTier tier, int? parentId)
         {
             try
@@ -125,17 +112,10 @@ namespace CMS.Presentation.Presenters
                 _view.ShowInfo(string.Format("สร้างหน่วยงาน '{0}' สำเร็จ", name));
                 RefreshCurrentView();
             }
-            catch (ArgumentException ex)
-            {
-                _view.ShowError("Validation error: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to create OrgUnit: " + ex.Message);
-            }
+            catch (ArgumentException ex) { _view.ShowError("Validation error: " + ex.Message); }
+            catch (Exception ex)         { _view.ShowError("Failed to create OrgUnit: " + ex.Message); }
         }
 
-        /// <summary>Creates a new OrgUnit from a CreateOrgUnitRequest DTO.</summary>
         public void CreateOrgUnit(CreateOrgUnitRequest request)
         {
             try
@@ -145,17 +125,10 @@ namespace CMS.Presentation.Presenters
                 _view.ShowInfo(string.Format("สร้างหน่วยงาน '{0}' สำเร็จ", request.OrgUnitNameTH));
                 RefreshCurrentView();
             }
-            catch (ArgumentException ex)
-            {
-                _view.ShowError("Validation error: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to create OrgUnit: " + ex.Message);
-            }
+            catch (ArgumentException ex) { _view.ShowError("Validation error: " + ex.Message); }
+            catch (Exception ex)         { _view.ShowError("Failed to create OrgUnit: " + ex.Message); }
         }
 
-        /// <summary>Updates the name of an existing OrgUnit.</summary>
         public void UpdateOrgUnit(int orgUnitId, string newName)
         {
             try
@@ -170,18 +143,9 @@ namespace CMS.Presentation.Presenters
                 _view.ShowInfo(string.Format("OrgUnit was renamed to ''{0}'' successfully.", newName));
                 RefreshCurrentView();
             }
-            catch (ArgumentException ex)
-            {
-                _view.ShowError("Validation error: " + ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError("Cannot update OrgUnit: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to update OrgUnit: " + ex.Message);
-            }
+            catch (ArgumentException ex)         { _view.ShowError("Validation error: " + ex.Message); }
+            catch (InvalidOperationException ex) { _view.ShowError("Cannot update OrgUnit: " + ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("Failed to update OrgUnit: " + ex.Message); }
         }
 
         public void DeactivateOrgUnit(int orgUnitId)
@@ -192,14 +156,8 @@ namespace CMS.Presentation.Presenters
                 _view.ShowInfo("OrgUnit was deactivated successfully.");
                 RefreshCurrentView();
             }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to deactivate OrgUnit: " + ex.Message);
-            }
+            catch (InvalidOperationException ex) { _view.ShowError(ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("Failed to deactivate OrgUnit: " + ex.Message); }
         }
 
         public void DeleteOrgUnit(int orgUnitId)
@@ -210,46 +168,27 @@ namespace CMS.Presentation.Presenters
                 _view.ShowInfo("หน่วยงานถูกลบเรียบร้อยแล้ว");
                 RefreshCurrentView();
             }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _view.ShowError("ไม่มีสิทธิ์ในการลบหน่วยงาน: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("ไม่สามารถลบหน่วยงานได้: " + ex.Message);
-            }
+            catch (InvalidOperationException ex)   { _view.ShowError(ex.Message); }
+            catch (UnauthorizedAccessException ex) { _view.ShowError("ไม่มีสิทธิ์ในการลบหน่วยงาน: " + ex.Message); }
+            catch (Exception ex)                   { _view.ShowError("ไม่สามารถลบหน่วยงานได้: " + ex.Message); }
         }
 
-        /// <summary>Moves an OrgUnit to a new parent.</summary>
         public void MoveOrgUnit(int orgUnitId, int newParentId)
         {
             try
             {
                 var request = new UpdateOrgUnitRequest
                 {
-                    OrgUnitID     = orgUnitId,
+                    OrgUnitID       = orgUnitId,
                     ParentOrgUnitID = newParentId
                 };
                 _service.MoveOrgUnit(request, _user);
                 _view.ShowInfo("OrgUnit was moved successfully.");
                 RefreshCurrentView();
             }
-            catch (ArgumentException ex)
-            {
-                _view.ShowError("Validation error: " + ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError("Cannot move OrgUnit: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to move OrgUnit: " + ex.Message);
-            }
+            catch (ArgumentException ex)         { _view.ShowError("Validation error: " + ex.Message); }
+            catch (InvalidOperationException ex) { _view.ShowError("Cannot move OrgUnit: " + ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("Failed to move OrgUnit: " + ex.Message); }
         }
 
         public void SetActiveView(bool isConfidentialityView)

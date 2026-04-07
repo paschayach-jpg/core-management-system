@@ -1,0 +1,17 @@
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\obj\Debug\CMS.Controllers.csproj.AssemblyReference.cache
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\obj\Debug\CMS.Controllers.csproj.CoreCompileInputs.cache
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Controllers.dll
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Controllers.pdb
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Data.dll
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Domain.dll
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Infrastructure.dll
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Services.dll
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\log4net.dll
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Domain.pdb
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Data.pdb
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Services.pdb
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\CMS.Infrastructure.pdb
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\bin\Debug\log4net.xml
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\obj\Debug\CMS.Cont.0F83C3BF.Up2Date
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\obj\Debug\CMS.Controllers.dll
+C:\Users\pitakpong\Documents\cms_import\CMS.Controllers\obj\Debug\CMS.Controllers.pdb

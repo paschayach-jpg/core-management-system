@@ -7,7 +7,7 @@ using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 
-namespace CMS.Presentation.Presenters
+namespace CMS.Controllers.DMS.Document
 {
     /// <summary>
     /// Presenter for MOD-002 Folder Structure.
@@ -113,7 +113,7 @@ namespace CMS.Presentation.Presenters
             try
             {
                 IEnumerable<Folder> subFolders;
-                
+
                 if (_folderRepository != null)
                 {
                     // ใช้ repository โดยตรง — ไม่มี permission check ขวางกั้น
@@ -125,7 +125,7 @@ namespace CMS.Presentation.Presenters
                     // Fallback: ใช้ service (อาจถูก block โดย permission)
                     subFolders = _service.GetFolderContents(folderId, _user);
                 }
-                
+
                 _view.ShowFolderContents(subFolders, Enumerable.Empty<FileDocument>());
             }
             catch (UnauthorizedAccessException)
@@ -239,28 +239,12 @@ namespace CMS.Presentation.Presenters
         {
             // Recycle bin functionality is disabled - pass empty list
             _view.ShowRecycleBin(new List<Folder>());
-            /*
-            try
-            {
-                IEnumerable<Folder> deleted = _service.GetDeletedFolders(orgUnitId, _user);
-                _view.ShowRecycleBin(deleted);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to load recycle bin: " + ex.Message);
-            }
-            */
         }
 
         // -----------------------------------------------------------------------
         // CRUD  (Req 4.2–4.4, 4.14)
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Re-renders the content panel after a mutating operation (create/delete/rename).
-        /// If a specific folder was open → reload its contents.
-        /// If at root level → reload root folders for the current OrgUnit.
-        /// </summary>
         private void RefreshContentPanel()
         {
             if (_currentFolderId.HasValue)
@@ -269,9 +253,6 @@ namespace CMS.Presentation.Presenters
                 ShowOrgUnitRootFolders(_currentOrgUnitId);
         }
 
-        /// <summary>
-        /// Creates a new root folder (no parent) under the given OrgUnit.
-        /// </summary>
         public void CreateRootFolder(string name, int orgUnitId, int confidentialityLevel = 1, bool showSuccessMessage = true)
         {
             try
@@ -290,33 +271,17 @@ namespace CMS.Presentation.Presenters
                 RefreshContentPanel();
 
                 if (showSuccessMessage)
-                {
                     _view.ShowInfo(string.Format("Root folder '{0}' สร้างสำเร็จ", created.FolderName));
-                }
             }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                _view.ShowError("Validation error: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("ไม่สามารถสร้าง Root Folder ได้: " + ex.Message);
-            }
+            catch (InvalidOperationException ex) { _view.ShowError(ex.Message); }
+            catch (ArgumentException ex)         { _view.ShowError("Validation error: " + ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("ไม่สามารถสร้าง Root Folder ได้: " + ex.Message); }
         }
 
-        /// <summary>
-        /// Creates a new folder under the given parent.
-        /// Shows a descriptive error if the depth limit (10) would be exceeded (Req 4.3).
-        /// </summary>
         public void CreateFolder(int parentFolderId, string name, int orgUnitId, int? confidentialityLevel = null, bool showSuccessMessage = true)
         {
             try
             {
-                // Show HC approval message if creating HC folder
                 if (confidentialityLevel == 1)
                 {
                     var result = MessageBox.Show(
@@ -334,7 +299,7 @@ namespace CMS.Presentation.Presenters
                         MessageBoxIcon.Information);
 
                     if (result != DialogResult.OK)
-                        return; // User cancelled
+                        return;
                 }
 
                 var request = new CreateFolderRequest
@@ -346,228 +311,123 @@ namespace CMS.Presentation.Presenters
                 };
                 Folder created = _service.CreateFolder(request, _user);
 
-                // Reload the folder tree and recycle bin, then show success message
                 LoadFolderTree(_currentOrgUnitId);
                 RefreshContentPanel();
 
-                // Show different message for HC folders (pending approval)
                 if (confidentialityLevel == 1)
-                {
                     _view.ShowInfo(string.Format("คำขอสร้าง HC Folder '{0}' ได้ถูกส่งให้ Admin อนุมัติแล้ว\n\nFolder จะถูกสร้างหลังจากที่ได้รับการอนุมัติ", created.FolderName));
-                }
                 else if (showSuccessMessage)
-                {
                     _view.ShowInfo(string.Format("Folder '{0}' สร้างสำเร็จ", created.FolderName));
-                }
             }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                _view.ShowError("Validation error: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("ไม่สามารถสร้าง Folder ได้: " + ex.Message);
-            }
+            catch (InvalidOperationException ex) { _view.ShowError(ex.Message); }
+            catch (ArgumentException ex)         { _view.ShowError("Validation error: " + ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("ไม่สามารถสร้าง Folder ได้: " + ex.Message); }
         }
 
-        /// <summary>
-        /// Renames the specified folder (Req 4.14).
-        /// </summary>
         public void RenameFolder(int folderId, string newName)
         {
             try
             {
                 _service.RenameFolder(folderId, newName, _user);
-                
-                // Reload data first, then show success message
                 LoadFolderTree(_currentOrgUnitId);
-                
                 _view.ShowInfo(string.Format("Folder was renamed to '{0}'.", newName));
             }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError("Cannot rename folder: " + ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                _view.ShowError("Validation error: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to rename folder: " + ex.Message);
-            }
+            catch (InvalidOperationException ex) { _view.ShowError("Cannot rename folder: " + ex.Message); }
+            catch (ArgumentException ex)         { _view.ShowError("Validation error: " + ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("Failed to rename folder: " + ex.Message); }
         }
 
         // -----------------------------------------------------------------------
         // Archive  (Req 4.7–4.8)
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Archives the folder and all its descendants (Req 4.7–4.8).
-        /// </summary>
         public void ArchiveFolder(int folderId)
         {
             try
             {
                 _service.ArchiveFolder(folderId, _user);
-                
-                // Reload data first, then show success message
                 LoadFolderTree(_currentOrgUnitId);
-                
                 _view.ShowInfo("Folder and all descendants have been archived.");
             }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError("Cannot archive folder: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to archive folder: " + ex.Message);
-            }
+            catch (InvalidOperationException ex) { _view.ShowError("Cannot archive folder: " + ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("Failed to archive folder: " + ex.Message); }
         }
 
         // -----------------------------------------------------------------------
         // Delete (soft)  (Req 4.9–4.10)
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Moves the folder to the recycle bin (soft delete) (Req 4.9–4.10).
-        /// </summary>
         public void DeleteFolder(int folderId)
         {
             try
             {
                 _service.DeleteFolder(folderId, _user);
-
-                // Reload tree then refresh content panel
                 LoadFolderTree(_currentOrgUnitId);
                 RefreshContentPanel();
 
-                // ตรวจสอบว่า Folder ถูกลบออกจากระบบแล้ว (IsDeleted == true)
                 var deleted = _service.GetFolder(folderId, _user);
                 if (deleted == null || deleted.IsDeleted)
                     _view.ShowInfo("ย้าย Folder ไปยังถังขยะเรียบร้อยแล้ว");
                 else
                     _view.ShowError("ไม่สามารถยืนยันการลบ Folder\nกรุณาตรวจสอบอีกครั้ง");
             }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError("ไม่สามารถลบ Folder ได้: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("เกิดข้อผิดพลาดในการลบ Folder: " + ex.Message);
-            }
+            catch (InvalidOperationException ex) { _view.ShowError("ไม่สามารถลบ Folder ได้: " + ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("เกิดข้อผิดพลาดในการลบ Folder: " + ex.Message); }
         }
 
         // -----------------------------------------------------------------------
         // Restore  (Req 4.12–4.13)
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Restores a folder from the recycle bin.
-        /// If newParentId is null the service will attempt to restore to the original parent.
-        /// Shows a descriptive error if the original parent no longer exists (Req 4.13).
-        /// </summary>
         public void RestoreFolder(int folderId, int? newParentId)
         {
             try
             {
                 _service.RestoreFolder(folderId, newParentId, _user);
-                
-                // Reload data first, then show success message
                 LoadFolderTree(_currentOrgUnitId);
-                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
-                
                 _view.ShowInfo("Folder restored successfully.");
             }
-            catch (InvalidOperationException ex)
-            {
-                // Req 4.13: service message already says "original parent no longer exists"
-                _view.ShowError(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to restore folder: " + ex.Message);
-            }
+            catch (InvalidOperationException ex) { _view.ShowError(ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("Failed to restore folder: " + ex.Message); }
         }
 
         // -----------------------------------------------------------------------
         // Permanent delete  (Req 4.11)
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Permanently deletes a folder from the recycle bin. Manager/Admin only (Req 4.11).
-        /// </summary>
         public void PermanentlyDeleteFolder(int folderId)
         {
             try
             {
                 _service.PermanentlyDeleteFolder(folderId, _user);
-                
-                // Reload data first, then show success message
-                // LoadRecycleBin(_currentOrgUnitId); // Recycle bin disabled
-                
                 _view.ShowInfo("ลบ Folder ถาวรเรียบร้อยแล้ว");
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                _view.ShowError("ไม่มีสิทธิ์ลบ Folder ถาวร: " + ex.Message);
-            }
+            catch (UnauthorizedAccessException ex) { _view.ShowError("ไม่มีสิทธิ์ลบ Folder ถาวร: " + ex.Message); }
             catch (InvalidOperationException ex)
             {
                 if (ex.Message.Contains("REFERENCE constraint") || ex.Message.Contains("FK_sto_FileDocument_Folder"))
-                {
-                    _view.ShowError(
-                        "ไม่สามารถลบ Folder ได้เนื่องจากยังมีไฟล์อยู่ข้างใน\n\n" +
-                        "กรุณาลบไฟล์ทั้งหมดใน Folder นี้ก่อน หรือติดต่อผู้ดูแลระบบ\n\n" +
-                        "รายละเอียดข้อผิดพลาด: " + ex.Message);
-                }
+                    _view.ShowError("ไม่สามารถลบ Folder ได้เนื่องจากยังมีไฟล์อยู่ข้างใน\n\nกรุณาลบไฟล์ทั้งหมดใน Folder นี้ก่อน หรือติดต่อผู้ดูแลระบบ\n\nรายละเอียดข้อผิดพลาด: " + ex.Message);
                 else
-                {
                     _view.ShowError("ไม่สามารถลบ Folder ได้: " + ex.Message);
-                }
             }
-            catch (Exception ex)
-            {
-                _view.ShowError("เกิดข้อผิดพลาดในการลบ Folder: " + ex.Message);
-            }
+            catch (Exception ex) { _view.ShowError("เกิดข้อผิดพลาดในการลบ Folder: " + ex.Message); }
         }
 
         // -----------------------------------------------------------------------
         // Apply template  (Req 4.5–4.6)
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Applies a folder template under the given parent. Manager/Admin only (Req 4.5–4.6).
-        /// </summary>
         public void ApplyTemplate(int parentFolderId, int templateId)
         {
             try
             {
                 _service.ApplyTemplate(parentFolderId, templateId, _user);
-                
-                // Reload data first, then show success message
                 LoadFolderTree(_currentOrgUnitId);
-                
                 _view.ShowInfo("Template applied successfully.");
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                _view.ShowError("Access denied: " + ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _view.ShowError("Cannot apply template: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to apply template: " + ex.Message);
-            }
+            catch (UnauthorizedAccessException ex) { _view.ShowError("Access denied: " + ex.Message); }
+            catch (InvalidOperationException ex)   { _view.ShowError("Cannot apply template: " + ex.Message); }
+            catch (Exception ex)                   { _view.ShowError("Failed to apply template: " + ex.Message); }
         }
     }
 }
