@@ -38,6 +38,8 @@ namespace CMS.Presentation
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.menuItemHome = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemAdmin = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuItemShare = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuItemManageShares = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemUpload = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemNewFolder = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemDownload = new System.Windows.Forms.ToolStripMenuItem();
@@ -50,8 +52,6 @@ namespace CMS.Presentation
             this.menuItemPermission = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemAuditLog = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemApproval = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuItemShare = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuItemManageShares = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemInsert = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemInsertDoc = new System.Windows.Forms.ToolStripMenuItem();
             this.menuItemInsertImage = new System.Windows.Forms.ToolStripMenuItem();
@@ -90,23 +90,23 @@ namespace CMS.Presentation
             this.btnRibbonApproval = new System.Windows.Forms.ToolStripButton();
             this.lblApprovalBadge = new System.Windows.Forms.ToolStripLabel();
             this.btnRibbonUserAccess = new System.Windows.Forms.ToolStripButton();
-            this.btnRibbonUserMgmt   = new System.Windows.Forms.ToolStripButton();
+            this.btnRibbonUserMgmt = new System.Windows.Forms.ToolStripButton();
             this.ribbonStripAdmin = new System.Windows.Forms.ToolStrip();
-            this.btnRibbonFolderArchive = new System.Windows.Forms.ToolStripButton();
-            this.btnRibbonChangeLevel = new System.Windows.Forms.ToolStripButton();
-            this.btnRibbonCopyStructure = new System.Windows.Forms.ToolStripButton();
-            this.sepRibbon5 = new System.Windows.Forms.ToolStripSeparator();
             this.btnRibbonSysConfig = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonOrgAdmin = new System.Windows.Forms.ToolStripButton();
-            this.sepRibbon3 = new System.Windows.Forms.ToolStripSeparator();
             this.btnRibbonReportExcel = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonPDPA = new System.Windows.Forms.ToolStripButton();
+            this.btnRibbonFolderArchive = new System.Windows.Forms.ToolStripButton();
+            this.btnRibbonCopyStructure = new System.Windows.Forms.ToolStripButton();
+            this.btnRibbonChangeLevel = new System.Windows.Forms.ToolStripButton();
+            this.btnRibbonRecycleBin = new System.Windows.Forms.ToolStripButton();
+            this.sepRibbon3 = new System.Windows.Forms.ToolStripSeparator();
+            this.sepRibbon5 = new System.Windows.Forms.ToolStripSeparator();
             this.btnRibbonViewList = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonViewGrid = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonViewOrg = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonVirusScan = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonChecksum = new System.Windows.Forms.ToolStripButton();
-            this.btnRibbonRecycleBin = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonArchive = new System.Windows.Forms.ToolStripButton();
             this.sepRibbon4 = new System.Windows.Forms.ToolStripSeparator();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
@@ -138,9 +138,9 @@ namespace CMS.Presentation
             this.pnlDashboard.Controls.Add(this.pnlDashLeft);
             this.pnlDashboard.Controls.Add(this.lblDashTitle);
             this.pnlDashboard.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlDashboard.Location = new System.Drawing.Point(0, 53);
+            this.pnlDashboard.Location = new System.Drawing.Point(0, 79);
             this.pnlDashboard.Name = "pnlDashboard";
-            this.pnlDashboard.Size = new System.Drawing.Size(1469, 693);
+            this.pnlDashboard.Size = new System.Drawing.Size(1469, 667);
             this.pnlDashboard.TabIndex = 0;
             // 
             // pnlDashContent
@@ -152,7 +152,7 @@ namespace CMS.Presentation
             this.pnlDashContent.Location = new System.Drawing.Point(304, 50);
             this.pnlDashContent.Name = "pnlDashContent";
             this.pnlDashContent.Padding = new System.Windows.Forms.Padding(20);
-            this.pnlDashContent.Size = new System.Drawing.Size(1165, 643);
+            this.pnlDashContent.Size = new System.Drawing.Size(1165, 617);
             this.pnlDashContent.TabIndex = 0;
             // 
             // splitContainer1
@@ -179,7 +179,7 @@ namespace CMS.Presentation
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.lvRecentFiles);
-            this.splitContainer1.Size = new System.Drawing.Size(1125, 603);
+            this.splitContainer1.Size = new System.Drawing.Size(1125, 577);
             this.splitContainer1.SplitterDistance = 258;
             this.splitContainer1.TabIndex = 10;
             // 
@@ -190,7 +190,7 @@ namespace CMS.Presentation
             this.lblRecentFiles.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.lblRecentFiles.Location = new System.Drawing.Point(200, 217);
             this.lblRecentFiles.Name = "lblRecentFiles";
-            this.lblRecentFiles.Size = new System.Drawing.Size(164, 20);
+            this.lblRecentFiles.Size = new System.Drawing.Size(160, 20);
             this.lblRecentFiles.TabIndex = 8;
             this.lblRecentFiles.Text = "📄 ไฟล์ที่อัพโหลดล่าสุด";
             // 
@@ -201,7 +201,7 @@ namespace CMS.Presentation
             this.lblStats.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.lblStats.Location = new System.Drawing.Point(823, 147);
             this.lblStats.Name = "lblStats";
-            this.lblStats.Size = new System.Drawing.Size(95, 20);
+            this.lblStats.Size = new System.Drawing.Size(94, 20);
             this.lblStats.TabIndex = 6;
             this.lblStats.Text = "📈 สถิติระบบ";
             // 
@@ -307,7 +307,7 @@ namespace CMS.Presentation
             this.lvRecentFiles.HideSelection = false;
             this.lvRecentFiles.Location = new System.Drawing.Point(0, 0);
             this.lvRecentFiles.Name = "lvRecentFiles";
-            this.lvRecentFiles.Size = new System.Drawing.Size(1125, 341);
+            this.lvRecentFiles.Size = new System.Drawing.Size(1125, 315);
             this.lvRecentFiles.TabIndex = 9;
             this.lvRecentFiles.UseCompatibleStateImageBehavior = false;
             this.lvRecentFiles.View = System.Windows.Forms.View.Details;
@@ -317,7 +317,7 @@ namespace CMS.Presentation
             this.splitterDash.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(197)))), ((int)(((byte)(211)))), ((int)(((byte)(232)))));
             this.splitterDash.Location = new System.Drawing.Point(300, 50);
             this.splitterDash.Name = "splitterDash";
-            this.splitterDash.Size = new System.Drawing.Size(4, 643);
+            this.splitterDash.Size = new System.Drawing.Size(4, 617);
             this.splitterDash.TabIndex = 1;
             this.splitterDash.TabStop = false;
             // 
@@ -333,7 +333,7 @@ namespace CMS.Presentation
             this.pnlDashLeft.Location = new System.Drawing.Point(0, 50);
             this.pnlDashLeft.Name = "pnlDashLeft";
             this.pnlDashLeft.Padding = new System.Windows.Forms.Padding(8);
-            this.pnlDashLeft.Size = new System.Drawing.Size(300, 643);
+            this.pnlDashLeft.Size = new System.Drawing.Size(300, 617);
             this.pnlDashLeft.TabIndex = 2;
             // 
             // treeViewFolders
@@ -344,7 +344,7 @@ namespace CMS.Presentation
             this.treeViewFolders.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
             this.treeViewFolders.Location = new System.Drawing.Point(8, 97);
             this.treeViewFolders.Name = "treeViewFolders";
-            this.treeViewFolders.Size = new System.Drawing.Size(282, 536);
+            this.treeViewFolders.Size = new System.Drawing.Size(282, 510);
             this.treeViewFolders.TabIndex = 0;
             // 
             // txtSearchFolder
@@ -454,6 +454,18 @@ namespace CMS.Presentation
             this.menuItemAdmin.Size = new System.Drawing.Size(52, 23);
             this.menuItemAdmin.Text = "ผู้ดูแล";
             // 
+            // menuItemShare
+            // 
+            this.menuItemShare.Name = "menuItemShare";
+            this.menuItemShare.Size = new System.Drawing.Size(78, 23);
+            this.menuItemShare.Text = "📤 Share";
+            // 
+            // menuItemManageShares
+            // 
+            this.menuItemManageShares.Name = "menuItemManageShares";
+            this.menuItemManageShares.Size = new System.Drawing.Size(135, 23);
+            this.menuItemManageShares.Text = "📋 Manage Shares";
+            // 
             // menuItemUpload
             // 
             this.menuItemUpload.Name = "menuItemUpload";
@@ -526,18 +538,6 @@ namespace CMS.Presentation
             this.menuItemApproval.Size = new System.Drawing.Size(149, 22);
             this.menuItemApproval.Text = "✅ อนุมัติ";
             // 
-            // menuItemShare
-            // 
-            this.menuItemShare.Name = "menuItemShare";
-            this.menuItemShare.Size = new System.Drawing.Size(149, 22);
-            this.menuItemShare.Text = "📤 Share";
-            // 
-            // menuItemManageShares
-            // 
-            this.menuItemManageShares.Name = "menuItemManageShares";
-            this.menuItemManageShares.Size = new System.Drawing.Size(149, 22);
-            this.menuItemManageShares.Text = "📋 Manage Shares";
-            // 
             // menuItemInsert
             // 
             this.menuItemInsert.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -551,19 +551,19 @@ namespace CMS.Presentation
             // menuItemInsertDoc
             // 
             this.menuItemInsertDoc.Name = "menuItemInsertDoc";
-            this.menuItemInsertDoc.Size = new System.Drawing.Size(135, 22);
+            this.menuItemInsertDoc.Size = new System.Drawing.Size(134, 22);
             this.menuItemInsertDoc.Text = "📄 เอกสาร";
             // 
             // menuItemInsertImage
             // 
             this.menuItemInsertImage.Name = "menuItemInsertImage";
-            this.menuItemInsertImage.Size = new System.Drawing.Size(135, 22);
+            this.menuItemInsertImage.Size = new System.Drawing.Size(134, 22);
             this.menuItemInsertImage.Text = "🖼️ รูปภาพ";
             // 
             // menuItemInsertZip
             // 
             this.menuItemInsertZip.Name = "menuItemInsertZip";
-            this.menuItemInsertZip.Size = new System.Drawing.Size(135, 22);
+            this.menuItemInsertZip.Size = new System.Drawing.Size(134, 22);
             this.menuItemInsertZip.Text = "🗜️ ไฟล์บีบอัด";
             // 
             // menuItemView
@@ -748,7 +748,7 @@ namespace CMS.Presentation
             // btnRibbonTemplate
             // 
             this.btnRibbonTemplate.Name = "btnRibbonTemplate";
-            this.btnRibbonTemplate.Size = new System.Drawing.Size(91, 23);
+            this.btnRibbonTemplate.Size = new System.Drawing.Size(88, 23);
             this.btnRibbonTemplate.Text = "📋 Template";
             this.btnRibbonTemplate.ToolTipText = "Apply Folder Template";
             // 
@@ -770,7 +770,7 @@ namespace CMS.Presentation
             // btnRibbonPermission
             // 
             this.btnRibbonPermission.Name = "btnRibbonPermission";
-            this.btnRibbonPermission.Size = new System.Drawing.Size(59, 23);
+            this.btnRibbonPermission.Size = new System.Drawing.Size(56, 23);
             this.btnRibbonPermission.Text = "🔒 สิทธิ์";
             this.btnRibbonPermission.ToolTipText = "จัดการสิทธิ์การเข้าถึง";
             // 
@@ -803,21 +803,33 @@ namespace CMS.Presentation
             this.lblApprovalBadge.Size = new System.Drawing.Size(6, 23);
             this.lblApprovalBadge.Visible = false;
             // 
+            // btnRibbonUserAccess
+            // 
+            this.btnRibbonUserAccess.Name = "btnRibbonUserAccess";
+            this.btnRibbonUserAccess.Size = new System.Drawing.Size(112, 23);
+            this.btnRibbonUserAccess.Text = "👤 จัดการสิทธิ์ผู้ใช้";
+            this.btnRibbonUserAccess.ToolTipText = "จัดการสิทธิ์และบัญชีผู้ใช้";
+            // 
+            // btnRibbonUserMgmt
+            // 
+            this.btnRibbonUserMgmt.Name = "btnRibbonUserMgmt";
+            this.btnRibbonUserMgmt.Size = new System.Drawing.Size(120, 23);
+            this.btnRibbonUserMgmt.Text = "🗂️ จัดการบัญชีผู้ใช้";
+            this.btnRibbonUserMgmt.ToolTipText = "เพิ่ม/แก้ไข/ปิดใช้งานบัญชีผู้ใช้";
+            // 
             // ribbonStripAdmin
             // 
             this.ribbonStripAdmin.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(250)))));
-            this.ribbonStripAdmin.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
             this.ribbonStripAdmin.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.ribbonStripAdmin.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
             this.ribbonStripAdmin.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.ribbonStripAdmin.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            // ── กลุ่ม 1: ตั้งค่าโครงการ ──────────────────────────────────
             this.btnRibbonSysConfig,
             this.btnRibbonOrgAdmin,
             this.btnRibbonAuditLog,
             this.btnRibbonReportExcel,
             this.btnRibbonPDPA,
             this.sepRibbon1,
-            // ── กลุ่ม 2: จัดการ Folder ───────────────────────────────────
             this.btnRibbonTemplate,
             this.btnRibbonFolderArchive,
             this.btnRibbonCopyStructure,
@@ -826,90 +838,82 @@ namespace CMS.Presentation
             this.btnRibbonChangeLevel,
             this.btnRibbonRecycleBin,
             this.sepRibbon3,
-            // ── กลุ่ม 3: สิทธิ์ ──────────────────────────────────────────
             this.btnRibbonUserAccess,
             this.btnRibbonUserMgmt,
             this.btnRibbonPermission,
             this.btnRibbonFolderSettings});
-            this.ribbonStripAdmin.Location = new System.Drawing.Point(0, 49);
+            this.ribbonStripAdmin.Location = new System.Drawing.Point(0, 53);
             this.ribbonStripAdmin.Name = "ribbonStripAdmin";
             this.ribbonStripAdmin.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.ribbonStripAdmin.Size = new System.Drawing.Size(1280, 25);
+            this.ribbonStripAdmin.Size = new System.Drawing.Size(1469, 26);
             this.ribbonStripAdmin.TabIndex = 2;
             this.ribbonStripAdmin.Visible = false;
             // 
             // btnRibbonSysConfig
             // 
             this.btnRibbonSysConfig.Name = "btnRibbonSysConfig";
-            this.btnRibbonSysConfig.Size = new System.Drawing.Size(73, 22);
+            this.btnRibbonSysConfig.Size = new System.Drawing.Size(90, 23);
             this.btnRibbonSysConfig.Text = "⚙️ ตั้งค่าระบบ";
             this.btnRibbonSysConfig.ToolTipText = "ตั้งค่าระบบ (Admin)";
             // 
             // btnRibbonOrgAdmin
             // 
             this.btnRibbonOrgAdmin.Name = "btnRibbonOrgAdmin";
-            this.btnRibbonOrgAdmin.Size = new System.Drawing.Size(99, 22);
+            this.btnRibbonOrgAdmin.Size = new System.Drawing.Size(120, 23);
             this.btnRibbonOrgAdmin.Text = "🏢 โครงสร้างองค์กร";
             this.btnRibbonOrgAdmin.ToolTipText = "จัดการโครงสร้างองค์กร";
-            // 
-            // btnRibbonUserAccess
-            // 
-            this.btnRibbonUserAccess.Name        = "btnRibbonUserAccess";
-            this.btnRibbonUserAccess.Size        = new System.Drawing.Size(99, 22);
-            this.btnRibbonUserAccess.Text        = "👤 จัดการสิทธิ์ผู้ใช้";
-            this.btnRibbonUserAccess.ToolTipText = "จัดการสิทธิ์และบัญชีผู้ใช้";
-            //
-            // btnRibbonUserMgmt
-            //
-            this.btnRibbonUserMgmt.Name        = "btnRibbonUserMgmt";
-            this.btnRibbonUserMgmt.Size        = new System.Drawing.Size(110, 22);
-            this.btnRibbonUserMgmt.Text        = "🗂️ จัดการบัญชีผู้ใช้";
-            this.btnRibbonUserMgmt.ToolTipText = "เพิ่ม/แก้ไข/ปิดใช้งานบัญชีผู้ใช้";
-            // 
-            // btnRibbonFolderArchive
-            //
-            this.btnRibbonFolderArchive.Name = "btnRibbonFolderArchive";
-            this.btnRibbonFolderArchive.Size = new System.Drawing.Size(81, 22);
-            this.btnRibbonFolderArchive.Text = "📦 Archive";
-            this.btnRibbonFolderArchive.ToolTipText = "Archive Folder ที่เลือก";
-            //
-            // btnRibbonChangeLevel
-            //
-            this.btnRibbonChangeLevel.Name = "btnRibbonChangeLevel";
-            this.btnRibbonChangeLevel.Size = new System.Drawing.Size(95, 22);
-            this.btnRibbonChangeLevel.Text = "🔒 เปลี่ยนระดับ";
-            this.btnRibbonChangeLevel.ToolTipText = "เปลี่ยน Confidentiality Level ของ Folder";
-            //
-            // btnRibbonCopyStructure
-            //
-            this.btnRibbonCopyStructure.Name = "btnRibbonCopyStructure";
-            this.btnRibbonCopyStructure.Size = new System.Drawing.Size(123, 22);
-            this.btnRibbonCopyStructure.Text = "📂 คัดลอกโครงสร้าง";
-            this.btnRibbonCopyStructure.ToolTipText = "คัดลอกโครงสร้าง Folder ไปยัง Parent ใหม่";
-            //
-            // sepRibbon5
-            //
-            this.sepRibbon5.Name = "sepRibbon5";
-            this.sepRibbon5.Size = new System.Drawing.Size(6, 25);
-            //
-            // sepRibbon3
-            //
-            this.sepRibbon3.Name = "sepRibbon3";
-            this.sepRibbon3.Size = new System.Drawing.Size(6, 25);
             // 
             // btnRibbonReportExcel
             // 
             this.btnRibbonReportExcel.Name = "btnRibbonReportExcel";
-            this.btnRibbonReportExcel.Size = new System.Drawing.Size(88, 22);
+            this.btnRibbonReportExcel.Size = new System.Drawing.Size(106, 23);
             this.btnRibbonReportExcel.Text = "📊 รายงาน Excel";
             this.btnRibbonReportExcel.ToolTipText = "ออกรายงาน Excel";
             // 
             // btnRibbonPDPA
             // 
             this.btnRibbonPDPA.Name = "btnRibbonPDPA";
-            this.btnRibbonPDPA.Size = new System.Drawing.Size(102, 22);
+            this.btnRibbonPDPA.Size = new System.Drawing.Size(124, 23);
             this.btnRibbonPDPA.Text = "🔏 PDPA Consent";
             this.btnRibbonPDPA.ToolTipText = "จัดการ PDPA Consent";
+            // 
+            // btnRibbonFolderArchive
+            // 
+            this.btnRibbonFolderArchive.Name = "btnRibbonFolderArchive";
+            this.btnRibbonFolderArchive.Size = new System.Drawing.Size(81, 23);
+            this.btnRibbonFolderArchive.Text = "📦 Archive";
+            this.btnRibbonFolderArchive.ToolTipText = "Archive Folder ที่เลือก";
+            // 
+            // btnRibbonCopyStructure
+            // 
+            this.btnRibbonCopyStructure.Name = "btnRibbonCopyStructure";
+            this.btnRibbonCopyStructure.Size = new System.Drawing.Size(123, 23);
+            this.btnRibbonCopyStructure.Text = "📂 คัดลอกโครงสร้าง";
+            this.btnRibbonCopyStructure.ToolTipText = "คัดลอกโครงสร้าง Folder ไปยัง Parent ใหม่";
+            // 
+            // btnRibbonChangeLevel
+            // 
+            this.btnRibbonChangeLevel.Name = "btnRibbonChangeLevel";
+            this.btnRibbonChangeLevel.Size = new System.Drawing.Size(95, 23);
+            this.btnRibbonChangeLevel.Text = "🔒 เปลี่ยนระดับ";
+            this.btnRibbonChangeLevel.ToolTipText = "เปลี่ยน Confidentiality Level ของ Folder";
+            // 
+            // btnRibbonRecycleBin
+            // 
+            this.btnRibbonRecycleBin.Name = "btnRibbonRecycleBin";
+            this.btnRibbonRecycleBin.Size = new System.Drawing.Size(69, 23);
+            this.btnRibbonRecycleBin.Text = "🗑️ ถังขยะ";
+            this.btnRibbonRecycleBin.ToolTipText = "เปิดถังขยะ";
+            // 
+            // sepRibbon3
+            // 
+            this.sepRibbon3.Name = "sepRibbon3";
+            this.sepRibbon3.Size = new System.Drawing.Size(6, 26);
+            // 
+            // sepRibbon5
+            // 
+            this.sepRibbon5.Name = "sepRibbon5";
+            this.sepRibbon5.Size = new System.Drawing.Size(6, 25);
             // 
             // btnRibbonViewList
             // 
@@ -945,13 +949,6 @@ namespace CMS.Presentation
             this.btnRibbonChecksum.Size = new System.Drawing.Size(82, 22);
             this.btnRibbonChecksum.Text = "🔢 Checksum";
             this.btnRibbonChecksum.ToolTipText = "ตรวจสอบ Checksum";
-            // 
-            // btnRibbonRecycleBin
-            // 
-            this.btnRibbonRecycleBin.Name = "btnRibbonRecycleBin";
-            this.btnRibbonRecycleBin.Size = new System.Drawing.Size(55, 22);
-            this.btnRibbonRecycleBin.Text = "🗑️ ถังขยะ";
-            this.btnRibbonRecycleBin.ToolTipText = "เปิดถังขยะ";
             // 
             // btnRibbonArchive
             // 

@@ -1370,8 +1370,12 @@ namespace CMS.Presentation
         private async void LoadOrgUnitNode(System.Windows.Forms.TreeNode node)
         {
             var unit = node != null ? node.Tag as OrgUnit : null;
-            _selectedOrgUnitId   = unit != null ? (int?)unit.OrgUnitId : null;
-            _selectedOrgUnitName = unit != null ? unit.Name : "— ทั้งหมด —";
+
+            // "— ทั้งหมด —" node (tag=null) — ไม่ load รายการ ให้ user เลือก OrgUnit ก่อน
+            if (unit == null) return;
+
+            _selectedOrgUnitId   = (int?)unit.OrgUnitId;
+            _selectedOrgUnitName = unit.Name;
             _selectedOrgUnit     = unit;
 
             // Show loading feedback immediately (visible because we yield to UI via await)
