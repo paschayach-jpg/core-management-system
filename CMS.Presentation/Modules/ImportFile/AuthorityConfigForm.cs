@@ -619,7 +619,8 @@ namespace CMS.Presentation
 
         private void AuthorityConfigForm_Load(object sender, EventArgs e)
         {
-            this.WindowState = FormWindowState.Maximized;
+            this.WindowState = FormWindowState.Normal;
+            this.Size = new Size(1000, 600);
             
             // Hide old edit panel (now using dialog)
             if (pnlEdit != null)

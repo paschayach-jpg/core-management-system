@@ -43,6 +43,9 @@ namespace CMS.Presentation
         private readonly IPermissionService    _permissionService;
         private readonly IFolderRepository     _folderRepository;
         private          IPermissionRepository _permissionRepository;
+        private readonly IAuditService         _auditService;
+        private readonly IShareService         _shareService;
+        private readonly IUserAccountRepository _userAccountRepo;
         private readonly UserContext          _user;
 
         // Quick Access panel (Req 7)
@@ -80,8 +83,11 @@ namespace CMS.Presentation
         private Panel    _pnlViewButtons;
         private Button   _btnOrgView;
         private Button   _btnConfView;
+        private Button   _btnMainMenu;
         private TreeView _treeConfidentiality;
+        private TreeView _treeMainMenu;
         private bool     _showingConfView = false;
+        private bool     _showingMainMenuView = false;
 
         // -----------------------------------------------------------------------
         // Constructor
@@ -95,7 +101,10 @@ namespace CMS.Presentation
                           IApprovalService approvalService = null,
                           IPermissionService permissionService = null,
                           IFolderRepository folderRepository = null,
-                          IPermissionRepository permissionRepository = null)
+                          IPermissionRepository permissionRepository = null,
+                          IAuditService auditService = null,
+                          IShareService shareService = null,
+                          IUserAccountRepository userAccountRepository = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
@@ -111,6 +120,9 @@ namespace CMS.Presentation
             _approvalService          = approvalService;
             _permissionService        = permissionService;
             _permissionRepository     = permissionRepository;
+            _auditService             = auditService;
+            _shareService             = shareService;
+            _userAccountRepo          = userAccountRepository;
             _user                     = user;
 
             InitializeComponent();
@@ -648,15 +660,31 @@ namespace CMS.Presentation
                 Dock      = DockStyle.Top,
                 Height    = 40,
                 BackColor = Color.FromArgb(220, 230, 245),
-                Padding   = new Padding(5, 5, 5, 0)
+                Padding   = new Padding(2, 5, 2, 0)
             };
+
+            int btnWidth = 90;
+
+            _btnMainMenu = new Button
+            {
+                Text      = "☰ เมนูหลัก",
+                Width     = btnWidth,
+                Height    = 28,
+                Location  = new Point(5, 5),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = inactive,
+                ForeColor = accent,
+                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor    = Cursors.Hand
+            };
+            _btnMainMenu.FlatAppearance.BorderSize = 0;
 
             _btnOrgView = new Button
             {
                 Text      = "ตามองค์กร",
-                Width     = 115,
+                Width     = btnWidth,
                 Height    = 28,
-                Location  = new Point(5, 5),
+                Location  = new Point(5 + btnWidth + 2, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = accent,
                 ForeColor = Color.White,
@@ -667,10 +695,10 @@ namespace CMS.Presentation
 
             _btnConfView = new Button
             {
-                Text      = "🔒 ตามความลับ",
-                Width     = 130,
+                Text      = "🔒 ความลับ",
+                Width     = btnWidth,
                 Height    = 28,
-                Location  = new Point(124, 5),
+                Location  = new Point(5 + (btnWidth * 2) + 4, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = inactive,
                 ForeColor = accent,
@@ -679,60 +707,253 @@ namespace CMS.Presentation
             };
             _btnConfView.FlatAppearance.BorderSize = 0;
 
+            _pnlViewButtons.Controls.Add(_btnMainMenu);
             _pnlViewButtons.Controls.Add(_btnOrgView);
             _pnlViewButtons.Controls.Add(_btnConfView);
 
             // Confidentiality tree (initially hidden)
             _treeConfidentiality = new TreeView
             {
-                Dock        = DockStyle.Fill,
-                BackColor   = Color.White,
-                BorderStyle = BorderStyle.None,
-                Font        = new Font("Segoe UI", 10f),
-                HotTracking = true,
-                Visible     = false,
-                Indent      = 16
+                Dock          = DockStyle.Fill,
+                BackColor     = Color.White,
+                BorderStyle   = BorderStyle.None,
+                Font          = new Font("Segoe UI", 10f),
+                HotTracking   = true,
+                Visible       = false,
+                Indent        = 16,
+                HideSelection = false  // คง highlight node ที่เลือกไว้แม้ focus อยู่ที่ control อื่น
+            };
+
+            // Main Menu tree (initially hidden)
+            _treeMainMenu = new TreeView
+            {
+                Dock          = DockStyle.Fill,
+                BackColor     = Color.White,
+                BorderStyle   = BorderStyle.None,
+                Font          = new Font("Segoe UI", 10.5f),
+                HotTracking   = true,
+                Visible       = false,
+                Indent        = 16,
+                HideSelection = false,
+                ShowLines     = false
             };
 
             // Re-parent treeOrgUnit into pnlOrgFilter alongside the conf tree
             // Both use DockStyle.Fill and overlap — only one is visible at a time
             pnlOrgFilter.Controls.Remove(treeOrgUnit);
-            treeOrgUnit.Dock = DockStyle.Fill;
+            treeOrgUnit.Dock          = DockStyle.Fill;
+            treeOrgUnit.HideSelection = false;  // คง highlight node ที่เลือกไว้แม้ focus อยู่ที่ control อื่น
 
             pnlOrgFilter.Controls.Add(treeOrgUnit);            // index 0 (front)
             pnlOrgFilter.Controls.Add(_treeConfidentiality);   // index 1
-            pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 2 (back) → docked Top first
+            pnlOrgFilter.Controls.Add(_treeMainMenu);          // index 2
+            pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 3 (back) → docked Top first
 
             // Wire events
             _btnOrgView.Click  += (s, e) => SwitchToOrgView();
             _btnConfView.Click += (s, e) => SwitchToConfView();
+            _btnMainMenu.Click += (s, e) => SwitchToMainMenuView();
             _treeConfidentiality.NodeMouseClick += ConfTree_NodeMouseClick;
+            _treeMainMenu.NodeMouseClick += MainMenuTree_NodeMouseClick;
+            
+            LoadMainMenuTree();
+        }
+
+        private void LoadMainMenuTree()
+        {
+            _treeMainMenu.Nodes.Clear();
+            _treeMainMenu.BeginUpdate();
+
+            // 1. จัดการเอกสาร
+            var docNode = new TreeNode("📂 จัดการเอกสาร");
+            docNode.Nodes.Add(new TreeNode("🏠 หน้าหลัก/โฟลเดอร์") { Tag = "Home" });
+            docNode.Nodes.Add(new TreeNode("📄 ไฟล์ที่แชร์กับฉัน") { Tag = "SharedWithMe" });
+            docNode.Nodes.Add(new TreeNode("🔗 จัดการลิงก์แชร์")   { Tag = "ShareManagement" });
+            docNode.Nodes.Add(new TreeNode("🗑️ ถังขยะ")           { Tag = "RecycleBin" });
+            _treeMainMenu.Nodes.Add(docNode);
+
+            // 2. บริหารองค์กร
+            var orgNode = new TreeNode("🏢 บริหารองค์กร");
+            orgNode.Nodes.Add(new TreeNode("🌳 ผังโครงสร้างองค์กร")    { Tag = "OrgStructure" });
+            orgNode.Nodes.Add(new TreeNode("👥 จัดการผู้ใช้งาน")      { Tag = "UserManagement" });
+            orgNode.Nodes.Add(new TreeNode("🔄 Sync ข้อมูลพนักงาน")  { Tag = "SyncEmployee" }); // เมนูใหม่
+            orgNode.Nodes.Add(new TreeNode("🛡️ จัดการสิทธิ์การใช้งาน") { Tag = "PermissionAdmin" });
+            orgNode.Nodes.Add(new TreeNode("👤 สรุปสิทธิ์รายบุคคล")    { Tag = "UserPermissionSummary" });
+            _treeMainMenu.Nodes.Add(orgNode);
+
+            // 3. ตรวจสอบระบบ
+            var auditNode = new TreeNode("🔍 ตรวจสอบระบบ");
+            auditNode.Nodes.Add(new TreeNode("📜 ประวัติการเข้าถึง (Log)") { Tag = "AccessLog" });
+            auditNode.Nodes.Add(new TreeNode("📥 รายการรออนุมัติ (Inbox)") { Tag = "ApprovalInbox" });
+            _treeMainMenu.Nodes.Add(auditNode);
+
+            // 4. ตั้งค่า
+            var settingNode = new TreeNode("⚙️ ตั้งค่า");
+            settingNode.Nodes.Add(new TreeNode("🛠️ ตั้งค่าระบบ")           { Tag = "ConfigAdmin" });
+            settingNode.Nodes.Add(new TreeNode("📋 ตั้งค่าแม่แบบโฟลเดอร์") { Tag = "FolderTemplate" });
+            _treeMainMenu.Nodes.Add(settingNode);
+
+            _treeMainMenu.ExpandAll();
+            _treeMainMenu.EndUpdate();
+        }
+
+        private void MainMenuTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            string tag = e.Node.Tag as string;
+            if (string.IsNullOrEmpty(tag)) return;
+
+            // นำทางกลับหน้าหลัก
+            if (tag == "Home")
+            {
+                SwitchToOrgView();
+                return;
+            }
+
+            try
+            {
+                Form targetForm = null;
+
+                switch (tag)
+                {
+                    case "SharedWithMe":
+                        // ใช้บริการที่มีอยู่ใน FolderForm ส่งต่อไปยังหน้าจออื่นๆ
+                        targetForm = new SharedWithMeForm(_user, _permissionRepository, _folderRepository, null, null, null);
+                        break;
+
+                    case "ShareManagement":
+                        targetForm = new ShareManagementForm(_shareService, _user, _userAccountRepo, null);
+                        break;
+
+                    case "OrgStructure":
+                        targetForm = new OrgStructureForm(_orgStructureService, _user, null, null, null);
+                        break;
+
+                    case "UserManagement":
+                        targetForm = new UserManagementForm(_userAccountRepo, _user, _auditService, null, null, null, null);
+                        break;
+
+                    case "PermissionAdmin":
+                        // เปิดหน้าจอจัดการสิทธิ์ (ถ้ามี Folder ที่เลือกอยู่จะส่งไปด้วย)
+                        targetForm = new PermissionForm(_permissionService, _approvalService, _folderService, _permissionRepository, _user, SelectedFolder, null, _folderRepository, null, _orgStructureService, null, null);
+                        break;
+
+                    case "UserPermissionSummary":
+                        targetForm = new UserPermissionSummaryForm(_user, _permissionRepository, _folderRepository, null, null, null);
+                        break;
+
+                    case "ApprovalInbox":
+                        targetForm = new ApprovalInboxForm(_approvalService, _user);
+                        break;
+
+                    case "AccessLog":
+                        targetForm = new AccessLogView(_shareService, _user, 0);
+                        break;
+
+                    case "AuditLog":
+                        targetForm = new AuditLogForm(_auditService, _user);
+                        break;
+
+                    case "ConfigAdmin":
+                        // ConfigAdmin should be opened from MDI_Container which has _configManager
+                        MessageBox.Show("กรุณาเปิดผ่าน MDI Container เพื่อเข้าถึงตั้งค่าระบบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+
+                    case "FolderTemplate":
+                        targetForm = new FolderTemplateForm(_folderTemplateRepository, _user);
+                        break;
+
+                    case "SyncEmployee":
+                        // เรียกฟังก์ชัน Sync (ถ้ามีใน MDI Container หรือสร้างใหม่)
+                        MessageBox.Show("กำลังเริ่มกระบวนการ Sync ข้อมูลพนักงานจากระบบ HR...", "Sync ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                }
+
+                if (targetForm != null)
+                {
+                    // แสดงสถานะที่หน้าจอหลักก่อนเปิด
+                    ClearContentPanel();
+                    lblContentInfo.Text = "กำลังเปิด: " + e.Node.Text;
+
+                    // All forms open as dialogs (Normal window state), not as MDI children
+                    targetForm.WindowState = FormWindowState.Normal;
+                    targetForm.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("ไม่สามารถเปิดหน้าจอ " + e.Node.Text + " ได้ในขณะนี้\nเนื่องจาก: " + ex.Message, 
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private void SwitchToOrgView()
         {
-            if (!_showingConfView) return;
+            if (!_showingConfView && !_showingMainMenuView) return;
             _showingConfView = false;
+            _showingMainMenuView = false;
+            
             treeOrgUnit.Visible          = true;
             _treeConfidentiality.Visible = false;
+            _treeMainMenu.Visible        = false;
+            
             _btnOrgView.BackColor  = Color.FromArgb(31, 56, 100);
             _btnOrgView.ForeColor  = Color.White;
             _btnConfView.BackColor = Color.FromArgb(240, 244, 250);
             _btnConfView.ForeColor = Color.FromArgb(31, 56, 100);
+            _btnMainMenu.BackColor = Color.FromArgb(240, 244, 250);
+            _btnMainMenu.ForeColor = Color.FromArgb(31, 56, 100);
+            
             contentsListView.ShowGroups = false;
+            
+            // Re-load folder tree if org unit is selected
+            if (treeOrgUnit.SelectedNode != null && treeOrgUnit.SelectedNode.Tag is OrgUnit ou)
+            {
+                _isNavigating = true;
+                try { _presenter.LoadFolderTree(ou.OrgUnitID); }
+                finally { _isNavigating = false; }
+            }
         }
 
         private void SwitchToConfView()
         {
             if (_showingConfView) return;
             _showingConfView = true;
+            _showingMainMenuView = false;
+            
             treeOrgUnit.Visible          = false;
             _treeConfidentiality.Visible = true;
+            _treeMainMenu.Visible        = false;
+            
             _btnOrgView.BackColor  = Color.FromArgb(240, 244, 250);
             _btnOrgView.ForeColor  = Color.FromArgb(31, 56, 100);
             _btnConfView.BackColor = Color.FromArgb(31, 56, 100);
             _btnConfView.ForeColor = Color.White;
+            _btnMainMenu.BackColor = Color.FromArgb(240, 244, 250);
+            _btnMainMenu.ForeColor = Color.FromArgb(31, 56, 100);
+            
             BuildConfidentialityTreeFromAllFoldersAsync();
+        }
+
+        private void SwitchToMainMenuView()
+        {
+            if (_showingMainMenuView) return;
+            _showingConfView = false;
+            _showingMainMenuView = true;
+            
+            treeOrgUnit.Visible          = false;
+            _treeConfidentiality.Visible = false;
+            _treeMainMenu.Visible        = true;
+            
+            _btnOrgView.BackColor  = Color.FromArgb(240, 244, 250);
+            _btnOrgView.ForeColor  = Color.FromArgb(31, 56, 100);
+            _btnConfView.BackColor = Color.FromArgb(240, 244, 250);
+            _btnConfView.ForeColor = Color.FromArgb(31, 56, 100);
+            _btnMainMenu.BackColor = Color.FromArgb(31, 56, 100);
+            _btnMainMenu.ForeColor = Color.White;
+            
+            ClearContentPanel();
+            lblOrgUnitStatus.Text = "☰ เมนูหลัก";
+            ApplyBreadcrumb("หน้าแรก", new List<int?>());
         }
 
         private async void BuildConfidentialityTreeFromAllFoldersAsync()
@@ -1141,7 +1362,12 @@ namespace CMS.Presentation
 
                 ApplyBreadcrumb("🏠 PC  ›  " + nodeName, new List<int?>());
                 lblOrgUnitStatus.Text = string.Format("⏳ กำลังโหลด: {0}...", nodeName);
-                _presenter.LoadFolderTree(orgUnitId);
+                
+                // แจ้งว่ากำลังนำทาง เพื่อไม่ให้ ShowFolderTree ไป Rebuild Conf Tree อีกรอบ (ล้าง focus/selection)
+                _isNavigating = true;
+                try { _presenter.LoadFolderTree(orgUnitId); }
+                finally { _isNavigating = false; }
+
                 lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", nodeName);
                 lblContentInfo.Text   = "";
             }
@@ -1208,6 +1434,9 @@ namespace CMS.Presentation
                 ApplyBreadcrumb("🏠 PC  ›  " + nodeName, new List<int?>());
                 lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", nodeName);
                 lblContentInfo.Text   = string.Format("{0} Folder", totalFolders);
+                
+                // Adjust column widths to fit content
+                AdjustNameColumnWidth();
             }
         }
 
@@ -1443,7 +1672,9 @@ namespace CMS.Presentation
             {
                 // ไม่พบ node → reload ด้วย orgUnitId โดยตรง
                 _selectedOrgUnitId = orgUnitId;
-                _presenter.LoadFolderTree(_selectedOrgUnitId);
+                _isNavigating = true;
+                try { _presenter.LoadFolderTree(_selectedOrgUnitId); }
+                finally { _isNavigating = false; }
             }
         }
 
@@ -1734,6 +1965,10 @@ namespace CMS.Presentation
             var previousFolder = SelectedFolder;
             int? previousFolderId = previousFolder != null ? (int?)previousFolder.FolderId : null;
 
+            // จำ node ที่ expand ไว้ก่อน rebuild เพื่อคืน state กลับหลัง build
+            var expandedFolderIds = new HashSet<int>();
+            CollectExpandedNodes(folderTreeView.Nodes, expandedFolderIds);
+
             folderTreeView.BeginUpdate();
             folderTreeView.Nodes.Clear();
 
@@ -1751,7 +1986,7 @@ namespace CMS.Presentation
                     ForeColor = Color.Gray
                 };
                 folderTreeView.Nodes.Add(emptyNode);
-                
+
                 // ถ้าเลือก OrgUnit แล้วไม่มีโฟลเดอร์ → ถามว่าต้องการสร้างโฟลเดอร์หรือไม่
                 if (_selectedOrgUnitId.HasValue)
                 {
@@ -1759,7 +1994,14 @@ namespace CMS.Presentation
                 }
             }
 
-            folderTreeView.CollapseAll();
+            // คืน expanded state เดิม
+            // ถ้ามี expanded nodes → restore กลับ
+            // ถ้าไม่มี (โหลดครั้งแรก) → auto-expand ถึง Level 2 เพื่อให้เห็น subfolders ทันที
+            if (expandedFolderIds.Count > 0)
+                RestoreExpandedNodes(folderTreeView.Nodes, expandedFolderIds);
+            else
+                ExpandTreeToLevel(folderTreeView.Nodes, 0, 2);
+
             folderTreeView.EndUpdate();
 
             // ถ้ามี folder ที่เลือกอยู่ก่อน → restore selection เดิม
@@ -1781,8 +2023,8 @@ namespace CMS.Presentation
             }
             // _isNavigating = true → ไม่ทำอะไร ให้ caller จัดการ content เอง
 
-            // ถ้ากำลังแสดง "ตามความลับ" → rebuild conf tree ด้วย
-            if (_showingConfView && _treeConfidentiality != null)
+            // ถ้ากำลังแสดง "ตามความลับ" → rebuild conf tree ด้วย (เฉพาะเมื่อไม่ใช่การ navigation ทั่วไป เพื่อไม่ให้ล้าง selection/focus)
+            if (_showingConfView && _treeConfidentiality != null && !_isNavigating)
                 BuildConfidentialityTreeFromAllFoldersAsync();
         }
 
@@ -1944,6 +2186,9 @@ namespace CMS.Presentation
                 "{0} Folder, {1} ไฟล์  |  ขนาดรวม {2}  |  ไม่มีรายการที่เลือก",
                 folderList.Count, fileList.Count,
                 FormatBytes(fileList.Sum(f => f.FileSizeBytes)));
+
+            // Adjust column widths to fit content
+            AdjustNameColumnWidth();
 
             _currentSubFolders = folderList;
         }
@@ -2532,14 +2777,44 @@ namespace CMS.Presentation
         // TreeView — node selection loads contents
         // -----------------------------------------------------------------------
 
+        private bool _isAdjustingColumns = false;
+        
         private void AdjustNameColumnWidth()
         {
-            // คอลัมน์คงที่: ประเภท(80) + ระดับ(50) + ขนาด(70) + วันที่(120) + โดย(70) + Ver(40) + หน่วยงาน(140) + สิทธิ์(90)
-            int fixedWidth = 80 + 50 + 70 + 120 + 70 + 40 + 140 + 90;
-            int scrollBar = SystemInformation.VerticalScrollBarWidth;
-            int nameWidth = contentsListView.ClientSize.Width - fixedWidth - scrollBar;
-            if (nameWidth > 100)
-                colName.Width = nameWidth;
+            if (contentsListView == null || contentsListView.Columns.Count == 0) return;
+            if (_isAdjustingColumns) return;
+
+            _isAdjustingColumns = true;
+            try
+            {
+                contentsListView.SuspendLayout();
+
+                // Auto-resize ทุกคอลัมน์ (รวม index 0) ให้พอดีกับเนื้อหาและหัวข้อ
+                for (int i = 0; i < contentsListView.Columns.Count; i++)
+                {
+                    // วัดความกว้างจากเนื้อหา
+                    contentsListView.AutoResizeColumn(i, ColumnHeaderAutoResizeStyle.ColumnContent);
+                    int contentWidth = contentsListView.Columns[i].Width + 15;
+
+                    // วัดความกว้างจากหัวข้อคอลัมน์ (Header)
+                    contentsListView.AutoResizeColumn(i, ColumnHeaderAutoResizeStyle.HeaderSize);
+                    int headerWidth = contentsListView.Columns[i].Width;
+
+                    // เลือกค่าที่มากที่สุด (บวก padding เผื่อไว้นิดหน่อยเพื่อให้ดูไม่อึดอัด)
+                    int targetWidth = Math.Max(contentWidth, headerWidth) + 10;
+
+                    // กำหนดความกว้างขั้นต่ำของแต่ละคอลัมน์เพื่อไม่ให้แคบจนเกินไป
+                    if (targetWidth < 100)
+                        targetWidth = 100;
+                    
+                    contentsListView.Columns[i].Width = targetWidth;
+                }
+            }
+            finally
+            {
+                contentsListView.ResumeLayout();
+                _isAdjustingColumns = false;
+            }
         }
 
         private void ClearContentPanel()
@@ -3154,6 +3429,54 @@ namespace CMS.Presentation
             btnNavBack.Enabled    = _backStack.Count > 0;
             btnNavForward.Enabled = _forwardStack.Count > 0;
             btnNavUp.Enabled      = _currentNavFolderId.HasValue;
+        }
+
+        /// <summary>
+        /// Collects FolderIds of all currently expanded tree nodes.
+        /// </summary>
+        private void CollectExpandedNodes(TreeNodeCollection nodes, HashSet<int> expandedIds)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                if (node.IsExpanded)
+                {
+                    var f = node.Tag as Folder;
+                    if (f != null) expandedIds.Add(f.FolderId);
+                }
+                if (node.Nodes.Count > 0)
+                    CollectExpandedNodes(node.Nodes, expandedIds);
+            }
+        }
+
+        /// <summary>
+        /// Re-expands nodes whose FolderIds are in the provided set (restores previous expanded state).
+        /// </summary>
+        private void RestoreExpandedNodes(TreeNodeCollection nodes, HashSet<int> expandedIds)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                var f = node.Tag as Folder;
+                if (f != null && expandedIds.Contains(f.FolderId))
+                    node.Expand();
+                if (node.Nodes.Count > 0)
+                    RestoreExpandedNodes(node.Nodes, expandedIds);
+            }
+        }
+
+        /// <summary>
+        /// Auto-expands all nodes up to the specified depth level.
+        /// Level 0 nodes are expanded to show Level 1 children, etc.
+        /// Equivalent to FolderPickerDialog.ExpandToLevel but for folderTreeView.
+        /// </summary>
+        private static void ExpandTreeToLevel(TreeNodeCollection nodes, int current, int maxLevel)
+        {
+            if (current >= maxLevel) return;
+            foreach (TreeNode node in nodes)
+            {
+                node.Expand();
+                if (node.Nodes.Count > 0)
+                    ExpandTreeToLevel(node.Nodes, current + 1, maxLevel);
+            }
         }
 
         /// <summary>
@@ -5859,6 +6182,8 @@ namespace CMS.Presentation
                     folderTreeView.Nodes.Add(rootNode);
                 }
 
+                // Auto-expand ถึง Level 2 หลัง filter rebuild
+                ExpandTreeToLevel(folderTreeView.Nodes, 0, 2);
                 folderTreeView.EndUpdate();
 
                 // Restore selection เดิม → triggers AfterSelect → refreshes right panel
@@ -6034,6 +6359,9 @@ namespace CMS.Presentation
             }
 
             contentsListView.EndUpdate();
+            
+            // Adjust column widths to fit content
+            AdjustNameColumnWidth();
         }
 
         // -----------------------------------------------------------------------
@@ -6374,7 +6702,10 @@ namespace CMS.Presentation
                         lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: OrgUnit ID {0}", qa.Folder.OrgUnitID);
                     }
                 }
-                _presenter.LoadFolderTree(_selectedOrgUnitId);
+                _isNavigating = true;
+                try { _presenter.LoadFolderTree(_selectedOrgUnitId); }
+                finally { _isNavigating = false; }
+                
                 var t = new System.Windows.Forms.Timer { Interval = 100 };
                 t.Tick += (s, args) =>
                 {
@@ -6394,7 +6725,10 @@ namespace CMS.Presentation
                 }
                 else
                 {
-                    _presenter.LoadFolderTree(_selectedOrgUnitId);
+                    _isNavigating = true;
+                    try { _presenter.LoadFolderTree(_selectedOrgUnitId); }
+                    finally { _isNavigating = false; }
+                    
                     var t = new System.Windows.Forms.Timer { Interval = 100 };
                     t.Tick += (s, args) =>
                     {

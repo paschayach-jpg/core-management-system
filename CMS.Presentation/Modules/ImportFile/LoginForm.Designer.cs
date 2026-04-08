@@ -13,6 +13,7 @@ namespace CMS.Presentation
         private void InitializeComponent()
         {
             this.pnlHeader = new System.Windows.Forms.Panel();
+            this.btnClose = new System.Windows.Forms.Button();
             this.pnlAvatar = new System.Windows.Forms.Panel();
             this.lblAvatarIcon = new System.Windows.Forms.Label();
             this.lblTitle = new System.Windows.Forms.Label();
@@ -37,6 +38,8 @@ namespace CMS.Presentation
             // pnlHeader
             // 
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.pnlHeader.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.pnlHeader.Controls.Add(this.btnClose);
             this.pnlHeader.Controls.Add(this.pnlAvatar);
             this.pnlHeader.Controls.Add(this.lblTitle);
             this.pnlHeader.Controls.Add(this.lblWelcome);
@@ -45,10 +48,29 @@ namespace CMS.Presentation
             this.pnlHeader.Name = "pnlHeader";
             this.pnlHeader.Size = new System.Drawing.Size(320, 168);
             this.pnlHeader.TabIndex = 0;
+            this.pnlHeader.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlHeader_Paint);
+            // 
+            // btnClose
+            // 
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnClose.BackColor = System.Drawing.Color.Transparent;
+            this.btnClose.FlatAppearance.BorderSize = 0;
+            this.btnClose.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
+            this.btnClose.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClose.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnClose.ForeColor = System.Drawing.Color.White;
+            this.btnClose.Location = new System.Drawing.Point(286, 4);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(30, 30);
+            this.btnClose.TabIndex = 3;
+            this.btnClose.Text = "✕";
+            this.btnClose.UseVisualStyleBackColor = false;
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
             // pnlAvatar
             // 
-            this.pnlAvatar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(68)))), ((int)(((byte)(108)))), ((int)(((byte)(158)))));
+            this.pnlAvatar.BackColor = System.Drawing.Color.Transparent;
             this.pnlAvatar.Controls.Add(this.lblAvatarIcon);
             this.pnlAvatar.Location = new System.Drawing.Point(130, 16);
             this.pnlAvatar.Name = "pnlAvatar";
@@ -57,6 +79,7 @@ namespace CMS.Presentation
             // 
             // lblAvatarIcon
             // 
+            this.lblAvatarIcon.BackColor = System.Drawing.Color.Transparent;
             this.lblAvatarIcon.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblAvatarIcon.Font = new System.Drawing.Font("Segoe UI Symbol", 22F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblAvatarIcon.ForeColor = System.Drawing.Color.White;
@@ -69,6 +92,7 @@ namespace CMS.Presentation
             // 
             // lblTitle
             // 
+            this.lblTitle.BackColor = System.Drawing.Color.Transparent;
             this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTitle.ForeColor = System.Drawing.Color.White;
             this.lblTitle.Location = new System.Drawing.Point(0, 86);
@@ -80,6 +104,7 @@ namespace CMS.Presentation
             // 
             // lblWelcome
             // 
+            this.lblWelcome.BackColor = System.Drawing.Color.Transparent;
             this.lblWelcome.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblWelcome.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(205)))), ((int)(((byte)(230)))));
             this.lblWelcome.Location = new System.Drawing.Point(0, 126);
@@ -108,6 +133,7 @@ namespace CMS.Presentation
             this.pnlContent.Name = "pnlContent";
             this.pnlContent.Size = new System.Drawing.Size(320, 342);
             this.pnlContent.TabIndex = 1;
+            this.pnlContent.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlContent_Paint);
             // 
             // checkBox1
             // 
@@ -123,7 +149,7 @@ namespace CMS.Presentation
             // 
             this.lblUsernameCaption.Font = new System.Drawing.Font("Segoe UI", 7.5F, System.Drawing.FontStyle.Bold);
             this.lblUsernameCaption.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
-            this.lblUsernameCaption.Location = new System.Drawing.Point(30, 22);
+            this.lblUsernameCaption.Location = new System.Drawing.Point(30, 20);
             this.lblUsernameCaption.Name = "lblUsernameCaption";
             this.lblUsernameCaption.Size = new System.Drawing.Size(260, 14);
             this.lblUsernameCaption.TabIndex = 0;
@@ -131,11 +157,11 @@ namespace CMS.Presentation
             // 
             // txtUsername
             // 
-            this.txtUsername.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtUsername.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtUsername.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.txtUsername.Location = new System.Drawing.Point(30, 39);
+            this.txtUsername.Location = new System.Drawing.Point(35, 41);
             this.txtUsername.Name = "txtUsername";
-            this.txtUsername.Size = new System.Drawing.Size(260, 25);
+            this.txtUsername.Size = new System.Drawing.Size(250, 18);
             this.txtUsername.TabIndex = 1;
             this.txtUsername.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtUsername_KeyDown);
             // 
@@ -143,7 +169,7 @@ namespace CMS.Presentation
             // 
             this.lblPasswordCaption.Font = new System.Drawing.Font("Segoe UI", 7.5F, System.Drawing.FontStyle.Bold);
             this.lblPasswordCaption.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
-            this.lblPasswordCaption.Location = new System.Drawing.Point(30, 84);
+            this.lblPasswordCaption.Location = new System.Drawing.Point(30, 82);
             this.lblPasswordCaption.Name = "lblPasswordCaption";
             this.lblPasswordCaption.Size = new System.Drawing.Size(260, 14);
             this.lblPasswordCaption.TabIndex = 2;
@@ -151,12 +177,12 @@ namespace CMS.Presentation
             // 
             // txtPassword
             // 
-            this.txtPassword.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtPassword.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtPassword.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.txtPassword.Location = new System.Drawing.Point(30, 101);
+            this.txtPassword.Location = new System.Drawing.Point(35, 103);
             this.txtPassword.Name = "txtPassword";
             this.txtPassword.PasswordChar = '●';
-            this.txtPassword.Size = new System.Drawing.Size(260, 25);
+            this.txtPassword.Size = new System.Drawing.Size(250, 18);
             this.txtPassword.TabIndex = 3;
             this.txtPassword.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtPassword_KeyDown);
             // 
@@ -172,10 +198,10 @@ namespace CMS.Presentation
             // 
             // btnLogin
             // 
-            this.btnLogin.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(118)))), ((int)(((byte)(171)))));
+            this.btnLogin.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
             this.btnLogin.FlatAppearance.BorderSize = 0;
-            this.btnLogin.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(80)))), ((int)(((byte)(130)))));
-            this.btnLogin.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(95)))), ((int)(((byte)(148)))));
+            this.btnLogin.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(40)))), ((int)(((byte)(80)))));
+            this.btnLogin.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(70)))), ((int)(((byte)(120)))));
             this.btnLogin.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnLogin.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnLogin.ForeColor = System.Drawing.Color.White;
@@ -186,6 +212,7 @@ namespace CMS.Presentation
             this.btnLogin.Text = "SIGN IN";
             this.btnLogin.UseVisualStyleBackColor = false;
             this.btnLogin.Click += new System.EventHandler(this.btnLogin_Click);
+            this.btnLogin.Paint += new System.Windows.Forms.PaintEventHandler(this.btnLogin_Paint);
             // 
             // lblOr
             // 
@@ -237,7 +264,7 @@ namespace CMS.Presentation
             this.ClientSize = new System.Drawing.Size(320, 510);
             this.Controls.Add(this.pnlContent);
             this.Controls.Add(this.pnlHeader);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "LoginForm";
@@ -252,6 +279,7 @@ namespace CMS.Presentation
         }
 
         private System.Windows.Forms.Panel     pnlHeader;
+        private System.Windows.Forms.Button    btnClose;
         private System.Windows.Forms.Panel     pnlAvatar;
         private System.Windows.Forms.Label     lblAvatarIcon;
         private System.Windows.Forms.Label     lblTitle;

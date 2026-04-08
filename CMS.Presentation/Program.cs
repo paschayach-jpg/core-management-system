@@ -343,7 +343,9 @@ namespace CMS.Presentation
                         loggingService.Error("Failed to record logout audit.", ex);
                     }
                 };
-
+                // ── Menu management ──────────────────────────────────────
+                var menuItemRepository = new CMS.Data.Repositories.MenuItemRepository(configManager);
+                var menuService = new MenuService(menuItemRepository, loggingService, auditService);
                 // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(
                     loggingService,
@@ -374,7 +376,8 @@ namespace CMS.Presentation
                     hrPositionLevelRepository,
                     hrPositionMappingRepository,
                     shareService,
-                    shareAccessService);
+                    shareAccessService,
+                    menuService);
                 Application.Run(mainForm);
 
                 // ถ้า user กด Logout → restart process เพื่อแสดง LoginForm ใหม่

@@ -1,4 +1,6 @@
 using System;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -44,8 +46,48 @@ namespace CMS.Presentation
             _userAccountRepo = userAccountRepo;
             InitializeComponent();
 
+            // ทำให้หน้าจอมน
+            this.Load += (s, e) => ApplyRoundedRegion(15);
+            
+            // ทำให้ลากหน้าจอได้โดยการคลิกที่ pnlHeader
+            pnlHeader.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) ReleaseCaptureAndMove(); };
+
             // Wire Register link
             lnkRegister.LinkClicked += lnkRegister_LinkClicked;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Window Controls & Region
+        // ─────────────────────────────────────────────────────────────────────
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool ReleaseCapture();
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+
+        private void ReleaseCaptureAndMove()
+        {
+            ReleaseCapture();
+            SendMessage(this.Handle, 0xA1, 0x2, 0);
+        }
+
+        private void ApplyRoundedRegion(int radius)
+        {
+            using (GraphicsPath path = new GraphicsPath())
+            {
+                path.AddArc(0, 0, radius, radius, 180, 90);
+                path.AddArc(this.Width - radius, 0, radius, radius, 270, 90);
+                path.AddArc(this.Width - radius, this.Height - radius, radius, radius, 0, 90);
+                path.AddArc(0, this.Height - radius, radius, radius, 90, 90);
+                path.CloseFigure();
+                this.Region = new Region(path);
+            }
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.Cancel;
+            this.Close();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -67,11 +109,11 @@ namespace CMS.Presentation
                  
             }
             else {
-                //username = txtUsername.Text.Trim();
-                //password = txtPassword.Text;
+                username = txtUsername.Text.Trim();
+                password = txtPassword.Text;
 
-                username = "pitakpong";
-                password = "P@takpong01714";
+                //username = "pitakpong";
+                //password = "P@takpong01714";
             }
 
             if (username.Length == 0)
@@ -228,6 +270,79 @@ namespace CMS.Presentation
             btnLogin.Enabled    = !loading;
             txtUsername.Enabled = !loading;
             txtPassword.Enabled = !loading;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // UI Graphics (Rounded Corners & Shadows)
+        // ─────────────────────────────────────────────────────────────────────
+
+        private void pnlContent_Paint(object sender, PaintEventArgs e)
+        {
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+            // วาดกรอบและเงาให้ TextBox Username
+            Rectangle rectUser = new Rectangle(28, 35, 264, 30);
+            DrawTextBoxBackground(e.Graphics, rectUser);
+
+            // วาดกรอบและเงาให้ TextBox Password
+            Rectangle rectPass = new Rectangle(28, 97, 264, 30);
+            DrawTextBoxBackground(e.Graphics, rectPass);
+        }
+
+        private void pnlHeader_Paint(object sender, PaintEventArgs e)
+        {
+            // วาดเส้นขอบสีทองที่ด้านล่างสุดของ pnlHeader
+            using (var pen = new Pen(Color.FromArgb(218, 165, 32), 3f)) // สีทอง (Goldenrod) ความหนา 3px
+            {
+                e.Graphics.DrawLine(pen, 0, pnlHeader.Height - 1, pnlHeader.Width, pnlHeader.Height - 1);
+            }
+        }
+
+        private void DrawTextBoxBackground(Graphics g, Rectangle rect)
+        {
+            int radius = 8; // ความโค้งมนของกรอบ
+            using (GraphicsPath path = new GraphicsPath())
+            {
+                path.AddArc(rect.X, rect.Y, radius, radius, 180, 90);
+                path.AddArc(rect.Right - radius, rect.Y, radius, radius, 270, 90);
+                path.AddArc(rect.Right - radius, rect.Bottom - radius, radius, radius, 0, 90);
+                path.AddArc(rect.X, rect.Bottom - radius, radius, radius, 90, 90);
+                path.CloseFigure();
+
+                // วาดเงาให้มีมิติ (Drop Shadow บางๆ)
+                using (var shadowBrush = new SolidBrush(Color.FromArgb(12, 0, 0, 0)))
+                {
+                    g.TranslateTransform(1, 2);
+                    g.FillPath(shadowBrush, path);
+                    g.TranslateTransform(-1, -2);
+                }
+
+                // เติมพื้นหลังสีขาว
+                g.FillPath(Brushes.White, path);
+
+                // วาดเส้นขอบสีเทาอมฟ้าบางๆ
+                using (var pen = new Pen(Color.FromArgb(200, 205, 215), 1.5f))
+                {
+                    g.DrawPath(pen, path);
+                }
+            }
+        }
+
+        private void btnLogin_Paint(object sender, PaintEventArgs e)
+        {
+            Button btn = sender as Button;
+            int radius = 10; // ความโค้งมนของปุ่ม
+            using (GraphicsPath path = new GraphicsPath())
+            {
+                path.AddArc(0, 0, radius, radius, 180, 90);
+                path.AddArc(btn.Width - radius, 0, radius, radius, 270, 90);
+                path.AddArc(btn.Width - radius, btn.Height - radius, radius, radius, 0, 90);
+                path.AddArc(0, btn.Height - radius, radius, radius, 90, 90);
+                path.CloseFigure();
+                
+                // ใช้ Region ตัดขอบให้ปุ่มมีความมน
+                btn.Region = new Region(path);
+            }
         }
     }
 }

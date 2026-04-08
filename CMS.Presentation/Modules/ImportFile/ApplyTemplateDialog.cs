@@ -120,10 +120,6 @@ namespace CMS.Presentation
                 treeOrgUnit.ExpandAll();
                 treeOrgUnit.EndUpdate();
 
-                // Select first node
-                if (treeOrgUnit.Nodes.Count > 0)
-                    treeOrgUnit.SelectedNode = treeOrgUnit.Nodes[0];
-
                 _templates = _templateRepository.GetAll()
                     .Where(t => t.IsActive)
                     .OrderBy(t => t.TemplateName)

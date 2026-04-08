@@ -74,6 +74,7 @@
     <Compile Include="Models\ExternalShare.cs" />
     <Compile Include="Models\ShareAccessLog.cs" />
     <Compile Include="Models\ShareToken.cs" />
+    <Compile Include="Models\MenuItem.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

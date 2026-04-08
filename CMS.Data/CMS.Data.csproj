@@ -67,6 +67,7 @@
     <Compile Include="Interfaces\IExternalShareRepository.cs" />
     <Compile Include="Interfaces\IShareAccessLogRepository.cs" />
     <Compile Include="Interfaces\IShareTokenRepository.cs" />
+    <Compile Include="Interfaces\IMenuItemRepository.cs" />
     <Compile Include="Models\AuditQuery.cs" />
     <Compile Include="Models\PagedResult.cs" />
     <Compile Include="Repositories\UserAccountRepository.cs" />
@@ -90,6 +91,7 @@
     <Compile Include="Repositories\ExternalShareRepository.cs" />
     <Compile Include="Repositories\ShareAccessLogRepository.cs" />
     <Compile Include="Repositories\ShareTokenRepository.cs" />
+    <Compile Include="Repositories\MenuItemRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\001_CreateSchema.sql" />

@@ -9,7 +9,8 @@
       "Bash(powershell -Command \"& ''C:/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe'' ''c:/Users/pitakpong/Documents/cms_import/CMS.sln'' ''/p:Configuration=Debug'' ''/nologo'' ''/v:minimal''; exit $LASTEXITCODE\")",
       "Read(//c/Users/pitakpong/Documents/cms_import/CMS.Domain/Enums//**)",
       "Read(//c/Users/pitakpong/Documents/cms_import/CMS.Domain/enums//**)",
-      "Bash(find /c/Users/pitakpong/Documents/cms_import/CMS.Presentation -name *Presenter* -o -name *View*)"
+      "Bash(find /c/Users/pitakpong/Documents/cms_import/CMS.Presentation -name *Presenter* -o -name *View*)",
+      "Bash(\"/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe\" \"CMS.Presentation/CMS.Presentation.csproj\" /verbosity:minimal)"
     ]
   }
 }

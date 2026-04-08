@@ -342,6 +342,7 @@ namespace CMS.Presentation
             this.treeViewFolders.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeViewFolders.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.treeViewFolders.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
+            this.treeViewFolders.ItemHeight = 22;
             this.treeViewFolders.Location = new System.Drawing.Point(8, 97);
             this.treeViewFolders.Name = "treeViewFolders";
             this.treeViewFolders.Size = new System.Drawing.Size(282, 510);

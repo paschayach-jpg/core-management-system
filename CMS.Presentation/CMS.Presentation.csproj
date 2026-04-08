@@ -254,6 +254,13 @@
     <Compile Include="AccessShareForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="MenuManagementForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MenuManagementForm.Designer.cs">
+      <DependentUpon>MenuManagementForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="MenuTreeViewManager.cs" />
     <!-- Properties -->
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -287,6 +294,9 @@
   <ItemGroup>
     <EmbeddedResource Include="MDI_Container.resx">
       <DependentUpon>MDI_Container.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MenuManagementForm.resx">
+      <DependentUpon>MenuManagementForm.cs</DependentUpon>
     </EmbeddedResource>
     <!-- Module: ImportFile — EmbeddedResources -->
     <EmbeddedResource Include="Modules\ImportFile\ApplyTemplateDialog.resx">

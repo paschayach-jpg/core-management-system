@@ -66,7 +66,9 @@ namespace CMS.Presentation
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 ReadOnly = true,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells,
+                ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize,
+                ScrollBars = ScrollBars.Both
             };
 
             _dgvAccessLog.Columns.AddRange(

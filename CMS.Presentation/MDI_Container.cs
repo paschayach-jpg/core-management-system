@@ -49,6 +49,7 @@ namespace CMS.Presentation
         private readonly CMS.Data.Interfaces.IHrPositionMappingRepository _hrPositionMappingRepository;
         private readonly IShareService _shareService;
         private readonly IShareAccessService _shareAccessService;
+        private readonly IMenuService _menuService;
 
         // Notification inbox controls (built programmatically)
         private Panel    _notificationPanel;
@@ -139,7 +140,8 @@ namespace CMS.Presentation
             CMS.Data.Interfaces.IHrPositionLevelRepository hrPositionLevelRepository = null,
             CMS.Data.Interfaces.IHrPositionMappingRepository hrPositionMappingRepository = null,
             IShareService shareService = null,
-            IShareAccessService shareAccessService = null)
+            IShareAccessService shareAccessService = null,
+            IMenuService menuService = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
             if (auditService        == null) throw new ArgumentNullException("auditService");
@@ -176,6 +178,7 @@ namespace CMS.Presentation
             _hrPositionMappingRepository = hrPositionMappingRepository;
             _shareService = shareService;
             _shareAccessService = shareAccessService;
+            _menuService = menuService;
 
             InitializeComponent();
             BuildFileDetailPanel();
@@ -192,52 +195,75 @@ namespace CMS.Presentation
 
         private void MDI_Container_Load(object sender, EventArgs e)
         {
-            // Set form to full screen
-            this.WindowState = FormWindowState.Maximized;
+            try
+            {
+                // Set form to full screen
+                this.WindowState = FormWindowState.Maximized;
 
-            Text = string.Format("CMS — {0}", _currentUser.AdIdentity);
-            BuildGroupedAdminToolbar();
-            ApplyRoleBasedMenuVisibility();
-            WireRibbonHandlers();
-            WireDashboardHandlers();
-            SetupRecentFilesColumns();
-            LoadDashboardFolderTree();
-            LoadRecentFiles();
-            UpdateStatusBar();
-            LoadDashboardStats();
-            _escalationTimer.Start();
+                Text = string.Format("CMS — {0}", _currentUser.AdIdentity);
+                BuildGroupedAdminToolbar();
+                ApplyRoleBasedMenuVisibility();
+                WireRibbonHandlers();
+                WireDashboardHandlers();
+                SetupRecentFilesColumns();
+                LoadDashboardFolderTree();
+                LoadRecentFiles();
+                UpdateStatusBar();
+                LoadDashboardStats();
+                _escalationTimer.Start();
 
-            // ซ่อน detail panel จนกว่าจะมีการคลิกไฟล์
-            _fileDetailPanel.Visible = false;
+                // ซ่อน detail panel จนกว่าจะมีการคลิกไฟล์
+                _fileDetailPanel.Visible = false;
 
-            // Add refresh button for recent files
-            AddRefreshButton();
+                // Add refresh button for recent files
+                AddRefreshButton();
 
-            // Wire treeViewFolders selection → show files
-            treeViewFolders.AfterSelect += TreeViewFolders_AfterSelect;
+                // Wire treeViewFolders selection → show files
+                treeViewFolders.AfterSelect += TreeViewFolders_AfterSelect;
 
-            // Wire lvRecentFiles selection → show detail panel
-            lvRecentFiles.SelectedIndexChanged += LvRecentFiles_SelectedIndexChanged;
+                // Wire lvRecentFiles selection → show detail panel
+                lvRecentFiles.SelectedIndexChanged += LvRecentFiles_SelectedIndexChanged;
 
-            // Double-click folder row → toggle expand/collapse files
-            lvRecentFiles.DoubleClick += LvRecentFiles_DoubleClick;
+                // Double-click folder row → toggle expand/collapse files
+                lvRecentFiles.DoubleClick += LvRecentFiles_DoubleClick;
 
-            // Right-click context menu for lvRecentFiles
-            BuildRecentFilesContextMenu();
+                // Right-click context menu for lvRecentFiles
+                BuildRecentFilesContextMenu();
 
-            // Auto-resize columns when form is resized
-            this.Resize += (s, ev) => AutoResizeColumnsProportional();
+                // Auto-resize columns when form is resized
+                this.Resize += (s, ev) => AutoResizeColumnsProportional();
 
-            // Clock timer for status bar
-            var clockTimer = new Timer { Interval = 30000 };
-            clockTimer.Tick += (s, ev) => UpdateStatusBarDateTime();
-            clockTimer.Start();
+                // Clock timer for status bar
+                var clockTimer = new Timer { Interval = 30000 };
+                clockTimer.Tick += (s, ev) => UpdateStatusBarDateTime();
+                clockTimer.Start();
 
-            // Handle MDI child activation to show/hide dashboard
-            this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
+                // Handle MDI child activation to show/hide dashboard
+                this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
 
-            // Auto-open FolderForm as default instead of showing dashboard
-            OpenFolderStructure();
+                // Auto-open FolderForm as MDI child
+                // Requirement: FolderForm (MOD-002) should open automatically on startup
+                this.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        OpenFolderStructure();
+                        _logger.Info("FolderForm opened successfully on startup.");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error($"Error opening FolderForm: {ex.Message}", ex);
+                        MessageBox.Show($"Error opening Folder Manager: {ex.Message}", "Error", 
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error during MDI_Container initialization: {ex.Message}", ex);
+                MessageBox.Show($"Initialization error: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void OnMdiChildActivate()
@@ -602,6 +628,7 @@ namespace CMS.Presentation
             _grpSystem.ToolTipText = "ตั้งค่าระบบ (Admin เท่านั้น)";
             _grpSystem.DropDownItems.AddRange(new ToolStripItem[]
             {
+                new ToolStripMenuItem("🛠️ จัดการเมนู",            null, (s, e) => OpenMenuManagement()),
                 new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",            null, (s, e) => OpenSysConfig()),
                 new ToolStripMenuItem("🔐 จัดการสิทธิ์ Authority", null, (s, e) => OpenAuthorityConfig()),
                 new ToolStripMenuItem("🔄 Sync ข้อมูลพนักงาน",    null, (s, e) => SyncEmployeeFromApi()),
@@ -890,17 +917,68 @@ namespace CMS.Presentation
 
         private void OpenFolderStructure()
         {
-            if (_folderService != null)
+            // Validate all required services are available
+            if (_folderService == null)
             {
-                var ff = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository, _permissionRepository);
+                _logger.Error("FolderService is not available");
+                MessageBox.Show("Folder service is not available.", "MOD-002",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (_fileService == null)
+            {
+                _logger.Error("FileService is not available");
+                MessageBox.Show("File service is not available.", "MOD-002",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (_folderRepository == null)
+            {
+                _logger.Error("FolderRepository is not available");
+                MessageBox.Show("Folder repository is not available.", "MOD-002",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                // Create FolderForm with all required dependencies
+                var ff = new FolderForm(
+                    _folderService,              // IFolderService
+                    _currentUser,                // UserContext
+                    null,                        // int? orgUnitId (null = show all)
+                    _fileService,                // IFileService
+                    _orgStructureService,        // IOrgStructureService
+                    _folderTemplateRepository,   // IFolderTemplateRepository
+                    _uploadCheckpointService,    // IUploadCheckpointService
+                    _quickAccessService,         // IQuickAccessService
+                    _approvalService,            // IApprovalService
+                    _permissionService,          // IPermissionService
+                    _folderRepository,           // IFolderRepository
+                    _permissionRepository,       // IPermissionRepository
+                    _auditService,               // IAuditService
+                    _shareService,               // IShareService
+                    _userAccountRepository       // IUserAccountRepository
+                );
+
+                // Wire event handlers
                 ff.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
                 ff.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
                 ff.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
+
+                // Open as MDI child
                 OpenChildForm(ff);
+
+                _logger.Info("FolderForm (MOD-002) opened successfully");
             }
-            else
-                MessageBox.Show("Folder service is not available.", "MOD-002",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            catch (Exception ex)
+            {
+                _logger.Error($"Error creating FolderForm: {ex.Message}", ex);
+                MessageBox.Show($"Error opening Folder Manager: {ex.Message}", "MOD-002",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void OpenFolderSettings()
@@ -975,7 +1053,7 @@ namespace CMS.Presentation
             }
         }
 
-        private void OpenApprovalInbox()
+        public void OpenApprovalInbox()
         {
             if (_approvalService != null)
                 OpenChildForm(new ApprovalInboxForm(_approvalService, _currentUser));
@@ -1132,7 +1210,7 @@ namespace CMS.Presentation
             }
         }
 
-        private void OpenFileUpload()
+        public void OpenFileUpload()
         {
             if (_fileService == null || _folderService == null)
             {
@@ -1168,19 +1246,19 @@ namespace CMS.Presentation
             }
 
             // ยังไม่มี FolderForm — เปิดให้เลย พร้อมแจ้ง
-            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository, _permissionRepository);
+            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository, _permissionRepository, _auditService, _shareService, _userAccountRepository);
             folderForm.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
             OpenChildForm(folderForm);
         }
 
-        private void OpenAuditLog()
+        public void OpenAuditLog()
         {
             OpenChildForm(new AuditLogForm(_auditService, _currentUser));
         }
 
-        private void OpenSysConfig()
+        public void OpenSysConfig()
         {
             if (_configManager != null)
             {
@@ -1193,7 +1271,7 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
-        private void OpenAuthorityConfig()
+        public void OpenAuthorityConfig()
         {
             if (_folderAuthorityService != null)
                 OpenChildForm(new AuthorityConfigForm(_folderAuthorityService, _currentUser,
@@ -1287,6 +1365,35 @@ namespace CMS.Presentation
                 return;
             }
             OpenChildForm(new UserAccessForm(_userAccountRepository, _orgStructureService, _currentUser, visibilityService: _userOrgVisibilityService, auditService: _auditService));
+        }
+
+        private void OpenMenuManagement()
+        {
+            if (_currentUser.AppRole != 4)  // Admin only
+            {
+                MessageBox.Show("⛔ เฉพาะ Admin เท่านั้นที่สามารถจัดการเมนูได้", "ไม่มีสิทธิ์",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (_menuService == null)
+            {
+                MessageBox.Show("❌ ไม่พบ Menu Service สำหรับจัดการเมนู", "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                _logger.Info($"ผู้ใช้ {_currentUser.AdIdentity} เปิด Menu Management Form");
+                OpenChildForm(new MenuManagementForm(_menuService, _currentUser));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"เกิดข้อผิดพลาดในการเปิด Menu Management: {ex.Message}", ex);
+                MessageBox.Show($"❌ เกิดข้อผิดพลาด: {ex.Message}", "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void OpenUserManagement()
@@ -1527,9 +1634,32 @@ namespace CMS.Presentation
         /// </summary>
         private void OpenChildForm(Form childForm)
         {
-            pnlDashboard.Visible = false;
-            childForm.MdiParent = this;
-            childForm.Show();
+            if (childForm == null)
+                throw new ArgumentNullException(nameof(childForm));
+
+            try
+            {
+                // Hide dashboard when opening MDI child forms
+                pnlDashboard.Visible = false;
+
+                // Configure form as MDI child (not as dialog)
+                childForm.MdiParent = this;
+                childForm.WindowState = FormWindowState.Normal;
+
+                // Show as MDI child form (not ShowDialog)
+                childForm.Show();
+
+                // Activate to bring to front
+                childForm.Activate();
+
+                _logger.Info($"Opened MDI child form: {childForm.GetType().Name}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error opening child form: {ex.Message}", ex);
+                MessageBox.Show($"Error opening form: {ex.Message}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // -----------------------------------------------------------------------
@@ -2164,8 +2294,26 @@ namespace CMS.Presentation
             btnToggleByConfidentiality.Click += (s, e) => SetTreeViewMode(byOrg: false);
 
             // Search box placeholder behavior
-            txtSearchFolder.GotFocus  += (s, e) => { if (txtSearchFolder.Text == "🔍 ค้นหา Folder...") { txtSearchFolder.Text = ""; txtSearchFolder.ForeColor = System.Drawing.Color.Black; } };
-            txtSearchFolder.LostFocus += (s, e) => { if (string.IsNullOrWhiteSpace(txtSearchFolder.Text)) { txtSearchFolder.Text = "🔍 ค้นหา Folder..."; txtSearchFolder.ForeColor = System.Drawing.Color.Gray; } };
+            txtSearchFolder.GotFocus  += (s, e) =>
+            {
+                if (txtSearchFolder.Text == "🔍 ค้นหา Folder...")
+                {
+                    _suppressTreeReload   = true;
+                    txtSearchFolder.Text      = "";
+                    txtSearchFolder.ForeColor = System.Drawing.Color.Black;
+                    _suppressTreeReload   = false;
+                }
+            };
+            txtSearchFolder.LostFocus += (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(txtSearchFolder.Text))
+                {
+                    _suppressTreeReload   = true;
+                    txtSearchFolder.Text      = "🔍 ค้นหา Folder...";
+                    txtSearchFolder.ForeColor = System.Drawing.Color.Gray;
+                    _suppressTreeReload   = false;
+                }
+            };
             txtSearchFolder.TextChanged += TxtSearchFolder_TextChanged;
 
             // Refresh button for recent files (if it exists in designer)
@@ -2177,7 +2325,9 @@ namespace CMS.Presentation
             }
         }
 
-        private bool _treeViewByOrg = true;
+        private bool _treeViewByOrg      = true;
+        private bool _treeResetPending   = false;
+        private bool _suppressTreeReload = false;
 
         private void SetTreeViewMode(bool byOrg)
         {
@@ -2196,60 +2346,140 @@ namespace CMS.Presentation
             // Update title label
             lblTreeTitle.Text = byOrg ? "📁 ตามองค์กร" : "🔒 ตามความลับ";
 
-            // Reload tree
+            // Reload tree — force rebuild เมื่อ user กด toggle
             if (byOrg)
-                LoadDashboardFolderTree();
+                LoadDashboardFolderTree(force: true);
             else
-                LoadDashboardConfidentialityTree();
+                LoadDashboardConfidentialityTree(force: true);
         }
 
-        private void LoadDashboardConfidentialityTree()
+        private void LoadDashboardConfidentialityTree(bool force = false)
         {
+            // Skip rebuild ถ้า tree มี nodes อยู่แล้วและไม่ได้ force reload
+            if (!force && treeViewFolders.Nodes.Count > 0 && !_treeViewByOrg)
+                return;
+
+            treeViewFolders.AfterSelect -= TreeViewFolders_AfterSelect;
             treeViewFolders.Nodes.Clear();
 
-            if (_folderService == null) return;
+            if (_folderService == null)
+            {
+                treeViewFolders.AfterSelect += TreeViewFolders_AfterSelect;
+                return;
+            }
 
             try
             {
-                // Group folders by confidentiality level
                 var levels = new[]
                 {
-                    new { Level = 1, Label = "🔴 1HC — Highly Confidential" },
-                    new { Level = 2, Label = "🟠 2SC — Secret" },
-                    new { Level = 3, Label = "🔵 3NC — Non-Confidential" },
-                    new { Level = 4, Label = "🟢 4PC — Public/Common" },
+                    new { Level = 1, Label = "1HC — High Confidential" },
+                    new { Level = 2, Label = "2SC — Semi Confidential" },
+                    new { Level = 3, Label = "3NC — Normal Confidential" },
+                    new { Level = 4, Label = "4PC — Public / เปิดเผย" },
                 };
 
-                foreach (var lvl in levels)
+                var allFiles = _cachedAllFiles ?? _fileService.GetAllFilesGroupedByFolder(_currentUser)
+                    .Where(f => !f.IsDeleted).ToList();
+
+                var folderLookup = new Dictionary<int, Folder>();
+                try
                 {
-                    var node = new TreeNode(lvl.Label)
-                    {
-                        ForeColor = ConfidentialityColor(lvl.Level),
-                        Tag       = lvl.Level
-                    };
-                    treeViewFolders.Nodes.Add(node);
+                    foreach (var f in _folderService.GetAllFolders(null, _currentUser))
+                        folderLookup[f.FolderID] = f;
+                }
+                catch { }
+
+                var fileCountByLevel = new Dictionary<int, int>();
+                foreach (var file in allFiles)
+                {
+                    Folder folder;
+                    if (!folderLookup.TryGetValue(file.FolderID, out folder)) continue;
+                    int lvl = folder.ConfidentialityLevel;
+                    if (!fileCountByLevel.ContainsKey(lvl)) fileCountByLevel[lvl] = 0;
+                    fileCountByLevel[lvl]++;
                 }
 
-                treeViewFolders.ExpandAll();
+                var orgUnitsByLevel = new Dictionary<int, HashSet<int>>();
+                foreach (var file in allFiles)
+                {
+                    Folder folder;
+                    if (!folderLookup.TryGetValue(file.FolderID, out folder)) continue;
+                    int lvl = folder.ConfidentialityLevel;
+                    if (!orgUnitsByLevel.ContainsKey(lvl)) orgUnitsByLevel[lvl] = new HashSet<int>();
+                    orgUnitsByLevel[lvl].Add(folder.OrgUnitID);
+                }
+
+                if (_cachedOrgUnits == null && _orgStructureService != null)
+                    _cachedOrgUnits = _orgStructureService.GetHierarchy().ToList();
+                var orgLookup = new Dictionary<int, OrgUnit>();
+                if (_cachedOrgUnits != null)
+                    foreach (var ou in _cachedOrgUnits)
+                        orgLookup[ou.OrgUnitID] = ou;
+
+                treeViewFolders.BeginUpdate();
+                try
+                {
+                    foreach (var lvl in levels)
+                    {
+                        int count;
+                        fileCountByLevel.TryGetValue(lvl.Level, out count);
+                        string label = count > 0
+                            ? string.Format("{0}   {1} ไฟล์", lvl.Label, count)
+                            : lvl.Label;
+
+                        var levelNode = new TreeNode(label)
+                        {
+                            ForeColor = ConfidentialityColor(lvl.Level),
+                            Tag       = lvl.Level
+                        };
+
+                        HashSet<int> orgIds;
+                        if (orgUnitsByLevel.TryGetValue(lvl.Level, out orgIds))
+                        {
+                            foreach (int orgId in orgIds)
+                            {
+                                OrgUnit ou;
+                                if (!orgLookup.TryGetValue(orgId, out ou)) continue;
+                                var orgNode = new TreeNode(string.Format("📁 {0}", ou.Name))
+                                {
+                                    Tag       = ou,
+                                    ForeColor = System.Drawing.Color.FromArgb(0, 102, 51)
+                                };
+                                levelNode.Nodes.Add(orgNode);
+                            }
+                        }
+
+                        treeViewFolders.Nodes.Add(levelNode);
+                    }
+                }
+                finally
+                {
+                    treeViewFolders.EndUpdate();
+                }
             }
             catch (Exception ex)
             {
                 _logger.Error("Failed to load confidentiality tree: " + ex.Message, ex);
             }
+            finally
+            {
+                treeViewFolders.AfterSelect += TreeViewFolders_AfterSelect;
+            }
         }
 
         private void TxtSearchFolder_TextChanged(object sender, EventArgs e)
         {
+            if (_suppressTreeReload) return;
+
             string keyword = txtSearchFolder.Text.Trim();
             if (keyword == "🔍 ค้นหา Folder..." || string.IsNullOrEmpty(keyword))
             {
-                // Restore full tree
-                if (_treeViewByOrg) LoadDashboardFolderTree();
-                else LoadDashboardConfidentialityTree();
+                // restore หลัง search — force rebuild เพื่อให้ได้ tree ที่ถูกต้อง
+                if (_treeViewByOrg) LoadDashboardFolderTree(force: true);
+                else LoadDashboardConfidentialityTree(force: true);
                 return;
             }
 
-            // Filter nodes by keyword
             FilterTreeNodes(treeViewFolders.Nodes, keyword.ToLower());
         }
 
@@ -2270,8 +2500,14 @@ namespace CMS.Presentation
             return anyVisible;
         }
 
-        private void LoadDashboardFolderTree()
+        private void LoadDashboardFolderTree(bool force = false)
         {
+            // Skip rebuild ถ้า tree มี nodes อยู่แล้วและไม่ได้ force reload
+            if (!force && treeViewFolders.Nodes.Count > 0 && _treeViewByOrg)
+                return;
+
+            treeViewFolders.AfterSelect -= TreeViewFolders_AfterSelect;
+
             try
             {
                 treeViewFolders.Nodes.Clear();
@@ -2279,7 +2515,6 @@ namespace CMS.Presentation
                 if (_orgStructureService == null)
                     return;
 
-                // Cache hierarchy — reused by BuildOrgUnitNameLookup (eliminates duplicate DB call)
                 if (_cachedOrgUnits == null)
                     _cachedOrgUnits = _orgStructureService.GetHierarchy().ToList();
 
@@ -2287,7 +2522,6 @@ namespace CMS.Presentation
                 if (allUnits.Count == 0)
                     return;
 
-                // Build SubCommittee → Division → Department hierarchy
                 var subCommittees = allUnits
                     .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive)
                     .OrderBy(u => u.Name);
@@ -2337,8 +2571,6 @@ namespace CMS.Presentation
 
                         treeViewFolders.Nodes.Add(scNode);
                     }
-
-                    treeViewFolders.ExpandAll();
                 }
                 finally
                 {
@@ -2348,6 +2580,10 @@ namespace CMS.Presentation
             catch (Exception ex)
             {
                 _logger.Error("Failed to load dashboard org structure tree: " + ex.Message, ex);
+            }
+            finally
+            {
+                treeViewFolders.AfterSelect += TreeViewFolders_AfterSelect;
             }
         }
 
@@ -2406,6 +2642,8 @@ namespace CMS.Presentation
                 lblRecentFiles.Text = string.Format("📄 ไฟล์ใน {0}", orgUnit.Name);
                 LoadFilesForOrgUnit(orgUnit.OrgUnitID);
                 UpdateStatsCardForOrgUnit(orgUnit);
+                // คง expand state ไว้ — ไม่ให้ tree collapse
+                e.Node.EnsureVisible();
                 return;
             }
 
@@ -2418,6 +2656,8 @@ namespace CMS.Presentation
                 lblRecentFiles.Text = string.Format("📄 ไฟล์ระดับ {0}", labelText);
                 LoadFilesByConfidentialityLevel(level);
                 UpdateStatsCardForConfidentialityLevel(level, labelText);
+                // คง expand state ไว้
+                e.Node.EnsureVisible();
             }
         }
 

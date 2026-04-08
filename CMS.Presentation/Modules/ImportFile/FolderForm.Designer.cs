@@ -370,7 +370,7 @@ namespace CMS.Presentation
             // btnApplyTemplate
             // 
             this.btnApplyTemplate.Name = "btnApplyTemplate";
-            this.btnApplyTemplate.Size = new System.Drawing.Size(91, 23);
+            this.btnApplyTemplate.Size = new System.Drawing.Size(88, 23);
             this.btnApplyTemplate.Text = "📋 Template";
             this.btnApplyTemplate.ToolTipText = "Apply Template Folder";
             this.btnApplyTemplate.Click += new System.EventHandler(this.btnApplyTemplate_Click);
@@ -383,7 +383,7 @@ namespace CMS.Presentation
             // btnChangeLevel
             // 
             this.btnChangeLevel.Name = "btnChangeLevel";
-            this.btnChangeLevel.Size = new System.Drawing.Size(98, 23);
+            this.btnChangeLevel.Size = new System.Drawing.Size(95, 23);
             this.btnChangeLevel.Text = "🔒 เปลี่ยนระดับ";
             this.btnChangeLevel.ToolTipText = "เปลี่ยน Confidentiality Level (Manager/Admin)";
             this.btnChangeLevel.Visible = false;
@@ -664,9 +664,9 @@ namespace CMS.Presentation
             this.folderTreeView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.folderTreeView.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.folderTreeView.HotTracking = true;
-            this.folderTreeView.Location = new System.Drawing.Point(0, 505);
+            this.folderTreeView.Location = new System.Drawing.Point(0, 412);
             this.folderTreeView.Name = "folderTreeView";
-            this.folderTreeView.Size = new System.Drawing.Size(303, 201);
+            this.folderTreeView.Size = new System.Drawing.Size(303, 294);
             this.folderTreeView.TabIndex = 0;
             this.folderTreeView.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.folderTreeView_AfterSelect);
             // 
@@ -674,7 +674,7 @@ namespace CMS.Presentation
             // 
             this.txtFolderSearch.Dock = System.Windows.Forms.DockStyle.Top;
             this.txtFolderSearch.ForeColor = System.Drawing.Color.Gray;
-            this.txtFolderSearch.Location = new System.Drawing.Point(0, 485);
+            this.txtFolderSearch.Location = new System.Drawing.Point(0, 392);
             this.txtFolderSearch.Name = "txtFolderSearch";
             this.txtFolderSearch.Size = new System.Drawing.Size(303, 20);
             this.txtFolderSearch.TabIndex = 1;
@@ -686,7 +686,7 @@ namespace CMS.Presentation
             this.lblOrgUnitStatus.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblOrgUnitStatus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.lblOrgUnitStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
-            this.lblOrgUnitStatus.Location = new System.Drawing.Point(0, 465);
+            this.lblOrgUnitStatus.Location = new System.Drawing.Point(0, 372);
             this.lblOrgUnitStatus.Name = "lblOrgUnitStatus";
             this.lblOrgUnitStatus.Padding = new System.Windows.Forms.Padding(6, 0, 0, 0);
             this.lblOrgUnitStatus.Size = new System.Drawing.Size(303, 20);
@@ -702,7 +702,7 @@ namespace CMS.Presentation
             this.pnlOrgFilter.Location = new System.Drawing.Point(0, 26);
             this.pnlOrgFilter.Name = "pnlOrgFilter";
             this.pnlOrgFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlOrgFilter.Size = new System.Drawing.Size(303, 439);
+            this.pnlOrgFilter.Size = new System.Drawing.Size(303, 346);
             this.pnlOrgFilter.TabIndex = 2;
             // 
             // treeOrgUnit
@@ -714,7 +714,7 @@ namespace CMS.Presentation
             this.treeOrgUnit.HotTracking = true;
             this.treeOrgUnit.Location = new System.Drawing.Point(4, 4);
             this.treeOrgUnit.Name = "treeOrgUnit";
-            this.treeOrgUnit.Size = new System.Drawing.Size(295, 431);
+            this.treeOrgUnit.Size = new System.Drawing.Size(295, 338);
             this.treeOrgUnit.TabIndex = 1;
             this.treeOrgUnit.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.treeOrgUnit_AfterSelect);
             // 
@@ -1014,7 +1014,7 @@ namespace CMS.Presentation
             // btnRestore
             // 
             this.btnRestore.Name = "btnRestore";
-            this.btnRestore.Size = new System.Drawing.Size(60, 23);
+            this.btnRestore.Size = new System.Drawing.Size(59, 23);
             this.btnRestore.Text = "♻️ กู้คืน";
             this.btnRestore.ToolTipText = "กู้คืน Folder ไปยัง Parent เดิม";
             // 
