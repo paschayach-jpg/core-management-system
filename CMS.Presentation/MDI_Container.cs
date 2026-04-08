@@ -960,13 +960,15 @@ namespace CMS.Presentation
                     _permissionRepository,       // IPermissionRepository
                     _auditService,               // IAuditService
                     _shareService,               // IShareService
-                    _userAccountRepository       // IUserAccountRepository
+                    _userAccountRepository,      // IUserAccountRepository
+                    _menuService                 // IMenuService
                 );
 
                 // Wire event handlers
                 ff.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
                 ff.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
                 ff.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
+                ff.MenuActionRequested         += HandleFolderMenuActionRequested;
 
                 // Open as MDI child
                 OpenChildForm(ff);
@@ -1246,11 +1248,34 @@ namespace CMS.Presentation
             }
 
             // ยังไม่มี FolderForm — เปิดให้เลย พร้อมแจ้ง
-            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository, _permissionRepository, _auditService, _shareService, _userAccountRepository);
+            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository, _permissionRepository, _auditService, _shareService, _userAccountRepository, _menuService);
             folderForm.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
+            folderForm.MenuActionRequested         += HandleFolderMenuActionRequested;
             OpenChildForm(folderForm);
+        }
+
+        private bool HandleFolderMenuActionRequested(object sender, string actionKey)
+        {
+            switch ((actionKey ?? string.Empty).Trim())
+            {
+                case "ConfigAdmin":
+                case "ReportExcel":
+                    OpenSysConfig();
+                    return true;
+                case "PdpaReport":
+                    OpenPdpaReport();
+                    return true;
+                case "AuthorityConfig":
+                    OpenAuthorityConfig();
+                    return true;
+                case "SyncEmployee":
+                    SyncEmployeeFromApi();
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public void OpenAuditLog()

@@ -370,7 +370,7 @@ namespace CMS.Presentation
             // btnApplyTemplate
             // 
             this.btnApplyTemplate.Name = "btnApplyTemplate";
-            this.btnApplyTemplate.Size = new System.Drawing.Size(88, 23);
+            this.btnApplyTemplate.Size = new System.Drawing.Size(91, 23);
             this.btnApplyTemplate.Text = "📋 Template";
             this.btnApplyTemplate.ToolTipText = "Apply Template Folder";
             this.btnApplyTemplate.Click += new System.EventHandler(this.btnApplyTemplate_Click);
@@ -383,7 +383,7 @@ namespace CMS.Presentation
             // btnChangeLevel
             // 
             this.btnChangeLevel.Name = "btnChangeLevel";
-            this.btnChangeLevel.Size = new System.Drawing.Size(95, 23);
+            this.btnChangeLevel.Size = new System.Drawing.Size(98, 23);
             this.btnChangeLevel.Text = "🔒 เปลี่ยนระดับ";
             this.btnChangeLevel.ToolTipText = "เปลี่ยน Confidentiality Level (Manager/Admin)";
             this.btnChangeLevel.Visible = false;
@@ -1014,7 +1014,7 @@ namespace CMS.Presentation
             // btnRestore
             // 
             this.btnRestore.Name = "btnRestore";
-            this.btnRestore.Size = new System.Drawing.Size(59, 23);
+            this.btnRestore.Size = new System.Drawing.Size(60, 23);
             this.btnRestore.Text = "♻️ กู้คืน";
             this.btnRestore.ToolTipText = "กู้คืน Folder ไปยัง Parent เดิม";
             // 

@@ -46,6 +46,7 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -254,6 +255,9 @@
     <Compile Include="AccessShareForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="MenuActionContext.cs" />
+    <Compile Include="MenuActionKeyCatalog.cs" />
+    <Compile Include="MenuActionRegistry.cs" />
     <Compile Include="MenuManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>

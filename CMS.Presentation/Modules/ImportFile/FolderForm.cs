@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CMS.Data.Interfaces;
@@ -11,6 +12,7 @@ using CMS.Presentation.Modules.ImportFile;
 using CMS.Controllers.DMS.Document;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
+using MenuItem = CMS.Domain.Models.MenuItem;
 
 namespace CMS.Presentation
 {
@@ -46,6 +48,7 @@ namespace CMS.Presentation
         private readonly IAuditService         _auditService;
         private readonly IShareService         _shareService;
         private readonly IUserAccountRepository _userAccountRepo;
+        private readonly IMenuService          _menuService;
         private readonly UserContext          _user;
 
         // Quick Access panel (Req 7)
@@ -88,6 +91,7 @@ namespace CMS.Presentation
         private TreeView _treeMainMenu;
         private bool     _showingConfView = false;
         private bool     _showingMainMenuView = false;
+        private bool     _orgTreeLoaded = false;
 
         // -----------------------------------------------------------------------
         // Constructor
@@ -104,7 +108,8 @@ namespace CMS.Presentation
                           IPermissionRepository permissionRepository = null,
                           IAuditService auditService = null,
                           IShareService shareService = null,
-                          IUserAccountRepository userAccountRepository = null)
+                          IUserAccountRepository userAccountRepository = null,
+                          IMenuService menuService = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
@@ -123,6 +128,7 @@ namespace CMS.Presentation
             _auditService             = auditService;
             _shareService             = shareService;
             _userAccountRepo          = userAccountRepository;
+            _menuService              = menuService;
             _user                     = user;
 
             InitializeComponent();
@@ -192,8 +198,8 @@ namespace CMS.Presentation
             contentsListView.Resize += (s, e) => AdjustNameColumnWidth();
             this.Load += (s, e) => AdjustNameColumnWidth();
 
-            // Wire OrgUnit inline treeview — load on form Load
-            this.Load += (s, e2) => LoadOrgUnitTree();
+            // Defer OrgUnit loading until form is first shown to improve first paint.
+            this.Shown += FolderForm_Shown;
 
             // Build right-click context menu for folderTreeView
             BuildFolderTreeContextMenu();
@@ -237,6 +243,15 @@ namespace CMS.Presentation
             // Detail panel ขนาด 160px — พอดีกับปุ่มและข้อมูล
             splitContent.Panel2MinSize = 160;
             splitContent.SplitterDistance = Math.Max(this.Width - 165, 500);
+        }
+
+        private void FolderForm_Shown(object sender, EventArgs e)
+        {
+            if (_orgTreeLoaded)
+                return;
+
+            _orgTreeLoaded = true;
+            BeginInvoke(new Action(() => LoadOrgUnitTree()));
         }
 
         // -----------------------------------------------------------------------
@@ -598,10 +613,25 @@ namespace CMS.Presentation
         // Event สำหรับแจ้ง MDI_Container เมื่อ selection เปลี่ยน (Req 9.4)
         public event EventHandler SelectionChanged;
 
+        public delegate bool MenuActionRequestHandler(object sender, string actionKey);
+        public event MenuActionRequestHandler MenuActionRequested;
+
         private void OnSelectionChanged()
         {
             if (SelectionChanged != null)
                 SelectionChanged(this, EventArgs.Empty);
+        }
+
+        private bool OnMenuActionRequested(string actionKey)
+        {
+            if (MenuActionRequested == null)
+                return false;
+
+            bool handled = false;
+            foreach (MenuActionRequestHandler handler in MenuActionRequested.GetInvocationList())
+                handled = handler(this, actionKey) || handled;
+
+            return handled;
         }
 
         private void CtxPermission_Click(object sender, EventArgs e)
@@ -735,7 +765,8 @@ namespace CMS.Presentation
                 Visible       = false,
                 Indent        = 16,
                 HideSelection = false,
-                ShowLines     = false
+                ShowLines     = true
+              
             };
 
             // Re-parent treeOrgUnit into pnlOrgFilter alongside the conf tree
@@ -755,7 +786,7 @@ namespace CMS.Presentation
             _btnMainMenu.Click += (s, e) => SwitchToMainMenuView();
             _treeConfidentiality.NodeMouseClick += ConfTree_NodeMouseClick;
             _treeMainMenu.NodeMouseClick += MainMenuTree_NodeMouseClick;
-            
+            _treeMainMenu.CollapseAll();
             LoadMainMenuTree();
         }
 
@@ -763,6 +794,379 @@ namespace CMS.Presentation
         {
             _treeMainMenu.Nodes.Clear();
             _treeMainMenu.BeginUpdate();
+
+            try
+            {
+                if (TryLoadMainMenuFromManagement())
+                {
+                    _treeMainMenu.ExpandAll();
+                    return;
+                }
+
+                LoadDefaultMainMenuTree();
+                _treeMainMenu.ExpandAll();
+            }
+            finally
+            {
+                _treeMainMenu.EndUpdate();
+            }
+        }
+
+        private bool TryLoadMainMenuFromManagement()
+        {
+            if (_menuService == null)
+                return false;
+
+            var menus = GetMainMenuHierarchy();
+            if (menus == null || menus.Count == 0)
+                return false;
+
+            var activeMenus = FlattenMenuHierarchy(menus)
+                .Where(m => m.IsActive)
+                .OrderBy(m => m.DisplayOrder)
+                .ThenBy(m => m.MenuName)
+                .ToList();
+
+            if (activeMenus.Count == 0)
+                return false;
+
+            var roots = activeMenus.Where(m => !m.ParentMenuItemID.HasValue).ToList();
+            if (roots.Count == 0)
+                return false;
+
+            foreach (var root in roots)
+                _treeMainMenu.Nodes.Add(BuildMenuNodeFromManagement(root, activeMenus));
+
+            return _treeMainMenu.Nodes.Count > 0;
+        }
+
+        private List<MenuItem> GetMainMenuHierarchy()
+        {
+            // Admin should see exactly what is configured in Menu Management.
+            if (_user != null && _user.AppRole == 4)
+            {
+                return _menuService.GetAllMenusForManagement(_user) ?? new List<MenuItem>();
+            }
+
+            // Non-admin: build full visible tree recursively (service role filter is applied per level).
+            var roots = _menuService.GetRootMenus(_user) ?? new List<MenuItem>();
+            foreach (var root in roots)
+                PopulateVisibleChildrenRecursive(root);
+
+            return roots;
+        }
+
+        private void PopulateVisibleChildrenRecursive(MenuItem parent)
+        {
+            if (parent == null)
+                return;
+
+            var children = _menuService.GetChildMenus(parent.MenuItemID, _user) ?? new List<MenuItem>();
+            parent.ChildMenuItems = children;
+
+            foreach (var child in children)
+                PopulateVisibleChildrenRecursive(child);
+        }
+
+        private static List<MenuItem> FlattenMenuHierarchy(IEnumerable<MenuItem> roots)
+        {
+            var result = new List<MenuItem>();
+            var visited = new HashSet<int>();
+
+            foreach (var menu in roots)
+                FlattenMenuHierarchyRecursive(menu, result, visited);
+
+            return result;
+        }
+
+        private static void FlattenMenuHierarchyRecursive(MenuItem menu, List<MenuItem> result, HashSet<int> visited)
+        {
+            if (menu == null || visited.Contains(menu.MenuItemID))
+                return;
+
+            visited.Add(menu.MenuItemID);
+            result.Add(menu);
+
+            if (menu.ChildMenuItems == null || menu.ChildMenuItems.Count == 0)
+                return;
+
+            foreach (var child in menu.ChildMenuItems)
+                FlattenMenuHierarchyRecursive(child, result, visited);
+        }
+
+        private TreeNode BuildMenuNodeFromManagement(MenuItem menu, List<MenuItem> allMenus)
+        {
+            var node = new TreeNode(menu.MenuName)
+            {
+                Tag = menu,
+                ImageKey = "folder",
+                SelectedImageKey = "open_folder"
+            };
+
+            var children = allMenus
+                .Where(m => m.ParentMenuItemID == menu.MenuItemID)
+                .OrderBy(m => m.DisplayOrder)
+                .ThenBy(m => m.MenuName)
+                .ToList();
+
+            foreach (var child in children)
+                node.Nodes.Add(BuildMenuNodeFromManagement(child, allMenus));
+
+            if (node.Nodes.Count == 0)
+            {
+                // Priority 1: Use FormClassName if provided
+                if (!string.IsNullOrEmpty(menu.FormClassName))
+                {
+                    node.Tag = menu.FormClassName.Trim();
+                }
+                else
+                {
+                    // Priority 2: Try to map MenuKey to action tag
+                    string actionTag = MapMenuKeyToActionTag(menu.MenuKey);
+                    if (!string.IsNullOrEmpty(actionTag))
+                        node.Tag = actionTag;
+                }
+            }
+
+            return node;
+        }
+
+        private static string MapConfiguredActionToTag(string configuredValue)
+        {
+            string resolvedAction = MenuActionKeyCatalog.ResolveConfiguredActionKey(configuredValue);
+            string token = string.IsNullOrWhiteSpace(resolvedAction) ? configuredValue : resolvedAction;
+            if (string.IsNullOrWhiteSpace(token))
+                return null;
+
+            token = token.Trim();
+            int lastDot = token.LastIndexOf('.');
+            if (lastDot >= 0 && lastDot < token.Length - 1)
+                token = token.Substring(lastDot + 1);
+
+            token = token.Replace("_", string.Empty)
+                         .Replace("-", string.Empty)
+                         .Replace(" ", string.Empty)
+                         .ToLowerInvariant();
+
+            switch (token)
+            {
+                case "admin":
+                    return "Admin";
+                case "home":
+                case "folder":
+                case "folderhome":
+                case "folderexplorer":
+                    return "Home";
+                case "sharedialog":
+                    return "ShareDialog";
+                case "sharedwithme":
+                case "sharedwithmeform":
+                    return "SharedWithMe";
+                case "sharemanagement":
+                case "sharemanagementform":
+                    return "ShareManagement";
+                case "documentgroup":
+                    return "DocumentGroup";
+                case "orggroup":
+                    return "OrgGroup";
+                case "permissiongroup":
+                    return "PermissionGroup";
+                case "reportgroup":
+                    return "ReportGroup";
+                case "systemgroup":
+                    return "SystemGroup";
+                case "orgstructure":
+                case "orgstructureform":
+                    return "OrgStructure";
+                case "usermanagement":
+                case "usermanagementform":
+                    return "UserManagement";
+                case "useraccess":
+                case "useraccessform":
+                    return "UserAccess";
+                case "permissionadmin":
+                case "permissionform":
+                    return "PermissionAdmin";
+                case "foldersettings":
+                    return "FolderSettings";
+                case "userpermissionsummary":
+                case "userpermissionsummaryform":
+                    return "UserPermissionSummary";
+                case "approvalinbox":
+                case "approvalinboxform":
+                    return "ApprovalInbox";
+                case "reportexcel":
+                    return "ReportExcel";
+                case "pdpaconsent":
+                    return "PdpaConsent";
+                case "pdpareport":
+                    return "PdpaReport";
+                case "accesslog":
+                case "accesslogview":
+                    return "AccessLog";
+                case "auditlog":
+                case "auditlogform":
+                    return "AuditLog";
+                case "menumanagement":
+                    return "MenuManagement";
+                case "configadmin":
+                    return "ConfigAdmin";
+                case "authorityconfig":
+                case "authorityconfigform":
+                    return "AuthorityConfig";
+                case "foldertemplate":
+                case "foldertemplateform":
+                    return "FolderTemplate";
+                case "archivefolder":
+                    return "ArchiveFolder";
+                case "copystructure":
+                    return "CopyStructure";
+                case "changelevel":
+                    return "ChangeLevel";
+                case "syncemployee":
+                    return "SyncEmployee";
+                case "recyclebin":
+                case "recyclebinform":
+                case "trash":
+                    return "RecycleBin";
+                default:
+                    return null;
+            }
+        }
+
+        private static string MapMenuNameToActionTag(string menuName)
+        {
+            if (string.IsNullOrWhiteSpace(menuName))
+                return null;
+
+            string name = menuName.Trim().ToLowerInvariant();
+
+            if (name.Contains("หน้าหลัก") || name.Contains("home")) return "Home";
+            if (name.Contains("แชร์กับฉัน") || name.Contains("shared with me")) return "SharedWithMe";
+            if (name.Contains("ลิงก์แชร์") || name.Contains("share management")) return "ShareManagement";
+            if (name.Contains("โครงสร้าง") || name.Contains("org structure")) return "OrgStructure";
+            if (name.Contains("บัญชีผู้ใช้") || name.Contains("ผู้ใช้งาน") || name.Contains("user management")) return "UserManagement";
+            if (name.Contains("จัดการสิทธิ์") || name.Contains("permission")) return "PermissionAdmin";
+            if (name.Contains("สรุปสิทธิ์")) return "UserPermissionSummary";
+            if (name.Contains("อนุมัติ") || name.Contains("approval")) return "ApprovalInbox";
+            if (name.Contains("เข้าถึง") || name.Contains("access log")) return "AccessLog";
+            if (name.Contains("audit")) return "AuditLog";
+            if (name.Contains("ตั้งค่าระบบ") || name.Contains("config")) return "ConfigAdmin";
+            if (name.Contains("template") || name.Contains("แม่แบบ")) return "FolderTemplate";
+            if (name.Contains("sync") || name.Contains("พนักงาน")) return "SyncEmployee";
+            if (name.Contains("ถังขยะ") || name.Contains("recycle") || name.Contains("trash")) return "RecycleBin";
+
+            return null;
+        }
+
+        private static string ResolveMenuActionTag(MenuItem menu)
+        {
+            if (menu == null)
+                return null;
+
+            string action = MapConfiguredActionToTag(menu.FormClassName);
+            if (!string.IsNullOrEmpty(action))
+                return action;
+
+            action = MapMenuKeyToActionTag(menu.MenuKey);
+            if (!string.IsNullOrEmpty(action))
+                return action;
+
+            return MapMenuNameToActionTag(menu.MenuName);
+        }
+
+        private static string MapMenuKeyToActionTag(string menuKey)
+        {
+            if (string.IsNullOrWhiteSpace(menuKey))
+                return null;
+
+            switch (menuKey.Trim().ToLowerInvariant())
+            {
+                case "home":
+                case "folder":
+                case "folder_home":
+                case "folder_explorer":
+                    return "Home";
+                case "share_dialog":
+                case "sharedialog":
+                    return "ShareDialog";
+                case "shared_with_me":
+                case "sharedwithme":
+                    return "SharedWithMe";
+                case "share_management":
+                case "sharemanagement":
+                    return "ShareManagement";
+                case "user_access":
+                case "useraccess":
+                    return "UserAccess";
+                case "org_structure":
+                case "orgstructure":
+                    return "OrgStructure";
+                case "user_management":
+                case "usermanagement":
+                    return "UserManagement";
+                case "permission_admin":
+                case "permissionadmin":
+                    return "PermissionAdmin";
+                case "folder_settings":
+                case "foldersettings":
+                    return "FolderSettings";
+                case "user_permission_summary":
+                case "userpermissionsummary":
+                    return "UserPermissionSummary";
+                case "approval_inbox":
+                case "approvalinbox":
+                    return "ApprovalInbox";
+                case "report_excel":
+                case "reportexcel":
+                    return "ReportExcel";
+                case "pdpa_consent":
+                case "pdpaconsent":
+                    return "PdpaConsent";
+                case "pdpa_report":
+                case "pdpareport":
+                    return "PdpaReport";
+                case "access_log":
+                case "accesslog":
+                    return "AccessLog";
+                case "audit_log":
+                case "auditlog":
+                    return "AuditLog";
+                case "menu_management":
+                case "menumanagement":
+                    return "MenuManagement";
+                case "config_admin":
+                case "configadmin":
+                    return "ConfigAdmin";
+                case "authority_config":
+                case "authorityconfig":
+                    return "AuthorityConfig";
+                case "folder_template":
+                case "foldertemplate":
+                    return "FolderTemplate";
+                case "archive_folder":
+                case "archivefolder":
+                    return "ArchiveFolder";
+                case "copy_structure":
+                case "copystructure":
+                    return "CopyStructure";
+                case "change_level":
+                case "changelevel":
+                    return "ChangeLevel";
+                case "sync_employee":
+                case "syncemployee":
+                    return "SyncEmployee";
+                case "recycle_bin":
+                case "recyclebin":
+                case "trash":
+                    return "RecycleBin";
+                default:
+                    return null;
+            }
+        }
+
+        private void LoadDefaultMainMenuTree()
+        {
 
             // 1. จัดการเอกสาร
             var docNode = new TreeNode("📂 จัดการเอกสาร");
@@ -792,98 +1196,61 @@ namespace CMS.Presentation
             settingNode.Nodes.Add(new TreeNode("🛠️ ตั้งค่าระบบ")           { Tag = "ConfigAdmin" });
             settingNode.Nodes.Add(new TreeNode("📋 ตั้งค่าแม่แบบโฟลเดอร์") { Tag = "FolderTemplate" });
             _treeMainMenu.Nodes.Add(settingNode);
-
-            _treeMainMenu.ExpandAll();
-            _treeMainMenu.EndUpdate();
         }
 
         private void MainMenuTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
-            string tag = e.Node.Tag as string;
-            if (string.IsNullOrEmpty(tag)) return;
+            string tag = MapConfiguredActionToTag(e.Node.Tag as string);
 
-            // นำทางกลับหน้าหลัก
-            if (tag == "Home")
-            {
-                SwitchToOrgView();
+            // Try to map MenuItem if Tag is not a direct action string.
+            if (string.IsNullOrEmpty(tag) && e.Node.Tag is MenuItem menuItem)
+                tag = ResolveMenuActionTag(menuItem);
+
+            if (string.IsNullOrWhiteSpace(tag))
                 return;
-            }
 
-            try
+            string errorMessage;
+            if (MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(e.Node.Text), out errorMessage))
+                return;
+
+            if (!string.IsNullOrWhiteSpace(errorMessage))
             {
-                Form targetForm = null;
-
-                switch (tag)
-                {
-                    case "SharedWithMe":
-                        // ใช้บริการที่มีอยู่ใน FolderForm ส่งต่อไปยังหน้าจออื่นๆ
-                        targetForm = new SharedWithMeForm(_user, _permissionRepository, _folderRepository, null, null, null);
-                        break;
-
-                    case "ShareManagement":
-                        targetForm = new ShareManagementForm(_shareService, _user, _userAccountRepo, null);
-                        break;
-
-                    case "OrgStructure":
-                        targetForm = new OrgStructureForm(_orgStructureService, _user, null, null, null);
-                        break;
-
-                    case "UserManagement":
-                        targetForm = new UserManagementForm(_userAccountRepo, _user, _auditService, null, null, null, null);
-                        break;
-
-                    case "PermissionAdmin":
-                        // เปิดหน้าจอจัดการสิทธิ์ (ถ้ามี Folder ที่เลือกอยู่จะส่งไปด้วย)
-                        targetForm = new PermissionForm(_permissionService, _approvalService, _folderService, _permissionRepository, _user, SelectedFolder, null, _folderRepository, null, _orgStructureService, null, null);
-                        break;
-
-                    case "UserPermissionSummary":
-                        targetForm = new UserPermissionSummaryForm(_user, _permissionRepository, _folderRepository, null, null, null);
-                        break;
-
-                    case "ApprovalInbox":
-                        targetForm = new ApprovalInboxForm(_approvalService, _user);
-                        break;
-
-                    case "AccessLog":
-                        targetForm = new AccessLogView(_shareService, _user, 0);
-                        break;
-
-                    case "AuditLog":
-                        targetForm = new AuditLogForm(_auditService, _user);
-                        break;
-
-                    case "ConfigAdmin":
-                        // ConfigAdmin should be opened from MDI_Container which has _configManager
-                        MessageBox.Show("กรุณาเปิดผ่าน MDI Container เพื่อเข้าถึงตั้งค่าระบบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
-
-                    case "FolderTemplate":
-                        targetForm = new FolderTemplateForm(_folderTemplateRepository, _user);
-                        break;
-
-                    case "SyncEmployee":
-                        // เรียกฟังก์ชัน Sync (ถ้ามีใน MDI Container หรือสร้างใหม่)
-                        MessageBox.Show("กำลังเริ่มกระบวนการ Sync ข้อมูลพนักงานจากระบบ HR...", "Sync ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
-                }
-
-                if (targetForm != null)
-                {
-                    // แสดงสถานะที่หน้าจอหลักก่อนเปิด
-                    ClearContentPanel();
-                    lblContentInfo.Text = "กำลังเปิด: " + e.Node.Text;
-
-                    // All forms open as dialogs (Normal window state), not as MDI children
-                    targetForm.WindowState = FormWindowState.Normal;
-                    targetForm.ShowDialog(this);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("ไม่สามารถเปิดหน้าจอ " + e.Node.Text + " ได้ในขณะนี้\nเนื่องจาก: " + ex.Message, 
+                MessageBox.Show("ไม่สามารถเปิดหน้าจอ " + e.Node.Text + " ได้ในขณะนี้\nเนื่องจาก: " + errorMessage,
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+        }
+
+        private MenuActionContext BuildMenuActionContext(string menuText)
+        {
+            return new MenuActionContext
+            {
+                Owner = this,
+                User = _user,
+                MenuText = menuText,
+                SelectedFolder = SelectedFolder,
+                SelectedFile = SelectedFile,
+                FolderService = _folderService,
+                FileService = _fileService,
+                OrgStructureService = _orgStructureService,
+                ApprovalService = _approvalService,
+                FolderTemplateRepository = _folderTemplateRepository,
+                QuickAccessService = _quickAccessService,
+                PermissionService = _permissionService,
+                FolderRepository = _folderRepository,
+                PermissionRepository = _permissionRepository,
+                AuditService = _auditService,
+                ShareService = _shareService,
+                UserAccountRepository = _userAccountRepo,
+                MenuService = _menuService,
+                SwitchToOrgView = SwitchToOrgView,
+                SwitchToMainMenuView = SwitchToMainMenuView,
+                TriggerArchive = TriggerArchive,
+                TriggerChangeLevel = TriggerChangeLevel,
+                TriggerCopyStructure = TriggerCopyStructure,
+                ClearContentPanel = ClearContentPanel,
+                SetContentInfo = text => lblContentInfo.Text = "กำลังเปิด: " + text,
+                RequestMdiAction = OnMenuActionRequested
+            };
         }
 
         private void SwitchToOrgView()
@@ -939,6 +1306,10 @@ namespace CMS.Presentation
             if (_showingMainMenuView) return;
             _showingConfView = false;
             _showingMainMenuView = true;
+
+            // Refresh from MenuManagement and expand all nodes so submenus are visible immediately.
+            LoadMainMenuTree();
+            _treeMainMenu.ExpandAll();
             
             treeOrgUnit.Visible          = false;
             _treeConfidentiality.Visible = false;
@@ -1696,6 +2067,7 @@ namespace CMS.Presentation
 
         private void FolderForm_Load(object sender, EventArgs e)
         {
+            ApplyPerformanceTweaks();
             this.WindowState = FormWindowState.Maximized;
 
             // Set up folder open/closed icons from Resources (shared ImageList)
@@ -1941,6 +2313,28 @@ namespace CMS.Presentation
             // _presenter.LoadRecycleBin(_selectedOrgUnitId); // Hidden - recycle bin disabled
         }
 
+        private void ApplyPerformanceTweaks()
+        {
+            // Reduce redraw flicker while heavy controls are being populated.
+            SetDoubleBuffered(folderTreeView);
+            SetDoubleBuffered(treeOrgUnit);
+            if (_treeConfidentiality != null)
+                SetDoubleBuffered(_treeConfidentiality);
+            SetDoubleBuffered(contentsListView);
+            SetDoubleBuffered(splitContent);
+            SetDoubleBuffered(splitMain);
+        }
+
+        private static void SetDoubleBuffered(Control control)
+        {
+            if (control == null)
+                return;
+
+            var prop = typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (prop != null)
+                prop.SetValue(control, true, null);
+        }
+
         // -----------------------------------------------------------------------
         // IFolderView — ShowFolderTree  (Req 4.1, 7.6)
         // -----------------------------------------------------------------------
@@ -2060,6 +2454,7 @@ namespace CMS.Presentation
                 return;
             }
             
+            contentsListView.SuspendLayout();
             contentsListView.BeginUpdate();
             contentsListView.Items.Clear();
             _currentFiles.Clear();
@@ -2156,6 +2551,7 @@ namespace CMS.Presentation
             }
 
             contentsListView.EndUpdate();
+            contentsListView.ResumeLayout();
 
             // Apply Tile columns when in Tile view (ชื่อ + ประเภท + ขนาด)
             if (_currentView == View.Tile)
