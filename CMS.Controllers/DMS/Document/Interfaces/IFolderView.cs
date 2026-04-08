@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using CMS.Domain.Models;
 
-namespace CMS.Presentation.Presenters
+namespace CMS.Controllers.DMS.Document
 {
     /// <summary>
     /// View contract for the FolderPresenter.

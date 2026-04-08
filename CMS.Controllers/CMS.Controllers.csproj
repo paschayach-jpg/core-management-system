@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{2E4F8B3D-1A7C-4D96-B052-6C8E3F0A1D75}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CMS.Controllers</RootNamespace>
+    <AssemblyName>CMS.Controllers</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <!-- DMS.Document — View Interfaces -->
+    <Compile Include="DMS\Document\Interfaces\IFolderView.cs" />
+    <Compile Include="DMS\Document\Interfaces\IFileUploadView.cs" />
+    <Compile Include="DMS\Document\Interfaces\IPermissionView.cs" />
+    <Compile Include="DMS\Document\Interfaces\IAuditLogView.cs" />
+    <Compile Include="DMS\Document\Interfaces\IOrgStructureView.cs" />
+    <Compile Include="DMS\Document\Interfaces\IConfigAdminView.cs" />
+    <Compile Include="DMS\Document\Interfaces\IProjectView.cs" />
+    <!-- DMS.Document — Presenters (Controllers) -->
+    <Compile Include="DMS\Document\FolderPresenter.cs" />
+    <Compile Include="DMS\Document\FilePresenter.cs" />
+    <Compile Include="DMS\Document\PermissionPresenter.cs" />
+    <Compile Include="DMS\Document\AuditLogPresenter.cs" />
+    <Compile Include="DMS\Document\OrgStructurePresenter.cs" />
+    <Compile Include="DMS\Document\ConfigAdminPresenter.cs" />
+    <Compile Include="DMS\Document\ProjectPresenter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">
+      <Project>{C1CC34BC-573E-4C98-AA9E-37CB98534DEA}</Project>
+      <Name>CMS.Domain</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CMS.Data\CMS.Data.csproj">
+      <Project>{A63FD418-CCA6-4FE1-834F-A09136EE92D6}</Project>
+      <Name>CMS.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CMS.Services\CMS.Services.csproj">
+      <Project>{50513916-E8F1-4308-94C0-174114009D4F}</Project>
+      <Name>CMS.Services</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CMS.Infrastructure\CMS.Infrastructure.csproj">
+      <Project>{F52CF319-4754-4882-A243-DD367C39C156}</Project>
+      <Name>CMS.Infrastructure</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

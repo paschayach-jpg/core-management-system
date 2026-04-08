@@ -1,7 +1,7 @@
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
 
-namespace CMS.Presentation.Presenters
+namespace CMS.Controllers.DMS.Document
 {
     /// <summary>
     /// View contract for the FilePresenter (MOD-003).

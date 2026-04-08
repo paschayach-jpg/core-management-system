@@ -7,7 +7,7 @@ using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 
-namespace CMS.Presentation.Presenters
+namespace CMS.Controllers.DMS.Document
 {
     /// <summary>
     /// Presenter for MOD-003 File Upload.
@@ -16,10 +16,10 @@ namespace CMS.Presentation.Presenters
     /// </summary>
     public class FilePresenter
     {
-        private readonly IFileService   _fileService;
-        private readonly IFolderService _folderService;
+        private readonly IFileService    _fileService;
+        private readonly IFolderService  _folderService;
         private readonly IFileUploadView _view;
-        private readonly UserContext    _user;
+        private readonly UserContext     _user;
 
         // Quota warning threshold (90 %)
         private const double QuotaWarningThreshold = 0.90;
@@ -45,9 +45,6 @@ namespace CMS.Presentation.Presenters
         // Folder Tree Loading
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Loads the folder tree for the specified OrgUnit into the TreeView.
-        /// </summary>
         public void LoadFolderTree(TreeView treeView, int orgUnitId)
         {
             if (treeView == null) throw new ArgumentNullException("treeView");
@@ -57,7 +54,6 @@ namespace CMS.Presentation.Presenters
                 treeView.BeginUpdate();
                 treeView.Nodes.Clear();
 
-                // Get root folders for the org unit
                 var rootFolders = _folderService.GetRootFolders(orgUnitId, _user);
                 if (rootFolders == null) return;
 
@@ -111,10 +107,6 @@ namespace CMS.Presentation.Presenters
         // Upload  (Req 5.1–5.16, 12.5)
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Uploads the supplied files to the given folder.
-        /// Updates the view with per-file results and checks quota after upload.
-        /// </summary>
         public void UploadFiles(IList<FileUploadRequest> files, int folderId)
         {
             if (files == null || files.Count == 0)
@@ -123,7 +115,6 @@ namespace CMS.Presentation.Presenters
                 return;
             }
 
-            // Req 5.1, 5.2 — batch limit enforced in UI; double-check here
             if (files.Count > 10)
             {
                 _view.ShowError("A maximum of 10 files may be uploaded in a single operation.");
@@ -152,10 +143,7 @@ namespace CMS.Presentation.Presenters
                 return;
             }
 
-            // Update per-file status in the view
-            var resultList = results == null
-                ? new List<UploadResult>()
-                : results.ToList();
+            var resultList = results == null ? new List<UploadResult>() : results.ToList();
 
             for (int i = 0; i < resultList.Count; i++)
             {
@@ -169,7 +157,6 @@ namespace CMS.Presentation.Presenters
             _view.SetProgress(100);
             _view.SetUploadEnabled(true);
 
-            // Req 12.5 — check quota after upload
             CheckQuotaWarning(folderId);
         }
 
@@ -177,15 +164,6 @@ namespace CMS.Presentation.Presenters
         // Download  (Req 5.14, 5.15)
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Downloads the specified file, verifies its SHA-256 checksum, and saves it
-        /// to the path chosen by the user via the supplied save-path callback.
-        /// </summary>
-        /// <param name="fileDocumentId">ID of the FileDocument to download.</param>
-        /// <param name="getSavePath">
-        /// Callback that returns the full local path where the file should be saved,
-        /// or null if the user cancelled the save dialog.
-        /// </param>
         public void DownloadFile(int fileDocumentId, Func<string, string> getSavePath)
         {
             FileDownloadResult result;
@@ -210,10 +188,9 @@ namespace CMS.Presentation.Presenters
                 return;
             }
 
-            // Ask the view/caller for a save path
             string savePath = getSavePath(result.FileName);
             if (string.IsNullOrEmpty(savePath))
-                return; // user cancelled
+                return;
 
             try
             {
@@ -238,23 +215,10 @@ namespace CMS.Presentation.Presenters
         // Quota warning  (Req 12.5)
         // -----------------------------------------------------------------------
 
-        /// <summary>
-        /// Checks the storage report for the folder's OrgUnit and shows a quota warning
-        /// in the view if any folder has reached 90 % of its quota.
-        /// </summary>
         private void CheckQuotaWarning(int folderId)
         {
             try
             {
-                // Retrieve the folder to get its OrgUnitId
-                var contents = _folderService.GetFolderContents(folderId, _user);
-                // We need the folder itself — use GetRootFolders as a fallback;
-                // the simplest approach is to get the storage report for orgUnit 0
-                // and let the service resolve it. We pass orgUnitId=0 as a sentinel
-                // meaning "derive from folderId" — but since IFolderService doesn't
-                // expose GetById, we use GetStorageReport with the folderId's orgUnit.
-                // Because we don't have a direct GetFolder(id) here, we call
-                // GetStorageReport with orgUnitId = 0 and catch gracefully.
                 var report = _fileService.GetStorageReport(0, _user);
                 if (report == null || report.Folders == null) return;
 

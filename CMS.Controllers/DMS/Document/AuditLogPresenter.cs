@@ -5,7 +5,7 @@ using CMS.Data.Models;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
-namespace CMS.Presentation.Presenters
+namespace CMS.Controllers.DMS.Document
 {
     /// <summary>
     /// Presenter for the Audit Log viewer.
@@ -47,7 +47,7 @@ namespace CMS.Presentation.Presenters
             {
                 _view.ShowStatus("กำลังค้นหา...", false);
 
-                var query = BuildQuery();
+                var query  = BuildQuery();
                 var result = _auditService.Query(query, _user);
 
                 _view.BindResults(result.Items, result.TotalCount, result.PageNumber, result.PageSize);
@@ -79,7 +79,6 @@ namespace CMS.Presentation.Presenters
         {
             try
             {
-                // Fetch all pages for export (large page size)
                 var query = BuildQuery();
                 query.PageNumber = 1;
                 query.PageSize   = 10000;
@@ -128,8 +127,8 @@ namespace CMS.Presentation.Presenters
             {
                 FromDate   = _view.FromDate.Date,
                 ToDate     = _view.ToDate.Date.AddDays(1).AddSeconds(-1),
-                Module     = string.IsNullOrWhiteSpace(_view.FilterModule)   ? null : _view.FilterModule.Trim(),
-                Action     = string.IsNullOrWhiteSpace(_view.FilterAction)   ? null : _view.FilterAction.Trim(),
+                Module     = string.IsNullOrWhiteSpace(_view.FilterModule) ? null : _view.FilterModule.Trim(),
+                Action     = string.IsNullOrWhiteSpace(_view.FilterAction) ? null : _view.FilterAction.Trim(),
                 PageNumber = _view.CurrentPage,
                 PageSize   = _view.PageSize
             };

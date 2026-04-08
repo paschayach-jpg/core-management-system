@@ -30,6 +30,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
+      <HintPath>..\packages\BouncyCastle.1.8.9\lib\BouncyCastle.Crypto.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="itextsharp, Version=5.5.13.3, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>..\packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -38,12 +46,6 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="Microsoft.VisualBasic" />
-    <Reference Include="BouncyCastle.Crypto">
-      <HintPath>..\packages\BouncyCastle.1.8.9\lib\BouncyCastle.Crypto.dll</HintPath>
-    </Reference>
-    <Reference Include="itextsharp">
-      <HintPath>..\packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -229,19 +231,7 @@
     <Compile Include="Modules\ImportFile\UserManagementForm.Designer.cs">
       <DependentUpon>UserManagementForm.cs</DependentUpon>
     </Compile>
-    <!-- Module: ImportFile — Presenters -->
-    <Compile Include="Modules\ImportFile\Presenters\IOrgStructureView.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\OrgStructurePresenter.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\IFolderView.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\FolderPresenter.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\IFileUploadView.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\FilePresenter.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\IPermissionView.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\PermissionPresenter.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\IAuditLogView.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\AuditLogPresenter.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\IConfigAdminView.cs" />
-    <Compile Include="Modules\ImportFile\Presenters\ConfigAdminPresenter.cs" />
+    <!-- Module: ImportFile — Presenters (ย้ายไปไว้ใน CMS.Controllers แล้ว) -->
     <!-- Share Forms -->
     <Compile Include="SharedFileViewForm.cs">
       <SubType>Form</SubType>
@@ -288,6 +278,10 @@
     <ProjectReference Include="..\CMS.Services\CMS.Services.csproj">
       <Project>{50513916-E8F1-4308-94C0-174114009D4F}</Project>
       <Name>CMS.Services</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CMS.Controllers\CMS.Controllers.csproj">
+      <Project>{2E4F8B3D-1A7C-4D96-B052-6C8E3F0A1D75}</Project>
+      <Name>CMS.Controllers</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
