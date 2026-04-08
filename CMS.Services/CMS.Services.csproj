@@ -70,6 +70,8 @@
     <Compile Include="Interfaces\IShareService.cs" />
     <Compile Include="Interfaces\IShareTokenService.cs" />
     <Compile Include="Interfaces\IShareAccessService.cs" />
+    <Compile Include="Interfaces\IKBCategoryService.cs" />
+    <Compile Include="Interfaces\IKBArticleService.cs" />
     <Compile Include="DTOs\ShareAccessResult.cs" />
     <Compile Include="DTOs\CreateExternalShareRequest.cs" />
     <Compile Include="DTOs\CreateInternalShareRequest.cs" />
@@ -91,6 +93,8 @@
     <Compile Include="ShareService.cs" />
     <Compile Include="ShareTokenService.cs" />
     <Compile Include="ShareAccessService.cs" />
+    <Compile Include="KBCategoryService.cs" />
+    <Compile Include="KBArticleService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">

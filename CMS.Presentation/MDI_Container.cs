@@ -49,6 +49,8 @@ namespace CMS.Presentation
         private readonly CMS.Data.Interfaces.IHrPositionMappingRepository _hrPositionMappingRepository;
         private readonly IShareService _shareService;
         private readonly IShareAccessService _shareAccessService;
+        private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
+        private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
 
         // Notification inbox controls (built programmatically)
         private Panel    _notificationPanel;
@@ -139,7 +141,9 @@ namespace CMS.Presentation
             CMS.Data.Interfaces.IHrPositionLevelRepository hrPositionLevelRepository = null,
             CMS.Data.Interfaces.IHrPositionMappingRepository hrPositionMappingRepository = null,
             IShareService shareService = null,
-            IShareAccessService shareAccessService = null)
+            IShareAccessService shareAccessService = null,
+            CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
+            CMS.Services.Interfaces.IKBArticleService  kbArticleService  = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
             if (auditService        == null) throw new ArgumentNullException("auditService");
@@ -176,6 +180,8 @@ namespace CMS.Presentation
             _hrPositionMappingRepository = hrPositionMappingRepository;
             _shareService = shareService;
             _shareAccessService = shareAccessService;
+            _kbCategoryService = kbCategoryService;
+            _kbArticleService  = kbArticleService;
 
             InitializeComponent();
             BuildFileDetailPanel();
@@ -605,6 +611,9 @@ namespace CMS.Presentation
                 new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",            null, (s, e) => OpenSysConfig()),
                 new ToolStripMenuItem("🔐 จัดการสิทธิ์ Authority", null, (s, e) => OpenAuthorityConfig()),
                 new ToolStripMenuItem("🔄 Sync ข้อมูลพนักงาน",    null, (s, e) => SyncEmployeeFromApi()),
+                new ToolStripSeparator(),
+                new ToolStripMenuItem("📚 ห้องสมุดความรู้ (KMS)",  null, (s, e) => OpenKnowledgeBase()),
+                new ToolStripMenuItem("⚙️ ตั้งค่า KB Category",    null, (s, e) => OpenKBCategorySettings()),
             });
 
             ribbonStripAdmin.Items.AddRange(new ToolStripItem[]
@@ -738,6 +747,9 @@ namespace CMS.Presentation
             btnRibbonOrgAdmin.Click       += (s, e) => OpenOrgStructure();
             btnRibbonReportExcel.Click    += (s, e) => OpenSysConfig();
             btnRibbonPDPA.Click           += (s, e) => OpenPdpaConsent();
+
+            //ตั้งค่า Category ของระบบ KMS
+            toolStripButton1.Click       += (s, e) => OpenConfigCategoryKMS();
 
             // ── ปุ่ม "สิทธิ์ของฉัน" — แสดงใน ribbonStrip (Home tab) สำหรับทุก user ──
             var sepMyPerm = new ToolStripSeparator();
@@ -984,6 +996,22 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
+        private void OpenConfigCategoryKMS()
+        {
+            OpenKnowledgeBase();
+        }
+
+        private void OpenKnowledgeBase()
+        {
+            if (_kbCategoryService == null || _kbArticleService == null)
+            {
+                MessageBox.Show("Knowledge Base service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new KnowledgeBaseForm(_kbCategoryService, _kbArticleService, _currentUser));
+        }
+
         private void OpenShareDialog()
         {
             if (_shareService == null)
@@ -1202,6 +1230,17 @@ namespace CMS.Presentation
             else
                 MessageBox.Show("FolderAuthority service ไม่พร้อมใช้งาน", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private void OpenKBCategorySettings()
+        {
+            if (_kbCategoryService == null)
+            {
+                MessageBox.Show("KB Category service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new KBCategoryForm(_kbCategoryService, _currentUser));
         }
 
         private void SyncEmployeeFromApi()
