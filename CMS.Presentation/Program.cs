@@ -383,7 +383,6 @@ namespace CMS.Presentation
                     fileService: fileService,
                     configManager: configManager,
                     permissionService: permissionService,
-                    folderRepository: folderRepository,
                     filePermissionService: filePermissionService,
                     folderTemplateController: folderTemplateController,
                     employeeApiService: employeeApiService,
@@ -404,8 +403,7 @@ namespace CMS.Presentation
                     fileDocumentLookupController: fileDocumentLookupController,
                     filePermissionAclController: filePermissionAclController,
                     authorityOrgLookupController: authorityOrgLookupController,
-                    shareService,
-                    shareAccessService,
+                    folderRepository: folderRepository,
                     kbCategoryService,
                     kbArticleService);
                 Application.Run(mainForm);
