@@ -22,6 +22,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnNewCategory = new System.Windows.Forms.Button();
             this.pnlLeftHeader = new System.Windows.Forms.Panel();
             this.lblCategoryHeader = new System.Windows.Forms.Label();
+            this.panelMainRight = new System.Windows.Forms.Panel();
             this.pnlArticleList = new System.Windows.Forms.Panel();
             this.flpArticles = new System.Windows.Forms.FlowLayoutPanel();
             this.pnlSearch = new System.Windows.Forms.Panel();
@@ -43,6 +44,7 @@ namespace CMS.Presentation.Modules.KMS
             this.splitMain.SuspendLayout();
             this.pnlLeftFooter.SuspendLayout();
             this.pnlLeftHeader.SuspendLayout();
+            this.panelMainRight.SuspendLayout();
             this.pnlArticleList.SuspendLayout();
             this.pnlSearch.SuspendLayout();
             this.pnlRightTop.SuspendLayout();
@@ -105,19 +107,27 @@ namespace CMS.Presentation.Modules.KMS
             this.splitMain.Panel1MinSize = 160;
             // 
             // splitMain.Panel2
-            // 
+            //
             this.splitMain.Panel2.BackColor = System.Drawing.Color.White;
-            this.splitMain.Panel2.Controls.Add(this.pnlArticleList);
-            this.splitMain.Panel2.Controls.Add(this.pnlSearch);
-            this.splitMain.Panel2.Controls.Add(this.pnlRightTop);
-            this.splitMain.Panel2.Controls.Add(this.pnlRightFooter);
+            this.splitMain.Panel2.Controls.Add(this.panelMainRight);
             this.splitMain.Panel2MinSize = 400;
             this.splitMain.Size = new System.Drawing.Size(1100, 628);
-            this.splitMain.SplitterDistance = 696;
+            this.splitMain.SplitterDistance = 260;
             this.splitMain.TabIndex = 0;
-            // 
+            //
+            // panelMainRight
+            //
+            this.panelMainRight.BackColor = System.Drawing.Color.White;
+            this.panelMainRight.Controls.Add(this.pnlArticleList);
+            this.panelMainRight.Controls.Add(this.pnlSearch);
+            this.panelMainRight.Controls.Add(this.pnlRightTop);
+            this.panelMainRight.Controls.Add(this.pnlRightFooter);
+            this.panelMainRight.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelMainRight.Name = "panelMainRight";
+            this.panelMainRight.TabIndex = 0;
+            //
             // treeCategories
-            // 
+            //
             this.treeCategories.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.treeCategories.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.treeCategories.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -389,6 +399,7 @@ namespace CMS.Presentation.Modules.KMS
             this.splitMain.ResumeLayout(false);
             this.pnlLeftFooter.ResumeLayout(false);
             this.pnlLeftHeader.ResumeLayout(false);
+            this.panelMainRight.ResumeLayout(false);
             this.pnlArticleList.ResumeLayout(false);
             this.pnlSearch.ResumeLayout(false);
             this.pnlSearch.PerformLayout();
@@ -402,6 +413,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label           lblTitle;
         private System.Windows.Forms.Button          btnSettings;
         private System.Windows.Forms.SplitContainer  splitMain;
+        private System.Windows.Forms.Panel           panelMainRight;
         private System.Windows.Forms.Panel           pnlLeftHeader;
         private System.Windows.Forms.Label           lblCategoryHeader;
         private System.Windows.Forms.TreeView        treeCategories;

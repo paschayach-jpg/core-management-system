@@ -55,6 +55,13 @@ namespace CMS.Services
 
         // ── Write ─────────────────────────────────────────────────────────────
 
+        public string GenerateNextArticleCode()
+        {
+            int year = DateTime.Now.Year;
+            int seq  = _articleRepo.GetNextCodeSequence(year);
+            return string.Format("KB-{0}-{1:D3}", year, seq);
+        }
+
         public int Create(KBArticle article)
         {
             if (article == null)      throw new ArgumentNullException("article");
@@ -63,9 +70,13 @@ namespace CMS.Services
             if (article.CategoryID <= 0)
                 throw new ArgumentException("กรุณาเลือก Category");
 
-            // Auto-generate ArticleCode if empty
+            // Auto-generate ArticleCode if empty — รูปแบบ KB-yyyy-NNN (sequential per year)
             if (string.IsNullOrWhiteSpace(article.ArticleCode))
-                article.ArticleCode = string.Format("KB-{0}-{1:D3}", DateTime.Now.Year, DateTime.Now.Millisecond % 1000);
+            {
+                int year = DateTime.Now.Year;
+                int seq  = _articleRepo.GetNextCodeSequence(year);
+                article.ArticleCode = string.Format("KB-{0}-{1:D3}", year, seq);
+            }
 
             // New article always starts as Draft
             article.Status = 1;

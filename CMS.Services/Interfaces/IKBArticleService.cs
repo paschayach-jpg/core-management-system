@@ -15,6 +15,12 @@ namespace CMS.Services.Interfaces
         KBArticle GetById(int articleId);
 
         // ── Write ─────────────────────────────────────────────────────────────
+        /// <summary>
+        /// สร้าง ArticleCode ถัดไปในรูปแบบ KB-YYYY-NNN (เช่น KB-2566-001)
+        /// ใช้แสดง Preview ในฟอร์มก่อน Save จริง
+        /// </summary>
+        string GenerateNextArticleCode();
+
         /// <summary>สร้างบทความใหม่ คืน ArticleID (เริ่มต้นที่ Status=Draft)</summary>
         int Create(KBArticle article);
 

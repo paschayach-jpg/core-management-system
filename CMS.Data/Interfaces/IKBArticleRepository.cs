@@ -14,5 +14,8 @@ namespace CMS.Data.Interfaces
         void UpdateStatus(int articleId, byte status, string reviewedBy);
         void IncrementViewCount(int articleId);
         void IncrementLikeCount(int articleId);
+
+        /// <summary>คืน sequence ถัดไปสำหรับปีที่กำหนด เพื่อสร้าง ArticleCode รูปแบบ KB-yyyy-NNN</summary>
+        int GetNextCodeSequence(int year);
     }
 }

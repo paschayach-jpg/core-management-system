@@ -216,6 +216,26 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public int GetNextCodeSequence(int year)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    DECLARE @prefix VARCHAR(12) = 'KB-' + CAST(@Year AS VARCHAR(4)) + '-'
+                    SELECT ISNULL(
+                        MAX(TRY_CAST(SUBSTRING(ArticleCode, LEN(@prefix) + 1, 3) AS INT)),
+                        0) + 1
+                    FROM KMS.t_KBArticle
+                    WHERE ArticleCode LIKE @prefix + '%'";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Year", year);
+                    return Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+        }
+
         // ── Helpers ──────────────────────────────────────────────────────────
 
         private static void AddParams(SqlCommand cmd, KBArticle a)

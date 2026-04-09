@@ -19,9 +19,13 @@ namespace CMS.Presentation.Modules.KMS
         private readonly IKBArticleService  _articleService;
         private readonly UserContext        _user;
 
-        private List<KBCategory> _allCategories   = new List<KBCategory>();
-        private List<KBArticle>  _currentArticles = new List<KBArticle>();
-        private int?             _selectedCategoryId = null;
+        private List<KBCategory>  _allCategories      = new List<KBCategory>();
+        private List<KBArticle>   _currentArticles    = new List<KBArticle>();
+        private int?              _selectedCategoryId = null;
+
+        // ── Viewer state (Task 3) ──────────────────────────────────────────────
+        private ArticleViewerForm _activeViewer          = null;
+        private int?              _activeViewerArticleId = null;
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
         private static readonly byte?[] TypeFilterValues   = { null, 1, 2, 3, 4, 5 };
@@ -75,10 +79,29 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BuildCategoryTree()
         {
+            // โหลดจำนวนบทความต่อ Category เพื่อแสดงใน TreeView
+            var articleCounts = new System.Collections.Generic.Dictionary<int, int>();
+            try
+            {
+                foreach (var a in _articleService.GetAll())
+                {
+                    if (!articleCounts.ContainsKey(a.CategoryID))
+                        articleCounts[a.CategoryID] = 0;
+                    articleCounts[a.CategoryID]++;
+                }
+            }
+            catch { /* counts stay empty — non-critical */ }
+
             treeCategories.BeginUpdate();
             treeCategories.Nodes.Clear();
 
-            var rootNode = new TreeNode("📚 ทั้งหมด") { Tag = null };
+            int totalCount = 0;
+            foreach (var v in articleCounts.Values) totalCount += v;
+            string rootLabel = totalCount > 0
+                ? string.Format("📚 ทั้งหมด ({0})", totalCount)
+                : "📚 ทั้งหมด";
+
+            var rootNode = new TreeNode(rootLabel) { Tag = null };
             rootNode.ForeColor = Color.FromArgb(0, 51, 102);
             rootNode.NodeFont  = new Font("Segoe UI", 9.5f, FontStyle.Bold);
             treeCategories.Nodes.Add(rootNode);
@@ -86,16 +109,22 @@ namespace CMS.Presentation.Modules.KMS
             var roots = _allCategories.Where(c => c.IsActive && !c.ParentCategoryID.HasValue)
                                       .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
             foreach (var cat in roots)
-                rootNode.Nodes.Add(BuildCategoryNode(cat));
+                rootNode.Nodes.Add(BuildCategoryNode(cat, articleCounts));
 
             treeCategories.EndUpdate();
             treeCategories.ExpandAll();
             treeCategories.SelectedNode = rootNode;
         }
 
-        private TreeNode BuildCategoryNode(KBCategory cat)
+        private TreeNode BuildCategoryNode(KBCategory cat,
+            System.Collections.Generic.Dictionary<int, int> articleCounts)
         {
-            var node = new TreeNode(string.Format("📁 {0}", cat.CategoryName))
+            int count = articleCounts.ContainsKey(cat.CategoryID) ? articleCounts[cat.CategoryID] : 0;
+            string label = count > 0
+                ? string.Format("📁 {0} ({1})", cat.CategoryName, count)
+                : string.Format("📁 {0}", cat.CategoryName);
+
+            var node = new TreeNode(label)
             {
                 Tag       = cat,
                 ForeColor = Color.FromArgb(30, 30, 30),
@@ -103,7 +132,7 @@ namespace CMS.Presentation.Modules.KMS
             var children = _allCategories.Where(c => c.IsActive && c.ParentCategoryID == cat.CategoryID)
                                          .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
             foreach (var child in children)
-                node.Nodes.Add(BuildCategoryNode(child));
+                node.Nodes.Add(BuildCategoryNode(child, articleCounts));
             return node;
         }
 
@@ -257,8 +286,61 @@ namespace CMS.Presentation.Modules.KMS
             try { _articleService.IncrementViewCount(article.ArticleID); }
             catch { /* non-critical */ }
 
-            using (var dlg = new ArticleEditorDialog(_categoryService, _articleService, _user, article))
-                if (dlg.ShowDialog(this) == DialogResult.OK) LoadArticles();
+            ShowArticleViewer(article);
+        }
+
+        // ── Viewer navigation (Task 3) ────────────────────────────────────────
+
+        private void ShowArticleViewer(KBArticle article)
+        {
+            // Same article already open — do nothing
+            if (_activeViewerArticleId.HasValue && _activeViewerArticleId.Value == article.ArticleID)
+                return;
+
+            // Different article open — dispose it first
+            CloseActiveViewer();
+
+            // Hide list panels
+            pnlRightTop.Visible    = false;
+            pnlSearch.Visible      = false;
+            pnlRightFooter.Visible = false;
+            pnlArticleList.Visible = false;
+
+            // Create viewer and embed in panelMainRight
+            var viewer = new ArticleViewerForm(_categoryService, _articleService, _user, article);
+            viewer.BackRequested += OnViewerBackRequested;
+            viewer.TopLevel       = false;
+            viewer.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            viewer.Dock           = System.Windows.Forms.DockStyle.Fill;
+            panelMainRight.Controls.Add(viewer);
+            viewer.Show();
+
+            _activeViewer          = viewer;
+            _activeViewerArticleId = article.ArticleID;
+        }
+
+        private void OnViewerBackRequested(object sender, EventArgs e)
+        {
+            CloseActiveViewer();
+
+            // Restore list panels
+            pnlRightTop.Visible    = true;
+            pnlSearch.Visible      = true;
+            pnlRightFooter.Visible = true;
+            pnlArticleList.Visible = true;
+
+            // Refresh article list to pick up any edits made inside the viewer
+            LoadArticles();
+        }
+
+        private void CloseActiveViewer()
+        {
+            if (_activeViewer == null) return;
+            _activeViewer.BackRequested -= OnViewerBackRequested;
+            panelMainRight.Controls.Remove(_activeViewer);
+            _activeViewer.Dispose();
+            _activeViewer          = null;
+            _activeViewerArticleId = null;
         }
 
         private void BtnSearch_Click(object sender, EventArgs e) { LoadArticles(); }

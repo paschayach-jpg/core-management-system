@@ -186,6 +186,12 @@
     <Compile Include="Modules\KMS\ArticleEditorDialog.Designer.cs">
       <DependentUpon>ArticleEditorDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\KMS\ArticleViewerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\ArticleViewerForm.Designer.cs">
+      <DependentUpon>ArticleViewerForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\ImportFile\OrgStructureForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -346,6 +352,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\FolderTemplateForm.resx">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\ArticleViewerForm.resx">
+      <DependentUpon>ArticleViewerForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KnowledgeBaseForm.resx">
       <DependentUpon>KnowledgeBaseForm.cs</DependentUpon>
