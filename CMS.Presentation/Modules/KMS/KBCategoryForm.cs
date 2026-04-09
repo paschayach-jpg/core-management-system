@@ -6,7 +6,7 @@ using System.Windows.Forms;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
-namespace CMS.Presentation
+namespace CMS.Presentation.Modules.KMS
 {
     /// <summary>
     /// หน้าตั้งค่า Category สำหรับ Knowledge Base (MOD-006)
@@ -18,7 +18,7 @@ namespace CMS.Presentation
         private readonly UserContext        _user;
 
         private List<KBCategory> _categories = new List<KBCategory>();
-        private int?             _editingId   = null;   // null = กำลังเพิ่มใหม่
+        private int?             _editingId   = null;
 
         public KBCategoryForm(IKBCategoryService service, UserContext user)
         {
@@ -29,14 +29,7 @@ namespace CMS.Presentation
             InitializeComponent();
         }
 
-        // ── Load ──────────────────────────────────────────────────────────────
-
-        private void KBCategoryForm_Load(object sender, EventArgs e)
-        {
-            LoadCategories();
-        }
-
-        // ── Data ──────────────────────────────────────────────────────────────
+        private void KBCategoryForm_Load(object sender, EventArgs e) { LoadCategories(); }
 
         private void LoadCategories()
         {
@@ -67,8 +60,6 @@ namespace CMS.Presentation
                 item.ForeColor = c.IsActive ? Color.FromArgb(20, 20, 20) : Color.FromArgb(160, 160, 160);
                 lstCategories.Items.Add(item);
             }
-
-            // Custom striped row + inactive highlight
             for (int i = 0; i < lstCategories.Items.Count; i++)
             {
                 var lvi = lstCategories.Items[i];
@@ -86,42 +77,30 @@ namespace CMS.Presentation
         {
             cboParent.Items.Clear();
             cboParent.Items.Add(new ComboItem("(ไม่มี Parent — Root Category)", null));
-
             foreach (var c in _categories.Where(x => x.IsActive))
             {
-                // ไม่แสดง category ที่กำลังแก้ไขอยู่ (ป้องกัน self-reference)
-                if (_editingId.HasValue && c.CategoryID == _editingId.Value)
-                    continue;
+                if (_editingId.HasValue && c.CategoryID == _editingId.Value) continue;
                 cboParent.Items.Add(new ComboItem(
-                    string.Format("[{0}] {1}", c.CategoryCode, c.CategoryName),
-                    c.CategoryID));
+                    string.Format("[{0}] {1}", c.CategoryCode, c.CategoryName), c.CategoryID));
             }
             cboParent.SelectedIndex = 0;
         }
 
-        // ── List selection ────────────────────────────────────────────────────
-
         private void LstCategories_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (lstCategories.SelectedItems.Count == 0) return;
-
             var cat = lstCategories.SelectedItems[0].Tag as KBCategory;
             if (cat == null) return;
 
             _editingId        = cat.CategoryID;
             lblFormTitle.Text = "แก้ไข Category";
-
             txtCode.Text        = cat.CategoryCode;
             txtName.Text        = cat.CategoryName;
             txtIcon.Text        = cat.Icon;
             txtDescription.Text = cat.Description;
             numSortOrder.Value  = cat.SortOrder;
-
-            // อัปเดต parent combo (ต้องรู้ _editingId ก่อน เพื่อกัน self-reference)
             RefreshParentCombo();
             SelectParentInCombo(cat.ParentCategoryID);
-
-            // ปุ่มปิดใช้งานแสดงเฉพาะ category ที่ active
             btnDelete.Enabled = cat.IsActive;
             btnDelete.Text    = cat.IsActive ? "🗑️ ปิดใช้งาน" : "⛔ ปิดแล้ว";
         }
@@ -141,23 +120,18 @@ namespace CMS.Presentation
             cboParent.SelectedIndex = 0;
         }
 
-        // ── Button handlers ───────────────────────────────────────────────────
-
         private void BtnNew_Click(object sender, EventArgs e)   { ClearForm(); }
         private void BtnClear_Click(object sender, EventArgs e) { ClearForm(); }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (!Validate_()) return;
-
             var parentItem = cboParent.SelectedItem as ComboItem;
             int? parentId  = parentItem != null ? parentItem.Value : null;
-
             try
             {
                 if (!_editingId.HasValue)
                 {
-                    // ── CREATE ──────────────────────────────────────────────
                     var cat = new KBCategory
                     {
                         ParentCategoryID = parentId,
@@ -175,7 +149,6 @@ namespace CMS.Presentation
                 }
                 else
                 {
-                    // ── UPDATE ──────────────────────────────────────────────
                     var cat = new KBCategory
                     {
                         CategoryID       = _editingId.Value,
@@ -190,7 +163,6 @@ namespace CMS.Presentation
                     MessageBox.Show("แก้ไข Category สำเร็จ", "สำเร็จ",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
-
                 LoadCategories();
                 ClearForm();
             }
@@ -204,19 +176,12 @@ namespace CMS.Presentation
         private void BtnDelete_Click(object sender, EventArgs e)
         {
             if (!_editingId.HasValue) return;
-
             var cat = _categories.FirstOrDefault(c => c.CategoryID == _editingId.Value);
             string name = cat != null ? cat.CategoryName : _editingId.Value.ToString();
-
             var confirm = MessageBox.Show(
-                string.Format("ต้องการปิดใช้งาน Category \"{0}\" ใช่หรือไม่?\n\n" +
-                              "(ข้อมูลจะยังคงอยู่ในระบบ แต่จะไม่แสดงในรายการ)", name),
-                "ยืนยันการปิดใช้งาน",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning);
-
+                string.Format("ต้องการปิดใช้งาน Category \"{0}\" ใช่หรือไม่?", name),
+                "ยืนยันการปิดใช้งาน", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (confirm != DialogResult.Yes) return;
-
             try
             {
                 _service.Deactivate(_editingId.Value);
@@ -231,8 +196,6 @@ namespace CMS.Presentation
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-        // ── Helpers ───────────────────────────────────────────────────────────
 
         private void ClearForm()
         {
@@ -268,8 +231,6 @@ namespace CMS.Presentation
             }
             return true;
         }
-
-        // ── Inner helper class ────────────────────────────────────────────────
 
         private class ComboItem
         {

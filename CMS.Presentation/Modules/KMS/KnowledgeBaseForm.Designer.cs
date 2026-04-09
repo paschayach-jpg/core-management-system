@@ -1,4 +1,4 @@
-namespace CMS.Presentation
+namespace CMS.Presentation.Modules.KMS
 {
     partial class KnowledgeBaseForm
     {
@@ -327,7 +327,6 @@ namespace CMS.Presentation
             this.btnReports.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnReports.ForeColor = System.Drawing.Color.White;
             this.btnReports.Location = new System.Drawing.Point(268, 7);
-            this.btnReports.Margin = new System.Windows.Forms.Padding(0, 0, 6, 0);
             this.btnReports.Name = "btnReports";
             this.btnReports.Size = new System.Drawing.Size(110, 34);
             this.btnReports.TabIndex = 1;
@@ -345,7 +344,6 @@ namespace CMS.Presentation
             this.btnImportExcel.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnImportExcel.ForeColor = System.Drawing.Color.White;
             this.btnImportExcel.Location = new System.Drawing.Point(138, 7);
-            this.btnImportExcel.Margin = new System.Windows.Forms.Padding(0, 0, 6, 0);
             this.btnImportExcel.Name = "btnImportExcel";
             this.btnImportExcel.Size = new System.Drawing.Size(130, 34);
             this.btnImportExcel.TabIndex = 2;
@@ -363,7 +361,6 @@ namespace CMS.Presentation
             this.btnNewArticle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnNewArticle.ForeColor = System.Drawing.Color.White;
             this.btnNewArticle.Location = new System.Drawing.Point(8, 7);
-            this.btnNewArticle.Margin = new System.Windows.Forms.Padding(0, 0, 6, 0);
             this.btnNewArticle.Name = "btnNewArticle";
             this.btnNewArticle.Size = new System.Drawing.Size(130, 34);
             this.btnNewArticle.TabIndex = 3;
@@ -401,7 +398,6 @@ namespace CMS.Presentation
 
         }
 
-        // ── Control declarations ─────────────────────────────────────────────
         private System.Windows.Forms.Panel           pnlHeader;
         private System.Windows.Forms.Label           lblTitle;
         private System.Windows.Forms.Button          btnSettings;

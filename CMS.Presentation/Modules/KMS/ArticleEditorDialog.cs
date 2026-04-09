@@ -6,7 +6,7 @@ using System.Windows.Forms;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
-namespace CMS.Presentation
+namespace CMS.Presentation.Modules.KMS
 {
     /// <summary>
     /// Dialog สำหรับเพิ่ม/แก้ไขบทความ Knowledge Base (MOD-006)
@@ -183,9 +183,6 @@ namespace CMS.Presentation
 
         private void UpdateStatusButtons(byte status)
         {
-            // Draft → can publish/submit review
-            // Published → can archive
-            // Archived → read-only
             bool isArchived = (status == 4);
             btnSave.Enabled    = !isArchived;
             btnPublish.Enabled = !isArchived;
@@ -261,7 +258,7 @@ namespace CMS.Presentation
             }
 
             byte currentStatus = _editingArticle.Status;
-            byte targetStatus  = currentStatus == 1 ? (byte)2 : (byte)3;  // Draft→Review or Review→Published
+            byte targetStatus  = currentStatus == 1 ? (byte)2 : (byte)3;
             string actionText  = targetStatus == 2 ? "ส่ง Review" : "เผยแพร่";
 
             var confirm = MessageBox.Show(

@@ -167,22 +167,23 @@
     <Compile Include="Modules\ImportFile\FolderTemplateForm.Designer.cs">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\KBCategoryForm.cs">
+    <!-- Module: KMS — Forms -->
+    <Compile Include="Modules\KMS\KBCategoryForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\KBCategoryForm.Designer.cs">
+    <Compile Include="Modules\KMS\KBCategoryForm.Designer.cs">
       <DependentUpon>KBCategoryForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\KnowledgeBaseForm.cs">
+    <Compile Include="Modules\KMS\KnowledgeBaseForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\KnowledgeBaseForm.Designer.cs">
+    <Compile Include="Modules\KMS\KnowledgeBaseForm.Designer.cs">
       <DependentUpon>KnowledgeBaseForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\ArticleEditorDialog.cs">
+    <Compile Include="Modules\KMS\ArticleEditorDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\ArticleEditorDialog.Designer.cs">
+    <Compile Include="Modules\KMS\ArticleEditorDialog.Designer.cs">
       <DependentUpon>ArticleEditorDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\ImportFile\OrgStructureForm.cs">
@@ -313,6 +314,9 @@
     <EmbeddedResource Include="Modules\ImportFile\ApprovalInboxForm.resx">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\ArticleEditorDialog.resx">
+      <DependentUpon>ArticleEditorDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\AuthorityConfigForm.resx">
       <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -343,7 +347,7 @@
     <EmbeddedResource Include="Modules\ImportFile\FolderTemplateForm.resx">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\KnowledgeBaseForm.resx">
+    <EmbeddedResource Include="Modules\KMS\KnowledgeBaseForm.resx">
       <DependentUpon>KnowledgeBaseForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\LoginForm.resx">
