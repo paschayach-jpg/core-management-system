@@ -45,6 +45,10 @@ namespace CMS.Presentation
                 var externalShareRepository  = new ExternalShareRepository(configManager);
                 var shareAccessLogRepository = new ShareAccessLogRepository(configManager);
                 var shareTokenRepository     = new ShareTokenRepository(configManager);
+                var kbCategoryRepository     = new KBCategoryRepository(configManager);
+                var kbArticleRepository      = new KBArticleRepository(configManager);
+                var kbVersionRepository      = new KBVersionRepository(configManager);
+                var kbArticleLinkRepository  = new KBArticleLinkRepository(configManager);
 
                 var auditService        = new AuditService(auditRepository, loggingService);
                 var notificationService = new NotificationService(notificationRepository, loggingService);
@@ -134,6 +138,10 @@ namespace CMS.Presentation
                     notificationService,
                     auditService,
                     loggingService);
+
+                // ── KB Services (MOD-006) ─────────────────────────────────────
+                var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);
+                var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, auditService);
 
                 // ── AD Auth Service ───────────────────────────────────────────
                 var adAuthService = new AdAuthService(configManager);
@@ -395,7 +403,11 @@ namespace CMS.Presentation
                     folderReadLookupController: folderReadLookupController,
                     fileDocumentLookupController: fileDocumentLookupController,
                     filePermissionAclController: filePermissionAclController,
-                    authorityOrgLookupController: authorityOrgLookupController);
+                    authorityOrgLookupController: authorityOrgLookupController,
+                    shareService,
+                    shareAccessService,
+                    kbCategoryService,
+                    kbArticleService);
                 Application.Run(mainForm);
 
                 // ถ้า user กด Logout → restart process เพื่อแสดง LoginForm ใหม่

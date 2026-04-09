@@ -67,6 +67,10 @@
     <Compile Include="Interfaces\IExternalShareRepository.cs" />
     <Compile Include="Interfaces\IShareAccessLogRepository.cs" />
     <Compile Include="Interfaces\IShareTokenRepository.cs" />
+    <Compile Include="Interfaces\IKBCategoryRepository.cs" />
+    <Compile Include="Interfaces\IKBArticleRepository.cs" />
+    <Compile Include="Interfaces\IKBVersionRepository.cs" />
+    <Compile Include="Interfaces\IKBArticleLinkRepository.cs" />
     <Compile Include="Interfaces\IMenuItemRepository.cs" />
     <Compile Include="Models\AuditQuery.cs" />
     <Compile Include="Models\PagedResult.cs" />
@@ -91,6 +95,10 @@
     <Compile Include="Repositories\ExternalShareRepository.cs" />
     <Compile Include="Repositories\ShareAccessLogRepository.cs" />
     <Compile Include="Repositories\ShareTokenRepository.cs" />
+    <Compile Include="Repositories\KBCategoryRepository.cs" />
+    <Compile Include="Repositories\KBArticleRepository.cs" />
+    <Compile Include="Repositories\KBVersionRepository.cs" />
+    <Compile Include="Repositories\KBArticleLinkRepository.cs" />
     <Compile Include="Repositories\MenuItemRepository.cs" />
   </ItemGroup>
   <ItemGroup>

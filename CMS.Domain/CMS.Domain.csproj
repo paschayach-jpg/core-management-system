@@ -74,6 +74,10 @@
     <Compile Include="Models\ExternalShare.cs" />
     <Compile Include="Models\ShareAccessLog.cs" />
     <Compile Include="Models\ShareToken.cs" />
+    <Compile Include="Models\KBCategory.cs" />
+    <Compile Include="Models\KBArticle.cs" />
+    <Compile Include="Models\KBVersion.cs" />
+    <Compile Include="Models\KBArticleLink.cs" />
     <Compile Include="Models\MenuItem.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

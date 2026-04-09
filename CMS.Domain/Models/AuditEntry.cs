@@ -22,7 +22,12 @@ namespace CMS.Domain.Models
         public string IPAddress { get; set; }
         public string MachineName { get; set; }
         public string SessionID { get; set; }
-        public DateTime AuditDate { get; set; } = DateTime.Now;
+        private DateTime _auditDate;
+        public DateTime AuditDate
+        {
+            get { return _auditDate == default(DateTime) ? DateTime.Now : _auditDate; }
+            set { _auditDate = value; }
+        }
 
         // -----------------------------------------------------------------------
         // Aliases used by presentation / test layers

@@ -168,6 +168,31 @@
     <Compile Include="Modules\ImportFile\FolderTemplateForm.Designer.cs">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </Compile>
+    <!-- Module: KMS — Forms -->
+    <Compile Include="Modules\KMS\KBCategoryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBCategoryForm.Designer.cs">
+      <DependentUpon>KBCategoryForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\KMS\KnowledgeBaseForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KnowledgeBaseForm.Designer.cs">
+      <DependentUpon>KnowledgeBaseForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\KMS\ArticleEditorDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\ArticleEditorDialog.Designer.cs">
+      <DependentUpon>ArticleEditorDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\KMS\ArticleViewerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\ArticleViewerForm.Designer.cs">
+      <DependentUpon>ArticleViewerForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\ImportFile\OrgStructureForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -274,6 +299,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CMS.Controllers\CMS.Controllers.csproj">
+      <Project>{2e4f8b3d-1a7c-4d96-b052-6c8e3f0a1d75}</Project>
+      <Name>CMS.Controllers</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">
       <Project>{C1CC34BC-573E-4C98-AA9E-37CB98534DEA}</Project>
       <Name>CMS.Domain</Name>
@@ -287,12 +316,8 @@
       <Name>CMS.Data</Name>
     </ProjectReference>
     <ProjectReference Include="..\CMS.Services\CMS.Services.csproj">
-      <Project>{50513916-E8F1-4308-94C0-174114009D4F}</Project>
+      <Project>{50513916-e8f1-4308-94c0-174114009d4f}</Project>
       <Name>CMS.Services</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CMS.Controllers\CMS.Controllers.csproj">
-      <Project>{2E4F8B3D-1A7C-4D96-B052-6C8E3F0A1D75}</Project>
-      <Name>CMS.Controllers</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -308,6 +333,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\ApprovalInboxForm.resx">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\ArticleEditorDialog.resx">
+      <DependentUpon>ArticleEditorDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\AuthorityConfigForm.resx">
       <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
@@ -338,6 +366,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\FolderTemplateForm.resx">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\ArticleViewerForm.resx">
+      <DependentUpon>ArticleViewerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\KnowledgeBaseForm.resx">
+      <DependentUpon>KnowledgeBaseForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>
