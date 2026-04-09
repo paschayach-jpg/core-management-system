@@ -91,6 +91,8 @@ namespace CMS.Presentation
         private TreeView _treeMainMenu;
         private bool     _showingConfView = false;
         private bool     _showingMainMenuView = false;
+        private bool     _folderExplorerControlsVisible = true;
+        private int      _orgFilterDefaultHeight = 0;
         private bool     _orgTreeLoaded = false;
 
         // -----------------------------------------------------------------------
@@ -132,6 +134,8 @@ namespace CMS.Presentation
             _user                     = user;
 
             InitializeComponent();
+
+            _orgFilterDefaultHeight = pnlOrgFilter.Height;
 
             BuildContentImageList();
 
@@ -1253,11 +1257,39 @@ namespace CMS.Presentation
             };
         }
 
+        private void SetFolderExplorerControlsVisibility(bool isVisible)
+        {
+            lblOrgUnitStatus.Visible = isVisible;
+            txtFolderSearch.Visible = isVisible;
+            folderTreeView.Visible = isVisible;
+            _folderExplorerControlsVisible = isVisible;
+        }
+
+        private void ToggleFolderExplorerControlsVisibility()
+        {
+            SetFolderExplorerControlsVisibility(!_folderExplorerControlsVisible);
+        }
+
+        private void SetMainMenuTreeFullHeight(bool isFullHeight)
+        {
+            if (isFullHeight)
+            {
+                pnlOrgFilter.Dock = DockStyle.Fill;
+                return;
+            }
+
+            pnlOrgFilter.Dock = DockStyle.Top;
+            if (_orgFilterDefaultHeight > 0)
+                pnlOrgFilter.Height = _orgFilterDefaultHeight;
+        }
+
         private void SwitchToOrgView()
         {
             if (!_showingConfView && !_showingMainMenuView) return;
             _showingConfView = false;
             _showingMainMenuView = false;
+            SetFolderExplorerControlsVisibility(true);
+            SetMainMenuTreeFullHeight(false);
             
             treeOrgUnit.Visible          = true;
             _treeConfidentiality.Visible = false;
@@ -1286,6 +1318,8 @@ namespace CMS.Presentation
             if (_showingConfView) return;
             _showingConfView = true;
             _showingMainMenuView = false;
+            SetFolderExplorerControlsVisibility(true);
+            SetMainMenuTreeFullHeight(false);
             
             treeOrgUnit.Visible          = false;
             _treeConfidentiality.Visible = true;
@@ -1303,9 +1337,17 @@ namespace CMS.Presentation
 
         private void SwitchToMainMenuView()
         {
-            if (_showingMainMenuView) return;
+            if (_showingMainMenuView)
+            {
+                ToggleFolderExplorerControlsVisibility();
+                SetMainMenuTreeFullHeight(!_folderExplorerControlsVisible);
+                return;
+            }
+
             _showingConfView = false;
             _showingMainMenuView = true;
+            SetFolderExplorerControlsVisibility(false);
+            SetMainMenuTreeFullHeight(true);
 
             // Refresh from MenuManagement and expand all nodes so submenus are visible immediately.
             LoadMainMenuTree();

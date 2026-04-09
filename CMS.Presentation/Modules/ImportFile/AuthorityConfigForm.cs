@@ -619,8 +619,11 @@ namespace CMS.Presentation
 
         private void AuthorityConfigForm_Load(object sender, EventArgs e)
         {
-            this.WindowState = FormWindowState.Normal;
-            this.Size = new Size(1000, 600);
+            // Keep this form fullscreen when opened from menu (MDI or standalone).
+            if (this.MdiParent == null)
+                this.StartPosition = FormStartPosition.CenterScreen;
+
+            this.WindowState = FormWindowState.Maximized;
             
             // Hide old edit panel (now using dialog)
             if (pnlEdit != null)

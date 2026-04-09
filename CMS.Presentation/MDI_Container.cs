@@ -271,6 +271,9 @@ namespace CMS.Presentation
             bool showDashboard = (this.ActiveMdiChild == null);
             pnlDashboard.Visible = showDashboard;
 
+            ApplyAdminSectionVisibilityForActiveChild();
+            SetTopMenuVisibilityForAuthorityConfig(HasOpenAuthorityConfigForm());
+
             // Reload lvRecentFiles ทุกครั้งที่ dashboard กลับมาแสดง
             if (showDashboard)
                 RefreshDashboardFiles();
@@ -478,6 +481,61 @@ namespace CMS.Presentation
 
             // Initialize with home ribbon active
             SwitchToHomeRibbon();
+            ApplyAdminSectionVisibilityForActiveChild();
+        }
+
+        private void ApplyAdminSectionVisibilityForActiveChild()
+        {
+            if (HasOpenAuthorityConfigForm())
+            {
+                SetTopMenuVisibilityForAuthorityConfig(true);
+                if (_adminTabActive)
+                    SwitchToHomeRibbon();
+                return;
+            }
+
+            bool isManager = _currentUser.Role == UserRole.Manager;
+            bool isAdmin = _currentUser.Role == UserRole.Admin;
+            bool canManageByRole = isManager || isAdmin;
+            bool hideAdminTab = ActiveMdiChild is FolderForm;
+            bool showAdminTab = canManageByRole && !hideAdminTab;
+
+            menuItemAdmin.Enabled = showAdminTab;
+            menuItemAdmin.Visible = showAdminTab;
+
+            // Keep main form layout/ribbons unchanged; only hide the top Admin tab.
+            if (hideAdminTab && _adminTabActive)
+                SwitchToHomeRibbon();
+        }
+
+        private bool HasOpenAuthorityConfigForm()
+        {
+            return this.MdiChildren.Any(f => f is AuthorityConfigForm && !f.IsDisposed);
+        }
+
+        private void SetTopMenuVisibilityForAuthorityConfig(bool isAuthorityConfigOpen)
+        {
+            if (isAuthorityConfigOpen)
+            {
+                menuItemHome.Visible = false;
+                menuItemAdmin.Visible = false;
+                menuItemShare.Visible = false;
+                menuItemManageShares.Visible = false;
+                return;
+            }
+
+            // Restore default menu state when leaving Authority Config.
+            menuItemHome.Enabled = true;
+            menuItemHome.Visible = true;
+
+            menuItemShare.Enabled = true;
+            menuItemShare.Visible = true;
+
+            menuItemManageShares.Enabled = true;
+            menuItemManageShares.Visible = true;
+
+            ApplyRoleBasedMenuVisibility();
+            ApplyAdminSectionVisibilityForActiveChild();
         }
 
         // -----------------------------------------------------------------------
@@ -1299,9 +1357,20 @@ namespace CMS.Presentation
         public void OpenAuthorityConfig()
         {
             if (_folderAuthorityService != null)
-                OpenChildForm(new AuthorityConfigForm(_folderAuthorityService, _currentUser,
+            {
+                var form = new AuthorityConfigForm(_folderAuthorityService, _currentUser,
                     _hrDivisionRepository, _hrDepartmentRepository, _hrPositionRepository,
-                    _userAccountRepository, _hrPositionMappingRepository));
+                    _userAccountRepository, _hrPositionMappingRepository);
+
+                SetTopMenuVisibilityForAuthorityConfig(true);
+                form.FormClosed += (s, e) =>
+                {
+                    if (!HasOpenAuthorityConfigForm())
+                        SetTopMenuVisibilityForAuthorityConfig(false);
+                };
+
+                OpenChildForm(form, true);
+            }
             else
                 MessageBox.Show("FolderAuthority service ไม่พร้อมใช้งาน", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1657,7 +1726,7 @@ namespace CMS.Presentation
         /// <summary>
         /// Opens a form as an MDI child. Multiple instances may be open concurrently.
         /// </summary>
-        private void OpenChildForm(Form childForm)
+        private void OpenChildForm(Form childForm, bool maximize = false)
         {
             if (childForm == null)
                 throw new ArgumentNullException(nameof(childForm));
@@ -1669,7 +1738,7 @@ namespace CMS.Presentation
 
                 // Configure form as MDI child (not as dialog)
                 childForm.MdiParent = this;
-                childForm.WindowState = FormWindowState.Normal;
+                childForm.WindowState = maximize ? FormWindowState.Maximized : FormWindowState.Normal;
 
                 // Show as MDI child form (not ShowDialog)
                 childForm.Show();

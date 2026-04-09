@@ -255,9 +255,9 @@
     <Compile Include="AccessShareForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="MenuActionContext.cs" />
-    <Compile Include="MenuActionKeyCatalog.cs" />
-    <Compile Include="MenuActionRegistry.cs" />
+    <Compile Include="Modules\ImportFile\MenuActions\MenuActionContext.cs" />
+    <Compile Include="Modules\ImportFile\MenuActions\MenuActionKeyCatalog.cs" />
+    <Compile Include="Modules\ImportFile\MenuActions\MenuActionRegistry.cs" />
     <Compile Include="MenuManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>
