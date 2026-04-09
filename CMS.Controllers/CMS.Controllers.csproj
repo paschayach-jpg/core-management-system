@@ -45,6 +45,17 @@
     <Compile Include="DMS\Document\Interfaces\IOrgStructureView.cs" />
     <Compile Include="DMS\Document\Interfaces\IConfigAdminView.cs" />
     <Compile Include="DMS\Document\Interfaces\IProjectView.cs" />
+    <Compile Include="DMS\Document\Interfaces\IShareLookupController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IFolderSettingsController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IUserAccountLookupController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IUserAdminController.cs" />
+      <Compile Include="DMS\Document\Interfaces\ILoginAccountController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IFolderReadLookupController.cs" />
+      <Compile Include="DMS\Document\Interfaces\IFileDocumentLookupController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IFilePermissionAclController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IFolderPermissionLookupController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IAuthorityOrgLookupController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IFolderTemplateController.cs" />
     <!-- DMS.Document — Presenters (Controllers) -->
     <Compile Include="DMS\Document\FolderPresenter.cs" />
     <Compile Include="DMS\Document\FilePresenter.cs" />
@@ -53,6 +64,17 @@
     <Compile Include="DMS\Document\OrgStructurePresenter.cs" />
     <Compile Include="DMS\Document\ConfigAdminPresenter.cs" />
     <Compile Include="DMS\Document\ProjectPresenter.cs" />
+    <Compile Include="DMS\Document\FolderSettingsController.cs" />
+    <Compile Include="DMS\Document\FolderReadLookupController.cs" />
+    <Compile Include="DMS\Document\ShareLookupController.cs" />
+    <Compile Include="DMS\Document\UserAccountLookupController.cs" />
+    <Compile Include="DMS\Document\UserAdminController.cs" />
+    <Compile Include="DMS\Document\LoginAccountController.cs" />
+    <Compile Include="DMS\Document\FileDocumentLookupController.cs" />
+    <Compile Include="DMS\Document\FilePermissionAclController.cs" />
+    <Compile Include="DMS\Document\FolderPermissionLookupController.cs" />
+    <Compile Include="DMS\Document\AuthorityOrgLookupController.cs" />
+    <Compile Include="DMS\Document\FolderTemplateController.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">

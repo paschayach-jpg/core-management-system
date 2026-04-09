@@ -9,6 +9,8 @@ namespace CMS.Domain.Enums
         User       = 1,
         Role       = 2,
         Department = 3,
-        Division   = 4
+        Division   = 4,
+        Group = 5,
+        OrgUnit = 6
     }
 }

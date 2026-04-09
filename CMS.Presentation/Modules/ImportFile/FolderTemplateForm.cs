@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 
 namespace CMS.Presentation
@@ -14,14 +14,14 @@ namespace CMS.Presentation
     /// </summary>
     public partial class FolderTemplateForm : Form
     {
-        private readonly IFolderTemplateRepository _repo;
+        private readonly IFolderTemplateController _repo;
         private readonly UserContext               _user;
 
         private List<FolderTemplate>     _templates = new List<FolderTemplate>();
         private List<FolderTemplateItem> _items     = new List<FolderTemplateItem>();
         private FolderTemplate           _selected;
 
-        public FolderTemplateForm(IFolderTemplateRepository repo, UserContext user)
+        public FolderTemplateForm(IFolderTemplateController repo, UserContext user)
         {
             if (repo == null) throw new ArgumentNullException("repo");
             if (user == null) throw new ArgumentNullException("user");

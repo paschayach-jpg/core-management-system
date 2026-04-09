@@ -1,6 +1,6 @@
 using System;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -18,15 +18,16 @@ namespace CMS.Presentation
         public IFileService FileService { get; set; }
         public IOrgStructureService OrgStructureService { get; set; }
         public IApprovalService ApprovalService { get; set; }
-        public IFolderTemplateRepository FolderTemplateRepository { get; set; }
-        public IQuickAccessService QuickAccessService { get; set; }
+        public IFolderTemplateController FolderTemplateController { get; set; }
         public IPermissionService PermissionService { get; set; }
-        public IFolderRepository FolderRepository { get; set; }
-        public IPermissionRepository PermissionRepository { get; set; }
+        public IFolderSettingsController FolderSettingsController { get; set; }
+        public IFolderPermissionLookupController FolderPermissionLookupController { get; set; }
         public IAuditService AuditService { get; set; }
         public IShareService ShareService { get; set; }
-        public IUserAccountRepository UserAccountRepository { get; set; }
+        public IUserAccountLookupController UserAccountLookupController { get; set; }
+        public IUserAdminController UserAdminController { get; set; }
         public IMenuService MenuService { get; set; }
+        public IShareLookupController ShareLookupController { get; set; }
 
         public Action SwitchToOrgView { get; set; }
         public Action SwitchToMainMenuView { get; set; }

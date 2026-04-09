@@ -4,10 +4,10 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using Microsoft.VisualBasic;
-using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 
@@ -22,13 +22,14 @@ namespace CMS.Presentation
         private IAuditService       _auditService;
         private UserContext         _currentUser;
         private Folder _folder;
+        private readonly IFolderPermissionLookupController _folderPermissionLookupController;
         private List<FolderPermission> _aclEntries = new List<FolderPermission>();
         private List<FolderPermission> _allAclEntries = new List<FolderPermission>(); // includes revoked
         private bool _showAllEntries = false;
-        private IUserAccountRepository _userAccountRepository;
+        private readonly IUserAccountLookupController _userAccountController;
+        private readonly IFolderSettingsController _folderSettingsController;
         private List<UserAccount> _userList = new List<UserAccount>();
         private IApprovalService _approvalService;
-        private IFolderRepository _folderRepository;
         private Dictionary<int, string> _userDisplayMap = new Dictionary<int, string>();
         private CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
         private CMS.Services.Interfaces.IOrgStructureService _orgStructureService;
@@ -42,38 +43,38 @@ namespace CMS.Presentation
             IPermissionService  permissionService,
             IApprovalService    approvalService,
             IFolderService      folderService,
-            IPermissionRepository permissionRepo,
+            IFolderPermissionLookupController folderPermissionLookupController,
             UserContext         user,
             Folder              folder,
-            IUserAccountRepository userAccountRepository = null,
-            IFolderRepository  folderRepository = null,
+            IUserAccountLookupController userAccountLookupController = null,
+            IFolderSettingsController folderSettingsController = null,
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
             CMS.Services.Interfaces.IOrgStructureService orgStructureService = null,
-            IFileDocumentRepository fileDocumentRepository = null,
+            IFileDocumentLookupController fileDocumentLookupController = null,
             IAuditService       auditService = null)
         {
             if (permissionService == null) throw new ArgumentNullException("permissionService");
             if (approvalService   == null) throw new ArgumentNullException("approvalService");
             if (folderService     == null) throw new ArgumentNullException("folderService");
-            if (permissionRepo    == null) throw new ArgumentNullException("permissionRepo");
+            _folderPermissionLookupController = folderPermissionLookupController ?? throw new ArgumentNullException("folderPermissionLookupController");
             if (user              == null) throw new ArgumentNullException("user");
 
             _folder        = folder;
             _auditService  = auditService;
             _currentUser   = user;
-            _userAccountRepository = userAccountRepository;
+            _userAccountController = userAccountLookupController;
+            _folderSettingsController = folderSettingsController;
             _userList = new List<UserAccount>();
             _approvalService = approvalService;
-            _folderRepository = folderRepository;
             _employeeApiService = employeeApiService;
             _orgStructureService = orgStructureService;
 
             // Pre-load user display map
-            if (_userAccountRepository != null)
+            if (_userAccountController != null)
             {
                 try
                 {
-                    foreach (var u in _userAccountRepository.GetAll())
+                    foreach (var u in _userAccountController.GetAllUsers())
                         _userDisplayMap[u.UserID] = string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
                 }
                 catch { }
@@ -126,8 +127,8 @@ namespace CMS.Presentation
             colFull.Width = 0;
 
             _presenter = new PermissionPresenter(
-                permissionService, approvalService, folderService, permissionRepo, this, user,
-                fileDocumentRepository, auditService);
+                permissionService, approvalService, folderService, folderPermissionLookupController, this, user,
+                fileDocumentLookupController, auditService);
         }
 
         // ── Form load ────────────────────────────────────────────────────────
@@ -219,10 +220,7 @@ namespace CMS.Presentation
 
                 // Step 1: Query DB first
                 DiagLog("Step 1: Querying DB via PermissionRepository.GetAllByFolder...");
-                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
-                    new CMS.Infrastructure.ConfigManager());
-
-                var allPermissions = permissionRepo.GetAllByFolder(folderId).ToList();
+                var allPermissions = _folderPermissionLookupController.GetAllByFolder(folderId).ToList();
 
                 if (allPermissions.Count == 0)
                 {
@@ -729,17 +727,11 @@ namespace CMS.Presentation
 
             try
             {
-                // Direct database access to get all permissions
-                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
-                    new CMS.Infrastructure.ConfigManager());
-                var approvalRepo = new CMS.Data.Repositories.ApprovalRepository(
-                    new CMS.Infrastructure.ConfigManager());
-
                 // Get all permissions for this folder (including revoked)
-                var allPermissions = permissionRepo.GetAllByFolder(_folder.FolderID).ToList();
+                var allPermissions = _folderPermissionLookupController.GetAllByFolder(_folder.FolderID).ToList();
                 
                 // Get pending approval requests
-                var pendingApprovals = approvalRepo.GetAllRequestsByFolder(_folder.FolderID)
+                var pendingApprovals = _approvalService.GetAllApprovalsByFolder(_folder.FolderID)
                     .Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION")
                     .ToList();
 
@@ -790,11 +782,11 @@ namespace CMS.Presentation
                 System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: Processing {_allAclEntries.Count} ACL entries");
 
                 // Reload user names from repository
-                if (_userAccountRepository != null)
+                if (_userAccountController != null)
                 {
                     try
                     {
-                        var users = _userAccountRepository.GetAll().ToList();
+                        var users = _userAccountController.GetAllUsers().ToList();
                         System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: Found {users.Count} users from repository");
                         
                         foreach (var u in users)
@@ -813,7 +805,7 @@ namespace CMS.Presentation
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("LoadDisplayNames: _userAccountRepository is null");
+                    System.Diagnostics.Debug.WriteLine("LoadDisplayNames: _userAccountController is null");
                 }
 
                 // Reload org unit names from service
@@ -849,11 +841,11 @@ namespace CMS.Presentation
                     if (e.PrincipalType == PrincipalType.User && !_userDisplayMap.ContainsKey(e.PrincipalID))
                     {
                         string resolved = null;
-                        if (_userAccountRepository != null)
+                        if (_userAccountController != null)
                         {
                             try
                             {
-                                var u = _userAccountRepository.GetById(e.PrincipalID);
+                                var u = _userAccountController.GetUserById(e.PrincipalID);
                                 if (u != null)
                                     resolved = string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
                             }
@@ -887,17 +879,11 @@ namespace CMS.Presentation
 
             try
             {
-                // Direct database access to ensure we get all data
-                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
-                    new CMS.Infrastructure.ConfigManager());
-                var approvalRepo = new CMS.Data.Repositories.ApprovalRepository(
-                    new CMS.Infrastructure.ConfigManager());
-
                 // Get all permissions for this folder (including revoked ones)
-                var allPermissions = permissionRepo.GetAllByFolder(_folder.FolderID).ToList();
+                var allPermissions = _folderPermissionLookupController.GetAllByFolder(_folder.FolderID).ToList();
                 
                 // Get all approval requests for this folder
-                var allApprovals = approvalRepo.GetAllRequestsByFolder(_folder.FolderID).ToList();
+                var allApprovals = _approvalService.GetAllApprovalsByFolder(_folder.FolderID).ToList();
                 var pendingApprovals = allApprovals
                     .Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION")
                     .OrderByDescending(r => r.RequestedDate)
@@ -1021,11 +1007,11 @@ namespace CMS.Presentation
 
         private string ResolveUserName(int userId)
         {
-            if (_userAccountRepository != null)
+            if (_userAccountController != null)
             {
                 try
                 {
-                    var u = _userAccountRepository.GetById(userId);
+                    var u = _userAccountController.GetUserById(userId);
                     if (u != null)
                         return string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
                 }
@@ -1166,10 +1152,7 @@ namespace CMS.Presentation
                 System.Diagnostics.Debug.WriteLine($"Folder ID: {folderId}, Name: {folderName}");
 
                 // Simple direct database query - show ALL permissions including revoked
-                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
-                    new CMS.Infrastructure.ConfigManager());
-                
-                var allPermissions = permissionRepo.GetAllByFolder(folderId).ToList();
+                var allPermissions = _folderPermissionLookupController.GetAllByFolder(folderId).ToList();
                 System.Diagnostics.Debug.WriteLine($"Found {allPermissions.Count} total permissions in database");
 
                 if (allPermissions.Count == 0)
@@ -1343,15 +1326,10 @@ namespace CMS.Presentation
                 DiagLog("── Manual Diagnostic triggered ──");
 
                 // Run a fresh DB query and log every step
-                var permissionRepo = new CMS.Data.Repositories.PermissionRepository(
-                    new CMS.Infrastructure.ConfigManager());
-                var approvalRepo = new CMS.Data.Repositories.ApprovalRepository(
-                    new CMS.Infrastructure.ConfigManager());
-
                 // Test both methods to see which one works
-                var allPermissions = permissionRepo.GetAllByFolder(_folder.FolderID);
-                var activePermissions = permissionRepo.GetByFolder(_folder.FolderID);
-                var allApprovals = approvalRepo.GetAllRequestsByFolder(_folder.FolderID);
+                var allPermissions = _folderPermissionLookupController.GetAllByFolder(_folder.FolderID);
+                var activePermissions = _folderPermissionLookupController.GetByFolder(_folder.FolderID);
+                var allApprovals = _approvalService.GetAllApprovalsByFolder(_folder.FolderID);
                 var pendingApprovals = allApprovals.Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION");
                 var approvedApprovals = allApprovals.Where(r => r.RequestStatus == 2 && r.RequestType == "CHANGE_PERMISSION");
 
@@ -1471,7 +1449,7 @@ namespace CMS.Presentation
                             foreach (var pendingApproval in pendingApprovals)
                             {
                                 // Get all steps for this approval
-                                var steps = approvalRepo.GetAllSteps(pendingApproval.RequestID);
+                                var steps = _approvalService.GetApprovalSteps(pendingApproval.RequestID);
                                 var pendingSteps = steps.Where(s => s.StepStatus == 1).OrderBy(s => s.StepOrder);
 
                                 foreach (var step in pendingSteps)
@@ -1554,10 +1532,10 @@ namespace CMS.Presentation
                 }
 
                 // Persist to DB
-                if (changed && _folderRepository != null)
+                if (changed && _folderSettingsController != null)
                 {
                     _folder.UpdatedBy = null; // set to current user ID if available
-                    _folderRepository.Update(_folder);
+                    _folderSettingsController.UpdateFolder(_folder);
                     if (_auditService != null && _currentUser != null)
                         _auditService.Log(new AuditEntry
                         {
@@ -1950,10 +1928,10 @@ namespace CMS.Presentation
                     cboSelect.Text = "";
                     if (isUser)
                     {
-                        if (_userAccountRepository == null) return;
+                        if (_userAccountController == null) return;
                         try
                         {
-                            _userList = _userAccountRepository.GetAll().ToList();
+                            _userList = _userAccountController.GetAllUsers().ToList();
                             foreach (var u in _userList.OrderBy(x => x.ADUserName))
                                 cboSelect.Items.Add(string.Format("{0} — {1} (ID:{2})", u.ADUserName, u.DisplayName, u.UserID));
                             if (cboSelect.Items.Count > 0) cboSelect.SelectedIndex = 0;
@@ -2453,7 +2431,7 @@ namespace CMS.Presentation
         /// </summary>
         private int ResolveOrCreateUserAccount(EmployeeSummary emp)
         {
-            if (_userAccountRepository == null) return 0;
+            if (_userAccountController == null) return 0;
 
             // สร้าง ADUserName จาก FullNameEn (เอาเฉพาะชื่อ EN จาก DisplayName)
             string fullNameEn = ExtractEnglishName(emp.DisplayName);
@@ -2466,7 +2444,7 @@ namespace CMS.Presentation
             // ค้นหาใน DB ก่อน
             try
             {
-                var existing = _userAccountRepository.GetByADUserName(adUserName);
+                var existing = _userAccountController.GetUserByAdUserName(adUserName);
                 if (existing != null) return existing.UserID;
             }
             catch { }
@@ -2506,7 +2484,7 @@ namespace CMS.Presentation
                     CreatedDate  = DateTime.Now
                 };
 
-                int newId = _userAccountRepository.Create(newAccount);
+                int newId = _userAccountController.CreateUser(newAccount);
 
                 // อัปเดต cache
                 if (newId > 0)

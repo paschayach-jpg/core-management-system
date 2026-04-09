@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 
@@ -17,11 +17,7 @@ namespace CMS.Presentation.Modules.ImportFile
     public class UserPermissionSummaryForm : Form
     {
         private readonly UserContext               _user;
-        private readonly IPermissionRepository    _permRepo;
-        private readonly IFolderRepository        _folderRepo;
-        private readonly IFilePermissionRepository _filePermRepo;
-        private readonly IFileDocumentRepository  _fileDocRepo;
-        private readonly IUserAccountRepository   _userRepo;
+        private readonly IShareLookupController   _shareLookupController;
 
         // ── Level definitions (ต้องตรงกับ 4 root folders) ─────────────────
         private static readonly (int level, string code, string label, Color accent)[] Levels =
@@ -34,18 +30,10 @@ namespace CMS.Presentation.Modules.ImportFile
 
         public UserPermissionSummaryForm(
             UserContext                user,
-            IPermissionRepository     permRepo      = null,
-            IFolderRepository         folderRepo    = null,
-            IFilePermissionRepository filePermRepo  = null,
-            IFileDocumentRepository   fileDocRepo   = null,
-            IUserAccountRepository    userRepo      = null)
+            IShareLookupController    shareLookupController = null)
         {
             _user         = user       ?? throw new ArgumentNullException("user");
-            _permRepo     = permRepo;
-            _folderRepo   = folderRepo;
-            _filePermRepo = filePermRepo;
-            _fileDocRepo  = fileDocRepo;
-            _userRepo     = userRepo;
+            _shareLookupController = shareLookupController;
             BuildUI();
         }
 
@@ -484,15 +472,14 @@ namespace CMS.Presentation.Modules.ImportFile
         {
             grid.Rows.Clear();
 
-            if (_permRepo == null)
+            if (_shareLookupController == null)
             {
-                AddInfoRow(grid, "(ไม่สามารถโหลด ACL — PermissionRepository ไม่พร้อมใช้งาน)");
+                AddInfoRow(grid, "(ไม่สามารถโหลด ACL — Share lookup controller ไม่พร้อมใช้งาน)");
                 return;
             }
 
             // ── Direct user ACL ────────────────────────────────────────────
-            var perms = _permRepo.GetByPrincipal((int)PrincipalType.User, _user.UserID)
-                .Where(p => p.RevokedDate == null)
+            var perms = _shareLookupController.GetFolderPermissionsForUser(_user.UserID)
                 .OrderBy(p => p.FolderID)
                 .ToList();
 
@@ -506,14 +493,11 @@ namespace CMS.Presentation.Modules.ImportFile
             {
                 string folderName = "(ไม่พบ folder)";
                 string levelCode  = "—";
-                if (_folderRepo != null)
+                var folder = _shareLookupController.GetFolderById(p.FolderID);
+                if (folder != null)
                 {
-                    var folder = _folderRepo.GetById(p.FolderID);
-                    if (folder != null)
-                    {
-                        folderName = folder.FolderName;
-                        levelCode  = LevelCodeFrom(folder.ConfidentialityLevel);
-                    }
+                    folderName = folder.FolderName;
+                    levelCode  = LevelCodeFrom(folder.ConfidentialityLevel);
                 }
 
                 bool isExpired = p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today;
@@ -625,13 +609,13 @@ namespace CMS.Presentation.Modules.ImportFile
         {
             grid.Rows.Clear();
 
-            if (_filePermRepo == null)
+            if (_shareLookupController == null)
             {
-                AddInfoRow(grid, "(ไม่สามารถโหลดข้อมูล Share — FilePermissionRepository ไม่พร้อมใช้งาน)", 10);
+                AddInfoRow(grid, "(ไม่สามารถโหลดข้อมูล Share — Share lookup controller ไม่พร้อมใช้งาน)", 10);
                 return;
             }
 
-            var shares = _filePermRepo.GetByPrincipal((int)PrincipalType.User, _user.UserID)
+            var shares = _shareLookupController.GetFilePermissionsForUser(_user.UserID)
                 .OrderByDescending(p => p.GrantedDate)
                 .ToList();
 
@@ -648,36 +632,23 @@ namespace CMS.Presentation.Modules.ImportFile
                 string itemKind  = "📄 ไฟล์";
                 string levelCode = "—";
 
-                if (_fileDocRepo != null)
+                try
                 {
-                    try
+                    var doc = _shareLookupController.GetFileById(p.FileID);
+                    if (doc != null)
                     {
-                        var doc = _fileDocRepo.GetById(p.FileID);
-                        if (doc != null)
+                        itemName = doc.OriginalFileName;
+                        var folder = _shareLookupController.GetFolderById(doc.FolderID);
+                        if (folder != null)
                         {
-                            itemName = doc.OriginalFileName;
-                            if (_folderRepo != null)
-                            {
-                                var folder = _folderRepo.GetById(doc.FolderID);
-                                if (folder != null)
-                                    levelCode = LevelCodeFrom(folder.ConfidentialityLevel);
-                            }
+                            levelCode = LevelCodeFrom(folder.ConfidentialityLevel);
                         }
                     }
-                    catch { }
                 }
+                catch { }
 
                 // resolve ชื่อผู้ให้สิทธิ์
-                string grantedBy = string.Format("User #{0}", p.GrantedBy);
-                if (_userRepo != null)
-                {
-                    try
-                    {
-                        var u = _userRepo.GetById(p.GrantedBy);
-                        if (u != null) grantedBy = u.DisplayName ?? u.ADUserName ?? grantedBy;
-                    }
-                    catch { }
-                }
+                string grantedBy = _shareLookupController.ResolveGranterName(p.GrantedBy);
 
                 bool isExpired = p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today;
                 bool isDeny    = p.IsDeny;

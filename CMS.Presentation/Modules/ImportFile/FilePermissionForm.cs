@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
@@ -17,9 +17,9 @@ namespace CMS.Presentation
     public partial class FilePermissionForm : Form
     {
         private readonly IFilePermissionService    _filePermissionService;
-        private readonly IFilePermissionRepository _filePermissionRepository;
-        private readonly IUserAccountRepository    _userAccountRepository;
-        private readonly IPermissionRepository     _permissionRepository;
+        private readonly IFilePermissionAclController _filePermissionAclController;
+        private readonly IUserAccountLookupController _userAccountLookupController;
+        private readonly IFolderPermissionLookupController _folderPermissionLookupController;
         private readonly UserContext               _currentUser;
         private readonly FileDocument              _file;
         private readonly IAuditService             _auditService;
@@ -30,25 +30,25 @@ namespace CMS.Presentation
 
         public FilePermissionForm(
             IFilePermissionService    filePermissionService,
-            IFilePermissionRepository filePermissionRepository,
+            IFilePermissionAclController filePermissionAclController,
             UserContext               currentUser,
             FileDocument              file,
-            IUserAccountRepository    userAccountRepository = null,
-            IPermissionRepository     permissionRepository  = null,
+            IUserAccountLookupController userAccountLookupController = null,
+            IFolderPermissionLookupController folderPermissionLookupController = null,
             CMS.Services.Interfaces.IOrgStructureService orgStructureService = null,
             IAuditService             auditService          = null)
         {
             if (filePermissionService    == null) throw new ArgumentNullException("filePermissionService");
-            if (filePermissionRepository == null) throw new ArgumentNullException("filePermissionRepository");
+            if (filePermissionAclController == null) throw new ArgumentNullException("filePermissionAclController");
             if (currentUser              == null) throw new ArgumentNullException("currentUser");
             if (file                     == null) throw new ArgumentNullException("file");
 
             _filePermissionService    = filePermissionService;
-            _filePermissionRepository = filePermissionRepository;
+            _filePermissionAclController = filePermissionAclController;
             _currentUser              = currentUser;
             _file                     = file;
-            _userAccountRepository    = userAccountRepository;
-            _permissionRepository     = permissionRepository;
+            _userAccountLookupController = userAccountLookupController;
+            _folderPermissionLookupController = folderPermissionLookupController;
             _auditService             = auditService;
 
             InitializeComponent();
@@ -59,11 +59,11 @@ namespace CMS.Presentation
                                     (_file.FileExtension ?? "").TrimStart('.').ToUpper(),
                                     FormatBytes(_file.FileSizeBytes));
 
-            if (_userAccountRepository != null)
+            if (_userAccountLookupController != null)
             {
                 try
                 {
-                    foreach (var u in _userAccountRepository.GetAll())
+                    foreach (var u in _userAccountLookupController.GetAllUsers())
                         _userDisplayMap[u.UserID] = string.IsNullOrEmpty(u.DisplayName)
                             ? u.ADUserName : u.DisplayName;
                 }
@@ -95,7 +95,7 @@ namespace CMS.Presentation
         {
             try
             {
-                _aclEntries = _filePermissionRepository.GetByFile(_file.FileID).ToList();
+                _aclEntries = _filePermissionAclController.GetByFile(_file.FileID).ToList();
                 RefreshList();
             }
             catch (Exception ex)
@@ -132,7 +132,7 @@ namespace CMS.Presentation
 
         private void BtnAdd_Click(object sender, EventArgs e)
         {
-            using (var dlg = new FilePermissionAddDialog(_userAccountRepository))
+            using (var dlg = new FilePermissionAddDialog(_userAccountLookupController))
             {
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
@@ -244,14 +244,14 @@ namespace CMS.Presentation
 
         private void BtnSyncFolder_Click(object sender, EventArgs e)
         {
-            if (_permissionRepository == null)
+            if (_folderPermissionLookupController == null)
             {
-                MessageBox.Show("ไม่สามารถซิงค์ได้ — PermissionRepository ไม่พร้อมใช้งาน",
+                MessageBox.Show("ไม่สามารถซิงค์ได้ — FolderPermissionLookupController ไม่พร้อมใช้งาน",
                     "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            var folderPerms = _permissionRepository.GetByFolder(_file.FolderID)
+            var folderPerms = _folderPermissionLookupController.GetByFolder(_file.FolderID)
                 .Where(p => p.RevokedDate == null
                          && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < System.DateTime.Today))
                 .ToList();
@@ -268,12 +268,12 @@ namespace CMS.Presentation
             {
                 // Revoke all existing file permissions
                 foreach (var fp in _aclEntries)
-                    _filePermissionRepository.Revoke(fp.FilePermissionID, _currentUser.UserID, "ซิงค์จาก Folder");
+                    _filePermissionAclController.Revoke(fp.FilePermissionID, _currentUser.UserID, "ซิงค์จาก Folder");
 
                 // Insert folder permissions as file permissions
                 foreach (var fp in folderPerms)
                 {
-                    _filePermissionRepository.Insert(new FilePermission
+                    _filePermissionAclController.Insert(new FilePermission
                     {
                         FileID         = _file.FileID,
                         PrincipalType  = (int)fp.PrincipalType,

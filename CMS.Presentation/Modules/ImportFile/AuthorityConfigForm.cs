@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using CMS.Presentation.Modules.ImportFile;
@@ -13,11 +13,7 @@ namespace CMS.Presentation
     public partial class AuthorityConfigForm : Form
     {
         private readonly IFolderAuthorityService    _service;
-        private readonly IHrDivisionRepository      _hrDivRepo;
-        private readonly IHrDepartmentRepository    _hrDeptRepo;
-        private readonly IHrPositionRepository      _hrPosRepo;
-        private readonly IHrPositionMappingRepository _hrPosMappingRepo;
-        private readonly IUserAccountRepository     _userAccountRepo;
+        private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
         private readonly UserContext                _user;
 
         private List<FolderAuthorityConfig> _allConfigs = new List<FolderAuthorityConfig>();
@@ -32,19 +28,13 @@ namespace CMS.Presentation
         }
 
         public AuthorityConfigForm(IFolderAuthorityService service, UserContext user,
-            IHrDivisionRepository hrDivRepo = null, IHrDepartmentRepository hrDeptRepo = null,
-            IHrPositionRepository hrPosRepo = null, IUserAccountRepository userAccountRepo = null,
-            IHrPositionMappingRepository hrPosMappingRepo = null)
+            IAuthorityOrgLookupController authorityOrgLookupController = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
             _service          = service;
             _user             = user;
-            _hrDivRepo        = hrDivRepo;
-            _hrDeptRepo       = hrDeptRepo;
-            _hrPosRepo        = hrPosRepo;
-            _userAccountRepo  = userAccountRepo;
-            _hrPosMappingRepo = hrPosMappingRepo;
+            _authorityOrgLookupController = authorityOrgLookupController;
 
             InitializeComponent();
             this.Load += (s, e) =>
@@ -67,65 +57,61 @@ namespace CMS.Presentation
             var rootNode = new TreeNode("📋 ทั้งหมด") { Tag = null };
             tvOrg.Nodes.Add(rootNode);
 
-            if (_hrDivRepo != null)
+            if (_authorityOrgLookupController != null)
             {
-                var divs  = _hrDivRepo.GetAll().OrderBy(d => d.DivisionCode).ToList();
-                var depts = _hrDeptRepo != null
-                    ? _hrDeptRepo.GetAll().ToList()
-                    : new List<HrDepartment>();
+                var divs  = _authorityOrgLookupController.GetDivisions().OrderBy(d => d.DivisionCode).ToList();
+                var depts = _authorityOrgLookupController.GetDepartments().ToList();
 
                 // Pre-load HR_Position ครั้งเดียว → lookup PositionName → LevelCode
                 // ใช้ LevelCode ก่อน ถ้าว่างใช้ Level เดิม
                 var posLevelMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                if (_hrPosRepo != null)
-                    foreach (var p in _hrPosRepo.GetAll())
+                foreach (var p in _authorityOrgLookupController.GetPositions())
+                {
                         if (!string.IsNullOrEmpty(p.PositionName))
                             posLevelMap[p.PositionName] = !string.IsNullOrEmpty(p.LevelCode) ? p.LevelCode
                                                         : !string.IsNullOrEmpty(p.PositionLevel) ? p.PositionLevel
                                                         : "";
+                }
 
                 // Pre-load HR_PositionMapping → DepartmentID → List<PositionName>
                 var deptIdPosMap = new Dictionary<int, List<string>>();
                 var divIdPosMap  = new Dictionary<int, List<string>>();
-                if (_hrPosMappingRepo != null)
+                try
                 {
-                    try
-                    {
-                        var allMappings = _hrPosMappingRepo.GetAll().ToList();
-                        System.Diagnostics.Debug.WriteLine(
-                            string.Format("[AuthorityConfig] HR_PositionMapping loaded: {0} rows", allMappings.Count));
+                    var allMappings = _authorityOrgLookupController.GetPositionMappings().ToList();
+                    System.Diagnostics.Debug.WriteLine(
+                        string.Format("[AuthorityConfig] HR_PositionMapping loaded: {0} rows", allMappings.Count));
 
-                        foreach (var m in allMappings)
+                    foreach (var m in allMappings)
+                    {
+                        if (string.IsNullOrEmpty(m.PositionName)) continue;
+
+                        // อัปเดต posLevelMap ด้วย LevelCode จาก mapping
+                        if (!string.IsNullOrEmpty(m.Level))
+                            posLevelMap[m.PositionName] = m.Level;
+
+                        if (m.DepartmentID.HasValue)
                         {
-                            if (string.IsNullOrEmpty(m.PositionName)) continue;
-
-                            // อัปเดต posLevelMap ด้วย LevelCode จาก mapping
-                            if (!string.IsNullOrEmpty(m.Level))
-                                posLevelMap[m.PositionName] = m.Level;
-
-                            if (m.DepartmentID.HasValue)
-                            {
-                                if (!deptIdPosMap.ContainsKey(m.DepartmentID.Value))
-                                    deptIdPosMap[m.DepartmentID.Value] = new List<string>();
-                                if (!deptIdPosMap[m.DepartmentID.Value].Contains(m.PositionName))
-                                    deptIdPosMap[m.DepartmentID.Value].Add(m.PositionName);
-                            }
-                            else
-                            {
-                                if (!divIdPosMap.ContainsKey(m.DivisionID))
-                                    divIdPosMap[m.DivisionID] = new List<string>();
-                                if (!divIdPosMap[m.DivisionID].Contains(m.PositionName))
-                                    divIdPosMap[m.DivisionID].Add(m.PositionName);
-                            }
+                            if (!deptIdPosMap.ContainsKey(m.DepartmentID.Value))
+                                deptIdPosMap[m.DepartmentID.Value] = new List<string>();
+                            if (!deptIdPosMap[m.DepartmentID.Value].Contains(m.PositionName))
+                                deptIdPosMap[m.DepartmentID.Value].Add(m.PositionName);
                         }
-                        System.Diagnostics.Debug.WriteLine(
-                            string.Format("[AuthorityConfig] deptIdPosMap keys: {0}", string.Join(",", deptIdPosMap.Keys)));
+                        else
+                        {
+                            if (!divIdPosMap.ContainsKey(m.DivisionID))
+                                divIdPosMap[m.DivisionID] = new List<string>();
+                            if (!divIdPosMap[m.DivisionID].Contains(m.PositionName))
+                                divIdPosMap[m.DivisionID].Add(m.PositionName);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine(
-                            string.Format("[AuthorityConfig] HR_PositionMapping ERROR: {0}", ex.Message));
-                    }
+                    System.Diagnostics.Debug.WriteLine(
+                        string.Format("[AuthorityConfig] deptIdPosMap keys: {0}", string.Join(",", deptIdPosMap.Keys)));
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        string.Format("[AuthorityConfig] HR_PositionMapping ERROR: {0}", ex.Message));
                 }
 
                 foreach (var div in divs)
@@ -162,9 +148,9 @@ namespace CMS.Presentation
                         }
 
                         // 2. UserAccount fallback
-                        if (posNames == null && _userAccountRepo != null)
+                        if (posNames == null)
                         {
-                            try { posNames = _userAccountRepo.GetPositionsByDepartmentCode(dep.DepartmentCode); }
+                            try { posNames = _authorityOrgLookupController.GetPositionsByDepartmentCode(dep.DepartmentCode); }
                             catch { }
                         }
 
@@ -308,22 +294,19 @@ namespace CMS.Presentation
         /// </summary>
         private HashSet<string> GetPositionNamesForDept(string departmentCode)
         {
-            // หา DepartmentID จาก _hrDeptRepo
-            if (_hrDeptRepo == null) return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // หา DepartmentID ผ่าน lookup controller
+            if (_authorityOrgLookupController == null) return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             try
             {
-                var dept = _hrDeptRepo.GetAll()
+                var dept = _authorityOrgLookupController.GetDepartments()
                     .FirstOrDefault(d => string.Equals(d.DepartmentCode, departmentCode, StringComparison.OrdinalIgnoreCase));
                 if (dept == null) return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 // ดึง Position จาก HR_PositionMapping
-                if (_hrPosMappingRepo != null)
-                {
-                    var names = _hrPosMappingRepo.GetByDepartmentId(dept.DepartmentID)
-                        .Select(m => m.PositionName)
-                        .Where(n => !string.IsNullOrEmpty(n));
-                    return new HashSet<string>(names, StringComparer.OrdinalIgnoreCase);
-                }
+                var names = _authorityOrgLookupController.GetPositionMappingsByDepartmentId(dept.DepartmentID)
+                    .Select(m => m.PositionName)
+                    .Where(n => !string.IsNullOrEmpty(n));
+                return new HashSet<string>(names, StringComparer.OrdinalIgnoreCase);
             }
             catch { }
             return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -475,15 +458,16 @@ namespace CMS.Presentation
             _deptLookup.Clear();
             _divLookup.Clear();
 
-            if (_hrDeptRepo != null)
-                foreach (var d in _hrDeptRepo.GetAll())
+            if (_authorityOrgLookupController != null)
+            {
+                foreach (var d in _authorityOrgLookupController.GetDepartments())
                     if (!string.IsNullOrEmpty(d.DepartmentCode))
                         _deptLookup[d.DepartmentCode] = string.Format("{0} — {1}", d.DepartmentCode, d.DisplayName);
 
-            if (_hrDivRepo != null)
-                foreach (var d in _hrDivRepo.GetAll())
+                foreach (var d in _authorityOrgLookupController.GetDivisions())
                     if (!string.IsNullOrEmpty(d.DivisionCode))
                         _divLookup[d.DivisionCode] = string.Format("{0} — {1}", d.DivisionCode, d.DivisionName);
+            }
 
             var allRows = _service.GetAll().ToList();
             _allConfigs = new List<FolderAuthorityConfig>();

@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -15,13 +15,9 @@ namespace CMS.Presentation
     /// </summary>
     public partial class UserManagementForm : Form
     {
-        private readonly IUserAccountRepository      _userRepo;
+        private readonly IUserAdminController        _userAdminController;
         private readonly UserContext                 _currentUser;
         private readonly IAuditService               _auditService;
-        private readonly IHrDivisionRepository       _hrDivRepo;
-        private readonly IHrDepartmentRepository     _hrDeptRepo;
-        private readonly IHrPositionRepository       _hrPosRepo;
-        private readonly IHrPositionLevelRepository  _hrLevelRepo;
 
         private List<UserAccount>      _allUsers    = new List<UserAccount>();
         private List<HrDivision>       _divisions   = new List<HrDivision>();
@@ -29,20 +25,12 @@ namespace CMS.Presentation
         private List<HrPosition>       _positions   = new List<HrPosition>();
         private List<HrPositionLevel>  _levels      = new List<HrPositionLevel>();
 
-        public UserManagementForm(IUserAccountRepository userRepo, UserContext currentUser,
-                                   IAuditService auditService = null,
-                                   IHrDivisionRepository hrDivRepo = null,
-                                   IHrDepartmentRepository hrDeptRepo = null,
-                                   IHrPositionRepository hrPosRepo = null,
-                                   IHrPositionLevelRepository hrLevelRepo = null)
+        public UserManagementForm(IUserAdminController userAdminController, UserContext currentUser,
+                                   IAuditService auditService = null)
         {
-            _userRepo     = userRepo;
+            _userAdminController = userAdminController;
             _currentUser  = currentUser;
             _auditService = auditService;
-            _hrDivRepo    = hrDivRepo;
-            _hrDeptRepo   = hrDeptRepo;
-            _hrPosRepo    = hrPosRepo;
-            _hrLevelRepo  = hrLevelRepo;
 
             InitializeComponent();
             WireEvents();
@@ -73,18 +61,21 @@ namespace CMS.Presentation
 
         private void LoadHrData()
         {
-            if (_hrDivRepo   != null) _divisions   = _hrDivRepo.GetAll().OrderBy(d => d.DivisionCode).ToList();
-            if (_hrDeptRepo  != null) _departments = _hrDeptRepo.GetAll().OrderBy(d => d.DepartmentCode).ToList();
-            if (_hrPosRepo   != null) _positions   = _hrPosRepo.GetAll().OrderBy(p => p.PositionName).ToList();
-            if (_hrLevelRepo != null) _levels      = _hrLevelRepo.GetAll().OrderBy(l => l.LevelCode).ToList();
+            if (_userAdminController != null)
+            {
+                _divisions   = _userAdminController.GetDivisions().OrderBy(d => d.DivisionCode).ToList();
+                _departments = _userAdminController.GetDepartments().OrderBy(d => d.DepartmentCode).ToList();
+                _positions   = _userAdminController.GetPositions().OrderBy(p => p.PositionName).ToList();
+                _levels      = _userAdminController.GetPositionLevels().OrderBy(l => l.LevelCode).ToList();
+            }
         }
 
         private void LoadUsers()
         {
             try
             {
-                _allUsers = (_userRepo != null
-                    ? _userRepo.GetAll() ?? Enumerable.Empty<UserAccount>()
+                _allUsers = (_userAdminController != null
+                    ? _userAdminController.GetAllUsers() ?? Enumerable.Empty<UserAccount>()
                     : Enumerable.Empty<UserAccount>()).ToList();
 
                 ApplyFilter();
@@ -217,11 +208,11 @@ namespace CMS.Presentation
             {
                 bool wasActive = user.IsActive;
                 if (user.IsActive)
-                    _userRepo.Deactivate(user.UserID);
+                    _userAdminController.DeactivateUser(user.UserID);
                 else
                 {
                     user.IsActive = true;
-                    _userRepo.Update(user);
+                    _userAdminController.UpdateUser(user);
                 }
                 if (_auditService != null)
                     _auditService.Log(new AuditEntry
@@ -620,8 +611,8 @@ namespace CMS.Presentation
 
                 try
                 {
-                    if (isNew) _userRepo.Create(user);
-                    else       _userRepo.Update(user);
+                    if (isNew) _userAdminController.CreateUser(user);
+                    else       _userAdminController.UpdateUser(user);
 
                     if (_auditService != null)
                         _auditService.Log(new AuditEntry

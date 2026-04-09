@@ -5,9 +5,10 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
+using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
-using CMS.Data.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -21,7 +22,7 @@ namespace CMS.Presentation
         private readonly IFileService _fileService;
         private readonly IFolderService _folderService;
         private readonly IPermissionService _permissionService;
-        private readonly IUserAccountRepository _userAccountRepository;
+        private readonly IUserAccountLookupController _userAccountLookupController;
         private readonly IOrgStructureService _orgStructureService;
         private readonly UserContext _currentUser;
 
@@ -34,7 +35,7 @@ namespace CMS.Presentation
             IFileService fileService,
             IFolderService folderService,
             IPermissionService permissionService,
-            IUserAccountRepository userAccountRepository,
+            IUserAccountLookupController userAccountLookupController,
             IOrgStructureService orgStructureService,
             UserContext currentUser,
             FileDocument file = null,
@@ -45,7 +46,7 @@ namespace CMS.Presentation
             _fileService = fileService;
             _folderService = folderService;
             _permissionService = permissionService;
-            _userAccountRepository = userAccountRepository;
+            _userAccountLookupController = userAccountLookupController;
             _orgStructureService = orgStructureService;
             _currentUser = currentUser;
             _selectedFile = file;
@@ -452,7 +453,7 @@ namespace CMS.Presentation
             {
                 if (principalType == "User")
                 {
-                    var users = _userAccountRepository.GetAll();
+                    var users = _userAccountLookupController?.GetAllUsers() ?? Enumerable.Empty<UserAccount>();
                     foreach (var user in users)
                     {
                         lstPrincipal.Items.Add(new PrincipalItem { Id = user.UserID, Name = user.DisplayName ?? user.ADUserName, Data = user });

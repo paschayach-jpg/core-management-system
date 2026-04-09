@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Forms;
 using CMS.Data.Repositories;
+using CMS.Controllers.DMS.Document;
 using CMS.Domain.Models;
 using CMS.Infrastructure;
 using CMS.Services;
@@ -184,7 +185,7 @@ namespace CMS.Presentation
                 {
                     // เปิดตรง — แสดง LoginForm ให้กรอก
                     loggingService.Info("Startup mode: Manual login (no args)");
-                    using (var loginForm = new LoginForm(adAuthService, userAccountRepo))
+                    using (var loginForm = new LoginForm(adAuthService, new LoginAccountController(userAccountRepo)))
                     {
                         if (loginForm.ShowDialog() != DialogResult.OK)
                             return; // ผู้ใช้ปิด form
@@ -346,38 +347,55 @@ namespace CMS.Presentation
                 // ── Menu management ──────────────────────────────────────
                 var menuItemRepository = new CMS.Data.Repositories.MenuItemRepository(configManager);
                 var menuService = new MenuService(menuItemRepository, loggingService, auditService);
-                // ── Launch main form ──────────────────────────────────────────
-                var mainForm = new MDI_Container(
-                    loggingService,
-                    auditService,
-                    userContext,
-                    notificationService,
-                    approvalService,
-                    orgStructureService,
-                    folderService,
-                    fileService,
-                    configManager,
-                    userAccountRepo,
-                    permissionService,
-                    permissionRepository,
-                    folderRepository,
-                    filePermissionService,
-                    filePermissionRepository,
-                    fileDocumentRepository,
-                    folderTemplateRepository,
-                    employeeApiService,
-                    uploadCheckpointService,
-                    quickAccessService,
-                    userOrgVisibilityService,
-                    folderAuthorityService,
+                var folderTemplateController = new FolderTemplateController(folderTemplateRepository);
+                var shareLookupController = new ShareLookupController(permissionRepository, filePermissionRepository, folderRepository, fileDocumentRepository, userAccountRepo);
+                var folderSettingsController = new FolderSettingsController(folderRepository);
+                var folderPermissionLookupController = new FolderPermissionLookupController(permissionRepository);
+                var userAccountLookupController = new UserAccountLookupController(userAccountRepo);
+                var userAdminController = new UserAdminController(userAccountRepo);
+                var userAdminWithHrController = new UserAdminController(userAccountRepo, hrDivisionRepository, hrDepartmentRepository, hrPositionRepository, hrPositionLevelRepository);
+                var folderReadLookupController = new FolderReadLookupController(folderRepository);
+                var fileDocumentLookupController = new FileDocumentLookupController(fileDocumentRepository);
+                var filePermissionAclController = new FilePermissionAclController(filePermissionRepository);
+                var authorityOrgLookupController = new AuthorityOrgLookupController(
                     hrDivisionRepository,
                     hrDepartmentRepository,
                     hrPositionRepository,
-                    hrPositionLevelRepository,
                     hrPositionMappingRepository,
-                    shareService,
-                    shareAccessService,
-                    menuService);
+                    userAccountRepo);
+                // ── Launch main form ──────────────────────────────────────────
+                var mainForm = new MDI_Container(
+                    logger: loggingService,
+                    auditService: auditService,
+                    currentUser: userContext,
+                    notificationService: notificationService,
+                    approvalService: approvalService,
+                    orgStructureService: orgStructureService,
+                    folderService: folderService,
+                    fileService: fileService,
+                    configManager: configManager,
+                    permissionService: permissionService,
+                    folderRepository: folderRepository,
+                    filePermissionService: filePermissionService,
+                    folderTemplateController: folderTemplateController,
+                    employeeApiService: employeeApiService,
+                    uploadCheckpointService: uploadCheckpointService,
+                    quickAccessService: quickAccessService,
+                    userOrgVisibilityService: userOrgVisibilityService,
+                    folderAuthorityService: folderAuthorityService,
+                    shareService: shareService,
+                    shareAccessService: shareAccessService,
+                    menuService: menuService,
+                    shareLookupController: shareLookupController,
+                    folderSettingsController: folderSettingsController,
+                    folderPermissionLookupController: folderPermissionLookupController,
+                    userAccountLookupController: userAccountLookupController,
+                    userAdminController: userAdminController,
+                    userAdminWithHrController: userAdminWithHrController,
+                    folderReadLookupController: folderReadLookupController,
+                    fileDocumentLookupController: fileDocumentLookupController,
+                    filePermissionAclController: filePermissionAclController,
+                    authorityOrgLookupController: authorityOrgLookupController);
                 Application.Run(mainForm);
 
                 // ถ้า user กด Logout → restart process เพื่อแสดง LoginForm ใหม่

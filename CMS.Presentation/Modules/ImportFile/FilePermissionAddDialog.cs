@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 
 namespace CMS.Presentation
@@ -12,7 +12,7 @@ namespace CMS.Presentation
     /// </summary>
     public partial class FilePermissionAddDialog : Form
     {
-        private readonly IUserAccountRepository _userAccountRepository;
+        private readonly IUserAccountLookupController _userAccountLookupController;
         private List<UserAccount> _userList = new List<UserAccount>();
 
         // ── Result properties (อ่านได้หลัง DialogResult.OK) ─────────────────
@@ -25,9 +25,9 @@ namespace CMS.Presentation
         public bool CanFullControl { get; private set; }
         public bool IsDeny         { get; private set; }
 
-        public FilePermissionAddDialog(IUserAccountRepository userAccountRepository = null)
+        public FilePermissionAddDialog(IUserAccountLookupController userAccountLookupController = null)
         {
-            _userAccountRepository = userAccountRepository;
+            _userAccountLookupController = userAccountLookupController;
             InitializeComponent();
         }
 
@@ -126,11 +126,11 @@ namespace CMS.Presentation
             cboSelect.Items.Clear();
             cboSelect.Text = "";
 
-            if (!isUser || _userAccountRepository == null) return;
+            if (!isUser || _userAccountLookupController == null) return;
 
             try
             {
-                _userList = _userAccountRepository.GetAll().ToList();
+                _userList = (_userAccountLookupController?.GetAllUsers() ?? Enumerable.Empty<UserAccount>()).ToList();
                 foreach (var u in _userList.OrderBy(x => x.ADUserName))
                     cboSelect.Items.Add(string.Format("{0} — {1} (ID:{2})", u.ADUserName, u.DisplayName, u.UserID));
                 if (cboSelect.Items.Count > 0)

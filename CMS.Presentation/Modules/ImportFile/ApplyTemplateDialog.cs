@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -12,7 +12,7 @@ namespace CMS.Presentation
     public partial class ApplyTemplateDialog : Form
     {
         private readonly IFolderService            _folderService;
-        private readonly IFolderTemplateRepository _templateRepository;
+        private readonly IFolderTemplateController _templateController;
         private readonly IOrgStructureService      _orgStructureService;
         private readonly UserContext               _currentUser;
         private readonly Folder                    _parentFolder;  // folder ที่เข้ามาสร้าง
@@ -24,18 +24,18 @@ namespace CMS.Presentation
 
         public ApplyTemplateDialog(
             IFolderService            folderService,
-            IFolderTemplateRepository templateRepository,
+            IFolderTemplateController templateController,
             IOrgStructureService      orgStructureService,
             UserContext               currentUser,
             Folder                    parentFolder = null)
         {
             if (folderService       == null) throw new ArgumentNullException("folderService");
-            if (templateRepository  == null) throw new ArgumentNullException("templateRepository");
+            if (templateController  == null) throw new ArgumentNullException("templateController");
             if (orgStructureService == null) throw new ArgumentNullException("orgStructureService");
             if (currentUser         == null) throw new ArgumentNullException("currentUser");
 
             _folderService       = folderService;
-            _templateRepository  = templateRepository;
+            _templateController  = templateController;
             _orgStructureService = orgStructureService;
             _currentUser         = currentUser;
             _parentFolder        = parentFolder;
@@ -120,7 +120,7 @@ namespace CMS.Presentation
                 treeOrgUnit.ExpandAll();
                 treeOrgUnit.EndUpdate();
 
-                _templates = _templateRepository.GetAll()
+                _templates = _templateController.GetAll()
                     .Where(t => t.IsActive)
                     .OrderBy(t => t.TemplateName)
                     .ToList();
@@ -162,7 +162,7 @@ namespace CMS.Presentation
 
             try
             {
-                var items = _templateRepository.GetItems(tmpl.TemplateID).ToList();
+                var items = _templateController.GetItems(tmpl.TemplateID).ToList();
                 treePreview.BeginUpdate();
                 treePreview.Nodes.Clear();
 

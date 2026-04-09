@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -17,8 +17,7 @@ namespace CMS.Presentation
     {
         private readonly IShareService _shareService;
         private readonly UserContext _currentUser;
-        private readonly IUserAccountRepository _userRepo;
-        private readonly IFileDocumentRepository _fileRepo;
+        private readonly IShareLookupController _shareLookupController;
 
         private TabControl _tabControl;
         private DataGridView _dgvInternalShares;
@@ -27,13 +26,12 @@ namespace CMS.Presentation
         private Dictionary<int, int> _externalShareIdMap; // row → ExternalShareID
 
         public ShareManagementForm(IShareService shareService, UserContext currentUser,
-            IUserAccountRepository userRepo = null, IFileDocumentRepository fileRepo = null)
+            IShareLookupController shareLookupController = null)
         {
             InitializeComponent();
             _shareService = shareService;
             _currentUser = currentUser;
-            _userRepo = userRepo;
-            _fileRepo = fileRepo;
+            _shareLookupController = shareLookupController;
             _internalShareIdMap = new Dictionary<int, int>();
             _externalShareIdMap = new Dictionary<int, int>();
         }
@@ -441,19 +439,8 @@ namespace CMS.Presentation
         private string ResolvePrincipalName(int principalType, int principalId)
         {
             // PrincipalType: 1=User, 2=Role, 3=OrgUnit, 4=Group
-            if (principalType == 1 && _userRepo != null)
-            {
-                try
-                {
-                    var u = _userRepo.GetById(principalId);
-                    if (u != null)
-                    {
-                        var name = u.DisplayName ?? u.ADUserName;
-                        if (!string.IsNullOrEmpty(name)) return name;
-                    }
-                }
-                catch { }
-            }
+            if (_shareLookupController != null)
+                return _shareLookupController.ResolvePrincipalName(principalType, principalId);
 
             // Fallback: label by type
             switch (principalType)
@@ -468,16 +455,9 @@ namespace CMS.Presentation
 
         private string ResolveFileName(int fileId)
         {
-            if (_fileRepo != null)
-            {
-                try
-                {
-                    var f = _fileRepo.GetById(fileId);
-                    if (f != null && !string.IsNullOrEmpty(f.OriginalFileName))
-                        return f.OriginalFileName;
-                }
-                catch { }
-            }
+            if (_shareLookupController != null)
+                return _shareLookupController.ResolveFileName(fileId);
+
             return string.Format("File #{0}", fileId);
         }
 

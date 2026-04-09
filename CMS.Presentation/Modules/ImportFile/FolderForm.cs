@@ -10,6 +10,7 @@ using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 using MenuItem = CMS.Domain.Models.MenuItem;
@@ -39,16 +40,19 @@ namespace CMS.Presentation
         private readonly IFileService         _fileService;
         private readonly IOrgStructureService _orgStructureService;
         private readonly IApprovalService     _approvalService;
-        private readonly IFolderTemplateRepository _folderTemplateRepository;
+        private readonly IFolderTemplateController _folderTemplateController;
         private readonly IUploadCheckpointService  _checkpointService;
         private readonly IQuickAccessService  _quickAccessService;
         private readonly IPermissionService    _permissionService;
-        private readonly IFolderRepository     _folderRepository;
-        private          IPermissionRepository _permissionRepository;
+        private readonly IFolderReadLookupController _folderReadLookupController;
         private readonly IAuditService         _auditService;
         private readonly IShareService         _shareService;
-        private readonly IUserAccountRepository _userAccountRepo;
         private readonly IMenuService          _menuService;
+        private readonly IShareLookupController _shareLookupController;
+        private readonly IFolderSettingsController _folderSettingsController;
+        private readonly IFolderPermissionLookupController _folderPermissionLookupController;
+        private readonly IUserAccountLookupController _userAccountLookupController;
+        private readonly IUserAdminController _userAdminController;
         private readonly UserContext          _user;
 
         // Quick Access panel (Req 7)
@@ -101,17 +105,20 @@ namespace CMS.Presentation
 
         public FolderForm(IFolderService service, UserContext user, int? orgUnitId = null,
                           IFileService fileService = null, IOrgStructureService orgStructureService = null,
-                          IFolderTemplateRepository folderTemplateRepository = null,
+                          IFolderTemplateController folderTemplateController = null,
                           IUploadCheckpointService checkpointService = null,
                           IQuickAccessService quickAccessService = null,
                           IApprovalService approvalService = null,
                           IPermissionService permissionService = null,
-                          IFolderRepository folderRepository = null,
-                          IPermissionRepository permissionRepository = null,
                           IAuditService auditService = null,
                           IShareService shareService = null,
-                          IUserAccountRepository userAccountRepository = null,
-                          IMenuService menuService = null)
+                          IMenuService menuService = null,
+                          IShareLookupController shareLookupController = null,
+                          IFolderSettingsController folderSettingsController = null,
+                          IFolderPermissionLookupController folderPermissionLookupController = null,
+                          IUserAccountLookupController userAccountLookupController = null,
+                          IUserAdminController userAdminController = null,
+                          IFolderReadLookupController folderReadLookupController = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
@@ -121,16 +128,20 @@ namespace CMS.Presentation
             _folderService            = service;
             _fileService              = fileService;
             _orgStructureService      = orgStructureService;
-            _folderTemplateRepository = folderTemplateRepository;
+            _folderTemplateController = folderTemplateController;
             _checkpointService        = checkpointService;
             _quickAccessService       = quickAccessService;
             _approvalService          = approvalService;
             _permissionService        = permissionService;
-            _permissionRepository     = permissionRepository;
             _auditService             = auditService;
             _shareService             = shareService;
-            _userAccountRepo          = userAccountRepository;
             _menuService              = menuService;
+            _shareLookupController    = shareLookupController ?? new ShareLookupController(null, null, null, null, null);
+            _folderSettingsController = folderSettingsController ?? new FolderSettingsController(null);
+            _folderPermissionLookupController = folderPermissionLookupController ?? new FolderPermissionLookupController();
+            _userAccountLookupController = userAccountLookupController ?? new UserAccountLookupController();
+            _userAdminController = userAdminController ?? new UserAdminController();
+            _folderReadLookupController = folderReadLookupController ?? new FolderReadLookupController(null);
             _user                     = user;
 
             InitializeComponent();
@@ -139,8 +150,7 @@ namespace CMS.Presentation
 
             BuildContentImageList();
 
-            _presenter = new FolderPresenter(service, this, user, fileService, folderRepository);
-            _folderRepository = folderRepository;
+            _presenter = new FolderPresenter(service, this, user, fileService, _folderReadLookupController);
 
             // Manager/Admin only — ซ่อนปุ่มผู้ดูแลสำหรับ user ทั่วไป
             bool canManage = user.Role == UserRole.Manager || user.Role == UserRole.Admin;
@@ -1237,15 +1247,16 @@ namespace CMS.Presentation
                 FileService = _fileService,
                 OrgStructureService = _orgStructureService,
                 ApprovalService = _approvalService,
-                FolderTemplateRepository = _folderTemplateRepository,
-                QuickAccessService = _quickAccessService,
+                FolderTemplateController = _folderTemplateController,
                 PermissionService = _permissionService,
-                FolderRepository = _folderRepository,
-                PermissionRepository = _permissionRepository,
+                FolderSettingsController = _folderSettingsController,
+                FolderPermissionLookupController = _folderPermissionLookupController,
                 AuditService = _auditService,
                 ShareService = _shareService,
-                UserAccountRepository = _userAccountRepo,
+                UserAccountLookupController = _userAccountLookupController,
+                UserAdminController = _userAdminController,
                 MenuService = _menuService,
+                ShareLookupController = _shareLookupController,
                 SwitchToOrgView = SwitchToOrgView,
                 SwitchToMainMenuView = SwitchToMainMenuView,
                 TriggerArchive = TriggerArchive,
@@ -1381,8 +1392,8 @@ namespace CMS.Presentation
                 // ดึงข้อมูลทั้งหมดแบบ async เพื่อไม่ block UI
                 var result = await System.Threading.Tasks.Task.Run(() =>
                 {
-                    var allFolders = (_folderRepository != null
-                        ? _folderRepository.GetActiveFolders()
+                    var allFolders = (_folderReadLookupController != null
+                        ? _folderReadLookupController.GetActiveFolders()
                         : _folderService.GetRootFolders(null, _user))
                         .ToList();
 
@@ -1659,8 +1670,8 @@ namespace CMS.Presentation
                 }
                 else
                 {
-                    if (_folderRepository == null) return;
-                    children = _folderRepository.GetChildren(folderId)
+                    if (_folderReadLookupController == null) return;
+                    children = _folderReadLookupController.GetChildren(folderId)
                         .Where(f => !f.IsDeleted && !f.IsArchived)
                         .ToList();
                 }
@@ -3709,8 +3720,8 @@ namespace CMS.Presentation
         {
             Folder folder = null;
 
-            if (_folderRepository != null)
-                folder = _folderRepository.GetById(folderId);
+            if (_folderReadLookupController != null)
+                folder = _folderReadLookupController.GetById(folderId);
 
             if (folder != null)
             {
@@ -4026,12 +4037,12 @@ namespace CMS.Presentation
 
         /// <summary>
         /// ถามผู้ใช้ว่าต้องการสร้าง Sub-folder แบบ Blank หรือจาก Template
-        /// ถ้ามี _folderTemplateRepository จะแสดงตัวเลือก Template ให้
+        /// ถ้า template controller ใช้งานได้ จะแสดงตัวเลือก Template ให้
         /// </summary>
         private void CreateSubFolderWithChoice(Folder parent, int? lockedLevel)
         {
-            // ถ้ามี template repository → เสนอทางเลือก
-            if (_folderTemplateRepository != null && _folderService != null && _orgStructureService != null)
+            // ถ้า template controller ใช้งานได้ → เสนอทางเลือก
+            if (_folderTemplateController != null && _folderTemplateController.IsAvailable && _folderService != null && _orgStructureService != null)
             {
                 using (var dlg = new FolderCreationChoiceDialog(parent.FolderName))
                 {
@@ -4059,7 +4070,7 @@ namespace CMS.Presentation
         /// </summary>
         private void OpenApplyTemplateFor(Folder parent)
         {
-            using (var dlg = new ApplyTemplateDialog(_folderService, _folderTemplateRepository, _orgStructureService, _user, parent))
+            using (var dlg = new ApplyTemplateDialog(_folderService, _folderTemplateController, _orgStructureService, _user, parent))
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
@@ -4985,7 +4996,7 @@ namespace CMS.Presentation
 
         private void btnApplyTemplate_Click(object sender, EventArgs e)
         {
-            if (_folderTemplateRepository == null || _orgStructureService == null)
+            if (_folderTemplateController == null || !_folderTemplateController.IsAvailable || _orgStructureService == null)
             {
                 // Fallback: prompt for template folder ID (legacy behavior)
                 var parent = SelectedFolder;
@@ -5001,7 +5012,7 @@ namespace CMS.Presentation
                 return;
             }
 
-            using (var dlg = new ApplyTemplateDialog(_folderService, _folderTemplateRepository, _orgStructureService, _user, SelectedFolder))
+            using (var dlg = new ApplyTemplateDialog(_folderService, _folderTemplateController, _orgStructureService, _user, SelectedFolder))
             {
                 // Validate: ต้องเลือก folder ที่อยู่ภายใต้ 4 folders หลักเท่านั้น
                 var selectedFolder = SelectedFolder;

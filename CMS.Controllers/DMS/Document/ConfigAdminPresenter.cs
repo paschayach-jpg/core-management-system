@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Services.Interfaces;
@@ -19,7 +18,6 @@ namespace CMS.Controllers.DMS.Document
         private readonly IAuditService          _auditService;
         private readonly UserContext            _user;
         private readonly IFileService           _fileService;
-        private readonly IUserAccountRepository _userAccountRepository;
 
         // Config keys
         private const string KeyNetworkDrivePath        = "NetworkDrivePath";
@@ -46,8 +44,7 @@ namespace CMS.Controllers.DMS.Document
             IConfigManager         configManager,
             IAuditService          auditService,
             UserContext            user,
-            IFileService           fileService            = null,
-            IUserAccountRepository userAccountRepository  = null)
+            IFileService           fileService            = null)
         {
             if (view          == null) throw new ArgumentNullException("view");
             if (configManager == null) throw new ArgumentNullException("configManager");
@@ -59,7 +56,6 @@ namespace CMS.Controllers.DMS.Document
             _auditService          = auditService;
             _user                  = user;
             _fileService           = fileService;
-            _userAccountRepository = userAccountRepository;
 
             LoadCurrentValues();
 

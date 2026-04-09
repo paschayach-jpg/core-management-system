@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
@@ -13,10 +14,10 @@ namespace CMS.Controllers.DMS.Document
         private readonly IPermissionService      _permissionService;
         private readonly IApprovalService        _approvalService;
         private readonly IFolderService          _folderService;
-        private readonly IPermissionRepository   _permissionRepo;
+        private readonly IFolderPermissionLookupController _folderPermissionLookupController;
         private readonly IPermissionView         _view;
         private readonly UserContext             _user;
-        private readonly IFileDocumentRepository _fileDocumentRepository;
+        private readonly IFileDocumentLookupController _fileDocumentLookupController;
         private readonly IAuditService           _auditService;
 
         private Folder _currentFolder;
@@ -29,26 +30,26 @@ namespace CMS.Controllers.DMS.Document
             IPermissionService      permissionService,
             IApprovalService        approvalService,
             IFolderService          folderService,
-            IPermissionRepository   permissionRepo,
+            IFolderPermissionLookupController folderPermissionLookupController,
             IPermissionView         view,
             UserContext             user,
-            IFileDocumentRepository fileDocumentRepository = null,
+            IFileDocumentLookupController fileDocumentLookupController = null,
             IAuditService           auditService           = null)
         {
             if (permissionService == null) throw new ArgumentNullException("permissionService");
             if (approvalService   == null) throw new ArgumentNullException("approvalService");
             if (folderService     == null) throw new ArgumentNullException("folderService");
-            if (permissionRepo    == null) throw new ArgumentNullException("permissionRepo");
+            if (folderPermissionLookupController == null) throw new ArgumentNullException("folderPermissionLookupController");
             if (view              == null) throw new ArgumentNullException("view");
             if (user              == null) throw new ArgumentNullException("user");
 
             _permissionService      = permissionService;
             _approvalService        = approvalService;
             _folderService          = folderService;
-            _permissionRepo         = permissionRepo;
+            _folderPermissionLookupController = folderPermissionLookupController;
             _view                   = view;
             _user                   = user;
-            _fileDocumentRepository = fileDocumentRepository;
+            _fileDocumentLookupController = fileDocumentLookupController;
             _auditService           = auditService;
         }
 
@@ -68,7 +69,7 @@ namespace CMS.Controllers.DMS.Document
                 System.Diagnostics.Debug.WriteLine($"[PRESENTER] FolderID={folder.FolderID}  Name={folder.FolderName}  Level={folder.ConfidentialityLevel}");
                 System.Diagnostics.Debug.WriteLine($"[PRESENTER] UserID={_user.UserID}  AppRole={_user.AppRole}");
 
-                var entries = _permissionRepo.GetAllByFolder(folder.FolderID).ToList();
+                var entries = _folderPermissionLookupController.GetAllByFolder(folder.FolderID).ToList();
 
                 // Auto-revoke entries that have passed their expiry date
                 var expired = entries
@@ -80,9 +81,9 @@ namespace CMS.Controllers.DMS.Document
                 if (expired.Count > 0)
                 {
                     foreach (var exp in expired)
-                        _permissionRepo.Revoke(exp.PermissionID, _user.UserID, "หมดอายุอัตโนมัติ");
+                        _folderPermissionLookupController.Revoke(exp.PermissionID, _user.UserID, "หมดอายุอัตโนมัติ");
 
-                    entries = _permissionRepo.GetAllByFolder(folder.FolderID).ToList();
+                    entries = _folderPermissionLookupController.GetAllByFolder(folder.FolderID).ToList();
                 }
 
                 _view.ShowAclEntries(entries);
@@ -179,7 +180,7 @@ namespace CMS.Controllers.DMS.Document
 
             try
             {
-                _permissionRepo.Revoke(permissionId, _user.UserID, "Removed by user");
+                _folderPermissionLookupController.Revoke(permissionId, _user.UserID, "Removed by user");
                 if (_auditService != null)
                     _auditService.Log(new AuditEntry
                     {
@@ -260,14 +261,14 @@ namespace CMS.Controllers.DMS.Document
 
         private void PromptPropagateToFiles()
         {
-            if (_currentFolder == null || _fileDocumentRepository == null)
+            if (_currentFolder == null || _fileDocumentLookupController == null)
             {
                 _view.ShowInfo("✅ บันทึกสิทธิ์เรียบร้อยแล้ว");
                 return;
             }
 
             int fileCount;
-            try { fileCount = _fileDocumentRepository.GetByFolder(_currentFolder.FolderID).Count(); }
+            try { fileCount = _fileDocumentLookupController.GetByFolder(_currentFolder.FolderID).Count(); }
             catch { fileCount = 0; }
 
             if (fileCount == 0)

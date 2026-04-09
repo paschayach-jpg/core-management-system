@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
@@ -19,7 +19,7 @@ namespace CMS.Presentation
     {
         private readonly int                     _fileId;
         private readonly IFileService            _fileService;
-        private readonly IFileDocumentRepository _fileDocRepo;
+        private readonly IShareLookupController  _shareLookupController;
         private readonly UserContext             _user;
 
         private FileDocument _doc;
@@ -27,12 +27,12 @@ namespace CMS.Presentation
         public SharedFileViewForm(
             int                     fileId,
             IFileService            fileService,
-            IFileDocumentRepository fileDocRepo,
+            IShareLookupController  shareLookupController,
             UserContext             user)
         {
             _fileId      = fileId;
             _fileService = fileService ?? throw new ArgumentNullException("fileService");
-            _fileDocRepo = fileDocRepo ?? throw new ArgumentNullException("fileDocRepo");
+            _shareLookupController = shareLookupController ?? throw new ArgumentNullException("shareLookupController");
             _user        = user        ?? throw new ArgumentNullException("user");
             BuildUI();
         }
@@ -167,7 +167,7 @@ namespace CMS.Presentation
         {
             try
             {
-                _doc = _fileDocRepo.GetById(_fileId);
+                _doc = _shareLookupController.GetFileById(_fileId);
                 if (_doc == null)
                 {
                     _lblFileName.Text = "(ไม่พบไฟล์)";

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
-using CMS.Data.Interfaces;
 using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
@@ -18,8 +18,7 @@ namespace CMS.Presentation
         private readonly IOrgStructureService     _orgService;
         private readonly OrgUnitTier              _fixedTier;
         private readonly OrgUnit                  _selectedParent;
-        private readonly IHrDivisionRepository    _hrDivisionRepo;
-        private readonly IHrDepartmentRepository  _hrDepartmentRepo;
+        private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
 
         // เก็บ DivisionID ที่เลือกไว้ เพื่อ filter แผนก
         private int _selectedDivisionID = 0;
@@ -31,8 +30,7 @@ namespace CMS.Presentation
             OrgUnitTier? fixedTier = null,
             IOrgStructureService orgService = null,
             OrgUnit selectedParent = null,
-            IHrDivisionRepository hrDivisionRepo = null,
-            IHrDepartmentRepository hrDepartmentRepo = null)
+            IAuthorityOrgLookupController authorityOrgLookupController = null)
         {
             // Include ALL units (active, inactive, deleted) to avoid code conflicts
             _allUnits           = allUnits?.ToList() ?? new List<OrgUnit>();
@@ -40,8 +38,7 @@ namespace CMS.Presentation
             _orgService         = orgService;
             _fixedTier          = fixedTier ?? OrgUnitTier.SubCommittee;
             _selectedParent     = selectedParent;
-            _hrDivisionRepo     = hrDivisionRepo;
-            _hrDepartmentRepo   = hrDepartmentRepo;
+            _authorityOrgLookupController = authorityOrgLookupController;
 
             // Debug: Show total units received
             System.Diagnostics.Debug.WriteLine($"CreateOrgUnitDialog received {_allUnits.Count} units");
@@ -233,13 +230,13 @@ namespace CMS.Presentation
             bool   isDivision = currentTier == OrgUnitTier.Division;
 
             // ต้องมี data source อย่างน้อย 1 อย่าง
-            if (isDivision && _hrDivisionRepo == null && _employeeApiService == null)
+            if (isDivision && _authorityOrgLookupController == null && _employeeApiService == null)
             {
                 MessageBox.Show("ไม่มีแหล่งข้อมูลฝ่าย กรุณาตรวจสอบการตั้งค่า",
                     "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            if (!isDivision && _hrDepartmentRepo == null && _employeeApiService == null)
+            if (!isDivision && _authorityOrgLookupController == null && _employeeApiService == null)
             {
                 MessageBox.Show("ไม่มีแหล่งข้อมูลแผนก กรุณาตรวจสอบการตั้งค่า",
                     "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -332,10 +329,10 @@ namespace CMS.Presentation
                 {
                     if (isDivision)
                     {
-                        // ดึงจาก core.HR_Division ถ้ามี repo, fallback ไป Employee API
-                        if (_hrDivisionRepo != null)
+                        // ดึงจาก authority lookup ถ้ามี controller, fallback ไป Employee API
+                        if (_authorityOrgLookupController != null)
                         {
-                            foreach (var v in _hrDivisionRepo.GetAll().OrderBy(x => x.DivisionCode))
+                            foreach (var v in _authorityOrgLookupController.GetDivisions().OrderBy(x => x.DivisionCode))
                             {
                                 var row = new ListViewItem(v.DivisionCode ?? "");
                                 row.SubItems.Add(v.DivisionName ?? "");
@@ -358,24 +355,25 @@ namespace CMS.Presentation
                     {
                         // หา DivisionID จาก cboParent ที่เลือกไว้
                         int divisionId = 0;
-                        if (_hrDepartmentRepo != null)
+                        if (_authorityOrgLookupController != null)
                         {
                             // ดึง DivisionCode จาก cboParent แล้ว map ไปหา DivisionID ใน HR_Division
                             string selectedDivCode = null;
                             if (cboParent.SelectedItem is OrgUnitItem parentItem && parentItem.OrgUnit != null)
                                 selectedDivCode = parentItem.OrgUnit.OrgUnitCode;
 
-                            if (_hrDivisionRepo != null && !string.IsNullOrEmpty(selectedDivCode))
+                            if (!string.IsNullOrEmpty(selectedDivCode))
                             {
-                                var div = _hrDivisionRepo.GetAll()
+                                var div = _authorityOrgLookupController.GetDivisions()
                                     .FirstOrDefault(d => string.Equals(d.DivisionCode, selectedDivCode,
                                         StringComparison.OrdinalIgnoreCase));
                                 if (div != null) divisionId = div.DivisionID;
                             }
 
+                            var allDepartments = _authorityOrgLookupController.GetDepartments();
                             var depts = divisionId > 0
-                                ? _hrDepartmentRepo.GetByDivisionID(divisionId)
-                                : _hrDepartmentRepo.GetAll();
+                                ? allDepartments.Where(d => d.DivisionID == divisionId)
+                                : allDepartments;
 
                             foreach (var d in depts.OrderBy(x => x.DepartmentCode))
                             {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -17,7 +17,7 @@ namespace CMS.Presentation
     /// </summary>
     public partial class UserAccessForm : Form
     {
-        private readonly IUserAccountRepository   _userRepo;
+        private readonly IUserAdminController    _userAdminController;
         private readonly IOrgStructureService     _orgService;
         private readonly IEmployeeApiService      _employeeApi;
         private readonly UserContext              _currentUser;
@@ -36,14 +36,14 @@ namespace CMS.Presentation
         private Label    _lblVisibilityUser;
 
         public UserAccessForm(
-            IUserAccountRepository    userRepo,
+            IUserAdminController      userAdminController,
             IOrgStructureService      orgService,
             UserContext               currentUser,
             IEmployeeApiService       employeeApi       = null,
             IUserOrgVisibilityService visibilityService = null,
             IAuditService             auditService      = null)
         {
-            _userRepo          = userRepo;
+            _userAdminController = userAdminController;
             _orgService        = orgService;
             _currentUser       = currentUser;
             _employeeApi       = employeeApi;
@@ -172,8 +172,8 @@ namespace CMS.Presentation
         {
             try
             {
-                _allUsers = (_userRepo != null
-                    ? _userRepo.GetAll() ?? Enumerable.Empty<UserAccount>()
+                _allUsers = (_userAdminController != null
+                    ? _userAdminController.GetAllUsers() ?? Enumerable.Empty<UserAccount>()
                     : Enumerable.Empty<UserAccount>()).ToList();
 
                 _allOrgs = (_orgService != null
@@ -846,7 +846,7 @@ namespace CMS.Presentation
                 user.AppRole = newRole;
                 try
                 {
-                    _userRepo.Update(user);
+                    _userAdminController.UpdateUser(user);
                     if (_auditService != null)
                         _auditService.Log(new AuditEntry
                         {
@@ -892,7 +892,7 @@ namespace CMS.Presentation
 
             try
             {
-                _userRepo.Deactivate(user.UserID);
+                _userAdminController.DeactivateUser(user.UserID);
                 user.IsActive = false;
                 if (_auditService != null)
                     _auditService.Log(new AuditEntry
@@ -1161,7 +1161,7 @@ namespace CMS.Presentation
                     {
                         int oldOrgId   = user.OrgUnitID;
                         user.OrgUnitID = selected.OrgUnitID;
-                        _userRepo.Update(user);
+                        _userAdminController.UpdateUser(user);
                         if (_auditService != null)
                             _auditService.Log(new AuditEntry
                             {
@@ -1232,7 +1232,7 @@ namespace CMS.Presentation
             user.OrgUnitID = chosen.OrgUnitID;
             try
             {
-                _userRepo.Update(user);
+                _userAdminController.UpdateUser(user);
                 if (_auditService != null)
                     _auditService.Log(new AuditEntry
                     {

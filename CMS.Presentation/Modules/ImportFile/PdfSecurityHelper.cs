@@ -86,6 +86,13 @@ namespace CMS.Presentation
 
         private static async Task OpenWithPermissionsAsync(string sourcePath, Form form, int permissions)
         {
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                MessageBox.Show("พาธไฟล์ไม่ถูกต้อง", "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             if (!File.Exists(sourcePath))
             {
                 MessageBox.Show("ไม่พบไฟล์ที่ต้องการเปิด", "ข้อผิดพลาด",
@@ -109,9 +116,15 @@ namespace CMS.Presentation
                 PdfReader.unethicalreading = true;
                 byte[] sourceBytes = File.ReadAllBytes(sourcePath);
 
+                if (sourceBytes == null || sourceBytes.Length == 0)
+                    throw new InvalidDataException("ไฟล์ PDF ว่างหรืออ่านข้อมูลไม่ได้");
+
                 using (PdfReader reader = new PdfReader(sourceBytes))
                 using (MemoryStream ms = new MemoryStream())
                 {
+                    if (reader.NumberOfPages <= 0)
+                        throw new InvalidDataException("ไฟล์ PDF ไม่มีหน้าเอกสารหรือโครงสร้างไม่ถูกต้อง");
+
                     using (PdfStamper stamper = new PdfStamper(reader, ms))
                     {
                         stamper.SetEncryption(
@@ -136,6 +149,14 @@ namespace CMS.Presentation
 
                 // ── Wait then cleanup ──────────────────────────────────────────
                 await CleanupTempFileAsync(tempPath, retryCount: 5, delayMs: 3000);
+            }
+            catch (NullReferenceException ex)
+            {
+                if (tempPath != null) TryDeleteFile(tempPath);
+
+                MessageBox.Show(
+                    string.Format("ไม่สามารถประมวลผล PDF นี้ได้ (โครงสร้างไฟล์อาจไม่รองรับ): {0}", ex.Message),
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {

@@ -5,8 +5,8 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
-using CMS.Data.Interfaces;
 using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
@@ -24,16 +24,14 @@ namespace CMS.Presentation
         private readonly UserContext            _currentUser;
         private List<OrgUnit> _allUnits = new List<OrgUnit>();
         private readonly IEmployeeApiService    _employeeApiService;
-        private readonly IHrDivisionRepository   _hrDivisionRepo;
-        private readonly IHrDepartmentRepository _hrDepartmentRepo;
+        private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
 
         // ตัวเลือกมุมมองปัจจุบัน: false = ตามองค์กร, true = ตามความลับ
         private bool _isConfView = false;
 
         public OrgStructureForm(IOrgStructureService service, UserContext user,
             IEmployeeApiService employeeApiService = null,
-            IHrDivisionRepository hrDivisionRepo = null,
-            IHrDepartmentRepository hrDepartmentRepo = null)
+            IAuthorityOrgLookupController authorityOrgLookupController = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
@@ -41,8 +39,7 @@ namespace CMS.Presentation
             _service            = service;
             _currentUser        = user;
             _employeeApiService = employeeApiService;
-            _hrDivisionRepo     = hrDivisionRepo;
-            _hrDepartmentRepo   = hrDepartmentRepo;
+            _authorityOrgLookupController = authorityOrgLookupController;
 
             InitializeComponent();
             _presenter = new OrgStructurePresenter(service, this, user);
@@ -384,7 +381,7 @@ namespace CMS.Presentation
             }
 
             // Step 4: เปิด dialog สร้างหน่วยงาน พร้อมส่ง context ของ selected node
-            using (var dlg = new CreateOrgUnitDialog(_allUnits, _employeeApiService, null, _service, selectedOrgUnit, _hrDivisionRepo, _hrDepartmentRepo))
+            using (var dlg = new CreateOrgUnitDialog(_allUnits, _employeeApiService, null, _service, selectedOrgUnit, _authorityOrgLookupController))
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK && dlg.Result != null)
                     _presenter.CreateOrgUnit(dlg.Result);

@@ -44,26 +44,26 @@ namespace CMS.Presentation
                         return ExecuteShareDialog(context);
 
                     case "SharedWithMe":
-                        return ShowTargetForm(context, new SharedWithMeForm(context.User, context.PermissionRepository, context.FolderRepository, null, null, null));
+                        return ShowTargetForm(context, new SharedWithMeForm(context.User, context.ShareLookupController));
 
                     case "ShareManagement":
-                        return ShowTargetForm(context, new ShareManagementForm(context.ShareService, context.User, context.UserAccountRepository, null));
+                        return ShowTargetForm(context, new ShareManagementForm(context.ShareService, context.User, context.ShareLookupController));
 
                     case "OrgStructure":
-                        return ShowTargetForm(context, new OrgStructureForm(context.OrgStructureService, context.User, null, null, null));
+                        return ShowTargetForm(context, new OrgStructureForm(context.OrgStructureService, context.User, null, null));
 
                     case "UserManagement":
-                        return ShowTargetForm(context, new UserManagementForm(context.UserAccountRepository, context.User, context.AuditService, null, null, null, null));
+                        return ShowTargetForm(context, new UserManagementForm(context.UserAdminController, context.User, context.AuditService));
 
                     case "UserAccess":
-                        return ShowTargetForm(context, new UserAccessForm(context.UserAccountRepository, context.OrgStructureService, context.User, null, null, context.AuditService));
+                        return ShowTargetForm(context, new UserAccessForm(context.UserAdminController, context.OrgStructureService, context.User, null, null, context.AuditService));
 
                     case "PermissionAdmin":
                     case "FolderSettings":
-                        return ShowTargetForm(context, new PermissionForm(context.PermissionService, context.ApprovalService, context.FolderService, context.PermissionRepository, context.User, context.SelectedFolder, null, context.FolderRepository, null, context.OrgStructureService, null, null));
+                        return ShowTargetForm(context, new PermissionForm(context.PermissionService, context.ApprovalService, context.FolderService, context.FolderPermissionLookupController, context.User, context.SelectedFolder, context.UserAccountLookupController, context.FolderSettingsController, null, context.OrgStructureService, null, null));
 
                     case "UserPermissionSummary":
-                        return ShowTargetForm(context, new UserPermissionSummaryForm(context.User, context.PermissionRepository, context.FolderRepository, null, null, null));
+                        return ShowTargetForm(context, new UserPermissionSummaryForm(context.User, context.ShareLookupController));
 
                     case "ApprovalInbox":
                         return ShowTargetForm(context, new ApprovalInboxForm(context.ApprovalService, context.User));
@@ -106,7 +106,7 @@ namespace CMS.Presentation
                         return true;
 
                     case "FolderTemplate":
-                        return ShowTargetForm(context, new FolderTemplateForm(context.FolderTemplateRepository, context.User));
+                        return ShowTargetForm(context, new FolderTemplateForm(context.FolderTemplateController, context.User));
 
                     case "ArchiveFolder":
                         if (context.TriggerArchive != null)
@@ -184,7 +184,7 @@ namespace CMS.Presentation
                     bool isInternal = string.Equals(shareType.Tag as string, "internal", StringComparison.OrdinalIgnoreCase);
                     if (isInternal)
                     {
-                        using (var dlg = new ShareDialogInternal(context.ShareService, context.FileService, context.FolderService, context.PermissionService, context.UserAccountRepository, context.OrgStructureService, context.User, context.SelectedFile, context.SelectedFolder))
+                        using (var dlg = new ShareDialogInternal(context.ShareService, context.FileService, context.FolderService, context.PermissionService, context.UserAccountLookupController, context.OrgStructureService, context.User, context.SelectedFile, context.SelectedFolder))
                             dlg.ShowDialog(context.Owner);
                     }
                     else

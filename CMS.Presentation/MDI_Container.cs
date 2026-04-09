@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
@@ -29,27 +31,27 @@ namespace CMS.Presentation
         private readonly IFolderService       _folderService;
         private readonly IFileService         _fileService;
         private readonly IConfigManager       _configManager;
-        private readonly IUserAccountRepository _userAccountRepository;
         private readonly IPermissionService       _permissionService;
-        private readonly IPermissionRepository    _permissionRepository;
-        private readonly IFolderRepository        _folderRepository;
         private readonly IFilePermissionService   _filePermissionService;
-        private readonly IFilePermissionRepository _filePermissionRepository;
-        private readonly IFileDocumentRepository   _fileDocumentRepository;
-        private readonly IFolderTemplateRepository _folderTemplateRepository;
+        private readonly IFolderTemplateController _folderTemplateController;
         private readonly CMS.Services.Interfaces.IEmployeeApiService     _employeeApiService;
         private readonly CMS.Services.Interfaces.IFolderAuthorityService _folderAuthorityService;
         private readonly IUploadCheckpointService  _uploadCheckpointService;
         private readonly IQuickAccessService       _quickAccessService;
         private readonly IUserOrgVisibilityService _userOrgVisibilityService;
-        private readonly CMS.Data.Interfaces.IHrDivisionRepository    _hrDivisionRepository;
-        private readonly CMS.Data.Interfaces.IHrDepartmentRepository  _hrDepartmentRepository;
-        private readonly CMS.Data.Interfaces.IHrPositionRepository    _hrPositionRepository;
-        private readonly CMS.Data.Interfaces.IHrPositionLevelRepository _hrPositionLevelRepository;
-        private readonly CMS.Data.Interfaces.IHrPositionMappingRepository _hrPositionMappingRepository;
         private readonly IShareService _shareService;
         private readonly IShareAccessService _shareAccessService;
         private readonly IMenuService _menuService;
+        private readonly IShareLookupController _shareLookupController;
+        private readonly IFolderSettingsController _folderSettingsController;
+        private readonly IFolderPermissionLookupController _folderPermissionLookupController;
+        private readonly IUserAccountLookupController _userAccountLookupController;
+        private readonly IUserAdminController _userAdminController;
+        private readonly IUserAdminController _userAdminWithHrController;
+        private readonly IFolderReadLookupController _folderReadLookupController;
+        private readonly IFileDocumentLookupController _fileDocumentLookupController;
+        private readonly IFilePermissionAclController _filePermissionAclController;
+        private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
 
         // Notification inbox controls (built programmatically)
         private Panel    _notificationPanel;
@@ -121,27 +123,28 @@ namespace CMS.Presentation
             IFolderService            folderService             = null,
             IFileService              fileService               = null,
             IConfigManager            configManager             = null,
-            IUserAccountRepository    userAccountRepository     = null,
             IPermissionService        permissionService         = null,
-            IPermissionRepository     permissionRepository      = null,
-            IFolderRepository         folderRepository          = null,
             IFilePermissionService    filePermissionService     = null,
-            IFilePermissionRepository filePermissionRepository  = null,
-            IFileDocumentRepository   fileDocumentRepository    = null,
-            IFolderTemplateRepository folderTemplateRepository  = null,
+            IFolderTemplateController folderTemplateController  = null,
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
             IUploadCheckpointService uploadCheckpointService = null,
             IQuickAccessService quickAccessService = null,
             IUserOrgVisibilityService userOrgVisibilityService = null,
             CMS.Services.Interfaces.IFolderAuthorityService folderAuthorityService = null,
-            CMS.Data.Interfaces.IHrDivisionRepository hrDivisionRepository = null,
-            CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepository = null,
-            CMS.Data.Interfaces.IHrPositionRepository hrPositionRepository = null,
-            CMS.Data.Interfaces.IHrPositionLevelRepository hrPositionLevelRepository = null,
-            CMS.Data.Interfaces.IHrPositionMappingRepository hrPositionMappingRepository = null,
             IShareService shareService = null,
             IShareAccessService shareAccessService = null,
-            IMenuService menuService = null)
+            IMenuService menuService = null,
+            IShareLookupController shareLookupController = null,
+            IFolderSettingsController folderSettingsController = null,
+            IFolderPermissionLookupController folderPermissionLookupController = null,
+            IUserAccountLookupController userAccountLookupController = null,
+            IUserAdminController userAdminController = null,
+            IUserAdminController userAdminWithHrController = null,
+            IFolderReadLookupController folderReadLookupController = null,
+            IFileDocumentLookupController fileDocumentLookupController = null,
+            IFilePermissionAclController filePermissionAclController = null,
+            IAuthorityOrgLookupController authorityOrgLookupController = null,
+            Data.Repositories.FolderRepository folderRepository = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
             if (auditService        == null) throw new ArgumentNullException("auditService");
@@ -158,27 +161,27 @@ namespace CMS.Presentation
             _folderService            = folderService;
             _fileService              = fileService;
             _configManager            = configManager;
-            _userAccountRepository    = userAccountRepository;
             _permissionService        = permissionService;
-            _permissionRepository     = permissionRepository;
-            _folderRepository         = folderRepository;
             _filePermissionService    = filePermissionService;
-            _filePermissionRepository = filePermissionRepository;
-            _fileDocumentRepository   = fileDocumentRepository;
-            _folderTemplateRepository = folderTemplateRepository;
+            _folderTemplateController = folderTemplateController;
             _employeeApiService       = employeeApiService;
             _folderAuthorityService   = folderAuthorityService;
             _uploadCheckpointService  = uploadCheckpointService;
             _quickAccessService       = quickAccessService;
             _userOrgVisibilityService = userOrgVisibilityService;
-            _hrDivisionRepository       = hrDivisionRepository;
-            _hrDepartmentRepository     = hrDepartmentRepository;
-            _hrPositionRepository       = hrPositionRepository;
-            _hrPositionLevelRepository  = hrPositionLevelRepository;
-            _hrPositionMappingRepository = hrPositionMappingRepository;
             _shareService = shareService;
             _shareAccessService = shareAccessService;
             _menuService = menuService;
+            _shareLookupController = shareLookupController;
+            _folderSettingsController = folderSettingsController;
+            _folderPermissionLookupController = folderPermissionLookupController;
+            _userAccountLookupController = userAccountLookupController;
+            _userAdminController = userAdminController;
+            _userAdminWithHrController = userAdminWithHrController;
+            _folderReadLookupController = folderReadLookupController;
+            _fileDocumentLookupController = fileDocumentLookupController;
+            _filePermissionAclController = filePermissionAclController;
+            _authorityOrgLookupController = authorityOrgLookupController;
 
             InitializeComponent();
             BuildFileDetailPanel();
@@ -837,8 +840,7 @@ namespace CMS.Presentation
             };
             btnMyPerm.Click += (s, e) =>
             {
-                using (var frm = new UserPermissionSummaryForm(_currentUser, _permissionRepository, _folderRepository,
-                    _filePermissionRepository, _fileDocumentRepository, _userAccountRepository))
+                using (var frm = new UserPermissionSummaryForm(_currentUser, _shareLookupController))
                     frm.ShowDialog(this);
             };
             ribbonStrip.Items.Add(sepMyPerm);
@@ -877,14 +879,13 @@ namespace CMS.Presentation
 
         private void OpenSharedWithMe()
         {
-            if (_permissionRepository == null)
+            if (_shareLookupController == null)
             {
-                MessageBox.Show("ไม่สามารถโหลดข้อมูลได้ — Permission service ไม่พร้อมใช้งาน",
+                MessageBox.Show("ไม่สามารถโหลดข้อมูลได้ — Share lookup service ไม่พร้อมใช้งาน",
                     "แบ่งปันให้ฉัน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            using (var frm = new SharedWithMeForm(_currentUser, _permissionRepository, _folderRepository,
-                _userAccountRepository, _filePermissionRepository, _fileDocumentRepository))
+            using (var frm = new SharedWithMeForm(_currentUser, _shareLookupController))
             {
                 // เมื่อ user ดับเบิลคลิก Folder: navigate FolderForm
                 frm.OpenFolderRequested += folderId =>
@@ -908,7 +909,7 @@ namespace CMS.Presentation
                 frm.OpenFileRequested += (folderId, fileId) =>
                 {
                     using (var fileView = new SharedFileViewForm(
-                        fileId, _fileService, _fileDocumentRepository, _currentUser))
+                        fileId, _fileService, _shareLookupController, _currentUser))
                     {
                         fileView.ShowDialog(this);
                     }
@@ -923,12 +924,12 @@ namespace CMS.Presentation
         /// <summary>โหลด badge count จากฐานข้อมูลโดยไม่เปิด form</summary>
         private void RefreshSharedWithMeBadge()
         {
-            if (_permissionRepository == null) return;
+            if (_shareLookupController == null) return;
             try
             {
                 var cutoff = DateTime.Today.AddDays(-7);
-                int count = _permissionRepository
-                    .GetByPrincipal((int)PrincipalType.User, _currentUser.UserID)
+                int count = _shareLookupController
+                    .GetFolderPermissionsForUser(_currentUser.UserID)
                     .Count(p => p.RevokedDate == null
                              && !p.IsDeny
                              && p.GrantedDate.Date >= cutoff
@@ -954,20 +955,20 @@ namespace CMS.Presentation
 
         private void OpenFolderTemplateManagement()
         {
-            if (_folderTemplateRepository == null)
+            if (_folderTemplateController == null || !_folderTemplateController.IsAvailable)
             {
                 MessageBox.Show("Folder Template service is not available.", "Template",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            using (var dlg = new FolderTemplateForm(_folderTemplateRepository, _currentUser))
+            using (var dlg = new FolderTemplateForm(_folderTemplateController, _currentUser))
                 dlg.ShowDialog(this);
         }
 
         private void OpenOrgStructure()
         {
             if (_orgStructureService != null)
-                OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService, _hrDivisionRepository, _hrDepartmentRepository));
+                OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _employeeApiService, _authorityOrgLookupController));
             else
                 MessageBox.Show("Org Structure service is not available.", "MOD-001",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -992,10 +993,10 @@ namespace CMS.Presentation
                 return;
             }
 
-            if (_folderRepository == null)
+            if (_folderService == null)
             {
-                _logger.Error("FolderRepository is not available");
-                MessageBox.Show("Folder repository is not available.", "MOD-002",
+                _logger.Error("FolderService is not available");
+                MessageBox.Show("Folder service is not available.", "MOD-002",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -1004,22 +1005,25 @@ namespace CMS.Presentation
             {
                 // Create FolderForm with all required dependencies
                 var ff = new FolderForm(
-                    _folderService,              // IFolderService
-                    _currentUser,                // UserContext
-                    null,                        // int? orgUnitId (null = show all)
-                    _fileService,                // IFileService
-                    _orgStructureService,        // IOrgStructureService
-                    _folderTemplateRepository,   // IFolderTemplateRepository
-                    _uploadCheckpointService,    // IUploadCheckpointService
-                    _quickAccessService,         // IQuickAccessService
-                    _approvalService,            // IApprovalService
-                    _permissionService,          // IPermissionService
-                    _folderRepository,           // IFolderRepository
-                    _permissionRepository,       // IPermissionRepository
-                    _auditService,               // IAuditService
-                    _shareService,               // IShareService
-                    _userAccountRepository,      // IUserAccountRepository
-                    _menuService                 // IMenuService
+                    service: _folderService,
+                    user: _currentUser,
+                    orgUnitId: null,
+                    fileService: _fileService,
+                    orgStructureService: _orgStructureService,
+                    folderTemplateController: _folderTemplateController,
+                    checkpointService: _uploadCheckpointService,
+                    quickAccessService: _quickAccessService,
+                    approvalService: _approvalService,
+                    permissionService: _permissionService,
+                    auditService: _auditService,
+                    shareService: _shareService,
+                    menuService: _menuService,
+                    shareLookupController: _shareLookupController,
+                    folderSettingsController: _folderSettingsController,
+                    folderPermissionLookupController: _folderPermissionLookupController,
+                    userAccountLookupController: _userAccountLookupController,
+                    userAdminController: _userAdminController,
+                    folderReadLookupController: _folderReadLookupController
                 );
 
                 // Wire event handlers
@@ -1075,7 +1079,7 @@ namespace CMS.Presentation
         {
             if (selectedFolder == null) return;
 
-            if (_permissionService == null || _permissionRepository == null || _folderService == null)
+            if (_permissionService == null || _folderService == null || _folderPermissionLookupController == null || _folderSettingsController == null)
             {
                 MessageBox.Show("Permission service is not available.", "ตั้งค่า Folder",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1083,10 +1087,18 @@ namespace CMS.Presentation
             }
 
             using (var dlg = new PermissionForm(
-                _permissionService, _approvalService, _folderService,
-                _permissionRepository, _currentUser, selectedFolder,
-                _userAccountRepository, _folderRepository, _employeeApiService,
-                _orgStructureService, _fileDocumentRepository, _auditService))
+                permissionService: _permissionService,
+                approvalService: _approvalService,
+                folderService: _folderService,
+                folderPermissionLookupController: _folderPermissionLookupController,
+                user: _currentUser,
+                folder: selectedFolder,
+                userAccountLookupController: _userAccountLookupController,
+                folderSettingsController: _folderSettingsController,
+                employeeApiService: _employeeApiService,
+                orgStructureService: _orgStructureService,
+                fileDocumentLookupController: _fileDocumentLookupController,
+                auditService: _auditService))
             {
                 dlg.ShowDialog(this);
             }
@@ -1097,7 +1109,7 @@ namespace CMS.Presentation
         {
             if (file == null) return;
 
-            if (_filePermissionService == null || _filePermissionRepository == null)
+            if (_filePermissionService == null || _filePermissionAclController == null)
             {
                 MessageBox.Show("File permission service is not available.", "ตั้งค่าสิทธิ์ไฟล์",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1105,9 +1117,14 @@ namespace CMS.Presentation
             }
 
             using (var dlg = new FilePermissionForm(
-                _filePermissionService, _filePermissionRepository,
-                _currentUser, file, _userAccountRepository, _permissionRepository,
-                _orgStructureService, _auditService))
+                filePermissionService: _filePermissionService,
+                filePermissionAclController: _filePermissionAclController,
+                currentUser: _currentUser,
+                file: file,
+                userAccountLookupController: _userAccountLookupController,
+                folderPermissionLookupController: _folderPermissionLookupController,
+                orgStructureService: _orgStructureService,
+                auditService: _auditService))
             {
                 dlg.ShowDialog(this);
             }
@@ -1236,7 +1253,7 @@ namespace CMS.Presentation
                     // Internal share
                     using (var shareDialog = new ShareDialogInternal(
                         _shareService, _fileService, _folderService, _permissionService,
-                        _userAccountRepository, _orgStructureService, _currentUser,
+                        _userAccountLookupController, _orgStructureService, _currentUser,
                         selectedFile, selectedFolder))
                     {
                         shareDialog.ShowDialog(this);
@@ -1264,7 +1281,7 @@ namespace CMS.Presentation
                 return;
             }
 
-            using (var dlg = new ShareManagementForm(_shareService, _currentUser, _userAccountRepository, _fileDocumentRepository))
+            using (var dlg = new ShareManagementForm(_shareService, _currentUser, _shareLookupController))
             {
                 dlg.ShowDialog(this);
             }
@@ -1306,7 +1323,26 @@ namespace CMS.Presentation
             }
 
             // ยังไม่มี FolderForm — เปิดให้เลย พร้อมแจ้ง
-            var folderForm = new FolderForm(_folderService, _currentUser, null, _fileService, _orgStructureService, _folderTemplateRepository, _uploadCheckpointService, _quickAccessService, _approvalService, _permissionService, _folderRepository, _permissionRepository, _auditService, _shareService, _userAccountRepository, _menuService);
+            var folderForm = new FolderForm(
+                service: _folderService,
+                user: _currentUser,
+                orgUnitId: null,
+                fileService: _fileService,
+                orgStructureService: _orgStructureService,
+                folderTemplateController: _folderTemplateController,
+                checkpointService: _uploadCheckpointService,
+                quickAccessService: _quickAccessService,
+                approvalService: _approvalService,
+                permissionService: _permissionService,
+                auditService: _auditService,
+                shareService: _shareService,
+                menuService: _menuService,
+                shareLookupController: _shareLookupController,
+                folderSettingsController: _folderSettingsController,
+                folderPermissionLookupController: _folderPermissionLookupController,
+                userAccountLookupController: _userAccountLookupController,
+                userAdminController: _userAdminController,
+                folderReadLookupController: _folderReadLookupController);
             folderForm.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
@@ -1345,7 +1381,7 @@ namespace CMS.Presentation
         {
             if (_configManager != null)
             {
-                var form = new ConfigAdminForm(_configManager, _auditService, _currentUser, _fileService, _userAccountRepository);
+                var form = new ConfigAdminForm(_configManager, _auditService, _currentUser, _fileService);
                 form.GeneratePdpaReportRequested += (s, e) => OpenPdpaReport();
                 OpenChildForm(form);
             }
@@ -1358,9 +1394,10 @@ namespace CMS.Presentation
         {
             if (_folderAuthorityService != null)
             {
-                var form = new AuthorityConfigForm(_folderAuthorityService, _currentUser,
-                    _hrDivisionRepository, _hrDepartmentRepository, _hrPositionRepository,
-                    _userAccountRepository, _hrPositionMappingRepository);
+                var form = new AuthorityConfigForm(
+                    service: _folderAuthorityService,
+                    user: _currentUser,
+                    authorityOrgLookupController: _authorityOrgLookupController);
 
                 SetTopMenuVisibilityForAuthorityConfig(true);
                 form.FormClosed += (s, e) =>
@@ -1378,7 +1415,7 @@ namespace CMS.Presentation
 
         private void SyncEmployeeFromApi()
         {
-            if (_employeeApiService == null || _userAccountRepository == null)
+            if (_employeeApiService == null || _userAdminController == null)
             {
                 MessageBox.Show("Employee API service ไม่พร้อมใช้งาน", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1400,7 +1437,7 @@ namespace CMS.Presentation
                 Cursor = Cursors.WaitCursor;
                 int updated = 0, skipped = 0, failed = 0;
 
-                var allUsers     = _userAccountRepository.GetAll().ToList();
+                var allUsers     = _userAdminController.GetAllUsers().ToList();
                 var allEmployees = _employeeApiService.GetAllEmployees().ToList();
 
                 var empLookup = new Dictionary<string, CMS.Domain.Models.EmployeeSummary>(
@@ -1424,7 +1461,7 @@ namespace CMS.Presentation
 
                         if (emp == null) { skipped++; continue; }
 
-                        _userAccountRepository.UpdateEmployeeInfo(
+                        _userAdminController.UpdateEmployeeInfo(
                             u.UserID, emp.EmployeeCode,
                             null, null, null,
                             null, null, null,
@@ -1452,13 +1489,13 @@ namespace CMS.Presentation
 
         private void OpenUserAccess()
         {
-            if (_userAccountRepository == null && _orgStructureService == null)
+            if (_userAdminController == null || _orgStructureService == null)
             {
                 MessageBox.Show("ไม่พบ service สำหรับจัดการสิทธิ์ผู้ใช้", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenChildForm(new UserAccessForm(_userAccountRepository, _orgStructureService, _currentUser, visibilityService: _userOrgVisibilityService, auditService: _auditService));
+            OpenChildForm(new UserAccessForm(_userAdminController, _orgStructureService, _currentUser, visibilityService: _userOrgVisibilityService, auditService: _auditService));
         }
 
         private void OpenMenuManagement()
@@ -1492,15 +1529,16 @@ namespace CMS.Presentation
 
         private void OpenUserManagement()
         {
-            if (_userAccountRepository == null)
+            if (_userAdminWithHrController == null)
             {
                 MessageBox.Show("ไม่พบ service สำหรับจัดการบัญชีผู้ใช้", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenChildForm(new UserManagementForm(_userAccountRepository, _currentUser, _auditService,
-                _hrDivisionRepository, _hrDepartmentRepository,
-                _hrPositionRepository, _hrPositionLevelRepository));
+            OpenChildForm(new UserManagementForm(
+                _userAdminWithHrController,
+                _currentUser,
+                _auditService));
         }
 
         private void OpenPdpaConsent()
@@ -1526,14 +1564,14 @@ namespace CMS.Presentation
 
         private void OpenPdpaReport()
         {
-            if (_userAccountRepository == null || _fileDocumentRepository == null || _auditService == null)
+            if (_userAccountLookupController == null || _fileDocumentLookupController == null || _auditService == null)
             {
                 MessageBox.Show("ไม่พบ service ที่จำเป็นสำหรับ PDPA Report", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            var users = _userAccountRepository.GetAll().OrderBy(u => u.DisplayName).ToList();
+            var users = _userAccountLookupController.GetAllUsers().OrderBy(u => u.DisplayName).ToList();
             if (!users.Any())
             {
                 MessageBox.Show("ไม่พบข้อมูลผู้ใช้", "PDPA Report", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1694,7 +1732,7 @@ namespace CMS.Presentation
 
             try
             {
-                var files = _fileDocumentRepository.GetAllGroupedByFolder()
+                var files = _fileDocumentLookupController.GetAllGroupedByFolder()
                     .Where(f => f.UploadedBy == selectedUser.UserID)
                     .ToList();
 
@@ -1860,11 +1898,11 @@ namespace CMS.Presentation
                     catch { }
                 }
 
-                if (_userAccountRepository != null)
+                if (_userAdminController != null)
                 {
                     try
                     {
-                        totalUsers = _userAccountRepository.GetAll().Count();
+                        totalUsers = _userAdminController.GetAllUsers().Count();
                     }
                     catch { }
                 }

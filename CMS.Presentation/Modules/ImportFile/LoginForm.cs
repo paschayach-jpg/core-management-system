@@ -4,9 +4,9 @@ using System.Drawing.Drawing2D;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
-using CMS.Data.Repositories;
 using CMS.Domain.Models;
+using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 
@@ -18,7 +18,7 @@ namespace CMS.Presentation
     public partial class LoginForm : Form
     {
         private readonly IAdAuthService          _authService;
-        private readonly IUserAccountRepository  _userAccountRepo;
+        private readonly ILoginAccountController  _loginAccountController;
 
         /// <summary>ผลลัพธ์หลัง login สำเร็จ — อ่านได้หลัง DialogResult.OK</summary>
         public AdAuthResult AuthResult { get; private set; }
@@ -40,10 +40,10 @@ namespace CMS.Presentation
             return "127.0.0.1";
         }
 
-        public LoginForm(IAdAuthService authService, IUserAccountRepository userAccountRepo = null)
+        public LoginForm(IAdAuthService authService, ILoginAccountController loginAccountController = null)
         {
             _authService     = authService     ?? throw new ArgumentNullException("authService");
-            _userAccountRepo = userAccountRepo;
+            _loginAccountController = loginAccountController;
             InitializeComponent();
 
             // ทำให้หน้าจอมน
@@ -139,13 +139,13 @@ namespace CMS.Presentation
                 if (result.Success)
                 {
                     // เก็บ IP ตอน login สำเร็จ
-                    if (_userAccountRepo != null)
+                    if (_loginAccountController != null)
                     {
                         try
                         {
-                            var account = _userAccountRepo.GetByADUserName(username);
+                            var account = _loginAccountController.GetUserByAdUserName(username);
                             if (account != null)
-                                _userAccountRepo.UpdateLastLoginWithIP(account.UserID, GetLocalIP());
+                                _loginAccountController.UpdateLastLoginWithIP(account.UserID, GetLocalIP());
                         }
                         catch { /* ไม่ block login */ }
                     }
@@ -205,7 +205,7 @@ namespace CMS.Presentation
                     return;
                 }
 
-                if (_userAccountRepo == null)
+                if (_loginAccountController == null)
                 {
                     lblStatus.Text = "ไม่สามารถเชื่อมต่อฐานข้อมูลได้";
                     return;
@@ -225,7 +225,7 @@ namespace CMS.Presentation
 
                 lblStatus.Text = "กำลังบันทึกข้อมูล...";
                 bool isNew;
-                int userId = _userAccountRepo.RegisterOrUpdate(account, ip, out isNew);
+                int userId = _loginAccountController.RegisterOrUpdate(account, ip, out isNew);
 
                 string msg = isNew
                     ? string.Format("ลงทะเบียนสำเร็จ!\n\nผู้ใช้: {0}\nIP: {1}\n\nกรุณา Login เพื่อเข้าใช้งาน", username, ip)

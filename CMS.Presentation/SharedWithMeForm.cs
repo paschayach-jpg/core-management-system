@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 
@@ -17,11 +17,7 @@ namespace CMS.Presentation
     public class SharedWithMeForm : Form
     {
         private readonly UserContext              _user;
-        private readonly IPermissionRepository    _permRepo;
-        private readonly IFolderRepository        _folderRepo;
-        private readonly IUserAccountRepository   _userRepo;
-        private readonly IFilePermissionRepository _filePermRepo;
-        private readonly IFileDocumentRepository  _fileDocRepo;
+        private readonly IShareLookupController   _shareLookupController;
 
         private DataGridView _grid;
         private Label        _lblCount;
@@ -41,18 +37,10 @@ namespace CMS.Presentation
 
         public SharedWithMeForm(
             UserContext               user,
-            IPermissionRepository     permRepo,
-            IFolderRepository         folderRepo,
-            IUserAccountRepository    userRepo      = null,
-            IFilePermissionRepository filePermRepo  = null,
-            IFileDocumentRepository   fileDocRepo   = null)
+            IShareLookupController    shareLookupController)
         {
             _user         = user       ?? throw new ArgumentNullException("user");
-            _permRepo     = permRepo;
-            _folderRepo   = folderRepo;
-            _userRepo     = userRepo;
-            _filePermRepo = filePermRepo;
-            _fileDocRepo  = fileDocRepo;
+            _shareLookupController = shareLookupController;
             BuildUI();
         }
 
@@ -296,9 +284,9 @@ namespace CMS.Presentation
             _grid.Rows.Clear();
             NewItemCount = 0;
 
-            if (_permRepo == null)
+            if (_shareLookupController == null)
             {
-                AddInfoRow("(ไม่สามารถโหลดข้อมูล — PermissionRepository ไม่พร้อมใช้งาน)");
+                AddInfoRow("(ไม่สามารถโหลดข้อมูล — Share lookup controller ไม่พร้อมใช้งาน)");
                 _lblCount.Text = "ไม่สามารถโหลดข้อมูลได้";
                 return;
             }
@@ -308,25 +296,19 @@ namespace CMS.Presentation
                 var cutoff = DateTime.Today.AddDays(-7);
 
                 // ── เงื่อนไขที่ 1: FolderPermission (สิทธิ์ระดับ Folder จาก Admin) ──────
-                if (_permRepo != null)
+                if (_shareLookupController != null)
                 {
-                    var folderPerms = _permRepo.GetByPrincipal((int)PrincipalType.User, _user.UserID)
-                        .Where(p => p.RevokedDate == null)
-                        .OrderByDescending(p => p.GrantedDate)
-                        .ToList();
+                    var folderPerms = _shareLookupController.GetFolderPermissionsForUser(_user.UserID);
 
                     foreach (var p in folderPerms)
                     {
                         string folderName = "(ไม่พบ)";
                         string levelCode  = "—";
-                        if (_folderRepo != null)
+                        var folder = _shareLookupController.GetFolderById(p.FolderID);
+                        if (folder != null)
                         {
-                            var folder = _folderRepo.GetById(p.FolderID);
-                            if (folder != null)
-                            {
-                                folderName = folder.FolderName;
-                                levelCode  = LevelCode(folder.ConfidentialityLevel);
-                            }
+                            folderName = folder.FolderName;
+                            levelCode  = LevelCode(folder.ConfidentialityLevel);
                         }
 
                         bool isNew     = p.GrantedDate.Date >= cutoff;
@@ -354,27 +336,23 @@ namespace CMS.Presentation
                 }
 
                 // ── เงื่อนไขที่ 2: FilePermission (share ไฟล์ให้โดยตรง จาก Internal Share) ─
-                if (_filePermRepo != null)
+                if (_shareLookupController != null)
                 {
-                    var filePerms = _filePermRepo.GetByPrincipal((int)PrincipalType.User, _user.UserID)
-                        .ToList();
+                    var filePerms = _shareLookupController.GetFilePermissionsForUser(_user.UserID);
 
                     foreach (var p in filePerms)
                     {
-                        // ข้ามถ้าไม่มี fileDocRepo หรือหาไฟล์ไม่เจอ (data ไม่ consistent)
-                        if (_fileDocRepo == null) continue;
-                        var doc = _fileDocRepo.GetById(p.FileID);
+                        var doc = _shareLookupController.GetFileById(p.FileID);
                         if (doc == null) continue;  // FileID ไม่มีใน storage.FileDocument
 
                         string fileName  = doc.OriginalFileName;
                         int    folderId  = doc.FolderID;
                         string levelCode = "—";
 
-                        if (_folderRepo != null)
+                        var folder = _shareLookupController.GetFolderById(folderId);
+                        if (folder != null)
                         {
-                            var folder = _folderRepo.GetById(folderId);
-                            if (folder != null)
-                                levelCode = LevelCode(folder.ConfidentialityLevel);
+                            levelCode = LevelCode(folder.ConfidentialityLevel);
                         }
 
                         bool isNew     = p.GrantedDate.Date >= cutoff;
@@ -504,14 +482,10 @@ namespace CMS.Presentation
 
         private string ResolveGranterName(int userId)
         {
-            if (_userRepo == null) return string.Format("UserID: {0}", userId);
-            try
-            {
-                var u = _userRepo.GetById(userId);
-                if (u != null) return string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
-            }
-            catch { }
-            return string.Format("UserID: {0}", userId);
+            if (_shareLookupController == null)
+                return string.Format("UserID: {0}", userId);
+
+            return _shareLookupController.ResolveGranterName(userId);
         }
 
         private static string BuildPermText(FolderPermission p)

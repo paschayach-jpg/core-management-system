@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
@@ -20,7 +20,7 @@ namespace CMS.Controllers.DMS.Document
         private readonly IFileService      _fileService;
         private readonly IFolderView       _view;
         private readonly UserContext       _user;
-        private readonly IFolderRepository _folderRepository;
+        private readonly IFolderReadLookupController _folderReadLookupController;
 
         private int? _currentOrgUnitId;
         private int? _currentFolderId;   // tracks the folder currently shown in content panel
@@ -30,7 +30,7 @@ namespace CMS.Controllers.DMS.Document
             IFolderView       view,
             UserContext       user,
             IFileService      fileService      = null,
-            IFolderRepository folderRepository = null)
+            IFolderReadLookupController folderReadLookupController = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (view    == null) throw new ArgumentNullException("view");
@@ -40,7 +40,7 @@ namespace CMS.Controllers.DMS.Document
             _fileService      = fileService;
             _view             = view;
             _user             = user;
-            _folderRepository = folderRepository;
+            _folderReadLookupController = folderReadLookupController;
         }
 
         // -----------------------------------------------------------------------
@@ -114,10 +114,10 @@ namespace CMS.Controllers.DMS.Document
             {
                 IEnumerable<Folder> subFolders;
 
-                if (_folderRepository != null)
+                if (_folderReadLookupController != null)
                 {
-                    // ใช้ repository โดยตรง — ไม่มี permission check ขวางกั้น
-                    subFolders = _folderRepository.GetChildren(folderId)
+                    // ใช้ controller abstraction — ไม่มี permission check ขวางกั้น
+                    subFolders = _folderReadLookupController.GetChildren(folderId)
                         .Where(f => !f.IsDeleted && !f.IsArchived);
                 }
                 else

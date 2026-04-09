@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Controllers.DMS.Document;
@@ -110,8 +109,8 @@ namespace CMS.Presentation
             IConfigManager configManager,
             IAuditService  auditService,
             UserContext    user,
-            IFileService   fileService            = null,
-            IUserAccountRepository userAccountRepository = null)
+            IFileService   fileService            = null
+              )
         {
             if (configManager == null) throw new ArgumentNullException("configManager");
             if (auditService  == null) throw new ArgumentNullException("auditService");
@@ -119,7 +118,7 @@ namespace CMS.Presentation
 
             InitializeComponent();
 
-            _presenter = new ConfigAdminPresenter(this, configManager, auditService, user, fileService, userAccountRepository);
+              _presenter = new ConfigAdminPresenter(this, configManager, auditService, user, fileService);
         }
 
         // ── Event handlers ────────────────────────────────────────────────────
