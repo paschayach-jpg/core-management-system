@@ -1,0 +1,17 @@
+.vs/CMS/
+CMS.Data/bin/
+CMS.Data/obj/
+CMS.Domain/bin/
+CMS.Domain/obj/
+CMS.Infrastructure/bin/
+CMS.Infrastructure/obj/
+CMS.Presentation/bin/
+CMS.Presentation/obj/
+CMS.Services/bin/
+CMS.Services/obj/
+CMS.Tests/bin/
+CMS.Tests/obj/
+packages/BCrypt.Net-Next.4.0.3.nupkg
+packages/BCrypt.Net-Next.4.0.3/
+packages/System.ValueTuple.4.5.0/
+/MOD-006
