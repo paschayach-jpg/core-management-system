@@ -1161,8 +1161,7 @@ namespace CMS.Presentation
         {
             if (_kbCategoryService == null || _kbArticleService == null)
             {
-                MessageBox.Show("Knowledge Base service ไม่พร้อมใช้งาน", "แจ้งเตือน",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Knowledge Base service ไม่พร้อมใช้งาน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             OpenChildForm(new KnowledgeBaseForm(_kbCategoryService, _kbArticleService, _currentUser));
@@ -1395,6 +1394,15 @@ namespace CMS.Presentation
                     return true;
                 case "SyncEmployee":
                     SyncEmployeeFromApi();
+                    return true;
+                case "KnowledgeBaseForm":
+                    OpenKnowledgeBase();
+                    return true;
+                case "KBCategoryForm":
+                    OpenKBCategorySettings();
+                    return true;
+                case "KBCategoryConfig":
+                    OpenKBCategorySettings();
                     return true;
                 default:
                     return false;

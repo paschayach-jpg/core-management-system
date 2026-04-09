@@ -37,5 +37,6 @@ namespace CMS.Presentation
         public Action ClearContentPanel { get; set; }
         public Action<string> SetContentInfo { get; set; }
         public Func<string, bool> RequestMdiAction { get; set; }
+        public object KnowledgeBaseService { get; internal set; }
     }
 }

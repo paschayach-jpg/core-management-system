@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Drawing;
 using System.Linq;
 using System.Reflection;
@@ -98,6 +99,13 @@ namespace CMS.Presentation
         private bool     _folderExplorerControlsVisible = true;
         private int      _orgFilterDefaultHeight = 0;
         private bool     _orgTreeLoaded = false;
+
+        // Clipboard state for Cut / Copy / Paste
+        private enum ClipboardMode { None, Cut, Copy }
+        private ClipboardMode    _clipboardMode    = ClipboardMode.None;
+        private List<int>        _clipboardFileIds = new List<int>();
+        private Color?           _cutOriginalColor = null;
+        private ListViewItem     _cutItem          = null;
 
         // -----------------------------------------------------------------------
         // Constructor
@@ -226,6 +234,14 @@ namespace CMS.Presentation
 
             // Wire column sort (Req 4.5)
             contentsListView.ColumnClick += ContentsListView_ColumnClick;
+
+            // Lock column widths to avoid jitter/flicker from runtime auto-resize.
+            contentsListView.ColumnWidthChanging += (s, e2) =>
+            {
+                e2.Cancel = true;
+                if (e2.ColumnIndex >= 0 && e2.ColumnIndex < contentsListView.Columns.Count)
+                    e2.NewWidth = contentsListView.Columns[e2.ColumnIndex].Width;
+            };
 
             // Wire btnMove (Req 9.1, 9.2, 9.4) — event already wired in Designer.cs, do NOT add again here
             folderTreeView.AfterSelect += (s, e2) => { UpdateMoveButtonState(); OnSelectionChanged(); };
@@ -379,9 +395,9 @@ namespace CMS.Presentation
             var mnuNewFolder  = new ToolStripMenuItem("📁  Folder ใหม่...",    null, (s, e) => btnNewFolder_Click(s, e));
             var mnuOpen       = new ToolStripMenuItem("เปิดดู",              null, CtxFileOpen_Click);
             var mnuDownload   = new ToolStripMenuItem("ดาวน์โหลด",           null, CtxFileDownload_Click);
-            var mnuCut        = new ToolStripMenuItem("ตัด",                 null, (s, e) => ShowInfo("ฟีเจอร์ตัด/ย้ายไฟล์จะพร้อมใช้งานในเวอร์ชันถัดไป")) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.X, ShowShortcutKeys = true, Enabled = false };
-            var mnuCopy       = new ToolStripMenuItem("คัดลอก",              null, (s, e) => ShowInfo("ฟีเจอร์คัดลอกไฟล์จะพร้อมใช้งานในเวอร์ชันถัดไป")) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C, ShowShortcutKeys = true, Enabled = false };
-            var mnuPaste      = new ToolStripMenuItem("วาง",                 null, (s, e) => ShowInfo("ฟีเจอร์วางไฟล์จะพร้อมใช้งานในเวอร์ชันถัดไป"))   { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V, ShowShortcutKeys = true, Enabled = false };
+            var mnuCut        = new ToolStripMenuItem("ตัด",     null, CtxFileCut_Click)   { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.X, ShowShortcutKeys = true };
+            var mnuCopy       = new ToolStripMenuItem("คัดลอก",  null, CtxFileCopy_Click)  { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C, ShowShortcutKeys = true };
+            var mnuPaste      = new ToolStripMenuItem("วาง",     null, CtxFilePaste_Click) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V, ShowShortcutKeys = true };
             var mnuRename     = new ToolStripMenuItem("เปลี่ยนชื่อ",         null, (s, e) => btnRename_Click(s, e))                                      { ShortcutKeys = System.Windows.Forms.Keys.F2, ShowShortcutKeys = true };
             var mnuDelete     = new ToolStripMenuItem("ลบ",                  null, (s, e) => btnDelete_Click(s, e))                                       { ShortcutKeys = System.Windows.Forms.Keys.Delete, ShowShortcutKeys = true };
             var mnuClearFolder = new ToolStripMenuItem("🗑️  ล้างไฟล์ทั้งหมดใน Folder...", null, (s, e) => ClearFolderContents());
@@ -433,10 +449,17 @@ namespace CMS.Presentation
                 bool hasSelection = contentsListView.SelectedItems.Count > 0 && 
                                    (hasFile || contentFolder != null);
 
+                bool hasPendingPaste = _clipboardMode != ClipboardMode.None
+                                     && _clipboardFileIds.Count > 0
+                                     && hasFolder;
+
                 mnuUpload.Enabled      = hasFolder && canAdd  && _fileService != null;
                 mnuNewFolder.Enabled   = hasFolder && canAdd;
                 mnuOpen.Enabled        = hasFile   && canView;
                 mnuDownload.Enabled    = hasFile   && canView;
+                mnuCut.Enabled         = hasFile   && canEdit && _fileService != null;
+                mnuCopy.Enabled        = hasFile   && canView && _fileService != null;
+                mnuPaste.Enabled       = hasPendingPaste && canAdd && _fileService != null;
                 mnuRename.Enabled      = hasSelection && canEdit;
                 mnuDelete.Enabled      = canDeleteContent;
                 mnuClearFolder.Enabled = _fileService != null && _currentNavFolderId.HasValue && canEdit;
@@ -461,11 +484,11 @@ namespace CMS.Presentation
                     return;
                 }
 
-                string filePath = GetFilePhysicalPath(file);
-
-                if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
+                string filePath;
+                string resolveError;
+                if (!TryResolveOpenableFilePath(file, out filePath, out resolveError))
                 {
-                    ShowError(string.Format("ไม่พบไฟล์: {0}", file.OriginalFileName));
+                    ShowError(string.Format("ไม่พบไฟล์: {0}\n{1}", file.OriginalFileName, resolveError));
                     return;
                 }
 
@@ -474,13 +497,23 @@ namespace CMS.Presentation
 
                 if (ext == "pdf")
                 {
-                    PdfViewOptions options = PdfViewOptions.ViewOnly;
-
+                    // Print and Save are always blocked at the PDF encryption layer.
+                    // CanCopy (text selection) is allowed only for users with write-level permission or above.
+                    bool canCopy = false;
                     if (_permissionService != null)
                     {
                         var eff = _permissionService.GetEffectivePermission(_user.UserID, file.FolderID);
-                        options = PdfViewOptions.FromEffective(eff, _user);
+                        bool isManager = _user != null && _user.AppRole >= 3;
+                        bool hasWrite  = eff != null && (eff.HasFullControl || eff.CanModify || eff.CanWrite);
+                        canCopy = isManager || hasWrite;
                     }
+
+                    var options = new PdfViewOptions
+                    {
+                        CanPrint = false,   // always blocked
+                        CanSave  = false,   // always blocked
+                        CanCopy  = false    // always blocked
+                    };
 
                     await PdfSecurityHelper.OpenSecurePdfAsync(filePath, this, options);
                 }
@@ -498,6 +531,86 @@ namespace CMS.Presentation
                 ShowError(string.Format("ไม่สามารถเปิดไฟล์ได้: {0}\nข้อผิดพลาด: {1}",
                     file.OriginalFileName, ex.Message));
             }
+        }
+
+        private bool TryResolveOpenableFilePath(FileDocument file, out string resolvedPath, out string errorMessage)
+        {
+            resolvedPath = null;
+            errorMessage = null;
+
+            try
+            {
+                // Fast path: direct/constructed physical path.
+                string directPath = GetFilePhysicalPath(file);
+                if (!string.IsNullOrWhiteSpace(directPath) && System.IO.File.Exists(directPath))
+                {
+                    resolvedPath = directPath;
+                    return true;
+                }
+
+                // Fallback path: fetch verified stream from service and materialize to temp.
+                if (_fileService == null)
+                {
+                    errorMessage = "File service is not available.";
+                    return false;
+                }
+
+                var result = _fileService.DownloadFile(file.FileID, _user);
+                if (result == null)
+                {
+                    errorMessage = "ไม่พบข้อมูลไฟล์จาก service.";
+                    return false;
+                }
+
+                if (!result.Success || result.FileStream == null)
+                {
+                    errorMessage = string.IsNullOrWhiteSpace(result.ErrorMessage)
+                        ? "ดาวน์โหลดไฟล์เพื่อเปิดไม่สำเร็จ"
+                        : result.ErrorMessage;
+                    return false;
+                }
+
+                string safeName = BuildSafeTempFileName(file, result.FileName);
+                string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CMS", "OpenFiles");
+                System.IO.Directory.CreateDirectory(tempDir);
+
+                string tempPath = System.IO.Path.Combine(tempDir, safeName);
+                using (result.FileStream)
+                using (var fs = new System.IO.FileStream(tempPath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.Read))
+                {
+                    result.FileStream.CopyTo(fs);
+                }
+
+                resolvedPath = tempPath;
+                return System.IO.File.Exists(tempPath);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
+
+        private static string BuildSafeTempFileName(FileDocument file, string serviceFileName)
+        {
+            string fallback = !string.IsNullOrWhiteSpace(serviceFileName)
+                ? serviceFileName
+                : (!string.IsNullOrWhiteSpace(file.OriginalFileName)
+                    ? file.OriginalFileName
+                    : string.Format("file_{0}", file.FileID));
+
+            string extension = System.IO.Path.GetExtension(fallback);
+            if (string.IsNullOrWhiteSpace(extension) && !string.IsNullOrWhiteSpace(file.FileExtension))
+                extension = "." + file.FileExtension.Trim().TrimStart('.');
+
+            string baseName = System.IO.Path.GetFileNameWithoutExtension(fallback);
+            if (string.IsNullOrWhiteSpace(baseName))
+                baseName = string.Format("file_{0}", file.FileID);
+
+            foreach (char c in System.IO.Path.GetInvalidFileNameChars())
+                baseName = baseName.Replace(c, '_');
+
+            return string.Format("{0}_{1:yyyyMMddHHmmssfff}{2}", baseName, DateTime.Now, extension);
         }
 
         private void CtxFileDownload_Click(object sender, EventArgs e)
@@ -604,7 +717,7 @@ namespace CMS.Presentation
 
         private void CtxCut_Click(object sender, EventArgs e)
         {
-            // placeholder — ยังไม่ implement move
+            // placeholder — ยังไม่ implement move สำหรับ Folder tree
             ShowInfo("ฟีเจอร์ตัด/ย้าย Folder จะพร้อมใช้งานในเวอร์ชันถัดไป");
         }
 
@@ -616,6 +729,94 @@ namespace CMS.Presentation
         private void CtxPaste_Click(object sender, EventArgs e)
         {
             ShowInfo("ฟีเจอร์วาง Folder จะพร้อมใช้งานในเวอร์ชันถัดไป");
+        }
+
+        // ── File list: Cut / Copy / Paste ──────────────────────────────────────
+
+        private void CtxFileCut_Click(object sender, EventArgs e)
+        {
+            var file = SelectedFile;
+            if (file == null) return;
+
+            // Clear previous cut highlight
+            if (_cutItem != null && _cutOriginalColor.HasValue)
+                _cutItem.ForeColor = _cutOriginalColor.Value;
+
+            _clipboardMode    = ClipboardMode.Cut;
+            _clipboardFileIds = new List<int> { file.FileID };
+
+            // Dim selected item to indicate pending cut
+            _cutItem          = contentsListView.SelectedItems.Count > 0 ? contentsListView.SelectedItems[0] : null;
+            if (_cutItem != null)
+            {
+                _cutOriginalColor = _cutItem.ForeColor;
+                _cutItem.ForeColor = System.Drawing.Color.Gray;
+            }
+        }
+
+        private void CtxFileCopy_Click(object sender, EventArgs e)
+        {
+            var file = SelectedFile;
+            if (file == null) return;
+
+            // Cancel any pending cut highlight
+            if (_clipboardMode == ClipboardMode.Cut && _cutItem != null && _cutOriginalColor.HasValue)
+                _cutItem.ForeColor = _cutOriginalColor.Value;
+
+            _clipboardMode    = ClipboardMode.Copy;
+            _clipboardFileIds = new List<int> { file.FileID };
+            _cutItem          = null;
+        }
+
+        private void CtxFilePaste_Click(object sender, EventArgs e)
+        {
+            if (_clipboardMode == ClipboardMode.None || _clipboardFileIds.Count == 0) return;
+            if (!_currentNavFolderId.HasValue) { ShowError("กรุณาเลือก Folder ปลายทางก่อนวาง"); return; }
+            if (_fileService == null) return;
+
+            int destFolderId = _currentNavFolderId.Value;
+
+            try
+            {
+                if (_clipboardMode == ClipboardMode.Cut)
+                {
+                    var req = new CMS.Services.DTOs.MoveFileRequest
+                    {
+                        FileIds             = new List<int>(_clipboardFileIds),
+                        DestinationFolderId = destFolderId
+                    };
+                    _fileService.MoveFiles(req, _user);
+
+                    // Restore cut item color (it will be removed from list on refresh)
+                    if (_cutItem != null && _cutOriginalColor.HasValue)
+                        _cutItem.ForeColor = _cutOriginalColor.Value;
+                }
+                else // Copy
+                {
+                    foreach (int fileId in _clipboardFileIds)
+                        _fileService.CopyFile(fileId, destFolderId, _user);
+                }
+
+                // Clear clipboard state
+                _clipboardMode    = ClipboardMode.None;
+                _clipboardFileIds.Clear();
+                _cutItem          = null;
+                _cutOriginalColor = null;
+
+                // Refresh current folder view
+                if (_currentNavFolderId.HasValue)
+                    _presenter.GetFolderContents(_currentNavFolderId.Value);
+            }
+            catch (Exception ex)
+            {
+                // Restore cut color on failure
+                if (_cutItem != null && _cutOriginalColor.HasValue)
+                    _cutItem.ForeColor = _cutOriginalColor.Value;
+
+                ShowError(string.Format("{0}ไม่สำเร็จ: {1}",
+                    _clipboardMode == ClipboardMode.Cut ? "ย้ายไฟล์" : "คัดลอกไฟล์",
+                    ex.Message));
+            }
         }
 
         // Event สำหรับแจ้ง MDI_Container ให้เปิด PermissionForm (folder)
@@ -910,18 +1111,19 @@ namespace CMS.Presentation
 
         private TreeNode BuildMenuNodeFromManagement(MenuItem menu, List<MenuItem> allMenus)
         {
-            var node = new TreeNode(menu.MenuName)
-            {
-                Tag = menu,
-                ImageKey = "folder",
-                SelectedImageKey = "open_folder"
-            };
-
             var children = allMenus
                 .Where(m => m.ParentMenuItemID == menu.MenuItemID)
                 .OrderBy(m => m.DisplayOrder)
                 .ThenBy(m => m.MenuName)
                 .ToList();
+
+            bool hasChildren = children.Count > 0;
+            var node = new TreeNode(menu.MenuName)
+            {
+                Tag = menu,
+                ImageKey = ResolveMainMenuIconKey(menu, hasChildren),
+                SelectedImageKey = ResolveMainMenuIconKey(menu, hasChildren)
+            };
 
             foreach (var child in children)
                 node.Nodes.Add(BuildMenuNodeFromManagement(child, allMenus));
@@ -943,6 +1145,57 @@ namespace CMS.Presentation
             }
 
             return node;
+        }
+
+        private static string ResolveMainMenuIconKey(MenuItem menu, bool hasChildren)
+        {
+            if (menu == null)
+                return "folder";
+
+            if (hasChildren)
+            {
+                string groupName = (menu.MenuName ?? string.Empty).Trim().ToLowerInvariant();
+                if (groupName.Contains("องค์กร") || groupName.Contains("org"))
+                    return "organization";
+
+                return "folder";
+            }
+
+            string action = MapConfiguredActionToTag(menu.FormClassName)
+                ?? MapMenuKeyToActionTag(menu.MenuKey)
+                ?? MapMenuNameToActionTag(menu.MenuName);
+
+            return ResolveMainMenuLeafIconKey(action, menu.MenuName);
+        }
+
+        private static string ResolveMainMenuLeafIconKey(string action, string menuName)
+        {
+            switch ((action ?? string.Empty).Trim())
+            {
+                case "KnowledgeBaseForm":
+                case "KBCategoryForm":
+                case "ReportExcel":
+                case "AuditLog":
+                case "AccessLog":
+                case "ApprovalInbox":
+                    return "file_docs";
+                case "OrgStructure":
+                case "UserManagement":
+                case "UserAccess":
+                    return "organization";
+                case "SyncEmployee":
+                    return "lightning_bolt";
+                default:
+                    break;
+            }
+
+            string lowerName = (menuName ?? string.Empty).ToLowerInvariant();
+            if (lowerName.Contains("รายงาน") || lowerName.Contains("report") || lowerName.Contains("log"))
+                return "file_docs";
+            if (lowerName.Contains("องค์กร") || lowerName.Contains("ผู้ใช้") || lowerName.Contains("org") || lowerName.Contains("user"))
+                return "organization";
+
+            return "file_docs";
         }
 
         private static string MapConfiguredActionToTag(string configuredValue)
@@ -1039,6 +1292,14 @@ namespace CMS.Presentation
                     return "ChangeLevel";
                 case "syncemployee":
                     return "SyncEmployee";
+                case "knowledgebaseform":
+                      return "KnowledgeBaseForm";
+                case "knowledgebase":
+                case "kms":
+                    return "KnowledgeBaseForm";
+                case "kbcategoryform":
+                case "kbcategory":
+                    return "KBCategoryForm";
                 case "recyclebin":
                 case "recyclebinform":
                 case "trash":
@@ -1170,6 +1431,14 @@ namespace CMS.Presentation
                 case "sync_employee":
                 case "syncemployee":
                     return "SyncEmployee";
+                case "knowledge_base":
+                case "knowledgebase":
+                case "knowledgebaseform":
+                case "kms":
+                    return "KnowledgeBaseForm";
+                case "kb_category":
+                case "kbcategory":
+                    return "KBCategoryForm";
                 case "recycle_bin":
                 case "recyclebin":
                 case "trash":
@@ -2218,6 +2487,24 @@ namespace CMS.Presentation
                     ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder";
             };
 
+            // Main Menu TreeView — dedicated icon list for modern left-nav appearance
+            var mainMenuImageList = new ImageList { ImageSize = new Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
+            mainMenuImageList.Images.Add("folder", Properties.Resources.folder);
+            mainMenuImageList.Images.Add("open_folder", Properties.Resources.open_folder);
+            mainMenuImageList.Images.Add("organization", Properties.Resources.organization);
+            mainMenuImageList.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
+            try
+            {
+                mainMenuImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1);
+            }
+            catch
+            {
+                mainMenuImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
+            }
+            _treeMainMenu.ImageList = mainMenuImageList;
+            _treeMainMenu.ImageKey = "folder";
+            _treeMainMenu.SelectedImageKey = "open_folder";
+
             // ListView needs its own separate ImageList (WinForms does not allow sharing with TreeView)
             var listImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
             listImageList.Images.Add("folder",      Properties.Resources.folder);
@@ -3232,32 +3519,33 @@ namespace CMS.Presentation
         {
             if (contentsListView == null || contentsListView.Columns.Count == 0) return;
             if (_isAdjustingColumns) return;
+            if (contentsListView.View != View.Details) return;
 
             _isAdjustingColumns = true;
             try
             {
                 contentsListView.SuspendLayout();
 
-                // Auto-resize ทุกคอลัมน์ (รวม index 0) ให้พอดีกับเนื้อหาและหัวข้อ
-                for (int i = 0; i < contentsListView.Columns.Count; i++)
+                // Fixed widths for non-name columns (index 1..8)
+                // Keep layout stable and only stretch Name column to fill remaining space.
+                int[] fixedWidths = { 0, 95, 70, 85, 125, 160, 48, 220, 85 };
+                int fixedTotal = 0;
+
+                for (int i = 1; i < contentsListView.Columns.Count && i < fixedWidths.Length; i++)
                 {
-                    // วัดความกว้างจากเนื้อหา
-                    contentsListView.AutoResizeColumn(i, ColumnHeaderAutoResizeStyle.ColumnContent);
-                    int contentWidth = contentsListView.Columns[i].Width + 15;
+                    int target = fixedWidths[i];
+                    if (contentsListView.Columns[i].Width != target)
+                        contentsListView.Columns[i].Width = target;
 
-                    // วัดความกว้างจากหัวข้อคอลัมน์ (Header)
-                    contentsListView.AutoResizeColumn(i, ColumnHeaderAutoResizeStyle.HeaderSize);
-                    int headerWidth = contentsListView.Columns[i].Width;
-
-                    // เลือกค่าที่มากที่สุด (บวก padding เผื่อไว้นิดหน่อยเพื่อให้ดูไม่อึดอัด)
-                    int targetWidth = Math.Max(contentWidth, headerWidth) + 10;
-
-                    // กำหนดความกว้างขั้นต่ำของแต่ละคอลัมน์เพื่อไม่ให้แคบจนเกินไป
-                    if (targetWidth < 100)
-                        targetWidth = 100;
-                    
-                    contentsListView.Columns[i].Width = targetWidth;
+                    fixedTotal += target;
                 }
+
+                int available = contentsListView.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 8;
+                int minNameWidth = 260;
+                int targetNameWidth = Math.Max(minNameWidth, available - fixedTotal);
+
+                if (contentsListView.Columns[0].Width != targetNameWidth)
+                    contentsListView.Columns[0].Width = targetNameWidth;
             }
             finally
             {
@@ -5923,24 +6211,63 @@ namespace CMS.Presentation
             
             try
             {
-                // If the file has a PhysicalPath property, use it directly
-                if (!string.IsNullOrEmpty(file.PhysicalPath))
+                var candidates = new List<string>();
+
+                // 1) DB path (preferred)
+                if (!string.IsNullOrWhiteSpace(file.PhysicalPath))
                 {
-                    return file.PhysicalPath;
+                    candidates.Add(file.PhysicalPath.Trim());
                 }
-                
-                // Otherwise, construct the path based on the file's properties
-                // This assumes files are stored in a structured directory based on folder hierarchy
-                // You may need to adjust this based on your actual file storage structure
-                
-                // Example path construction - adjust according to your storage scheme:
-                // C:\FileStorage\Folder_{FolderId}\{StoredFileName}
-                string baseStoragePath = @"\\150.1.8.23\AppForUser\Cmd_LmportFile"; // Network storage path
-                
-                string folderPath = string.Format("Folder_{0}", file.FolderId);
-                string fileName = !string.IsNullOrEmpty(file.StoredFileName) ? file.StoredFileName : file.OriginalFileName;
-                
-                return System.IO.Path.Combine(baseStoragePath, folderPath, fileName);
+
+                string baseStoragePath = ConfigurationManager.AppSettings["NetworkDrivePath"];
+                if (string.IsNullOrWhiteSpace(baseStoragePath))
+                    baseStoragePath = @"\\150.1.8.23\AppForUser\Cmd_LmportFile";
+
+                string fileName = !string.IsNullOrWhiteSpace(file.StoredFileName)
+                    ? file.StoredFileName
+                    : file.OriginalFileName;
+
+                if (!string.IsNullOrWhiteSpace(fileName))
+                {
+                    // 2) Current standard storage layout: {base}\{orgUnitId}\{folderId}\{fileName}
+                    int? orgUnitId = null;
+
+                    if (SelectedFolder != null && SelectedFolder.FolderID == file.FolderID)
+                        orgUnitId = SelectedFolder.OrgUnitID;
+
+                    if (!orgUnitId.HasValue && _folderService != null)
+                    {
+                        try
+                        {
+                            var folder = _folderService.GetFolder(file.FolderID, _user);
+                            if (folder != null)
+                                orgUnitId = folder.OrgUnitID;
+                        }
+                        catch { }
+                    }
+
+                    if (orgUnitId.HasValue)
+                    {
+                        candidates.Add(System.IO.Path.Combine(
+                            baseStoragePath,
+                            orgUnitId.Value.ToString(),
+                            file.FolderID.ToString(),
+                            fileName));
+                    }
+
+                    // 3) Legacy/fallback layouts seen in older data
+                    candidates.Add(System.IO.Path.Combine(baseStoragePath, string.Format("Folder_{0}", file.FolderID), fileName));
+                    candidates.Add(System.IO.Path.Combine(baseStoragePath, file.FolderID.ToString(), fileName));
+                }
+
+                foreach (var path in candidates.Where(p => !string.IsNullOrWhiteSpace(p)).Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    if (System.IO.File.Exists(path))
+                        return path;
+                }
+
+                // Return first candidate for diagnostics if none exists.
+                return candidates.FirstOrDefault();
             }
             catch (Exception)
             {

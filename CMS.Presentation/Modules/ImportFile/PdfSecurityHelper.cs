@@ -62,14 +62,22 @@ namespace CMS.Presentation
         /// </summary>
         public static async Task OpenSecurePdfAsync(string sourcePath, Form form, PdfViewOptions options)
         {
+            // Base: screen-reader access only. All other permissions are opt-in.
             int permissions = PdfWriter.ALLOW_SCREENREADERS
                             | PdfWriter.ALLOW_ASSEMBLY;
 
+            // Print — blocked when CanPrint=false (default)
             if (options.CanPrint)
                 permissions |= PdfWriter.ALLOW_PRINTING | PdfWriter.ALLOW_DEGRADED_PRINTING;
 
-            if (options.CanSave || options.CanCopy)
+            // Copy text selection — independent of Save
+            if (options.CanCopy)
                 permissions |= PdfWriter.ALLOW_COPY;
+
+            // Save / modify — blocked when CanSave=false (default)
+            // ALLOW_MODIFY_CONTENTS covers "Save with changes"; left out by default.
+            if (options.CanSave)
+                permissions |= PdfWriter.ALLOW_MODIFY_CONTENTS | PdfWriter.ALLOW_MODIFY_ANNOTATIONS;
 
             await OpenWithPermissionsAsync(sourcePath, form, permissions);
         }

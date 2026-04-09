@@ -39,6 +39,7 @@
     <Reference Include="log4net, Version=2.0.15.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a">
       <HintPath>..\packages\log4net.2.0.15\lib\net45\log4net.dll</HintPath>
     </Reference>
+    <Reference Include="System.Security" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">
@@ -52,6 +53,7 @@
     <Compile Include="ConfigManager.cs" />
     <Compile Include="LoggingService.cs" />
     <Compile Include="ActiveDirectoryHelper.cs" />
+    <Compile Include="NetworkShareConnector.cs" />
     <Compile Include="NetworkDriveHelper.cs" />
     <Compile Include="Interfaces\IClamAVAdapter.cs" />
     <Compile Include="Interfaces\IConfigManager.cs" />

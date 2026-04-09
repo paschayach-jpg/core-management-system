@@ -501,6 +501,99 @@ namespace CMS.Services
 
 
         // -----------------------------------------------------------------------
+        // CopyFile
+        // -----------------------------------------------------------------------
+
+        public int CopyFile(int fileId, int destinationFolderId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var source = _fileDocumentRepository.GetById(fileId);
+            if (source == null)
+                throw new InvalidOperationException(string.Format("ไม่พบไฟล์ ID {0}", fileId));
+            if (source.IsDeleted)
+                throw new InvalidOperationException("ไม่สามารถคัดลอกไฟล์ที่ถูกลบแล้ว");
+
+            var destFolder = _folderRepository.GetById(destinationFolderId);
+            if (destFolder == null)
+                throw new InvalidOperationException(string.Format("ไม่พบ Folder ปลายทาง ID {0}", destinationFolderId));
+
+            // Permission check on destination
+            if (user.AppRole < 4)
+            {
+                if (!_permissionService.CheckPermission(user.UserID, destinationFolderId, "Write"))
+                    throw new UnauthorizedAccessException(
+                        string.Format("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง '{0}'", destFolder.FolderName));
+            }
+
+            // Build a unique stored filename in destination (append copy index if collision)
+            string baseName  = Path.GetFileNameWithoutExtension(source.StoredFileName ?? source.OriginalFileName);
+            string ext       = source.FileExtension ?? Path.GetExtension(source.OriginalFileName ?? "");
+            if (!ext.StartsWith(".")) ext = "." + ext;
+
+            string storedName = baseName + "_copy" + ext;
+            string destPath   = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
+
+            int suffix = 1;
+            while (_networkDriveHelper.FileExists(destPath))
+            {
+                storedName = string.Format("{0}_copy({1}){2}", baseName, suffix++, ext);
+                destPath   = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
+            }
+
+            // Copy physical file
+            if (!string.IsNullOrWhiteSpace(source.PhysicalPath) && _networkDriveHelper.FileExists(source.PhysicalPath))
+            {
+                string destDir = Path.GetDirectoryName(destPath);
+                if (!string.IsNullOrWhiteSpace(destDir) && !Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+
+                File.Copy(source.PhysicalPath, destPath, overwrite: false);
+            }
+
+            // Create new DB record
+            var newDoc = new FileDocument
+            {
+                FolderID         = destinationFolderId,
+                OriginalFileName = source.OriginalFileName,
+                StoredFileName   = storedName,
+                FileExtension    = source.FileExtension,
+                MimeType         = source.MimeType,
+                FileSizeBytes    = source.FileSizeBytes,
+                PhysicalPath     = destPath,
+                Checksum         = source.Checksum,
+                VirusScanStatus  = source.VirusScanStatus,
+                VirusScanDate    = source.VirusScanDate,
+                FileStatus       = 1,
+                UploadedBy       = user.UserID,
+                UploadedDate     = DateTime.Now,
+                Version          = 1
+            };
+
+            int newId = _fileDocumentRepository.Insert(newDoc);
+
+            _auditService.Log(new AuditEntry
+            {
+                Module      = "File",
+                Action      = "CopyFile",
+                UserID      = user.UserID,
+                UserName    = user.ADUserName ?? string.Empty,
+                UserRole    = user.AppRole,
+                TableName   = "storage.FileDocument",
+                RecordID    = newId,
+                OldValue    = string.Format("SourceFileID={0} FolderID={1}", fileId, source.FolderID),
+                NewValue    = string.Format("NewFileID={0} FolderID={1} Path={2}", newId, destinationFolderId, destPath),
+                MachineName = user.MachineName,
+                IPAddress   = user.IPAddress,
+                SessionID   = user.SessionID,
+                Result      = 1,
+                AuditDate   = DateTime.Now
+            });
+
+            return newId;
+        }
+
+        // -----------------------------------------------------------------------
         // Private: single-file upload pipeline
         // -----------------------------------------------------------------------
 

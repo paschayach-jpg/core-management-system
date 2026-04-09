@@ -1,4 +1,5 @@
 using CMS.Presentation.Modules.ImportFile;
+using CMS.Presentation.Modules.KMS;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -130,6 +131,16 @@ namespace CMS.Presentation
 
                     case "RecycleBin":
                         return ShowTargetForm(context, new RecycleBinForm(context.FolderService, context.User, context.OrgStructureService));
+
+                    case "KnowledgeBase":
+                    case "KnowledgeBaseForm":
+                        if (!TryRequestMdiAction(context, "KnowledgeBaseForm"))
+                            MessageBox.Show("กรุณาเปิด Knowledge Base ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+                    case "KBCategoryForm":
+                        if (!TryRequestMdiAction(context, "KBCategoryForm"))
+                            MessageBox.Show("กรุณาเปิด KB Category Form ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
                 }
             }
             catch (Exception ex)

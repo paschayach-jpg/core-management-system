@@ -22,5 +22,10 @@ namespace CMS.Services.Interfaces
         IEnumerable<FileDocument> GetFilesByOrgUnit(int orgUnitId, UserContext user);
         void RenameFile(int fileId, string newName, UserContext user);
         void MoveFiles(MoveFileRequest request, UserContext user);
+
+        /// <summary>
+        /// คัดลอกไฟล์ไปยัง Folder ปลายทาง (สร้าง record ใหม่ พร้อม copy physical file)
+        /// </summary>
+        int CopyFile(int fileId, int destinationFolderId, UserContext user);
     }
 }

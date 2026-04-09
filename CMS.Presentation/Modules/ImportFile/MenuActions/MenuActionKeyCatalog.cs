@@ -39,7 +39,9 @@ namespace CMS.Presentation
             "CopyStructure",
             "ChangeLevel",
             "SyncEmployee",
-            "RecycleBin"
+            "RecycleBin",
+            "KnowledgeBaseForm",
+            "KBCategoryForm"
         };
 
         public static string[] GetAvailableActionKeys()

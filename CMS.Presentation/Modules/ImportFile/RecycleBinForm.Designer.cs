@@ -1,6 +1,3 @@
-using System.Drawing;
-using System.Windows.Forms;
-
 namespace CMS.Presentation
 {
     partial class RecycleBinForm
@@ -8,19 +5,21 @@ namespace CMS.Presentation
         private System.ComponentModel.IContainer components = null;
 
         // ── Controls ────────────────────────────────────────────────────────────
-        private ToolStrip            _toolbar;
-        private ToolStripButton      _btnRestore;
-        private ToolStripButton      _btnDelete;
-        private ToolStripButton      _btnRefresh;
-        private ToolStripButton      _btnEmptyBin;
-        private ToolStripSeparator   _sep1;
-        private ToolStripLabel       _lblOrgUnit;
-        private ToolStripComboBox    _cmbOrgUnit;
-
-        private ListView             _listView;
-        private StatusStrip          _statusBar;
-        private ToolStripStatusLabel _lblStatus;
-        private Panel                _emptyPanel;
+        private System.Windows.Forms.ToolStrip            _toolbar;
+        private System.Windows.Forms.ToolStripButton      _btnRestore;
+        private System.Windows.Forms.ToolStripButton      _btnDelete;
+        private System.Windows.Forms.ToolStripButton      _btnRefresh;
+        private System.Windows.Forms.ToolStripButton      _btnEmptyBin;
+        private System.Windows.Forms.ToolStripSeparator   _sep1;
+        private System.Windows.Forms.ToolStripLabel       _lblOrgUnit;
+        private System.Windows.Forms.ToolStripComboBox    _cmbOrgUnit;
+        private System.Windows.Forms.ListView             _listView;
+        private System.Windows.Forms.StatusStrip          _statusBar;
+        private System.Windows.Forms.ToolStripStatusLabel _lblStatus;
+        private System.Windows.Forms.Panel                _emptyPanel;
+        private System.Windows.Forms.Label                _iconLabel;
+        private System.Windows.Forms.Label                _msgLabel;
+        private System.Windows.Forms.Label                _subLabel;
 
         protected override void Dispose(bool disposing)
         {
@@ -31,163 +30,157 @@ namespace CMS.Presentation
 
         private void InitializeComponent()
         {
+            this.components   = new System.ComponentModel.Container();
+            this._toolbar     = new System.Windows.Forms.ToolStrip();
+            this._btnRestore  = new System.Windows.Forms.ToolStripButton();
+            this._btnDelete   = new System.Windows.Forms.ToolStripButton();
+            this._sep1        = new System.Windows.Forms.ToolStripSeparator();
+            this._btnEmptyBin = new System.Windows.Forms.ToolStripButton();
+            this._btnRefresh  = new System.Windows.Forms.ToolStripButton();
+            this._lblOrgUnit  = new System.Windows.Forms.ToolStripLabel();
+            this._cmbOrgUnit  = new System.Windows.Forms.ToolStripComboBox();
+            this._listView    = new System.Windows.Forms.ListView();
+            this._emptyPanel  = new System.Windows.Forms.Panel();
+            this._iconLabel   = new System.Windows.Forms.Label();
+            this._msgLabel    = new System.Windows.Forms.Label();
+            this._subLabel    = new System.Windows.Forms.Label();
+            this._statusBar   = new System.Windows.Forms.StatusStrip();
+            this._lblStatus   = new System.Windows.Forms.ToolStripStatusLabel();
+            this._toolbar.SuspendLayout();
+            this._emptyPanel.SuspendLayout();
+            this._statusBar.SuspendLayout();
             this.SuspendLayout();
+
+            // ── Toolbar ───────────────────────────────────────────────────────
+            this._toolbar.BackColor = System.Drawing.Color.FromArgb(240, 244, 250);
+            this._toolbar.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this._toolbar.Padding   = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this._toolbar.Dock      = System.Windows.Forms.DockStyle.Top;
+            this._toolbar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+                this._btnRestore, this._btnDelete, this._sep1, this._btnEmptyBin,
+                this._btnRefresh, this._lblOrgUnit, this._cmbOrgUnit });
+
+            // ── _btnRestore ───────────────────────────────────────────────────
+            this._btnRestore.Text        = "♻️  คืนค่า (Restore)";
+            this._btnRestore.ToolTipText = "คืน Folder ที่เลือกกลับไปยังตำแหน่งเดิม";
+            this._btnRestore.Enabled     = false;
+            this._btnRestore.Click      += new System.EventHandler(this.BtnRestore_Click);
+
+            // ── _btnDelete ────────────────────────────────────────────────────
+            this._btnDelete.Text        = "🗑️  ลบถาวร";
+            this._btnDelete.ToolTipText = "ลบ Folder ที่เลือกออกจากระบบถาวร (ไม่สามารถกู้คืนได้)";
+            this._btnDelete.Enabled     = false;
+            this._btnDelete.ForeColor   = System.Drawing.Color.FromArgb(180, 30, 30);
+            this._btnDelete.Click      += new System.EventHandler(this.BtnDelete_Click);
+
+            // ── _btnEmptyBin ──────────────────────────────────────────────────
+            this._btnEmptyBin.Text        = "🗑️  ล้างถังขยะทั้งหมด";
+            this._btnEmptyBin.ToolTipText = "ลบ Folder ทั้งหมดในถังขยะออกถาวร";
+            this._btnEmptyBin.ForeColor   = System.Drawing.Color.FromArgb(180, 30, 30);
+            this._btnEmptyBin.Enabled     = false;
+            this._btnEmptyBin.Click      += new System.EventHandler(this.BtnEmptyBin_Click);
+
+            // ── _btnRefresh ───────────────────────────────────────────────────
+            this._btnRefresh.Text        = "↻  Refresh";
+            this._btnRefresh.ToolTipText = "โหลดข้อมูลใหม่";
+            this._btnRefresh.Alignment   = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this._btnRefresh.Click      += new System.EventHandler(this.BtnRefresh_Click);
+
+            // ── _lblOrgUnit ───────────────────────────────────────────────────
+            this._lblOrgUnit.Text      = "หน่วยงาน:";
+            this._lblOrgUnit.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+
+            // ── _cmbOrgUnit ───────────────────────────────────────────────────
+            this._cmbOrgUnit.DropDownStyle          = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this._cmbOrgUnit.Size                   = new System.Drawing.Size(180, 23);
+            this._cmbOrgUnit.Alignment              = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this._cmbOrgUnit.ToolTipText            = "กรองตามหน่วยงาน";
+            this._cmbOrgUnit.SelectedIndexChanged  += new System.EventHandler(this.CmbOrgUnit_SelectedIndexChanged);
+
+            // ── _listView ─────────────────────────────────────────────────────
+            this._listView.Dock          = System.Windows.Forms.DockStyle.Fill;
+            this._listView.View          = System.Windows.Forms.View.Details;
+            this._listView.FullRowSelect = true;
+            this._listView.GridLines     = false;
+            this._listView.MultiSelect   = true;
+            this._listView.CheckBoxes    = false;
+            this._listView.Font          = new System.Drawing.Font("Segoe UI", 9f);
+            this._listView.BorderStyle   = System.Windows.Forms.BorderStyle.None;
+            this._listView.BackColor     = System.Drawing.Color.White;
+            this._listView.OwnerDraw     = true;
+            this._listView.Columns.Add("ชื่อ Folder",  250);
+            this._listView.Columns.Add("หน่วยงาน",      160);
+            this._listView.Columns.Add("ตำแหน่งเดิม",   200);
+            this._listView.Columns.Add("วันที่ลบ",      140);
+            this._listView.Columns.Add("คงเหลือ (วัน)", 100);
+            this._listView.Columns.Add("ระดับ",           80);
+            this._listView.DrawColumnHeader        += new System.Windows.Forms.DrawListViewColumnHeaderEventHandler(this.ListView_DrawColumnHeader);
+            this._listView.DrawItem                += new System.Windows.Forms.DrawListViewItemEventHandler(this.ListView_DrawItem);
+            this._listView.DrawSubItem             += new System.Windows.Forms.DrawListViewSubItemEventHandler(this.ListViewDrawSubItem);
+            this._listView.SelectedIndexChanged    += new System.EventHandler(this.ListView_SelectedIndexChanged);
+            this._listView.DoubleClick             += new System.EventHandler(this.ListView_DoubleClick);
+            this._listView.ColumnClick             += new System.Windows.Forms.ColumnClickEventHandler(this.ListView_ColumnClick);
+            this._listView.ListViewItemSorter       = new ListViewColumnSorter();
+
+            // ── _emptyPanel ───────────────────────────────────────────────────
+            this._emptyPanel.Dock      = System.Windows.Forms.DockStyle.Fill;
+            this._emptyPanel.BackColor = System.Drawing.Color.White;
+            this._emptyPanel.Visible   = false;
+            this._emptyPanel.Controls.Add(this._subLabel);
+            this._emptyPanel.Controls.Add(this._msgLabel);
+            this._emptyPanel.Controls.Add(this._iconLabel);
+
+            // ── _iconLabel ────────────────────────────────────────────────────
+            this._iconLabel.Text      = "🗑️";
+            this._iconLabel.Font      = new System.Drawing.Font("Segoe UI", 48f);
+            this._iconLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this._iconLabel.Dock      = System.Windows.Forms.DockStyle.Top;
+            this._iconLabel.Height    = 120;
+
+            // ── _msgLabel ─────────────────────────────────────────────────────
+            this._msgLabel.Text      = "ถังขยะว่างเปล่า";
+            this._msgLabel.Font      = new System.Drawing.Font("Segoe UI", 14f);
+            this._msgLabel.ForeColor = System.Drawing.Color.Gray;
+            this._msgLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this._msgLabel.Dock      = System.Windows.Forms.DockStyle.Top;
+            this._msgLabel.Height    = 36;
+
+            // ── _subLabel ─────────────────────────────────────────────────────
+            this._subLabel.Text      = "Folder ที่ถูกลบจะปรากฏที่นี่";
+            this._subLabel.Font      = new System.Drawing.Font("Segoe UI", 9f);
+            this._subLabel.ForeColor = System.Drawing.Color.LightGray;
+            this._subLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this._subLabel.Dock      = System.Windows.Forms.DockStyle.Top;
+            this._subLabel.Height    = 24;
+
+            // ── _statusBar ────────────────────────────────────────────────────
+            this._statusBar.BackColor = System.Drawing.Color.FromArgb(240, 244, 250);
+            this._statusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+                this._lblStatus });
+
+            // ── _lblStatus ────────────────────────────────────────────────────
+            this._lblStatus.Text      = "พร้อมใช้งาน";
+            this._lblStatus.Spring    = true;
+            this._lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
             // ── Form ──────────────────────────────────────────────────────────
             this.Text          = "🗑️ ถังขยะ — Recycle Bin";
-            this.Size          = new Size(900, 600);
-            this.MinimumSize   = new Size(700, 450);
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.Font          = new Font("Segoe UI", 9f);
-            this.BackColor     = Color.White;
+            this.Size          = new System.Drawing.Size(900, 600);
+            this.MinimumSize   = new System.Drawing.Size(700, 450);
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Font          = new System.Drawing.Font("Segoe UI", 9f);
+            this.BackColor     = System.Drawing.Color.White;
             this.Name          = "RecycleBinForm";
+            this.Controls.Add(this._listView);
+            this.Controls.Add(this._emptyPanel);
+            this.Controls.Add(this._toolbar);
+            this.Controls.Add(this._statusBar);
 
-            // ── Toolbar ───────────────────────────────────────────────────────
-            _toolbar = new ToolStrip
-            {
-                BackColor = Color.FromArgb(240, 244, 250),
-                GripStyle = ToolStripGripStyle.Hidden,
-                Padding   = new Padding(4, 0, 0, 0),
-                Dock      = DockStyle.Top
-            };
-
-            _btnRestore = new ToolStripButton("♻️  คืนค่า (Restore)")
-            {
-                ToolTipText = "คืน Folder ที่เลือกกลับไปยังตำแหน่งเดิม",
-                Enabled     = false
-            };
-            _btnRestore.Click += BtnRestore_Click;
-
-            _btnDelete = new ToolStripButton("🗑️  ลบถาวร")
-            {
-                ToolTipText = "ลบ Folder ที่เลือกออกจากระบบถาวร (ไม่สามารถกู้คืนได้)",
-                Enabled     = false,
-                ForeColor   = Color.FromArgb(180, 30, 30)
-            };
-            _btnDelete.Click += BtnDelete_Click;
-
-            _sep1 = new ToolStripSeparator();
-
-            _btnEmptyBin = new ToolStripButton("🗑️  ล้างถังขยะทั้งหมด")
-            {
-                ToolTipText = "ลบ Folder ทั้งหมดในถังขยะออกถาวร",
-                ForeColor   = Color.FromArgb(180, 30, 30),
-                Enabled     = false
-            };
-            _btnEmptyBin.Click += BtnEmptyBin_Click;
-
-            _btnRefresh = new ToolStripButton("↻  Refresh")
-            {
-                ToolTipText = "โหลดข้อมูลใหม่",
-                Alignment   = ToolStripItemAlignment.Right
-            };
-            _btnRefresh.Click += (s, e) => LoadData();
-
-            _lblOrgUnit = new ToolStripLabel("หน่วยงาน:")
-            {
-                Alignment = ToolStripItemAlignment.Right
-            };
-
-            _cmbOrgUnit = new ToolStripComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Width         = 180,
-                Alignment     = ToolStripItemAlignment.Right,
-                ToolTipText   = "กรองตามหน่วยงาน"
-            };
-            _cmbOrgUnit.SelectedIndexChanged += CmbOrgUnit_SelectedIndexChanged;
-
-            _toolbar.Items.AddRange(new ToolStripItem[]
-            {
-                _btnRestore, _btnDelete, _sep1, _btnEmptyBin,
-                _btnRefresh, _lblOrgUnit, _cmbOrgUnit
-            });
-
-            // ── ListView ──────────────────────────────────────────────────────
-            _listView = new ListView
-            {
-                Dock          = DockStyle.Fill,
-                View          = View.Details,
-                FullRowSelect = true,
-                GridLines     = false,
-                MultiSelect   = true,
-                CheckBoxes    = false,
-                Font          = new Font("Segoe UI", 9f),
-                BorderStyle   = BorderStyle.None,
-                BackColor     = Color.White
-            };
-
-            _listView.Columns.Add("ชื่อ Folder",  250);
-            _listView.Columns.Add("หน่วยงาน",      160);
-            _listView.Columns.Add("ตำแหน่งเดิม",   200);
-            _listView.Columns.Add("วันที่ลบ",      140);
-            _listView.Columns.Add("คงเหลือ (วัน)", 100);
-            _listView.Columns.Add("ระดับ",           80);
-
-            _listView.OwnerDraw = true;
-            _listView.DrawColumnHeader += (s, e) => e.DrawDefault = true;
-            _listView.DrawItem         += (s, e) => { };
-            _listView.DrawSubItem      += ListViewDrawSubItem;
-
-            _listView.SelectedIndexChanged += ListView_SelectedIndexChanged;
-            _listView.DoubleClick          += ListView_DoubleClick;
-            _listView.ColumnClick          += ListView_ColumnClick;
-            _listView.ListViewItemSorter    = new ListViewColumnSorter();
-
-            // ── Empty State Panel ─────────────────────────────────────────────
-            _emptyPanel = new Panel
-            {
-                Dock      = DockStyle.Fill,
-                BackColor = Color.White,
-                Visible   = false
-            };
-
-            var _iconLabel = new Label
-            {
-                Text      = "🗑️",
-                Font      = new Font("Segoe UI", 48f),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock      = DockStyle.Top,
-                Height    = 120
-            };
-            var _msgLabel = new Label
-            {
-                Text      = "ถังขยะว่างเปล่า",
-                Font      = new Font("Segoe UI", 14f),
-                ForeColor = Color.Gray,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock      = DockStyle.Top,
-                Height    = 36
-            };
-            var _subLabel = new Label
-            {
-                Text      = "Folder ที่ถูกลบจะปรากฏที่นี่",
-                Font      = new Font("Segoe UI", 9f),
-                ForeColor = Color.LightGray,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Dock      = DockStyle.Top,
-                Height    = 24
-            };
-
-            _emptyPanel.Controls.Add(_subLabel);
-            _emptyPanel.Controls.Add(_msgLabel);
-            _emptyPanel.Controls.Add(_iconLabel);
-
-            // ── Status Bar ────────────────────────────────────────────────────
-            _statusBar = new StatusStrip { BackColor = Color.FromArgb(240, 244, 250) };
-            _lblStatus = new ToolStripStatusLabel("พร้อมใช้งาน")
-            {
-                Spring    = true,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            _statusBar.Items.Add(_lblStatus);
-
-            // ── Add to Form ───────────────────────────────────────────────────
-            this.Controls.Add(_listView);
-            this.Controls.Add(_emptyPanel);
-            this.Controls.Add(_toolbar);
-            this.Controls.Add(_statusBar);
-
+            this._toolbar.ResumeLayout(false);
+            this._toolbar.PerformLayout();
+            this._emptyPanel.ResumeLayout(false);
+            this._statusBar.ResumeLayout(false);
+            this._statusBar.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

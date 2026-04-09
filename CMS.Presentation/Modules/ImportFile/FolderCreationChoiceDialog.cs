@@ -9,15 +9,12 @@ namespace CMS.Presentation
     /// Dialog เลือกวิธีสร้าง Folder: จาก Template หรือ Blank Folder
     /// แทน MessageBox YesNoCancel เดิม
     /// </summary>
-    internal class FolderCreationChoiceDialog : Form
+    internal partial class FolderCreationChoiceDialog : Form
     {
         public enum Choice { Template, Blank, Cancel }
 
         public Choice SelectedChoice { get; private set; } = Choice.Cancel;
 
-        private Panel _pnlTemplate;
-        private Panel _pnlBlank;
-        private Button _btnOk;
         private Choice _hoveredOrSelected = Choice.Cancel;
 
         // ── Colors ────────────────────────────────────────────────────────────
@@ -30,197 +27,83 @@ namespace CMS.Presentation
         private static readonly Color _colorText        = Color.FromArgb(30, 30, 30);
         private static readonly Color _colorSubText     = Color.FromArgb(90, 90, 90);
 
+        /// <summary>For Visual Studio Designer only.</summary>
+        internal FolderCreationChoiceDialog() : this("(ชื่อ Folder หลัก)") { }
+
         public FolderCreationChoiceDialog(string parentFolderName)
         {
-            Text            = "วิธีสร้าง Folder";
-            ClientSize      = new Size(480, 310);
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            StartPosition   = FormStartPosition.CenterParent;
-            MaximizeBox     = false;
-            MinimizeBox     = false;
-            BackColor       = Color.FromArgb(245, 247, 250);
-            Font            = new Font("Segoe UI", 9f);
-
-            BuildUI(parentFolderName);
+            InitializeComponent();
+            _lblSub.Text = string.Format("ภายใต้ \"{0}\"", parentFolderName);
         }
 
-        private void BuildUI(string parentFolderName)
+        // ── Event Handlers ────────────────────────────────────────────────────
+
+        private void BtnOk_Click(object sender, EventArgs e)
         {
-            // ── Header ────────────────────────────────────────────────────────
-            var pnlHeader = new Panel
-            {
-                Dock      = DockStyle.Top,
-                Height    = 52,
-                BackColor = _colorHeader
-            };
-            var lblTitle = new Label
-            {
-                Text      = "วิธีสร้าง Folder",
-                Dock      = DockStyle.Top,
-                Height    = 30,
-                ForeColor = Color.White,
-                Font      = new Font("Segoe UI", 12f, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleLeft,
-                Padding   = new Padding(16, 0, 0, 0)
-            };
-            var lblSub = new Label
-            {
-                Text      = string.Format("ภายใต้ \"{0}\"", parentFolderName),
-                Dock      = DockStyle.Fill,
-                ForeColor = Color.FromArgb(180, 210, 255),
-                Font      = new Font("Segoe UI", 9f),
-                TextAlign = ContentAlignment.MiddleLeft,
-                Padding   = new Padding(18, 0, 0, 4)
-            };
-            pnlHeader.Controls.Add(lblSub);
-            pnlHeader.Controls.Add(lblTitle);
-
-            // ── Choice cards ──────────────────────────────────────────────────
-            var pnlCards = new Panel
-            {
-                Dock      = DockStyle.Fill,
-                BackColor = Color.Transparent,
-                Padding   = new Padding(20, 16, 20, 8)
-            };
-
-            _pnlTemplate = CreateChoiceCard(
-                "📋  จาก Template",
-                "สร้าง Sub-folder อัตโนมัติตามโครงสร้าง Template ที่กำหนดไว้",
-                Choice.Template);
-
-            _pnlBlank = CreateChoiceCard(
-                "📁  Blank Folder",
-                "สร้าง Folder เปล่า — กำหนดชื่อและระดับเองได้อิสระ",
-                Choice.Blank);
-
-            // วาง cards ซ้าย-ขวา
-            _pnlTemplate.SetBounds(20, 16, 200, 130);
-            _pnlBlank   .SetBounds(240, 16, 200, 130);
-            _pnlTemplate.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            _pnlBlank   .Anchor = AnchorStyles.Top | AnchorStyles.Left;
-
-            pnlCards.Controls.Add(_pnlTemplate);
-            pnlCards.Controls.Add(_pnlBlank);
-
-            // ── Footer ────────────────────────────────────────────────────────
-            var pnlFooter = new Panel
-            {
-                Dock      = DockStyle.Bottom,
-                Height    = 52,
-                BackColor = Color.FromArgb(238, 240, 245)
-            };
-
-            // separator line
-            var line = new Panel
-            {
-                Dock      = DockStyle.Top,
-                Height    = 1,
-                BackColor = Color.FromArgb(210, 215, 225)
-            };
-
-            _btnOk = new Button
-            {
-                Text      = "ตกลง",
-                Size      = new Size(90, 30),
-                BackColor = _colorHeader,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Enabled   = false,
-                Anchor    = AnchorStyles.Right | AnchorStyles.Top
-            };
-            _btnOk.FlatAppearance.BorderSize = 0;
-            _btnOk.Click += (s, e) => Confirm();
-
-            var btnCancel = new Button
-            {
-                Text         = "ยกเลิก",
-                Size         = new Size(80, 30),
-                BackColor    = Color.White,
-                ForeColor    = Color.FromArgb(60, 60, 60),
-                FlatStyle    = FlatStyle.Flat,
-                DialogResult = DialogResult.Cancel,
-                Anchor       = AnchorStyles.Right | AnchorStyles.Top
-            };
-            btnCancel.FlatAppearance.BorderColor = Color.FromArgb(190, 190, 190);
-
-            pnlFooter.Controls.Add(line);
-            pnlFooter.Controls.Add(_btnOk);
-            pnlFooter.Controls.Add(btnCancel);
-            pnlFooter.Resize += (s, e) =>
-            {
-                btnCancel.Left = pnlFooter.ClientSize.Width - btnCancel.Width - 12;
-                _btnOk.Left    = btnCancel.Left - _btnOk.Width - 8;
-                _btnOk.Top     = btnCancel.Top = (pnlFooter.Height - _btnOk.Height) / 2 + 1;
-            };
-
-            // ── Assemble ──────────────────────────────────────────────────────
-            Controls.Add(pnlCards);
-            Controls.Add(pnlFooter);
-            Controls.Add(pnlHeader);
-
-            AcceptButton = _btnOk;
-            CancelButton = btnCancel;
+            Confirm();
         }
 
-        // ── Card factory ──────────────────────────────────────────────────────
-
-        private Panel CreateChoiceCard(string title, string description, Choice choice)
+        private void PnlFooter_Resize(object sender, EventArgs e)
         {
-            var pnl = new Panel
-            {
-                BackColor  = _colorNormal,
-                Cursor     = Cursors.Hand,
-                Padding    = new Padding(14, 14, 14, 14)
-            };
+            _btnCancel.Left = _pnlFooter.ClientSize.Width - _btnCancel.Width - 12;
+            _btnOk.Left     = _btnCancel.Left - _btnOk.Width - 8;
+            _btnOk.Top      = _btnCancel.Top = (_pnlFooter.Height - _btnOk.Height) / 2 + 1;
+        }
 
-            // border via Paint
-            pnl.Paint += (s, e) => DrawCardBorder(e.Graphics, pnl, choice);
+        // ── Template card events ──────────────────────────────────────────────
 
-            var lblIcon = new Label
-            {
-                Text      = choice == Choice.Template ? "📋" : "📁",
-                Font      = new Font("Segoe UI", 28f),
-                ForeColor = choice == Choice.Template
-                    ? Color.FromArgb(0, 120, 215)
-                    : Color.FromArgb(255, 160, 0),
-                AutoSize  = false,
-                Bounds    = new Rectangle(14, 14, 56, 56),
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            var lblTitle = new Label
-            {
-                Text      = title,
-                Font      = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = _colorText,
-                AutoSize  = false,
-                Bounds    = new Rectangle(14, 74, 172, 22),
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            var lblDesc = new Label
-            {
-                Text      = description,
-                Font      = new Font("Segoe UI", 8.5f),
-                ForeColor = _colorSubText,
-                AutoSize  = false,
-                Bounds    = new Rectangle(14, 96, 172, 30),
-                TextAlign = ContentAlignment.TopLeft
-            };
+        private void PnlTemplate_Paint(object sender, PaintEventArgs e)
+        {
+            DrawCardBorder(e.Graphics, _pnlTemplate, Choice.Template);
+        }
 
-            pnl.Controls.Add(lblIcon);
-            pnl.Controls.Add(lblTitle);
-            pnl.Controls.Add(lblDesc);
+        private void PnlTemplate_MouseEnter(object sender, EventArgs e)
+        {
+            OnCardHover(_pnlTemplate, Choice.Template, true);
+        }
 
-            // Wire up all controls inside the card too
-            foreach (Control c in new Control[] { pnl, lblIcon, lblTitle, lblDesc })
-            {
-                c.MouseEnter  += (s, e) => OnCardHover(pnl, choice, true);
-                c.MouseLeave  += (s, e) => OnCardHover(pnl, choice, false);
-                c.Click       += (s, e) => SelectCard(choice);
-                c.DoubleClick += (s, e) => { SelectCard(choice); Confirm(); };
-            }
+        private void PnlTemplate_MouseLeave(object sender, EventArgs e)
+        {
+            OnCardHover(_pnlTemplate, Choice.Template, false);
+        }
 
-            return pnl;
+        private void PnlTemplate_Click(object sender, EventArgs e)
+        {
+            SelectCard(Choice.Template);
+        }
+
+        private void PnlTemplate_DoubleClick(object sender, EventArgs e)
+        {
+            SelectCard(Choice.Template);
+            Confirm();
+        }
+
+        // ── Blank card events ─────────────────────────────────────────────────
+
+        private void PnlBlank_Paint(object sender, PaintEventArgs e)
+        {
+            DrawCardBorder(e.Graphics, _pnlBlank, Choice.Blank);
+        }
+
+        private void PnlBlank_MouseEnter(object sender, EventArgs e)
+        {
+            OnCardHover(_pnlBlank, Choice.Blank, true);
+        }
+
+        private void PnlBlank_MouseLeave(object sender, EventArgs e)
+        {
+            OnCardHover(_pnlBlank, Choice.Blank, false);
+        }
+
+        private void PnlBlank_Click(object sender, EventArgs e)
+        {
+            SelectCard(Choice.Blank);
+        }
+
+        private void PnlBlank_DoubleClick(object sender, EventArgs e)
+        {
+            SelectCard(Choice.Blank);
+            Confirm();
         }
 
         private void DrawCardBorder(Graphics g, Panel pnl, Choice choice)

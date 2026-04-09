@@ -220,6 +220,19 @@ namespace CMS.Presentation
                     return;
                 }
 
+                // Optional: establish authenticated SMB session from config to prevent credential prompts.
+                var networkShareConnector = new NetworkShareConnector(configManager);
+                string networkShareMessage;
+                if (!networkShareConnector.TryEnsureConnected(out networkShareMessage))
+                {
+                    loggingService.Error("Network share pre-connect failed: " + networkShareMessage, null);
+                    MessageBox.Show(
+                        "ไม่สามารถเชื่อมต่อ Network Share จากค่าที่ตั้งไว้ได้\r\n\r\n" + networkShareMessage,
+                        "CMS - Network Share Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
                 UserAccount account = userAccountRepo.GetByADUserName(adUserName);
 
                 if (account == null)

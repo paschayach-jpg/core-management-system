@@ -107,27 +107,16 @@ namespace CMS.Presentation.Modules.KMS
             this.splitMain.Panel1MinSize = 160;
             // 
             // splitMain.Panel2
-            //
+            // 
             this.splitMain.Panel2.BackColor = System.Drawing.Color.White;
             this.splitMain.Panel2.Controls.Add(this.panelMainRight);
             this.splitMain.Panel2MinSize = 400;
             this.splitMain.Size = new System.Drawing.Size(1100, 628);
             this.splitMain.SplitterDistance = 260;
             this.splitMain.TabIndex = 0;
-            //
-            // panelMainRight
-            //
-            this.panelMainRight.BackColor = System.Drawing.Color.White;
-            this.panelMainRight.Controls.Add(this.pnlArticleList);
-            this.panelMainRight.Controls.Add(this.pnlSearch);
-            this.panelMainRight.Controls.Add(this.pnlRightTop);
-            this.panelMainRight.Controls.Add(this.pnlRightFooter);
-            this.panelMainRight.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelMainRight.Name = "panelMainRight";
-            this.panelMainRight.TabIndex = 0;
-            //
+            // 
             // treeCategories
-            //
+            // 
             this.treeCategories.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.treeCategories.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.treeCategories.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -137,7 +126,7 @@ namespace CMS.Presentation.Modules.KMS
             this.treeCategories.Indent = 18;
             this.treeCategories.Location = new System.Drawing.Point(0, 38);
             this.treeCategories.Name = "treeCategories";
-            this.treeCategories.Size = new System.Drawing.Size(696, 544);
+            this.treeCategories.Size = new System.Drawing.Size(260, 544);
             this.treeCategories.TabIndex = 0;
             this.treeCategories.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeCategories_AfterSelect);
             // 
@@ -149,7 +138,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlLeftFooter.Location = new System.Drawing.Point(0, 582);
             this.pnlLeftFooter.Name = "pnlLeftFooter";
             this.pnlLeftFooter.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlLeftFooter.Size = new System.Drawing.Size(696, 46);
+            this.pnlLeftFooter.Size = new System.Drawing.Size(260, 46);
             this.pnlLeftFooter.TabIndex = 1;
             // 
             // btnNewCategory
@@ -163,7 +152,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnNewCategory.ForeColor = System.Drawing.Color.White;
             this.btnNewCategory.Location = new System.Drawing.Point(8, 6);
             this.btnNewCategory.Name = "btnNewCategory";
-            this.btnNewCategory.Size = new System.Drawing.Size(680, 34);
+            this.btnNewCategory.Size = new System.Drawing.Size(244, 34);
             this.btnNewCategory.TabIndex = 0;
             this.btnNewCategory.Text = "+ หมวดหมู่ใหม่";
             this.btnNewCategory.UseVisualStyleBackColor = false;
@@ -176,7 +165,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlLeftHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlLeftHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlLeftHeader.Name = "pnlLeftHeader";
-            this.pnlLeftHeader.Size = new System.Drawing.Size(696, 38);
+            this.pnlLeftHeader.Size = new System.Drawing.Size(260, 38);
             this.pnlLeftHeader.TabIndex = 2;
             // 
             // lblCategoryHeader
@@ -186,10 +175,23 @@ namespace CMS.Presentation.Modules.KMS
             this.lblCategoryHeader.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
             this.lblCategoryHeader.Location = new System.Drawing.Point(0, 0);
             this.lblCategoryHeader.Name = "lblCategoryHeader";
-            this.lblCategoryHeader.Size = new System.Drawing.Size(696, 38);
+            this.lblCategoryHeader.Size = new System.Drawing.Size(260, 38);
             this.lblCategoryHeader.TabIndex = 0;
             this.lblCategoryHeader.Text = "  หมวดหมู่";
             this.lblCategoryHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // panelMainRight
+            // 
+            this.panelMainRight.BackColor = System.Drawing.Color.White;
+            this.panelMainRight.Controls.Add(this.pnlArticleList);
+            this.panelMainRight.Controls.Add(this.pnlSearch);
+            this.panelMainRight.Controls.Add(this.pnlRightTop);
+            this.panelMainRight.Controls.Add(this.pnlRightFooter);
+            this.panelMainRight.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelMainRight.Location = new System.Drawing.Point(0, 0);
+            this.panelMainRight.Name = "panelMainRight";
+            this.panelMainRight.Size = new System.Drawing.Size(836, 628);
+            this.panelMainRight.TabIndex = 0;
             // 
             // pnlArticleList
             // 
@@ -200,7 +202,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlArticleList.Location = new System.Drawing.Point(0, 80);
             this.pnlArticleList.Name = "pnlArticleList";
             this.pnlArticleList.Padding = new System.Windows.Forms.Padding(8);
-            this.pnlArticleList.Size = new System.Drawing.Size(400, 500);
+            this.pnlArticleList.Size = new System.Drawing.Size(836, 500);
             this.pnlArticleList.TabIndex = 0;
             // 
             // flpArticles
@@ -211,7 +213,7 @@ namespace CMS.Presentation.Modules.KMS
             this.flpArticles.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpArticles.Location = new System.Drawing.Point(8, 8);
             this.flpArticles.Name = "flpArticles";
-            this.flpArticles.Size = new System.Drawing.Size(384, 484);
+            this.flpArticles.Size = new System.Drawing.Size(820, 484);
             this.flpArticles.TabIndex = 0;
             this.flpArticles.WrapContents = false;
             // 
@@ -226,7 +228,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlSearch.Location = new System.Drawing.Point(0, 38);
             this.pnlSearch.Name = "pnlSearch";
             this.pnlSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlSearch.Size = new System.Drawing.Size(400, 42);
+            this.pnlSearch.Size = new System.Drawing.Size(836, 42);
             this.pnlSearch.TabIndex = 1;
             // 
             // cboFilter
@@ -234,9 +236,9 @@ namespace CMS.Presentation.Modules.KMS
             this.cboFilter.Dock = System.Windows.Forms.DockStyle.Right;
             this.cboFilter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboFilter.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.cboFilter.Location = new System.Drawing.Point(182, 6);
+            this.cboFilter.Location = new System.Drawing.Point(618, 6);
             this.cboFilter.Name = "cboFilter";
-            this.cboFilter.Size = new System.Drawing.Size(130, 28);
+            this.cboFilter.Size = new System.Drawing.Size(130, 23);
             this.cboFilter.TabIndex = 0;
             this.cboFilter.SelectedIndexChanged += new System.EventHandler(this.CboFilter_SelectedIndexChanged);
             // 
@@ -249,7 +251,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnSearch.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSearch.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnSearch.ForeColor = System.Drawing.Color.White;
-            this.btnSearch.Location = new System.Drawing.Point(312, 6);
+            this.btnSearch.Location = new System.Drawing.Point(748, 6);
             this.btnSearch.Name = "btnSearch";
             this.btnSearch.Size = new System.Drawing.Size(80, 30);
             this.btnSearch.TabIndex = 1;
@@ -264,7 +266,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 9.5F);
             this.txtSearch.Location = new System.Drawing.Point(36, 6);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(356, 29);
+            this.txtSearch.Size = new System.Drawing.Size(792, 24);
             this.txtSearch.TabIndex = 2;
             this.txtSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearch_KeyDown);
             // 
@@ -286,7 +288,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRightTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlRightTop.Location = new System.Drawing.Point(0, 0);
             this.pnlRightTop.Name = "pnlRightTop";
-            this.pnlRightTop.Size = new System.Drawing.Size(400, 38);
+            this.pnlRightTop.Size = new System.Drawing.Size(836, 38);
             this.pnlRightTop.TabIndex = 2;
             // 
             // lblArticleTitle
@@ -296,7 +298,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblArticleTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
             this.lblArticleTitle.Location = new System.Drawing.Point(0, 0);
             this.lblArticleTitle.Name = "lblArticleTitle";
-            this.lblArticleTitle.Size = new System.Drawing.Size(400, 38);
+            this.lblArticleTitle.Size = new System.Drawing.Size(836, 38);
             this.lblArticleTitle.TabIndex = 0;
             this.lblArticleTitle.Text = "  เลือกหมวดหมู่เพื่อดูบทความ";
             this.lblArticleTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -312,7 +314,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRightFooter.Location = new System.Drawing.Point(0, 580);
             this.pnlRightFooter.Name = "pnlRightFooter";
             this.pnlRightFooter.Padding = new System.Windows.Forms.Padding(8, 7, 8, 7);
-            this.pnlRightFooter.Size = new System.Drawing.Size(400, 48);
+            this.pnlRightFooter.Size = new System.Drawing.Size(836, 48);
             this.pnlRightFooter.TabIndex = 3;
             // 
             // lblArticleCount
@@ -323,7 +325,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblArticleCount.Location = new System.Drawing.Point(378, 7);
             this.lblArticleCount.Name = "lblArticleCount";
             this.lblArticleCount.Padding = new System.Windows.Forms.Padding(0, 0, 8, 0);
-            this.lblArticleCount.Size = new System.Drawing.Size(14, 34);
+            this.lblArticleCount.Size = new System.Drawing.Size(450, 34);
             this.lblArticleCount.TabIndex = 0;
             this.lblArticleCount.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
@@ -380,7 +382,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // KnowledgeBaseForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1100, 680);

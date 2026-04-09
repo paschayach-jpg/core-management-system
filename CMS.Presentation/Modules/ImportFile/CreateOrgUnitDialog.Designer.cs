@@ -269,7 +269,7 @@ namespace CMS.Presentation
             this.pnlFooter.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlFooter.Location = new System.Drawing.Point(0, 276);
             this.pnlFooter.Name = "pnlFooter";
-            this.pnlFooter.Padding = new System.Windows.Forms.Padding(8, 8, 8, 8);
+            this.pnlFooter.Padding = new System.Windows.Forms.Padding(8);
             this.pnlFooter.Size = new System.Drawing.Size(502, 44);
             this.pnlFooter.TabIndex = 1;
             // 

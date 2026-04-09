@@ -26,7 +26,7 @@ namespace CMS.Presentation.Modules.KMS
         // ── Viewer state (Task 3) ──────────────────────────────────────────────
         private ArticleViewerForm _activeViewer          = null;
         private int?              _activeViewerArticleId = null;
-
+        private object knowledgeBaseService;
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
         private static readonly byte?[] TypeFilterValues   = { null, 1, 2, 3, 4, 5 };
 
@@ -42,6 +42,12 @@ namespace CMS.Presentation.Modules.KMS
             _articleService  = articleService;
             _user            = user;
             InitializeComponent();
+        }
+
+        public KnowledgeBaseForm(object knowledgeBaseService, UserContext user)
+        {
+            this.knowledgeBaseService = knowledgeBaseService;
+            _user = user;
         }
 
         private void KnowledgeBaseForm_Load(object sender, EventArgs e)

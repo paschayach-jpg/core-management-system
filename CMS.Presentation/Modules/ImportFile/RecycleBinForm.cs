@@ -144,6 +144,21 @@ namespace CMS.Presentation
 
         // ── Event Handlers ───────────────────────────────────────────────────────
 
+        private void BtnRefresh_Click(object sender, EventArgs e)
+        {
+            LoadData();
+        }
+
+        private void ListView_DrawColumnHeader(object sender, DrawListViewColumnHeaderEventArgs e)
+        {
+            e.DrawDefault = true;
+        }
+
+        private void ListView_DrawItem(object sender, DrawListViewItemEventArgs e)
+        {
+            // owner-draw handled entirely in DrawSubItem
+        }
+
         private void ListView_SelectedIndexChanged(object sender, EventArgs e)
         {
             UpdateActionButtons();
