@@ -68,10 +68,12 @@ namespace CMS.Presentation.Modules.KMS
                 Close();
                 return;
             }
-            BuildSidebarSections();
             AdjustSplitter();
             splitViewer.Resize += (s, ev) => AdjustSplitter();
             _presenter.Initialize();
+            
+            // Initialize with Attachments tab
+            SwitchToTab(btnTabAttach);
         }
 
         private void AdjustSplitter()
@@ -96,44 +98,8 @@ namespace CMS.Presentation.Modules.KMS
 
         public void BindVersionHistory(IEnumerable<KBVersion> versions)
         {
-            pnlVersionList.SuspendLayout();
-            pnlVersionList.Controls.Clear();
-
-            var list = versions.ToList();
-            if (list.Count == 0)
-            {
-                pnlVersionList.Controls.Add(new Label
-                {
-                    Dock      = DockStyle.Top,
-                    Height    = 24,
-                    Font      = new Font("Segoe UI", 8f),
-                    ForeColor = Color.FromArgb(160, 160, 160),
-                    Padding   = new Padding(4, 4, 0, 0),
-                    Text      = "ยังไม่มี Version History",
-                });
-            }
-            else
-            {
-                // DockStyle.Top: add in reverse so newest version appears at top
-                for (int i = Math.Min(list.Count, 8) - 1; i >= 0; i--)
-                {
-                    var v   = list[i];
-                    var row = new Panel { Dock = DockStyle.Top, Height = 20, BackColor = Color.White };
-                    var sep = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = Color.FromArgb(238, 238, 238) };
-                    var lbl = new Label
-                    {
-                        Dock      = DockStyle.Fill,
-                        Font      = new Font("Segoe UI", 8f),
-                        ForeColor = Color.FromArgb(85, 85, 85),
-                        Padding   = new Padding(4, 1, 4, 1),
-                        Text      = string.Format("v{0}  —  {1}", v.VersionNumber, v.CreatedDate.ToString("dd MMM yy")),
-                    };
-                    row.Controls.Add(lbl);
-                    row.Controls.Add(sep);
-                    pnlVersionList.Controls.Add(row);
-                }
-            }
-            pnlVersionList.ResumeLayout();
+            // Version history is no longer displayed in the new tabbed design
+            // This method is kept for interface compatibility
         }
 
         public void ShowError(string message)
@@ -190,9 +156,533 @@ namespace CMS.Presentation.Modules.KMS
             ShowInfo("ฟังก์ชัน Version History เต็มอยู่ระหว่างการพัฒนา");
         }
 
+        private void BtnTab_Click(object sender, EventArgs e)
+        {
+            if (sender is Button btn)
+                SwitchToTab(btn);
+        }
+
         private void webContent_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e) { }
 
         // ── Private UI helpers ───────────────────────────────────────────────
+
+        private void SwitchToTab(Button activeBtn)
+        {
+            // Reset all tab buttons
+            foreach (Control ctrl in pnlTabHeaders.Controls)
+            {
+                if (ctrl is Button btn)
+                {
+                    btn.BackColor = Color.FromArgb(240, 244, 248);
+                    btn.ForeColor = Color.FromArgb(85, 85, 85);
+                    btn.Font = new Font("Segoe UI", 8.5f, FontStyle.Regular);
+                }
+            }
+
+            // Highlight active tab
+            activeBtn.BackColor = Color.White;
+            activeBtn.ForeColor = Color.FromArgb(46, 116, 181);
+            activeBtn.Font = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+
+            // Load content based on tab
+            if (activeBtn == btnTabAttach)
+                LoadAttachmentsTab();
+            else if (activeBtn == btnTabRelated)
+                LoadRelatedTab();
+            else if (activeBtn == btnTabWorkflow)
+                LoadWorkflowTab();
+            else if (activeBtn == btnTabProgram)
+                LoadProgramTab();
+            else if (activeBtn == btnTabDoc)
+                LoadDocumentTab();
+        }
+
+        private void LoadAttachmentsTab()
+        {
+            pnlTabContent.SuspendLayout();
+            pnlTabContent.Controls.Clear();
+
+            // Sample attachment 1
+            var attach1 = CreateAttachmentItem(
+                "📄", "Claims_Form_2569.pdf", "245 KB", "3NC", false);
+            attach1.Dock = DockStyle.Top;
+            pnlTabContent.Controls.Add(attach1);
+
+            // Sample attachment 2 (locked)
+            var attach2 = CreateAttachmentItem(
+                "📊", "UW_Criteria_Table.xlsx", "89 KB", "1HC", true);
+            attach2.Dock = DockStyle.Top;
+            pnlTabContent.Controls.Add(attach2);
+
+            pnlTabContent.ResumeLayout();
+        }
+
+        private Panel CreateAttachmentItem(string icon, string fileName, string size, string craf, bool locked)
+        {
+            var pnl = new Panel
+            {
+                Height = 48,
+                BackColor = locked ? Color.FromArgb(254, 249, 231) : Color.White,
+                Padding = new Padding(5, 4, 5, 4),
+                Margin = new Padding(0, 0, 0, 6),
+            };
+
+            var lblIcon = new Label
+            {
+                Text = icon,
+                Font = new Font("Segoe UI", 14f),
+                Width = 32,
+                Dock = DockStyle.Left,
+                TextAlign = ContentAlignment.MiddleCenter,
+            };
+
+            var pnlInfo = new Panel { Dock = DockStyle.Fill };
+            var lblName = new Label
+            {
+                Text = fileName,
+                Font = new Font("Segoe UI", 9f, locked ? FontStyle.Regular : FontStyle.Bold),
+                ForeColor = locked ? Color.FromArgb(160, 160, 160) : Color.FromArgb(46, 116, 181),
+                Dock = DockStyle.Top,
+                Height = 20,
+                Cursor = locked ? Cursors.Default : Cursors.Hand,
+            };
+            if (!locked)
+                lblName.Click += (s, e) => ShowInfo($"เปิด {fileName}");
+
+            var lblMeta = new Label
+            {
+                Text = $"{size}  ",
+                Font = new Font("Segoe UI", 7.5f),
+                ForeColor = Color.FromArgb(120, 120, 120),
+                Dock = DockStyle.Top,
+                Height = 18,
+            };
+
+            var lblBadge = new Label
+            {
+                Text = craf,
+                Font = new Font("Segoe UI", 7f, FontStyle.Bold),
+                ForeColor = craf == "1HC" ? Color.FromArgb(192, 57, 43) : Color.FromArgb(22, 160, 133),
+                BackColor = craf == "1HC" ? Color.FromArgb(253, 237, 236) : Color.FromArgb(213, 245, 227),
+                AutoSize = true,
+                Padding = new Padding(4, 1, 4, 1),
+                Location = new Point(lblMeta.Text.Length * 6, 0),
+            };
+            lblMeta.Controls.Add(lblBadge);
+
+            pnlInfo.Controls.Add(lblMeta);
+            pnlInfo.Controls.Add(lblName);
+
+            if (locked)
+            {
+                var lblLocked = new Label
+                {
+                    Text = "🔒 ต้องสิทธิ์ " + craf,
+                    Font = new Font("Segoe UI", 7.5f),
+                    ForeColor = Color.FromArgb(183, 119, 13),
+                    Dock = DockStyle.Right,
+                    Width = 90,
+                    TextAlign = ContentAlignment.MiddleRight,
+                };
+                pnl.Controls.Add(lblLocked);
+            }
+            else
+            {
+                var pnlButtons = new Panel { Dock = DockStyle.Right, Width = 50 };
+                var btnView = new Button
+                {
+                    Text = "👁️ ดู",
+                    Font = new Font("Segoe UI", 7.5f),
+                    Height = 18,
+                    Dock = DockStyle.Top,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(214, 228, 240),
+                    Cursor = Cursors.Hand,
+                };
+                btnView.FlatAppearance.BorderColor = Color.FromArgb(170, 170, 170);
+                btnView.Click += (s, e) => ShowInfo($"กำลังเปิด {fileName}");
+
+                var btnDownload = new Button
+                {
+                    Text = "📥",
+                    Font = new Font("Segoe UI", 7.5f),
+                    Height = 18,
+                    Dock = DockStyle.Top,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(214, 228, 240),
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(0, 2, 0, 0),
+                };
+                btnDownload.FlatAppearance.BorderColor = Color.FromArgb(170, 170, 170);
+                btnDownload.Click += (s, e) => ShowInfo($"กำลังดาวน์โหลด {fileName}");
+
+                pnlButtons.Controls.Add(btnDownload);
+                pnlButtons.Controls.Add(btnView);
+                pnl.Controls.Add(pnlButtons);
+            }
+
+            pnl.Controls.Add(pnlInfo);
+            pnl.Controls.Add(lblIcon);
+
+            var sep = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = Color.FromArgb(238, 238, 238) };
+            pnl.Controls.Add(sep);
+
+            return pnl;
+        }
+
+        private void LoadRelatedTab()
+        {
+            pnlTabContent.SuspendLayout();
+            pnlTabContent.Controls.Clear();
+
+            var items = new[]
+            {
+                ("[SOP] กฎระเบียบข้อบังคับการรับสินไหม", "KB-2569-005"),
+                ("[FAQ] วิธีการเคลมประกันรถยนต์", "KB-2569-015"),
+                ("[แนวทาง] คู่มือ UW ฉบับ 2", "KB-2569-003"),
+            };
+
+            foreach (var item in items)
+            {
+                var pnl = CreateRelatedItem(item.Item1, item.Item2);
+                pnl.Dock = DockStyle.Top;
+                pnlTabContent.Controls.Add(pnl);
+            }
+
+            pnlTabContent.ResumeLayout();
+        }
+
+        private Panel CreateRelatedItem(string title, string code)
+        {
+            var pnl = new Panel
+            {
+                Height = 42,
+                BackColor = Color.White,
+                Padding = new Padding(5, 4, 5, 4),
+                Cursor = Cursors.Hand,
+            };
+
+            var lblDot = new Label
+            {
+                Text = "●",
+                Font = new Font("Segoe UI", 10f),
+                ForeColor = Color.FromArgb(46, 116, 181),
+                Width = 20,
+                Dock = DockStyle.Left,
+                TextAlign = ContentAlignment.MiddleCenter,
+            };
+
+            var pnlInfo = new Panel { Dock = DockStyle.Fill };
+            var lblTitle = new Label
+            {
+                Text = title,
+                Font = new Font("Segoe UI", 8.5f),
+                ForeColor = Color.FromArgb(46, 116, 181),
+                Dock = DockStyle.Top,
+                Height = 18,
+            };
+            var lblCode = new Label
+            {
+                Text = code,
+                Font = new Font("Segoe UI", 7.5f),
+                ForeColor = Color.FromArgb(120, 120, 120),
+                Dock = DockStyle.Top,
+                Height = 16,
+            };
+
+            pnlInfo.Controls.Add(lblCode);
+            pnlInfo.Controls.Add(lblTitle);
+            pnl.Controls.Add(pnlInfo);
+            pnl.Controls.Add(lblDot);
+
+            pnl.Click += (s, e) => ShowInfo($"เปิด {code}");
+
+            var sep = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = Color.FromArgb(238, 238, 238) };
+            pnl.Controls.Add(sep);
+
+            return pnl;
+        }
+
+        private void LoadWorkflowTab()
+        {
+            pnlTabContent.SuspendLayout();
+            pnlTabContent.Controls.Clear();
+
+            var workflows = new[]
+            {
+                ("การรับแจ้งอุบัติเหตุ (RG01000)", "5 Step | v2.1", "Active"),
+                ("การออกสำรวจภัย (RG02000)", "8 Step | v1.5", "Active"),
+            };
+
+            foreach (var wf in workflows)
+            {
+                var pnl = CreateWorkflowItem(wf.Item1, wf.Item2, wf.Item3);
+                pnl.Dock = DockStyle.Top;
+                pnlTabContent.Controls.Add(pnl);
+            }
+
+            var btnStart = new Button
+            {
+                Text = "▶️ เริ่ม Workflow",
+                Font = new Font("Segoe UI", 8.5f),
+                Height = 32,
+                Dock = DockStyle.Top,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(46, 116, 181),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 8, 0, 0),
+            };
+            btnStart.FlatAppearance.BorderColor = Color.FromArgb(30, 58, 95);
+            btnStart.Click += (s, e) => ShowInfo("เปิด Workflow Module");
+            pnlTabContent.Controls.Add(btnStart);
+
+            pnlTabContent.ResumeLayout();
+        }
+
+        private Panel CreateWorkflowItem(string name, string meta, string status)
+        {
+            var pnl = new Panel
+            {
+                Height = 48,
+                BackColor = Color.White,
+                Padding = new Padding(5, 4, 5, 4),
+            };
+
+            var lblIcon = new Label
+            {
+                Text = "⚖️",
+                Font = new Font("Segoe UI", 14f),
+                Width = 32,
+                Dock = DockStyle.Left,
+                TextAlign = ContentAlignment.MiddleCenter,
+            };
+
+            var pnlInfo = new Panel { Dock = DockStyle.Fill };
+            var lblName = new Label
+            {
+                Text = name,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(85, 85, 85),
+                Dock = DockStyle.Top,
+                Height = 20,
+            };
+
+            var lblMeta = new Label
+            {
+                Text = meta + "  ",
+                Font = new Font("Segoe UI", 7.5f),
+                ForeColor = Color.FromArgb(120, 120, 120),
+                Dock = DockStyle.Top,
+                Height = 18,
+            };
+
+            var lblStatus = new Label
+            {
+                Text = status,
+                Font = new Font("Segoe UI", 7f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 132, 73),
+                BackColor = Color.FromArgb(213, 245, 227),
+                AutoSize = true,
+                Padding = new Padding(4, 1, 4, 1),
+                Location = new Point(lblMeta.Text.Length * 6, 0),
+            };
+            lblMeta.Controls.Add(lblStatus);
+
+            pnlInfo.Controls.Add(lblMeta);
+            pnlInfo.Controls.Add(lblName);
+            pnl.Controls.Add(pnlInfo);
+            pnl.Controls.Add(lblIcon);
+
+            var sep = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = Color.FromArgb(238, 238, 238) };
+            pnl.Controls.Add(sep);
+
+            return pnl;
+        }
+
+        private void LoadProgramTab()
+        {
+            pnlTabContent.SuspendLayout();
+            pnlTabContent.Controls.Clear();
+
+            var programs = new[]
+            {
+                ("RISC Claim", "ฝ่ายสินไหมทดแทน"),
+                ("ทะเบียนสินไหม", "ฝ่ายสินไหมทดแทน"),
+                ("New E-Filing", "IT"),
+                ("BIS Claim", "ฝ่ายสินไหมทดแทน"),
+                ("TFRS17", "แผนกบัญชี"),
+            };
+
+            foreach (var prog in programs)
+            {
+                var pnl = CreateProgramItem(prog.Item1, prog.Item2);
+                pnl.Dock = DockStyle.Top;
+                pnlTabContent.Controls.Add(pnl);
+            }
+
+            pnlTabContent.ResumeLayout();
+        }
+
+        private Panel CreateProgramItem(string name, string dept)
+        {
+            var pnl = new Panel
+            {
+                Height = 42,
+                BackColor = Color.White,
+                Padding = new Padding(5, 4, 5, 4),
+            };
+
+            var lblIcon = new Label
+            {
+                Text = "💻",
+                Font = new Font("Segoe UI", 12f),
+                Width = 28,
+                Dock = DockStyle.Left,
+                TextAlign = ContentAlignment.MiddleCenter,
+            };
+
+            var pnlInfo = new Panel { Dock = DockStyle.Fill };
+            var lblName = new Label
+            {
+                Text = name,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(85, 85, 85),
+                Dock = DockStyle.Top,
+                Height = 18,
+            };
+            var lblDept = new Label
+            {
+                Text = dept,
+                Font = new Font("Segoe UI", 7.5f),
+                ForeColor = Color.FromArgb(120, 120, 120),
+                Dock = DockStyle.Top,
+                Height = 16,
+            };
+
+            pnlInfo.Controls.Add(lblDept);
+            pnlInfo.Controls.Add(lblName);
+
+            var btnOpen = new Button
+            {
+                Text = "เปิด",
+                Font = new Font("Segoe UI", 7.5f),
+                Width = 50,
+                Height = 18,
+                Dock = DockStyle.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(214, 228, 240),
+                Cursor = Cursors.Hand,
+            };
+            btnOpen.FlatAppearance.BorderColor = Color.FromArgb(170, 170, 170);
+            btnOpen.Click += (s, e) => ShowInfo($"เปิด {name}");
+
+            pnl.Controls.Add(btnOpen);
+            pnl.Controls.Add(pnlInfo);
+            pnl.Controls.Add(lblIcon);
+
+            var sep = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = Color.FromArgb(238, 238, 238) };
+            pnl.Controls.Add(sep);
+
+            return pnl;
+        }
+
+        private void LoadDocumentTab()
+        {
+            pnlTabContent.SuspendLayout();
+            pnlTabContent.Controls.Clear();
+
+            var docs = new[]
+            {
+                ("☑️", "FM-CLM-001 แบบฟอร์มรับแจ้งสินไหม", "Rev.5", "3NC"),
+                ("☐", "FM-CLM-002 แบบฟอร์มประเมินความเสียหาย", "Rev.3", "3NC"),
+            };
+
+            foreach (var doc in docs)
+            {
+                var pnl = CreateDocumentItem(doc.Item1, doc.Item2, doc.Item3, doc.Item4);
+                pnl.Dock = DockStyle.Top;
+                pnlTabContent.Controls.Add(pnl);
+            }
+
+            pnlTabContent.ResumeLayout();
+        }
+
+        private Panel CreateDocumentItem(string icon, string name, string rev, string craf)
+        {
+            var pnl = new Panel
+            {
+                Height = 42,
+                BackColor = Color.White,
+                Padding = new Padding(5, 4, 5, 4),
+            };
+
+            var lblIcon = new Label
+            {
+                Text = icon,
+                Font = new Font("Segoe UI", 12f),
+                Width = 28,
+                Dock = DockStyle.Left,
+                TextAlign = ContentAlignment.MiddleCenter,
+            };
+
+            var pnlInfo = new Panel { Dock = DockStyle.Fill };
+            var lblName = new Label
+            {
+                Text = name,
+                Font = new Font("Segoe UI", 8.5f),
+                ForeColor = Color.FromArgb(85, 85, 85),
+                Dock = DockStyle.Top,
+                Height = 18,
+            };
+
+            var lblMeta = new Label
+            {
+                Text = rev + "  ",
+                Font = new Font("Segoe UI", 7.5f),
+                ForeColor = Color.FromArgb(120, 120, 120),
+                Dock = DockStyle.Top,
+                Height = 16,
+            };
+
+            var lblBadge = new Label
+            {
+                Text = craf,
+                Font = new Font("Segoe UI", 7f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(22, 160, 133),
+                BackColor = Color.FromArgb(213, 245, 227),
+                AutoSize = true,
+                Padding = new Padding(4, 1, 4, 1),
+                Location = new Point(lblMeta.Text.Length * 6, 0),
+            };
+            lblMeta.Controls.Add(lblBadge);
+
+            pnlInfo.Controls.Add(lblMeta);
+            pnlInfo.Controls.Add(lblName);
+
+            var btnDownload = new Button
+            {
+                Text = "📥",
+                Font = new Font("Segoe UI", 7.5f),
+                Width = 50,
+                Height = 18,
+                Dock = DockStyle.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(214, 228, 240),
+                Cursor = Cursors.Hand,
+            };
+            btnDownload.FlatAppearance.BorderColor = Color.FromArgb(170, 170, 170);
+            btnDownload.Click += (s, e) => ShowInfo("ดาวน์โหลดแบบฟอร์ม");
+
+            pnl.Controls.Add(btnDownload);
+            pnl.Controls.Add(pnlInfo);
+            pnl.Controls.Add(lblIcon);
+
+            var sep = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = Color.FromArgb(238, 238, 238) };
+            pnl.Controls.Add(sep);
+
+            return pnl;
+        }
 
         private void PopulateHeader()
         {
@@ -258,103 +748,6 @@ namespace CMS.Presentation.Modules.KMS
                 webContent.DocumentText =
                     "<p style='font-family:Segoe UI;color:#888'>ไม่สามารถแสดงเนื้อหาได้</p>";
             }
-        }
-
-        private void BuildSidebarSections()
-        {
-            pnlSidebar.SuspendLayout();
-
-            // DockStyle.Top — add bottom sections first, top sections last
-            pnlSidebar.Controls.Add(
-                CreateSidebarSection("🕐  VERSION HISTORY", null, BuildVersionHistoryContent(), 190));
-            pnlSidebar.Controls.Add(
-                CreateSidebarSection("🔗  บทความเกี่ยวข้อง", new[] { "(อยู่ระหว่างการพัฒนา)" }, null, 52));
-            pnlSidebar.Controls.Add(
-                CreateSidebarSection("⚖️  เส้นงาน", new[] { "(อยู่ระหว่างการพัฒนา)" }, null, 52));
-            pnlSidebar.Controls.Add(
-                CreateSidebarSection("📎  ไฟล์แนบ", new[] { "(อยู่ระหว่างการพัฒนา)" }, null, 52));
-            pnlSidebar.Controls.Add(
-                CreateSidebarSection("📋  โปรแกรมที่เกี่ยวข้อง", new[] { "(อยู่ระหว่างการพัฒนา)" }, null, 52));
-
-            pnlSidebar.ResumeLayout();
-        }
-
-        private Panel CreateSidebarSection(string header, string[] links, Control extraContent, int height)
-        {
-            var pnlSection = new Panel
-            {
-                Dock      = DockStyle.Top,
-                Height    = height,
-                BackColor = Color.FromArgb(250, 250, 250),
-                Padding   = new Padding(10, 8, 10, 6),
-            };
-            pnlSection.Controls.Add(new Panel
-            {
-                Dock      = DockStyle.Bottom,
-                Height    = 1,
-                BackColor = Color.FromArgb(238, 238, 238),
-            });
-
-            if (links != null)
-            {
-                for (int i = links.Length - 1; i >= 0; i--)
-                {
-                    bool isPlaceholder = links[i].StartsWith("(");
-                    pnlSection.Controls.Add(new Label
-                    {
-                        Dock      = DockStyle.Top,
-                        Height    = 18,
-                        AutoSize  = false,
-                        Font      = new Font("Segoe UI", 8f),
-                        ForeColor = isPlaceholder ? Color.FromArgb(170, 170, 170) : Color.FromArgb(46, 116, 181),
-                        Text      = links[i],
-                        Padding   = new Padding(2, 1, 0, 0),
-                        Cursor    = isPlaceholder ? Cursors.Default : Cursors.Hand,
-                    });
-                }
-            }
-
-            if (extraContent != null) pnlSection.Controls.Add(extraContent);
-
-            pnlSection.Controls.Add(new Label
-            {
-                Dock      = DockStyle.Top,
-                Height    = 22,
-                AutoSize  = false,
-                Font      = new Font("Segoe UI", 8f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(46, 116, 181),
-                Text      = header,
-                TextAlign = ContentAlignment.MiddleLeft,
-            });
-            return pnlSection;
-        }
-
-        private Control BuildVersionHistoryContent()
-        {
-            var pnl = new Panel { Dock = DockStyle.Top, Height = 162, BackColor = Color.Transparent };
-            var btnAll = new Button
-            {
-                Dock                    = DockStyle.Bottom,
-                Height                  = 24,
-                Text                    = "ดู History ทั้งหมด",
-                Font                    = new Font("Segoe UI", 8f),
-                BackColor               = Color.FromArgb(214, 228, 240),
-                ForeColor               = Color.FromArgb(30, 58, 95),
-                FlatStyle               = FlatStyle.Flat,
-                Cursor                  = Cursors.Hand,
-                UseVisualStyleBackColor = false,
-            };
-            btnAll.FlatAppearance.BorderColor = Color.FromArgb(46, 116, 181);
-            btnAll.FlatAppearance.BorderSize  = 1;
-            btnAll.Click += BtnShowAllHistory_Click;
-
-            pnlVersionList.Dock       = DockStyle.Fill;
-            pnlVersionList.BackColor  = Color.White;
-            pnlVersionList.AutoScroll = true;
-
-            pnl.Controls.Add(pnlVersionList);
-            pnl.Controls.Add(btnAll);
-            return pnl;
         }
 
         // ── Colour helpers ────────────────────────────────────────────────────

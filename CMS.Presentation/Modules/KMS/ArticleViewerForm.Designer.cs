@@ -39,6 +39,16 @@ namespace CMS.Presentation.Modules.KMS
             this.lblCategoryBadge = new System.Windows.Forms.Label();
             this.lblStatusBadge = new System.Windows.Forms.Label();
             this.pnlSidebar = new System.Windows.Forms.Panel();
+            this.pnlMappingSection = new System.Windows.Forms.Panel();
+            this.pnlTabContent = new System.Windows.Forms.Panel();
+            this.pnlTabHeaders = new System.Windows.Forms.Panel();
+            this.btnTabDoc = new System.Windows.Forms.Button();
+            this.btnTabProgram = new System.Windows.Forms.Button();
+            this.btnTabWorkflow = new System.Windows.Forms.Button();
+            this.btnTabRelated = new System.Windows.Forms.Button();
+            this.btnTabAttach = new System.Windows.Forms.Button();
+            this.pnlMappingHeader = new System.Windows.Forms.Panel();
+            this.lblMappingTitle = new System.Windows.Forms.Label();
             this.lblOfficialBadge = new System.Windows.Forms.Label();
             this.pnlVersionList = new System.Windows.Forms.Panel();
             this.panel1 = new System.Windows.Forms.Panel();
@@ -53,6 +63,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlArticleInfo.SuspendLayout();
             this.tblMeta.SuspendLayout();
             this.flpBadges.SuspendLayout();
+            this.pnlSidebar.SuspendLayout();
+            this.pnlMappingSection.SuspendLayout();
+            this.pnlTabHeaders.SuspendLayout();
+            this.pnlMappingHeader.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlHeader
@@ -418,11 +432,163 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlSidebar.AutoScroll = true;
             this.pnlSidebar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(250)))), ((int)(((byte)(250)))));
+            this.pnlSidebar.Controls.Add(this.pnlMappingSection);
             this.pnlSidebar.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlSidebar.Location = new System.Drawing.Point(0, 0);
             this.pnlSidebar.Name = "pnlSidebar";
             this.pnlSidebar.Size = new System.Drawing.Size(696, 591);
             this.pnlSidebar.TabIndex = 0;
+            // 
+            // pnlMappingSection
+            // 
+            this.pnlMappingSection.BackColor = System.Drawing.Color.White;
+            this.pnlMappingSection.Controls.Add(this.pnlTabContent);
+            this.pnlMappingSection.Controls.Add(this.pnlTabHeaders);
+            this.pnlMappingSection.Controls.Add(this.pnlMappingHeader);
+            this.pnlMappingSection.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlMappingSection.Location = new System.Drawing.Point(0, 0);
+            this.pnlMappingSection.Name = "pnlMappingSection";
+            this.pnlMappingSection.Size = new System.Drawing.Size(696, 591);
+            this.pnlMappingSection.TabIndex = 0;
+            // 
+            // pnlTabContent
+            // 
+            this.pnlTabContent.AutoScroll = true;
+            this.pnlTabContent.BackColor = System.Drawing.Color.White;
+            this.pnlTabContent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlTabContent.Location = new System.Drawing.Point(0, 72);
+            this.pnlTabContent.Name = "pnlTabContent";
+            this.pnlTabContent.Padding = new System.Windows.Forms.Padding(8, 8, 8, 8);
+            this.pnlTabContent.Size = new System.Drawing.Size(696, 519);
+            this.pnlTabContent.TabIndex = 2;
+            // 
+            // pnlTabHeaders
+            // 
+            this.pnlTabHeaders.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.pnlTabHeaders.Controls.Add(this.btnTabDoc);
+            this.pnlTabHeaders.Controls.Add(this.btnTabProgram);
+            this.pnlTabHeaders.Controls.Add(this.btnTabWorkflow);
+            this.pnlTabHeaders.Controls.Add(this.btnTabRelated);
+            this.pnlTabHeaders.Controls.Add(this.btnTabAttach);
+            this.pnlTabHeaders.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlTabHeaders.Location = new System.Drawing.Point(0, 36);
+            this.pnlTabHeaders.Name = "pnlTabHeaders";
+            this.pnlTabHeaders.Padding = new System.Windows.Forms.Padding(6, 0, 6, 0);
+            this.pnlTabHeaders.Size = new System.Drawing.Size(696, 36);
+            this.pnlTabHeaders.TabIndex = 1;
+            // 
+            // btnTabDoc
+            // 
+            this.btnTabDoc.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.btnTabDoc.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnTabDoc.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnTabDoc.FlatAppearance.BorderSize = 0;
+            this.btnTabDoc.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTabDoc.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnTabDoc.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(85)))), ((int)(((byte)(85)))));
+            this.btnTabDoc.Location = new System.Drawing.Point(446, 0);
+            this.btnTabDoc.Name = "btnTabDoc";
+            this.btnTabDoc.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
+            this.btnTabDoc.Size = new System.Drawing.Size(110, 36);
+            this.btnTabDoc.TabIndex = 4;
+            this.btnTabDoc.Text = "📋 เอกสาร (1)";
+            this.btnTabDoc.UseVisualStyleBackColor = false;
+            this.btnTabDoc.Click += new System.EventHandler(this.BtnTab_Click);
+            // 
+            // btnTabProgram
+            // 
+            this.btnTabProgram.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.btnTabProgram.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnTabProgram.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnTabProgram.FlatAppearance.BorderSize = 0;
+            this.btnTabProgram.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTabProgram.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnTabProgram.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(85)))), ((int)(((byte)(85)))));
+            this.btnTabProgram.Location = new System.Drawing.Point(326, 0);
+            this.btnTabProgram.Name = "btnTabProgram";
+            this.btnTabProgram.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
+            this.btnTabProgram.Size = new System.Drawing.Size(120, 36);
+            this.btnTabProgram.TabIndex = 3;
+            this.btnTabProgram.Text = "💻 โปรแกรม (5)";
+            this.btnTabProgram.UseVisualStyleBackColor = false;
+            this.btnTabProgram.Click += new System.EventHandler(this.BtnTab_Click);
+            // 
+            // btnTabWorkflow
+            // 
+            this.btnTabWorkflow.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.btnTabWorkflow.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnTabWorkflow.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnTabWorkflow.FlatAppearance.BorderSize = 0;
+            this.btnTabWorkflow.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTabWorkflow.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnTabWorkflow.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(85)))), ((int)(((byte)(85)))));
+            this.btnTabWorkflow.Location = new System.Drawing.Point(216, 0);
+            this.btnTabWorkflow.Name = "btnTabWorkflow";
+            this.btnTabWorkflow.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
+            this.btnTabWorkflow.Size = new System.Drawing.Size(110, 36);
+            this.btnTabWorkflow.TabIndex = 2;
+            this.btnTabWorkflow.Text = "⚖️ เส้นงาน (2)";
+            this.btnTabWorkflow.UseVisualStyleBackColor = false;
+            this.btnTabWorkflow.Click += new System.EventHandler(this.BtnTab_Click);
+            // 
+            // btnTabRelated
+            // 
+            this.btnTabRelated.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.btnTabRelated.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnTabRelated.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnTabRelated.FlatAppearance.BorderSize = 0;
+            this.btnTabRelated.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTabRelated.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnTabRelated.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(85)))), ((int)(((byte)(85)))));
+            this.btnTabRelated.Location = new System.Drawing.Point(106, 0);
+            this.btnTabRelated.Name = "btnTabRelated";
+            this.btnTabRelated.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
+            this.btnTabRelated.Size = new System.Drawing.Size(110, 36);
+            this.btnTabRelated.TabIndex = 1;
+            this.btnTabRelated.Text = "🔗 ความรู้ (3)";
+            this.btnTabRelated.UseVisualStyleBackColor = false;
+            this.btnTabRelated.Click += new System.EventHandler(this.BtnTab_Click);
+            // 
+            // btnTabAttach
+            // 
+            this.btnTabAttach.BackColor = System.Drawing.Color.White;
+            this.btnTabAttach.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnTabAttach.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnTabAttach.FlatAppearance.BorderSize = 0;
+            this.btnTabAttach.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTabAttach.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.btnTabAttach.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnTabAttach.Location = new System.Drawing.Point(6, 0);
+            this.btnTabAttach.Name = "btnTabAttach";
+            this.btnTabAttach.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
+            this.btnTabAttach.Size = new System.Drawing.Size(100, 36);
+            this.btnTabAttach.TabIndex = 0;
+            this.btnTabAttach.Text = "📎 ไฟล์แนบ (2)";
+            this.btnTabAttach.UseVisualStyleBackColor = false;
+            this.btnTabAttach.Click += new System.EventHandler(this.BtnTab_Click);
+            // 
+            // pnlMappingHeader
+            // 
+            this.pnlMappingHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.pnlMappingHeader.Controls.Add(this.lblMappingTitle);
+            this.pnlMappingHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlMappingHeader.Location = new System.Drawing.Point(0, 0);
+            this.pnlMappingHeader.Name = "pnlMappingHeader";
+            this.pnlMappingHeader.Padding = new System.Windows.Forms.Padding(10, 8, 10, 6);
+            this.pnlMappingHeader.Size = new System.Drawing.Size(696, 36);
+            this.pnlMappingHeader.TabIndex = 0;
+            // 
+            // lblMappingTitle
+            // 
+            this.lblMappingTitle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblMappingTitle.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblMappingTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblMappingTitle.Location = new System.Drawing.Point(10, 8);
+            this.lblMappingTitle.Name = "lblMappingTitle";
+            this.lblMappingTitle.Size = new System.Drawing.Size(676, 22);
+            this.lblMappingTitle.TabIndex = 0;
+            this.lblMappingTitle.Text = "🔗 MAPPING รายการที่เกี่ยวข้อง";
+            this.lblMappingTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblOfficialBadge
             // 
@@ -481,6 +647,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tblMeta.ResumeLayout(false);
             this.flpBadges.ResumeLayout(false);
             this.flpBadges.PerformLayout();
+            this.pnlSidebar.ResumeLayout(false);
+            this.pnlMappingSection.ResumeLayout(false);
+            this.pnlTabHeaders.ResumeLayout(false);
+            this.pnlMappingHeader.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -513,6 +683,16 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.WebBrowser       webContent;
         private System.Windows.Forms.Panel            pnlSidebar;
         private System.Windows.Forms.Panel            pnlVersionList;
-        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Panel            panel1;
+        private System.Windows.Forms.Panel            pnlMappingSection;
+        private System.Windows.Forms.Panel            pnlMappingHeader;
+        private System.Windows.Forms.Label            lblMappingTitle;
+        private System.Windows.Forms.Panel            pnlTabHeaders;
+        private System.Windows.Forms.Button           btnTabAttach;
+        private System.Windows.Forms.Button           btnTabRelated;
+        private System.Windows.Forms.Button           btnTabWorkflow;
+        private System.Windows.Forms.Button           btnTabProgram;
+        private System.Windows.Forms.Button           btnTabDoc;
+        private System.Windows.Forms.Panel            pnlTabContent;
     }
 }
