@@ -14,6 +14,8 @@ namespace CMS.Presentation.Modules.KMS
     /// <summary>
     /// หน้าตั้งค่า Category สำหรับ Knowledge Base (MOD-006)
     /// รองรับ: เพิ่ม / แก้ไข / Soft-Delete รายการใน KMS.m_KBCategory
+    /// ออกแบบตาม kms_category.html (lines 603–788)
+    /// เปิดแบบฝังใน KBMainForm เหมือน ArticleViewerForm (TopLevel=false, Dock=Fill)
     /// </summary>
     public partial class KBCategoryForm : Form, IKBCategoryController
     {
@@ -21,6 +23,14 @@ namespace CMS.Presentation.Modules.KMS
         private readonly UserContext _user;
 
         private List<KBCategory> _categories = new List<KBCategory>();
+
+        /// <summary>
+        /// Fired when the user clicks "← กลับ"; parent form handles navigation.
+        /// </summary>
+        public event EventHandler BackRequested;
+
+        /// <summary>Backing store for CategoryCode (not shown in UI but required by interface).</summary>
+        private string _categoryCodeValue = string.Empty;
 
         public KBCategoryForm(UserContext user)
         {
@@ -60,6 +70,16 @@ namespace CMS.Presentation.Modules.KMS
             if (lstCategories.SelectedItems.Count == 0) return;
             var cat = lstCategories.SelectedItems[0].Tag as KBCategory;
             _presenter.OnCategorySelected(cat);
+            // Update edit card header to include the category name
+            if (cat != null)
+                lblEditCardHeader.Text = "  ✏️ แก้ไขหมวดหมู่: " + cat.CategoryName;
+            ClearDirty();
+        }
+
+        private void BtnBack_Click(object sender, EventArgs e)
+        {
+            if (BackRequested != null)
+                BackRequested(this, EventArgs.Empty);
         }
 
         private void BtnNew_Click(object sender, EventArgs e)
@@ -76,6 +96,7 @@ namespace CMS.Presentation.Modules.KMS
             if (_presenter == null) return;
             if (!ValidateInput()) return;
             _presenter.Save();
+            ClearDirty();
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
@@ -91,24 +112,67 @@ namespace CMS.Presentation.Modules.KMS
                 _presenter.Deactivate();
         }
 
-        // ── IKBCategoryView ──────────────────────────────────────────────────
+        // ── Dirty tracking ────────────────────────────────────────────────────
 
+        private void TxtName_TextChanged(object sender, EventArgs e)
+        {
+            MarkDirty();
+            UpdateIconFullPreview();
+        }
+
+        private void TxtDescription_TextChanged(object sender, EventArgs e) { MarkDirty(); }
+
+        private void NumSortOrder_ValueChanged(object sender, EventArgs e) { MarkDirty(); }
+
+        private void CboParent_SelectedIndexChanged(object sender, EventArgs e) { MarkDirty(); }
+
+        private void CboIcon_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            MarkDirty();
+            UpdateIconPreview();
+        }
+
+        private void MarkDirty()
+        {
+            lblDirtyHint.Visible = true;
+        }
+
+        private void ClearDirty()
+        {
+            lblDirtyHint.Visible = false;
+        }
+
+        // ── IKBCategoryController ─────────────────────────────────────────────
+
+        /// <summary>
+        /// CategoryCode is not displayed in the redesigned form but is required
+        /// by IKBCategoryController. Stored internally.
+        /// </summary>
         public string CategoryCode
         {
-            get { return txtCode.Text.Trim(); }
-            set { txtCode.Text = value; }
+            get { return _categoryCodeValue; }
+            set { _categoryCodeValue = value ?? string.Empty; }
         }
 
         public string CategoryName
         {
             get { return txtName.Text.Trim(); }
-            set { txtName.Text = value; }
+            set
+            {
+                txtName.Text = value;
+                UpdateIconFullPreview();
+            }
         }
 
+        /// <summary>
+        /// Icon stored as the emoji prefix of the selected combo item (e.g. "❓").
+        /// On get: returns the first "word" (emoji) of the selected item.
+        /// On set: finds the matching item by emoji prefix.
+        /// </summary>
         public string Icon
         {
-            get { return txtIcon.Text.Trim(); }
-            set { txtIcon.Text = value; }
+            get { return GetIconEmoji(); }
+            set { SelectIconByEmoji(value); }
         }
 
         public string Description
@@ -120,7 +184,11 @@ namespace CMS.Presentation.Modules.KMS
         public int SortOrder
         {
             get { return (int)numSortOrder.Value; }
-            set { numSortOrder.Value = value; }
+            set
+            {
+                if (value >= numSortOrder.Minimum && value <= numSortOrder.Maximum)
+                    numSortOrder.Value = value;
+            }
         }
 
         public int? ParentCategoryId
@@ -133,12 +201,22 @@ namespace CMS.Presentation.Modules.KMS
 
         public string FormTitleText
         {
-            set { lblFormTitle.Text = value; }
+            set { lblEditCardHeader.Text = "  ✏️ " + value; }
         }
 
         public bool DeleteEnabled
         {
-            set { btnDelete.Enabled = value; }
+            set
+            {
+                btnDelete.Enabled = value;
+                // Mirror active/inactive state in the read-only status combo
+                cboStatus.SelectedIndex = value ? 0 : 1;
+                // Update info-row status badge
+                lblInfoStatusVal.Text = value ? "● Active" : "○ Inactive";
+                lblInfoStatusVal.ForeColor = value
+                    ? Color.FromArgb(30, 132, 73)
+                    : Color.FromArgb(150, 150, 150);
+            }
         }
 
         public string DeleteButtonText
@@ -168,22 +246,40 @@ namespace CMS.Presentation.Modules.KMS
             MessageBox.Show(message, "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        // ── Private UI helpers ───────────────────────────────────────────────
+        // ── Private UI helpers ────────────────────────────────────────────────
 
         private void _view_ClearForm()
         {
-            EditingId           = null;
-            lblFormTitle.Text   = "เพิ่ม Category ใหม่";
-            txtCode.Text        = string.Empty;
-            txtName.Text        = string.Empty;
-            txtIcon.Text        = string.Empty;
-            txtDescription.Text = string.Empty;
-            numSortOrder.Value  = 0;
-            btnDelete.Enabled   = false;
-            btnDelete.Text      = "🗑️ ปิดใช้งาน";
+            EditingId              = null;
+            _categoryCodeValue     = string.Empty;
+            lblEditCardHeader.Text = "  ✏️ เพิ่ม Category ใหม่";
+            txtName.Text           = string.Empty;
+            if (cboIcon.Items.Count > 0)
+                cboIcon.SelectedIndex = 0;
+            txtDescription.Text    = string.Empty;
+            numSortOrder.Value     = 1;
+            cboStatus.SelectedIndex = 0;
+            btnDelete.Enabled      = false;
+            btnDelete.Text         = "🗑️ ลบหมวดหมู่";
             lstCategories.SelectedItems.Clear();
+            ClearDirty();
+            ClearDetailPanel();
             RefreshParentCombo();
-            txtCode.Focus();
+            txtName.Focus();
+        }
+
+        private void ClearDetailPanel()
+        {
+            lblStatTotalNum.Text     = "—";
+            lblStatPublishedNum.Text = "—";
+            lblStatDraftNum.Text     = "—";
+            lblInfoCreatedByVal.Text  = "—";
+            lblInfoCreatedDateVal.Text = "—";
+            lblInfoUpdatedVal.Text    = "—";
+            lblInfoStatusVal.Text     = "—";
+            lblInfoStatusVal.ForeColor = Color.FromArgb(120, 120, 120);
+            lblInfoPathVal.Text       = "—";
+            lstArticleUsage.Items.Clear();
         }
 
         private void RefreshList()
@@ -218,7 +314,7 @@ namespace CMS.Presentation.Modules.KMS
         private void RefreshParentCombo()
         {
             cboParent.Items.Clear();
-            cboParent.Items.Add(new ComboItem("(ไม่มี Parent — Root Category)", null));
+            cboParent.Items.Add(new ComboItem("— ไม่มี (หมวดหมู่หลัก / Root) —", null));
             foreach (var c in _categories.Where(x => x.IsActive))
             {
                 if (EditingId.HasValue && c.CategoryID == EditingId.Value) continue;
@@ -250,15 +346,50 @@ namespace CMS.Presentation.Modules.KMS
             return ci != null ? ci.Value : null;
         }
 
+        /// <summary>Returns the emoji portion of the selected icon combo item.</summary>
+        private string GetIconEmoji()
+        {
+            if (cboIcon.SelectedItem == null) return string.Empty;
+            string item = cboIcon.SelectedItem.ToString();
+            // Items are formatted as "❓ คำถาม" — split on first space
+            int spaceIdx = item.IndexOf(' ');
+            return spaceIdx > 0 ? item.Substring(0, spaceIdx) : item;
+        }
+
+        /// <summary>Selects the combo item whose emoji prefix matches <paramref name="emoji"/>.</summary>
+        private void SelectIconByEmoji(string emoji)
+        {
+            if (string.IsNullOrEmpty(emoji)) { cboIcon.SelectedIndex = 0; return; }
+            for (int i = 0; i < cboIcon.Items.Count; i++)
+            {
+                string item = cboIcon.Items[i].ToString();
+                if (item.StartsWith(emoji))
+                {
+                    cboIcon.SelectedIndex = i;
+                    return;
+                }
+            }
+            cboIcon.SelectedIndex = 0;
+        }
+
+        private void UpdateIconPreview()
+        {
+            string emoji = GetIconEmoji();
+            lblIconPreview.Text = string.IsNullOrEmpty(emoji) ? "❓" : emoji;
+            UpdateIconFullPreview();
+        }
+
+        private void UpdateIconFullPreview()
+        {
+            string emoji = GetIconEmoji();
+            string name  = txtName.Text.Trim();
+            lblIconFullPreview.Text = string.Format("{0} {1}",
+                string.IsNullOrEmpty(emoji) ? "❓" : emoji,
+                string.IsNullOrEmpty(name)  ? "ชื่อ Category" : name);
+        }
+
         private bool ValidateInput()
         {
-            if (string.IsNullOrWhiteSpace(txtCode.Text))
-            {
-                MessageBox.Show("กรุณากรอกรหัส Category", "กรุณากรอกข้อมูล",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtCode.Focus();
-                return false;
-            }
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
                 MessageBox.Show("กรุณากรอกชื่อ Category", "กรุณากรอกข้อมูล",

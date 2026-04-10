@@ -690,7 +690,8 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label           lblTitle;
         private System.Windows.Forms.Button          btnSettings;
         private System.Windows.Forms.SplitContainer  splitMain;
-        private System.Windows.Forms.Panel           pnlViewerHost;   // created in KBMainForm.cs constructor
+        private System.Windows.Forms.Panel           pnlViewerHost;    // created in KBMainForm.cs constructor
+        private System.Windows.Forms.Panel           pnlCategoryHost;  // created in KBMainForm.cs constructor
         private System.Windows.Forms.Panel           panelMainRight;
         private System.Windows.Forms.Panel           pnlLeftHeader;
         private System.Windows.Forms.Label           lblCategoryHeader;

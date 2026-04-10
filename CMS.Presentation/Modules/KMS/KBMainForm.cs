@@ -25,13 +25,16 @@ namespace CMS.Presentation.Modules.KMS
         private ArticleViewerForm _activeViewer          = null;
         private int?              _activeViewerArticleId = null;
 
+        // ── Category settings embedded panel state ───────────────────────────────
+        private KBCategoryForm _activeCategoryForm = null;
+
         // ── Dialog / child-form factories (injected by composition root) ────────
         /// <summary>Creates and returns a pre-wired ArticleViewerForm for a given article.</summary>
         private Func<KBArticle, ArticleViewerForm> _viewerFactory;
         /// <summary>Shows a pre-wired KBEditorDialog. Returns the dialog result.</summary>
         private Func<KBArticle, DialogResult> _editorFactory;
-        /// <summary>Shows the pre-wired KBCategoryForm as a modal dialog.</summary>
-        private Action _categorySettingsFactory;
+        /// <summary>Creates and returns a pre-wired KBCategoryForm ready to be embedded.</summary>
+        private Func<KBCategoryForm> _categoryFormFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBImportWizardForm. Returns DialogResult.</summary>
         private Func<DialogResult> _importWizardFactory;
 
@@ -50,8 +53,20 @@ namespace CMS.Presentation.Modules.KMS
                 Dock      = System.Windows.Forms.DockStyle.Fill,
                 Visible   = false,
             };
-            Controls.Add(pnlViewerHost);      // added after splitMain → sits behind it by default
-            pnlViewerHost.BringToFront();      // move in front of splitMain (pnlHeader stays on top via Dock=Top)
+            Controls.Add(pnlViewerHost);
+            pnlViewerHost.BringToFront();
+
+            // pnlCategoryHost hosts the embedded KBCategoryForm (same pattern as pnlViewerHost)
+            pnlCategoryHost = new System.Windows.Forms.Panel
+            {
+                Name      = "pnlCategoryHost",
+                BackColor = System.Drawing.Color.White,
+                Dock      = System.Windows.Forms.DockStyle.Fill,
+                Visible   = false,
+            };
+            Controls.Add(pnlCategoryHost);
+            pnlCategoryHost.BringToFront();
+
             splitMain.BringToFront();          // restore splitMain as the visible default layer
         }
 
@@ -74,11 +89,11 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachFactories(
             Func<KBArticle, ArticleViewerForm> viewerFactory,
             Func<KBArticle, DialogResult>       editorFactory,
-            Action                              categorySettingsFactory)
+            Func<KBCategoryForm>                categoryFormFactory)
         {
-            _viewerFactory           = viewerFactory;
-            _editorFactory           = editorFactory;
-            _categorySettingsFactory = categorySettingsFactory;
+            _viewerFactory       = viewerFactory;
+            _editorFactory       = editorFactory;
+            _categoryFormFactory = categoryFormFactory;
         }
 
         /// <summary>
@@ -191,15 +206,13 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnNewCategory_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            _categorySettingsFactory?.Invoke();
-            _presenter.LoadCategoryTree();
+            ShowCategorySettings();
         }
 
         private void BtnSettings_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            _categorySettingsFactory?.Invoke();
-            _presenter.LoadCategoryTree();
+            ShowCategorySettings();
         }
 
         private void BtnImportExcel_Click(object sender, EventArgs e)
@@ -219,6 +232,49 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             _presenter.ShowReport();
+        }
+
+        // ── Category settings navigation (embedded over splitMain) ──────────────
+
+        private void ShowCategorySettings()
+        {
+            CloseActiveCategoryForm();
+
+            var catForm = _categoryFormFactory != null ? _categoryFormFactory() : null;
+            if (catForm == null) return;
+
+            catForm.BackRequested  += OnCategoryBackRequested;
+            catForm.TopLevel        = false;
+            catForm.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            catForm.Dock            = System.Windows.Forms.DockStyle.Fill;
+
+            splitMain.Visible = false;
+            pnlCategoryHost.Controls.Add(catForm);
+            pnlCategoryHost.Visible = true;
+            pnlCategoryHost.BringToFront();
+            catForm.Show();
+
+            _activeCategoryForm = catForm;
+        }
+
+        private void OnCategoryBackRequested(object sender, EventArgs e)
+        {
+            CloseActiveCategoryForm();
+
+            pnlCategoryHost.Visible = false;
+            splitMain.Visible       = true;
+
+            if (_presenter != null)
+                _presenter.LoadCategoryTree();
+        }
+
+        private void CloseActiveCategoryForm()
+        {
+            if (_activeCategoryForm == null) return;
+            _activeCategoryForm.BackRequested -= OnCategoryBackRequested;
+            pnlCategoryHost.Controls.Remove(_activeCategoryForm);
+            _activeCategoryForm.Dispose();
+            _activeCategoryForm = null;
         }
 
         // ── Viewer navigation (full-screen over splitMain) ───────────────────────

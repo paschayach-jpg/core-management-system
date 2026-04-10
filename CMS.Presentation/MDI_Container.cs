@@ -1185,8 +1185,14 @@ namespace CMS.Presentation
                 },
                 // editorFactory — เปิด KBEditorDialog พร้อม presenter
                 article => OpenKBEditorDialog(article),
-                // categorySettingsFactory — เปิดหน้าตั้งค่า Category
-                () => OpenKBCategorySettings());
+                // categoryFormFactory — สร้าง KBCategoryForm พร้อม presenter สำหรับฝังใน KBMainForm
+                () =>
+                {
+                    var catForm      = new KBCategoryForm(_currentUser);
+                    var catPresenter = new KBCategoryController(catForm, _kbCategoryService, _currentUser);
+                    catForm.AttachPresenter(catPresenter);
+                    return catForm;
+                });
 
             // importWizardFactory — สร้าง KBImportWizardForm พร้อม presenter
             form.AttachImportWizardFactory(() =>
@@ -1510,6 +1516,8 @@ namespace CMS.Presentation
             var form      = new KBCategoryForm(_currentUser);
             var presenter = new KBCategoryController(form, _kbCategoryService, _currentUser);
             form.AttachPresenter(presenter);
+            // When opened standalone (menu route), "← กลับ" closes the MDI child
+            form.BackRequested += (s, e) => form.Close();
             OpenChildForm(form);
         }
         private void SyncEmployeeFromApi()
