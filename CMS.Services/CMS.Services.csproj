@@ -73,6 +73,7 @@
     <Compile Include="Interfaces\IMenuService.cs" />
     <Compile Include="Interfaces\IKBCategoryService.cs" />
     <Compile Include="Interfaces\IKBArticleService.cs" />
+    <Compile Include="Interfaces\IKBDashboardService.cs" />
     <Compile Include="DTOs\ShareAccessResult.cs" />
     <Compile Include="DTOs\CreateExternalShareRequest.cs" />
     <Compile Include="DTOs\CreateInternalShareRequest.cs" />
@@ -97,6 +98,7 @@
     <Compile Include="MenuService.cs" />
     <Compile Include="KBCategoryService.cs" />
     <Compile Include="KBArticleService.cs" />
+    <Compile Include="KBDashboardService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">

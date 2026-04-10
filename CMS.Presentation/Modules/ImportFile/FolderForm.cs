@@ -1262,6 +1262,7 @@ namespace CMS.Presentation
             switch ((action ?? string.Empty).Trim())
             {
                 case "KnowledgeBaseForm":
+                case "KBMainForm":
                 case "KBCategoryForm":
                 case "ReportExcel":
                 case "AuditLog":
@@ -1384,11 +1385,11 @@ namespace CMS.Presentation
                 case "syncemployee":
                     return "SyncEmployee";
                 case "knowledgebaseform":
-                      return "KnowledgeBaseForm";
+                case "kbmainform":
+                      return "KBMainForm";
                 case "knowledgebase":
                 case "kms":
-                case "kb":
-                    return "KnowledgeBaseForm";
+                    return "KBMainForm";
                 case "kbcategoryform":
                 case "kbcategory":
                     return "KBCategoryForm";
@@ -1530,9 +1531,9 @@ namespace CMS.Presentation
                 case "knowledge_base":
                 case "knowledgebase":
                 case "knowledgebaseform":
+                case "kbmainform":
                 case "kms":
-                case "kb":
-                    return "KnowledgeBaseForm";
+                    return "KBMainForm";
                 case "kb_category":
                 case "kbcategory":
                     return "KBCategoryForm";

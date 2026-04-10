@@ -78,7 +78,11 @@
     <Compile Include="Models\KBArticle.cs" />
     <Compile Include="Models\KBVersion.cs" />
     <Compile Include="Models\KBArticleLink.cs" />
+    <Compile Include="Models\KBImportValidationResult.cs" />
     <Compile Include="Models\MenuItem.cs" />
+    <Compile Include="Models\KBDashboardStats.cs" />
+    <Compile Include="Models\KBMonthlyArticle.cs" />
+    <Compile Include="Models\KBTopArticle.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

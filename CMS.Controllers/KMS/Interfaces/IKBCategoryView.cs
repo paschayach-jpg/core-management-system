@@ -1,7 +1,7 @@
 ﻿using CMS.Domain.Models;
 using System.Collections.Generic;
 
-namespace CMS.Controllers.KBS.Interfaces
+namespace CMS.Controllers.KMS.Interfaces
 {
     public interface IKBCategoryView
     {

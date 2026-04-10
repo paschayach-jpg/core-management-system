@@ -53,7 +53,7 @@
     <Compile Include="DMS\Document\Interfaces\IFolderSettingsController.cs" />
     <Compile Include="DMS\Document\Interfaces\IUserAccountLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IUserAdminController.cs" />
-      <Compile Include="DMS\Document\Interfaces\ILoginAccountController.cs" />
+    <Compile Include="DMS\Document\Interfaces\ILoginAccountController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAccessShareController.cs" />
     <Compile Include="DMS\Document\Interfaces\IApprovalInboxController.cs" />
     <Compile Include="DMS\Document\Interfaces\IApprovalWorkflowController.cs" />
@@ -62,8 +62,9 @@
     <Compile Include="DMS\Document\Interfaces\IRecycleBinController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFileBrowseController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFileUploadController.cs" />
+    <Compile Include="DMS\Document\Interfaces\ILoginAccountController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFolderReadLookupController.cs" />
-      <Compile Include="DMS\Document\Interfaces\IFileDocumentLookupController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IFileDocumentLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFilePermissionAclController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFolderPermissionLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuthorityConfigController.cs" />
@@ -114,6 +115,18 @@
     <Compile Include="DMS\Document\AuthorityOrgLookupController.cs" />
     <Compile Include="DMS\Document\UserAccessOrgLookupController.cs" />
     <Compile Include="DMS\Document\FolderTemplateController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBImportWizardController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBMainController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBEditorController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBCategoryController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IArticleViewerController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBDashboardController.cs" />
+    <Compile Include="KMS\KB\KBImportWizardController.cs" />
+    <Compile Include="KMS\KB\KBMainController.cs" />
+    <Compile Include="KMS\KB\KBEditorController.cs" />
+    <Compile Include="KMS\KB\KBCategoryController.cs" />
+    <Compile Include="KMS\KB\ArticleViewerController.cs" />
+    <Compile Include="KMS\KB\KBDashboardController.cs" />
     <Compile Include="DMS\Document\UserOrgVisibilityController.cs" />
     <Compile Include="DMS\Document\EmployeeDirectoryController.cs" />
     <Compile Include="DMS\Document\UploadCheckpointController.cs" />
@@ -125,12 +138,6 @@
     <Compile Include="DMS\Document\FolderCommandController.cs" />
     <Compile Include="DMS\Document\FileCommandController.cs" />
     <Compile Include="DMS\Document\KBController.cs" />
-    <Compile Include="KMS\Interfaces\IKnowledgeBaseView.cs" />
-    <Compile Include="KMS\Interfaces\IArticleEditorDialogView.cs" />
-    <Compile Include="KMS\Interfaces\IKBCategoryView.cs" />
-    <Compile Include="KMS\KnowledgeBasePresenter.cs" />
-    <Compile Include="KMS\ArticleEditorDialogPresenter.cs" />
-    <Compile Include="KMS\KBCategoryPresenter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">

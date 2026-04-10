@@ -176,7 +176,8 @@ namespace CMS.Presentation
 
                     case "KnowledgeBase":
                     case "KnowledgeBaseForm":
-                        if (!TryRequestMdiAction(context, "KnowledgeBaseForm"))
+                    case "KBMainForm":
+                        if (!TryRequestMdiAction(context, "KBMainForm"))
                             MessageBox.Show("กรุณาเปิด Knowledge Base ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
                     case "KBCategoryForm":
