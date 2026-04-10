@@ -14,7 +14,7 @@ namespace CMS.Presentation.Modules.KMS
     /// <summary>
     /// KMS-03 Article Viewer — แสดงรายละเอียดบทความ Knowledge Base
     /// ออกแบบตาม KMS_Wireframe_UI_v2.html / screen-kms03
-    /// ฝังใน panelMainRight ของ KnowledgeBaseForm (TopLevel = false)
+    /// ฝังใน panelMainRight ของ KBMainForm (TopLevel = false)
     /// </summary>
     public partial class ArticleViewerForm : Form, IArticleViewerView
     {

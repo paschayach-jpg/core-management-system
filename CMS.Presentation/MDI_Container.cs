@@ -1167,8 +1167,8 @@ namespace CMS.Presentation
                 return;
             }
 
-            var form      = new KnowledgeBaseForm();
-            var presenter = new KnowledgeBasePresenter(
+            var form      = new KBMainForm();
+            var presenter = new KBMainPresenter(
                 form, _kbCategoryService, _kbArticleService, _currentUser);
 
             form.AttachPresenter(presenter, _currentUser);
@@ -1443,6 +1443,7 @@ namespace CMS.Presentation
                     SyncEmployeeFromApi();
                     return true;
                 case "KnowledgeBaseForm":
+                case "KBMainForm":
                     OpenKnowledgeBase();
                     return true;
                 case "KBCategoryForm":

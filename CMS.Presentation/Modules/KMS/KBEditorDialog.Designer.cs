@@ -505,7 +505,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabRelated.Location = new System.Drawing.Point(4, 29);
             this.tabRelated.Name = "tabRelated";
             this.tabRelated.Padding = new System.Windows.Forms.Padding(4);
-            this.tabRelated.Size = new System.Drawing.Size(949, 187);
+            this.tabRelated.Size = new System.Drawing.Size(1378, 187);
             this.tabRelated.TabIndex = 1;
             this.tabRelated.Text = "🔗 ความรู้ที่เกี่ยวข้อง";
             // 
@@ -522,7 +522,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstRelated.HideSelection = false;
             this.lstRelated.Location = new System.Drawing.Point(4, 4);
             this.lstRelated.Name = "lstRelated";
-            this.lstRelated.Size = new System.Drawing.Size(941, 179);
+            this.lstRelated.Size = new System.Drawing.Size(1370, 179);
             this.lstRelated.TabIndex = 0;
             this.lstRelated.UseCompatibleStateImageBehavior = false;
             this.lstRelated.View = System.Windows.Forms.View.Details;
@@ -549,7 +549,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabWorkflow.Location = new System.Drawing.Point(4, 29);
             this.tabWorkflow.Name = "tabWorkflow";
             this.tabWorkflow.Padding = new System.Windows.Forms.Padding(4);
-            this.tabWorkflow.Size = new System.Drawing.Size(949, 187);
+            this.tabWorkflow.Size = new System.Drawing.Size(1378, 187);
             this.tabWorkflow.TabIndex = 2;
             this.tabWorkflow.Text = "⚖️ เส้นงาน (Workflow)";
             // 
@@ -566,7 +566,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstWorkflow.HideSelection = false;
             this.lstWorkflow.Location = new System.Drawing.Point(4, 4);
             this.lstWorkflow.Name = "lstWorkflow";
-            this.lstWorkflow.Size = new System.Drawing.Size(941, 179);
+            this.lstWorkflow.Size = new System.Drawing.Size(1370, 179);
             this.lstWorkflow.TabIndex = 0;
             this.lstWorkflow.UseCompatibleStateImageBehavior = false;
             this.lstWorkflow.View = System.Windows.Forms.View.Details;
@@ -593,7 +593,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabPrograms.Location = new System.Drawing.Point(4, 29);
             this.tabPrograms.Name = "tabPrograms";
             this.tabPrograms.Padding = new System.Windows.Forms.Padding(4);
-            this.tabPrograms.Size = new System.Drawing.Size(949, 187);
+            this.tabPrograms.Size = new System.Drawing.Size(1378, 187);
             this.tabPrograms.TabIndex = 3;
             this.tabPrograms.Text = "💻 โปรแกรมที่เกี่ยวข้อง";
             // 
@@ -609,7 +609,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstPrograms.HideSelection = false;
             this.lstPrograms.Location = new System.Drawing.Point(4, 4);
             this.lstPrograms.Name = "lstPrograms";
-            this.lstPrograms.Size = new System.Drawing.Size(941, 179);
+            this.lstPrograms.Size = new System.Drawing.Size(1370, 179);
             this.lstPrograms.TabIndex = 0;
             this.lstPrograms.UseCompatibleStateImageBehavior = false;
             this.lstPrograms.View = System.Windows.Forms.View.Details;
@@ -631,7 +631,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabDocs.Location = new System.Drawing.Point(4, 29);
             this.tabDocs.Name = "tabDocs";
             this.tabDocs.Padding = new System.Windows.Forms.Padding(4);
-            this.tabDocs.Size = new System.Drawing.Size(949, 187);
+            this.tabDocs.Size = new System.Drawing.Size(1378, 187);
             this.tabDocs.TabIndex = 4;
             this.tabDocs.Text = "📋 เอกสารที่เกี่ยวข้อง";
             // 
@@ -647,7 +647,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstDocs.HideSelection = false;
             this.lstDocs.Location = new System.Drawing.Point(4, 4);
             this.lstDocs.Name = "lstDocs";
-            this.lstDocs.Size = new System.Drawing.Size(941, 179);
+            this.lstDocs.Size = new System.Drawing.Size(1370, 179);
             this.lstDocs.TabIndex = 0;
             this.lstDocs.UseCompatibleStateImageBehavior = false;
             this.lstDocs.View = System.Windows.Forms.View.Details;
@@ -669,7 +669,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabVersions.Location = new System.Drawing.Point(4, 29);
             this.tabVersions.Name = "tabVersions";
             this.tabVersions.Padding = new System.Windows.Forms.Padding(4);
-            this.tabVersions.Size = new System.Drawing.Size(949, 187);
+            this.tabVersions.Size = new System.Drawing.Size(1378, 187);
             this.tabVersions.TabIndex = 5;
             this.tabVersions.Text = "🕐 ประวัติ Version";
             // 
@@ -688,7 +688,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstVersions.HideSelection = false;
             this.lstVersions.Location = new System.Drawing.Point(4, 4);
             this.lstVersions.Name = "lstVersions";
-            this.lstVersions.Size = new System.Drawing.Size(941, 179);
+            this.lstVersions.Size = new System.Drawing.Size(1370, 179);
             this.lstVersions.TabIndex = 0;
             this.lstVersions.UseCompatibleStateImageBehavior = false;
             this.lstVersions.View = System.Windows.Forms.View.Details;

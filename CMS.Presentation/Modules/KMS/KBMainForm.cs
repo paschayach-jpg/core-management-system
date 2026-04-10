@@ -12,13 +12,13 @@ using CMS.Domain.Models;
 namespace CMS.Presentation.Modules.KMS
 {
     /// <summary>
-    /// หน้าหลัก Knowledge Base System (MOD-006)
+    /// หน้าหลัก Knowledge Base System (MOD-006) - KBMain
     /// Layout: SplitContainer — ซ้าย=Category TreeView, ขวา=Article List + Search
     /// รองรับ: Browse by Category, Full-text Search, Add/Edit/Archive Article, Version History
     /// </summary>
-    public partial class KnowledgeBaseForm : Form, IKnowledgeBaseView
+    public partial class KBMainForm : Form, IKBMainView
     {
-        private KnowledgeBasePresenter _presenter;
+        private KBMainPresenter _presenter;
         private UserContext _user;
 
         // ── Viewer state ────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
 
-        public KnowledgeBaseForm()
+        public KBMainForm()
         {
             InitializeComponent();
         }
@@ -46,7 +46,7 @@ namespace CMS.Presentation.Modules.KMS
         /// Called by the composition root after the presenter is wired.
         /// Must be called before the form is shown.
         /// </summary>
-        public void AttachPresenter(KnowledgeBasePresenter presenter, UserContext user)
+        public void AttachPresenter(KBMainPresenter presenter, UserContext user)
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             if (user == null) throw new ArgumentNullException("user");
@@ -79,7 +79,7 @@ namespace CMS.Presentation.Modules.KMS
 
         // ── Form events ──────────────────────────────────────────────────────────
 
-        private void KnowledgeBaseForm_Load(object sender, EventArgs e)
+        private void KBMainForm_Load(object sender, EventArgs e)
         {
             if (_presenter == null)
             {
@@ -93,9 +93,9 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.Initialize();
         }
 
-        private void KnowledgeBaseForm_Resize(object sender, EventArgs e) { ResizeArticleCards(); }
+        private void KBMainForm_Resize(object sender, EventArgs e) { ResizeArticleCards(); }
 
-        // ── IKnowledgeBaseView ───────────────────────────────────────────────────
+        // ── IKBMainView ───────────────────────────────────────────────────
 
         public string SearchKeyword      { get { return txtSearch.Text.Trim(); } }
         public int    StatusFilterIndex  { get { return cboFilter.SelectedIndex; } }

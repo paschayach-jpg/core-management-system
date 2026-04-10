@@ -178,11 +178,11 @@
     <Compile Include="Modules\KMS\KBCategoryForm.Designer.cs">
       <DependentUpon>KBCategoryForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\KMS\KnowledgeBaseForm.cs">
+    <Compile Include="Modules\KMS\KBMainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\KMS\KnowledgeBaseForm.Designer.cs">
-      <DependentUpon>KnowledgeBaseForm.cs</DependentUpon>
+    <Compile Include="Modules\KMS\KBMainForm.Designer.cs">
+      <DependentUpon>KBMainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\KMS\KBEditorDialog.cs">
       <SubType>Form</SubType>
@@ -391,8 +391,8 @@
     <EmbeddedResource Include="Modules\KMS\KBImportWizardForm.resx">
       <DependentUpon>KBImportWizardForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\KMS\KnowledgeBaseForm.resx">
-      <DependentUpon>KnowledgeBaseForm.cs</DependentUpon>
+    <EmbeddedResource Include="Modules\KMS\KBMainForm.resx">
+      <DependentUpon>KBMainForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>

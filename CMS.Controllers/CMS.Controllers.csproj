@@ -76,13 +76,13 @@
     <Compile Include="DMS\Document\AuthorityOrgLookupController.cs" />
     <Compile Include="DMS\Document\FolderTemplateController.cs" />
     <Compile Include="KMS\Interfaces\IKBImportWizardView.cs" />
-    <Compile Include="KMS\Interfaces\IKnowledgeBaseView.cs" />
+    <Compile Include="KMS\Interfaces\IKBMainView.cs" />
     <Compile Include="KMS\Interfaces\IKBEditorView.cs" />
     <Compile Include="KMS\Interfaces\IKBCategoryView.cs" />
     <Compile Include="KMS\Interfaces\IArticleViewerView.cs" />
     <Compile Include="KMS\Interfaces\IKBDashboardView.cs" />
     <Compile Include="KMS\KB\KBImportWizardPresenter.cs" />
-    <Compile Include="KMS\KB\KnowledgeBasePresenter.cs" />
+    <Compile Include="KMS\KB\KBMainPresenter.cs" />
     <Compile Include="KMS\KB\KBEditorPresenter.cs" />
     <Compile Include="KMS\KB\KBCategoryPresenter.cs" />
     <Compile Include="KMS\KB\ArticleViewerPresenter.cs" />

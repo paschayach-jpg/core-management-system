@@ -1,6 +1,6 @@
 namespace CMS.Presentation.Modules.KMS
 {
-    partial class KnowledgeBaseForm
+    partial class KBMainForm
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -238,7 +238,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboFilter.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cboFilter.Location = new System.Drawing.Point(618, 6);
             this.cboFilter.Name = "cboFilter";
-            this.cboFilter.Size = new System.Drawing.Size(130, 23);
+            this.cboFilter.Size = new System.Drawing.Size(130, 28);
             this.cboFilter.TabIndex = 0;
             this.cboFilter.SelectedIndexChanged += new System.EventHandler(this.CboFilter_SelectedIndexChanged);
             // 
@@ -266,7 +266,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 9.5F);
             this.txtSearch.Location = new System.Drawing.Point(36, 6);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(792, 24);
+            this.txtSearch.Size = new System.Drawing.Size(792, 29);
             this.txtSearch.TabIndex = 2;
             this.txtSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearch_KeyDown);
             // 
@@ -380,9 +380,9 @@ namespace CMS.Presentation.Modules.KMS
             this.btnNewArticle.UseVisualStyleBackColor = false;
             this.btnNewArticle.Click += new System.EventHandler(this.BtnNewArticle_Click);
             // 
-            // KnowledgeBaseForm
+            // KBMainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1100, 680);
@@ -390,10 +390,10 @@ namespace CMS.Presentation.Modules.KMS
             this.Controls.Add(this.pnlHeader);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.MinimumSize = new System.Drawing.Size(800, 500);
-            this.Name = "KnowledgeBaseForm";
-            this.Text = "ห้องสมุดความรู้ (KMS) — MOD-006";
-            this.Load += new System.EventHandler(this.KnowledgeBaseForm_Load);
-            this.Resize += new System.EventHandler(this.KnowledgeBaseForm_Resize);
+            this.Name = "KBMainForm";
+            this.Text = "ห้องสมุดความรู้ (KMS) — MOD-006 | KBMain";
+            this.Load += new System.EventHandler(this.KBMainForm_Load);
+            this.Resize += new System.EventHandler(this.KBMainForm_Resize);
             this.pnlHeader.ResumeLayout(false);
             this.splitMain.Panel1.ResumeLayout(false);
             this.splitMain.Panel2.ResumeLayout(false);

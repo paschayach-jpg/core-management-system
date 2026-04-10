@@ -7,17 +7,17 @@ using System.Linq;
 
 namespace CMS.Controllers.KMS.KB
 {
-    public class KnowledgeBasePresenter
+    public class KBMainPresenter
     {
-        private readonly IKnowledgeBaseView  _view;
+        private readonly IKBMainView  _view;
         private readonly IKBCategoryService  _categoryService;
         private readonly IKBArticleService   _articleService;
         private readonly UserContext         _user;
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
 
-        public KnowledgeBasePresenter(
-            IKnowledgeBaseView  view,
+        public KBMainPresenter(
+            IKBMainView  view,
             IKBCategoryService  categoryService,
             IKBArticleService   articleService,
             UserContext         user)

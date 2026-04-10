@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CMS.Controllers.KMS.Interfaces
 {
-    public interface IKnowledgeBaseView
+    public interface IKBMainView
     {
         string SearchKeyword { get; }
         int StatusFilterIndex { get; }

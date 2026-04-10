@@ -41,6 +41,7 @@ namespace CMS.Presentation
             "SyncEmployee",
             "RecycleBin",
             "KnowledgeBaseForm",
+            "KBMainForm",
             "KBCategoryForm"
         };
 
