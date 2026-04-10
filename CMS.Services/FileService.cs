@@ -607,6 +607,10 @@ namespace CMS.Services
                 if (request.FileStream == null)
                     return Fail(request.FileName, "File stream is null.");
 
+                // Resolve duplicate file name — append " copy", " copy(2)", " copy(3)", …
+                string resolvedName = ResolveFileName(request.FileName, folder.FolderID);
+                bool   isDuplicate  = !string.Equals(resolvedName, request.FileName, StringComparison.OrdinalIgnoreCase);
+
                 // Check quota before proceeding
                 if (folder.QuotaBytes.HasValue)
                 {
@@ -628,7 +632,7 @@ namespace CMS.Services
                 ScanResult scanResult = new ScanResult { IsClean = true, ScannerError = false };
 
                 // Write to network drive
-                writtenPath = _networkDriveHelper.BuildPath(folder.OrgUnitID, folder.FolderID, request.FileName);
+                writtenPath = _networkDriveHelper.BuildPath(folder.OrgUnitID, folder.FolderID, resolvedName);
                 _networkDriveHelper.WriteFile(writtenPath, request.FileStream);
 
                 string storedFileName = Path.GetFileName(writtenPath);
@@ -637,7 +641,7 @@ namespace CMS.Services
                 var doc = new FileDocument
                 {
                     FolderID         = folder.FolderID,
-                    OriginalFileName = request.FileName,
+                    OriginalFileName = resolvedName,
                     StoredFileName   = storedFileName,
                     FileExtension    = ext,
                     MimeType         = mimeType,
@@ -719,11 +723,13 @@ namespace CMS.Services
 
                 Log(user, "File", "UPLOAD", "storage.FileDocument", insertedId.Value, 1,
                     string.Format("Uploaded '{0}' ({1:N0} bytes) to folder {2}.",
-                        request.FileName, request.FileSizeBytes, folder.FolderID));
+                        resolvedName, request.FileSizeBytes, folder.FolderID));
 
                 return new UploadResult
                 {
                     OriginalFileName = request.FileName,
+                    ActualFileName   = resolvedName,
+                    IsDuplicate      = isDuplicate,
                     Success          = true,
                     FileDocumentId   = insertedId
                 };
@@ -802,6 +808,47 @@ namespace CMS.Services
         private static UploadResult Fail(string fileName, string message)
         {
             return new UploadResult { OriginalFileName = fileName, Success = false, ErrorMessage = message };
+        }
+
+        public IEnumerable<string> FindDuplicateNames(IEnumerable<string> fileNames, int folderId, UserContext user)
+        {
+            if (fileNames == null) throw new ArgumentNullException("fileNames");
+            if (user      == null) throw new ArgumentNullException("user");
+
+            return fileNames
+                .Where(name => !string.IsNullOrEmpty(name)
+                            && _fileDocumentRepository.ExistsWithName(name, folderId))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Returns a unique file name within the folder.
+        /// If <paramref name="fileName"/> is already taken, counts existing copies and names the new file
+        /// "{name} copy({count+1}).ext", guaranteeing no collision in a single extra check.
+        /// </summary>
+        private string ResolveFileName(string fileName, int folderId)
+        {
+            if (!_fileDocumentRepository.ExistsWithName(fileName, folderId))
+                return fileName;
+
+            string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+            string ext            = Path.GetExtension(fileName);
+
+            // Count all existing copies: original + any "name copy*" files
+            string copyPrefix = nameWithoutExt + " copy";
+            int existingCopies = _fileDocumentRepository.CountByNamePrefix(copyPrefix, folderId);
+
+            // Start at count+1 and increment until a free slot is found (handles gaps/race conditions)
+            int counter = existingCopies + 1;
+            string candidate;
+            do
+            {
+                candidate = string.Format("{0} copy({1}){2}", nameWithoutExt, counter, ext);
+                counter++;
+            }
+            while (_fileDocumentRepository.ExistsWithName(candidate, folderId));
+
+            return candidate;
         }
     }
 }

@@ -282,6 +282,44 @@ namespace CMS.Presentation
             if (_pendingFiles.Count == 0)                  { ShowError("กรุณาเลือกไฟล์ที่ต้องการอัพโหลด"); return; }
             if (_fileUploadController == null)             { ShowError("บริการอัพโหลดไม่พร้อม"); return; }
 
+            // ── ตรวจสอบไฟล์ซ้ำก่อนเริ่ม upload ─────────────────────────────
+            var fileNames  = _pendingFiles.Select(f => f.FileName);
+            var duplicates = _fileUploadController
+                                 .FindDuplicateNames(fileNames, _folderId, _user)
+                                 .ToList();
+
+            if (duplicates.Count > 0)
+            {
+                string fileList = string.Join("\n", duplicates.Select(d => "  • " + d));
+                string message  = string.Format(
+                    "พบไฟล์ต่อไปนี้ในโฟลเดอร์แล้ว:\n{0}\n\n" +
+                    "กด Yes    = บันทึกสำเนา (ตั้งชื่อใหม่อัตโนมัติ)\n" +
+                    "กด No     = ข้ามไฟล์ซ้ำ (อัพโหลดเฉพาะไฟล์ใหม่)\n" +
+                    "กด Cancel = ยกเลิกการอัพโหลด",
+                    fileList);
+
+                var answer = MessageBox.Show(message, "พบไฟล์ซ้ำ",
+                    MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+                if (answer == DialogResult.Cancel)
+                    return;
+
+                if (answer == DialogResult.No)
+                {
+                    // ข้ามไฟล์ซ้ำออก — อัพโหลดเฉพาะไฟล์ที่ไม่ซ้ำ
+                    var dupSet = new System.Collections.Generic.HashSet<string>(
+                        duplicates, StringComparer.OrdinalIgnoreCase);
+                    _pendingFiles.RemoveAll(f => dupSet.Contains(f.FileName));
+
+                    if (_pendingFiles.Count == 0)
+                    {
+                        ShowError("ไม่มีไฟล์ที่จะอัพโหลด (ทุกไฟล์ซ้ำกับไฟล์ในโฟลเดอร์)");
+                        return;
+                    }
+                }
+                // DialogResult.Yes → ดำเนินการต่อโดย FileService จะตั้งชื่อ copy อัตโนมัติ
+            }
+
             // Req 10.1 — save checkpoint for each file before starting
             if (_checkpointController != null)
             {

@@ -322,6 +322,7 @@ namespace CMS.Presentation
             this.lvRecentFiles.HideSelection = false;
             this.lvRecentFiles.Location = new System.Drawing.Point(0, 0);
             this.lvRecentFiles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lvRecentFiles.MultiSelect = true;
             this.lvRecentFiles.Name = "lvRecentFiles";
             this.lvRecentFiles.Size = new System.Drawing.Size(1501, 483);
             this.lvRecentFiles.TabIndex = 9;

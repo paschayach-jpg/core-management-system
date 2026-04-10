@@ -221,6 +221,40 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public bool ExistsWithName(string fileName, int folderId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM storage.FileDocument " +
+                    "WHERE FolderID = @FolderID AND OriginalFileName = @OriginalFileName AND FileStatus <> 3", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@FolderID",         folderId);
+                    cmd.Parameters.AddWithValue("@OriginalFileName", fileName);
+                    return (int)cmd.ExecuteScalar() > 0;
+                }
+            }
+        }
+
+        public int CountByNamePrefix(string namePrefix, int folderId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM storage.FileDocument " +
+                    "WHERE FolderID = @FolderID AND OriginalFileName LIKE @Prefix AND FileStatus <> 3", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@FolderID", folderId);
+                    cmd.Parameters.AddWithValue("@Prefix",   namePrefix + "%");
+                    return (int)cmd.ExecuteScalar();
+                }
+            }
+        }
+
         public void RenameFile(int fileId, string newName)
         {
             using (var conn = new SqlConnection(_connectionString))

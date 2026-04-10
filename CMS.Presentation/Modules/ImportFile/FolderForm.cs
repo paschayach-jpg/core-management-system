@@ -4999,13 +4999,26 @@ namespace CMS.Presentation
             // ตรวจสอบ item ที่เลือกใน contentsListView ก่อน (File หรือ Folder ในรายการขวา)
             if (contentsListView.SelectedItems.Count > 0)
             {
+                var selectedFiles = contentsListView.SelectedItems.Cast<ListViewItem>()
+                    .Select(item => item.Tag as FileDocument)
+                    .Where(f => f != null)
+                    .GroupBy(f => f.FileDocumentId)
+                    .Select(group => group.First())
+                    .ToList();
+
+                if (selectedFiles.Count > 0)
+                {
+                    DeleteSelectedFiles(selectedFiles);
+                    return;
+                }
+
                 var tag = contentsListView.SelectedItems[0].Tag;
 
                 // ── กรณี File ──────────────────────────────────────────────────
                 var file = tag as FileDocument;
                 if (file != null)
                 {
-                    DeleteSelectedFile(file);
+                    DeleteSelectedFiles(new List<FileDocument> { file });
                     return;
                 }
 
@@ -5031,44 +5044,78 @@ namespace CMS.Presentation
 
         private void DeleteSelectedFile(FileDocument file)
         {
+            DeleteSelectedFiles(new List<FileDocument> { file });
+        }
+
+        private void DeleteSelectedFiles(IList<FileDocument> files)
+        {
+            if (files == null || files.Count == 0)
+            {
+                ShowError("กรุณาเลือกไฟล์ที่ต้องการลบ");
+                return;
+            }
+
+            if (_fileCommandController == null)
+            {
+                ShowError("File command controller is not available.");
+                return;
+            }
+
+            string confirmMessage = files.Count == 1
+                ? string.Format("ลบไฟล์ '{0}' หรือไม่?\n\nไฟล์จะถูกย้ายไปยังถังขยะ", files[0].OriginalFileName)
+                : string.Format("ลบไฟล์ที่เลือกทั้งหมด {0} ไฟล์ หรือไม่?\n\nไฟล์จะถูกย้ายไปยังถังขยะ", files.Count);
+
             var confirm = MessageBox.Show(
-                string.Format("ลบไฟล์ '{0}' หรือไม่?\n\nไฟล์จะถูกย้ายไปยังถังขยะ", file.OriginalFileName),
-                "ยืนยันการลบไฟล์",
+                confirmMessage,
+                files.Count == 1 ? "ยืนยันการลบไฟล์" : "ยืนยันการลบหลายไฟล์",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
             if (confirm != DialogResult.Yes) return;
 
-            try
+            int deleted = 0;
+            int failed = 0;
+            string firstError = null;
+
+            foreach (var file in files)
             {
-                if (_fileCommandController == null) { ShowError("File command controller is not available."); return; }
-
-                _fileCommandController.DeleteFile(file.FileDocumentId, _user);
-
-                // Reload ก่อนเพื่อยืนยันว่าลบสำเร็จ
-                var currentFolder = SelectedFolder;
-                if (currentFolder != null)
-                    _presenter.GetFolderContents(currentFolder.FolderId);
-
-                // ตรวจสอบว่าไฟล์ไม่ปรากฏในรายการอีกต่อไป
-                bool stillExists = false;
-                foreach (ListViewItem item in contentsListView.Items)
+                try
                 {
-                    var f = item.Tag as FileDocument;
-                    if (f != null && f.FileDocumentId == file.FileDocumentId)
-                    {
-                        stillExists = true;
-                        break;
-                    }
+                    _fileCommandController.DeleteFile(file.FileDocumentId, _user);
+                    deleted++;
                 }
-
-                if (!stillExists)
-                    ShowInfo(string.Format("ลบไฟล์ '{0}' เรียบร้อยแล้ว", file.OriginalFileName));
-                else
-                    ShowError(string.Format("ไม่สามารถยืนยันการลบไฟล์ '{0}'\nกรุณาตรวจสอบอีกครั้ง", file.OriginalFileName));
+                catch (UnauthorizedAccessException ex)
+                {
+                    failed++;
+                    if (string.IsNullOrEmpty(firstError))
+                        firstError = "ไม่มีสิทธิ์ลบไฟล์บางรายการ: " + ex.Message;
+                }
+                catch (Exception ex)
+                {
+                    failed++;
+                    if (string.IsNullOrEmpty(firstError))
+                        firstError = "ไม่สามารถลบไฟล์บางรายการได้: " + ex.Message;
+                }
             }
-            catch (UnauthorizedAccessException ex) { ShowError("ไม่มีสิทธิ์ลบไฟล์นี้: " + ex.Message); }
-            catch (Exception ex)                   { ShowError("ไม่สามารถลบไฟล์ได้: " + ex.Message); }
+
+            var currentFolder = SelectedFolder;
+            if (currentFolder != null)
+                _presenter.GetFolderContents(currentFolder.FolderId);
+
+            if (failed == 0)
+            {
+                if (files.Count == 1)
+                    ShowInfo(string.Format("ลบไฟล์ '{0}' เรียบร้อยแล้ว", files[0].OriginalFileName));
+                else
+                    ShowInfo(string.Format("ลบไฟล์เรียบร้อยแล้ว {0} ไฟล์", deleted));
+                return;
+            }
+
+            MessageBox.Show(
+                string.Format("ลบไฟล์เสร็จสิ้น\nสำเร็จ {0} ไฟล์\nล้มเหลว {1} ไฟล์\n\n{2}", deleted, failed, firstError ?? "กรุณาตรวจสอบรายการที่ลบไม่สำเร็จอีกครั้ง"),
+                "ผลการลบไฟล์",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
         }
 
         private void DeleteSelectedFolder(Folder folder)

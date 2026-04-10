@@ -119,6 +119,78 @@ namespace CMS.Tests
         // UploadFiles - File Size Limit Tests (Requirement 5.3, 5.4)
         // -----------------------------------------------------------------------
 
+        // -----------------------------------------------------------------------
+        // UploadFiles - Duplicate File Name Tests
+        // -----------------------------------------------------------------------
+
+        [Test]
+        public void UploadFiles_WithDuplicateFileName_SucceedsAndRenamesWithCopySuffix()
+        {
+            // Arrange
+            var folder = new Folder { FolderId = FolderId, OrgUnitID = OrgUnitId, IsDeleted = false, IsArchived = false };
+            _folderRepo.GetById(FolderId).Returns(folder);
+            _fileDocRepo.ExistsWithName("report.pdf",      FolderId).Returns(true);
+            _fileDocRepo.CountByNamePrefix("report copy",  FolderId).Returns(0);   // 0 copies → copy(1)
+            _fileDocRepo.ExistsWithName("report copy(1).pdf", FolderId).Returns(false);
+
+            var files = new List<FileUploadRequest> { MakeFileRequest("report.pdf", 1024) };
+            var user  = MakeUserContext();
+
+            // Act
+            var results = _svc.UploadFiles(files, FolderId, user).ToList();
+
+            // Assert
+            Assert.AreEqual(1, results.Count);
+            Assert.IsTrue(results[0].Success);
+            Assert.IsTrue(results[0].IsDuplicate);
+            Assert.AreEqual("report.pdf",         results[0].OriginalFileName);
+            Assert.AreEqual("report copy(1).pdf", results[0].ActualFileName);
+        }
+
+        [Test]
+        public void UploadFiles_WithDuplicateFileNameAndCopyAlsoExists_SucceedsAndRenamesWithCopy2()
+        {
+            // Arrange
+            var folder = new Folder { FolderId = FolderId, OrgUnitID = OrgUnitId, IsDeleted = false, IsArchived = false };
+            _folderRepo.GetById(FolderId).Returns(folder);
+            _fileDocRepo.ExistsWithName("report.pdf",         FolderId).Returns(true);
+            _fileDocRepo.CountByNamePrefix("report copy",     FolderId).Returns(1);   // 1 copy exists → try copy(2)
+            _fileDocRepo.ExistsWithName("report copy(2).pdf", FolderId).Returns(false);
+
+            var files = new List<FileUploadRequest> { MakeFileRequest("report.pdf", 1024) };
+            var user  = MakeUserContext();
+
+            // Act
+            var results = _svc.UploadFiles(files, FolderId, user).ToList();
+
+            // Assert
+            Assert.IsTrue(results[0].Success);
+            Assert.IsTrue(results[0].IsDuplicate);
+            Assert.AreEqual("report copy(2).pdf", results[0].ActualFileName);
+        }
+
+        [Test]
+        public void UploadFiles_WithNoDuplicate_SucceedsWithOriginalName()
+        {
+            // Arrange
+            var folder = new Folder { FolderId = FolderId, OrgUnitID = OrgUnitId, IsDeleted = false, IsArchived = false };
+            _folderRepo.GetById(FolderId).Returns(folder);
+            _fileDocRepo.ExistsWithName("newfile.pdf", FolderId).Returns(false);
+
+            var files = new List<FileUploadRequest> { MakeFileRequest("newfile.pdf", 1024) };
+            var user  = MakeUserContext();
+
+            // Act
+            var results = _svc.UploadFiles(files, FolderId, user).ToList();
+
+            // Assert
+            Assert.IsTrue(results[0].Success);
+            Assert.IsFalse(results[0].IsDuplicate);
+            Assert.AreEqual("newfile.pdf", results[0].ActualFileName);
+        }
+
+        // -----------------------------------------------------------------------
+
         [Test]
         public void UploadFiles_WithFileExceeding100MB_RejectsFile()
         {

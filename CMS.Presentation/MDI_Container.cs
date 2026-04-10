@@ -3440,7 +3440,7 @@ namespace CMS.Presentation
 
         private void LvRecentFiles_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (lvRecentFiles.SelectedItems.Count == 0)
+            if (lvRecentFiles.SelectedItems.Count != 1)
             {
                 _fileDetailPanel.Visible = false;
                 return;
@@ -3713,12 +3713,13 @@ namespace CMS.Presentation
             // enable/disable ตาม selection
             ctx.Opening += (s, e) =>
             {
-                bool hasFile = GetDashSelectedFile() != null;
-                mnuOpen.Enabled       = hasFile;
-                mnuDownload.Enabled   = hasFile;
-                mnuRename.Enabled     = hasFile;
-                mnuDelete.Enabled     = hasFile;
-                mnuPermission.Enabled = hasFile;
+                bool hasSelection = lvRecentFiles.SelectedItems.Count > 0;
+                bool isSingleFile = lvRecentFiles.SelectedItems.Count == 1 && GetDashSelectedFile() != null;
+                mnuOpen.Enabled       = isSingleFile;
+                mnuDownload.Enabled   = isSingleFile;
+                mnuRename.Enabled     = isSingleFile;
+                mnuDelete.Enabled     = hasSelection;
+                mnuPermission.Enabled = isSingleFile;
                 mnuProperties.Enabled = lvRecentFiles.SelectedItems.Count > 0;
 
                 // ถ้าไม่มีไฟล์เลือก ซ่อน menu ทั้งหมด
@@ -3748,6 +3749,16 @@ namespace CMS.Presentation
         {
             if (lvRecentFiles.SelectedItems.Count == 0) return null;
             return lvRecentFiles.SelectedItems[0].Tag as FileDocument;
+        }
+
+        private List<FileDocument> GetDashSelectedFiles()
+        {
+            return lvRecentFiles.SelectedItems.Cast<ListViewItem>()
+                .Select(item => item.Tag as FileDocument)
+                .Where(file => file != null)
+                .GroupBy(file => file.FileID)
+                .Select(group => group.First())
+                .ToList();
         }
 
         private async void CtxDash_Open_Click(object sender, EventArgs e)
@@ -3878,19 +3889,52 @@ namespace CMS.Presentation
 
         private void CtxDash_Delete_Click(object sender, EventArgs e)
         {
-            var file = GetDashSelectedFile();
-            if (file == null || _fileCommandController == null) return;
+            var files = GetDashSelectedFiles();
+            if (files.Count == 0 || _fileCommandController == null) return;
 
             var confirm = MessageBox.Show(
-                string.Format("ลบไฟล์ '{0}' หรือไม่?\nไฟล์จะถูกย้ายไปยังถังขยะ", file.OriginalFileName),
+                files.Count == 1
+                    ? string.Format("ลบไฟล์ '{0}' หรือไม่?\nไฟล์จะถูกย้ายไปยังถังขยะ", files[0].OriginalFileName)
+                    : string.Format("ลบไฟล์ที่เลือกทั้งหมด {0} ไฟล์ หรือไม่?\nไฟล์จะถูกย้ายไปยังถังขยะ", files.Count),
                 "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (confirm != DialogResult.Yes) return;
 
             try
             {
-                _fileCommandController.DeleteFile(file.FileID, _currentUser);
+                int deleted = 0;
+                int failed = 0;
+                string firstError = null;
+
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        _fileCommandController.DeleteFile(file.FileID, _currentUser);
+                        deleted++;
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        failed++;
+                        if (string.IsNullOrEmpty(firstError))
+                            firstError = "ไม่มีสิทธิ์ลบไฟล์บางรายการ: " + ex.Message;
+                    }
+                    catch (Exception ex)
+                    {
+                        failed++;
+                        if (string.IsNullOrEmpty(firstError))
+                            firstError = "ไม่สามารถลบไฟล์บางรายการได้: " + ex.Message;
+                    }
+                }
+
                 RefreshDashboardFiles();
                 LoadDashboardStats();
+
+                if (failed > 0)
+                {
+                    MessageBox.Show(
+                        string.Format("ลบไฟล์เสร็จสิ้น\nสำเร็จ {0} ไฟล์\nล้มเหลว {1} ไฟล์\n\n{2}", deleted, failed, firstError ?? "กรุณาตรวจสอบรายการที่ลบไม่สำเร็จอีกครั้ง"),
+                        "ผลการลบไฟล์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
             catch (UnauthorizedAccessException ex)
             {

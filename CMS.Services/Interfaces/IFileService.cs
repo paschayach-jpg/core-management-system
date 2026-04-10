@@ -27,5 +27,8 @@ namespace CMS.Services.Interfaces
         /// คัดลอกไฟล์ไปยัง Folder ปลายทาง (สร้าง record ใหม่ พร้อม copy physical file)
         /// </summary>
         int CopyFile(int fileId, int destinationFolderId, UserContext user);
+
+        /// <summary>Returns the subset of <paramref name="fileNames"/> that already exist (active) in the folder.</summary>
+        IEnumerable<string> FindDuplicateNames(IEnumerable<string> fileNames, int folderId, UserContext user);
     }
 }
