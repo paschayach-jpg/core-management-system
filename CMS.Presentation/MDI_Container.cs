@@ -1126,7 +1126,7 @@ namespace CMS.Presentation
                 MessageBox.Show("Permission service is not available.", "ตั้งค่า Folder",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
-            }
+            } 
 
             using (var dlg = new PermissionForm(
                 permissionService: _permissionService,

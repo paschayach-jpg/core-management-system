@@ -68,7 +68,7 @@ namespace CMS.Tests
         }
 
         // -----------------------------------------------------------------------
-        // UploadFiles - Batch Limit Tests (Requirement 5.1, 5.2)
+        // UploadFiles - Batch Tests (no batch size limit)
         // -----------------------------------------------------------------------
 
         [Test]
@@ -95,9 +95,12 @@ namespace CMS.Tests
         }
 
         [Test]
-        public void UploadFiles_WithMoreThan10Files_RejectsAllFiles()
+        public void UploadFiles_WithMoreThan10Files_SucceedsForAllFiles()
         {
-            // Arrange
+            // Arrange — no batch limit; all 11 files should succeed
+            var folder = new Folder { FolderId = FolderId, OrgUnitID = OrgUnitId, IsDeleted = false, IsArchived = false };
+            _folderRepo.GetById(FolderId).Returns(folder);
+
             var files = new List<FileUploadRequest>();
             for (int i = 0; i < 11; i++)
                 files.Add(MakeFileRequest($"file{i}.pdf", 1024));
@@ -109,28 +112,6 @@ namespace CMS.Tests
 
             // Assert
             Assert.AreEqual(11, results.Count);
-            Assert.IsTrue(results.All(r => !r.Success));
-            Assert.IsTrue(results.All(r => r.ErrorMessage.Contains("maximum is 10")));
-        }
-
-        [Test]
-        public void UploadFiles_WithExactly10Files_Succeeds()
-        {
-            // Arrange
-            var folder = new Folder { FolderId = FolderId, OrgUnitID = OrgUnitId, IsDeleted = false, IsArchived = false };
-            _folderRepo.GetById(FolderId).Returns(folder);
-
-            var files = new List<FileUploadRequest>();
-            for (int i = 0; i < 10; i++)
-                files.Add(MakeFileRequest($"file{i}.pdf", 1024));
-
-            var user = MakeUserContext();
-
-            // Act
-            var results = _svc.UploadFiles(files, FolderId, user).ToList();
-
-            // Assert
-            Assert.AreEqual(10, results.Count);
             Assert.IsTrue(results.All(r => r.Success));
         }
 
