@@ -71,26 +71,36 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader = new System.Windows.Forms.Label();
             this.pnlGap1 = new System.Windows.Forms.Panel();
             this.pnlContentOuter = new System.Windows.Forms.Panel();
-            this.txtContent = new System.Windows.Forms.RichTextBox();
+            this.webEditor = new System.Windows.Forms.WebBrowser();
             this.pnlRteStatus = new System.Windows.Forms.Panel();
             this.lblRteStatus = new System.Windows.Forms.Label();
             this.lblContent = new System.Windows.Forms.Label();
             this.tsRte = new System.Windows.Forms.ToolStrip();
+            this.tsRteFontFamily = new System.Windows.Forms.ToolStripComboBox();
+            this.tsRteSep0 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteFontSize = new System.Windows.Forms.ToolStripComboBox();
+            this.tsRteSep1 = new System.Windows.Forms.ToolStripSeparator();
             this.tsRteBold = new System.Windows.Forms.ToolStripButton();
             this.tsRteItalic = new System.Windows.Forms.ToolStripButton();
             this.tsRteUnder = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep1 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteSep2 = new System.Windows.Forms.ToolStripSeparator();
             this.tsRteH1 = new System.Windows.Forms.ToolStripButton();
             this.tsRteH2 = new System.Windows.Forms.ToolStripButton();
             this.tsRteH3 = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep2 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteSep3 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteAlignLeft = new System.Windows.Forms.ToolStripButton();
+            this.tsRteAlignCenter = new System.Windows.Forms.ToolStripButton();
+            this.tsRteAlignRight = new System.Windows.Forms.ToolStripButton();
+            this.tsRteSep4 = new System.Windows.Forms.ToolStripSeparator();
             this.tsRteBullet = new System.Windows.Forms.ToolStripButton();
             this.tsRteNumList = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep3 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteSep5 = new System.Windows.Forms.ToolStripSeparator();
             this.tsRteLink = new System.Windows.Forms.ToolStripButton();
+            this.tsRteTable = new System.Windows.Forms.ToolStripButton();
+            this.tsRteCode = new System.Windows.Forms.ToolStripButton();
             this.tsRteImage = new System.Windows.Forms.ToolStripButton();
             this.tsRteAttach = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep4 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteSep6 = new System.Windows.Forms.ToolStripSeparator();
             this.tsRteUndo = new System.Windows.Forms.ToolStripButton();
             this.tsRteRedo = new System.Windows.Forms.ToolStripButton();
             this.pnlSummaryArea = new System.Windows.Forms.Panel();
@@ -749,7 +759,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlContentOuter.BackColor = System.Drawing.Color.White;
             this.pnlContentOuter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlContentOuter.Controls.Add(this.txtContent);
+            this.pnlContentOuter.Controls.Add(this.webEditor);
             this.pnlContentOuter.Controls.Add(this.pnlRteStatus);
             this.pnlContentOuter.Controls.Add(this.lblContent);
             this.pnlContentOuter.Controls.Add(this.tsRte);
@@ -760,22 +770,18 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContentOuter.Name = "pnlContentOuter";
             this.pnlContentOuter.Size = new System.Drawing.Size(1388, 316);
             this.pnlContentOuter.TabIndex = 12;
-            // 
-            // txtContent
-            // 
-            this.txtContent.BackColor = System.Drawing.Color.White;
-            this.txtContent.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.txtContent.DetectUrls = false;
-            this.txtContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtContent.Font = new System.Drawing.Font("Consolas", 9.5F);
-            this.txtContent.Location = new System.Drawing.Point(0, 151);
-            this.txtContent.Margin = new System.Windows.Forms.Padding(10, 0, 10, 0);
-            this.txtContent.Name = "txtContent";
-            this.txtContent.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.txtContent.Size = new System.Drawing.Size(1386, 141);
-            this.txtContent.TabIndex = 5;
-            this.txtContent.Text = "";
-            this.txtContent.TextChanged += new System.EventHandler(this.TxtContent_TextChanged);
+            //
+            // webEditor
+            //
+            this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.webEditor.IsWebBrowserContextMenuEnabled = false;
+            this.webEditor.Location = new System.Drawing.Point(0, 151);
+            this.webEditor.MinimumSize = new System.Drawing.Size(20, 20);
+            this.webEditor.Name = "webEditor";
+            this.webEditor.ScriptErrorsSuppressed = true;
+            this.webEditor.Size = new System.Drawing.Size(1386, 141);
+            this.webEditor.TabIndex = 5;
+            this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
             // 
             // pnlRteStatus
             // 
@@ -810,7 +816,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblContent.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
             this.lblContent.Size = new System.Drawing.Size(1386, 22);
             this.lblContent.TabIndex = 3;
-            this.lblContent.Text = "เนื้อหาบทความ (รองรับ Markdown / Plain Text)";
+            this.lblContent.Text = "เนื้อหาบทความ (HTML Editor — WYSIWYG)";
             // 
             // tsRte
             // 
@@ -818,21 +824,31 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRte.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.tsRte.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.tsRte.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tsRteFontFamily,
+            this.tsRteSep0,
+            this.tsRteFontSize,
+            this.tsRteSep1,
             this.tsRteBold,
             this.tsRteItalic,
             this.tsRteUnder,
-            this.tsRteSep1,
+            this.tsRteSep2,
             this.tsRteH1,
             this.tsRteH2,
             this.tsRteH3,
-            this.tsRteSep2,
+            this.tsRteSep3,
+            this.tsRteAlignLeft,
+            this.tsRteAlignCenter,
+            this.tsRteAlignRight,
+            this.tsRteSep4,
             this.tsRteBullet,
             this.tsRteNumList,
-            this.tsRteSep3,
+            this.tsRteSep5,
             this.tsRteLink,
+            this.tsRteTable,
+            this.tsRteCode,
             this.tsRteImage,
             this.tsRteAttach,
-            this.tsRteSep4,
+            this.tsRteSep6,
             this.tsRteUndo,
             this.tsRteRedo});
             this.tsRte.Location = new System.Drawing.Point(0, 102);
@@ -983,7 +999,91 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteRedo.Text = "↷";
             this.tsRteRedo.ToolTipText = "Redo (Ctrl+Y)";
             this.tsRteRedo.Click += new System.EventHandler(this.TsRteRedo_Click);
-            // 
+            //
+            // tsRteFontFamily
+            //
+            this.tsRteFontFamily.AutoSize = false;
+            this.tsRteFontFamily.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.tsRteFontFamily.Items.AddRange(new object[] {
+                "Segoe UI", "Arial", "Tahoma", "Times New Roman", "Calibri", "Consolas", "Courier New", "Georgia"});
+            this.tsRteFontFamily.Name = "tsRteFontFamily";
+            this.tsRteFontFamily.Size = new System.Drawing.Size(130, 27);
+            this.tsRteFontFamily.Text = "Segoe UI";
+            this.tsRteFontFamily.ToolTipText = "Font Family";
+            this.tsRteFontFamily.SelectedIndexChanged += new System.EventHandler(this.TsRteFontFamily_SelectedIndexChanged);
+            //
+            // tsRteSep0
+            //
+            this.tsRteSep0.Name = "tsRteSep0";
+            this.tsRteSep0.Size = new System.Drawing.Size(6, 27);
+            //
+            // tsRteFontSize
+            //
+            this.tsRteFontSize.AutoSize = false;
+            this.tsRteFontSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.tsRteFontSize.Items.AddRange(new object[] { "8pt", "10pt", "12pt", "14pt", "18pt", "24pt", "36pt" });
+            this.tsRteFontSize.Name = "tsRteFontSize";
+            this.tsRteFontSize.Size = new System.Drawing.Size(70, 27);
+            this.tsRteFontSize.Text = "12pt";
+            this.tsRteFontSize.ToolTipText = "Font Size";
+            this.tsRteFontSize.SelectedIndexChanged += new System.EventHandler(this.TsRteFontSize_SelectedIndexChanged);
+            //
+            // tsRteAlignLeft
+            //
+            this.tsRteAlignLeft.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAlignLeft.Name = "tsRteAlignLeft";
+            this.tsRteAlignLeft.Size = new System.Drawing.Size(29, 24);
+            this.tsRteAlignLeft.Text = "≡L";
+            this.tsRteAlignLeft.ToolTipText = "ชิดซ้าย (Align Left)";
+            this.tsRteAlignLeft.Click += new System.EventHandler(this.TsRteAlignLeft_Click);
+            //
+            // tsRteAlignCenter
+            //
+            this.tsRteAlignCenter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAlignCenter.Name = "tsRteAlignCenter";
+            this.tsRteAlignCenter.Size = new System.Drawing.Size(29, 24);
+            this.tsRteAlignCenter.Text = "≡C";
+            this.tsRteAlignCenter.ToolTipText = "กึ่งกลาง (Align Center)";
+            this.tsRteAlignCenter.Click += new System.EventHandler(this.TsRteAlignCenter_Click);
+            //
+            // tsRteAlignRight
+            //
+            this.tsRteAlignRight.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAlignRight.Name = "tsRteAlignRight";
+            this.tsRteAlignRight.Size = new System.Drawing.Size(29, 24);
+            this.tsRteAlignRight.Text = "≡R";
+            this.tsRteAlignRight.ToolTipText = "ชิดขวา (Align Right)";
+            this.tsRteAlignRight.Click += new System.EventHandler(this.TsRteAlignRight_Click);
+            //
+            // tsRteTable
+            //
+            this.tsRteTable.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteTable.Name = "tsRteTable";
+            this.tsRteTable.Size = new System.Drawing.Size(34, 24);
+            this.tsRteTable.Text = "⊞";
+            this.tsRteTable.ToolTipText = "แทรกตาราง (Insert Table)";
+            this.tsRteTable.Click += new System.EventHandler(this.TsRteTable_Click);
+            //
+            // tsRteCode
+            //
+            this.tsRteCode.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteCode.Font = new System.Drawing.Font("Consolas", 8.5F, System.Drawing.FontStyle.Bold);
+            this.tsRteCode.Name = "tsRteCode";
+            this.tsRteCode.Size = new System.Drawing.Size(34, 24);
+            this.tsRteCode.Text = "<>";
+            this.tsRteCode.ToolTipText = "แทรก Code Block";
+            this.tsRteCode.Click += new System.EventHandler(this.TsRteCode_Click);
+            //
+            // tsRteSep5
+            //
+            this.tsRteSep5.Name = "tsRteSep5";
+            this.tsRteSep5.Size = new System.Drawing.Size(6, 27);
+            //
+            // tsRteSep6
+            //
+            this.tsRteSep6.Name = "tsRteSep6";
+            this.tsRteSep6.Size = new System.Drawing.Size(6, 27);
+            //
             // pnlSummaryArea
             // 
             this.pnlSummaryArea.BackColor = System.Drawing.Color.White;
@@ -1495,25 +1595,35 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label       lblSummary;
         private System.Windows.Forms.TextBox     txtSummary;
         private System.Windows.Forms.ToolStrip   tsRte;
+        private System.Windows.Forms.ToolStripComboBox  tsRteFontFamily;
+        private System.Windows.Forms.ToolStripSeparator tsRteSep0;
+        private System.Windows.Forms.ToolStripComboBox  tsRteFontSize;
+        private System.Windows.Forms.ToolStripSeparator tsRteSep1;
         private System.Windows.Forms.ToolStripButton    tsRteBold;
         private System.Windows.Forms.ToolStripButton    tsRteItalic;
         private System.Windows.Forms.ToolStripButton    tsRteUnder;
-        private System.Windows.Forms.ToolStripSeparator tsRteSep1;
+        private System.Windows.Forms.ToolStripSeparator tsRteSep2;
         private System.Windows.Forms.ToolStripButton    tsRteH1;
         private System.Windows.Forms.ToolStripButton    tsRteH2;
         private System.Windows.Forms.ToolStripButton    tsRteH3;
-        private System.Windows.Forms.ToolStripSeparator tsRteSep2;
+        private System.Windows.Forms.ToolStripSeparator tsRteSep3;
+        private System.Windows.Forms.ToolStripButton    tsRteAlignLeft;
+        private System.Windows.Forms.ToolStripButton    tsRteAlignCenter;
+        private System.Windows.Forms.ToolStripButton    tsRteAlignRight;
+        private System.Windows.Forms.ToolStripSeparator tsRteSep4;
         private System.Windows.Forms.ToolStripButton    tsRteBullet;
         private System.Windows.Forms.ToolStripButton    tsRteNumList;
-        private System.Windows.Forms.ToolStripSeparator tsRteSep3;
+        private System.Windows.Forms.ToolStripSeparator tsRteSep5;
         private System.Windows.Forms.ToolStripButton    tsRteLink;
+        private System.Windows.Forms.ToolStripButton    tsRteTable;
+        private System.Windows.Forms.ToolStripButton    tsRteCode;
         private System.Windows.Forms.ToolStripButton    tsRteImage;
         private System.Windows.Forms.ToolStripButton    tsRteAttach;
-        private System.Windows.Forms.ToolStripSeparator tsRteSep4;
+        private System.Windows.Forms.ToolStripSeparator tsRteSep6;
         private System.Windows.Forms.ToolStripButton    tsRteUndo;
         private System.Windows.Forms.ToolStripButton    tsRteRedo;
         private System.Windows.Forms.Label       lblContent;
-        private System.Windows.Forms.RichTextBox txtContent;
+        private System.Windows.Forms.WebBrowser  webEditor;
         private System.Windows.Forms.Panel       pnlRteStatus;
         private System.Windows.Forms.Label       lblRteStatus;
 

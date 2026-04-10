@@ -349,6 +349,9 @@
     <EmbeddedResource Include="Modules\ImportFile\ApprovalInboxForm.resx">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\KBCategoryForm.resx">
+      <DependentUpon>KBCategoryForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBEditorDialog.resx">
       <DependentUpon>KBEditorDialog.cs</DependentUpon>
     </EmbeddedResource>

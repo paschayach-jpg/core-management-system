@@ -53,6 +53,7 @@ namespace CMS.Presentation.Modules.KMS
                 return;
             }
 
+            webEditor.DocumentText = GetEditorHtml();
             InitTypeCombo();
             _presenter.Initialize();
         }
@@ -123,10 +124,34 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnPreview_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(
-                string.Format("Preview: {0}\n\n(ฟีเจอร์ Preview จะเปิดในหน้าต่างใหม่ — Phase 2)",
-                    txtTitle.Text.Trim()),
-                "Preview บทความ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            string html = ContentHTML;
+            string tmpPath = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(),
+                "kms_preview_" + System.IO.Path.GetRandomFileName() + ".html");
+
+            string fullHtml =
+                "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
+                "<title>Preview — " + System.Net.WebUtility.HtmlEncode(txtTitle.Text.Trim()) + "</title>" +
+                "<style>body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:14px;margin:24px;" +
+                "line-height:1.6;color:#333;max-width:900px;}" +
+                "h1{font-size:22px;}h2{font-size:18px;}h3{font-size:15px;}" +
+                "table{border-collapse:collapse;width:100%;margin:8px 0;}" +
+                "td,th{border:1px solid #ccc;padding:4px 8px;}th{background:#f0f0f0;}" +
+                "pre{background:#f4f4f4;padding:8px;border-radius:4px;border:1px solid #ddd;" +
+                "font-family:Consolas,monospace;overflow:auto;}" +
+                "a{color:#2980b9;}</style></head><body>" +
+                "<h2>" + System.Net.WebUtility.HtmlEncode(txtTitle.Text.Trim()) + "</h2>" +
+                html + "</body></html>";
+
+            try
+            {
+                System.IO.File.WriteAllText(tmpPath, fullHtml, System.Text.Encoding.UTF8);
+                System.Diagnostics.Process.Start(tmpPath);
+            }
+            catch (Exception ex)
+            {
+                ShowError("ไม่สามารถเปิด Preview ได้:\n" + ex.Message);
+            }
         }
 
         private void BtnCancel_Click(object sender, EventArgs e)
@@ -155,10 +180,23 @@ namespace CMS.Presentation.Modules.KMS
             set { txtSummary.Text = value; }
         }
 
+        private string _pendingHtml  = string.Empty;
+        private bool   _editorReady = false;
+
         public string ContentHTML
         {
-            get { return txtContent.Text.Trim(); }
-            set { txtContent.Text = value; }
+            get
+            {
+                if (!_editorReady || webEditor.Document == null || webEditor.Document.Body == null)
+                    return _pendingHtml;
+                return webEditor.Document.Body.InnerHtml ?? string.Empty;
+            }
+            set
+            {
+                _pendingHtml = value ?? string.Empty;
+                if (_editorReady && webEditor.Document != null && webEditor.Document.Body != null)
+                    webEditor.Document.Body.InnerHtml = _pendingHtml;
+            }
         }
 
         public string Tags
@@ -422,57 +460,111 @@ namespace CMS.Presentation.Modules.KMS
 
         // ── RTE Toolbar Handlers ─────────────────────────────────────────────
 
-        private void TsRteBold_Click(object sender, EventArgs e)
+        private void WebEditor_DocumentCompleted(object sender, System.Windows.Forms.WebBrowserDocumentCompletedEventArgs e)
         {
-            if (txtContent.SelectionLength == 0) return;
-            bool isBold = txtContent.SelectionFont != null && txtContent.SelectionFont.Bold;
-            txtContent.SelectionFont = new Font(
-                txtContent.SelectionFont ?? txtContent.Font,
-                isBold ? FontStyle.Regular : FontStyle.Bold);
-            txtContent.Focus();
+            if (_editorReady) return;
+            if (webEditor.Document == null || webEditor.Document.Body == null) return;
+            // Editability is set via contenteditable="true" on the body in GetEditorHtml()
+            _editorReady = true;
+            if (!string.IsNullOrEmpty(_pendingHtml))
+                webEditor.Document.Body.InnerHtml = _pendingHtml;
+            UpdateEditorStatus();
+            webEditor.Document.Body.KeyPress += (s, ev) => UpdateEditorStatus();
         }
 
-        private void TsRteItalic_Click(object sender, EventArgs e)
+        private void UpdateEditorStatus()
         {
-            if (txtContent.SelectionLength == 0) return;
-            bool isItalic = txtContent.SelectionFont != null && txtContent.SelectionFont.Italic;
-            txtContent.SelectionFont = new Font(
-                txtContent.SelectionFont ?? txtContent.Font,
-                isItalic ? FontStyle.Regular : FontStyle.Italic);
-            txtContent.Focus();
+            if (webEditor.Document == null || webEditor.Document.Body == null) return;
+            int len = (webEditor.Document.Body.InnerText ?? string.Empty).Length;
+            lblRteStatus.Text = string.Format("🖊️ กำลังแก้ไข  |  จำนวนอักขระ: {0}", len);
         }
 
-        private void TsRteUnder_Click(object sender, EventArgs e)
+        private void ExecCmd(string command, object value = null)
         {
-            if (txtContent.SelectionLength == 0) return;
-            bool isUnder = txtContent.SelectionFont != null && txtContent.SelectionFont.Underline;
-            txtContent.SelectionFont = new Font(
-                txtContent.SelectionFont ?? txtContent.Font,
-                isUnder ? FontStyle.Regular : FontStyle.Underline);
-            txtContent.Focus();
+            if (webEditor.Document == null) return;
+            webEditor.Document.ExecCommand(command, false, value);
+            webEditor.Focus();
         }
 
-        private void TsRteH1_Click(object sender, EventArgs e)     { InsertAtLineStart("# "); }
-        private void TsRteH2_Click(object sender, EventArgs e)     { InsertAtLineStart("## "); }
-        private void TsRteH3_Click(object sender, EventArgs e)     { InsertAtLineStart("### "); }
-        private void TsRteBullet_Click(object sender, EventArgs e) { InsertAtLineStart("- "); }
-        private void TsRteNumList_Click(object sender, EventArgs e){ InsertAtLineStart("1. "); }
+        private void PasteHtmlAtCursor(string html)
+        {
+            if (webEditor.Document == null) return;
+            webEditor.Document.InvokeScript("pasteHtml", new object[] { html });
+            webEditor.Focus();
+            UpdateEditorStatus();
+        }
+
+        private void TsRteBold_Click(object sender, EventArgs e)         { ExecCmd("Bold"); }
+        private void TsRteItalic_Click(object sender, EventArgs e)       { ExecCmd("Italic"); }
+        private void TsRteUnder_Click(object sender, EventArgs e)        { ExecCmd("Underline"); }
+        private void TsRteH1_Click(object sender, EventArgs e)           { ExecCmd("FormatBlock", "<h1>"); }
+        private void TsRteH2_Click(object sender, EventArgs e)           { ExecCmd("FormatBlock", "<h2>"); }
+        private void TsRteH3_Click(object sender, EventArgs e)           { ExecCmd("FormatBlock", "<h3>"); }
+        private void TsRteAlignLeft_Click(object sender, EventArgs e)    { ExecCmd("JustifyLeft"); }
+        private void TsRteAlignCenter_Click(object sender, EventArgs e)  { ExecCmd("JustifyCenter"); }
+        private void TsRteAlignRight_Click(object sender, EventArgs e)   { ExecCmd("JustifyRight"); }
+        private void TsRteBullet_Click(object sender, EventArgs e)       { ExecCmd("InsertUnorderedList"); }
+        private void TsRteNumList_Click(object sender, EventArgs e)      { ExecCmd("InsertOrderedList"); }
 
         private void TsRteLink_Click(object sender, EventArgs e)
         {
-            string sel  = txtContent.SelectedText;
-            string text = string.IsNullOrEmpty(sel) ? "ข้อความลิงก์" : sel;
-            int    pos  = txtContent.SelectionStart;
-            txtContent.SelectedText   = string.Format("[{0}](URL)", text);
-            txtContent.SelectionStart = pos + text.Length + 3;
-            txtContent.SelectionLength = 3;
-            txtContent.Focus();
+            string url = Microsoft.VisualBasic.Interaction.InputBox(
+                "กรอก URL:", "แทรก Hyperlink", "https://");
+            if (string.IsNullOrWhiteSpace(url)) return;
+            ExecCmd("CreateLink", url);
         }
 
         private void TsRteImage_Click(object sender, EventArgs e)
         {
-            txtContent.SelectedText = "![คำอธิบายรูปภาพ](URL)";
-            txtContent.Focus();
+            string url = Microsoft.VisualBasic.Interaction.InputBox(
+                "กรอก URL รูปภาพ:", "แทรกรูปภาพ", "https://");
+            if (string.IsNullOrWhiteSpace(url)) return;
+            PasteHtmlAtCursor(string.Format(
+                "<img src='{0}' alt='รูปภาพ' style='max-width:100%;' />", url));
+        }
+
+        private void TsRteTable_Click(object sender, EventArgs e)
+        {
+            string input = Microsoft.VisualBasic.Interaction.InputBox(
+                "จำนวน แถว x คอลัมน์ (เช่น 3x4):", "แทรกตาราง", "3x3");
+            if (string.IsNullOrWhiteSpace(input)) return;
+
+            string[] parts = input.Split(new char[] { 'x', 'X' });
+            int rows = 3, cols = 3;
+            if (parts.Length == 2)
+            {
+                int.TryParse(parts[0].Trim(), out rows);
+                int.TryParse(parts[1].Trim(), out cols);
+            }
+            if (rows < 1) rows = 1;
+            if (cols < 1) cols = 1;
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append("<table border='1' style='border-collapse:collapse;width:100%;margin:8px 0;'>");
+            sb.Append("<tr>");
+            for (int c = 0; c < cols; c++)
+                sb.AppendFormat("<th style='border:1px solid #ccc;padding:4px 8px;background:#f0f0f0;'>Header {0}</th>", c + 1);
+            sb.Append("</tr>");
+            for (int r = 1; r < rows; r++)
+            {
+                sb.Append("<tr>");
+                for (int c = 0; c < cols; c++)
+                    sb.Append("<td style='border:1px solid #ccc;padding:4px 8px;'>&nbsp;</td>");
+                sb.Append("</tr>");
+            }
+            sb.Append("</table><p></p>");
+            PasteHtmlAtCursor(sb.ToString());
+        }
+
+        private void TsRteCode_Click(object sender, EventArgs e)
+        {
+            string lang = Microsoft.VisualBasic.Interaction.InputBox(
+                "ภาษาโปรแกรม (เช่น csharp, sql, javascript) หรือว่างเปล่า:",
+                "แทรก Code Block", "");
+            PasteHtmlAtCursor(string.Format(
+                "<pre style='background:#f4f4f4;padding:8px;border-radius:4px;" +
+                "font-family:Consolas,monospace;border:1px solid #ddd;'>" +
+                "<code class='language-{0}'>// Code here</code></pre><p></p>", lang ?? ""));
         }
 
         private void TsRteAttach_Click(object sender, EventArgs e)
@@ -480,32 +572,45 @@ namespace CMS.Presentation.Modules.KMS
             tabMapping.SelectedTab = tabAttach;
         }
 
-        private void TsRteUndo_Click(object sender, EventArgs e)
+        private void TsRteUndo_Click(object sender, EventArgs e) { ExecCmd("Undo"); }
+        private void TsRteRedo_Click(object sender, EventArgs e) { ExecCmd("Redo"); }
+
+        private void TsRteFontFamily_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (txtContent.CanUndo) txtContent.Undo();
-            txtContent.Focus();
+            if (tsRteFontFamily.SelectedItem == null) return;
+            ExecCmd("FontName", tsRteFontFamily.SelectedItem.ToString());
         }
 
-        private void TsRteRedo_Click(object sender, EventArgs e)
+        private void TsRteFontSize_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (txtContent.CanRedo) txtContent.Redo();
-            txtContent.Focus();
+            int idx = tsRteFontSize.SelectedIndex;
+            if (idx < 0) return;
+            // HTML font sizes 1–7 map to: 8pt 10pt 12pt 14pt 18pt 24pt 36pt
+            ExecCmd("FontSize", (idx + 1).ToString());
         }
 
-        private void TxtContent_TextChanged(object sender, EventArgs e)
+        private static string GetEditorHtml()
         {
-            lblRteStatus.Text = string.Format(
-                "🖊️ กำลังแก้ไข  |  จำนวนอักขระ: {0}", txtContent.TextLength);
-        }
-
-        private void InsertAtLineStart(string prefix)
-        {
-            int lineIndex = txtContent.GetLineFromCharIndex(txtContent.SelectionStart);
-            int lineStart = txtContent.GetFirstCharIndexFromLine(lineIndex);
-            txtContent.SelectionStart  = lineStart;
-            txtContent.SelectionLength = 0;
-            txtContent.SelectedText    = prefix;
-            txtContent.Focus();
+            return
+                "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
+                "<style>" +
+                "body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:14px;margin:8px;" +
+                "line-height:1.6;color:#333;}" +
+                "h1{font-size:22px;}h2{font-size:18px;}h3{font-size:15px;}" +
+                "table{border-collapse:collapse;width:100%;margin:8px 0;}" +
+                "td,th{border:1px solid #ccc;padding:4px 8px;}" +
+                "th{background:#f0f0f0;}" +
+                "pre{background:#f4f4f4;font-family:Consolas,monospace;padding:8px;" +
+                "border-radius:4px;border:1px solid #ddd;overflow:auto;}" +
+                "code{background:#f4f4f4;font-family:Consolas,monospace;padding:2px 4px;border-radius:2px;}" +
+                "a{color:#2980b9;}" +
+                "</style>" +
+                "<script type='text/javascript'>" +
+                "function pasteHtml(h){" +
+                "try{if(document.selection){var r=document.selection.createRange();r.pasteHTML(h);}}" +
+                "catch(e){}}" +
+                "</script>" +
+                "</head><body contenteditable='true' style='outline:none;'></body></html>";
         }
 
         // ── Helper Classes ───────────────────────────────────────────────────
