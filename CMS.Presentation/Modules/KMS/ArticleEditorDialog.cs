@@ -1,10 +1,13 @@
+// ✅ Allowed usings: CMS.Controllers, CMS.Domain
+// ❌ Forbidden usings: CMS.Services, CMS.Data
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation.Modules.KMS
 {
@@ -13,128 +16,295 @@ namespace CMS.Presentation.Modules.KMS
     /// Layout ตาม kms_editor.html — 3 sections: General Info, Content Editor, Mapping Tabs
     /// รองรับ: Create / Edit / Send Review / Publish / Archive + Version History
     /// </summary>
-    public partial class ArticleEditorDialog : Form
+    public partial class ArticleEditorDialog : Form, IArticleEditorDialogView
     {
-        private readonly IKBCategoryService _categoryService;
-        private readonly IKBArticleService  _articleService;
-        private readonly UserContext        _user;
-        private readonly KBArticle          _editingArticle; // null = new article
+        private ArticleEditorDialogPresenter _presenter;
+        private readonly UserContext          _user;
 
-        private List<KBCategory> _categories = new List<KBCategory>();
-
-        public ArticleEditorDialog(
-            IKBCategoryService categoryService,
-            IKBArticleService  articleService,
-            UserContext        user,
-            KBArticle          article)   // null = create new
+        public ArticleEditorDialog(UserContext user)
         {
-            if (categoryService == null) throw new ArgumentNullException("categoryService");
-            if (articleService  == null) throw new ArgumentNullException("articleService");
-            if (user            == null) throw new ArgumentNullException("user");
-            _categoryService = categoryService;
-            _articleService  = articleService;
-            _user            = user;
-            _editingArticle  = article;
+            if (user == null) throw new ArgumentNullException("user");
+            _user = user;
             InitializeComponent();
         }
 
-        // ── Load ──────────────────────────────────────────────────────────────
+        /// <summary>
+        /// Called by the composition root after the presenter is wired.
+        /// Must be called before the dialog is shown.
+        /// </summary>
+        public void AttachPresenter(ArticleEditorDialogPresenter presenter)
+        {
+            if (presenter == null) throw new ArgumentNullException("presenter");
+            _presenter = presenter;
+        }
+
+        // ── Form events ──────────────────────────────────────────────────────
 
         private void ArticleEditorDialog_Load(object sender, EventArgs e)
         {
-            LoadDropdowns();
+            InitTypeCombo();
+            _presenter.Initialize();
+        }
 
-            if (_editingArticle == null)
+        private void ChkNoExpiry_CheckedChanged(object sender, EventArgs e)
+        {
+            dtpExpiry.Enabled = !chkNoExpiry.Checked;
+        }
+
+        private void BtnSaveDraft_Click(object sender, EventArgs e)
+        {
+            if (!ValidateInput()) return;
+            try { _presenter.Save(txtChangeDesc.Text.Trim()); }
+            catch (Exception ex) { ShowError("บันทึกไม่สำเร็จ:\n" + ex.Message); }
+        }
+
+        private void BtnSendReview_Click(object sender, EventArgs e)
+        {
+            string action = btnSendReview.Text.Contains("Review") ? "ส่งขอ Review" : "เผยแพร่";
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการ{0}บทความ \"{1}\" ใช่หรือไม่?", action, txtTitle.Text.Trim()),
+                "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm != DialogResult.Yes) return;
+            try { _presenter.Publish(); }
+            catch (Exception ex) { ShowError("เกิดข้อผิดพลาด:\n" + ex.Message); }
+        }
+
+        private void BtnArchive_Click(object sender, EventArgs e)
+        {
+            var confirm = MessageBox.Show(
+                string.Format(
+                    "ต้องการ Archive บทความ \"{0}\" ใช่หรือไม่?\n\n" +
+                    "(บทความที่ Archive แล้วไม่สามารถนำกลับมาแก้ไขได้)",
+                    txtTitle.Text.Trim()),
+                "ยืนยัน Archive", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (confirm != DialogResult.Yes) return;
+            try { _presenter.Archive(); }
+            catch (Exception ex) { ShowError("เกิดข้อผิดพลาด:\n" + ex.Message); }
+        }
+
+        private void BtnPreview_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(
+                string.Format("Preview: {0}\n\n(ฟีเจอร์ Preview จะเปิดในหน้าต่างใหม่ — Phase 2)",
+                    txtTitle.Text.Trim()),
+                "Preview บทความ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void BtnCancel_Click(object sender, EventArgs e)
+        {
+            DialogResult = DialogResult.Cancel;
+            Close();
+        }
+
+        // ── IArticleEditorDialogView ─────────────────────────────────────────
+
+        public string ArticleCode
+        {
+            get { return txtCode.Text.Trim(); }
+            set { txtCode.Text = value; }
+        }
+
+        public string Title
+        {
+            get { return txtTitle.Text.Trim(); }
+            set { txtTitle.Text = value; }
+        }
+
+        public string Summary
+        {
+            get { return txtSummary.Text.Trim(); }
+            set { txtSummary.Text = value; }
+        }
+
+        public string ContentHTML
+        {
+            get { return txtContent.Text.Trim(); }
+            set { txtContent.Text = value; }
+        }
+
+        public string Tags
+        {
+            get { return txtTags.Text.Trim(); }
+            set { txtTags.Text = value; }
+        }
+
+        public bool IsOfficialPolicy
+        {
+            get { return chkOfficialPolicy.Checked; }
+            set { chkOfficialPolicy.Checked = value; }
+        }
+
+        public bool NoExpiry
+        {
+            get { return chkNoExpiry.Checked; }
+            set
             {
-                // New article — Draft defaults
-                Text = "เพิ่มบทความใหม่ — Knowledge Base | KMS";
-                lblHeader.Text      = "  ✏️ เพิ่มบทความใหม่";
-                lblBreadcrumb.Text  = "KMS › บทความใหม่";
-                txtCode.Text        = GenerateArticleCodePreview();
-                cboType.SelectedIndex = 0;
-                chkNoExpiry.Checked = true;
-                dtpExpiry.Enabled   = false;
-                btnArchive.Visible  = false;
-
-                SetStatusDisplay(1);
-                SetStatusBarInfo(null);
-            }
-            else
-            {
-                Text = string.Format("แก้ไขบทความ: {0} — KMS", _editingArticle.Title ?? "");
-                lblHeader.Text     = string.Format("  ✏️ แก้ไขบทความ: {0}", _editingArticle.Title ?? "");
-                lblBreadcrumb.Text = string.Format("KMS › {0} › แก้ไขบทความ",
-                    _editingArticle.CategoryName ?? "หมวดหมู่");
-
-                PopulateFields(_editingArticle);
-                LoadVersionHistory(_editingArticle.ArticleID);
-                UpdateActionButtons(_editingArticle.Status);
+                chkNoExpiry.Checked = value;
+                dtpExpiry.Enabled   = !value;
             }
         }
 
-        // ── Dropdowns ─────────────────────────────────────────────────────────
-
-        private void LoadDropdowns()
+        public DateTime? ExpiryDate
         {
-            try { _categories = _categoryService.GetAllActive().ToList(); }
-            catch { _categories = new List<KBCategory>(); }
+            get { return chkNoExpiry.Checked ? (DateTime?)null : dtpExpiry.Value; }
+            set { if (value.HasValue) dtpExpiry.Value = value.Value; }
+        }
 
+        public int SelectedCategoryId
+        {
+            get
+            {
+                var ci = cboCategory.SelectedItem as ComboItem;
+                return ci != null ? ci.Value : 0;
+            }
+            set { SelectComboByValue(cboCategory, value); }
+        }
+
+        public byte SelectedArticleType
+        {
+            get
+            {
+                var ci = cboType.SelectedItem as ComboItem;
+                return ci != null ? (byte)ci.Value : (byte)1;
+            }
+            set { SelectComboByValue(cboType, value); }
+        }
+
+        public byte SelectedStatus
+        {
+            get { return _currentStatus; }
+            set
+            {
+                _currentStatus = value;
+                SetStatusDisplay(value);
+            }
+        }
+        private byte _currentStatus = 1;
+
+        public string HeaderText
+        {
+            set { lblHeader.Text = value; }
+        }
+
+        public string ViewCountText
+        {
+            set { lblViewCount.Text = value; }
+        }
+
+        public string LikeCountText
+        {
+            set { lblLikeCount.Text = value; }
+        }
+
+        public string VersionTabText
+        {
+            set { tabVersions.Text = value; }
+        }
+
+        public bool PublishButtonVisible
+        {
+            set { btnSendReview.Visible = value; }
+        }
+
+        public bool ArchiveButtonVisible
+        {
+            set { btnArchive.Visible = value; }
+        }
+
+        public bool SaveEnabled
+        {
+            set { btnSaveDraft.Enabled = value; }
+        }
+
+        public string PublishButtonText
+        {
+            set { btnSendReview.Text = value; }
+        }
+
+        public Color PublishButtonColor
+        {
+            set { btnSendReview.BackColor = value; }
+        }
+
+        public string VersionText
+        {
+            set { lblVerInfo.Text = value; }
+        }
+
+        public string AuthorText
+        {
+            set { lblAuthorInfo.Text = value; }
+        }
+
+        public string DateInfoText
+        {
+            set { lblDateInfo.Text = value; }
+        }
+
+        public void BindCategories(IEnumerable<KBCategory> categories)
+        {
             cboCategory.Items.Clear();
             cboCategory.Items.Add(new ComboItem("— เลือกหมวดหมู่ —", 0));
-            foreach (var c in _categories.OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName))
+            foreach (var c in categories.OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName))
                 cboCategory.Items.Add(new ComboItem(
                     c.ParentCategoryID.HasValue
                         ? string.Format("  └ {0}", c.CategoryName)
                         : c.CategoryName,
                     c.CategoryID));
             cboCategory.SelectedIndex = 0;
+        }
 
+        public void BindVersionHistory(IEnumerable<KBVersion> versions)
+        {
+            lstVersions.Items.Clear();
+            foreach (var v in versions)
+            {
+                var item = new ListViewItem(string.Format("v{0}", v.VersionNumber));
+                item.SubItems.Add(v.CreatedDate.ToString("dd/MM/yyyy HH:mm"));
+                item.SubItems.Add(v.CreatedBy ?? "-");
+                item.SubItems.Add(v.ChangeDescription ?? "-");
+                item.Tag       = v;
+                item.BackColor = v.VersionNumber % 2 == 0
+                    ? Color.White
+                    : Color.FromArgb(248, 250, 253);
+                lstVersions.Items.Add(item);
+            }
+        }
+
+        public void CloseOk()
+        {
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+
+        public void CloseCancel()
+        {
+            DialogResult = DialogResult.Cancel;
+            Close();
+        }
+
+        public void ShowError(string message)
+        {
+            MessageBox.Show(message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        public void ShowInfo(string message)
+        {
+            MessageBox.Show(message, "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        // ── Private UI helpers ───────────────────────────────────────────────
+
+        private void InitTypeCombo()
+        {
             cboType.Items.Clear();
             cboType.Items.Add(new ComboItem("SOP (Standard Operating Procedure)", 1));
-            cboType.Items.Add(new ComboItem("FAQ (คำถามที่พบบ่อย)", 2));
-            cboType.Items.Add(new ComboItem("Guideline (แนวปฏิบัติ)", 3));
-            cboType.Items.Add(new ComboItem("Template (แม่แบบเอกสาร)", 4));
-            cboType.Items.Add(new ComboItem("Policy (นโยบาย)", 5));
+            cboType.Items.Add(new ComboItem("FAQ (คำถามที่พบบ่อย)",              2));
+            cboType.Items.Add(new ComboItem("Guideline (แนวปฏิบัติ)",             3));
+            cboType.Items.Add(new ComboItem("Template (แม่แบบเอกสาร)",            4));
+            cboType.Items.Add(new ComboItem("Policy (นโยบาย)",                    5));
             cboType.SelectedIndex = 0;
         }
-
-        // ── Populate fields from existing article ─────────────────────────────
-
-        private void PopulateFields(KBArticle a)
-        {
-            txtCode.Text    = a.ArticleCode ?? string.Empty;
-            txtTitle.Text   = a.Title       ?? string.Empty;
-            txtSummary.Text = a.Summary     ?? string.Empty;
-            txtContent.Text = a.ContentHTML ?? string.Empty;
-            txtTags.Text    = a.Tags        ?? string.Empty;
-            chkOfficialPolicy.Checked = a.IsOfficialPolicy;
-
-            SelectComboByValue(cboCategory, a.CategoryID);
-            SelectComboByValue(cboType, (int)a.ArticleType);
-
-            SetStatusDisplay(a.Status);
-            lblCurVersion.Text = string.Format("v{0}.0", a.CurrentVersion > 0 ? a.CurrentVersion : 1);
-
-            // Expiry
-            if (a.ExpiryDate.HasValue)
-            {
-                chkNoExpiry.Checked = false;
-                dtpExpiry.Enabled   = true;
-                dtpExpiry.Value     = a.ExpiryDate.Value;
-            }
-            else
-            {
-                chkNoExpiry.Checked = true;
-                dtpExpiry.Enabled   = false;
-            }
-
-            lblViewCount.Text = string.Format("👁  ดู {0} ครั้ง", a.ViewCount);
-            lblLikeCount.Text = string.Format("👍  {0} Like", a.LikeCount);
-
-            SetStatusBarInfo(a);
-        }
-
-        // ── Status display ────────────────────────────────────────────────────
 
         private void SetStatusDisplay(byte status)
         {
@@ -173,191 +343,31 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        private void SetStatusBarInfo(KBArticle a)
+        private bool ValidateInput()
         {
-            if (a == null)
+            if (string.IsNullOrWhiteSpace(txtTitle.Text))
             {
-                lblVerInfo.Text    = "Version: 1.0";
-                lblAuthorInfo.Text = string.Format("สร้างโดย: {0}", _user.AdIdentity);
-                lblDateInfo.Text   = string.Format("วันที่: {0}", DateTime.Now.ToString("dd/MM/yyyy"));
+                ShowInfo("กรุณากรอกชื่อบทความ");
+                txtTitle.Focus();
+                return false;
             }
-            else
+            var catItem = cboCategory.SelectedItem as ComboItem;
+            if (catItem == null || catItem.Value == 0)
             {
-                lblVerInfo.Text    = string.Format("Version: {0}.0", a.CurrentVersion > 0 ? a.CurrentVersion : 1);
-                lblAuthorInfo.Text = string.Format("สร้างโดย: {0}", a.CreatedBy ?? "—");
-                lblDateInfo.Text   = string.Format("วันที่: {0}", a.CreatedDate.ToString("dd/MM/yyyy"));
+                ShowInfo("กรุณาเลือกหมวดหมู่");
+                cboCategory.Focus();
+                return false;
             }
+            return true;
         }
 
-        // ── Version History ───────────────────────────────────────────────────
-
-        private void LoadVersionHistory(int articleId)
+        private void SelectComboByValue(ComboBox cbo, int value)
         {
-            lstVersions.Items.Clear();
-            try
+            for (int i = 0; i < cbo.Items.Count; i++)
             {
-                var versions = _articleService.GetVersionHistory(articleId).ToList();
-                foreach (var v in versions)
-                {
-                    var item = new ListViewItem(string.Format("v{0}", v.VersionNumber));
-                    item.SubItems.Add(v.CreatedDate.ToString("dd/MM/yyyy HH:mm"));
-                    item.SubItems.Add(v.CreatedBy ?? "-");
-                    item.SubItems.Add(v.ChangeDescription ?? "-");
-                    item.Tag       = v;
-                    item.BackColor = v.VersionNumber % 2 == 0
-                        ? Color.White
-                        : Color.FromArgb(248, 250, 253);
-                    lstVersions.Items.Add(item);
-                }
-                tabVersions.Text = string.Format("🕐 ประวัติ Version ({0})", versions.Count);
+                var ci = cbo.Items[i] as ComboItem;
+                if (ci != null && ci.Value == value) { cbo.SelectedIndex = i; return; }
             }
-            catch { /* non-critical */ }
-        }
-
-        // ── Action button state ───────────────────────────────────────────────
-
-        private void UpdateActionButtons(byte status)
-        {
-            bool isArchived  = (status == 4);
-            bool isPublished = (status == 3);
-
-            btnSaveDraft.Enabled  = !isArchived;
-            btnSendReview.Enabled = !isArchived && !isPublished;
-            btnPreview.Enabled    = true;
-
-            if (status == 1)   // Draft
-            {
-                btnSendReview.Text      = "📤 ส่งขอ Review";
-                btnSendReview.BackColor = Color.FromArgb(46, 116, 181);
-            }
-            else if (status == 2)   // Review — reviewer can publish
-            {
-                btnSendReview.Text      = "✅ เผยแพร่";
-                btnSendReview.BackColor = Color.FromArgb(39, 174, 96);
-            }
-
-            btnArchive.Visible = isPublished;
-
-            if (isArchived)
-            {
-                btnSaveDraft.Text    = "🔒 (Archived)";
-                btnSaveDraft.Enabled = false;
-            }
-        }
-
-        // ── Event handlers ────────────────────────────────────────────────────
-
-        private void ChkNoExpiry_CheckedChanged(object sender, EventArgs e)
-        {
-            dtpExpiry.Enabled = !chkNoExpiry.Checked;
-        }
-
-        // 💾 Save as Draft
-        private void BtnSaveDraft_Click(object sender, EventArgs e)
-        {
-            if (!ValidateInput()) return;
-            try
-            {
-                var article = BuildArticleFromUI();
-                if (_editingArticle == null)
-                {
-                    _articleService.Create(article);
-                    MessageBox.Show("เพิ่มบทความสำเร็จ", "สำเร็จ",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    article.ArticleID = _editingArticle.ArticleID;
-                    _articleService.Update(article, txtChangeDesc.Text.Trim());
-                    MessageBox.Show("บันทึกบทความสำเร็จ", "สำเร็จ",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                DialogResult = DialogResult.OK;
-                Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("บันทึกไม่สำเร็จ:\n" + ex.Message,
-                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        // 📤 Send Review / ✅ Publish
-        private void BtnSendReview_Click(object sender, EventArgs e)
-        {
-            if (_editingArticle == null)
-            {
-                MessageBox.Show("กรุณาบันทึกบทความก่อนส่ง Review", "แจ้งเตือน",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            byte currentStatus = _editingArticle.Status;
-            byte targetStatus  = currentStatus == 1 ? (byte)2 : (byte)3;
-            string actionText  = targetStatus == 2 ? "ส่งขอ Review" : "เผยแพร่";
-
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการ{0}บทความ \"{1}\" ใช่หรือไม่?",
-                    actionText, _editingArticle.Title),
-                "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirm != DialogResult.Yes) return;
-
-            try
-            {
-                _articleService.ChangeStatus(_editingArticle.ArticleID, targetStatus, _user.AdIdentity);
-                MessageBox.Show(string.Format("{0}สำเร็จ", actionText), "สำเร็จ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                DialogResult = DialogResult.OK;
-                Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("เกิดข้อผิดพลาด:\n" + ex.Message,
-                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        // 👁️ Preview
-        private void BtnPreview_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show(
-                string.Format("Preview: {0}\n\n(ฟีเจอร์ Preview จะเปิดในหน้าต่างใหม่ — Phase 2)",
-                    txtTitle.Text.Trim()),
-                "Preview บทความ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-        // 📦 Archive
-        private void BtnArchive_Click(object sender, EventArgs e)
-        {
-            if (_editingArticle == null) return;
-
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการ Archive บทความ \"{0}\" ใช่หรือไม่?\n\n" +
-                              "(บทความที่ Archive แล้วไม่สามารถนำกลับมาแก้ไขได้)",
-                    _editingArticle.Title),
-                "ยืนยัน Archive", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (confirm != DialogResult.Yes) return;
-
-            try
-            {
-                _articleService.ChangeStatus(_editingArticle.ArticleID, 4, _user.AdIdentity);
-                MessageBox.Show("Archive บทความสำเร็จ", "สำเร็จ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                DialogResult = DialogResult.OK;
-                Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("เกิดข้อผิดพลาด:\n" + ex.Message,
-                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        // ❌ Cancel
-        private void BtnCancel_Click(object sender, EventArgs e)
-        {
-            DialogResult = DialogResult.Cancel;
-            Close();
         }
 
         // ── RTE Toolbar handlers ──────────────────────────────────────────────
@@ -392,19 +402,19 @@ namespace CMS.Presentation.Modules.KMS
             txtContent.Focus();
         }
 
-        private void TsRteH1_Click(object sender, EventArgs e) { InsertAtLineStart("# "); }
-        private void TsRteH2_Click(object sender, EventArgs e) { InsertAtLineStart("## "); }
-        private void TsRteH3_Click(object sender, EventArgs e) { InsertAtLineStart("### "); }
+        private void TsRteH1_Click(object sender, EventArgs e)     { InsertAtLineStart("# "); }
+        private void TsRteH2_Click(object sender, EventArgs e)     { InsertAtLineStart("## "); }
+        private void TsRteH3_Click(object sender, EventArgs e)     { InsertAtLineStart("### "); }
         private void TsRteBullet_Click(object sender, EventArgs e) { InsertAtLineStart("- "); }
-        private void TsRteNumList_Click(object sender, EventArgs e) { InsertAtLineStart("1. "); }
+        private void TsRteNumList_Click(object sender, EventArgs e){ InsertAtLineStart("1. "); }
 
         private void TsRteLink_Click(object sender, EventArgs e)
         {
             string sel  = txtContent.SelectedText;
             string text = string.IsNullOrEmpty(sel) ? "ข้อความลิงก์" : sel;
             int    pos  = txtContent.SelectionStart;
-            txtContent.SelectedText    = string.Format("[{0}](URL)", text);
-            txtContent.SelectionStart  = pos + text.Length + 3;
+            txtContent.SelectedText   = string.Format("[{0}](URL)", text);
+            txtContent.SelectionStart = pos + text.Length + 3;
             txtContent.SelectionLength = 3;
             txtContent.Focus();
         }
@@ -438,79 +448,6 @@ namespace CMS.Presentation.Modules.KMS
                 "🖊️ กำลังแก้ไข  |  จำนวนอักขระ: {0}", txtContent.TextLength);
         }
 
-        // ── Build / Validate ──────────────────────────────────────────────────
-
-        /// <summary>
-        /// เรียก service เพื่อดึง ArticleCode ถัดไป (KB-YYYY-NNN) สำหรับแสดงใน txtCode
-        /// หาก DB ไม่พร้อมจะคืนค่าว่าง ซึ่ง KBArticleService.Create() จะสร้างใหม่ขณะ Save
-        /// </summary>
-        private string GenerateArticleCodePreview()
-        {
-            try
-            {
-                return _articleService.GenerateNextArticleCode();
-            }
-            catch
-            {
-                // ไม่สามารถติดต่อ DB ได้ — ปล่อยว่าง ให้ service สร้างขณะ Save
-                return string.Empty;
-            }
-        }
-
-        private KBArticle BuildArticleFromUI()
-        {
-            var catItem  = cboCategory.SelectedItem as ComboItem;
-            var typeItem = cboType.SelectedItem     as ComboItem;
-
-            return new KBArticle
-            {
-                ArticleCode      = txtCode.Text.Trim(),
-                Title            = txtTitle.Text.Trim(),
-                Summary          = txtSummary.Text.Trim(),
-                ContentHTML      = txtContent.Text.Trim(),
-                CategoryID       = catItem  != null ? catItem.Value  : 0,
-                ArticleType      = typeItem != null ? (byte)typeItem.Value : (byte)1,
-                Status           = 1,   // always saved as Draft
-                IsOfficialPolicy = chkOfficialPolicy.Checked,
-                Tags             = txtTags.Text.Trim(),
-                ExpiryDate       = chkNoExpiry.Checked ? (DateTime?)null : dtpExpiry.Value,
-                CreatedBy        = _user.AdIdentity,
-            };
-        }
-
-        private bool ValidateInput()
-        {
-            if (string.IsNullOrWhiteSpace(txtTitle.Text))
-            {
-                MessageBox.Show("กรุณากรอกชื่อบทความ", "กรุณากรอกข้อมูล",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtTitle.Focus();
-                return false;
-            }
-            var catItem = cboCategory.SelectedItem as ComboItem;
-            if (catItem == null || catItem.Value == 0)
-            {
-                MessageBox.Show("กรุณาเลือกหมวดหมู่", "กรุณากรอกข้อมูล",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                cboCategory.Focus();
-                return false;
-            }
-            return true;
-        }
-
-        private void SelectComboByValue(ComboBox cbo, int value)
-        {
-            for (int i = 0; i < cbo.Items.Count; i++)
-            {
-                var ci = cbo.Items[i] as ComboItem;
-                if (ci != null && ci.Value == value)
-                {
-                    cbo.SelectedIndex = i;
-                    return;
-                }
-            }
-        }
-
         private void InsertAtLineStart(string prefix)
         {
             int lineIndex = txtContent.GetLineFromCharIndex(txtContent.SelectionStart);
@@ -520,8 +457,6 @@ namespace CMS.Presentation.Modules.KMS
             txtContent.SelectedText    = prefix;
             txtContent.Focus();
         }
-
-        // ── Inner helper ──────────────────────────────────────────────────────
 
         private class ComboItem
         {

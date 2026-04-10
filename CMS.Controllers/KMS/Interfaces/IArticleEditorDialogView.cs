@@ -1,7 +1,7 @@
 ﻿using CMS.Domain.Models;
 using System.Collections.Generic;
 
-namespace CMS.Controllers.KBS.Interfaces
+namespace CMS.Controllers.KMS.Interfaces
 {
     public interface IArticleEditorDialogView
     {
@@ -29,5 +29,12 @@ namespace CMS.Controllers.KBS.Interfaces
         void BindVersionHistory(IEnumerable<KBVersion> versions);
         void CloseOk();
         void CloseCancel();
+        void ShowError(string message);
+        void ShowInfo(string message);
+
+        // Status-bar display labels
+        string VersionText   { set; }
+        string AuthorText    { set; }
+        string DateInfoText  { set; }
     }
 }

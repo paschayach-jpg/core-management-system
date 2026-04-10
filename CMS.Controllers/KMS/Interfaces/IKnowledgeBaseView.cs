@@ -1,7 +1,7 @@
 ﻿using CMS.Domain.Models;
 using System.Collections.Generic;
 
-namespace CMS.Controllers.KBS.Interfaces
+namespace CMS.Controllers.KMS.Interfaces
 {
     public interface IKnowledgeBaseView
     {
@@ -10,7 +10,7 @@ namespace CMS.Controllers.KBS.Interfaces
         int? SelectedCategoryId { get; set; }
         string ArticleTitleText { set; }
         string ArticleCountText { set; }
-        void BindCategoryTree(IEnumerable<KBCategory> categories);
+        void BindCategoryTree(IEnumerable<KBCategory> categories, System.Collections.Generic.IDictionary<int, int> articleCounts);
         void RenderArticles(IEnumerable<KBArticle> articles);
         void ShowError(string message);
         void ShowReport(string reportText);

@@ -1,10 +1,9 @@
-﻿using CMS.Controllers.KBS.Interfaces;
+using CMS.Controllers.KMS.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
-using System.Linq;
 
-namespace CMS.Controllers.KBS
+namespace CMS.Controllers.KMS.KB
 {
     public class KBCategoryPresenter
     {
@@ -14,9 +13,9 @@ namespace CMS.Controllers.KBS
 
         public KBCategoryPresenter(IKBCategoryView view, IKBCategoryService service, UserContext user)
         {
-            if (view == null) throw new ArgumentNullException("view");
+            if (view    == null) throw new ArgumentNullException("view");
             if (service == null) throw new ArgumentNullException("service");
-            if (user == null) throw new ArgumentNullException("user");
+            if (user    == null) throw new ArgumentNullException("user");
             _view = view; _service = service; _user = user;
         }
 
@@ -31,16 +30,16 @@ namespace CMS.Controllers.KBS
         public void OnCategorySelected(KBCategory cat)
         {
             if (cat == null) return;
-            _view.EditingId = cat.CategoryID;
-            _view.FormTitleText = "Edit Category";
-            _view.CategoryCode = cat.CategoryCode;
-            _view.CategoryName = cat.CategoryName;
-            _view.Icon = cat.Icon;
-            _view.Description = cat.Description;
-            _view.SortOrder = cat.SortOrder;
-            _view.ParentCategoryId = cat.ParentCategoryID;
-            _view.DeleteEnabled = cat.IsActive;
-            _view.DeleteButtonText = cat.IsActive ? "Deactivate" : "Already Inactive";
+            _view.EditingId      = cat.CategoryID;
+            _view.FormTitleText  = "แก้ไข Category";
+            _view.CategoryCode   = cat.CategoryCode;
+            _view.CategoryName   = cat.CategoryName;
+            _view.Icon           = cat.Icon;
+            _view.Description    = cat.Description;
+            _view.SortOrder      = cat.SortOrder;
+            _view.ParentCategoryId  = cat.ParentCategoryID;
+            _view.DeleteEnabled     = cat.IsActive;
+            _view.DeleteButtonText  = cat.IsActive ? "🗑️ ปิดใช้งาน" : "⛔ ปิดแล้ว";
         }
 
         public void Save()
@@ -52,31 +51,31 @@ namespace CMS.Controllers.KBS
                     var cat = new KBCategory
                     {
                         ParentCategoryID = _view.ParentCategoryId,
-                        CategoryCode = _view.CategoryCode,
-                        CategoryName = _view.CategoryName,
-                        Icon = _view.Icon,
-                        Description = _view.Description,
-                        SortOrder = _view.SortOrder,
-                        IsActive = true,
-                        CreatedBy = _user.AdIdentity,
+                        CategoryCode     = _view.CategoryCode,
+                        CategoryName     = _view.CategoryName,
+                        Icon             = _view.Icon,
+                        Description      = _view.Description,
+                        SortOrder        = _view.SortOrder,
+                        IsActive         = true,
+                        CreatedBy        = _user.AdIdentity,
                     };
                     _service.Create(cat);
-                    _view.ShowSuccess("Category added successfully");
+                    _view.ShowSuccess("เพิ่ม Category สำเร็จ");
                 }
                 else
                 {
                     var cat = new KBCategory
                     {
-                        CategoryID = _view.EditingId.Value,
+                        CategoryID       = _view.EditingId.Value,
                         ParentCategoryID = _view.ParentCategoryId,
-                        CategoryCode = _view.CategoryCode,
-                        CategoryName = _view.CategoryName,
-                        Icon = _view.Icon,
-                        Description = _view.Description,
-                        SortOrder = _view.SortOrder,
+                        CategoryCode     = _view.CategoryCode,
+                        CategoryName     = _view.CategoryName,
+                        Icon             = _view.Icon,
+                        Description      = _view.Description,
+                        SortOrder        = _view.SortOrder,
                     };
                     _service.Update(cat);
-                    _view.ShowSuccess("Category updated successfully");
+                    _view.ShowSuccess("แก้ไข Category สำเร็จ");
                 }
                 LoadCategories();
                 _view.ClearForm();
@@ -90,7 +89,7 @@ namespace CMS.Controllers.KBS
             try
             {
                 _service.Deactivate(_view.EditingId.Value);
-                _view.ShowSuccess("Category deactivated");
+                _view.ShowSuccess("ปิดใช้งาน Category สำเร็จ");
                 LoadCategories();
                 _view.ClearForm();
             }

@@ -78,9 +78,11 @@
     <Compile Include="KMS\Interfaces\IKnowledgeBaseView.cs" />
     <Compile Include="KMS\Interfaces\IArticleEditorDialogView.cs" />
     <Compile Include="KMS\Interfaces\IKBCategoryView.cs" />
-    <Compile Include="KMS\KnowledgeBasePresenter.cs" />
-    <Compile Include="KMS\ArticleEditorDialogPresenter.cs" />
-    <Compile Include="KMS\KBCategoryPresenter.cs" />
+    <Compile Include="KMS\Interfaces\IArticleViewerView.cs" />
+    <Compile Include="KMS\KB\KnowledgeBasePresenter.cs" />
+    <Compile Include="KMS\KB\ArticleEditorDialogPresenter.cs" />
+    <Compile Include="KMS\KB\KBCategoryPresenter.cs" />
+    <Compile Include="KMS\KB\ArticleViewerPresenter.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">
