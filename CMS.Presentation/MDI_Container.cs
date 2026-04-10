@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
+using CMS.Controllers.KMS.KB;
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
@@ -1161,10 +1162,46 @@ namespace CMS.Presentation
         {
             if (_kbCategoryService == null || _kbArticleService == null)
             {
-                MessageBox.Show("Knowledge Base service ไม่พร้อมใช้งาน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Knowledge Base service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenChildForm(new KnowledgeBaseForm(_kbCategoryService, _kbArticleService, _currentUser));
+
+            var form      = new KnowledgeBaseForm();
+            var presenter = new KnowledgeBasePresenter(
+                form, _kbCategoryService, _kbArticleService, _currentUser);
+
+            form.AttachPresenter(presenter, _currentUser);
+            form.AttachFactories(
+                // viewerFactory — สร้าง ArticleViewerForm พร้อม presenter
+                article =>
+                {
+                    var viewer          = new ArticleViewerForm();
+                    var viewerPresenter = new ArticleViewerPresenter(
+                        viewer, _kbArticleService, _currentUser, article);
+                    viewer.AttachPresenter(viewerPresenter);
+                    viewer.AttachEditorFactory(a => OpenArticleEditorDialog(a));
+                    return viewer;
+                },
+                // editorFactory — เปิด ArticleEditorDialog พร้อม presenter
+                article => OpenArticleEditorDialog(article),
+                // categorySettingsFactory — เปิดหน้าตั้งค่า Category
+                () => OpenKBCategorySettings());
+
+            OpenChildForm(form);
+        }
+
+        /// <summary>
+        /// Composition-root helper: สร้าง ArticleEditorDialog พร้อม presenter ครบชุด
+        /// แล้ว ShowDialog() คืนค่า DialogResult กลับมา
+        /// </summary>
+        private DialogResult OpenArticleEditorDialog(KBArticle article)
+        {
+            var dlg       = new ArticleEditorDialog(_currentUser);
+            var presenter = new ArticleEditorDialogPresenter(
+                dlg, _kbCategoryService, _kbArticleService, _currentUser, article);
+            dlg.AttachPresenter(presenter);
+            return dlg.ShowDialog(this);
         }
 
         private void OpenShareDialog()
@@ -1458,7 +1495,11 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenChildForm(new KBCategoryForm(_kbCategoryService, _currentUser));
+
+            var form      = new KBCategoryForm(_currentUser);
+            var presenter = new KBCategoryPresenter(form, _kbCategoryService, _currentUser);
+            form.AttachPresenter(presenter);
+            OpenChildForm(form);
         }
 
         private void SyncEmployeeFromApi()

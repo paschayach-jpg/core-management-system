@@ -60,6 +60,14 @@ namespace CMS.Presentation.Modules.KMS
 
         private void ArticleViewerForm_Load(object sender, EventArgs e)
         {
+            if (_presenter == null)
+            {
+                MessageBox.Show(
+                    "Presenter ยังไม่ได้ถูก Attach\n\nกรุณาเรียก AttachPresenter() ก่อนเปิดฟอร์ม",
+                    "ข้อผิดพลาดภายใน", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
+                return;
+            }
             BuildSidebarSections();
             AdjustSplitter();
             splitViewer.Resize += (s, ev) => AdjustSplitter();
@@ -148,6 +156,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnEdit_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             if (_openEditorFactory == null || _article == null) return;
             if (_openEditorFactory(_article) == DialogResult.OK)
                 _presenter.RefreshAfterEdit();

@@ -19,6 +19,7 @@ namespace CMS.Presentation.Modules.KMS
     public partial class KnowledgeBaseForm : Form, IKnowledgeBaseView
     {
         private KnowledgeBasePresenter _presenter;
+        private UserContext _user;
 
         // ── Viewer state ────────────────────────────────────────────────────────
         private ArticleViewerForm _activeViewer          = null;
@@ -43,10 +44,12 @@ namespace CMS.Presentation.Modules.KMS
         /// Called by the composition root after the presenter is wired.
         /// Must be called before the form is shown.
         /// </summary>
-        public void AttachPresenter(KnowledgeBasePresenter presenter)
+        public void AttachPresenter(KnowledgeBasePresenter presenter, UserContext user)
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
+            if (user == null) throw new ArgumentNullException("user");
             _presenter = presenter;
+            _user = user;
         }
 
         /// <summary>
@@ -67,6 +70,14 @@ namespace CMS.Presentation.Modules.KMS
 
         private void KnowledgeBaseForm_Load(object sender, EventArgs e)
         {
+            if (_presenter == null)
+            {
+                MessageBox.Show(
+                    "Presenter ยังไม่ได้ถูก Attach\n\nกรุณาเรียก AttachPresenter() ก่อนเปิดฟอร์ม",
+                    "ข้อผิดพลาดภายใน", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
+                return;
+            }
             InitFilterCombo();
             _presenter.Initialize();
         }
@@ -113,11 +124,21 @@ namespace CMS.Presentation.Modules.KMS
 
         // ── Search / filter handlers ─────────────────────────────────────────────
 
-        private void BtnSearch_Click(object sender, EventArgs e)       { _presenter.LoadArticles(); }
-        private void CboFilter_SelectedIndexChanged(object sender, EventArgs e) { _presenter.LoadArticles(); }
+        private void BtnSearch_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            _presenter.LoadArticles();
+        }
+
+        private void CboFilter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            _presenter.LoadArticles();
+        }
 
         private void TxtSearch_KeyDown(object sender, KeyEventArgs e)
         {
+            if (_presenter == null) return;
             if (e.KeyCode == Keys.Enter) _presenter.LoadArticles();
         }
 
@@ -125,6 +146,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TreeCategories_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            if (_presenter == null) return;
             if (e.Node == null) return;
             var cat = e.Node.Tag as KBCategory;
             _presenter.OnCategorySelected(cat?.CategoryID, cat?.CategoryName);
@@ -142,6 +164,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnNewArticle_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             if (_editorFactory == null) return;
             if (_editorFactory(null) == DialogResult.OK)
                 _presenter.LoadArticles();
@@ -149,24 +172,38 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnNewCategory_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             _categorySettingsFactory?.Invoke();
             _presenter.LoadCategoryTree();
         }
 
         private void BtnSettings_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             _categorySettingsFactory?.Invoke();
             _presenter.LoadCategoryTree();
         }
 
         private void BtnImportExcel_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("ฟังก์ชัน Import Excel อยู่ระหว่างการพัฒนา",
-                "Import Excel — MOD-006", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (_presenter == null) return;
+            if (_user == null) return;
+            // Open the Import Wizard
+            using (var wizard = new KBImportWizardForm(_user))
+            {
+                if (wizard.ShowDialog() == DialogResult.OK)
+                {
+                    // Refresh the article list after successful import
+                    _presenter.LoadArticles();
+                    MessageBox.Show("นำเข้าข้อมูลเรียบร้อยแล้ว", "สำเร็จ",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
         }
 
         private void BtnReports_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             _presenter.ShowReport();
         }
 
@@ -209,7 +246,8 @@ namespace CMS.Presentation.Modules.KMS
             pnlRightFooter.Visible = true;
             pnlArticleList.Visible = true;
 
-            _presenter.LoadArticles();
+            if (_presenter != null)
+                _presenter.LoadArticles();
         }
 
         private void CloseActiveViewer()

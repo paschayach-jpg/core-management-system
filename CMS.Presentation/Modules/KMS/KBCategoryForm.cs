@@ -43,27 +43,44 @@ namespace CMS.Presentation.Modules.KMS
 
         private void KBCategoryForm_Load(object sender, EventArgs e)
         {
+            if (_presenter == null)
+            {
+                MessageBox.Show(
+                    "Presenter ยังไม่ได้ถูก Attach\n\nกรุณาเรียก AttachPresenter() ก่อนเปิดฟอร์ม",
+                    "ข้อผิดพลาดภายใน", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
+                return;
+            }
             _presenter.Initialize();
         }
 
         private void LstCategories_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             if (lstCategories.SelectedItems.Count == 0) return;
             var cat = lstCategories.SelectedItems[0].Tag as KBCategory;
             _presenter.OnCategorySelected(cat);
         }
 
-        private void BtnNew_Click(object sender, EventArgs e)   { _presenter.Initialize(); _view_ClearForm(); }
+        private void BtnNew_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            _presenter.Initialize();
+            _view_ClearForm();
+        }
+
         private void BtnClear_Click(object sender, EventArgs e) { _view_ClearForm(); }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             if (!ValidateInput()) return;
             _presenter.Save();
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             if (!EditingId.HasValue) return;
             var cat  = _categories.FirstOrDefault(c => c.CategoryID == EditingId.Value);
             string name = cat != null ? cat.CategoryName : EditingId.Value.ToString();

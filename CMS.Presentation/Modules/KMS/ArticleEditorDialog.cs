@@ -42,6 +42,15 @@ namespace CMS.Presentation.Modules.KMS
 
         private void ArticleEditorDialog_Load(object sender, EventArgs e)
         {
+            if (_presenter == null)
+            {
+                MessageBox.Show(
+                    "Presenter ยังไม่ได้ถูก Attach\n\nกรุณาเรียก AttachPresenter() ก่อนเปิด Dialog",
+                    "ข้อผิดพลาดภายใน", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                DialogResult = DialogResult.Cancel;
+                Close();
+                return;
+            }
             InitTypeCombo();
             _presenter.Initialize();
         }
@@ -53,6 +62,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnSaveDraft_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             if (!ValidateInput()) return;
             try { _presenter.Save(txtChangeDesc.Text.Trim()); }
             catch (Exception ex) { ShowError("บันทึกไม่สำเร็จ:\n" + ex.Message); }
@@ -60,6 +70,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnSendReview_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             string action = btnSendReview.Text.Contains("Review") ? "ส่งขอ Review" : "เผยแพร่";
             var confirm = MessageBox.Show(
                 string.Format("ต้องการ{0}บทความ \"{1}\" ใช่หรือไม่?", action, txtTitle.Text.Trim()),
@@ -71,6 +82,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnArchive_Click(object sender, EventArgs e)
         {
+            if (_presenter == null) return;
             var confirm = MessageBox.Show(
                 string.Format(
                     "ต้องการ Archive บทความ \"{0}\" ใช่หรือไม่?\n\n" +
