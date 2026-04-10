@@ -3,21 +3,24 @@ using System.Linq;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Data.Interfaces;
 using CMS.Domain.Models;
+using CMS.Services.Interfaces;
 
 namespace CMS.Controllers.DMS.Document
 {
     public sealed class FolderTemplateController : IFolderTemplateController
     {
         private readonly IFolderTemplateRepository _templateRepository;
+        private readonly IFolderService _folderService;
 
         public bool IsAvailable
         {
             get { return _templateRepository != null; }
         }
 
-        public FolderTemplateController(IFolderTemplateRepository templateRepository = null)
+        public FolderTemplateController(IFolderTemplateRepository templateRepository = null, IFolderService folderService = null)
         {
             _templateRepository = templateRepository;
+            _folderService = folderService;
         }
 
         public int Insert(FolderTemplate template)
@@ -98,6 +101,22 @@ namespace CMS.Controllers.DMS.Document
                 return;
 
             _templateRepository.DeleteItemsByTemplate(templateId);
+        }
+
+        public void ApplyTemplateToFolder(int parentFolderId, int templateId, int confidentialityLevel, UserContext currentUser)
+        {
+            if (_folderService == null)
+                return;
+
+            _folderService.ApplyTemplateToFolder(parentFolderId, templateId, confidentialityLevel, currentUser);
+        }
+
+        public void ApplyTemplateToOrgUnit(int orgUnitId, int templateId, string rootFolderName, int confidentialityLevel, UserContext currentUser)
+        {
+            if (_folderService == null)
+                return;
+
+            _folderService.ApplyTemplateToOrgUnit(orgUnitId, templateId, rootFolderName, confidentialityLevel, currentUser);
         }
     }
 }

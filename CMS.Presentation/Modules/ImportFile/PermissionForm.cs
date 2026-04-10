@@ -19,7 +19,7 @@ namespace CMS.Presentation
     public partial class PermissionForm : Form, IPermissionView
     {
         private PermissionPresenter _presenter;
-        private IAuditService       _auditService;
+        private readonly IAuditLogController _auditLogController;
         private UserContext         _currentUser;
         private Folder _folder;
         private readonly IFolderPermissionLookupController _folderPermissionLookupController;
@@ -29,10 +29,10 @@ namespace CMS.Presentation
         private readonly IUserAccountLookupController _userAccountController;
         private readonly IFolderSettingsController _folderSettingsController;
         private List<UserAccount> _userList = new List<UserAccount>();
-        private IApprovalService _approvalService;
+        private readonly IApprovalWorkflowController _approvalWorkflowController;
         private Dictionary<int, string> _userDisplayMap = new Dictionary<int, string>();
         private CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
-        private CMS.Services.Interfaces.IOrgStructureService _orgStructureService;
+        private readonly IUserAccessOrgLookupController _orgLookupController;
         private Dictionary<int, string> _departmentNameMap = new Dictionary<int, string>(); // DepartmentId -> Name (Employee API)
         private Dictionary<int, string> _divisionNameMap = new Dictionary<int, string>();   // DivisionId -> Name (Employee API)
         private Dictionary<int, string> _orgUnitNameMap = new Dictionary<int, string>();    // OrgUnitID -> Name (DB)
@@ -49,7 +49,7 @@ namespace CMS.Presentation
             IUserAccountLookupController userAccountLookupController = null,
             IFolderSettingsController folderSettingsController = null,
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
-            CMS.Services.Interfaces.IOrgStructureService orgStructureService = null,
+            IUserAccessOrgLookupController orgLookupController = null,
             IFileDocumentLookupController fileDocumentLookupController = null,
             IAuditService       auditService = null)
         {
@@ -60,14 +60,14 @@ namespace CMS.Presentation
             if (user              == null) throw new ArgumentNullException("user");
 
             _folder        = folder;
-            _auditService  = auditService;
+            _auditLogController = new AuditLogController(auditService);
             _currentUser   = user;
             _userAccountController = userAccountLookupController;
             _folderSettingsController = folderSettingsController;
             _userList = new List<UserAccount>();
-            _approvalService = approvalService;
+            _approvalWorkflowController = new ApprovalWorkflowController(approvalService);
             _employeeApiService = employeeApiService;
-            _orgStructureService = orgStructureService;
+            _orgLookupController = orgLookupController;
 
             // Pre-load user display map
             if (_userAccountController != null)
@@ -94,11 +94,11 @@ namespace CMS.Presentation
             }
 
             // Pre-load OrgUnit name map keyed by OrgUnitID (used for display in ACL list)
-            if (_orgStructureService != null)
+            if (_orgLookupController != null)
             {
                 try
                 {
-                    foreach (var u in _orgStructureService.GetHierarchy())
+                    foreach (var u in _orgLookupController.GetHierarchy())
                         _orgUnitNameMap[u.OrgUnitID] = u.OrgUnitNameTH ?? u.OrgUnitNameEN ?? u.OrgUnitCode ?? u.OrgUnitID.ToString();
                 }
                 catch { }
@@ -731,7 +731,7 @@ namespace CMS.Presentation
                 var allPermissions = _folderPermissionLookupController.GetAllByFolder(_folder.FolderID).ToList();
                 
                 // Get pending approval requests
-                var pendingApprovals = _approvalService.GetAllApprovalsByFolder(_folder.FolderID)
+                var pendingApprovals = _approvalWorkflowController.GetAllApprovalsByFolder(_folder.FolderID)
                     .Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION")
                     .ToList();
 
@@ -809,11 +809,11 @@ namespace CMS.Presentation
                 }
 
                 // Reload org unit names from service
-                if (_orgStructureService != null)
+                if (_orgLookupController != null)
                 {
                     try
                     {
-                        var orgUnits = _orgStructureService.GetHierarchy().ToList();
+                        var orgUnits = _orgLookupController.GetHierarchy().ToList();
                         System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: Found {orgUnits.Count} org units from service");
                         
                         foreach (var u in orgUnits)
@@ -883,7 +883,7 @@ namespace CMS.Presentation
                 var allPermissions = _folderPermissionLookupController.GetAllByFolder(_folder.FolderID).ToList();
                 
                 // Get all approval requests for this folder
-                var allApprovals = _approvalService.GetAllApprovalsByFolder(_folder.FolderID).ToList();
+                var allApprovals = _approvalWorkflowController.GetAllApprovalsByFolder(_folder.FolderID).ToList();
                 var pendingApprovals = allApprovals
                     .Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION")
                     .OrderByDescending(r => r.RequestedDate)
@@ -1329,7 +1329,7 @@ namespace CMS.Presentation
                 // Test both methods to see which one works
                 var allPermissions = _folderPermissionLookupController.GetAllByFolder(_folder.FolderID);
                 var activePermissions = _folderPermissionLookupController.GetByFolder(_folder.FolderID);
-                var allApprovals = _approvalService.GetAllApprovalsByFolder(_folder.FolderID);
+                var allApprovals = _approvalWorkflowController.GetAllApprovalsByFolder(_folder.FolderID);
                 var pendingApprovals = allApprovals.Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION");
                 var approvedApprovals = allApprovals.Where(r => r.RequestStatus == 2 && r.RequestType == "CHANGE_PERMISSION");
 
@@ -1449,13 +1449,13 @@ namespace CMS.Presentation
                             foreach (var pendingApproval in pendingApprovals)
                             {
                                 // Get all steps for this approval
-                                var steps = _approvalService.GetApprovalSteps(pendingApproval.RequestID);
+                                var steps = _approvalWorkflowController.GetApprovalSteps(pendingApproval.RequestID);
                                 var pendingSteps = steps.Where(s => s.StepStatus == 1).OrderBy(s => s.StepOrder);
 
                                 foreach (var step in pendingSteps)
                                 {
                                     // Auto-approve each step
-                                    _approvalService.ApproveStep(step.StepID, "Auto-approved for testing", _presenter.User);
+                                    _approvalWorkflowController.ApproveStep(step.StepID, "Auto-approved for testing", _presenter.User);
                                     approvedCount++;
                                     System.Diagnostics.Debug.WriteLine($"Auto-approved step {step.StepID} of request {pendingApproval.RequestID}");
                                 }
@@ -1536,8 +1536,8 @@ namespace CMS.Presentation
                 {
                     _folder.UpdatedBy = null; // set to current user ID if available
                     _folderSettingsController.UpdateFolder(_folder);
-                    if (_auditService != null && _currentUser != null)
-                        _auditService.Log(new AuditEntry
+                    if (_auditLogController != null && _currentUser != null)
+                        _auditLogController.Log(new AuditEntry
                         {
                             Module      = "Permission",
                             Action      = "SAVE_FOLDER_SETTINGS",
@@ -1802,14 +1802,14 @@ namespace CMS.Presentation
                 btnOrgPicker.Click += (s, e) =>
                 {
                     var allUnits = new List<OrgUnit>();
-                    if (_orgStructureService != null)
+                    if (_orgLookupController != null)
                     {
-                        try { allUnits = _orgStructureService.GetHierarchy().ToList(); }
+                        try { allUnits = _orgLookupController.GetHierarchy().ToList(); }
                         catch { }
                     }
 
                     using (var picker = _employeeApiService != null
-                        ? (Form)new EmployeeOrgSelectionDialog(_employeeApiService)
+                        ? (Form)new EmployeeOrgSelectionDialog(new EmployeeDirectoryController(_employeeApiService))
                         : (Form)new OrgStructureSelectionDialog(allUnits))
                     {
                         if (picker.ShowDialog(dlg) == DialogResult.OK)
@@ -1902,7 +1902,7 @@ namespace CMS.Presentation
                             "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
-                    using (var searchDlg = new EmployeeSearchDialog(_employeeApiService))
+                    using (var searchDlg = new EmployeeSearchDialog(new EmployeeDirectoryController(_employeeApiService)))
                     {
                         if (searchDlg.ShowDialog(dlg) == DialogResult.OK && searchDlg.SelectedEmployee != null)
                         {

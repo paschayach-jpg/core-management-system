@@ -17,7 +17,6 @@ namespace CMS.Controllers.DMS.Document
         private readonly IConfigManager         _configManager;
         private readonly IAuditService          _auditService;
         private readonly UserContext            _user;
-        private readonly IFileService           _fileService;
 
         // Config keys
         private const string KeyNetworkDrivePath        = "NetworkDrivePath";
@@ -43,8 +42,7 @@ namespace CMS.Controllers.DMS.Document
             IConfigAdminView       view,
             IConfigManager         configManager,
             IAuditService          auditService,
-            UserContext            user,
-            IFileService           fileService            = null)
+            UserContext            user)
         {
             if (view          == null) throw new ArgumentNullException("view");
             if (configManager == null) throw new ArgumentNullException("configManager");
@@ -55,7 +53,6 @@ namespace CMS.Controllers.DMS.Document
             _configManager         = configManager;
             _auditService          = auditService;
             _user                  = user;
-            _fileService           = fileService;
 
             LoadCurrentValues();
 

@@ -11,9 +11,8 @@ namespace CMS.Presentation
 {
     public partial class ApplyTemplateDialog : Form
     {
-        private readonly IFolderService            _folderService;
         private readonly IFolderTemplateController _templateController;
-        private readonly IOrgStructureService      _orgStructureService;
+        private readonly IUserAccessOrgLookupController _orgLookupController;
         private readonly UserContext               _currentUser;
         private readonly Folder                    _parentFolder;  // folder ที่เข้ามาสร้าง
 
@@ -23,20 +22,17 @@ namespace CMS.Presentation
         public int? SelectedOrgUnitId { get; private set; }
 
         public ApplyTemplateDialog(
-            IFolderService            folderService,
             IFolderTemplateController templateController,
-            IOrgStructureService      orgStructureService,
+            IUserAccessOrgLookupController orgLookupController,
             UserContext               currentUser,
             Folder                    parentFolder = null)
         {
-            if (folderService       == null) throw new ArgumentNullException("folderService");
             if (templateController  == null) throw new ArgumentNullException("templateController");
-            if (orgStructureService == null) throw new ArgumentNullException("orgStructureService");
+            if (orgLookupController == null) throw new ArgumentNullException("orgLookupController");
             if (currentUser         == null) throw new ArgumentNullException("currentUser");
 
-            _folderService       = folderService;
             _templateController  = templateController;
-            _orgStructureService = orgStructureService;
+            _orgLookupController  = orgLookupController;
             _currentUser         = currentUser;
             _parentFolder        = parentFolder;
 
@@ -78,7 +74,7 @@ namespace CMS.Presentation
             {
                 lblStatus.Text = "⏳ กำลังโหลดข้อมูล...";
 
-                _orgUnits = _orgStructureService.GetHierarchy()
+                _orgUnits = _orgLookupController.GetHierarchy()
                     .Where(u => u.IsActive && !u.IsDeleted)
                     .ToList();
 
@@ -220,7 +216,7 @@ namespace CMS.Presentation
                     Application.DoEvents();
 
                     // สร้างภายใต้ parentFolder โดยตรง
-                    _folderService.ApplyTemplateToFolder(
+                    _templateController.ApplyTemplateToFolder(
                         _parentFolder.FolderId,
                         tmpl.TemplateID,
                         _parentFolder.ConfidentialityLevel,
@@ -272,7 +268,7 @@ namespace CMS.Presentation
                 lblStatus.Text   = "⏳ กำลังสร้าง Folder...";
                 Application.DoEvents();
 
-                _folderService.ApplyTemplateToOrgUnit(
+                _templateController.ApplyTemplateToOrgUnit(
                     ou.OrgUnitId, tmpl.TemplateID,
                     txtRootName.Text.Trim(), conf, _currentUser);
 

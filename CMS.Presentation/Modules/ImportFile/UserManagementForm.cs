@@ -4,9 +4,9 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -17,7 +17,7 @@ namespace CMS.Presentation
     {
         private readonly IUserAdminController        _userAdminController;
         private readonly UserContext                 _currentUser;
-        private readonly IAuditService               _auditService;
+        private readonly IAuditLogController         _auditLogController;
 
         private List<UserAccount>      _allUsers    = new List<UserAccount>();
         private List<HrDivision>       _divisions   = new List<HrDivision>();
@@ -26,11 +26,11 @@ namespace CMS.Presentation
         private List<HrPositionLevel>  _levels      = new List<HrPositionLevel>();
 
         public UserManagementForm(IUserAdminController userAdminController, UserContext currentUser,
-                                   IAuditService auditService = null)
+                                   CMS.Services.Interfaces.IAuditService auditService = null)
         {
             _userAdminController = userAdminController;
             _currentUser  = currentUser;
-            _auditService = auditService;
+            _auditLogController = new AuditLogController(auditService);
 
             InitializeComponent();
             WireEvents();
@@ -214,21 +214,20 @@ namespace CMS.Presentation
                     user.IsActive = true;
                     _userAdminController.UpdateUser(user);
                 }
-                if (_auditService != null)
-                    _auditService.Log(new AuditEntry
-                    {
-                        Module      = "UserManagement",
-                        Action      = wasActive ? "DEACTIVATE_USER" : "ACTIVATE_USER",
-                        UserID      = _currentUser.UserID,
-                        TableName   = "UserAccount",
-                        RecordID    = user.UserID,
-                        NewValue    = string.Format("User:{0} IsActive:{1}", user.ADUserName, !wasActive),
-                        MachineName = _currentUser.MachineName,
-                        IPAddress   = _currentUser.IPAddress,
-                        SessionID   = _currentUser.SessionID,
-                        Result      = 1,
-                        AuditDate   = DateTime.Now
-                    });
+                _auditLogController.Log(new AuditEntry
+                {
+                    Module      = "UserManagement",
+                    Action      = wasActive ? "DEACTIVATE_USER" : "ACTIVATE_USER",
+                    UserID      = _currentUser.UserID,
+                    TableName   = "UserAccount",
+                    RecordID    = user.UserID,
+                    NewValue    = string.Format("User:{0} IsActive:{1}", user.ADUserName, !wasActive),
+                    MachineName = _currentUser.MachineName,
+                    IPAddress   = _currentUser.IPAddress,
+                    SessionID   = _currentUser.SessionID,
+                    Result      = 1,
+                    AuditDate   = DateTime.Now
+                });
                 LoadUsers();
                 SetStatus(string.Format("{0} '{1}' เรียบร้อย",
                     action, user.DisplayName ?? user.ADUserName), Color.DarkGreen);
@@ -614,24 +613,23 @@ namespace CMS.Presentation
                     if (isNew) _userAdminController.CreateUser(user);
                     else       _userAdminController.UpdateUser(user);
 
-                    if (_auditService != null)
-                        _auditService.Log(new AuditEntry
-                        {
-                            Module      = "UserManagement",
-                            Action      = isNew ? "CREATE_USER" : "EDIT_USER",
-                            UserID      = _currentUser.UserID,
-                            TableName   = "UserAccount",
-                            RecordID    = user.UserID,
-                            NewValue    = string.Format("AD:{0} Role:{1} Div:{2} Dept:{3} Pos:{4} Level:{5}",
-                                             user.ADUserName, user.AppRole,
-                                             user.DivisionCode, user.DepartmentCode,
-                                             user.PositionName, user.LevelCode),
-                            MachineName = _currentUser.MachineName,
-                            IPAddress   = _currentUser.IPAddress,
-                            SessionID   = _currentUser.SessionID,
-                            Result      = 1,
-                            AuditDate   = DateTime.Now
-                        });
+                    _auditLogController.Log(new AuditEntry
+                    {
+                        Module      = "UserManagement",
+                        Action      = isNew ? "CREATE_USER" : "EDIT_USER",
+                        UserID      = _currentUser.UserID,
+                        TableName   = "UserAccount",
+                        RecordID    = user.UserID,
+                        NewValue    = string.Format("AD:{0} Role:{1} Div:{2} Dept:{3} Pos:{4} Level:{5}",
+                                         user.ADUserName, user.AppRole,
+                                         user.DivisionCode, user.DepartmentCode,
+                                         user.PositionName, user.LevelCode),
+                        MachineName = _currentUser.MachineName,
+                        IPAddress   = _currentUser.IPAddress,
+                        SessionID   = _currentUser.SessionID,
+                        Result      = 1,
+                        AuditDate   = DateTime.Now
+                    });
                 }
                 catch (Exception ex)
                 {

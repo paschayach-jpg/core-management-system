@@ -18,7 +18,7 @@ namespace CMS.Presentation
     public class SharedFileViewForm : Form
     {
         private readonly int                     _fileId;
-        private readonly IFileService            _fileService;
+        private readonly IFileBrowseController   _fileBrowseController;
         private readonly IShareLookupController  _shareLookupController;
         private readonly UserContext             _user;
 
@@ -26,12 +26,12 @@ namespace CMS.Presentation
 
         public SharedFileViewForm(
             int                     fileId,
-            IFileService            fileService,
+            IFileBrowseController   fileBrowseController,
             IShareLookupController  shareLookupController,
             UserContext             user)
         {
             _fileId      = fileId;
-            _fileService = fileService ?? throw new ArgumentNullException("fileService");
+            _fileBrowseController = fileBrowseController ?? throw new ArgumentNullException("fileBrowseController");
             _shareLookupController = shareLookupController ?? throw new ArgumentNullException("shareLookupController");
             _user        = user        ?? throw new ArgumentNullException("user");
             BuildUI();
@@ -196,7 +196,7 @@ namespace CMS.Presentation
             if (_doc == null) return;
             try
             {
-                var result = _fileService.DownloadFile(_fileId, _user);
+                var result = _fileBrowseController.DownloadFile(_fileId, _user);
                 if (result == null || !result.Success)
                 {
                     MessageBox.Show("เปิดไฟล์ไม่สำเร็จ: " + (result?.ErrorMessage ?? "Unknown error"),
@@ -232,7 +232,7 @@ namespace CMS.Presentation
 
                 try
                 {
-                    var result = _fileService.DownloadFile(_fileId, _user);
+                    var result = _fileBrowseController.DownloadFile(_fileId, _user);
 
                     if (result == null || !result.Success)
                     {

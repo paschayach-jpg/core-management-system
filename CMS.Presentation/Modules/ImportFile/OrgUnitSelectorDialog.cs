@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -13,7 +13,7 @@ namespace CMS.Presentation
     /// </summary>
     public partial class OrgUnitSelectorDialog : Form
     {
-        private readonly IOrgStructureService _service;
+        private readonly IUserAccessOrgLookupController _orgLookupController;
         private readonly List<OrgUnit>        _providedUnits;
         private List<OrgUnit>                 _allUnits = new List<OrgUnit>();
 
@@ -23,10 +23,10 @@ namespace CMS.Presentation
         public OrgUnit SelectedOrgUnit     { get; private set; }
 
         // ── Constructor 1: load from service ─────────────────────────────────
-        public OrgUnitSelectorDialog(IOrgStructureService service)
+        public OrgUnitSelectorDialog(IUserAccessOrgLookupController orgLookupController)
         {
-            if (service == null) throw new ArgumentNullException("service");
-            _service       = service;
+            if (orgLookupController == null) throw new ArgumentNullException("orgLookupController");
+            _orgLookupController = orgLookupController;
             _providedUnits = null;
             InitializeComponent();
         }
@@ -35,7 +35,7 @@ namespace CMS.Presentation
         public OrgUnitSelectorDialog(List<OrgUnit> units, string title = "เลือกหน่วยงาน")
         {
             if (units == null) throw new ArgumentNullException("units");
-            _service       = null;
+            _orgLookupController = null;
             _providedUnits = units;
             InitializeComponent();
             this.Text        = title ?? "เลือกหน่วยงาน";
@@ -90,7 +90,7 @@ namespace CMS.Presentation
                 }
                 else
                 {
-                    _allUnits = _service.GetHierarchy()
+                    _allUnits = _orgLookupController.GetHierarchy()
                         .Where(u => u.IsActive && !u.IsDeleted)
                         .OrderBy(u => u.OrgUnitType)
                         .ThenBy(u => u.SortOrder)

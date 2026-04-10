@@ -15,18 +15,21 @@ namespace CMS.Presentation
         public FileDocument SelectedFile { get; set; }
 
         public IFolderService FolderService { get; set; }
-        public IFileService FileService { get; set; }
         public IOrgStructureService OrgStructureService { get; set; }
+        public IUserAccessOrgLookupController OrgLookupController { get; set; }
         public IApprovalService ApprovalService { get; set; }
         public IFolderTemplateController FolderTemplateController { get; set; }
         public IPermissionService PermissionService { get; set; }
         public IFolderSettingsController FolderSettingsController { get; set; }
         public IFolderPermissionLookupController FolderPermissionLookupController { get; set; }
         public IAuditService AuditService { get; set; }
-        public IShareService ShareService { get; set; }
+        public IShareCommandController ShareCommandController { get; set; }
+        public IShareManagementController ShareManagementController { get; set; }
         public IUserAccountLookupController UserAccountLookupController { get; set; }
         public IUserAdminController UserAdminController { get; set; }
-        public IMenuService MenuService { get; set; }
+        public IMenuManagementController MenuManagementController { get; set; }
+        public IApprovalInboxController ApprovalInboxController { get; set; }
+        public IRecycleBinController RecycleBinController { get; set; }
         public IShareLookupController ShareLookupController { get; set; }
 
         public Action SwitchToOrgView { get; set; }

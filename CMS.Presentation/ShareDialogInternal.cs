@@ -8,7 +8,6 @@ using CMS.Domain.Models;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.DTOs;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -18,12 +17,9 @@ namespace CMS.Presentation
     /// </summary>
     public partial class ShareDialogInternal : Form
     {
-        private readonly IShareService _shareService;
-        private readonly IFileService _fileService;
-        private readonly IFolderService _folderService;
-        private readonly IPermissionService _permissionService;
+        private readonly IShareCommandController _shareCommandController;
         private readonly IUserAccountLookupController _userAccountLookupController;
-        private readonly IOrgStructureService _orgStructureService;
+        private readonly IUserAccessOrgLookupController _orgLookupController;
         private readonly UserContext _currentUser;
 
         private FileDocument _selectedFile;
@@ -31,23 +27,17 @@ namespace CMS.Presentation
         private Dictionary<string, object> _controls;
 
         public ShareDialogInternal(
-            IShareService shareService,
-            IFileService fileService,
-            IFolderService folderService,
-            IPermissionService permissionService,
+            IShareCommandController shareCommandController,
             IUserAccountLookupController userAccountLookupController,
-            IOrgStructureService orgStructureService,
+            IUserAccessOrgLookupController orgLookupController,
             UserContext currentUser,
             FileDocument file = null,
             Folder folder = null)
         {
             InitializeComponent();
-            _shareService = shareService;
-            _fileService = fileService;
-            _folderService = folderService;
-            _permissionService = permissionService;
+            _shareCommandController = shareCommandController;
             _userAccountLookupController = userAccountLookupController;
-            _orgStructureService = orgStructureService;
+            _orgLookupController = orgLookupController;
             _currentUser = currentUser;
             _selectedFile = file;
             _selectedFolder = folder;
@@ -461,7 +451,7 @@ namespace CMS.Presentation
                 }
                 else if (principalType == "Department")
                 {
-                    var depts = _orgStructureService.GetHierarchy()
+                    var depts = (_orgLookupController != null ? _orgLookupController.GetHierarchy() : Enumerable.Empty<OrgUnit>())
                         .Where(o => o.Tier == OrgUnitTier.Department)
                         .ToList();
                     foreach (var dept in depts)
@@ -541,7 +531,7 @@ namespace CMS.Presentation
                         CanDelete     = chkDelete.Checked,
                         ExpiryDate    = chkNoExpiry.Checked ? (DateTime?)null : dtpExpiry.Value
                     };
-                    _shareService.CreateInternalShare(request, _currentUser);
+                    _shareCommandController.CreateInternalShare(request, _currentUser);
                 }
                 else if (_selectedFolder != null)
                 {
@@ -558,7 +548,7 @@ namespace CMS.Presentation
                         CanFullControl = false,
                         IsDeny         = false
                     };
-                    _permissionService.SetFolderPermission(setReq, _currentUser);
+                    _shareCommandController.SetFolderPermission(setReq, _currentUser);
                 }
 
                 lblStatus.Text = "Success: Share created.";

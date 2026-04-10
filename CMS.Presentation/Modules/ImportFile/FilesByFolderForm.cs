@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -14,16 +14,16 @@ namespace CMS.Presentation
     /// </summary>
     public partial class FilesByFolderForm : Form
     {
-        private readonly IFileService _fileService;
+        private readonly IFileBrowseController _fileBrowseController;
         private readonly UserContext  _user;
 
         private List<FileDocument> _allFiles = new List<FileDocument>();
 
-        public FilesByFolderForm(IFileService fileService, UserContext user)
+        public FilesByFolderForm(IFileBrowseController fileBrowseController, UserContext user)
         {
-            if (fileService == null) throw new ArgumentNullException("fileService");
+            if (fileBrowseController == null) throw new ArgumentNullException("fileBrowseController");
             if (user        == null) throw new ArgumentNullException("user");
-            _fileService = fileService;
+            _fileBrowseController = fileBrowseController;
             _user        = user;
             InitializeComponent();
         }
@@ -37,7 +37,7 @@ namespace CMS.Presentation
         {
             try
             {
-                _allFiles = _fileService.GetAllFilesGroupedByFolder(_user).ToList();
+                _allFiles = _fileBrowseController.GetAllFilesGroupedByFolder(_user).ToList();
                 PopulateTree();
             }
             catch (Exception ex)

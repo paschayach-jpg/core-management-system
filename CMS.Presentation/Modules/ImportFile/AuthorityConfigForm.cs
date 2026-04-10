@@ -5,14 +5,13 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 using CMS.Presentation.Modules.ImportFile;
 
 namespace CMS.Presentation
 {
     public partial class AuthorityConfigForm : Form
     {
-        private readonly IFolderAuthorityService    _service;
+        private readonly IAuthorityConfigController _authorityConfigController;
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
         private readonly UserContext                _user;
 
@@ -27,12 +26,12 @@ namespace CMS.Presentation
             InitializeComponent();
         }
 
-        public AuthorityConfigForm(IFolderAuthorityService service, UserContext user,
+        public AuthorityConfigForm(IAuthorityConfigController authorityConfigController, UserContext user,
             IAuthorityOrgLookupController authorityOrgLookupController = null)
         {
-            if (service == null) throw new ArgumentNullException("service");
+            if (authorityConfigController == null) throw new ArgumentNullException("authorityConfigController");
             if (user    == null) throw new ArgumentNullException("user");
-            _service          = service;
+            _authorityConfigController = authorityConfigController;
             _user             = user;
             _authorityOrgLookupController = authorityOrgLookupController;
 
@@ -469,7 +468,7 @@ namespace CMS.Presentation
                         _divLookup[d.DivisionCode] = string.Format("{0} — {1}", d.DivisionCode, d.DivisionName);
             }
 
-            var allRows = _service.GetAll().ToList();
+            var allRows = _authorityConfigController.GetAll().ToList();
             _allConfigs = new List<FolderAuthorityConfig>();
 
             foreach (var grp in allRows.GroupBy(r => r.ConfigLabel))
@@ -553,7 +552,7 @@ namespace CMS.Presentation
         {
             try
             {
-                _service.Delete(config.ConfigLabel, _user.UserID);
+                _authorityConfigController.Delete(config.ConfigLabel, _user.UserID);
                 foreach (var lv in new[] {
                     new { L=1, C="1HC", V=config.HC_View, A=config.HC_Add, E=config.HC_Edit, Ap=config.HC_Approve },
                     new { L=2, C="2SC", V=config.SC_View, A=config.SC_Add, E=config.SC_Edit, Ap=config.SC_Approve },
@@ -561,7 +560,7 @@ namespace CMS.Presentation
                     new { L=4, C="4PC", V=config.PC_View, A=config.PC_Add, E=config.PC_Edit, Ap=config.PC_Approve },
                 })
                 {
-                    _service.Save(new FolderAuthorityConfig
+                    _authorityConfigController.Save(new FolderAuthorityConfig
                     {
                         ConfigLabel = config.ConfigLabel,
                         PositionName = config.PositionName,
@@ -593,7 +592,7 @@ namespace CMS.Presentation
             var c = (FolderAuthorityConfig)dgv.SelectedRows[0].Tag;
             if (MessageBox.Show(string.Format("ลบ \"{0}\" ใช่หรือไม่?", c.ConfigLabel),
                 "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-            _service.Delete(c.ConfigLabel, _user.UserID);
+            _authorityConfigController.Delete(c.ConfigLabel, _user.UserID);
             LoadData();
         }
 

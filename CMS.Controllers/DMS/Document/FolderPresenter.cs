@@ -5,19 +5,18 @@ using System.Windows.Forms;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
-using CMS.Services.Interfaces;
 
 namespace CMS.Controllers.DMS.Document
 {
     /// <summary>
     /// Presenter for MOD-002 Folder Structure.
-    /// Mediates between IFolderView and IFolderService.
+    /// Mediates between IFolderView and folder controllers.
     /// Satisfies Requirements 4.1–4.14, 7.6.
     /// </summary>
     public class FolderPresenter
     {
-        private readonly IFolderService    _service;
-        private readonly IFileService      _fileService;
+        private readonly IFolderCommandController _folderCommandController;
+        private readonly IFileBrowseController _fileBrowseController;
         private readonly IFolderView       _view;
         private readonly UserContext       _user;
         private readonly IFolderReadLookupController _folderReadLookupController;
@@ -26,20 +25,21 @@ namespace CMS.Controllers.DMS.Document
         private int? _currentFolderId;   // tracks the folder currently shown in content panel
 
         public FolderPresenter(
-            IFolderService    service,
             IFolderView       view,
             UserContext       user,
-            IFileService      fileService      = null,
+            IFileBrowseController fileBrowseController = null,
+            IFolderCommandController folderCommandController = null,
             IFolderReadLookupController folderReadLookupController = null)
         {
-            if (service == null) throw new ArgumentNullException("service");
             if (view    == null) throw new ArgumentNullException("view");
             if (user    == null) throw new ArgumentNullException("user");
+            if (folderCommandController == null) throw new ArgumentNullException("folderCommandController");
+            if (folderReadLookupController == null) throw new ArgumentNullException("folderReadLookupController");
 
-            _service          = service;
-            _fileService      = fileService;
-            _view             = view;
-            _user             = user;
+            _folderCommandController = folderCommandController;
+            _fileBrowseController = fileBrowseController;
+            _view                 = view;
+            _user                 = user;
             _folderReadLookupController = folderReadLookupController;
         }
 
@@ -57,7 +57,7 @@ namespace CMS.Controllers.DMS.Document
             _currentOrgUnitId = orgUnitId;
             try
             {
-                var allFolders = _service.GetAllFolders(orgUnitId, _user);
+                var allFolders = _folderReadLookupController.GetAllFolders(orgUnitId, _user);
                 _view.ShowFolderTree(allFolders);
             }
             catch (UnauthorizedAccessException ex)
@@ -80,7 +80,7 @@ namespace CMS.Controllers.DMS.Document
             _currentOrgUnitId = orgUnitId;
             try
             {
-                return _service.GetAllFolders(orgUnitId, _user)
+                return _folderReadLookupController.GetAllFolders(orgUnitId, _user)
                     .Where(f => !f.IsDeleted && !f.IsArchived)
                     .ToList();
             }
@@ -98,7 +98,7 @@ namespace CMS.Controllers.DMS.Document
             _currentFolderId = null; // viewing root level — no specific folder selected
             try
             {
-                IEnumerable<Folder> roots = _service.GetRootFolders(orgUnitId, _user);
+                IEnumerable<Folder> roots = _folderReadLookupController.GetRootFolders(orgUnitId, _user);
                 _view.ShowFolderContents(roots, Enumerable.Empty<FileDocument>());
             }
             catch (Exception ex)
@@ -122,8 +122,7 @@ namespace CMS.Controllers.DMS.Document
                 }
                 else
                 {
-                    // Fallback: ใช้ service (อาจถูก block โดย permission)
-                    subFolders = _service.GetFolderContents(folderId, _user);
+                    subFolders = Enumerable.Empty<Folder>();
                 }
 
                 _view.ShowFolderContents(subFolders, Enumerable.Empty<FileDocument>());
@@ -147,7 +146,7 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                return _service.GetFolderContents(parentFolderId, _user);
+                return _folderReadLookupController.GetChildren(parentFolderId);
             }
             catch
             {
@@ -162,7 +161,7 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                return _service.GetAllFolders(_currentOrgUnitId, _user);
+                return _folderReadLookupController.GetAllFolders(_currentOrgUnitId, _user);
             }
             catch
             {
@@ -182,17 +181,18 @@ namespace CMS.Controllers.DMS.Document
             _currentFolderId = folderId;
             try
             {
-                IEnumerable<Folder>       subFolders = _service.GetFolderContents(folderId, _user);
+                IEnumerable<Folder>       subFolders = _folderReadLookupController.GetChildrenWithPermission(folderId, _user)
+                    .Where(f => !f.IsDeleted && !f.IsArchived);
                 IEnumerable<FileDocument> files      = null;
 
-                if (_fileService != null)
+                if (_fileBrowseController != null)
                 {
                     try
                     {
-                        var rawFiles = _fileService.GetFilesInFolder(folderId, _user);
+                        var rawFiles = _fileBrowseController.GetFilesInFolder(folderId, _user);
 
                         // Enrich files with folder's confidentiality level
-                        var folder = _service.GetFolder(folderId, _user);
+                        var folder = _folderReadLookupController.GetFolder(folderId, _user);
                         int folderLevel = folder != null ? folder.ConfidentialityLevel : 0;
                         var enriched = new List<FileDocument>();
                         foreach (var f in rawFiles)
@@ -264,7 +264,7 @@ namespace CMS.Controllers.DMS.Document
                     Name                 = name,
                     ConfidentialityLevel = confidentialityLevel
                 };
-                Folder created = _service.CreateFolder(request, _user);
+                Folder created = _folderCommandController.CreateFolder(request, _user);
 
                 _currentOrgUnitId = orgUnitId;
                 LoadFolderTree(_currentOrgUnitId);
@@ -309,7 +309,7 @@ namespace CMS.Controllers.DMS.Document
                     Name                 = name,
                     ConfidentialityLevel = confidentialityLevel
                 };
-                Folder created = _service.CreateFolder(request, _user);
+                Folder created = _folderCommandController.CreateFolder(request, _user);
 
                 LoadFolderTree(_currentOrgUnitId);
                 RefreshContentPanel();
@@ -328,7 +328,7 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                _service.RenameFolder(folderId, newName, _user);
+                _folderCommandController.RenameFolder(folderId, newName, _user);
                 LoadFolderTree(_currentOrgUnitId);
                 _view.ShowInfo(string.Format("Folder was renamed to '{0}'.", newName));
             }
@@ -345,7 +345,7 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                _service.ArchiveFolder(folderId, _user);
+                _folderCommandController.ArchiveFolder(folderId, _user);
                 LoadFolderTree(_currentOrgUnitId);
                 _view.ShowInfo("Folder and all descendants have been archived.");
             }
@@ -361,11 +361,11 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                _service.DeleteFolder(folderId, _user);
+                _folderCommandController.DeleteFolder(folderId, _user);
                 LoadFolderTree(_currentOrgUnitId);
                 RefreshContentPanel();
 
-                var deleted = _service.GetFolder(folderId, _user);
+                var deleted = _folderReadLookupController.GetFolder(folderId, _user);
                 if (deleted == null || deleted.IsDeleted)
                     _view.ShowInfo("ย้าย Folder ไปยังถังขยะเรียบร้อยแล้ว");
                 else
@@ -383,7 +383,7 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                _service.RestoreFolder(folderId, newParentId, _user);
+                _folderCommandController.RestoreFolder(folderId, newParentId, _user);
                 LoadFolderTree(_currentOrgUnitId);
                 _view.ShowInfo("Folder restored successfully.");
             }
@@ -399,7 +399,7 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                _service.PermanentlyDeleteFolder(folderId, _user);
+                _folderCommandController.PermanentlyDeleteFolder(folderId, _user);
                 _view.ShowInfo("ลบ Folder ถาวรเรียบร้อยแล้ว");
             }
             catch (UnauthorizedAccessException ex) { _view.ShowError("ไม่มีสิทธิ์ลบ Folder ถาวร: " + ex.Message); }
@@ -421,7 +421,7 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                _service.ApplyTemplate(parentFolderId, templateId, _user);
+                _folderCommandController.ApplyTemplate(parentFolderId, templateId, _user);
                 LoadFolderTree(_currentOrgUnitId);
                 _view.ShowInfo("Template applied successfully.");
             }

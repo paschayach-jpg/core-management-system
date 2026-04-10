@@ -13,7 +13,6 @@ using CMS.Presentation.Modules.ImportFile;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.DTOs;
-using CMS.Services.Interfaces;
 using MenuItem = CMS.Domain.Models.MenuItem;
 
 namespace CMS.Presentation
@@ -36,19 +35,23 @@ namespace CMS.Presentation
         // OrgUnit scope passed in from MDI_Container
         private readonly int? _orgUnitId;
 
-        // Keep a reference to the service for confidentiality level changes (Req 7.5)
-        private readonly IFolderService       _folderService;
-        private readonly IFileService         _fileService;
-        private readonly IOrgStructureService _orgStructureService;
-        private readonly IApprovalService     _approvalService;
+        private readonly IFolderCommandController _folderCommandController;
+        private readonly IFileBrowseController _fileBrowseController;
+        private readonly IFileCommandController _fileCommandController;
+        private readonly IUserAccessOrgLookupController _orgLookupController;
+        private readonly IApprovalFolderController _approvalFolderController;
         private readonly IFolderTemplateController _folderTemplateController;
-        private readonly IUploadCheckpointService  _checkpointService;
-        private readonly IQuickAccessService  _quickAccessService;
-        private readonly IPermissionService    _permissionService;
+        private readonly IUploadCheckpointController _uploadCheckpointController;
+        private readonly IQuickAccessController _quickAccessController;
+        private readonly IPermissionCheckController _permissionCheckController;
         private readonly IFolderReadLookupController _folderReadLookupController;
-        private readonly IAuditService         _auditService;
-        private readonly IShareService         _shareService;
-        private readonly IMenuService          _menuService;
+        private readonly IAuditLogController   _auditLogController;
+        private readonly IShareCommandController _shareCommandController;
+        private readonly IMenuManagementController _menuManagementController;
+        private readonly IApprovalInboxController _approvalInboxController;
+        private readonly IRecycleBinController _recycleBinController;
+        private readonly IFileUploadController _fileUploadController;
+        private readonly IShareManagementController _shareManagementController;
         private readonly IShareLookupController _shareLookupController;
         private readonly IFolderSettingsController _folderSettingsController;
         private readonly IFolderPermissionLookupController _folderPermissionLookupController;
@@ -111,16 +114,23 @@ namespace CMS.Presentation
         // Constructor
         // -----------------------------------------------------------------------
 
-        public FolderForm(IFolderService service, UserContext user, int? orgUnitId = null,
-                          IFileService fileService = null, IOrgStructureService orgStructureService = null,
+        public FolderForm(UserContext user, int? orgUnitId = null,
+                          IFileBrowseController fileBrowseController = null,
+                  IFileCommandController fileCommandController = null,
+                  IFolderCommandController folderCommandController = null,
+                  IUserAccessOrgLookupController orgLookupController = null,
                           IFolderTemplateController folderTemplateController = null,
-                          IUploadCheckpointService checkpointService = null,
-                          IQuickAccessService quickAccessService = null,
-                          IApprovalService approvalService = null,
-                          IPermissionService permissionService = null,
-                          IAuditService auditService = null,
-                          IShareService shareService = null,
-                          IMenuService menuService = null,
+                          IUploadCheckpointController uploadCheckpointController = null,
+                  IQuickAccessController quickAccessController = null,
+                  IApprovalFolderController approvalFolderController = null,
+                  IPermissionCheckController permissionCheckController = null,
+                  IAuditLogController auditLogController = null,
+                          IShareCommandController shareCommandController = null,
+                          IMenuManagementController menuManagementController = null,
+                          IApprovalInboxController approvalInboxController = null,
+                          IRecycleBinController recycleBinController = null,
+                          IFileUploadController fileUploadController = null,
+                          IShareManagementController shareManagementController = null,
                           IShareLookupController shareLookupController = null,
                           IFolderSettingsController folderSettingsController = null,
                           IFolderPermissionLookupController folderPermissionLookupController = null,
@@ -128,22 +138,28 @@ namespace CMS.Presentation
                           IUserAdminController userAdminController = null,
                           IFolderReadLookupController folderReadLookupController = null)
         {
-            if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
+            if (folderCommandController == null) throw new ArgumentNullException("folderCommandController");
+            if (folderReadLookupController == null) throw new ArgumentNullException("folderReadLookupController");
 
             _orgUnitId                = orgUnitId;
             _selectedOrgUnitId        = orgUnitId;
-            _folderService            = service;
-            _fileService              = fileService;
-            _orgStructureService      = orgStructureService;
+            _folderCommandController  = folderCommandController;
+            _fileBrowseController     = fileBrowseController ?? new FileBrowseController(null);
+            _fileCommandController    = fileCommandController ?? new FileCommandController(null);
+            _orgLookupController      = orgLookupController;
             _folderTemplateController = folderTemplateController;
-            _checkpointService        = checkpointService;
-            _quickAccessService       = quickAccessService;
-            _approvalService          = approvalService;
-            _permissionService        = permissionService;
-            _auditService             = auditService;
-            _shareService             = shareService;
-            _menuService              = menuService;
+            _uploadCheckpointController = uploadCheckpointController ?? new UploadCheckpointController(null);
+            _quickAccessController    = quickAccessController;
+            _approvalFolderController = approvalFolderController;
+            _permissionCheckController = permissionCheckController;
+            _auditLogController       = auditLogController;
+            _shareCommandController   = shareCommandController;
+            _menuManagementController = menuManagementController;
+            _approvalInboxController  = approvalInboxController;
+            _recycleBinController     = recycleBinController;
+            _fileUploadController     = fileUploadController;
+            _shareManagementController = shareManagementController;
             _shareLookupController    = shareLookupController ?? new ShareLookupController(null, null, null, null, null);
             _folderSettingsController = folderSettingsController ?? new FolderSettingsController(null);
             _folderPermissionLookupController = folderPermissionLookupController ?? new FolderPermissionLookupController();
@@ -158,7 +174,12 @@ namespace CMS.Presentation
 
             BuildContentImageList();
 
-            _presenter = new FolderPresenter(service, this, user, fileService, _folderReadLookupController);
+            _presenter = new FolderPresenter(
+                this,
+                user,
+                _fileBrowseController,
+                _folderCommandController,
+                _folderReadLookupController);
 
             // Manager/Admin only — ซ่อนปุ่มผู้ดูแลสำหรับ user ทั่วไป
             bool canManage = user.Role == UserRole.Manager || user.Role == UserRole.Admin;
@@ -367,7 +388,7 @@ namespace CMS.Presentation
                 mnuArchive.Enabled        = hasFolder && canEdit;
                 mnuPermission.Enabled     = hasFolder && isPrivileged;
                 mnuProperties.Enabled     = hasFolder && canView;
-                mnuAddQuickAccess.Enabled = hasFolder && canView && _quickAccessService != null;
+                mnuAddQuickAccess.Enabled = hasFolder && canView && _quickAccessController != null;
                 // mnuReload ใช้ได้เสมอ
             };
 
@@ -453,16 +474,16 @@ namespace CMS.Presentation
                                      && _clipboardFileIds.Count > 0
                                      && hasFolder;
 
-                mnuUpload.Enabled      = hasFolder && canAdd  && _fileService != null;
+                mnuUpload.Enabled      = hasFolder && canAdd  && _fileUploadController != null;
                 mnuNewFolder.Enabled   = hasFolder && canAdd;
                 mnuOpen.Enabled        = hasFile   && canView;
-                mnuDownload.Enabled    = hasFile   && canView;
-                mnuCut.Enabled         = hasFile   && canEdit && _fileService != null;
-                mnuCopy.Enabled        = hasFile   && canView && _fileService != null;
-                mnuPaste.Enabled       = hasPendingPaste && canAdd && _fileService != null;
+                mnuDownload.Enabled    = hasFile   && canView && _fileBrowseController != null;
+                mnuCut.Enabled         = hasFile   && canEdit && _fileCommandController != null;
+                mnuCopy.Enabled        = hasFile   && canView && _fileCommandController != null;
+                mnuPaste.Enabled       = hasPendingPaste && canAdd && _fileCommandController != null;
                 mnuRename.Enabled      = hasSelection && canEdit;
                 mnuDelete.Enabled      = canDeleteContent;
-                mnuClearFolder.Enabled = _fileService != null && _currentNavFolderId.HasValue && canEdit;
+                mnuClearFolder.Enabled = _fileBrowseController != null && _fileCommandController != null && _currentNavFolderId.HasValue && canEdit;
                 mnuArchive.Enabled     = hasFile   && canEdit;
                 mnuPermission.Enabled  = isPrivileged;
                 mnuProperties.Enabled  = hasFile   && canView;
@@ -478,9 +499,9 @@ namespace CMS.Presentation
 
             try
             {
-                if (_fileService == null)
+                if (_fileBrowseController == null)
                 {
-                    ShowError("File service is not available.");
+                    ShowError("File browse controller is not available.");
                     return;
                 }
 
@@ -500,9 +521,9 @@ namespace CMS.Presentation
                     // Print and Save are always blocked at the PDF encryption layer.
                     // CanCopy (text selection) is allowed only for users with write-level permission or above.
                     bool canCopy = false;
-                    if (_permissionService != null)
+                    if (_permissionCheckController != null)
                     {
-                        var eff = _permissionService.GetEffectivePermission(_user.UserID, file.FolderID);
+                        var eff = _permissionCheckController.GetEffectivePermission(_user.UserID, file.FolderID);
                         bool isManager = _user != null && _user.AppRole >= 3;
                         bool hasWrite  = eff != null && (eff.HasFullControl || eff.CanModify || eff.CanWrite);
                         canCopy = isManager || hasWrite;
@@ -549,13 +570,13 @@ namespace CMS.Presentation
                 }
 
                 // Fallback path: fetch verified stream from service and materialize to temp.
-                if (_fileService == null)
+                if (_fileBrowseController == null)
                 {
-                    errorMessage = "File service is not available.";
+                    errorMessage = "File browse controller is not available.";
                     return false;
                 }
 
-                var result = _fileService.DownloadFile(file.FileID, _user);
+                var result = _fileBrowseController.DownloadFile(file.FileID, _user);
                 if (result == null)
                 {
                     errorMessage = "ไม่พบข้อมูลไฟล์จาก service.";
@@ -618,9 +639,9 @@ namespace CMS.Presentation
             var file = SelectedFile;
             if (file == null) return;
 
-            if (_fileService == null)
+            if (_fileBrowseController == null)
             {
-                ShowError("File service is not available.");
+                ShowError("File browse controller is not available.");
                 return;
             }
 
@@ -640,7 +661,7 @@ namespace CMS.Presentation
 
                 try
                 {
-                    var result = _fileService.DownloadFile(file.FileID, _user);
+                    var result = _fileBrowseController.DownloadFile(file.FileID, _user);
 
                     if (result == null || !result.Success)
                     {
@@ -772,7 +793,7 @@ namespace CMS.Presentation
         {
             if (_clipboardMode == ClipboardMode.None || _clipboardFileIds.Count == 0) return;
             if (!_currentNavFolderId.HasValue) { ShowError("กรุณาเลือก Folder ปลายทางก่อนวาง"); return; }
-            if (_fileService == null) return;
+            if (_fileCommandController == null) return;
 
             int destFolderId = _currentNavFolderId.Value;
 
@@ -785,7 +806,7 @@ namespace CMS.Presentation
                         FileIds             = new List<int>(_clipboardFileIds),
                         DestinationFolderId = destFolderId
                     };
-                    _fileService.MoveFiles(req, _user);
+                    _fileCommandController.MoveFiles(req, _user);
 
                     // Restore cut item color (it will be removed from list on refresh)
                     if (_cutItem != null && _cutOriginalColor.HasValue)
@@ -794,7 +815,7 @@ namespace CMS.Presentation
                 else // Copy
                 {
                     foreach (int fileId in _clipboardFileIds)
-                        _fileService.CopyFile(fileId, destFolderId, _user);
+                        _fileCommandController.CopyFile(fileId, destFolderId, _user);
                 }
 
                 // Clear clipboard state
@@ -1029,7 +1050,7 @@ namespace CMS.Presentation
 
         private bool TryLoadMainMenuFromManagement()
         {
-            if (_menuService == null)
+            if (_menuManagementController == null)
                 return false;
 
             var menus = GetMainMenuHierarchy();
@@ -1049,10 +1070,78 @@ namespace CMS.Presentation
             if (roots.Count == 0)
                 return false;
 
+            var availableActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var menu in activeMenus)
+            {
+                string action = ResolveMenuActionTag(menu);
+                if (!string.IsNullOrWhiteSpace(action))
+                    availableActions.Add(action);
+            }
+
+            bool hasCompleteDmsMenu = HasRequiredDefaultDmsActions(availableActions);
+            if (!hasCompleteDmsMenu)
+            {
+                foreach (var root in roots.Where(IsNonDmsManagedRoot))
+                    _treeMainMenu.Nodes.Add(BuildMenuNodeFromManagement(root, activeMenus));
+
+                LoadDefaultMainMenuTree();
+                return _treeMainMenu.Nodes.Count > 0;
+            }
+
             foreach (var root in roots)
                 _treeMainMenu.Nodes.Add(BuildMenuNodeFromManagement(root, activeMenus));
 
             return _treeMainMenu.Nodes.Count > 0;
+        }
+
+        private static bool HasRequiredDefaultDmsActions(ISet<string> availableActions)
+        {
+            if (availableActions == null || availableActions.Count == 0)
+                return false;
+
+            string[] requiredActions =
+            {
+                "Home",
+                "SharedWithMe",
+                "ShareManagement",
+                "OrgStructure",
+                "UserManagement",
+                "ApprovalInbox",
+                "ConfigAdmin",
+                "FolderTemplate"
+            };
+
+            return requiredActions.All(availableActions.Contains);
+        }
+
+        private static bool IsNonDmsManagedRoot(MenuItem root)
+        {
+            if (root == null)
+                return false;
+
+            return IsKnowledgeBaseMenuTree(root);
+        }
+
+        private static bool IsKnowledgeBaseMenuTree(MenuItem menu)
+        {
+            if (menu == null)
+                return false;
+
+            string moduleCode = (menu.ModuleCode ?? string.Empty).Trim();
+            if (moduleCode.Equals("KMS", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            string action = ResolveMenuActionTag(menu);
+            if (string.Equals(action, "KnowledgeBaseForm", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(action, "KBCategoryForm", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (menu.ChildMenuItems == null || menu.ChildMenuItems.Count == 0)
+                return false;
+
+            return menu.ChildMenuItems.All(IsKnowledgeBaseMenuTree);
         }
 
         private List<MenuItem> GetMainMenuHierarchy()
@@ -1060,11 +1149,11 @@ namespace CMS.Presentation
             // Admin should see exactly what is configured in Menu Management.
             if (_user != null && _user.AppRole == 4)
             {
-                return _menuService.GetAllMenusForManagement(_user) ?? new List<MenuItem>();
+                return _menuManagementController.GetVisibleMenus(_user)?.ToList() ?? new List<MenuItem>();
             }
 
             // Non-admin: build full visible tree recursively (service role filter is applied per level).
-            var roots = _menuService.GetRootMenus(_user) ?? new List<MenuItem>();
+            var roots = _menuManagementController.GetRootMenus(_user)?.ToList() ?? new List<MenuItem>();
             foreach (var root in roots)
                 PopulateVisibleChildrenRecursive(root);
 
@@ -1076,7 +1165,7 @@ namespace CMS.Presentation
             if (parent == null)
                 return;
 
-            var children = _menuService.GetChildMenus(parent.MenuItemID, _user) ?? new List<MenuItem>();
+            var children = _menuManagementController.GetChildMenus(parent.MenuItemID, _user)?.ToList() ?? new List<MenuItem>();
             parent.ChildMenuItems = children;
 
             foreach (var child in children)
@@ -1225,12 +1314,14 @@ namespace CMS.Presentation
                 case "folderexplorer":
                     return "Home";
                 case "sharedialog":
+                case "share":
                     return "ShareDialog";
                 case "sharedwithme":
                 case "sharedwithmeform":
                     return "SharedWithMe";
                 case "sharemanagement":
                 case "sharemanagementform":
+                case "manageshare":
                     return "ShareManagement";
                 case "documentgroup":
                     return "DocumentGroup";
@@ -1296,6 +1387,7 @@ namespace CMS.Presentation
                       return "KnowledgeBaseForm";
                 case "knowledgebase":
                 case "kms":
+                case "kb":
                     return "KnowledgeBaseForm";
                 case "kbcategoryform":
                 case "kbcategory":
@@ -1318,7 +1410,8 @@ namespace CMS.Presentation
 
             if (name.Contains("หน้าหลัก") || name.Contains("home")) return "Home";
             if (name.Contains("แชร์กับฉัน") || name.Contains("shared with me")) return "SharedWithMe";
-            if (name.Contains("ลิงก์แชร์") || name.Contains("share management")) return "ShareManagement";
+            if (name.Contains("ลิงก์แชร์") || name.Contains("share management") || name.Contains("manage share")) return "ShareManagement";
+            if (name == "share" || name.Contains("แชร์")) return "ShareDialog";
             if (name.Contains("โครงสร้าง") || name.Contains("org structure")) return "OrgStructure";
             if (name.Contains("บัญชีผู้ใช้") || name.Contains("ผู้ใช้งาน") || name.Contains("user management")) return "UserManagement";
             if (name.Contains("จัดการสิทธิ์") || name.Contains("permission")) return "PermissionAdmin";
@@ -1364,12 +1457,15 @@ namespace CMS.Presentation
                     return "Home";
                 case "share_dialog":
                 case "sharedialog":
+                case "share":
                     return "ShareDialog";
                 case "shared_with_me":
                 case "sharedwithme":
                     return "SharedWithMe";
                 case "share_management":
                 case "sharemanagement":
+                case "manage_share":
+                case "manageshare":
                     return "ShareManagement";
                 case "user_access":
                 case "useraccess":
@@ -1435,6 +1531,7 @@ namespace CMS.Presentation
                 case "knowledgebase":
                 case "knowledgebaseform":
                 case "kms":
+                case "kb":
                     return "KnowledgeBaseForm";
                 case "kb_category":
                 case "kbcategory":
@@ -1512,19 +1609,22 @@ namespace CMS.Presentation
                 MenuText = menuText,
                 SelectedFolder = SelectedFolder,
                 SelectedFile = SelectedFile,
-                FolderService = _folderService,
-                FileService = _fileService,
-                OrgStructureService = _orgStructureService,
-                ApprovalService = _approvalService,
+                FolderService = null,
+                OrgStructureService = null,
+                OrgLookupController = _orgLookupController,
+                ApprovalService = null,
                 FolderTemplateController = _folderTemplateController,
-                PermissionService = _permissionService,
+                PermissionService = null,
                 FolderSettingsController = _folderSettingsController,
                 FolderPermissionLookupController = _folderPermissionLookupController,
-                AuditService = _auditService,
-                ShareService = _shareService,
+                AuditService = null,
+                ShareCommandController = _shareCommandController,
+                ShareManagementController = _shareManagementController,
                 UserAccountLookupController = _userAccountLookupController,
                 UserAdminController = _userAdminController,
-                MenuService = _menuService,
+                MenuManagementController = _menuManagementController,
+                ApprovalInboxController = _approvalInboxController,
+                RecycleBinController = _recycleBinController,
                 ShareLookupController = _shareLookupController,
                 SwitchToOrgView = SwitchToOrgView,
                 SwitchToMainMenuView = SwitchToMainMenuView,
@@ -1662,8 +1762,8 @@ namespace CMS.Presentation
                 var result = await System.Threading.Tasks.Task.Run(() =>
                 {
                     var allFolders = (_folderReadLookupController != null
-                        ? _folderReadLookupController.GetActiveFolders()
-                        : _folderService.GetRootFolders(null, _user))
+                        ? _folderReadLookupController.GetAllFolders(null, _user)
+                        : Enumerable.Empty<Folder>())
                         .ToList();
 
                     var childrenByParent = allFolders
@@ -1676,8 +1776,8 @@ namespace CMS.Presentation
                         .ToList();
 
                     var allOrgUnits = new List<OrgUnit>();
-                    if (_orgStructureService != null)
-                        allOrgUnits = _orgStructureService.GetHierarchy()
+                    if (_orgLookupController != null)
+                        allOrgUnits = _orgLookupController.GetHierarchy()
                             .Where(u => u.IsActive && !u.IsDeleted)
                             .ToList();
 
@@ -2151,7 +2251,7 @@ namespace CMS.Presentation
 
         private async void LoadOrgUnitTree()
         {
-            if (_orgStructureService == null) return;
+            if (_orgLookupController == null) return;
 
             try
             {
@@ -2159,7 +2259,7 @@ namespace CMS.Presentation
                 // ถ้า user มี explicit grants → คืนเฉพาะ granted set
                 // ถ้าไม่มี → fallback role-based (เหมือนเดิม)
                 var units = await System.Threading.Tasks.Task.Run(() =>
-                    _orgStructureService.GetVisibleHierarchy(_user)
+                    _orgLookupController.GetVisibleHierarchy(_user)
                         .Where(u => u.IsActive && !u.IsDeleted)
                         .ToList());
 
@@ -2322,7 +2422,7 @@ namespace CMS.Presentation
                     if (orgUnitId.HasValue)
                     {
                         // ค้นหา Folder ของ OrgUnit ที่เลือก
-                        var folders = _folderService.GetFoldersByOrgUnit(orgUnitId.Value, _user).ToList();
+                        var folders = _folderReadLookupController.GetFoldersByOrgUnit(orgUnitId.Value, _user).ToList();
                         // ไม่ fallback ไป OrgUnit อื่น — ถ้าไม่มี folder ให้คืน list ว่าง
                         // เพื่อให้ PromptToCreateFirstFolder ทำงานถูกต้องสำหรับ OrgUnit นี้โดยเฉพาะ
                         return folders;
@@ -4330,7 +4430,7 @@ namespace CMS.Presentation
         private void CreateSubFolderWithChoice(Folder parent, int? lockedLevel)
         {
             // ถ้า template controller ใช้งานได้ → เสนอทางเลือก
-            if (_folderTemplateController != null && _folderTemplateController.IsAvailable && _folderService != null && _orgStructureService != null)
+            if (_folderTemplateController != null && _folderTemplateController.IsAvailable && _folderCommandController != null && _orgLookupController != null)
             {
                 using (var dlg = new FolderCreationChoiceDialog(parent.FolderName))
                 {
@@ -4358,7 +4458,7 @@ namespace CMS.Presentation
         /// </summary>
         private void OpenApplyTemplateFor(Folder parent)
         {
-            using (var dlg = new ApplyTemplateDialog(_folderService, _folderTemplateController, _orgStructureService, _user, parent))
+            using (var dlg = new ApplyTemplateDialog(_folderTemplateController, _orgLookupController, _user, parent))
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
@@ -4499,7 +4599,7 @@ namespace CMS.Presentation
                 return;
             }
 
-            if (_fileService == null || _folderService == null)
+            if (_fileUploadController == null)
             {
                 ShowError("Upload service is not available.");
                 return;
@@ -4508,7 +4608,7 @@ namespace CMS.Presentation
             // เก็บ folder ID ที่กำลังดูอยู่ก่อน upload
             int uploadFolderId = folder.FolderId;
 
-            var uploadForm = new FileUploadForm(_fileService, _folderService, _user, folder, _checkpointService);
+            var uploadForm = new FileUploadForm(_fileUploadController, _user, folder, _uploadCheckpointController);
             var result = uploadForm.ShowDialog(this.MdiParent ?? this);
             
             if (result == DialogResult.OK)
@@ -4602,8 +4702,8 @@ namespace CMS.Presentation
 
         private IEnumerable<CMS.Domain.Models.OrgUnit> GetOrgUnits()
         {
-            if (_orgStructureService == null) return Enumerable.Empty<CMS.Domain.Models.OrgUnit>();
-            try { return _orgStructureService.GetHierarchy(); }
+            if (_orgLookupController == null) return Enumerable.Empty<CMS.Domain.Models.OrgUnit>();
+            try { return _orgLookupController.GetHierarchy(); }
             catch { return Enumerable.Empty<CMS.Domain.Models.OrgUnit>(); }
         }
 
@@ -4618,20 +4718,20 @@ namespace CMS.Presentation
 
             if (selectedFileIds.Any())
             {
-                if (_fileService == null)
+                if (_fileCommandController == null)
                 {
-                    ShowError("FileService ไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+                    ShowError("File command controller ไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
                     return;
                 }
                 
                 using (var picker = new FolderPickerDialog())
                 {
-                    picker.LoadFolders(_folderService.GetAllFolders(null, _user), new HashSet<int>(), GetOrgUnits());
+                    picker.LoadFolders(_folderReadLookupController.GetAllFolders(null, _user), new HashSet<int>(), GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
                         {
-                            _fileService.MoveFiles(new MoveFileRequest
+                            _fileCommandController.MoveFiles(new MoveFileRequest
                             {
                                 FileIds             = selectedFileIds,
                                 DestinationFolderId = picker.SelectedFolderId.Value
@@ -4669,19 +4769,19 @@ namespace CMS.Presentation
 
             if (selectedFolderFromList != null)
             {
-                var descendants = _folderService.GetDescendants(selectedFolderFromList.FolderID);
+                var descendants = _folderCommandController.GetDescendants(selectedFolderFromList.FolderID);
                 var excluded    = new HashSet<int>(descendants.Select(d => d.FolderID));
                 excluded.Add(selectedFolderFromList.FolderID);
 
                 using (var picker = new FolderPickerDialog())
                 {
                     picker.SourceFolderId = selectedFolderFromList.FolderID;
-                    picker.LoadFolders(_folderService.GetAllFolders(null, _user), excluded, GetOrgUnits());
+                    picker.LoadFolders(_folderReadLookupController.GetAllFolders(null, _user), excluded, GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
                         {
-                            _folderService.MoveFolder(new MoveFolderRequest
+                            _folderCommandController.MoveFolder(new MoveFolderRequest
                             {
                                 SourceFolderId            = selectedFolderFromList.FolderID,
                                 DestinationParentFolderId = picker.SelectedFolderId.Value
@@ -4716,19 +4816,19 @@ namespace CMS.Presentation
 
             if (selectedFolder != null)
             {
-                var descendants = _folderService.GetDescendants(selectedFolder.FolderID);
+                var descendants = _folderCommandController.GetDescendants(selectedFolder.FolderID);
                 var excluded    = new HashSet<int>(descendants.Select(d => d.FolderID));
                 excluded.Add(selectedFolder.FolderID);
 
                 using (var picker = new FolderPickerDialog())
                 {
                     picker.SourceFolderId = selectedFolder.FolderID;
-                    picker.LoadFolders(_folderService.GetAllFolders(null, _user), excluded, GetOrgUnits());
+                    picker.LoadFolders(_folderReadLookupController.GetAllFolders(null, _user), excluded, GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
                         {
-                            _folderService.MoveFolder(new MoveFolderRequest
+                            _folderCommandController.MoveFolder(new MoveFolderRequest
                             {
                                 SourceFolderId            = selectedFolder.FolderID,
                                 DestinationParentFolderId = picker.SelectedFolderId.Value
@@ -4870,7 +4970,7 @@ namespace CMS.Presentation
                 if (newName == fileTag.OriginalFileName) return;  // ไม่มีอะไรเปลี่ยน
                 try
                 {
-                    _fileService.RenameFile(fileTag.FileID, newName, _user);
+                    _fileCommandController.RenameFile(fileTag.FileID, newName, _user);
                     var currentFolder = SelectedFolder;
                     if (currentFolder != null)
                         _presenter.GetFolderContents(currentFolder.FolderId);
@@ -4969,9 +5069,9 @@ namespace CMS.Presentation
 
             try
             {
-                if (_fileService == null) { ShowError("File service is not available."); return; }
+                if (_fileCommandController == null) { ShowError("File command controller is not available."); return; }
 
-                _fileService.DeleteFile(file.FileDocumentId, _user);
+                _fileCommandController.DeleteFile(file.FileDocumentId, _user);
 
                 // Reload ก่อนเพื่อยืนยันว่าลบสำเร็จ
                 var currentFolder = SelectedFolder;
@@ -5017,7 +5117,7 @@ namespace CMS.Presentation
             // Folder ที่มีไฟล์อยู่ต้องผ่านการอนุมัติ
             if (folder.FileCount > 0)
             {
-                if (_approvalService == null)
+                if (_approvalFolderController == null)
                 {
                     MessageBox.Show(
                         string.Format(
@@ -5047,7 +5147,13 @@ namespace CMS.Presentation
 
                 try
                 {
-                    _approvalService.RequestFolderDelete(folder.FolderId, reason, _user);
+                    if (_approvalFolderController == null)
+                    {
+                        ShowError("Approval controller is not available.");
+                        return;
+                    }
+
+                    _approvalFolderController.RequestFolderDelete(folder.FolderId, reason, _user);
                     ShowInfo(string.Format(
                         "ส่งคำขออนุมัติลบ Folder '{0}' เรียบร้อยแล้ว\n\n" +
                         "โปรดรอ Admin อนุมัติ ระบบจะลบ Folder โดยอัตโนมัติหลังได้รับการอนุมัติ",
@@ -5079,7 +5185,7 @@ namespace CMS.Presentation
         /// </summary>
         private void ClearFolderContents()
         {
-            if (_fileService == null || !_currentNavFolderId.HasValue) return;
+            if (_fileBrowseController == null || _fileCommandController == null || !_currentNavFolderId.HasValue) return;
 
             int rootFolderId = _currentNavFolderId.Value;
 
@@ -5087,7 +5193,7 @@ namespace CMS.Presentation
             var allFolderIds = new List<int> { rootFolderId };
             try
             {
-                var descendants = _folderService.GetDescendants(rootFolderId);
+                var descendants = _folderCommandController.GetDescendants(rootFolderId);
                 if (descendants != null)
                     foreach (var d in descendants)
                         allFolderIds.Add(d.FolderID);
@@ -5101,7 +5207,7 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    var files = _fileService.GetFilesInFolder(fid, _user).ToList();
+                    var files = _fileBrowseController.GetFilesInFolder(fid, _user).ToList();
                     if (files.Count > 0)
                     {
                         filesByFolder[fid] = files;
@@ -5139,7 +5245,7 @@ namespace CMS.Presentation
                 {
                     try
                     {
-                        _fileService.DeleteFile(file.FileID, _user);
+                        _fileCommandController.DeleteFile(file.FileID, _user);
                         deleted++;
                     }
                     catch
@@ -5284,7 +5390,7 @@ namespace CMS.Presentation
 
         private void btnApplyTemplate_Click(object sender, EventArgs e)
         {
-            if (_folderTemplateController == null || !_folderTemplateController.IsAvailable || _orgStructureService == null)
+            if (_folderTemplateController == null || !_folderTemplateController.IsAvailable || _orgLookupController == null)
             {
                 // Fallback: prompt for template folder ID (legacy behavior)
                 var parent = SelectedFolder;
@@ -5300,7 +5406,7 @@ namespace CMS.Presentation
                 return;
             }
 
-            using (var dlg = new ApplyTemplateDialog(_folderService, _folderTemplateController, _orgStructureService, _user, SelectedFolder))
+            using (var dlg = new ApplyTemplateDialog(_folderTemplateController, _orgLookupController, _user, SelectedFolder))
             {
                 // Validate: ต้องเลือก folder ที่อยู่ภายใต้ 4 folders หลักเท่านั้น
                 var selectedFolder = SelectedFolder;
@@ -5376,7 +5482,7 @@ namespace CMS.Presentation
 
             try
             {
-                _folderService.ChangeConfidentialityLevel(folder.FolderId, newLevel.Value, _user);
+                _folderCommandController.ChangeConfidentialityLevel(folder.FolderId, newLevel.Value, _user);
                 ShowInfo(string.Format(
                     "Confidentiality level changed to {0} and propagated to all inheriting descendants.",
                     ConfidentialityLabel(newLevel.Value)));
@@ -5411,7 +5517,7 @@ namespace CMS.Presentation
 
             try
             {
-                _folderService.CopyFolderStructure(sourceFolder.FolderId, destinationParentId.Value, _user);
+                _folderCommandController.CopyFolderStructure(sourceFolder.FolderId, destinationParentId.Value, _user);
 
                 // Reload tree and select the destination parent so user can see the new folder
                 _presenter.LoadFolderTree(_selectedOrgUnitId);
@@ -5915,10 +6021,10 @@ namespace CMS.Presentation
         {
             try
             {
-                if (_folderService == null) return false;
+                if (_folderReadLookupController == null) return false;
 
                 // ใช้ service เพื่อตรวจสอบความถูกต้อง
-                var allFolders = _folderService.GetAllFolders(null, _user);
+                var allFolders = _folderReadLookupController.GetAllFolders(null, _user);
                 
                 if (parentFolderId.HasValue)
                 {
@@ -6235,11 +6341,11 @@ namespace CMS.Presentation
                     if (SelectedFolder != null && SelectedFolder.FolderID == file.FolderID)
                         orgUnitId = SelectedFolder.OrgUnitID;
 
-                    if (!orgUnitId.HasValue && _folderService != null)
+                    if (!orgUnitId.HasValue && _folderReadLookupController != null)
                     {
                         try
                         {
-                            var folder = _folderService.GetFolder(file.FolderID, _user);
+                            var folder = _folderReadLookupController.GetFolder(file.FolderID, _user);
                             if (folder != null)
                                 orgUnitId = folder.OrgUnitID;
                         }
@@ -6349,13 +6455,13 @@ namespace CMS.Presentation
             bool canEdit = isPrivileged || _user.CanEditFolder(folder.ConfidentialityLevel);
             
             // Check ACL permissions if permission service is available
-            if (_permissionService != null && !isPrivileged)
+            if (_permissionCheckController != null && !isPrivileged)
             {
                 try
                 {
-                    bool hasRead = _permissionService.CheckPermission(_user.UserID, folder.FolderId, "Read");
-                    bool hasWrite = _permissionService.CheckPermission(_user.UserID, folder.FolderId, "Write");
-                    bool hasModify = _permissionService.CheckPermission(_user.UserID, folder.FolderId, "Modify");
+                    bool hasRead = _permissionCheckController.CheckPermission(_user.UserID, folder.FolderId, "Read");
+                    bool hasWrite = _permissionCheckController.CheckPermission(_user.UserID, folder.FolderId, "Write");
+                    bool hasModify = _permissionCheckController.CheckPermission(_user.UserID, folder.FolderId, "Modify");
                     
                     // ACL overrides authority
                     if (hasRead || hasWrite || hasModify)
@@ -7098,11 +7204,11 @@ namespace CMS.Presentation
 
             // Build OrgUnit lookup for display names
             Dictionary<int, string> orgUnitNames = new Dictionary<int, string>();
-            if (_orgStructureService != null)
+            if (_orgLookupController != null)
             {
                 try
                 {
-                    foreach (var ou in _orgStructureService.GetHierarchy())
+                    foreach (var ou in _orgLookupController.GetHierarchy())
                         orgUnitNames[ou.OrgUnitID] = ou.OrgUnitNameTH ?? ou.OrgUnitNameEN ?? ou.OrgUnitCode;
                 }
                 catch { }
@@ -7319,20 +7425,20 @@ namespace CMS.Presentation
         /// <summary>โหลดรายการ Quick Access จาก service และแสดงใน _lstQuickAccess</summary>
         private void LoadQuickAccessPanel()
         {
-            if (_quickAccessService == null || _lstQuickAccess == null) return;
+            if (_quickAccessController == null || _lstQuickAccess == null) return;
 
             try
             {
-                _quickAccessItems = _quickAccessService.GetByUser(_user.UserID).ToList();
+                _quickAccessItems = _quickAccessController.GetByUser(_user.UserID).ToList();
                 _lstQuickAccess.Items.Clear();
 
                 // สร้าง lookup สำหรับ OrgUnit names
                 Dictionary<int, string> orgUnitNames = new Dictionary<int, string>();
-                if (_orgStructureService != null)
+                if (_orgLookupController != null)
                 {
                     try
                     {
-                        foreach (var ou in _orgStructureService.GetHierarchy())
+                        foreach (var ou in _orgLookupController.GetHierarchy())
                             orgUnitNames[ou.OrgUnitId] = ou.Name ?? ou.OrgUnitCode;
                     }
                     catch { /* ถ้าโหลดไม่ได้ก็ไม่แสดงชื่อ OrgUnit */ }
@@ -7387,14 +7493,14 @@ namespace CMS.Presentation
         /// </summary>
         private void CtxAddQuickAccess_Click(object sender, EventArgs e)
         {
-            if (_quickAccessService == null) return;
+            if (_quickAccessController == null) return;
 
             var folder = SelectedFolder;
             if (folder == null) return;
 
             try
             {
-                _quickAccessService.Add(_user.UserID, folder.FolderID);
+                _quickAccessController.Add(_user.UserID, folder.FolderID);
                 LoadQuickAccessPanel();
             }
             catch (Exception ex)
@@ -7408,7 +7514,7 @@ namespace CMS.Presentation
         /// </summary>
         private void CtxRemoveQuickAccess_Click(object sender, EventArgs e)
         {
-            if (_quickAccessService == null) return;
+            if (_quickAccessController == null) return;
 
             int idx = _lstQuickAccess.SelectedIndex;
             if (idx < 0 || idx >= _quickAccessItems.Count) return;
@@ -7416,7 +7522,7 @@ namespace CMS.Presentation
             var qa = _quickAccessItems[idx];
             try
             {
-                _quickAccessService.Remove(_user.UserID, qa.FolderID);
+                _quickAccessController.Remove(_user.UserID, qa.FolderID);
                 LoadQuickAccessPanel();
             }
             catch (Exception ex)
@@ -7464,11 +7570,11 @@ namespace CMS.Presentation
             {
                 _selectedOrgUnitId = qa.Folder.OrgUnitID;
                 SelectOrgUnitNode(qa.Folder.OrgUnitID);
-                if (_orgStructureService != null)
+                if (_orgLookupController != null)
                 {
                     try
                     {
-                        var orgUnit = _orgStructureService.GetHierarchy()
+                        var orgUnit = _orgLookupController.GetHierarchy()
                             .FirstOrDefault(u => u.OrgUnitId == qa.Folder.OrgUnitID);
                         _selectedOrgUnitName = orgUnit?.Name ?? "ไม่ทราบชื่อ";
                         lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", _selectedOrgUnitName);

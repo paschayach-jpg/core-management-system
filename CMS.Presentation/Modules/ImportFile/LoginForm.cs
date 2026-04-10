@@ -8,7 +8,6 @@ using CMS.Domain.Models;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.DTOs;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -17,7 +16,7 @@ namespace CMS.Presentation
     /// </summary>
     public partial class LoginForm : Form
     {
-        private readonly IAdAuthService          _authService;
+        private readonly ILoginAuthController    _loginAuthController;
         private readonly ILoginAccountController  _loginAccountController;
 
         /// <summary>ผลลัพธ์หลัง login สำเร็จ — อ่านได้หลัง DialogResult.OK</summary>
@@ -40,9 +39,9 @@ namespace CMS.Presentation
             return "127.0.0.1";
         }
 
-        public LoginForm(IAdAuthService authService, ILoginAccountController loginAccountController = null)
+        public LoginForm(ILoginAuthController loginAuthController, ILoginAccountController loginAccountController = null)
         {
-            _authService     = authService     ?? throw new ArgumentNullException("authService");
+            _loginAuthController = loginAuthController ?? throw new ArgumentNullException("loginAuthController");
             _loginAccountController = loginAccountController;
             InitializeComponent();
 
@@ -134,7 +133,7 @@ namespace CMS.Presentation
 
             try
             {
-                AdAuthResult result = await _authService.LoginAsync(username, password);
+                AdAuthResult result = await _loginAuthController.LoginAsync(username, password);
 
                 if (result.Success)
                 {
@@ -196,7 +195,7 @@ namespace CMS.Presentation
             try
             {
                 // 1. Authenticate กับ AD ก่อน
-                AdAuthResult result = await _authService.LoginAsync(username, password);
+                AdAuthResult result = await _loginAuthController.LoginAsync(username, password);
                 if (!result.Success)
                 {
                     lblStatus.Text = "Username หรือ Password ไม่ถูกต้อง";

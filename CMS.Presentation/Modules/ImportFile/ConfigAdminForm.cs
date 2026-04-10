@@ -108,8 +108,7 @@ namespace CMS.Presentation
         public ConfigAdminForm(
             IConfigManager configManager,
             IAuditService  auditService,
-            UserContext    user,
-            IFileService   fileService            = null
+            UserContext    user
               )
         {
             if (configManager == null) throw new ArgumentNullException("configManager");
@@ -118,7 +117,7 @@ namespace CMS.Presentation
 
             InitializeComponent();
 
-              _presenter = new ConfigAdminPresenter(this, configManager, auditService, user, fileService);
+              _presenter = new ConfigAdminPresenter(this, configManager, auditService, user);
         }
 
         // ── Event handlers ────────────────────────────────────────────────────

@@ -7,15 +7,13 @@ using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
     internal partial class CreateOrgUnitDialog : Form
     {
         private readonly List<OrgUnit>           _allUnits;
-        private readonly IEmployeeApiService      _employeeApiService;
-        private readonly IOrgStructureService     _orgService;
+        private readonly IEmployeeDirectoryController _employeeDirectoryController;
         private readonly OrgUnitTier              _fixedTier;
         private readonly OrgUnit                  _selectedParent;
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
@@ -26,16 +24,14 @@ namespace CMS.Presentation
         public CreateOrgUnitRequest Result { get; private set; }
 
         public CreateOrgUnitDialog(IEnumerable<OrgUnit> allUnits,
-            IEmployeeApiService employeeApiService = null,
+            IEmployeeDirectoryController employeeDirectoryController = null,
             OrgUnitTier? fixedTier = null,
-            IOrgStructureService orgService = null,
             OrgUnit selectedParent = null,
             IAuthorityOrgLookupController authorityOrgLookupController = null)
         {
             // Include ALL units (active, inactive, deleted) to avoid code conflicts
             _allUnits           = allUnits?.ToList() ?? new List<OrgUnit>();
-            _employeeApiService = employeeApiService;
-            _orgService         = orgService;
+            _employeeDirectoryController = employeeDirectoryController;
             _fixedTier          = fixedTier ?? OrgUnitTier.SubCommittee;
             _selectedParent     = selectedParent;
             _authorityOrgLookupController = authorityOrgLookupController;
@@ -156,16 +152,7 @@ namespace CMS.Presentation
 
             // SubCommittee → auto-generate SC-NNN ต่อเนื่อง
             const string prefix = "SC";
-            List<OrgUnit> allUnits;
-            if (_orgService != null)
-            {
-                try   { allUnits = _orgService.GetHierarchy().ToList(); }
-                catch { allUnits = _allUnits; }
-            }
-            else
-            {
-                allUnits = _allUnits;
-            }
+            List<OrgUnit> allUnits = _allUnits;
 
             var existingNumbers = allUnits
                 .Where(u => u.OrgUnitCode != null && u.OrgUnitCode.StartsWith(prefix + "-"))
@@ -197,13 +184,7 @@ namespace CMS.Presentation
                 return;
             }
 
-            List<OrgUnit> allUnits;
-            if (_orgService != null)
-            {
-                try   { allUnits = _orgService.GetHierarchy().ToList(); }
-                catch { allUnits = _allUnits; }
-            }
-            else { allUnits = _allUnits; }
+            List<OrgUnit> allUnits = _allUnits;
 
             var exists = allUnits.Any(u => u.OrgUnitCode == code && u.IsActive && !u.IsDeleted);
             txtCode.BackColor = exists ? Color.FromArgb(255, 235, 235) : Color.White;
@@ -230,13 +211,13 @@ namespace CMS.Presentation
             bool   isDivision = currentTier == OrgUnitTier.Division;
 
             // ต้องมี data source อย่างน้อย 1 อย่าง
-            if (isDivision && _authorityOrgLookupController == null && _employeeApiService == null)
+            if (isDivision && _authorityOrgLookupController == null && _employeeDirectoryController == null)
             {
                 MessageBox.Show("ไม่มีแหล่งข้อมูลฝ่าย กรุณาตรวจสอบการตั้งค่า",
                     "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            if (!isDivision && _authorityOrgLookupController == null && _employeeApiService == null)
+            if (!isDivision && _authorityOrgLookupController == null && _employeeDirectoryController == null)
             {
                 MessageBox.Show("ไม่มีแหล่งข้อมูลแผนก กรุณาตรวจสอบการตั้งค่า",
                     "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -340,9 +321,9 @@ namespace CMS.Presentation
                                 allItems.Add(row);
                             }
                         }
-                        else if (_employeeApiService != null)
+                        else if (_employeeDirectoryController != null)
                         {
-                            foreach (var v in _employeeApiService.GetDivisions().OrderBy(x => x.DivisionCode))
+                            foreach (var v in _employeeDirectoryController.GetDivisions().OrderBy(x => x.DivisionCode))
                             {
                                 var row = new ListViewItem(v.DivisionCode ?? "");
                                 row.SubItems.Add(v.NameTh ?? "");
@@ -383,9 +364,9 @@ namespace CMS.Presentation
                                 allItems.Add(row);
                             }
                         }
-                        else if (_employeeApiService != null)
+                        else if (_employeeDirectoryController != null)
                         {
-                            foreach (var d in _employeeApiService.GetDepartments().OrderBy(x => x.DepartmentCode))
+                            foreach (var d in _employeeDirectoryController.GetDepartments().OrderBy(x => x.DepartmentCode))
                             {
                                 var row = new ListViewItem(d.DepartmentCode ?? "");
                                 row.SubItems.Add(d.NameTh ?? "");
@@ -478,12 +459,7 @@ namespace CMS.Presentation
             if (tier == OrgUnitTier.SubCommittee)
             {
                 List<OrgUnit> allUnitsForCheck;
-                if (_orgService != null)
-                {
-                    try   { allUnitsForCheck = _orgService.GetHierarchy().ToList(); }
-                    catch { allUnitsForCheck = _allUnits; }
-                }
-                else { allUnitsForCheck = _allUnits; }
+                allUnitsForCheck = _allUnits;
 
                 var existingByCode = allUnitsForCheck.FirstOrDefault(u =>
                     u.OrgUnitCode == code && u.IsActive && !u.IsDeleted);

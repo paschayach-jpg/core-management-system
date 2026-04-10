@@ -5,7 +5,6 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -17,12 +16,11 @@ namespace CMS.Presentation
     /// </summary>
     public partial class UserAccessForm : Form
     {
-        private readonly IUserAdminController    _userAdminController;
-        private readonly IOrgStructureService     _orgService;
-        private readonly IEmployeeApiService      _employeeApi;
-        private readonly UserContext              _currentUser;
-        private readonly IUserOrgVisibilityService _visibilityService;
-        private readonly IAuditService            _auditService;
+        private readonly IUserAdminController _userAdminController;
+        private readonly IUserAccessOrgLookupController _orgLookupController;
+        private readonly UserContext _currentUser;
+        private readonly IUserOrgVisibilityController _visibilityController;
+        private readonly IAuditLogController _auditLogController;
 
         private List<UserAccount> _allUsers = new List<UserAccount>();
         private List<OrgUnit>     _allOrgs  = new List<OrgUnit>();
@@ -36,19 +34,17 @@ namespace CMS.Presentation
         private Label    _lblVisibilityUser;
 
         public UserAccessForm(
-            IUserAdminController      userAdminController,
-            IOrgStructureService      orgService,
-            UserContext               currentUser,
-            IEmployeeApiService       employeeApi       = null,
-            IUserOrgVisibilityService visibilityService = null,
-            IAuditService             auditService      = null)
+            IUserAdminController userAdminController,
+            IUserAccessOrgLookupController orgLookupController,
+            UserContext currentUser,
+            IUserOrgVisibilityController visibilityController = null,
+            IAuditLogController auditLogController = null)
         {
             _userAdminController = userAdminController;
-            _orgService        = orgService;
-            _currentUser       = currentUser;
-            _employeeApi       = employeeApi;
-            _visibilityService = visibilityService;
-            _auditService      = auditService;
+            _orgLookupController = orgLookupController;
+            _currentUser = currentUser;
+            _visibilityController = visibilityController;
+            _auditLogController = auditLogController;
 
             InitializeComponent();
             InitializeVisibilityTab();
@@ -176,8 +172,8 @@ namespace CMS.Presentation
                     ? _userAdminController.GetAllUsers() ?? Enumerable.Empty<UserAccount>()
                     : Enumerable.Empty<UserAccount>()).ToList();
 
-                _allOrgs = (_orgService != null
-                    ? _orgService.GetHierarchy() ?? Enumerable.Empty<OrgUnit>()
+                _allOrgs = (_orgLookupController != null
+                    ? _orgLookupController.GetHierarchy() ?? Enumerable.Empty<OrgUnit>()
                     : Enumerable.Empty<OrgUnit>()).ToList();
 
                 FilterUsers();
@@ -235,12 +231,12 @@ namespace CMS.Presentation
             _orgTree.Nodes.Clear();
 
             List<OrgUnit> visible;
-            if (_visibilityService != null)
+            if (_visibilityController != null)
             {
                 try
                 {
                     var visibleSet = new HashSet<int>(
-                        _visibilityService.GetVisibleOrgUnits(_currentUser.UserID, _currentUser)
+                        _visibilityController.GetVisibleOrgUnits(_currentUser.UserID, _currentUser)
                                           .Select(o => o.OrgUnitID));
                     visible = _allOrgs.Where(o => visibleSet.Contains(o.OrgUnitID)).ToList();
                 }
@@ -376,18 +372,18 @@ namespace CMS.Presentation
 
             _lblVisibilityUser.Text = string.Format("สิทธิ์มองเห็นหน่วยงานของ: {0}",
                 user.DisplayName ?? user.ADUserName);
-            _btnGrantVisibility.Enabled  = _visibilityService != null;
+            _btnGrantVisibility.Enabled  = _visibilityController != null;
             _btnRevokeVisibility.Enabled = false;
 
             _lvVisibility.BeginUpdate();
             _lvVisibility.Items.Clear();
 
-            if (_visibilityService != null)
+            if (_visibilityController != null)
             {
                 try
                 {
                     // Get explicit grants with GrantedBy and GrantedDate information
-                    var grants = _visibilityService.GetExplicitGrantsForUser(user.UserID, _currentUser).ToList();
+                    var grants = _visibilityController.GetExplicitGrantsForUser(user.UserID, _currentUser).ToList();
                     
                     // Build lookup for OrgUnit names
                     var orgLookup = _allOrgs.ToDictionary(o => o.OrgUnitID, o => o);
@@ -433,7 +429,7 @@ namespace CMS.Presentation
                     // If no explicit grants, show role-based fallback info
                     if (grants.Count == 0)
                     {
-                        var visibleOrgs = _visibilityService.GetVisibleOrgUnits(user.UserID, _currentUser).ToList();
+                        var visibleOrgs = _visibilityController.GetVisibleOrgUnits(user.UserID, _currentUser).ToList();
                         foreach (var org in visibleOrgs)
                         {
                             var item = new ListViewItem(org.OrgUnitNameTH ?? org.OrgUnitCode);
@@ -471,7 +467,7 @@ namespace CMS.Presentation
         private void BtnGrantVisibility_Click(object sender, EventArgs e)
         {
             var user = GetSelectedUser();
-            if (user == null || _visibilityService == null) return;
+            if (user == null || _visibilityController == null) return;
 
             // Show OrgUnit picker — returns multiple selections via CheckedListBox
             var chosen = PickOrgUnitsFromFullHierarchy();
@@ -482,9 +478,9 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    _visibilityService.GrantVisibility(user.UserID, org.OrgUnitID, _currentUser);
-                    if (_auditService != null)
-                        _auditService.Log(new AuditEntry
+                    _visibilityController.GrantVisibility(user.UserID, org.OrgUnitID, _currentUser);
+                    if (_auditLogController != null)
+                        _auditLogController.Log(new AuditEntry
                         {
                             Module      = "UserAccess",
                             Action      = "GRANT_VISIBILITY",
@@ -521,7 +517,7 @@ namespace CMS.Presentation
         private void BtnRevokeVisibility_Click(object sender, EventArgs e)
         {
             var user = GetSelectedUser();
-            if (user == null || _visibilityService == null) return;
+            if (user == null || _visibilityController == null) return;
             if (_lvVisibility.SelectedItems.Count == 0) return;
 
             var org = _lvVisibility.SelectedItems[0].Tag as OrgUnit;
@@ -529,9 +525,9 @@ namespace CMS.Presentation
 
             try
             {
-                _visibilityService.RevokeVisibility(user.UserID, org.OrgUnitID, _currentUser);
-                if (_auditService != null)
-                    _auditService.Log(new AuditEntry
+                _visibilityController.RevokeVisibility(user.UserID, org.OrgUnitID, _currentUser);
+                if (_auditLogController != null)
+                    _auditLogController.Log(new AuditEntry
                     {
                         Module      = "UserAccess",
                         Action      = "REVOKE_VISIBILITY",
@@ -572,20 +568,20 @@ namespace CMS.Presentation
         private List<OrgUnit> PickOrgUnitsFromFullHierarchy()
         {
             var results = new List<OrgUnit>();
-            var allOrgs = (_orgService != null
-                ? _orgService.GetHierarchy() ?? Enumerable.Empty<OrgUnit>()
+            var allOrgs = (_orgLookupController != null
+                ? _orgLookupController.GetHierarchy() ?? Enumerable.Empty<OrgUnit>()
                 : _allOrgs).ToList();
 
             // Collect already-granted IDs — use explicit grants only (no role-based fallback)
             var alreadyGrantedIds = new HashSet<int>();
-            if (_visibilityService != null)
+            if (_visibilityController != null)
             {
                 var selectedUser = GetSelectedUser();
                 if (selectedUser != null)
                 {
                     try
                     {
-                        foreach (var g in _visibilityService.GetExplicitGrantsForUser(selectedUser.UserID, _currentUser))
+                        foreach (var g in _visibilityController.GetExplicitGrantsForUser(selectedUser.UserID, _currentUser))
                             alreadyGrantedIds.Add(g.OrgUnitID);
                     }
                     catch { }
@@ -847,8 +843,8 @@ namespace CMS.Presentation
                 try
                 {
                     _userAdminController.UpdateUser(user);
-                    if (_auditService != null)
-                        _auditService.Log(new AuditEntry
+                    if (_auditLogController != null)
+                        _auditLogController.Log(new AuditEntry
                         {
                             Module      = "UserAccess",
                             Action      = "CHANGE_ROLE",
@@ -894,8 +890,8 @@ namespace CMS.Presentation
             {
                 _userAdminController.DeactivateUser(user.UserID);
                 user.IsActive = false;
-                if (_auditService != null)
-                    _auditService.Log(new AuditEntry
+                if (_auditLogController != null)
+                    _auditLogController.Log(new AuditEntry
                     {
                         Module      = "UserAccess",
                         Action      = "DEACTIVATE_USER",
@@ -1162,8 +1158,8 @@ namespace CMS.Presentation
                         int oldOrgId   = user.OrgUnitID;
                         user.OrgUnitID = selected.OrgUnitID;
                         _userAdminController.UpdateUser(user);
-                        if (_auditService != null)
-                            _auditService.Log(new AuditEntry
+                        if (_auditLogController != null)
+                            _auditLogController.Log(new AuditEntry
                             {
                                 Module      = "UserAccess",
                                 Action      = "ASSIGN_ORG",
@@ -1233,8 +1229,8 @@ namespace CMS.Presentation
             try
             {
                 _userAdminController.UpdateUser(user);
-                if (_auditService != null)
-                    _auditService.Log(new AuditEntry
+                if (_auditLogController != null)
+                    _auditLogController.Log(new AuditEntry
                     {
                         Module      = "UserAccess",
                         Action      = "CHANGE_ORG",

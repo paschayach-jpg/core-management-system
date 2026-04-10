@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -13,7 +13,7 @@ namespace CMS.Presentation
     /// </summary>
     public partial class AccessShareForm : Form
     {
-        private readonly IShareAccessService _shareAccessService;
+        private readonly IAccessShareController _accessShareController;
         private readonly Guid _shareToken;
         private bool _accessGranted;
 
@@ -23,10 +23,10 @@ namespace CMS.Presentation
         private Label _lblFileInfo;
         private Dictionary<string, object> _controls;
 
-        public AccessShareForm(IShareAccessService shareAccessService, Guid shareToken)
+        public AccessShareForm(IAccessShareController accessShareController, Guid shareToken)
         {
             InitializeComponent();
-            _shareAccessService = shareAccessService;
+            _accessShareController = accessShareController;
             _shareToken = shareToken;
             _accessGranted = false;
         }
@@ -99,7 +99,7 @@ namespace CMS.Presentation
                 };
 
                 // Validate the token without password first
-                var result = _shareAccessService.ValidateAndGrantAccess(_shareToken, null, anonymousUser);
+                var result = _accessShareController.ValidateAndGrantAccess(_shareToken, null, anonymousUser);
 
                 if (!result.IsGranted)
                 {
@@ -145,7 +145,7 @@ namespace CMS.Presentation
                     ADUserName = "Anonymous"
                 };
 
-                var result = _shareAccessService.ValidateAndGrantAccess(_shareToken, _txtPassword.Text, anonymousUser);
+                var result = _accessShareController.ValidateAndGrantAccess(_shareToken, _txtPassword.Text, anonymousUser);
 
                 if (result.IsGranted)
                 {
@@ -205,7 +205,7 @@ namespace CMS.Presentation
             {
                 // In a real implementation, this would trigger the file download
                 MessageBox.Show("File download would be initiated here.", "Info");
-                _shareAccessService.IncrementDownloadCount(0); // Would use actual share ID
+                _accessShareController.IncrementDownloadCount(0); // Would use actual share ID
             }
             catch (Exception ex)
             {

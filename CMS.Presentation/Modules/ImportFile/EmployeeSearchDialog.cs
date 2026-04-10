@@ -3,23 +3,23 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
     public partial class EmployeeSearchDialog : Form
     {
-        private readonly IEmployeeApiService _employeeService;
+        private readonly IEmployeeDirectoryController _employeeDirectoryController;
 
         public EmployeeSummary SelectedEmployee { get; private set; }
 
         private List<EmployeeSummary> _allEmployees = new List<EmployeeSummary>();
 
-        public EmployeeSearchDialog(IEmployeeApiService employeeService)
+        public EmployeeSearchDialog(IEmployeeDirectoryController employeeDirectoryController)
         {
-            if (employeeService == null) throw new ArgumentNullException("employeeService");
-            _employeeService = employeeService;
+            if (employeeDirectoryController == null) throw new ArgumentNullException("employeeDirectoryController");
+            _employeeDirectoryController = employeeDirectoryController;
             InitializeComponent();
 
             // Placeholder behavior
@@ -47,17 +47,17 @@ namespace CMS.Presentation
 
             try
             {
-                _allEmployees = _employeeService.GetAllEmployees().ToList();
+                _allEmployees = _employeeDirectoryController.GetAllEmployees().ToList();
 
                 cmbDepartment.Items.Clear();
                 cmbDepartment.Items.Add(new ComboItem(0, "— ทุกแผนก —"));
-                foreach (var d in _employeeService.GetDepartments())
+                foreach (var d in _employeeDirectoryController.GetDepartments())
                     cmbDepartment.Items.Add(new ComboItem(d.DepartmentId, d.DisplayName));
                 cmbDepartment.SelectedIndex = 0;
 
                 cmbDivision.Items.Clear();
                 cmbDivision.Items.Add(new ComboItem(0, "— ทุกฝ่าย —"));
-                foreach (var v in _employeeService.GetDivisions())
+                foreach (var v in _employeeDirectoryController.GetDivisions())
                     cmbDivision.Items.Add(new ComboItem(v.DivisionId, v.DisplayName));
                 cmbDivision.SelectedIndex = 0;
 
@@ -128,7 +128,7 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    var byCode = _employeeService.GetByCode(kw);
+                    var byCode = _employeeDirectoryController.GetByCode(kw);
                     if (byCode != null)
                     {
                         var summary = new EmployeeSummary

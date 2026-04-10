@@ -5,7 +5,6 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -15,7 +14,7 @@ namespace CMS.Presentation
     /// </summary>
     public partial class ShareManagementForm : Form
     {
-        private readonly IShareService _shareService;
+        private readonly IShareManagementController _shareManagementController;
         private readonly UserContext _currentUser;
         private readonly IShareLookupController _shareLookupController;
 
@@ -25,11 +24,11 @@ namespace CMS.Presentation
         private Dictionary<int, int> _internalShareIdMap; // row → FilePermissionID
         private Dictionary<int, int> _externalShareIdMap; // row → ExternalShareID
 
-        public ShareManagementForm(IShareService shareService, UserContext currentUser,
+        public ShareManagementForm(IShareManagementController shareManagementController, UserContext currentUser,
             IShareLookupController shareLookupController = null)
         {
             InitializeComponent();
-            _shareService = shareService;
+            _shareManagementController = shareManagementController;
             _currentUser = currentUser;
             _shareLookupController = shareLookupController;
             _internalShareIdMap = new Dictionary<int, int>();
@@ -258,7 +257,7 @@ namespace CMS.Presentation
                 _externalShareIdMap.Clear();
 
                 // Load internal shares
-                var internalShares = _shareService.GetInternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
+                var internalShares = _shareManagementController.GetInternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
                 var internalData = new List<object>();
                 for (int i = 0; i < internalShares.Count; i++)
                 {
@@ -277,7 +276,7 @@ namespace CMS.Presentation
                 _dgvInternalShares.DataSource = internalData;
 
                 // Load external shares
-                var externalShares = _shareService.GetExternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
+                var externalShares = _shareManagementController.GetExternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
                 var externalData = new List<object>();
                 for (int i = 0; i < externalShares.Count; i++)
                 {
@@ -327,7 +326,7 @@ namespace CMS.Presentation
                     return;
                 }
 
-                _shareService.RevokeInternalShare(filePermissionId, _currentUser);
+                _shareManagementController.RevokeInternalShare(filePermissionId, _currentUser);
                 MessageBox.Show("Internal share revoked.", "Success");
                 LoadShares();
             }
@@ -354,7 +353,7 @@ namespace CMS.Presentation
                     return;
                 }
 
-                _shareService.ApproveExternalShare(externalShareId, _currentUser);
+                _shareManagementController.ApproveExternalShare(externalShareId, _currentUser);
                 MessageBox.Show("External share approved.", "Success");
                 LoadShares();
             }
@@ -384,7 +383,7 @@ namespace CMS.Presentation
                     return;
                 }
 
-                _shareService.RejectExternalShare(externalShareId, reason, _currentUser);
+                _shareManagementController.RejectExternalShare(externalShareId, reason, _currentUser);
                 MessageBox.Show("External share rejected.", "Success");
                 LoadShares();
             }
@@ -414,7 +413,7 @@ namespace CMS.Presentation
                     return;
                 }
 
-                _shareService.RevokeExternalShare(externalShareId, reason, _currentUser);
+                _shareManagementController.RevokeExternalShare(externalShareId, reason, _currentUser);
                 MessageBox.Show("External share revoked.", "Success");
                 LoadShares();
             }

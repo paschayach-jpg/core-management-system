@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -13,7 +13,7 @@ namespace CMS.Presentation
     /// </summary>
     public partial class AccessLogView : Form
     {
-        private readonly IShareService _shareService;
+        private readonly IShareManagementController _shareManagementController;
         private readonly UserContext _currentUser;
         private int _externalShareId;
 
@@ -23,10 +23,10 @@ namespace CMS.Presentation
         private ComboBox _cboAccessType;
         private Dictionary<string, object> _controls;
 
-        public AccessLogView(IShareService shareService, UserContext currentUser, int externalShareId)
+        public AccessLogView(IShareManagementController shareManagementController, UserContext currentUser, int externalShareId)
         {
             InitializeComponent();
-            _shareService = shareService;
+            _shareManagementController = shareManagementController;
             _currentUser = currentUser;
             _externalShareId = externalShareId;
         }
@@ -113,18 +113,18 @@ namespace CMS.Presentation
         {
             try
             {
-                var logs = _shareService.GetAccessLog(_externalShareId, _currentUser);
+                var logs = _shareManagementController.GetAccessLog(_externalShareId, _currentUser);
 
                 // Filter by date range
                 var startDate = _dtpStartDate.Value.Date;
                 var endDate = _dtpEndDate.Value.Date.AddDays(1);
-                logs = logs.Where(l => l.AccessTimestamp >= startDate && l.AccessTimestamp < endDate);
+                logs = logs.Where(l => l.AccessTimestamp >= startDate && l.AccessTimestamp < endDate).ToList();
 
                 // Filter by access type
                 var accessType = _cboAccessType.SelectedItem?.ToString();
                 if (accessType != "All")
                 {
-                    logs = logs.Where(l => l.AccessType == accessType);
+                    logs = logs.Where(l => l.AccessType == accessType).ToList();
                 }
 
                 var logData = logs.Select(l => new
