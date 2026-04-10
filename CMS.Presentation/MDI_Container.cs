@@ -1188,6 +1188,16 @@ namespace CMS.Presentation
                 // categorySettingsFactory — เปิดหน้าตั้งค่า Category
                 () => OpenKBCategorySettings());
 
+            // importWizardFactory — สร้าง KBImportWizardForm พร้อม presenter
+            form.AttachImportWizardFactory(() =>
+            {
+                var wizard          = new KBImportWizardForm(_currentUser);
+                var wizardPresenter = new KBImportWizardPresenter(
+                    wizard, _kbArticleService, _kbCategoryService, _currentUser);
+                wizard.AttachPresenter(wizardPresenter);
+                return wizard.ShowDialog(this);
+            });
+
             OpenChildForm(form);
         }
 
@@ -1501,7 +1511,6 @@ namespace CMS.Presentation
             form.AttachPresenter(presenter);
             OpenChildForm(form);
         }
-
         private void SyncEmployeeFromApi()
         {
             if (_employeeApiService == null || _userAdminController == null)

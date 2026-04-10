@@ -72,6 +72,7 @@
     <Compile Include="Interfaces\IKBVersionRepository.cs" />
     <Compile Include="Interfaces\IKBArticleLinkRepository.cs" />
     <Compile Include="Interfaces\IMenuItemRepository.cs" />
+    <Compile Include="Interfaces\IKBDashboardRepository.cs" />
     <Compile Include="Models\AuditQuery.cs" />
     <Compile Include="Models\PagedResult.cs" />
     <Compile Include="Repositories\UserAccountRepository.cs" />
@@ -100,6 +101,7 @@
     <Compile Include="Repositories\KBVersionRepository.cs" />
     <Compile Include="Repositories\KBArticleLinkRepository.cs" />
     <Compile Include="Repositories\MenuItemRepository.cs" />
+    <Compile Include="Repositories\KBDashboardRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\001_CreateSchema.sql" />

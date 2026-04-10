@@ -196,6 +196,18 @@
     <Compile Include="Modules\KMS\ArticleViewerForm.Designer.cs">
       <DependentUpon>ArticleViewerForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\KMS\KBImportWizardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBImportWizardForm.Designer.cs">
+      <DependentUpon>KBImportWizardForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\KMS\KBDashboardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBDashboardForm.Designer.cs">
+      <DependentUpon>KBDashboardForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\ImportFile\OrgStructureForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -375,6 +387,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\ArticleViewerForm.resx">
       <DependentUpon>ArticleViewerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\KBImportWizardForm.resx">
+      <DependentUpon>KBImportWizardForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KnowledgeBaseForm.resx">
       <DependentUpon>KnowledgeBaseForm.cs</DependentUpon>

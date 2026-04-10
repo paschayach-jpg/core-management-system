@@ -32,6 +32,8 @@ namespace CMS.Presentation.Modules.KMS
         private Func<KBArticle, DialogResult> _editorFactory;
         /// <summary>Shows the pre-wired KBCategoryForm as a modal dialog.</summary>
         private Action _categorySettingsFactory;
+        /// <summary>Creates, wires, and shows a pre-wired KBImportWizardForm. Returns DialogResult.</summary>
+        private Func<DialogResult> _importWizardFactory;
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
 
@@ -64,6 +66,15 @@ namespace CMS.Presentation.Modules.KMS
             _viewerFactory           = viewerFactory;
             _editorFactory           = editorFactory;
             _categorySettingsFactory = categorySettingsFactory;
+        }
+
+        /// <summary>
+        /// Inject the factory used to create and show the KB Import Wizard with its
+        /// pre-wired presenter. Must be called before the form is shown.
+        /// </summary>
+        public void AttachImportWizardFactory(Func<DialogResult> factory)
+        {
+            _importWizardFactory = factory;
         }
 
         // ── Form events ──────────────────────────────────────────────────────────
@@ -187,17 +198,13 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnImportExcel_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            if (_user == null) return;
-            // Open the Import Wizard
-            using (var wizard = new KBImportWizardForm(_user))
+            if (_importWizardFactory == null) return;
+            if (_importWizardFactory() == DialogResult.OK)
             {
-                if (wizard.ShowDialog() == DialogResult.OK)
-                {
-                    // Refresh the article list after successful import
-                    _presenter.LoadArticles();
-                    MessageBox.Show("นำเข้าข้อมูลเรียบร้อยแล้ว", "สำเร็จ",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
+                // Refresh the article list after successful import
+                _presenter.LoadArticles();
+                MessageBox.Show("นำเข้าข้อมูลเรียบร้อยแล้ว", "สำเร็จ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
