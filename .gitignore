@@ -18,3 +18,5 @@ packages/System.ValueTuple.4.5.0/
 
 
 CMS.Domain/obj/Debug/ 
+/CMS.Controllers/obj/Debug/CMS.Controllers.csproj.AssemblyReference.cache
+/CMS.Controllers/obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
