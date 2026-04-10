@@ -208,7 +208,7 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.ShowReport();
         }
 
-        // ── Viewer navigation (embedded child form) ──────────────────────────────
+        // ── Viewer navigation (full-screen over splitMain) ───────────────────────
 
         private void ShowArticleViewer(KBArticle article)
         {
@@ -217,22 +217,19 @@ namespace CMS.Presentation.Modules.KMS
 
             CloseActiveViewer();
 
-            pnlRightTop.Visible    = false;
-            pnlToolbar.Visible     = false;
-            pnlFilterBar.Visible   = false;
-            pnlPagination.Visible  = false;
-            pnlArticleList.Visible = false;
-
-            var viewer = _viewerFactory != null
-                ? _viewerFactory(article)
-                : null;
+            var viewer = _viewerFactory != null ? _viewerFactory(article) : null;
             if (viewer == null) return;
 
             viewer.BackRequested  += OnViewerBackRequested;
             viewer.TopLevel        = false;
             viewer.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             viewer.Dock            = System.Windows.Forms.DockStyle.Fill;
-            panelMainRight.Controls.Add(viewer);
+
+            // Hide the split layout and show the full-screen host in its place
+            splitMain.Visible      = false;
+            pnlViewerHost.Controls.Add(viewer);
+            pnlViewerHost.Visible  = true;
+            pnlViewerHost.BringToFront();
             viewer.Show();
 
             _activeViewer          = viewer;
@@ -243,11 +240,9 @@ namespace CMS.Presentation.Modules.KMS
         {
             CloseActiveViewer();
 
-            pnlRightTop.Visible    = true;
-            pnlToolbar.Visible     = true;
-            pnlFilterBar.Visible   = true;
-            pnlPagination.Visible  = true;
-            pnlArticleList.Visible = true;
+            // Restore the normal split layout
+            pnlViewerHost.Visible = false;
+            splitMain.Visible     = true;
 
             if (_presenter != null)
                 _presenter.LoadArticles();
@@ -257,7 +252,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_activeViewer == null) return;
             _activeViewer.BackRequested -= OnViewerBackRequested;
-            panelMainRight.Controls.Remove(_activeViewer);
+            pnlViewerHost.Controls.Remove(_activeViewer);
             _activeViewer.Dispose();
             _activeViewer          = null;
             _activeViewerArticleId = null;

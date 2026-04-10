@@ -16,6 +16,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.btnSettings = new System.Windows.Forms.Button();
             this.lblTitle = new System.Windows.Forms.Label();
+            this.pnlViewerHost = new System.Windows.Forms.Panel();
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.treeCategories = new System.Windows.Forms.TreeView();
             this.pnlLeftFooter = new System.Windows.Forms.Panel();
@@ -54,6 +55,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPrevPage = new System.Windows.Forms.Button();
             this.lblPageInfo = new System.Windows.Forms.Label();
             this.pnlHeader.SuspendLayout();
+            this.pnlViewerHost.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
             this.splitMain.Panel1.SuspendLayout();
             this.splitMain.Panel2.SuspendLayout();
@@ -112,9 +114,20 @@ namespace CMS.Presentation.Modules.KMS
             this.lblTitle.TabIndex = 1;
             this.lblTitle.Text = "🏢 Core Management System — คลังความรู้ (KMS)";
             this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
+            //
+            // pnlViewerHost  — full-screen overlay for ArticleViewerForm
+            // Docked Fill; hidden by default. splitMain is hidden while this is visible.
+            //
+            this.pnlViewerHost.BackColor = System.Drawing.Color.White;
+            this.pnlViewerHost.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlViewerHost.Location = new System.Drawing.Point(0, 32);
+            this.pnlViewerHost.Name = "pnlViewerHost";
+            this.pnlViewerHost.Size = new System.Drawing.Size(1100, 648);
+            this.pnlViewerHost.TabIndex = 2;
+            this.pnlViewerHost.Visible = false;
+            //
             // splitMain
-            // 
+            //
             this.splitMain.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitMain.Location = new System.Drawing.Point(0, 32);
@@ -648,6 +661,7 @@ namespace CMS.Presentation.Modules.KMS
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1100, 680);
+            this.Controls.Add(this.pnlViewerHost);
             this.Controls.Add(this.splitMain);
             this.Controls.Add(this.pnlHeader);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
@@ -657,6 +671,7 @@ namespace CMS.Presentation.Modules.KMS
             this.Load += new System.EventHandler(this.KBMainForm_Load);
             this.Resize += new System.EventHandler(this.KBMainForm_Resize);
             this.pnlHeader.ResumeLayout(false);
+            this.pnlViewerHost.ResumeLayout(false);
             this.splitMain.Panel1.ResumeLayout(false);
             this.splitMain.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).EndInit();
@@ -681,6 +696,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label           lblTitle;
         private System.Windows.Forms.Button          btnSettings;
         private System.Windows.Forms.SplitContainer  splitMain;
+        private System.Windows.Forms.Panel           pnlViewerHost;
         private System.Windows.Forms.Panel           panelMainRight;
         private System.Windows.Forms.Panel           pnlLeftHeader;
         private System.Windows.Forms.Label           lblCategoryHeader;
