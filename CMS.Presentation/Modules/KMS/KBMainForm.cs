@@ -97,13 +97,13 @@ namespace CMS.Presentation.Modules.KMS
 
         // ── IKBMainView ───────────────────────────────────────────────────
 
-        public string SearchKeyword      { get { return txtSearch.Text.Trim(); } }
-        public int    StatusFilterIndex  { get { return cboFilter.SelectedIndex; } }
+        public string SearchKeyword      { get { return txtToolbarSearch.Text.Trim(); } }
+        public int    StatusFilterIndex  { get { return cboStatus.SelectedIndex; } }
 
         public int? SelectedCategoryId  { get; set; }
 
         public string ArticleTitleText  { set { lblArticleTitle.Text = value; } }
-        public string ArticleCountText  { set { lblArticleCount.Text = value; } }
+        public string ArticleCountText  { set { lblPageInfo.Text = value; } }
 
         public void BindCategoryTree(
             IEnumerable<KBCategory>         categories,
@@ -134,12 +134,6 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         // ── Search / filter handlers ─────────────────────────────────────────────
-
-        private void BtnSearch_Click(object sender, EventArgs e)
-        {
-            if (_presenter == null) return;
-            _presenter.LoadArticles();
-        }
 
         private void CboFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -224,8 +218,9 @@ namespace CMS.Presentation.Modules.KMS
             CloseActiveViewer();
 
             pnlRightTop.Visible    = false;
-            pnlSearch.Visible      = false;
-            pnlRightFooter.Visible = false;
+            pnlToolbar.Visible     = false;
+            pnlFilterBar.Visible   = false;
+            pnlPagination.Visible  = false;
             pnlArticleList.Visible = false;
 
             var viewer = _viewerFactory != null
@@ -249,8 +244,9 @@ namespace CMS.Presentation.Modules.KMS
             CloseActiveViewer();
 
             pnlRightTop.Visible    = true;
-            pnlSearch.Visible      = true;
-            pnlRightFooter.Visible = true;
+            pnlToolbar.Visible     = true;
+            pnlFilterBar.Visible   = true;
+            pnlPagination.Visible  = true;
             pnlArticleList.Visible = true;
 
             if (_presenter != null)
@@ -271,13 +267,18 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitFilterCombo()
         {
-            cboFilter.Items.Clear();
-            cboFilter.Items.Add("ทุกสถานะ");
-            cboFilter.Items.Add("📝 Draft");
-            cboFilter.Items.Add("🔍 รอ Review");
-            cboFilter.Items.Add("✅ Published");
-            cboFilter.Items.Add("📦 Archived");
-            cboFilter.SelectedIndex = 0;
+            cboStatus.Items.Clear();
+            cboStatus.Items.Add("ทุกสถานะ");
+            cboStatus.Items.Add("📝 Draft");
+            cboStatus.Items.Add("🔍 รอ Review");
+            cboStatus.Items.Add("✅ Published");
+            cboStatus.Items.Add("📦 Archived");
+            cboStatus.SelectedIndex = 0;
+
+            cboType.SelectedIndex = 0;
+            cboDepartment.SelectedIndex = 0;
+            cboSortBy.SelectedIndex = 0;
+            cboPageSize.SelectedIndex = 0;
         }
 
         private void BuildCategoryTree(
