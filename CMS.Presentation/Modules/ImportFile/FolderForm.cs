@@ -1033,13 +1033,7 @@ namespace CMS.Presentation
 
             try
             {
-                if (TryLoadMainMenuFromManagement())
-                {
-                    _treeMainMenu.ExpandAll();
-                    return;
-                }
-
-                LoadDefaultMainMenuTree();
+                TryLoadMainMenuFromManagement();
                 _treeMainMenu.ExpandAll();
             }
             finally
@@ -1069,24 +1063,6 @@ namespace CMS.Presentation
             var roots = activeMenus.Where(m => !m.ParentMenuItemID.HasValue).ToList();
             if (roots.Count == 0)
                 return false;
-
-            var availableActions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var menu in activeMenus)
-            {
-                string action = ResolveMenuActionTag(menu);
-                if (!string.IsNullOrWhiteSpace(action))
-                    availableActions.Add(action);
-            }
-
-            bool hasCompleteDmsMenu = HasRequiredDefaultDmsActions(availableActions);
-            if (!hasCompleteDmsMenu)
-            {
-                foreach (var root in roots.Where(IsNonDmsManagedRoot))
-                    _treeMainMenu.Nodes.Add(BuildMenuNodeFromManagement(root, activeMenus));
-
-                LoadDefaultMainMenuTree();
-                return _treeMainMenu.Nodes.Count > 0;
-            }
 
             foreach (var root in roots)
                 _treeMainMenu.Nodes.Add(BuildMenuNodeFromManagement(root, activeMenus));
@@ -1146,13 +1122,8 @@ namespace CMS.Presentation
 
         private List<MenuItem> GetMainMenuHierarchy()
         {
-            // Admin should see exactly what is configured in Menu Management.
-            if (_user != null && _user.AppRole == 4)
-            {
-                return _menuManagementController.GetVisibleMenus(_user)?.ToList() ?? new List<MenuItem>();
-            }
-
-            // Non-admin: build full visible tree recursively (service role filter is applied per level).
+            // Build full visible tree recursively for all roles.
+            // This avoids shallow results from GetVisibleMenus() that may include only one child level.
             var roots = _menuManagementController.GetRootMenus(_user)?.ToList() ?? new List<MenuItem>();
             foreach (var root in roots)
                 PopulateVisibleChildrenRecursive(root);

@@ -15,7 +15,6 @@ namespace CMS.Services
     public class FileService : IFileService
     {
         private const long   MaxFileSizeBytes = 100L * 1024 * 1024;
-        private const int    MaxBatchCount    = 10;
 
         private static readonly HashSet<string> AllowedExtensions = new HashSet<string>(
             StringComparer.OrdinalIgnoreCase)
@@ -88,14 +87,6 @@ namespace CMS.Services
 
             var fileList = files.ToList();
             var results  = new List<UploadResult>();
-
-            if (fileList.Count > MaxBatchCount)
-            {
-                foreach (var f in fileList)
-                    results.Add(Fail(f.FileName, string.Format(
-                        "Batch contains {0} files; maximum is {1}.", fileList.Count, MaxBatchCount)));
-                return results;
-            }
 
             var folder = _folderRepository.GetById(folderId);
             if (folder == null)
