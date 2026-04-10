@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
 
@@ -15,9 +15,9 @@ namespace CMS.Presentation.Modules.KMS
     /// KMS Dashboard & Reports — แสดงสถิติ, รายงาน, และ KPI ของระบบ Knowledge Base
     /// Layout ตาม MOD-006/kms_dashboard.html
     /// </summary>
-    public partial class KBDashboardForm : Form, IKBDashboardView
+    public partial class KBDashboardForm : Form, IKBDashboardController
     {
-        private KBDashboardPresenter _presenter;
+        private KBDashboardController _presenter;
         private readonly UserContext _user;
 
         // ── Constructor ─────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ namespace CMS.Presentation.Modules.KMS
         /// Called by the composition root after the presenter is fully wired.
         /// Must be called before ShowDialog().
         /// </summary>
-        public void AttachPresenter(KBDashboardPresenter presenter)
+        public void AttachPresenter(KBDashboardController presenter)
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             _presenter = presenter;

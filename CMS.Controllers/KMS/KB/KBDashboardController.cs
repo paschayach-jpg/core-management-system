@@ -1,18 +1,18 @@
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
 
 namespace CMS.Controllers.KMS.KB
 {
-    public class KBDashboardPresenter
+    public class KBDashboardController
     {
-        private readonly IKBDashboardView _view;
+        private readonly IKBDashboardController _view;
         private readonly IKBDashboardService _dashboardService;
         private readonly UserContext _user;
 
-        public KBDashboardPresenter(
-            IKBDashboardView view,
+        public KBDashboardController(
+            IKBDashboardController view,
             IKBDashboardService dashboardService,
             UserContext user)
         {

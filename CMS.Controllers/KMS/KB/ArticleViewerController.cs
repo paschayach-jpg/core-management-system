@@ -1,4 +1,4 @@
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
@@ -6,15 +6,15 @@ using System.Linq;
 
 namespace CMS.Controllers.KMS.KB
 {
-    public class ArticleViewerPresenter
+    public class ArticleViewerController
     {
-        private readonly IArticleViewerView _view;
+        private readonly IArticleViewerController _view;
         private readonly IKBArticleService  _articleService;
         private readonly UserContext        _user;
         private KBArticle                  _article;
 
-        public ArticleViewerPresenter(
-            IArticleViewerView view,
+        public ArticleViewerController(
+            IArticleViewerController view,
             IKBArticleService  articleService,
             UserContext        user,
             KBArticle          article)

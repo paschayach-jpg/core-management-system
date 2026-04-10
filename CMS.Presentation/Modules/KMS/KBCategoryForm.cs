@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
 
@@ -15,9 +15,9 @@ namespace CMS.Presentation.Modules.KMS
     /// หน้าตั้งค่า Category สำหรับ Knowledge Base (MOD-006)
     /// รองรับ: เพิ่ม / แก้ไข / Soft-Delete รายการใน KMS.m_KBCategory
     /// </summary>
-    public partial class KBCategoryForm : Form, IKBCategoryView
+    public partial class KBCategoryForm : Form, IKBCategoryController
     {
-        private KBCategoryPresenter _presenter;
+        private KBCategoryController _presenter;
         private readonly UserContext _user;
 
         private List<KBCategory> _categories = new List<KBCategory>();
@@ -33,7 +33,7 @@ namespace CMS.Presentation.Modules.KMS
         /// Called by the composition root after the presenter is wired.
         /// Must be called before the form is shown.
         /// </summary>
-        public void AttachPresenter(KBCategoryPresenter presenter)
+        public void AttachPresenter(KBCategoryController presenter)
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             _presenter = presenter;

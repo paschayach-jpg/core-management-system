@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
 
@@ -16,9 +16,9 @@ namespace CMS.Presentation.Modules.KMS
     /// Layout: SplitContainer — ซ้าย=Category TreeView, ขวา=Article List + Search
     /// รองรับ: Browse by Category, Full-text Search, Add/Edit/Archive Article, Version History
     /// </summary>
-    public partial class KBMainForm : Form, IKBMainView
+    public partial class KBMainForm : Form, IKBMainController
     {
-        private KBMainPresenter _presenter;
+        private KBMainController _presenter;
         private UserContext _user;
 
         // ── Viewer state ────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ namespace CMS.Presentation.Modules.KMS
         /// Called by the composition root after the presenter is wired.
         /// Must be called before the form is shown.
         /// </summary>
-        public void AttachPresenter(KBMainPresenter presenter, UserContext user)
+        public void AttachPresenter(KBMainController presenter, UserContext user)
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             if (user == null) throw new ArgumentNullException("user");

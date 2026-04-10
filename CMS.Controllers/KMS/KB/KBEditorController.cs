@@ -1,4 +1,4 @@
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
@@ -13,16 +13,16 @@ namespace CMS.Controllers.KMS.KB
     /// Redesigned from ArticleEditorDialogPresenter
     /// Handles: Create / Edit / Send Review / Publish / Archive + Version History
     /// </summary>
-    public class KBEditorPresenter
+    public class KBEditorController
     {
-        private readonly IKBEditorView     _view;
+        private readonly IKBEditorController     _view;
         private readonly IKBCategoryService _categoryService;
         private readonly IKBArticleService  _articleService;
         private readonly UserContext        _user;
         private readonly KBArticle         _editingArticle;
 
-        public KBEditorPresenter(
-            IKBEditorView     view,
+        public KBEditorController(
+            IKBEditorController     view,
             IKBCategoryService categoryService,
             IKBArticleService  articleService,
             UserContext        user,

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
 
@@ -16,9 +16,9 @@ namespace CMS.Presentation.Modules.KMS
     /// ออกแบบตาม KMS_Wireframe_UI_v2.html / screen-kms03
     /// ฝังใน panelMainRight ของ KBMainForm (TopLevel = false)
     /// </summary>
-    public partial class ArticleViewerForm : Form, IArticleViewerView
+    public partial class ArticleViewerForm : Form, IArticleViewerController
     {
-        private ArticleViewerPresenter _presenter;
+        private ArticleViewerController _presenter;
 
         /// <summary>
         /// Factory injected by the composition root to open KBEditorDialog
@@ -41,7 +41,7 @@ namespace CMS.Presentation.Modules.KMS
         /// Called by the composition root after the presenter is wired.
         /// Must be called before the form is shown.
         /// </summary>
-        public void AttachPresenter(ArticleViewerPresenter presenter)
+        public void AttachPresenter(ArticleViewerController presenter)
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             _presenter = presenter;

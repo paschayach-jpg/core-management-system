@@ -49,9 +49,9 @@
     <Compile Include="DMS\Document\Interfaces\IFolderSettingsController.cs" />
     <Compile Include="DMS\Document\Interfaces\IUserAccountLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IUserAdminController.cs" />
-      <Compile Include="DMS\Document\Interfaces\ILoginAccountController.cs" />
+    <Compile Include="DMS\Document\Interfaces\ILoginAccountController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFolderReadLookupController.cs" />
-      <Compile Include="DMS\Document\Interfaces\IFileDocumentLookupController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IFileDocumentLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFilePermissionAclController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFolderPermissionLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuthorityOrgLookupController.cs" />
@@ -75,18 +75,18 @@
     <Compile Include="DMS\Document\FolderPermissionLookupController.cs" />
     <Compile Include="DMS\Document\AuthorityOrgLookupController.cs" />
     <Compile Include="DMS\Document\FolderTemplateController.cs" />
-    <Compile Include="KMS\Interfaces\IKBImportWizardView.cs" />
-    <Compile Include="KMS\Interfaces\IKBMainView.cs" />
-    <Compile Include="KMS\Interfaces\IKBEditorView.cs" />
-    <Compile Include="KMS\Interfaces\IKBCategoryView.cs" />
-    <Compile Include="KMS\Interfaces\IArticleViewerView.cs" />
-    <Compile Include="KMS\Interfaces\IKBDashboardView.cs" />
-    <Compile Include="KMS\KB\KBImportWizardPresenter.cs" />
-    <Compile Include="KMS\KB\KBMainPresenter.cs" />
-    <Compile Include="KMS\KB\KBEditorPresenter.cs" />
-    <Compile Include="KMS\KB\KBCategoryPresenter.cs" />
-    <Compile Include="KMS\KB\ArticleViewerPresenter.cs" />
-    <Compile Include="KMS\KB\KBDashboardPresenter.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBImportWizardController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBMainController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBEditorController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBCategoryController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IArticleViewerController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBDashboardController.cs" />
+    <Compile Include="KMS\KB\KBImportWizardController.cs" />
+    <Compile Include="KMS\KB\KBMainController.cs" />
+    <Compile Include="KMS\KB\KBEditorController.cs" />
+    <Compile Include="KMS\KB\KBCategoryController.cs" />
+    <Compile Include="KMS\KB\ArticleViewerController.cs" />
+    <Compile Include="KMS\KB\KBDashboardController.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">

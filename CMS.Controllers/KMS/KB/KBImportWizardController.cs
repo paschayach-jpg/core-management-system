@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -12,9 +12,9 @@ namespace CMS.Controllers.KMS.KB
     /// All business rules (field mapping, status defaults, row skipping) live here —
     /// never in the form.
     /// </summary>
-    public class KBImportWizardPresenter
+    public class KBImportWizardController
     {
-        private readonly IKBImportWizardView _view;
+        private readonly IKBImportWizardController _view;
         private readonly IKBArticleService   _articleService;
         private readonly IKBCategoryService  _categoryService;
         private readonly UserContext         _user;
@@ -24,8 +24,8 @@ namespace CMS.Controllers.KMS.KB
 
         // ── Constructor ──────────────────────────────────────────────────────────
 
-        public KBImportWizardPresenter(
-            IKBImportWizardView view,
+        public KBImportWizardController(
+            IKBImportWizardController view,
             IKBArticleService   articleService,
             IKBCategoryService  categoryService,
             UserContext         user)
@@ -44,9 +44,9 @@ namespace CMS.Controllers.KMS.KB
         // ── Public API (called by the form) ──────────────────────────────────────
 
         /// <summary>
-        /// Validates the Excel file at <see cref="IKBImportWizardView.SelectedFilePath"/>.
-        /// On success calls <see cref="IKBImportWizardView.ShowValidationResult"/>; on
-        /// failure calls <see cref="IKBImportWizardView.ShowError"/>.
+        /// Validates the Excel file at <see cref="IKBImportWizardController.SelectedFilePath"/>.
+        /// On success calls <see cref="IKBImportWizardController.ShowValidationResult"/>; on
+        /// failure calls <see cref="IKBImportWizardController.ShowError"/>.
         /// </summary>
         public void ValidateFile()
         {
@@ -76,7 +76,7 @@ namespace CMS.Controllers.KMS.KB
         /// Imports validated rows by creating <see cref="KBArticle"/> records via
         /// <see cref="IKBArticleService.Create"/>. Import options are read from the
         /// view at call time. On completion calls
-        /// <see cref="IKBImportWizardView.ShowImportComplete"/>.
+        /// <see cref="IKBImportWizardController.ShowImportComplete"/>.
         /// </summary>
         public void ExecuteImport()
         {

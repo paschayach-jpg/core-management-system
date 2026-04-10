@@ -1,139 +1,136 @@
-# SKILL: Build a Form (CMS MVP — Strict 6-Layer Architecture)
-
-Invoke this skill whenever the user says: "create a form", "build a screen", "add a UI",
-"create a dialog", "build a view", or any equivalent request for a new WinForms screen.
+# CMS Solution — Developer Skill Guide
+> .NET 4.5 · Windows Forms · SQL Server 2019 · ADO.NET  
+> Insurance Business Domain · Full-Stack Development
 
 ---
 
-## Architecture Constraint — Read Before Writing Any Code
+## 1. Technology Stack
+
+| Layer | Technology |
+|---|---|
+| UI | .NET 4.5 Windows Forms (WinForms) |
+| Database | SQL Server 2019 |
+| Data Access | ADO.NET (SqlConnection / SqlCommand / SqlDataReader) |
+| Architecture | 5-layer Clean Architecture (Presentation → Controller → Service → Data → Domain) |
+
+---
+
+## 2. Solution Structure
 
 ```
-CMS.Presentation  → only references CMS.Controllers + CMS.Domain
-      ▼
-CMS.Controllers   → only references CMS.Services + CMS.Domain
-      ▼
-CMS.Services      → only references CMS.Data + CMS.Domain + CMS.Infrastructure
-      ▼
-CMS.Data          → only references CMS.Domain + CMS.Infrastructure
-      ▼
-CMS.Domain / CMS.Infrastructure
-```
-
-**Non-negotiable rules:**
-- `CMS.Presentation` form files must NEVER contain `using CMS.Services` or `using CMS.Data`.
-- Forms receive a pre-built **Presenter** via `AttachPresenter()` — they never `new` up services or repositories.
-- Services are only instantiated in the **composition root** (`MDI_Container.cs` or a dedicated factory in `CMS.Presentation`).
-
----
-
-## Deliverables per Form
-
-Every form task must produce **all** of these files — never skip a layer:
-
-| # | File | Project | Location |
-|---|---|---|---|
-| 1 | `{EntityName}.cs` | CMS.Domain | `Models/` |
-| 2 | `I{Entity}Repository.cs` | CMS.Data | `Interfaces/` |
-| 3 | `{Entity}Repository.cs` | CMS.Data | `Repositories/` |
-| 4 | `I{Form}Service.cs` | CMS.Services | `Interfaces/` |
-| 5 | `{Form}Service.cs` | CMS.Services | root |
-| 6 | `I{Form}View.cs` | CMS.Controllers | `{Module}/Interfaces/` |
-| 7 | `{Form}Presenter.cs` | CMS.Controllers | `{Module}/{SubModule}/` |
-| 8 | `{Form}Form.cs` | CMS.Presentation | `Modules/{Module}/` |
-| 9 | `{Form}Form.Designer.cs` | CMS.Presentation | `Modules/{Module}/` |
-| 10 | `.csproj` edits | all affected projects | `<Compile>` + `<ProjectReference>` |
-
----
-
-## Step-by-Step Instructions
-
----
-
-### STEP 1 — Clarify scope before writing code
-
-Determine the following (ask the user or infer from context):
-
-- **Module** — which top-level module? (`DMS`, `KMS`, or a new one?)
-- **Sub-module** — e.g., `KB` (Knowledge Base), `Document`, `Claim`
-- **FormBaseName** — e.g., `KBCategory`, `ClaimApproval`, `PolicyHolder`
-- **EntityName** — the domain object, e.g., `KBCategory`
-- **Form type** — main `Form` or modal `Dialog`?
-- **Operations** — which actions does the form support? Add / Edit / Delete / View / Search
-- **Existing files** — do the model, service, or repository already exist?
-
-> If anything is ambiguous, ask before generating code.
-
----
-
-### STEP 2 — Derive all file paths
-
-Resolve every path from the naming rules before touching any file:
-
-```
-Example:
-  Module       = KMS
-  SubModule    = KB
-  FormBaseName = KBCategory
-  EntityName   = KBCategory
-
-File paths:
-  CMS.Domain/Models/KBCategory.cs
-  CMS.Data/Interfaces/IKBCategoryRepository.cs
-  CMS.Data/Repositories/KBCategoryRepository.cs
-  CMS.Services/Interfaces/IKBCategoryService.cs
-  CMS.Services/KBCategoryService.cs
-  CMS.Controllers/KMS/Interfaces/IKBCategoryView.cs
-  CMS.Controllers/KMS/KB/KBCategoryPresenter.cs
-  CMS.Presentation/Modules/KMS/KBCategoryForm.cs
-  CMS.Presentation/Modules/KMS/KBCategoryForm.Designer.cs
+CMS.sln
+├── CMS.Presentation      UI only — Forms + event handlers
+├── CMS.Controllers       Presenter/Controller per form — bridges UI ↔ Services
+├── CMS.Services          Business logic — all rules live here
+├── CMS.Data              ADO.NET repositories — DB access only
+├── CMS.Domain            POCO model classes (mapping objects)
+└── CMS.Infrastructure    Cross-cutting concerns (config, logging, etc.)
 ```
 
 ---
 
-### STEP 3 — CMS.Domain: Domain Model
+## 3. Layer Responsibilities & Strict Rules
 
-Skip this step if the model already exists.
+### 3.1 CMS.Presentation
+- **ONLY** responsible for: UI rendering, control layout, event handlers, user input.
+- **FORBIDDEN**: any direct reference to `CMS.Services` or `CMS.Data`.
+- Allowed `using` statements: `CMS.Controllers.*`, `CMS.Domain.*`, `System.Windows.Forms`, BCL.
+- Forms implement a **View Interface** defined in `CMS.Controllers` (e.g., `IKBCategoryView`).
+- All business calls go through the attached Presenter (e.g., `_presenter.Save()`).
+- First line comment convention:
+  ```csharp
+  // ✅ Allowed usings: CMS.Controllers, CMS.Domain
+  // ❌ Forbidden usings: CMS.Services, CMS.Data
+  ```
 
-**File:** `CMS.Domain/Models/{EntityName}.cs`
+### 3.2 CMS.Controllers
+- Receives commands from `CMS.Presentation` and delegates to `CMS.Services`.
+- No direct DB calls. No business logic beyond orchestration.
+- Holds the **View Interface** definitions consumed by Presentation forms.
+- Named with `Presenter` or `Controller` suffix.
+- Folder layout mirrors the module hierarchy (see §5.2).
+
+### 3.3 CMS.Services
+- **All business logic must reside here** — validation, authorization, audit logging, calculations.
+- Receives tasks from Controllers; decides which Repository to call.
+- Service classes: root of project, suffix `Service` (e.g., `KBCategoryService.cs`).
+- Interface classes: `Interfaces\` sub-folder, prefix `I`, suffix `Service` (e.g., `IKBCategoryService.cs`).
+- Always validate inputs and throw meaningful exceptions (`ArgumentNullException`, `ArgumentException`, `InvalidOperationException`, `UnauthorizedAccessException`).
+
+### 3.4 CMS.Data
+- Retrieves / persists data via raw ADO.NET (`SqlConnection`, `SqlCommand`, `SqlDataReader`).
+- No business logic. No validation beyond null checks.
+- Repository classes: `Repositories\` folder, suffix `Repository`.
+- Interface classes: `Interfaces\` folder, prefix `I`, suffix `Repository`.
+- Connection string obtained via `IConfigManager.Get<string>("ConnectionString")`.
+- Always use `using` blocks for `SqlConnection`, `SqlCommand`, `SqlDataReader`.
+- Null-safe reader helpers: `reader.IsDBNull(ord) ? defaultValue : reader.Get*(ord)`.
+
+### 3.5 CMS.Domain
+- Pure POCO / mapping objects. No methods with side effects.
+- Model classes live in `Models\` folder.
+- Enum types live in `Enums\` folder.
+- Maps 1-to-1 with database tables/views; property names match column names.
+- Display-helper properties (non-DB derived values) are allowed and must be documented with a comment.
+
+---
+
+## 4. Dependency Flow
+
+```
+CMS.Presentation
+      │ uses interfaces defined in
+      ▼
+CMS.Controllers  ──────────────────▶  CMS.Services  ──────────────────▶  CMS.Data
+      │                                    │                                  │
+      └── references CMS.Domain ◀──────────┴──────────────────────────────────┘
+```
+
+**Allowed references per project:**
+
+| Project | May reference |
+|---|---|
+| CMS.Presentation | CMS.Controllers, CMS.Domain |
+| CMS.Controllers | CMS.Services (interfaces), CMS.Domain |
+| CMS.Services | CMS.Data (interfaces), CMS.Domain, CMS.Infrastructure |
+| CMS.Data | CMS.Domain, CMS.Infrastructure |
+| CMS.Domain | *(none — pure POCOs)* |
+
+---
+
+## 5. Creating a New Form (Step-by-Step)
+
+When asked to **"สร้าง form"**, **"create form"**, **"build form"**, **"สร้างหน้าจอ"**, **"สร้าง UI"**, or **"สร้างหน้า"**, follow every step below in order.
+
+### 5.1 CMS.Domain — Model Class
+
+**Location:** `CMS.Domain\Models\{ModelName}.cs`
 
 ```csharp
 namespace CMS.Domain.Models
 {
-    public class {EntityName}
+    /// <summary>Maps to {Schema}.{TableName} in the database.</summary>
+    public class {ModelName}
     {
-        // Primary key
-        public int {EntityName}ID { get; set; }
-
-        // Core fields — add all relevant columns
-        public string Name { get; set; }
-        public int CreatedBy { get; set; }
-        public System.DateTime CreatedDate { get; set; }
-
-        // Alias for backward compatibility
-        public int {EntityName}Id
-        {
-            get { return {EntityName}ID; }
-            set { {EntityName}ID = value; }
-        }
-
-        // Transient fields — populated by service layer, NOT columns in the DB
-        public string CreatedByName { get; set; }
-
-        // Enum conversion — add only if the entity has an int status/type column
-        // public SomeStatusEnum StatusEnum
-        // {
-        //     get { return (SomeStatusEnum)StatusInt; }
-        //     set { StatusInt = (int)value; }
-        // }
+        public int    {ModelName}ID  { get; set; }
+        public string PropertyName  { get; set; }
+        // ... other properties matching DB columns
+        // Display helpers (non-DB):
+        public string DerivedDisplay { get; set; } // set by repository join
     }
 }
 ```
 
+Register in `CMS.Domain.csproj`:
+```xml
+<Compile Include="Models\{ModelName}.cs" />
+```
+
 ---
 
-### STEP 4 — CMS.Data: Repository Interface
+### 5.2 CMS.Data — Interface + Repository
 
-**File:** `CMS.Data/Interfaces/I{EntityName}Repository.cs`
+**Interface location:** `CMS.Data\Interfaces\I{ModelName}Repository.cs`
 
 ```csharp
 using System.Collections.Generic;
@@ -141,24 +138,18 @@ using CMS.Domain.Models;
 
 namespace CMS.Data.Interfaces
 {
-    public interface I{EntityName}Repository
+    public interface I{ModelName}Repository
     {
-        int Insert({EntityName} entity);
-        void Update({EntityName} entity);
-        void Delete(int id);
-        {EntityName} GetById(int id);
-        IEnumerable<{EntityName}> GetAll();
-        // Add query methods needed by the service, e.g.:
-        // IEnumerable<{EntityName}> GetByParentId(int parentId);
+        IEnumerable<{ModelName}> GetAll();
+        {ModelName} GetById(int id);
+        int Insert({ModelName} model);
+        void Update({ModelName} model);
+        void Delete(int id);   // soft-delete preferred: set IsActive = 0
     }
 }
 ```
 
----
-
-### STEP 5 — CMS.Data: Repository Implementation
-
-**File:** `CMS.Data/Repositories/{EntityName}Repository.cs`
+**Repository location:** `CMS.Data\Repositories\{ModelName}Repository.cs`
 
 ```csharp
 using System;
@@ -167,125 +158,76 @@ using System.Data;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
 using CMS.Domain.Models;
-using CMS.Infrastructure;
+using CMS.Infrastructure.Interfaces;
 
 namespace CMS.Data.Repositories
 {
-    public class {EntityName}Repository : I{EntityName}Repository
+    public class {ModelName}Repository : I{ModelName}Repository
     {
         private readonly string _connectionString;
 
-        public {EntityName}Repository(IConfigManager configManager)
+        public {ModelName}Repository(IConfigManager configManager)
         {
             _connectionString = configManager.Get<string>("ConnectionString");
         }
 
-        public int Insert({EntityName} entity)
+        public IEnumerable<{ModelName}> GetAll()
+        {
+            var results = new List<{ModelName}>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"SELECT ... FROM {Schema}.{TableName} ORDER BY ...";
+                using (var cmd = new SqlCommand(sql, conn))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read()) results.Add(Map(reader));
+            }
+            return results;
+        }
+
+        public int Insert({ModelName} model)
         {
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("{schema}.sp_Insert{EntityName}", conn))
+                const string sql = @"
+                    INSERT INTO {Schema}.{TableName} (Col1, Col2, ...)
+                    VALUES (@p1, @p2, ...);
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
+                using (var cmd = new SqlCommand(sql, conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@Name", entity.Name);
-                    cmd.Parameters.AddWithValue("@CreatedBy", entity.CreatedBy);
-                    // Nullable parameters: (object)entity.Field ?? DBNull.Value
-                    return Convert.ToInt32(cmd.ExecuteScalar());
+                    cmd.Parameters.AddWithValue("@p1", model.Property1);
+                    cmd.Parameters.AddWithValue("@p2", (object)model.Property2 ?? DBNull.Value);
+                    return (int)cmd.ExecuteScalar();
                 }
             }
         }
 
-        public void Update({EntityName} entity)
+        private static {ModelName} Map(SqlDataReader r)
         {
-            using (var conn = new SqlConnection(_connectionString))
+            return new {ModelName}
             {
-                conn.Open();
-                using (var cmd = new SqlCommand("{schema}.sp_Update{EntityName}", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@{EntityName}ID", entity.{EntityName}ID);
-                    cmd.Parameters.AddWithValue("@Name", entity.Name);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public void Delete(int id)
-        {
-            using (var conn = new SqlConnection(_connectionString))
-            {
-                conn.Open();
-                using (var cmd = new SqlCommand("{schema}.sp_Delete{EntityName}", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@{EntityName}ID", id);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public {EntityName} GetById(int id)
-        {
-            using (var conn = new SqlConnection(_connectionString))
-            {
-                conn.Open();
-                using (var cmd = new SqlCommand("{schema}.sp_Get{EntityName}ById", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@{EntityName}ID", id);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read()) return MapRow(reader);
-                        return null;
-                    }
-                }
-            }
-        }
-
-        public IEnumerable<{EntityName}> GetAll()
-        {
-            var list = new List<{EntityName}>();
-            using (var conn = new SqlConnection(_connectionString))
-            {
-                conn.Open();
-                using (var cmd = new SqlCommand("{schema}.sp_GetAll{EntityName}s", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read()) list.Add(MapRow(reader));
-                    }
-                }
-            }
-            return list;
-        }
-
-        private {EntityName} MapRow(SqlDataReader reader)
-        {
-            return new {EntityName}
-            {
-                {EntityName}ID = Convert.ToInt32(reader["{EntityName}ID"]),
-                Name           = reader["Name"].ToString(),
-                CreatedBy      = Convert.ToInt32(reader["CreatedBy"])
-                // Map all columns here
+                {ModelName}ID = r.GetInt32(r.GetOrdinal("{ModelName}ID")),
+                PropertyName  = r.IsDBNull(r.GetOrdinal("PropertyName"))
+                                    ? null
+                                    : r.GetString(r.GetOrdinal("PropertyName")),
             };
         }
     }
 }
 ```
 
-**Rules:**
-- Every DB call uses a stored procedure — no inline SQL.
-- Stored procedure naming: `{schema}.sp_{Verb}{EntityName}` — e.g., `km.sp_InsertKBCategory`.
-- Nullable columns: `(object)value ?? DBNull.Value`.
-- Always map results in a private `MapRow(SqlDataReader)` method.
+Register in `CMS.Data.csproj`:
+```xml
+<Compile Include="Interfaces\I{ModelName}Repository.cs" />
+<Compile Include="Repositories\{ModelName}Repository.cs" />
+```
 
 ---
 
-### STEP 6 — CMS.Services: Service Interface
+### 5.3 CMS.Services — Interface + Service
 
-**File:** `CMS.Services/Interfaces/I{FormBaseName}Service.cs`
+**Interface location:** `CMS.Services\Interfaces\I{ModelName}Service.cs`
 
 ```csharp
 using System.Collections.Generic;
@@ -293,23 +235,18 @@ using CMS.Domain.Models;
 
 namespace CMS.Services.Interfaces
 {
-    public interface I{FormBaseName}Service
+    public interface I{ModelName}Service
     {
-        IEnumerable<{EntityName}> GetAll(UserContext user);
-        {EntityName} GetById(int id, UserContext user);
-        void Create({EntityName} entity, UserContext user);
-        void Update({EntityName} entity, UserContext user);
-        void Delete(int id, UserContext user);
-        // Add only the methods actually needed by the presenter
+        IEnumerable<{ModelName}> GetAll();
+        {ModelName} GetById(int id);
+        int Create({ModelName} model);
+        void Update({ModelName} model);
+        void Deactivate(int id);   // soft-delete preferred
     }
 }
 ```
 
----
-
-### STEP 7 — CMS.Services: Service Implementation
-
-**File:** `CMS.Services/{FormBaseName}Service.cs`
+**Service location:** `CMS.Services\{ModelName}Service.cs`
 
 ```csharp
 using System;
@@ -320,497 +257,398 @@ using CMS.Services.Interfaces;
 
 namespace CMS.Services
 {
-    public class {FormBaseName}Service : I{FormBaseName}Service
+    public class {ModelName}Service : I{ModelName}Service
     {
-        private readonly I{EntityName}Repository _{entityVar}Repository;
-        // Add additional repository/service dependencies as needed
+        private readonly I{ModelName}Repository _repo;
+        private readonly IAuditService          _auditService;
 
-        public {FormBaseName}Service(I{EntityName}Repository {entityVar}Repository)
+        public {ModelName}Service(
+            I{ModelName}Repository repo,
+            IAuditService          auditService)
         {
-            if ({entityVar}Repository == null)
-                throw new ArgumentNullException("{entityVar}Repository");
-            _{entityVar}Repository = {entityVar}Repository;
+            if (repo         == null) throw new ArgumentNullException("repo");
+            if (auditService == null) throw new ArgumentNullException("auditService");
+            _repo         = repo;
+            _auditService = auditService;
         }
 
-        public IEnumerable<{EntityName}> GetAll(UserContext user)
+        public IEnumerable<{ModelName}> GetAll() => _repo.GetAll();
+
+        public {ModelName} GetById(int id) => _repo.GetById(id);
+
+        public int Create({ModelName} model)
         {
-            if (user == null) throw new ArgumentNullException("user");
-            return _{entityVar}Repository.GetAll();
+            if (model == null) throw new ArgumentNullException("model");
+            if (string.IsNullOrWhiteSpace(model.RequiredField))
+                throw new ArgumentException("RequiredField ต้องไม่ว่าง");
+
+            int newId = _repo.Insert(model);
+
+            _auditService.Log(new AuditEntry
+            {
+                Module    = "{ModuleName}",
+                Action    = "CREATE_{MODEL_UPPER}",
+                UserName  = model.CreatedBy ?? string.Empty,
+                TableName = "{Schema}.{TableName}",
+                RecordID  = newId,
+                AuditDate = DateTime.Now,
+                Result    = 1
+            });
+
+            return newId;
         }
 
-        public {EntityName} GetById(int id, UserContext user)
+        public void Update({ModelName} model)
         {
-            if (user == null) throw new ArgumentNullException("user");
-            var entity = _{entityVar}Repository.GetById(id);
-            if (entity == null) throw new KeyNotFoundException("{EntityName} not found.");
-            return entity;
+            if (model == null) throw new ArgumentNullException("model");
+            _repo.Update(model);
         }
 
-        public void Create({EntityName} entity, UserContext user)
-        {
-            if (entity == null) throw new ArgumentNullException("entity");
-            if (user == null) throw new ArgumentNullException("user");
-            // ── Business rules and validation go HERE ──
-            if (string.IsNullOrWhiteSpace(entity.Name))
-                throw new ArgumentException("Name is required.");
-            // ──────────────────────────────────────────
-            entity.CreatedBy   = user.UserId;
-            entity.CreatedDate = DateTime.Now;
-            _{entityVar}Repository.Insert(entity);
-        }
-
-        public void Update({EntityName} entity, UserContext user)
-        {
-            if (entity == null) throw new ArgumentNullException("entity");
-            if (user == null) throw new ArgumentNullException("user");
-            _{entityVar}Repository.Update(entity);
-        }
-
-        public void Delete(int id, UserContext user)
-        {
-            if (user == null) throw new ArgumentNullException("user");
-            _{entityVar}Repository.Delete(id);
-        }
+        public void Deactivate(int id) => _repo.Delete(id);
     }
 }
 ```
 
-**Rules:**
-- Null-check every constructor parameter and every public method parameter.
-- All business rules, validation, and domain logic live here — never in the presenter or form.
-- If multiple repositories or services are needed, inject all of them in the constructor.
+Register in `CMS.Services.csproj`:
+```xml
+<Compile Include="Interfaces\I{ModelName}Service.cs" />
+<Compile Include="{ModelName}Service.cs" />
+```
 
 ---
 
-### STEP 8 — CMS.Controllers: View Interface
+### 5.4 CMS.Controllers — View Interface + Presenter
 
-**File:** `CMS.Controllers/{Module}/Interfaces/I{FormBaseName}View.cs`
+#### Folder layout
 
+| What | Path example |
+|---|---|
+| Module root | `CMS.Controllers\{MODULE}\{SubModule}\` |
+| View interface | `CMS.Controllers\{MODULE}\{SubModule}\Interfaces\I{FormName}View.cs` |
+| Presenter class | `CMS.Controllers\{MODULE}\{SubModule}\{FormName}Presenter.cs` |
+
+**Examples:**
+```
+CMS.Controllers\KMS\KB\Interfaces\IKBCategoryView.cs
+CMS.Controllers\KMS\KB\KBCategoryPresenter.cs
+
+CMS.Controllers\DMS\Document\Interfaces\IFolderView.cs
+CMS.Controllers\DMS\Document\FolderPresenter.cs
+```
+
+**View Interface:**
 ```csharp
-using System.Collections.Generic;
-using CMS.Domain.Models;
-
-namespace CMS.Controllers.{Module}.Interfaces
+namespace CMS.Controllers.{MODULE}.{SubModule}.Interfaces
 {
-    public interface I{FormBaseName}View
+    public interface I{FormName}View
     {
-        // Presenter → View: push data to form controls
-        void Show{EntityName}List(IEnumerable<{EntityName}> items);
+        void BindList(System.Collections.Generic.IEnumerable<CMS.Domain.Models.{ModelName}> items);
         void ShowError(string message);
         void ShowInfo(string message);
-
-        // View → Presenter: expose selected UI state (never raw controls)
-        {EntityName} Selected{EntityName} { get; }
+        void ClearForm();
+        // expose UI field values as properties:
+        string FieldName { get; }
+        int    SelectedId { get; }
     }
 }
 ```
 
-**Rules:**
-- The interface contains only what the presenter needs — no ListViews, TextBoxes, or other control types.
-- `ShowError` and `ShowInfo` are mandatory on every view interface.
-- Selection properties are always read-only (`{ get; }`).
-
----
-
-### STEP 9 — CMS.Controllers: Presenter
-
-**File:** `CMS.Controllers/{Module}/{SubModule}/{FormBaseName}Presenter.cs`
-
+**Presenter:**
 ```csharp
 using System;
-using CMS.Controllers.{Module}.Interfaces;
+using CMS.Controllers.{MODULE}.{SubModule}.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
-namespace CMS.Controllers.{Module}.{SubModule}
+namespace CMS.Controllers.{MODULE}.{SubModule}
 {
-    public class {FormBaseName}Presenter
+    public class {FormName}Presenter
     {
-        private readonly I{FormBaseName}Service _service;
-        private readonly I{FormBaseName}View _view;
-        private readonly UserContext _user;
+        private readonly I{FormName}View  _view;
+        private readonly I{ModelName}Service _service;
+        private readonly UserContext       _user;
 
-        public {FormBaseName}Presenter(
-            I{FormBaseName}Service service,
-            I{FormBaseName}View view,
-            UserContext user)
+        public {FormName}Presenter(
+            I{FormName}View      view,
+            I{ModelName}Service  service,
+            UserContext          user)
         {
+            if (view    == null) throw new ArgumentNullException("view");
             if (service == null) throw new ArgumentNullException("service");
-            if (view == null)    throw new ArgumentNullException("view");
-            if (user == null)    throw new ArgumentNullException("user");
-
-            _service = service;
+            if (user    == null) throw new ArgumentNullException("user");
             _view    = view;
+            _service = service;
             _user    = user;
         }
 
-        public void LoadData()
+        public void Initialize()
         {
-            try
-            {
-                var items = _service.GetAll(_user);
-                _view.Show{EntityName}List(items);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _view.ShowError("Access denied: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _view.ShowError("Failed to load: " + ex.Message);
-            }
+            try   { _view.BindList(_service.GetAll()); }
+            catch (Exception ex) { _view.ShowError("โหลดข้อมูลไม่สำเร็จ: " + ex.Message); }
         }
 
-        public void Add({EntityName} entity)
+        public void Save()
         {
             try
             {
-                _service.Create(entity, _user);
-                LoadData();
-                _view.ShowInfo("{EntityName} created successfully.");
+                var model = new {ModelName} { FieldName = _view.FieldName };
+                _service.Create(model);
+                Initialize();
+                _view.ClearForm();
+                _view.ShowInfo("บันทึกสำเร็จ");
             }
-            catch (Exception ex) { _view.ShowError(ex.Message); }
-        }
-
-        public void Edit({EntityName} entity)
-        {
-            try
-            {
-                _service.Update(entity, _user);
-                LoadData();
-                _view.ShowInfo("{EntityName} updated successfully.");
-            }
-            catch (Exception ex) { _view.ShowError(ex.Message); }
-        }
-
-        public void Delete(int id)
-        {
-            try
-            {
-                _service.Delete(id, _user);
-                LoadData();
-                _view.ShowInfo("{EntityName} deleted successfully.");
-            }
-            catch (Exception ex) { _view.ShowError(ex.Message); }
+            catch (ArgumentException ex)      { _view.ShowError(ex.Message); }
+            catch (InvalidOperationException ex) { _view.ShowError(ex.Message); }
+            catch (Exception ex)              { _view.ShowError("เกิดข้อผิดพลาด: " + ex.Message); }
         }
     }
 }
 ```
 
-**Rules:**
-- Only add methods for actions the form actually supports.
-- Always wrap every service call in try-catch; surface errors via `_view.ShowError()`.
-- After any mutation, call a load method to refresh the view.
-- The presenter never touches UI controls, never calls `MessageBox.Show`.
+Register in `CMS.Controllers.csproj`:
+```xml
+<!-- View interface -->
+<Compile Include="{MODULE}\{SubModule}\Interfaces\I{FormName}View.cs" />
+<!-- Presenter -->
+<Compile Include="{MODULE}\{SubModule}\{FormName}Presenter.cs" />
+```
 
 ---
 
-### STEP 10 — CMS.Presentation: Form Code-behind
+### 5.5 CMS.Presentation — Designer + Code-Behind
 
-**File:** `CMS.Presentation/Modules/{Module}/{FormBaseName}Form.cs`
+**Locations:**
+```
+CMS.Presentation\Modules\{MODULE}\{FormName}.Designer.cs
+CMS.Presentation\Modules\{MODULE}\{FormName}.cs
+CMS.Presentation\Modules\{MODULE}\{FormName}.resx       (only if images/resources needed)
+```
 
+**Code-behind template:**
 ```csharp
-// ✅ Allowed: CMS.Controllers, CMS.Domain
-// ❌ Forbidden: CMS.Services, CMS.Data
+// ✅ Allowed usings: CMS.Controllers, CMS.Domain
+// ❌ Forbidden usings: CMS.Services, CMS.Data
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using CMS.Controllers.{Module}.Interfaces;
-using CMS.Controllers.{Module}.{SubModule};
+using CMS.Controllers.{MODULE}.{SubModule}.Interfaces;
+using CMS.Controllers.{MODULE}.{SubModule};
 using CMS.Domain.Models;
 
-namespace CMS.Presentation.Modules.{Module}
+namespace CMS.Presentation.Modules.{MODULE}
 {
-    public partial class {FormBaseName}Form : Form, I{FormBaseName}View
+    public partial class {FormName} : Form, I{FormName}View
     {
-        private {FormBaseName}Presenter _presenter;
+        private {FormName}Presenter _presenter;
         private readonly UserContext _user;
-        private List<{EntityName}> _items = new List<{EntityName}>();
 
-        // Constructor has NO service/repository parameters
-        public {FormBaseName}Form(UserContext user)
+        public {FormName}(UserContext user)
         {
-            InitializeComponent();
+            if (user == null) throw new ArgumentNullException("user");
             _user = user;
+            InitializeComponent();
         }
 
-        /// <summary>
-        /// Inject the pre-built presenter from the composition root.
-        /// Must be called before the form is shown.
-        /// </summary>
-        public void AttachPresenter({FormBaseName}Presenter presenter)
+        public void AttachPresenter({FormName}Presenter presenter)
         {
+            if (presenter == null) throw new ArgumentNullException("presenter");
             _presenter = presenter;
         }
 
-        // ── Form events ──────────────────────────────────────────────────
-        private void {FormBaseName}Form_Load(object sender, EventArgs e)
-        {
-            _presenter.LoadData();
-        }
+        // ── Form events ──────────────────────────────────────────────────────
 
-        private void btnAdd_Click(object sender, EventArgs e)
+        private void {FormName}_Load(object sender, EventArgs e)
         {
-            var entity = new {EntityName}
+            if (_presenter == null)
             {
-                Name      = txt{Field}.Text.Trim(),
-                CreatedBy = _user.UserId
-            };
-            _presenter.Add(entity);
+                MessageBox.Show(
+                    "Presenter ยังไม่ได้ถูก Attach\nกรุณาเรียก AttachPresenter() ก่อนเปิดฟอร์ม",
+                    "ข้อผิดพลาดภายใน", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Close();
+                return;
+            }
+            _presenter.Initialize();
         }
 
-        private void btnEdit_Click(object sender, EventArgs e)
+        private void BtnSave_Click(object sender, EventArgs e)
         {
-            if (Selected{EntityName} == null) { ShowInfo("Please select an item."); return; }
-            var entity  = Selected{EntityName};
-            entity.Name = txt{Field}.Text.Trim();
-            _presenter.Edit(entity);
+            if (_presenter == null) return;
+            _presenter.Save();
         }
 
-        private void btnDelete_Click(object sender, EventArgs e)
-        {
-            if (Selected{EntityName} == null) { ShowInfo("Please select an item."); return; }
-            if (MessageBox.Show("Delete selected item?", "Confirm",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                _presenter.Delete(Selected{EntityName}.{EntityName}ID);
-        }
+        // ── I{FormName}View implementation ───────────────────────────────────
 
-        // ── I{FormBaseName}View ──────────────────────────────────────────
-        public void Show{EntityName}List(IEnumerable<{EntityName}> items)
-        {
-            _items = new List<{EntityName}>(items);
-            listView{EntityName}.Items.Clear();
-            foreach (var item in _items)
-                listView{EntityName}.Items.Add(new ListViewItem(item.Name) { Tag = item });
-        }
+        public string FieldName => txtFieldName.Text.Trim();
+        public int    SelectedId => (lstItems.SelectedItems.Count > 0)
+                                        ? ((int)lstItems.SelectedItems[0].Tag)
+                                        : 0;
 
-        public void ShowError(string message)
+        public void BindList(IEnumerable<{ModelName}> items)
         {
-            MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-
-        public void ShowInfo(string message)
-        {
-            MessageBox.Show(message, "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-        public {EntityName} Selected{EntityName}
-        {
-            get
+            lstItems.Items.Clear();
+            foreach (var item in items)
             {
-                if (listView{EntityName}.SelectedItems.Count == 0) return null;
-                return listView{EntityName}.SelectedItems[0].Tag as {EntityName};
+                var lvi = new ListViewItem(item.DisplayName) { Tag = item.{ModelName}ID };
+                lstItems.Items.Add(lvi);
             }
         }
+
+        public void ClearForm()
+        {
+            txtFieldName.Clear();
+            lstItems.SelectedItems.Clear();
+        }
+
+        public void ShowError(string message) =>
+            MessageBox.Show(message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+        public void ShowInfo(string message) =>
+            MessageBox.Show(message, "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 }
 ```
 
-**Rules:**
-- The form class is `partial` — it pairs with its `.Designer.cs`.
-- No `using CMS.Services` or `using CMS.Data` — ever.
-- The form does NOT create the presenter with `new XxxPresenter(...)`. It only stores and calls it.
-- Event handlers only gather UI input and delegate to the presenter. No business logic.
-- `ShowError` / `ShowInfo` always use `MessageBox.Show`.
-- `SelectedXxx` reads from `Tag` set during the list-population method.
-
----
-
-### STEP 11 — CMS.Presentation: Visual Designer
-
-**File:** `CMS.Presentation/Modules/{Module}/{FormBaseName}Form.Designer.cs`
-
+**Designer template (minimal):**
 ```csharp
-namespace CMS.Presentation.Modules.{Module}
+namespace CMS.Presentation.Modules.{MODULE}
 {
-    partial class {FormBaseName}Form
+    partial class {FormName}
     {
         private System.ComponentModel.IContainer components = null;
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
-                components.Dispose();
+            if (disposing && (components != null)) components.Dispose();
             base.Dispose(disposing);
         }
 
         private void InitializeComponent()
         {
-            this.listView{EntityName} = new System.Windows.Forms.ListView();
-            this.txt{Field}           = new System.Windows.Forms.TextBox();
-            this.btnAdd               = new System.Windows.Forms.Button();
-            this.btnEdit              = new System.Windows.Forms.Button();
-            this.btnDelete            = new System.Windows.Forms.Button();
+            // TODO: add controls — Panel, ListView, TextBox, Button, Label
             this.SuspendLayout();
-
-            // listView{EntityName}
-            this.listView{EntityName}.FullRowSelect = true;
-            this.listView{EntityName}.GridLines     = true;
-            this.listView{EntityName}.Location      = new System.Drawing.Point(12, 12);
-            this.listView{EntityName}.Size          = new System.Drawing.Size(560, 300);
-            this.listView{EntityName}.View          = System.Windows.Forms.View.Details;
-            this.listView{EntityName}.Columns.Add("Name", 540);
-
-            // txt{Field}
-            this.txt{Field}.Location = new System.Drawing.Point(12, 325);
-            this.txt{Field}.Size     = new System.Drawing.Size(350, 23);
-
-            // btnAdd
-            this.btnAdd.Location = new System.Drawing.Point(370, 323);
-            this.btnAdd.Size     = new System.Drawing.Size(60, 27);
-            this.btnAdd.Text     = "Add";
-            this.btnAdd.Click   += new System.EventHandler(this.btnAdd_Click);
-
-            // btnEdit
-            this.btnEdit.Location = new System.Drawing.Point(438, 323);
-            this.btnEdit.Size     = new System.Drawing.Size(60, 27);
-            this.btnEdit.Text     = "Edit";
-            this.btnEdit.Click   += new System.EventHandler(this.btnEdit_Click);
-
-            // btnDelete
-            this.btnDelete.Location = new System.Drawing.Point(506, 323);
-            this.btnDelete.Size     = new System.Drawing.Size(66, 27);
-            this.btnDelete.Text     = "Delete";
-            this.btnDelete.Click   += new System.EventHandler(this.btnDelete_Click);
-
-            // {FormBaseName}Form
-            this.ClientSize = new System.Drawing.Size(600, 370);
-            this.Controls.Add(this.listView{EntityName});
-            this.Controls.Add(this.txt{Field});
-            this.Controls.Add(this.btnAdd);
-            this.Controls.Add(this.btnEdit);
-            this.Controls.Add(this.btnDelete);
-            this.Name  = "{FormBaseName}Form";
-            this.Text  = "{FormBaseName}";
-            this.Load += new System.EventHandler(this.{FormBaseName}Form_Load);
+            // ... control declarations ...
             this.ResumeLayout(false);
-            this.PerformLayout();
         }
-
-        private System.Windows.Forms.ListView listView{EntityName};
-        private System.Windows.Forms.TextBox  txt{Field};
-        private System.Windows.Forms.Button   btnAdd;
-        private System.Windows.Forms.Button   btnEdit;
-        private System.Windows.Forms.Button   btnDelete;
     }
 }
 ```
 
-**Rules:**
-- `partial class` — same namespace and class name as the code-behind.
-- Always include the standard `Dispose` + `IContainer components`.
-- All event handler wiring is done inside `InitializeComponent()` with `+=`.
-- Control field declarations appear at the bottom of the file.
-- Scale the UI (more columns, panels, GroupBoxes, labels, etc.) to match the actual form design.
+Register in `CMS.Presentation.csproj`:
+```xml
+<Compile Include="Modules\{MODULE}\{FormName}.cs">
+  <SubType>Form</SubType>
+</Compile>
+<Compile Include="Modules\{MODULE}\{FormName}.Designer.cs">
+  <DependentUpon>{FormName}.cs</DependentUpon>
+</Compile>
+<!-- Only if resource file exists: -->
+<EmbeddedResource Include="Modules\{MODULE}\{FormName}.resx">
+  <DependentUpon>{FormName}.cs</DependentUpon>
+</EmbeddedResource>
+```
 
 ---
 
-### STEP 12 — Composition Root Wiring
+## 6. Module Naming Conventions
 
-Add a method in `MDI_Container.cs` (or a `FormFactory` class) to wire the full object graph.  
-This is the **only place** services and repositories are instantiated inside `CMS.Presentation`.
+| Module Code | Full Name | Folder |
+|---|---|---|
+| DMS | Document Management System | `DMS\Document\` |
+| KMS | Knowledge Management System | `KMS\KB\` |
+| *(new)* | *(new module)* | `{MODULE}\{SubModule}\` |
 
+**Controller Interfaces folder per module:**
+
+| Module | Interface folder |
+|---|---|
+| DMS | `CMS.Controllers\DMS\Document\Interfaces\` |
+| KMS | `CMS.Controllers\KMS\KB\Interfaces\` |
+| *(new)* | `CMS.Controllers\{MODULE}\{SubModule}\Interfaces\` |
+
+---
+
+## 7. Naming Cheat-Sheet
+
+| Artifact | Suffix/Prefix | Example |
+|---|---|---|
+| Form code-behind | `Form` or `Dialog` | `KBCategoryForm.cs` |
+| View interface | `I` + `View` | `IKBCategoryView.cs` |
+| Presenter/Controller | `Presenter` or `Controller` | `KBCategoryPresenter.cs` |
+| Service interface | `I` + `Service` | `IKBCategoryService.cs` |
+| Service class | `Service` | `KBCategoryService.cs` |
+| Repository interface | `I` + `Repository` | `IKBCategoryRepository.cs` |
+| Repository class | `Repository` | `KBCategoryRepository.cs` |
+| Domain model | *(plain noun)* | `KBCategory.cs` |
+| Domain enum | *(plain noun)* | `PermissionType.cs` |
+
+---
+
+## 8. ADO.NET Patterns
+
+### Null-safe mapping helper
 ```csharp
-// Example method in MDI_Container.cs
-// CMS.Presentation is allowed to reference CMS.Services and CMS.Data ONLY here.
-private void Open{FormBaseName}Form()
+private static T SafeGet<T>(SqlDataReader r, string col, T defaultValue = default(T))
 {
-    // 1. Build from the bottom up
-    var repo      = new {EntityName}Repository(_configManager);           // CMS.Data
-    var service   = new {FormBaseName}Service(repo);                      // CMS.Services
-    // 2. Create form first (it is the IView)
-    var form      = new {FormBaseName}Form(_currentUser);                 // CMS.Presentation
-    // 3. Create presenter with form as the view
-    var presenter = new {FormBaseName}Presenter(service, form, _currentUser); // CMS.Controllers
-    // 4. Inject presenter into form
-    form.AttachPresenter(presenter);
-    // 5. Open
-    form.Show();
+    int ord = r.GetOrdinal(col);
+    return r.IsDBNull(ord) ? defaultValue : (T)r.GetValue(ord);
 }
 ```
 
----
-
-### STEP 13 — Update .csproj Files
-
-Add a `<Compile Include="..." />` entry for every new file.
-
-**CMS.Domain.csproj**
-```xml
-<Compile Include="Models\{EntityName}.cs" />
+### Parameterised query — always use parameters, never string concat
+```csharp
+cmd.Parameters.AddWithValue("@Name", (object)model.Name ?? DBNull.Value);
 ```
 
-**CMS.Data.csproj**
-```xml
-<Compile Include="Interfaces\I{EntityName}Repository.cs" />
-<Compile Include="Repositories\{EntityName}Repository.cs" />
+### Scalar insert (returns new ID)
+```csharp
+const string sql = @"INSERT INTO Schema.Table (Col) VALUES (@v); SELECT CAST(SCOPE_IDENTITY() AS INT);";
+return (int)cmd.ExecuteScalar();
 ```
 
-**CMS.Services.csproj**
-```xml
-<Compile Include="Interfaces\I{FormBaseName}Service.cs" />
-<Compile Include="{FormBaseName}Service.cs" />
+### Soft delete pattern
+```csharp
+const string sql = "UPDATE Schema.Table SET IsActive = 0 WHERE TableID = @id";
 ```
-
-**CMS.Controllers.csproj**
-```xml
-<Compile Include="{Module}\Interfaces\I{FormBaseName}View.cs" />
-<Compile Include="{Module}\{SubModule}\{FormBaseName}Presenter.cs" />
-```
-
-**CMS.Presentation.csproj**
-```xml
-<Compile Include="Modules\{Module}\{FormBaseName}Form.cs">
-  <SubType>Form</SubType>
-</Compile>
-<Compile Include="Modules\{Module}\{FormBaseName}Form.Designer.cs">
-  <DependentUpon>{FormBaseName}Form.cs</DependentUpon>
-</Compile>
-```
-
-**Adding a new `<ProjectReference>` (if not already present):**
-```xml
-<ProjectReference Include="..\CMS.Services\CMS.Services.csproj">
-  <Project>{GUID-from-target-csproj}</Project>
-  <Name>CMS.Services</Name>
-</ProjectReference>
-```
-> Look up the GUID from the target project's `<ProjectGuid>` element in its `.csproj`.
 
 ---
 
-### STEP 14 — Build and Verify
+## 9. Error Handling Guidelines
 
-```bash
-msbuild CMS.sln /p:Configuration=Debug /nologo /v:minimal
-```
-
-Fix all errors before delivering. Common failure causes:
-
-| Symptom | Likely cause |
+| Exception type | When to throw |
 |---|---|
-| `The type or namespace ... could not be found` | Missing `using`, wrong namespace, or missing `<ProjectReference>` |
-| `does not implement interface member` | Method or property missing from the form's `IXxxView` implementation |
-| `partial declarations must not specify different base classes` | Namespace or class name mismatch between `*.cs` and `*.Designer.cs` |
-| `<Compile>` warning or missing type | File created on disk but not added to `.csproj` |
+| `ArgumentNullException` | Null constructor argument or null service parameter |
+| `ArgumentException` | Empty/invalid required field value |
+| `InvalidOperationException` | Business rule violation (duplicate, self-reference, etc.) |
+| `UnauthorizedAccessException` | Permission check failure |
+
+Presenter catch blocks must always call `_view.ShowError(ex.Message)` — never let exceptions bubble to WinForms unhandled.
 
 ---
 
-## Quick Reference Checklist
+## 10. .csproj Registration Checklist
 
-Before closing the task, confirm every item:
+Every new file **must** be added to the corresponding `.csproj` `<ItemGroup>`:
 
-- [ ] `{EntityName}.cs` in `CMS.Domain/Models/`
-- [ ] `I{EntityName}Repository.cs` in `CMS.Data/Interfaces/`
-- [ ] `{EntityName}Repository.cs` in `CMS.Data/Repositories/`
-- [ ] `I{FormBaseName}Service.cs` in `CMS.Services/Interfaces/`
-- [ ] `{FormBaseName}Service.cs` in `CMS.Services/`
-- [ ] `I{FormBaseName}View.cs` in `CMS.Controllers/{Module}/Interfaces/`
-- [ ] `{FormBaseName}Presenter.cs` in `CMS.Controllers/{Module}/{SubModule}/`
-- [ ] `{FormBaseName}Form.cs` in `CMS.Presentation/Modules/{Module}/`
-- [ ] `{FormBaseName}Form.Designer.cs` in `CMS.Presentation/Modules/{Module}/`
-- [ ] Form code-behind has NO `using CMS.Services` or `using CMS.Data`
-- [ ] `AttachPresenter()` method exists on the form
-- [ ] Composition root wiring added in `MDI_Container.cs` or factory
-- [ ] All `.csproj` files updated with `<Compile>` entries
-- [ ] Solution builds with zero errors
+- [ ] `CMS.Domain.csproj` — model and enum classes
+- [ ] `CMS.Data.csproj` — repository interface and class
+- [ ] `CMS.Services.csproj` — service interface and class
+- [ ] `CMS.Controllers.csproj` — view interface and presenter
+- [ ] `CMS.Presentation.csproj` — form `.cs`, `.Designer.cs`, and `.resx` (if used)
+
+Form entries in `CMS.Presentation.csproj` must use `<SubType>Form</SubType>` and `<DependentUpon>` to keep the IDE file grouping correct.
+
+---
+
+## 11. Quick Reference: Real Examples in Codebase
+
+| Layer | File | Notes |
+|---|---|---|
+| Domain | `CMS.Domain\Models\KBCategory.cs` | Self-referencing hierarchy, display helper property |
+| Data Interface | `CMS.Data\Interfaces\IKBCategoryRepository.cs` | CRUD interface |
+| Repository | `CMS.Data\Repositories\KBCategoryRepository.cs` | Full ADO.NET CRUD |
+| Service Interface | `CMS.Services\Interfaces\IKBCategoryService.cs` | Thin interface |
+| Service | `CMS.Services\KBCategoryService.cs` | Validation + audit logging |
+| View Interface | `CMS.Controllers\KMS\KB\Interfaces\IKBCategoryView.cs` | Used by presenter |
+| Presenter | `CMS.Controllers\KMS\KB\KBCategoryPresenter.cs` | Orchestration only |
+| Form code-behind | `CMS.Presentation\Modules\KMS\KBCategoryForm.cs` | Implements IKBCategoryView |
+| Form designer | `CMS.Presentation\Modules\KMS\KBCategoryForm.Designer.cs` | InitializeComponent only |

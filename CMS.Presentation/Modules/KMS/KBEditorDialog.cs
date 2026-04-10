@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
 
@@ -17,9 +17,9 @@ namespace CMS.Presentation.Modules.KMS
     /// Layout: General Info, Content Editor, Mapping Tabs (Attachments, Related, Workflow, Programs, Docs, Versions)
     /// Supports: Create / Edit / Send Review / Publish / Archive + Version History
     /// </summary>
-    public partial class KBEditorDialog : Form, IKBEditorView
+    public partial class KBEditorDialog : Form, IKBEditorController
     {
-        private KBEditorPresenter _presenter;
+        private KBEditorController _presenter;
         private readonly UserContext _user;
 
         public KBEditorDialog(UserContext user)
@@ -33,7 +33,7 @@ namespace CMS.Presentation.Modules.KMS
         /// Called by the composition root after the presenter is wired.
         /// Must be called before the dialog is shown.
         /// </summary>
-        public void AttachPresenter(KBEditorPresenter presenter)
+        public void AttachPresenter(KBEditorController presenter)
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             _presenter = presenter;

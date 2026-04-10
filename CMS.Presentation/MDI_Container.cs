@@ -1168,7 +1168,7 @@ namespace CMS.Presentation
             }
 
             var form      = new KBMainForm();
-            var presenter = new KBMainPresenter(
+            var presenter = new KBMainController(
                 form, _kbCategoryService, _kbArticleService, _currentUser);
 
             form.AttachPresenter(presenter, _currentUser);
@@ -1177,7 +1177,7 @@ namespace CMS.Presentation
                 article =>
                 {
                     var viewer          = new ArticleViewerForm();
-                    var viewerPresenter = new ArticleViewerPresenter(
+                    var viewerPresenter = new ArticleViewerController(
                         viewer, _kbArticleService, _currentUser, article);
                     viewer.AttachPresenter(viewerPresenter);
                     viewer.AttachEditorFactory(a => OpenKBEditorDialog(a));
@@ -1192,7 +1192,7 @@ namespace CMS.Presentation
             form.AttachImportWizardFactory(() =>
             {
                 var wizard          = new KBImportWizardForm(_currentUser);
-                var wizardPresenter = new KBImportWizardPresenter(
+                var wizardPresenter = new KBImportWizardController(
                     wizard, _kbArticleService, _kbCategoryService, _currentUser);
                 wizard.AttachPresenter(wizardPresenter);
                 return wizard.ShowDialog(this);
@@ -1208,7 +1208,7 @@ namespace CMS.Presentation
         private DialogResult OpenKBEditorDialog(KBArticle article)
         {
             var dlg       = new KBEditorDialog(_currentUser);
-            var presenter = new KBEditorPresenter(
+            var presenter = new KBEditorController(
                 dlg, _kbCategoryService, _kbArticleService, _currentUser, article);
             dlg.AttachPresenter(presenter);
             return dlg.ShowDialog(this);
@@ -1508,7 +1508,7 @@ namespace CMS.Presentation
             }
 
             var form      = new KBCategoryForm(_currentUser);
-            var presenter = new KBCategoryPresenter(form, _kbCategoryService, _currentUser);
+            var presenter = new KBCategoryController(form, _kbCategoryService, _currentUser);
             form.AttachPresenter(presenter);
             OpenChildForm(form);
         }

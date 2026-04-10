@@ -1,17 +1,17 @@
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
 
 namespace CMS.Controllers.KMS.KB
 {
-    public class KBCategoryPresenter
+    public class KBCategoryController
     {
-        private readonly IKBCategoryView    _view;
+        private readonly IKBCategoryController    _view;
         private readonly IKBCategoryService _service;
         private readonly UserContext        _user;
 
-        public KBCategoryPresenter(IKBCategoryView view, IKBCategoryService service, UserContext user)
+        public KBCategoryController(IKBCategoryController view, IKBCategoryService service, UserContext user)
         {
             if (view    == null) throw new ArgumentNullException("view");
             if (service == null) throw new ArgumentNullException("service");

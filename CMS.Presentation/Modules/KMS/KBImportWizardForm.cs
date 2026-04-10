@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Windows.Forms;
-using CMS.Controllers.KMS.Interfaces;
+using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
 
@@ -20,9 +20,9 @@ namespace CMS.Presentation.Modules.KMS
     ///   Step 3 — สรุปผลการนำเข้า
     /// Layout ตาม MOD-006/kms_import.html
     /// </summary>
-    public partial class KBImportWizardForm : Form, IKBImportWizardView
+    public partial class KBImportWizardForm : Form, IKBImportWizardController
     {
-        private KBImportWizardPresenter _presenter;
+        private KBImportWizardController _presenter;
         private readonly UserContext    _user;
         private int      _currentStep = 1;
 
@@ -44,7 +44,7 @@ namespace CMS.Presentation.Modules.KMS
         /// Called by the composition root after the presenter is fully wired.
         /// Must be called before ShowDialog().
         /// </summary>
-        public void AttachPresenter(KBImportWizardPresenter presenter)
+        public void AttachPresenter(KBImportWizardController presenter)
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             _presenter = presenter;
