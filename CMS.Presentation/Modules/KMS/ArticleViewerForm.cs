@@ -21,7 +21,7 @@ namespace CMS.Presentation.Modules.KMS
         private ArticleViewerPresenter _presenter;
 
         /// <summary>
-        /// Factory injected by the composition root to open ArticleEditorDialog
+        /// Factory injected by the composition root to open KBEditorDialog
         /// pre-wired with its own presenter. Returns DialogResult.OK if saved.
         /// </summary>
         private Func<KBArticle, DialogResult> _openEditorFactory;
@@ -48,7 +48,7 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         /// <summary>
-        /// Inject the factory used to open a pre-wired ArticleEditorDialog.
+        /// Inject the factory used to open a pre-wired KBEditorDialog.
         /// Must be called before the form is shown.
         /// </summary>
         public void AttachEditorFactory(Func<KBArticle, DialogResult> factory)

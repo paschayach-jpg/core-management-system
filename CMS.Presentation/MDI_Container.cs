@@ -1180,11 +1180,11 @@ namespace CMS.Presentation
                     var viewerPresenter = new ArticleViewerPresenter(
                         viewer, _kbArticleService, _currentUser, article);
                     viewer.AttachPresenter(viewerPresenter);
-                    viewer.AttachEditorFactory(a => OpenArticleEditorDialog(a));
+                    viewer.AttachEditorFactory(a => OpenKBEditorDialog(a));
                     return viewer;
                 },
-                // editorFactory — เปิด ArticleEditorDialog พร้อม presenter
-                article => OpenArticleEditorDialog(article),
+                // editorFactory — เปิด KBEditorDialog พร้อม presenter
+                article => OpenKBEditorDialog(article),
                 // categorySettingsFactory — เปิดหน้าตั้งค่า Category
                 () => OpenKBCategorySettings());
 
@@ -1202,13 +1202,13 @@ namespace CMS.Presentation
         }
 
         /// <summary>
-        /// Composition-root helper: สร้าง ArticleEditorDialog พร้อม presenter ครบชุด
+        /// Composition-root helper: สร้าง KBEditorDialog พร้อม presenter ครบชุด
         /// แล้ว ShowDialog() คืนค่า DialogResult กลับมา
         /// </summary>
-        private DialogResult OpenArticleEditorDialog(KBArticle article)
+        private DialogResult OpenKBEditorDialog(KBArticle article)
         {
-            var dlg       = new ArticleEditorDialog(_currentUser);
-            var presenter = new ArticleEditorDialogPresenter(
+            var dlg       = new KBEditorDialog(_currentUser);
+            var presenter = new KBEditorPresenter(
                 dlg, _kbCategoryService, _kbArticleService, _currentUser, article);
             dlg.AttachPresenter(presenter);
             return dlg.ShowDialog(this);

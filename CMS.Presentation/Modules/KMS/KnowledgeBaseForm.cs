@@ -28,7 +28,7 @@ namespace CMS.Presentation.Modules.KMS
         // ── Dialog / child-form factories (injected by composition root) ────────
         /// <summary>Creates and returns a pre-wired ArticleViewerForm for a given article.</summary>
         private Func<KBArticle, ArticleViewerForm> _viewerFactory;
-        /// <summary>Shows a pre-wired ArticleEditorDialog. Returns the dialog result.</summary>
+        /// <summary>Shows a pre-wired KBEditorDialog. Returns the dialog result.</summary>
         private Func<KBArticle, DialogResult> _editorFactory;
         /// <summary>Shows the pre-wired KBCategoryForm as a modal dialog.</summary>
         private Action _categorySettingsFactory;

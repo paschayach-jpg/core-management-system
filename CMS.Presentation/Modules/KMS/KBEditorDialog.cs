@@ -12,16 +12,17 @@ using CMS.Domain.Models;
 namespace CMS.Presentation.Modules.KMS
 {
     /// <summary>
-    /// Dialog สำหรับเพิ่ม/แก้ไขบทความ Knowledge Base (MOD-006)
-    /// Layout ตาม kms_editor.html — 3 sections: General Info, Content Editor, Mapping Tabs
-    /// รองรับ: Create / Edit / Send Review / Publish / Archive + Version History
+    /// KBEditor Dialog — แก้ไข/เพิ่มบทความ Knowledge Base (MOD-006)
+    /// Redesigned from ArticleEditorDialog based on kms_editor.html
+    /// Layout: General Info, Content Editor, Mapping Tabs (Attachments, Related, Workflow, Programs, Docs, Versions)
+    /// Supports: Create / Edit / Send Review / Publish / Archive + Version History
     /// </summary>
-    public partial class ArticleEditorDialog : Form, IArticleEditorDialogView
+    public partial class KBEditorDialog : Form, IKBEditorView
     {
-        private ArticleEditorDialogPresenter _presenter;
-        private readonly UserContext          _user;
+        private KBEditorPresenter _presenter;
+        private readonly UserContext _user;
 
-        public ArticleEditorDialog(UserContext user)
+        public KBEditorDialog(UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");
             _user = user;
@@ -32,15 +33,15 @@ namespace CMS.Presentation.Modules.KMS
         /// Called by the composition root after the presenter is wired.
         /// Must be called before the dialog is shown.
         /// </summary>
-        public void AttachPresenter(ArticleEditorDialogPresenter presenter)
+        public void AttachPresenter(KBEditorPresenter presenter)
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             _presenter = presenter;
         }
 
-        // ── Form events ──────────────────────────────────────────────────────
+        // ── Form Events ──────────────────────────────────────────────────────
 
-        private void ArticleEditorDialog_Load(object sender, EventArgs e)
+        private void KBEditorDialog_Load(object sender, EventArgs e)
         {
             if (_presenter == null)
             {
@@ -51,6 +52,7 @@ namespace CMS.Presentation.Modules.KMS
                 Close();
                 return;
             }
+
             InitTypeCombo();
             _presenter.Initialize();
         }
@@ -64,34 +66,59 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             if (!ValidateInput()) return;
-            try { _presenter.Save(txtChangeDesc.Text.Trim()); }
-            catch (Exception ex) { ShowError("บันทึกไม่สำเร็จ:\n" + ex.Message); }
+
+            try
+            {
+                _presenter.Save(txtChangeDesc.Text.Trim());
+            }
+            catch (Exception ex)
+            {
+                ShowError("บันทึกไม่สำเร็จ:\n" + ex.Message);
+            }
         }
 
         private void BtnSendReview_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
+
             string action = btnSendReview.Text.Contains("Review") ? "ส่งขอ Review" : "เผยแพร่";
             var confirm = MessageBox.Show(
                 string.Format("ต้องการ{0}บทความ \"{1}\" ใช่หรือไม่?", action, txtTitle.Text.Trim()),
                 "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
             if (confirm != DialogResult.Yes) return;
-            try { _presenter.Publish(); }
-            catch (Exception ex) { ShowError("เกิดข้อผิดพลาด:\n" + ex.Message); }
+
+            try
+            {
+                _presenter.Publish();
+            }
+            catch (Exception ex)
+            {
+                ShowError("เกิดข้อผิดพลาด:\n" + ex.Message);
+            }
         }
 
         private void BtnArchive_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
+
             var confirm = MessageBox.Show(
                 string.Format(
                     "ต้องการ Archive บทความ \"{0}\" ใช่หรือไม่?\n\n" +
                     "(บทความที่ Archive แล้วไม่สามารถนำกลับมาแก้ไขได้)",
                     txtTitle.Text.Trim()),
                 "ยืนยัน Archive", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
             if (confirm != DialogResult.Yes) return;
-            try { _presenter.Archive(); }
-            catch (Exception ex) { ShowError("เกิดข้อผิดพลาด:\n" + ex.Message); }
+
+            try
+            {
+                _presenter.Archive();
+            }
+            catch (Exception ex)
+            {
+                ShowError("เกิดข้อผิดพลาด:\n" + ex.Message);
+            }
         }
 
         private void BtnPreview_Click(object sender, EventArgs e)
@@ -108,7 +135,7 @@ namespace CMS.Presentation.Modules.KMS
             Close();
         }
 
-        // ── IArticleEditorDialogView ─────────────────────────────────────────
+        // ── IKBEditorView Implementation ─────────────────────────────────────
 
         public string ArticleCode
         {
@@ -257,18 +284,23 @@ namespace CMS.Presentation.Modules.KMS
         {
             cboCategory.Items.Clear();
             cboCategory.Items.Add(new ComboItem("— เลือกหมวดหมู่ —", 0));
+
             foreach (var c in categories.OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName))
+            {
                 cboCategory.Items.Add(new ComboItem(
                     c.ParentCategoryID.HasValue
                         ? string.Format("  └ {0}", c.CategoryName)
                         : c.CategoryName,
                     c.CategoryID));
+            }
+
             cboCategory.SelectedIndex = 0;
         }
 
         public void BindVersionHistory(IEnumerable<KBVersion> versions)
         {
             lstVersions.Items.Clear();
+
             foreach (var v in versions)
             {
                 var item = new ListViewItem(string.Format("v{0}", v.VersionNumber));
@@ -305,7 +337,7 @@ namespace CMS.Presentation.Modules.KMS
             MessageBox.Show(message, "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        // ── Private UI helpers ───────────────────────────────────────────────
+        // ── Private UI Helpers ───────────────────────────────────────────────
 
         private void InitTypeCombo()
         {
@@ -363,6 +395,7 @@ namespace CMS.Presentation.Modules.KMS
                 txtTitle.Focus();
                 return false;
             }
+
             var catItem = cboCategory.SelectedItem as ComboItem;
             if (catItem == null || catItem.Value == 0)
             {
@@ -370,6 +403,7 @@ namespace CMS.Presentation.Modules.KMS
                 cboCategory.Focus();
                 return false;
             }
+
             return true;
         }
 
@@ -378,11 +412,15 @@ namespace CMS.Presentation.Modules.KMS
             for (int i = 0; i < cbo.Items.Count; i++)
             {
                 var ci = cbo.Items[i] as ComboItem;
-                if (ci != null && ci.Value == value) { cbo.SelectedIndex = i; return; }
+                if (ci != null && ci.Value == value)
+                {
+                    cbo.SelectedIndex = i;
+                    return;
+                }
             }
         }
 
-        // ── RTE Toolbar handlers ──────────────────────────────────────────────
+        // ── RTE Toolbar Handlers ─────────────────────────────────────────────
 
         private void TsRteBold_Click(object sender, EventArgs e)
         {
@@ -470,12 +508,23 @@ namespace CMS.Presentation.Modules.KMS
             txtContent.Focus();
         }
 
+        // ── Helper Classes ───────────────────────────────────────────────────
+
         private class ComboItem
         {
             public string Display { get; private set; }
             public int    Value   { get; private set; }
-            public ComboItem(string display, int value) { Display = display; Value = value; }
-            public override string ToString() { return Display; }
+
+            public ComboItem(string display, int value)
+            {
+                Display = display;
+                Value   = value;
+            }
+
+            public override string ToString()
+            {
+                return Display;
+            }
         }
     }
 }

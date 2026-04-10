@@ -8,35 +8,48 @@ using System.Linq;
 
 namespace CMS.Controllers.KMS.KB
 {
-    public class ArticleEditorDialogPresenter
+    /// <summary>
+    /// Presenter for KBEditor dialog (MOD-006)
+    /// Redesigned from ArticleEditorDialogPresenter
+    /// Handles: Create / Edit / Send Review / Publish / Archive + Version History
+    /// </summary>
+    public class KBEditorPresenter
     {
-        private readonly IArticleEditorDialogView _view;
-        private readonly IKBCategoryService       _categoryService;
-        private readonly IKBArticleService        _articleService;
-        private readonly UserContext              _user;
-        private readonly KBArticle               _editingArticle;
+        private readonly IKBEditorView     _view;
+        private readonly IKBCategoryService _categoryService;
+        private readonly IKBArticleService  _articleService;
+        private readonly UserContext        _user;
+        private readonly KBArticle         _editingArticle;
 
-        public ArticleEditorDialogPresenter(
-            IArticleEditorDialogView view,
-            IKBCategoryService       categoryService,
-            IKBArticleService        articleService,
-            UserContext              user,
-            KBArticle                article)   // null = create new
+        public KBEditorPresenter(
+            IKBEditorView     view,
+            IKBCategoryService categoryService,
+            IKBArticleService  articleService,
+            UserContext        user,
+            KBArticle          article)   // null = create new
         {
             if (view            == null) throw new ArgumentNullException("view");
             if (categoryService == null) throw new ArgumentNullException("categoryService");
             if (articleService  == null) throw new ArgumentNullException("articleService");
             if (user            == null) throw new ArgumentNullException("user");
-            _view = view; _categoryService = categoryService;
-            _articleService = articleService; _user = user; _editingArticle = article;
+
+            _view            = view;
+            _categoryService = categoryService;
+            _articleService  = articleService;
+            _user            = user;
+            _editingArticle  = article;
         }
 
+        /// <summary>
+        /// Initialize the view with data
+        /// </summary>
         public void Initialize()
         {
             LoadDropdowns();
 
             if (_editingArticle == null)
             {
+                // Create mode
                 _view.HeaderText           = "  ✏️ เพิ่มบทความใหม่";
                 _view.ArticleCode          = string.Format("KB-{0}-NEW", DateTime.Now.Year);
                 _view.NoExpiry             = true;
@@ -48,6 +61,7 @@ namespace CMS.Controllers.KMS.KB
             }
             else
             {
+                // Edit mode
                 _view.HeaderText = string.Format("  ✏️ แก้ไขบทความ: {0}", _editingArticle.Title ?? "");
                 PopulateFields(_editingArticle);
                 LoadVersionHistory(_editingArticle.ArticleID);
@@ -55,12 +69,24 @@ namespace CMS.Controllers.KMS.KB
             }
         }
 
+        /// <summary>
+        /// Load dropdown data (categories)
+        /// </summary>
         private void LoadDropdowns()
         {
-            try { _view.BindCategories(_categoryService.GetAllActive()); }
-            catch { _view.BindCategories(new List<KBCategory>()); }
+            try
+            {
+                _view.BindCategories(_categoryService.GetAllActive());
+            }
+            catch
+            {
+                _view.BindCategories(new List<KBCategory>());
+            }
         }
 
+        /// <summary>
+        /// Populate view fields from article entity
+        /// </summary>
         private void PopulateFields(KBArticle a)
         {
             _view.ArticleCode         = a.ArticleCode ?? string.Empty;
@@ -73,7 +99,10 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedArticleType = (byte)a.ArticleType;
             _view.SelectedStatus      = a.Status;
             _view.NoExpiry            = !a.ExpiryDate.HasValue;
-            if (a.ExpiryDate.HasValue) _view.ExpiryDate = a.ExpiryDate.Value;
+
+            if (a.ExpiryDate.HasValue)
+                _view.ExpiryDate = a.ExpiryDate.Value;
+
             _view.ViewCountText  = string.Format("👁  ดู {0} ครั้ง", a.ViewCount);
             _view.LikeCountText  = string.Format("👍  {0} Like", a.LikeCount);
             _view.VersionText    = string.Format("Version: {0}.0", a.CurrentVersion > 0 ? a.CurrentVersion : 1);
@@ -81,6 +110,9 @@ namespace CMS.Controllers.KMS.KB
             _view.DateInfoText   = string.Format("วันที่: {0}", a.CreatedDate.ToString("dd/MM/yyyy"));
         }
 
+        /// <summary>
+        /// Load version history for the article
+        /// </summary>
         private void LoadVersionHistory(int articleId)
         {
             try
@@ -89,9 +121,15 @@ namespace CMS.Controllers.KMS.KB
                 _view.BindVersionHistory(versions);
                 _view.VersionTabText = string.Format("🕐 ประวัติ Version ({0})", versions.Count);
             }
-            catch { }
+            catch
+            {
+                // Silently fail - version history is optional
+            }
         }
 
+        /// <summary>
+        /// Update button visibility and text based on article status
+        /// </summary>
         private void UpdateStatusButtons(byte status)
         {
             bool isArchived  = (status == 4);
@@ -101,6 +139,7 @@ namespace CMS.Controllers.KMS.KB
 
             if (status == 1 || status == 2)
             {
+                // Draft or Review
                 _view.PublishButtonText  = status == 1 ? "📤 ส่งขอ Review" : "✅ เผยแพร่";
                 _view.PublishButtonColor = status == 1
                     ? Color.FromArgb(46, 116, 181)
@@ -109,18 +148,22 @@ namespace CMS.Controllers.KMS.KB
             }
             else if (status == 3)
             {
+                // Published
                 _view.PublishButtonVisible = false;
                 _view.ArchiveButtonVisible = true;
             }
             else if (status == 4)
             {
+                // Archived
                 _view.PublishButtonVisible = false;
                 _view.ArchiveButtonVisible = false;
                 _view.SaveEnabled          = false;
             }
         }
 
-        /// <summary>Save as Draft (status stays at 1) or update existing.</summary>
+        /// <summary>
+        /// Save as Draft (status stays at 1) or update existing
+        /// </summary>
         public void Save(string changeDesc)
         {
             try
@@ -133,7 +176,7 @@ namespace CMS.Controllers.KMS.KB
                     ContentHTML      = _view.ContentHTML,
                     CategoryID       = _view.SelectedCategoryId,
                     ArticleType      = _view.SelectedArticleType,
-                    Status           = 1,
+                    Status           = 1,  // Always save as Draft
                     IsOfficialPolicy = _view.IsOfficialPolicy,
                     Tags             = _view.Tags,
                     ExpiryDate       = _view.NoExpiry ? (DateTime?)null : _view.ExpiryDate,
@@ -141,30 +184,44 @@ namespace CMS.Controllers.KMS.KB
                 };
 
                 if (_editingArticle == null)
+                {
+                    // Create new article
                     _articleService.Create(article);
+                }
                 else
                 {
+                    // Update existing article
                     article.ArticleID = _editingArticle.ArticleID;
                     _articleService.Update(article, changeDesc);
                 }
+
                 _view.CloseOk();
             }
-            catch (Exception ex) { throw new InvalidOperationException("Save failed: " + ex.Message, ex); }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Save failed: " + ex.Message, ex);
+            }
         }
 
-        /// <summary>Advance status: Draft→Review or Review→Published.</summary>
+        /// <summary>
+        /// Advance status: Draft→Review or Review→Published
+        /// </summary>
         public void Publish()
         {
             if (_editingArticle == null) return;
-            byte target = _editingArticle.Status == 1 ? (byte)2 : (byte)3;
-            _articleService.ChangeStatus(_editingArticle.ArticleID, target, _user.AdIdentity);
+
+            byte targetStatus = _editingArticle.Status == 1 ? (byte)2 : (byte)3;
+            _articleService.ChangeStatus(_editingArticle.ArticleID, targetStatus, _user.AdIdentity);
             _view.CloseOk();
         }
 
-        /// <summary>Move to Archived status.</summary>
+        /// <summary>
+        /// Move to Archived status
+        /// </summary>
         public void Archive()
         {
             if (_editingArticle == null) return;
+
             _articleService.ChangeStatus(_editingArticle.ArticleID, 4, _user.AdIdentity);
             _view.CloseOk();
         }
