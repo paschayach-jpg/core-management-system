@@ -95,3 +95,6 @@ CMS.Domain/obj/Debug/
 /CMS.Domain/obj/Debug/CMS.Domain.dll
 /CMS.Infrastructure/bin/Debug/CMS.Domain.dll
 /CMS.Infrastructure/bin/Debug/CMS.Infrastructure.dll
+# Build folders
+bin/
+obj/
