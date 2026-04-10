@@ -47,3 +47,6 @@ CMS.Domain/obj/Debug/
 /CMS.Presentation/bin/Debug/CMS.Domain.pdb
 /CMS.Services/bin/Debug/CMS.Domain.dll
 /CMS.Services/bin/Debug/CMS.Domain.pdb
+# Build folders
+bin/
+obj/
