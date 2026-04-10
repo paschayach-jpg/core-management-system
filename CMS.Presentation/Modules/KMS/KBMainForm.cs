@@ -40,6 +40,19 @@ namespace CMS.Presentation.Modules.KMS
         public KBMainForm()
         {
             InitializeComponent();
+
+            // pnlViewerHost is created here so the designer stays free of a Dock=Fill panel
+            // that would block adding other controls. Runtime behaviour is identical.
+            pnlViewerHost = new System.Windows.Forms.Panel
+            {
+                Name      = "pnlViewerHost",
+                BackColor = System.Drawing.Color.White,
+                Dock      = System.Windows.Forms.DockStyle.Fill,
+                Visible   = false,
+            };
+            Controls.Add(pnlViewerHost);      // added after splitMain → sits behind it by default
+            pnlViewerHost.BringToFront();      // move in front of splitMain (pnlHeader stays on top via Dock=Top)
+            splitMain.BringToFront();          // restore splitMain as the visible default layer
         }
 
         /// <summary>
