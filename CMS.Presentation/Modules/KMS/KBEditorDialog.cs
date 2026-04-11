@@ -663,11 +663,48 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TsRteImage_Click(object sender, EventArgs e)
         {
-            string url = Microsoft.VisualBasic.Interaction.InputBox(
-                "กรอก URL รูปภาพ:", "แทรกรูปภาพ", "https://");
-            if (string.IsNullOrWhiteSpace(url)) return;
-            PasteHtmlAtCursor(string.Format(
-                "<img src='{0}' alt='รูปภาพ' style='max-width:100%;' />", url));
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Title = "เลือกรูปภาพ";
+                ofd.Filter = "Image Files (*.jpg;*.jpeg;*.png;*.gif;*.bmp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp|" +
+                             "JPEG Files (*.jpg;*.jpeg)|*.jpg;*.jpeg|" +
+                             "PNG Files (*.png)|*.png|" +
+                             "GIF Files (*.gif)|*.gif|" +
+                             "BMP Files (*.bmp)|*.bmp|" +
+                             "All Files (*.*)|*.*";
+                ofd.FilterIndex = 1; // Default to "Image Files"
+                ofd.Multiselect = false;
+                
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        // Convert local file path to data URI for embedding
+                        string filePath = ofd.FileName;
+                        byte[] imageBytes = System.IO.File.ReadAllBytes(filePath);
+                        string base64 = Convert.ToBase64String(imageBytes);
+                        string ext = System.IO.Path.GetExtension(filePath).ToLower();
+                        
+                        // Determine MIME type
+                        string mimeType = "image/jpeg";
+                        if (ext == ".png") mimeType = "image/png";
+                        else if (ext == ".gif") mimeType = "image/gif";
+                        else if (ext == ".bmp") mimeType = "image/bmp";
+                        
+                        string dataUri = string.Format("data:{0};base64,{1}", mimeType, base64);
+                        string fileName = System.IO.Path.GetFileName(filePath);
+                        
+                        PasteHtmlAtCursor(string.Format(
+                            "<img src='{0}' alt='{1}' style='max-width:100%;' />", 
+                            dataUri, 
+                            System.Net.WebUtility.HtmlEncode(fileName)));
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowError("ไม่สามารถแทรกรูปภาพได้:\n" + ex.Message);
+                    }
+                }
+            }
         }
 
         private void TsRteTable_Click(object sender, EventArgs e)
