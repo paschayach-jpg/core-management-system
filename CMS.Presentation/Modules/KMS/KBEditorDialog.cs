@@ -55,6 +55,14 @@ namespace CMS.Presentation.Modules.KMS
 
             webEditor.DocumentText = GetEditorHtml();
             InitTypeCombo();
+            
+            // Add toolbars to tabs
+            tabAttach.Controls.Add(CreateAttachToolbar());
+            tabRelated.Controls.Add(CreateRelatedToolbar());
+            tabWorkflow.Controls.Add(CreateWorkflowToolbar());
+            tabPrograms.Controls.Add(CreateProgramsToolbar());
+            tabDocs.Controls.Add(CreateDocsToolbar());
+            
             _presenter.Initialize();
         }
 
@@ -201,8 +209,37 @@ namespace CMS.Presentation.Modules.KMS
 
         public string Tags
         {
-            get { return txtTags.Text.Trim(); }
-            set { txtTags.Text = value; }
+            get
+            {
+                var tags = new List<string>();
+                foreach (Control ctrl in flpTags.Controls)
+                {
+                    if (ctrl is Panel chip && chip != txtTagInput.Parent)
+                    {
+                        var lbl = chip.Controls.OfType<Label>().FirstOrDefault();
+                        if (lbl != null) tags.Add(lbl.Text);
+                    }
+                }
+                return string.Join(", ", tags);
+            }
+            set
+            {
+                // Clear existing chips (keep input box)
+                for (int i = flpTags.Controls.Count - 1; i >= 0; i--)
+                {
+                    if (flpTags.Controls[i] != txtTagInput)
+                        flpTags.Controls.RemoveAt(i);
+                }
+                
+                // Add chips from comma-separated string
+                if (!string.IsNullOrEmpty(value))
+                {
+                    foreach (var tag in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        AddTagChip(tag.Trim());
+                    }
+                }
+            }
         }
 
         public bool IsOfficialPolicy
@@ -249,11 +286,19 @@ namespace CMS.Presentation.Modules.KMS
 
         public byte SelectedStatus
         {
-            get { return _currentStatus; }
+            get
+            {
+                if (cboStatus.SelectedIndex < 0) return _currentStatus;
+                return (byte)(cboStatus.SelectedIndex + 1);  // 1=Draft, 2=Review, 3=Published, 4=Archived
+            }
             set
             {
                 _currentStatus = value;
-                SetStatusDisplay(value);
+                if (value >= 1 && value <= 4)
+                {
+                    cboStatus.SelectedIndex = value - 1;
+                }
+                SetStatusDisplay(value);  // Still update status bar
             }
         }
         private byte _currentStatus = 1;
@@ -390,37 +435,23 @@ namespace CMS.Presentation.Modules.KMS
 
         private void SetStatusDisplay(byte status)
         {
+            // Update status bar info only (removed lblStatusDisplay references)
             switch (status)
             {
                 case 1:
-                    lblStatusDisplay.Text      = "📝  Draft";
-                    lblStatusDisplay.BackColor = Color.FromArgb(253, 237, 236);
-                    lblStatusDisplay.ForeColor = Color.FromArgb(146, 43, 33);
-                    lblStatusInfo.Text         = "📝 Draft";
+                    lblStatusInfo.Text = "📝 Draft";
                     break;
                 case 2:
-                    lblStatusDisplay.Text      = "🔍  รอ Review";
-                    lblStatusDisplay.BackColor = Color.FromArgb(254, 249, 231);
-                    lblStatusDisplay.ForeColor = Color.FromArgb(126, 81, 9);
-                    lblStatusInfo.Text         = "🔍 รอ Review";
+                    lblStatusInfo.Text = "🔍 รอ Review";
                     break;
                 case 3:
-                    lblStatusDisplay.Text      = "✅  Published";
-                    lblStatusDisplay.BackColor = Color.FromArgb(213, 245, 227);
-                    lblStatusDisplay.ForeColor = Color.FromArgb(30, 132, 73);
-                    lblStatusInfo.Text         = "✅ Published";
+                    lblStatusInfo.Text = "✅ Published";
                     break;
                 case 4:
-                    lblStatusDisplay.Text      = "📦  Archived";
-                    lblStatusDisplay.BackColor = Color.FromArgb(236, 240, 241);
-                    lblStatusDisplay.ForeColor = Color.FromArgb(127, 140, 141);
-                    lblStatusInfo.Text         = "📦 Archived";
+                    lblStatusInfo.Text = "📦 Archived";
                     break;
                 default:
-                    lblStatusDisplay.Text      = "—";
-                    lblStatusDisplay.BackColor = Color.FromArgb(245, 247, 250);
-                    lblStatusDisplay.ForeColor = Color.FromArgb(74, 85, 104);
-                    lblStatusInfo.Text         = "—";
+                    lblStatusInfo.Text = "—";
                     break;
             }
         }
@@ -470,6 +501,122 @@ namespace CMS.Presentation.Modules.KMS
                 webEditor.Document.Body.InnerHtml = _pendingHtml;
             UpdateEditorStatus();
             webEditor.Document.Body.KeyPress += (s, ev) => UpdateEditorStatus();
+            
+            // Attach link click handler to open links in external browser
+            webEditor.Document.Click += WebEditor_Document_Click;
+        }
+
+        private void WebEditor_Document_Click(object sender, HtmlElementEventArgs e)
+        {
+            if (webEditor.Document == null) return;
+            
+            var element = webEditor.Document.GetElementFromPoint(e.ClientMousePosition);
+            if (element == null) return;
+            
+            // Check if clicked element or its parent is a link
+            while (element != null)
+            {
+                if (element.TagName != null && element.TagName.ToUpper() == "A")
+                {
+                    string href = element.GetAttribute("href");
+                    if (!string.IsNullOrEmpty(href) && (href.StartsWith("http://") || href.StartsWith("https://")))
+                    {
+                        e.ReturnValue = false; // Prevent default navigation
+                        try
+                        {
+                            System.Diagnostics.Process.Start(href);
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowError("ไม่สามารถเปิดลิงก์ได้:\n" + ex.Message);
+                        }
+                    }
+                    break;
+                }
+                element = element.Parent;
+            }
+        }
+
+        // ── Tag Chip Management ──────────────────────────────────────────────
+
+        private void CboStatus_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboStatus.SelectedIndex < 0) return;
+            byte status = (byte)(cboStatus.SelectedIndex + 1);
+            _currentStatus = status;
+            SetStatusDisplay(status);
+        }
+
+        private void TxtTagInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Oemcomma)
+            {
+                e.SuppressKeyPress = true;
+                AddTagChip(txtTagInput.Text.Trim());
+                txtTagInput.Text = string.Empty;
+            }
+            else if (e.KeyCode == Keys.Back && string.IsNullOrEmpty(txtTagInput.Text))
+            {
+                // Remove last chip on backspace
+                if (flpTags.Controls.Count > 1)
+                {
+                    flpTags.Controls.RemoveAt(flpTags.Controls.Count - 2);
+                }
+            }
+        }
+
+        private void AddTagChip(string tag)
+        {
+            if (string.IsNullOrWhiteSpace(tag)) return;
+            
+            // Remove comma if present
+            tag = tag.TrimEnd(',');
+            if (string.IsNullOrWhiteSpace(tag)) return;
+            
+            // Create chip panel
+            var chip = new Panel
+            {
+                AutoSize = true,
+                Height = 22,
+                Margin = new Padding(2),
+                Padding = new Padding(6, 2, 2, 2),
+                BackColor = Color.FromArgb(214, 234, 248),
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            
+            var lblTag = new Label
+            {
+                Text = tag,
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5f),
+                ForeColor = Color.FromArgb(26, 82, 118),
+                Padding = new Padding(0, 2, 4, 0)
+            };
+            
+            var btnRemove = new Button
+            {
+                Text = "×",
+                Size = new Size(16, 16),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(26, 82, 118),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            btnRemove.FlatAppearance.BorderSize = 0;
+            btnRemove.Click += (s, ev) => flpTags.Controls.Remove(chip);
+            
+            chip.Controls.Add(lblTag);
+            chip.Controls.Add(btnRemove);
+            lblTag.Location = new Point(6, 2);
+            btnRemove.Location = new Point(lblTag.Right + 2, 2);
+            chip.Width = lblTag.Width + btnRemove.Width + 12;
+            
+            // Insert before the input textbox
+            int inputIndex = flpTags.Controls.IndexOf(txtTagInput);
+            flpTags.Controls.Add(chip);
+            flpTags.Controls.SetChildIndex(chip, inputIndex);
         }
 
         private void UpdateEditorStatus()
@@ -611,6 +758,397 @@ namespace CMS.Presentation.Modules.KMS
                 "catch(e){}}" +
                 "</script>" +
                 "</head><body contenteditable='true' style='outline:none;'></body></html>";
+        }
+
+        // ── Tab Mapping Toolbars ─────────────────────────────────────────────
+
+        private Panel CreateAttachToolbar()
+        {
+            var toolbar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                BackColor = Color.FromArgb(245, 247, 250)
+            };
+            
+            var btnUpload = new Button
+            {
+                Location = new Point(8, 6),
+                Size = new Size(120, 24),
+                Text = "📤 อัพโหลดไฟล์",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(46, 116, 181),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnUpload.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
+            btnUpload.Click += BtnUploadAttachment_Click;
+            
+            var btnRemove = new Button
+            {
+                Location = new Point(136, 6),
+                Size = new Size(100, 24),
+                Text = "🗑️ ลบไฟล์",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(231, 76, 60),
+                Cursor = Cursors.Hand
+            };
+            btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
+            btnRemove.Click += BtnRemoveAttachment_Click;
+            
+            toolbar.Controls.Add(btnUpload);
+            toolbar.Controls.Add(btnRemove);
+            
+            return toolbar;
+        }
+
+        private Panel CreateRelatedToolbar()
+        {
+            var toolbar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                BackColor = Color.FromArgb(245, 247, 250)
+            };
+            
+            var btnAdd = new Button
+            {
+                Location = new Point(8, 6),
+                Size = new Size(160, 24),
+                Text = "➕ เพิ่มความรู้ที่เกี่ยวข้อง",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(46, 116, 181),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnAdd.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
+            btnAdd.Click += BtnAddRelated_Click;
+            
+            var btnRemove = new Button
+            {
+                Location = new Point(176, 6),
+                Size = new Size(80, 24),
+                Text = "🗑️ ลบ",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(231, 76, 60),
+                Cursor = Cursors.Hand
+            };
+            btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
+            btnRemove.Click += BtnRemoveRelated_Click;
+            
+            toolbar.Controls.Add(btnAdd);
+            toolbar.Controls.Add(btnRemove);
+            
+            return toolbar;
+        }
+
+        private Panel CreateWorkflowToolbar()
+        {
+            var toolbar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                BackColor = Color.FromArgb(245, 247, 250)
+            };
+            
+            var btnAdd = new Button
+            {
+                Location = new Point(8, 6),
+                Size = new Size(120, 24),
+                Text = "➕ เพิ่ม Workflow",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(46, 116, 181),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnAdd.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
+            btnAdd.Click += BtnAddWorkflow_Click;
+            
+            var btnRemove = new Button
+            {
+                Location = new Point(136, 6),
+                Size = new Size(80, 24),
+                Text = "🗑️ ลบ",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(231, 76, 60),
+                Cursor = Cursors.Hand
+            };
+            btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
+            btnRemove.Click += BtnRemoveWorkflow_Click;
+            
+            toolbar.Controls.Add(btnAdd);
+            toolbar.Controls.Add(btnRemove);
+            
+            return toolbar;
+        }
+
+        private Panel CreateProgramsToolbar()
+        {
+            var toolbar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                BackColor = Color.FromArgb(245, 247, 250)
+            };
+            
+            var btnAdd = new Button
+            {
+                Location = new Point(8, 6),
+                Size = new Size(120, 24),
+                Text = "➕ เพิ่มโปรแกรม",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(46, 116, 181),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnAdd.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
+            btnAdd.Click += BtnAddProgram_Click;
+            
+            var btnRemove = new Button
+            {
+                Location = new Point(136, 6),
+                Size = new Size(80, 24),
+                Text = "🗑️ ลบ",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(231, 76, 60),
+                Cursor = Cursors.Hand
+            };
+            btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
+            btnRemove.Click += BtnRemoveProgram_Click;
+            
+            toolbar.Controls.Add(btnAdd);
+            toolbar.Controls.Add(btnRemove);
+            
+            return toolbar;
+        }
+
+        private Panel CreateDocsToolbar()
+        {
+            var toolbar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                BackColor = Color.FromArgb(245, 247, 250)
+            };
+            
+            var btnAdd = new Button
+            {
+                Location = new Point(8, 6),
+                Size = new Size(120, 24),
+                Text = "➕ เพิ่มเอกสาร",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(46, 116, 181),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnAdd.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
+            btnAdd.Click += BtnAddDoc_Click;
+            
+            var btnRemove = new Button
+            {
+                Location = new Point(136, 6),
+                Size = new Size(80, 24),
+                Text = "🗑️ ลบ",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(231, 76, 60),
+                Cursor = Cursors.Hand
+            };
+            btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
+            btnRemove.Click += BtnRemoveDoc_Click;
+            
+            toolbar.Controls.Add(btnAdd);
+            toolbar.Controls.Add(btnRemove);
+            
+            return toolbar;
+        }
+
+        // ── Tab Mapping Event Handlers ───────────────────────────────────────
+
+        private void BtnUploadAttachment_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Title = "เลือกไฟล์ที่ต้องการแนบ";
+                ofd.Filter = "All Files (*.*)|*.*";
+                ofd.Multiselect = true;
+                
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    foreach (var file in ofd.FileNames)
+                    {
+                        var fi = new System.IO.FileInfo(file);
+                        var item = new ListViewItem(fi.Name);
+                        item.SubItems.Add(FormatFileSize(fi.Length));
+                        item.SubItems.Add(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+                        item.Tag = file;
+                        lstAttach.Items.Add(item);
+                    }
+                    
+                    ShowInfo(string.Format("เพิ่มไฟล์แนบ {0} ไฟล์เรียบร้อยแล้ว", ofd.FileNames.Length));
+                }
+            }
+        }
+
+        private void BtnRemoveAttachment_Click(object sender, EventArgs e)
+        {
+            if (lstAttach.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกไฟล์ที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบไฟล์ที่เลือก {0} ไฟล์ ใช่หรือไม่?", lstAttach.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstAttach.SelectedItems.Count > 0)
+                {
+                    lstAttach.Items.Remove(lstAttach.SelectedItems[0]);
+                }
+                ShowInfo("ลบไฟล์เรียบร้อยแล้ว");
+            }
+        }
+
+        private void BtnAddRelated_Click(object sender, EventArgs e)
+        {
+            // TODO: Open article selection dialog
+            ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือกบทความที่เกี่ยวข้อง\n\nสามารถเพิ่มการเชื่อมโยงไปยังบทความอื่นๆ ในระบบ");
+        }
+
+        private void BtnRemoveRelated_Click(object sender, EventArgs e)
+        {
+            if (lstRelated.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกรายการที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบความรู้ที่เกี่ยวข้อง {0} รายการ ใช่หรือไม่?", lstRelated.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstRelated.SelectedItems.Count > 0)
+                {
+                    lstRelated.Items.Remove(lstRelated.SelectedItems[0]);
+                }
+                ShowInfo("ลบรายการเรียบร้อยแล้ว");
+            }
+        }
+
+        private void BtnAddWorkflow_Click(object sender, EventArgs e)
+        {
+            // TODO: Open workflow selection dialog
+            ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือก Workflow\n\nสามารถเชื่อมโยงบทความกับเส้นงาน (Workflow) ที่เกี่ยวข้อง");
+        }
+
+        private void BtnRemoveWorkflow_Click(object sender, EventArgs e)
+        {
+            if (lstWorkflow.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกรายการที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบ Workflow {0} รายการ ใช่หรือไม่?", lstWorkflow.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstWorkflow.SelectedItems.Count > 0)
+                {
+                    lstWorkflow.Items.Remove(lstWorkflow.SelectedItems[0]);
+                }
+                ShowInfo("ลบรายการเรียบร้อยแล้ว");
+            }
+        }
+
+        private void BtnAddProgram_Click(object sender, EventArgs e)
+        {
+            // TODO: Open program selection dialog
+            ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือกโปรแกรม\n\nสามารถเชื่อมโยงบทความกับโปรแกรมที่เกี่ยวข้อง");
+        }
+
+        private void BtnRemoveProgram_Click(object sender, EventArgs e)
+        {
+            if (lstPrograms.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกรายการที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบโปรแกรม {0} รายการ ใช่หรือไม่?", lstPrograms.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstPrograms.SelectedItems.Count > 0)
+                {
+                    lstPrograms.Items.Remove(lstPrograms.SelectedItems[0]);
+                }
+                ShowInfo("ลบรายการเรียบร้อยแล้ว");
+            }
+        }
+
+        private void BtnAddDoc_Click(object sender, EventArgs e)
+        {
+            // TODO: Open document selection dialog (from DMS)
+            ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือกเอกสารจากระบบ DMS\n\nสามารถเชื่อมโยงบทความกับเอกสารในระบบจัดการเอกสาร");
+        }
+
+        private void BtnRemoveDoc_Click(object sender, EventArgs e)
+        {
+            if (lstDocs.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกรายการที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบเอกสาร {0} รายการ ใช่หรือไม่?", lstDocs.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstDocs.SelectedItems.Count > 0)
+                {
+                    lstDocs.Items.Remove(lstDocs.SelectedItems[0]);
+                }
+                ShowInfo("ลบรายการเรียบร้อยแล้ว");
+            }
+        }
+
+        private string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return string.Format("{0:0.##} {1}", len, sizes[order]);
         }
 
         // ── Helper Classes ───────────────────────────────────────────────────

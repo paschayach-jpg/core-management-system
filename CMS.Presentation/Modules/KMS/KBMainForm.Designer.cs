@@ -14,6 +14,7 @@ namespace CMS.Presentation.Modules.KMS
         private void InitializeComponent()
         {
             this.pnlHeader = new System.Windows.Forms.Panel();
+            this.btnDashboard = new System.Windows.Forms.Button();
             this.btnSettings = new System.Windows.Forms.Button();
             this.lblTitle = new System.Windows.Forms.Label();
             this.pnlViewerHost = new System.Windows.Forms.Panel();
@@ -75,6 +76,7 @@ namespace CMS.Presentation.Modules.KMS
             // pnlHeader
             // 
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.pnlHeader.Controls.Add(this.btnDashboard);
             this.pnlHeader.Controls.Add(this.btnSettings);
             this.pnlHeader.Controls.Add(this.lblTitle);
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
@@ -82,6 +84,24 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlHeader.Name = "pnlHeader";
             this.pnlHeader.Size = new System.Drawing.Size(1100, 32);
             this.pnlHeader.TabIndex = 1;
+            // 
+            // btnDashboard
+            // 
+            this.btnDashboard.BackColor = System.Drawing.Color.Transparent;
+            this.btnDashboard.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnDashboard.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnDashboard.FlatAppearance.BorderSize = 0;
+            this.btnDashboard.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(74)))), ((int)(((byte)(111)))));
+            this.btnDashboard.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDashboard.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnDashboard.ForeColor = System.Drawing.Color.White;
+            this.btnDashboard.Location = new System.Drawing.Point(841, 0);
+            this.btnDashboard.Name = "btnDashboard";
+            this.btnDashboard.Size = new System.Drawing.Size(169, 32);
+            this.btnDashboard.TabIndex = 1;
+            this.btnDashboard.Text = "📊 Dashboard";
+            this.btnDashboard.UseVisualStyleBackColor = false;
+            this.btnDashboard.Click += new System.EventHandler(this.BtnDashboard_Click);
             // 
             // btnSettings
             // 
@@ -688,6 +708,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private System.Windows.Forms.Panel           pnlHeader;
         private System.Windows.Forms.Label           lblTitle;
+        private System.Windows.Forms.Button          btnDashboard;
         private System.Windows.Forms.Button          btnSettings;
         private System.Windows.Forms.SplitContainer  splitMain;
         private System.Windows.Forms.Panel           pnlViewerHost;    // created in KBMainForm.cs constructor

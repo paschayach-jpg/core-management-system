@@ -37,6 +37,8 @@ namespace CMS.Presentation.Modules.KMS
         private Func<KBCategoryForm> _categoryFormFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBImportWizardForm. Returns DialogResult.</summary>
         private Func<DialogResult> _importWizardFactory;
+        /// <summary>Creates, wires, and shows a pre-wired KBDashboardForm. Returns DialogResult.</summary>
+        private Func<DialogResult> _dashboardFactory;
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
 
@@ -103,6 +105,15 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachImportWizardFactory(Func<DialogResult> factory)
         {
             _importWizardFactory = factory;
+        }
+
+        /// <summary>
+        /// Inject the factory used to create and show the KB Dashboard with its
+        /// pre-wired presenter. Must be called before the form is shown.
+        /// </summary>
+        public void AttachDashboardFactory(Func<DialogResult> factory)
+        {
+            _dashboardFactory = factory;
         }
 
         // ── Form events ──────────────────────────────────────────────────────────
@@ -213,6 +224,13 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             ShowCategorySettings();
+        }
+
+        private void BtnDashboard_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            if (_dashboardFactory == null) return;
+            _dashboardFactory();
         }
 
         private void BtnImportExcel_Click(object sender, EventArgs e)

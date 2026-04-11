@@ -29,9 +29,6 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         public event EventHandler BackRequested;
 
-        /// <summary>Backing store for CategoryCode (not shown in UI but required by interface).</summary>
-        private string _categoryCodeValue = string.Empty;
-
         public KBCategoryForm(UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");
@@ -106,24 +103,45 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnNewRoot_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            _presenter.Initialize();
+            
+            // Clear the form for new entry
             _view_ClearForm();
-            cboParent.SelectedIndex = 0;   // ensure Root is selected
+            
+            // Ensure Root is selected (index 0 = no parent)
+            cboParent.SelectedIndex = 0;
+            
+            lblEditCardHeader.Text = "  ✏️ เพิ่มหมวดหมู่หลัก";
+            txtName.Focus();
         }
 
         private void BtnNewSub_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            _presenter.Initialize();
-            _view_ClearForm();
-            // Pre-select the currently highlighted tree node as parent
+            
+            // Store the selected category before clearing
             var selected = treeCategories.SelectedNode;
+            KBCategory selectedCat = null;
             if (selected != null)
             {
-                var cat = selected.Tag as KBCategory;
-                if (cat != null)
-                    SelectParentInCombo(cat.CategoryID);
+                selectedCat = selected.Tag as KBCategory;
             }
+            
+            // Clear the form for new entry
+            _view_ClearForm();
+            
+            // Pre-select the previously highlighted tree node as parent
+            if (selectedCat != null)
+            {
+                SelectParentInCombo(selectedCat.CategoryID);
+            }
+            else if (cboParent.Items.Count > 1)
+            {
+                // If no node was selected, select the first available category as parent
+                cboParent.SelectedIndex = 1;
+            }
+            
+            lblEditCardHeader.Text = "  ✏️ เพิ่มหมวดหมู่ย่อย";
+            txtName.Focus();
         }
 
         private void BtnClear_Click(object sender, EventArgs e) { treeCategories.SelectedNode = null; _view_ClearForm(); }
@@ -159,6 +177,8 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TxtDescription_TextChanged(object sender, EventArgs e) { MarkDirty(); }
 
+        private void TxtCategoryCode_TextChanged(object sender, EventArgs e) { MarkDirty(); }
+
         private void NumSortOrder_ValueChanged(object sender, EventArgs e) { MarkDirty(); }
 
         private void CboParent_SelectedIndexChanged(object sender, EventArgs e) { MarkDirty(); }
@@ -182,13 +202,12 @@ namespace CMS.Presentation.Modules.KMS
         // ── IKBCategoryController ─────────────────────────────────────────────
 
         /// <summary>
-        /// CategoryCode is not displayed in the redesigned form but is required
-        /// by IKBCategoryController. Stored internally.
+        /// CategoryCode is now displayed in txtCategoryCode.
         /// </summary>
         public string CategoryCode
         {
-            get { return _categoryCodeValue; }
-            set { _categoryCodeValue = value ?? string.Empty; }
+            get { return txtCategoryCode.Text.Trim(); }
+            set { txtCategoryCode.Text = value ?? string.Empty; }
         }
 
         public string CategoryName
@@ -288,9 +307,9 @@ namespace CMS.Presentation.Modules.KMS
         private void _view_ClearForm()
         {
             EditingId              = null;
-            _categoryCodeValue     = string.Empty;
             lblEditCardHeader.Text = "  ✏️ เพิ่ม Category ใหม่";
             txtName.Text           = string.Empty;
+            txtCategoryCode.Text   = string.Empty;
             if (cboIcon.Items.Count > 0)
                 cboIcon.SelectedIndex = 0;
             txtDescription.Text    = string.Empty;
@@ -301,7 +320,15 @@ namespace CMS.Presentation.Modules.KMS
             treeCategories.SelectedNode = null;
             ClearDirty();
             ClearDetailPanel();
+            
+            // Refresh parent combo to show all available categories
             RefreshParentCombo();
+            
+            // Default to Root (no parent) for new categories
+            // This will be overridden by BtnNewSub_Click if creating a subcategory
+            if (cboParent.Items.Count > 0)
+                cboParent.SelectedIndex = 0;
+            
             txtName.Focus();
         }
 
@@ -377,16 +404,35 @@ namespace CMS.Presentation.Modules.KMS
 
         private void RefreshParentCombo()
         {
+            // Store the currently selected parent ID before refreshing
+            int? currentSelection = GetSelectedParentId();
+            
             cboParent.Items.Clear();
             cboParent.Items.Add(new ComboItem("— ไม่มี (หมวดหมู่หลัก / Root) —", null));
-            foreach (var c in _categories.Where(x => x.IsActive))
+            
+            // Add all active categories as potential parents
+            foreach (var c in _categories.Where(x => x.IsActive).OrderBy(x => x.SortOrder).ThenBy(x => x.CategoryName))
             {
-                if (EditingId.HasValue && c.CategoryID == EditingId.Value) continue;
+                // Prevent a category from being its own parent
+                if (EditingId.HasValue && c.CategoryID == EditingId.Value) 
+                    continue;
+                
+                // Show hierarchy in the combo box
+                string prefix = c.ParentCategoryID.HasValue ? "    └─ " : "";
                 cboParent.Items.Add(new ComboItem(
-                    string.Format("[{0}] {1}", c.CategoryCode, c.CategoryName),
+                    string.Format("{0}{1} {2}", prefix, c.Icon ?? "📁", c.CategoryName),
                     c.CategoryID));
             }
-            cboParent.SelectedIndex = 0;
+            
+            // Restore previous selection if it still exists
+            if (currentSelection.HasValue)
+            {
+                SelectParentInCombo(currentSelection);
+            }
+            else
+            {
+                cboParent.SelectedIndex = 0;
+            }
         }
 
         private void SelectParentInCombo(int? parentId)
@@ -439,7 +485,7 @@ namespace CMS.Presentation.Modules.KMS
         private void UpdateIconPreview()
         {
             string emoji = GetIconEmoji();
-            lblIconPreview.Text = string.IsNullOrEmpty(emoji) ? "❓" : emoji;
+            //lblIconPreview.Text = string.IsNullOrEmpty(emoji) ? "❓" : emoji;
             UpdateIconFullPreview();
         }
 

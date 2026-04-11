@@ -116,7 +116,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblVerLabel = new System.Windows.Forms.Label();
             this.txtCode = new System.Windows.Forms.TextBox();
             this.cboType = new System.Windows.Forms.ComboBox();
-            this.lblStatusDisplay = new System.Windows.Forms.Label();
+            this.cboStatus = new System.Windows.Forms.ComboBox();
             this.lblCurVersion = new System.Windows.Forms.Label();
             this.lblTitle = new System.Windows.Forms.Label();
             this.lblCategory = new System.Windows.Forms.Label();
@@ -124,7 +124,8 @@ namespace CMS.Presentation.Modules.KMS
             this.cboCategory = new System.Windows.Forms.ComboBox();
             this.lblTags = new System.Windows.Forms.Label();
             this.lblExpiry = new System.Windows.Forms.Label();
-            this.txtTags = new System.Windows.Forms.TextBox();
+            this.flpTags = new System.Windows.Forms.FlowLayoutPanel();
+            this.txtTagInput = new System.Windows.Forms.TextBox();
             this.pnlExpiry = new System.Windows.Forms.Panel();
             this.chkNoExpiry = new System.Windows.Forms.CheckBox();
             this.dtpExpiry = new System.Windows.Forms.DateTimePicker();
@@ -154,6 +155,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContentHeader.SuspendLayout();
             this.pnlGenInfoOuter.SuspendLayout();
             this.tlpGenInfo.SuspendLayout();
+            this.flpTags.SuspendLayout();
             this.pnlExpiry.SuspendLayout();
             this.pnlGenInfoHeader.SuspendLayout();
             this.SuspendLayout();
@@ -770,16 +772,16 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContentOuter.Name = "pnlContentOuter";
             this.pnlContentOuter.Size = new System.Drawing.Size(1388, 316);
             this.pnlContentOuter.TabIndex = 12;
-            //
+            // 
             // webEditor
-            //
+            // 
             this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.webEditor.IsWebBrowserContextMenuEnabled = false;
-            this.webEditor.Location = new System.Drawing.Point(0, 151);
+            this.webEditor.Location = new System.Drawing.Point(0, 152);
             this.webEditor.MinimumSize = new System.Drawing.Size(20, 20);
             this.webEditor.Name = "webEditor";
             this.webEditor.ScriptErrorsSuppressed = true;
-            this.webEditor.Size = new System.Drawing.Size(1386, 141);
+            this.webEditor.Size = new System.Drawing.Size(1386, 140);
             this.webEditor.TabIndex = 5;
             this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
             // 
@@ -811,7 +813,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblContent.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblContent.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lblContent.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblContent.Location = new System.Drawing.Point(0, 129);
+            this.lblContent.Location = new System.Drawing.Point(0, 130);
             this.lblContent.Name = "lblContent";
             this.lblContent.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
             this.lblContent.Size = new System.Drawing.Size(1386, 22);
@@ -854,15 +856,60 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRte.Location = new System.Drawing.Point(0, 102);
             this.tsRte.Name = "tsRte";
             this.tsRte.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.tsRte.Size = new System.Drawing.Size(1386, 27);
+            this.tsRte.Size = new System.Drawing.Size(1386, 28);
             this.tsRte.TabIndex = 2;
+            // 
+            // tsRteFontFamily
+            // 
+            this.tsRteFontFamily.AutoSize = false;
+            this.tsRteFontFamily.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.tsRteFontFamily.Items.AddRange(new object[] {
+            "Segoe UI",
+            "Arial",
+            "Tahoma",
+            "Times New Roman",
+            "Calibri",
+            "Consolas",
+            "Courier New",
+            "Georgia"});
+            this.tsRteFontFamily.Name = "tsRteFontFamily";
+            this.tsRteFontFamily.Size = new System.Drawing.Size(130, 28);
+            this.tsRteFontFamily.ToolTipText = "Font Family";
+            this.tsRteFontFamily.SelectedIndexChanged += new System.EventHandler(this.TsRteFontFamily_SelectedIndexChanged);
+            // 
+            // tsRteSep0
+            // 
+            this.tsRteSep0.Name = "tsRteSep0";
+            this.tsRteSep0.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteFontSize
+            // 
+            this.tsRteFontSize.AutoSize = false;
+            this.tsRteFontSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.tsRteFontSize.Items.AddRange(new object[] {
+            "8pt",
+            "10pt",
+            "12pt",
+            "14pt",
+            "18pt",
+            "24pt",
+            "36pt"});
+            this.tsRteFontSize.Name = "tsRteFontSize";
+            this.tsRteFontSize.Size = new System.Drawing.Size(70, 28);
+            this.tsRteFontSize.ToolTipText = "Font Size";
+            this.tsRteFontSize.SelectedIndexChanged += new System.EventHandler(this.TsRteFontSize_SelectedIndexChanged);
+            // 
+            // tsRteSep1
+            // 
+            this.tsRteSep1.Name = "tsRteSep1";
+            this.tsRteSep1.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteBold
             // 
             this.tsRteBold.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteBold.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.tsRteBold.Name = "tsRteBold";
-            this.tsRteBold.Size = new System.Drawing.Size(29, 24);
+            this.tsRteBold.Size = new System.Drawing.Size(29, 25);
             this.tsRteBold.Text = "B";
             this.tsRteBold.ToolTipText = "Bold (Ctrl+B)";
             this.tsRteBold.Click += new System.EventHandler(this.TsRteBold_Click);
@@ -872,7 +919,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteItalic.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteItalic.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
             this.tsRteItalic.Name = "tsRteItalic";
-            this.tsRteItalic.Size = new System.Drawing.Size(29, 24);
+            this.tsRteItalic.Size = new System.Drawing.Size(29, 25);
             this.tsRteItalic.Text = "I";
             this.tsRteItalic.ToolTipText = "Italic (Ctrl+I)";
             this.tsRteItalic.Click += new System.EventHandler(this.TsRteItalic_Click);
@@ -882,22 +929,22 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteUnder.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteUnder.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Underline);
             this.tsRteUnder.Name = "tsRteUnder";
-            this.tsRteUnder.Size = new System.Drawing.Size(29, 24);
+            this.tsRteUnder.Size = new System.Drawing.Size(29, 25);
             this.tsRteUnder.Text = "U";
             this.tsRteUnder.ToolTipText = "Underline (Ctrl+U)";
             this.tsRteUnder.Click += new System.EventHandler(this.TsRteUnder_Click);
             // 
-            // tsRteSep1
+            // tsRteSep2
             // 
-            this.tsRteSep1.Name = "tsRteSep1";
-            this.tsRteSep1.Size = new System.Drawing.Size(6, 27);
+            this.tsRteSep2.Name = "tsRteSep2";
+            this.tsRteSep2.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteH1
             // 
             this.tsRteH1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteH1.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.tsRteH1.Name = "tsRteH1";
-            this.tsRteH1.Size = new System.Drawing.Size(33, 24);
+            this.tsRteH1.Size = new System.Drawing.Size(33, 25);
             this.tsRteH1.Text = "H1";
             this.tsRteH1.ToolTipText = "หัวข้อหลัก (Heading 1)";
             this.tsRteH1.Click += new System.EventHandler(this.TsRteH1_Click);
@@ -907,7 +954,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteH2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteH2.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.tsRteH2.Name = "tsRteH2";
-            this.tsRteH2.Size = new System.Drawing.Size(33, 24);
+            this.tsRteH2.Size = new System.Drawing.Size(33, 25);
             this.tsRteH2.Text = "H2";
             this.tsRteH2.ToolTipText = "หัวข้อรอง (Heading 2)";
             this.tsRteH2.Click += new System.EventHandler(this.TsRteH2_Click);
@@ -917,21 +964,53 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteH3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteH3.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.tsRteH3.Name = "tsRteH3";
-            this.tsRteH3.Size = new System.Drawing.Size(33, 24);
+            this.tsRteH3.Size = new System.Drawing.Size(33, 25);
             this.tsRteH3.Text = "H3";
             this.tsRteH3.ToolTipText = "หัวข้อย่อย (Heading 3)";
             this.tsRteH3.Click += new System.EventHandler(this.TsRteH3_Click);
             // 
-            // tsRteSep2
+            // tsRteSep3
             // 
-            this.tsRteSep2.Name = "tsRteSep2";
-            this.tsRteSep2.Size = new System.Drawing.Size(6, 27);
+            this.tsRteSep3.Name = "tsRteSep3";
+            this.tsRteSep3.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteAlignLeft
+            // 
+            this.tsRteAlignLeft.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAlignLeft.Name = "tsRteAlignLeft";
+            this.tsRteAlignLeft.Size = new System.Drawing.Size(30, 25);
+            this.tsRteAlignLeft.Text = "≡L";
+            this.tsRteAlignLeft.ToolTipText = "ชิดซ้าย (Align Left)";
+            this.tsRteAlignLeft.Click += new System.EventHandler(this.TsRteAlignLeft_Click);
+            // 
+            // tsRteAlignCenter
+            // 
+            this.tsRteAlignCenter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAlignCenter.Name = "tsRteAlignCenter";
+            this.tsRteAlignCenter.Size = new System.Drawing.Size(32, 25);
+            this.tsRteAlignCenter.Text = "≡C";
+            this.tsRteAlignCenter.ToolTipText = "กึ่งกลาง (Align Center)";
+            this.tsRteAlignCenter.Click += new System.EventHandler(this.TsRteAlignCenter_Click);
+            // 
+            // tsRteAlignRight
+            // 
+            this.tsRteAlignRight.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAlignRight.Name = "tsRteAlignRight";
+            this.tsRteAlignRight.Size = new System.Drawing.Size(32, 25);
+            this.tsRteAlignRight.Text = "≡R";
+            this.tsRteAlignRight.ToolTipText = "ชิดขวา (Align Right)";
+            this.tsRteAlignRight.Click += new System.EventHandler(this.TsRteAlignRight_Click);
+            // 
+            // tsRteSep4
+            // 
+            this.tsRteSep4.Name = "tsRteSep4";
+            this.tsRteSep4.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteBullet
             // 
             this.tsRteBullet.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteBullet.Name = "tsRteBullet";
-            this.tsRteBullet.Size = new System.Drawing.Size(29, 24);
+            this.tsRteBullet.Size = new System.Drawing.Size(29, 25);
             this.tsRteBullet.Text = "•";
             this.tsRteBullet.ToolTipText = "รายการสัญลักษณ์ (Bullet List)";
             this.tsRteBullet.Click += new System.EventHandler(this.TsRteBullet_Click);
@@ -940,30 +1019,49 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteNumList.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteNumList.Name = "tsRteNumList";
-            this.tsRteNumList.Size = new System.Drawing.Size(29, 24);
+            this.tsRteNumList.Size = new System.Drawing.Size(29, 25);
             this.tsRteNumList.Text = "1.";
             this.tsRteNumList.ToolTipText = "รายการตัวเลข (Numbered List)";
             this.tsRteNumList.Click += new System.EventHandler(this.TsRteNumList_Click);
             // 
-            // tsRteSep3
+            // tsRteSep5
             // 
-            this.tsRteSep3.Name = "tsRteSep3";
-            this.tsRteSep3.Size = new System.Drawing.Size(6, 27);
+            this.tsRteSep5.Name = "tsRteSep5";
+            this.tsRteSep5.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteLink
             // 
             this.tsRteLink.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteLink.Name = "tsRteLink";
-            this.tsRteLink.Size = new System.Drawing.Size(34, 24);
+            this.tsRteLink.Size = new System.Drawing.Size(34, 25);
             this.tsRteLink.Text = "🔗";
             this.tsRteLink.ToolTipText = "แทรก Hyperlink";
             this.tsRteLink.Click += new System.EventHandler(this.TsRteLink_Click);
+            // 
+            // tsRteTable
+            // 
+            this.tsRteTable.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteTable.Name = "tsRteTable";
+            this.tsRteTable.Size = new System.Drawing.Size(29, 25);
+            this.tsRteTable.Text = "⊞";
+            this.tsRteTable.ToolTipText = "แทรกตาราง (Insert Table)";
+            this.tsRteTable.Click += new System.EventHandler(this.TsRteTable_Click);
+            // 
+            // tsRteCode
+            // 
+            this.tsRteCode.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteCode.Font = new System.Drawing.Font("Consolas", 8.5F, System.Drawing.FontStyle.Bold);
+            this.tsRteCode.Name = "tsRteCode";
+            this.tsRteCode.Size = new System.Drawing.Size(29, 25);
+            this.tsRteCode.Text = "<>";
+            this.tsRteCode.ToolTipText = "แทรก Code Block";
+            this.tsRteCode.Click += new System.EventHandler(this.TsRteCode_Click);
             // 
             // tsRteImage
             // 
             this.tsRteImage.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteImage.Name = "tsRteImage";
-            this.tsRteImage.Size = new System.Drawing.Size(34, 24);
+            this.tsRteImage.Size = new System.Drawing.Size(34, 25);
             this.tsRteImage.Text = "📷";
             this.tsRteImage.ToolTipText = "แทรกรูปภาพ";
             this.tsRteImage.Click += new System.EventHandler(this.TsRteImage_Click);
@@ -972,21 +1070,21 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteAttach.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteAttach.Name = "tsRteAttach";
-            this.tsRteAttach.Size = new System.Drawing.Size(29, 24);
+            this.tsRteAttach.Size = new System.Drawing.Size(29, 25);
             this.tsRteAttach.Text = "📎";
             this.tsRteAttach.ToolTipText = "แนบไฟล์";
             this.tsRteAttach.Click += new System.EventHandler(this.TsRteAttach_Click);
             // 
-            // tsRteSep4
+            // tsRteSep6
             // 
-            this.tsRteSep4.Name = "tsRteSep4";
-            this.tsRteSep4.Size = new System.Drawing.Size(6, 27);
+            this.tsRteSep6.Name = "tsRteSep6";
+            this.tsRteSep6.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteUndo
             // 
             this.tsRteUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteUndo.Name = "tsRteUndo";
-            this.tsRteUndo.Size = new System.Drawing.Size(29, 24);
+            this.tsRteUndo.Size = new System.Drawing.Size(29, 25);
             this.tsRteUndo.Text = "↶";
             this.tsRteUndo.ToolTipText = "Undo (Ctrl+Z)";
             this.tsRteUndo.Click += new System.EventHandler(this.TsRteUndo_Click);
@@ -995,95 +1093,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteRedo.Name = "tsRteRedo";
-            this.tsRteRedo.Size = new System.Drawing.Size(29, 24);
+            this.tsRteRedo.Size = new System.Drawing.Size(29, 25);
             this.tsRteRedo.Text = "↷";
             this.tsRteRedo.ToolTipText = "Redo (Ctrl+Y)";
             this.tsRteRedo.Click += new System.EventHandler(this.TsRteRedo_Click);
-            //
-            // tsRteFontFamily
-            //
-            this.tsRteFontFamily.AutoSize = false;
-            this.tsRteFontFamily.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.tsRteFontFamily.Items.AddRange(new object[] {
-                "Segoe UI", "Arial", "Tahoma", "Times New Roman", "Calibri", "Consolas", "Courier New", "Georgia"});
-            this.tsRteFontFamily.Name = "tsRteFontFamily";
-            this.tsRteFontFamily.Size = new System.Drawing.Size(130, 27);
-            this.tsRteFontFamily.Text = "Segoe UI";
-            this.tsRteFontFamily.ToolTipText = "Font Family";
-            this.tsRteFontFamily.SelectedIndexChanged += new System.EventHandler(this.TsRteFontFamily_SelectedIndexChanged);
-            //
-            // tsRteSep0
-            //
-            this.tsRteSep0.Name = "tsRteSep0";
-            this.tsRteSep0.Size = new System.Drawing.Size(6, 27);
-            //
-            // tsRteFontSize
-            //
-            this.tsRteFontSize.AutoSize = false;
-            this.tsRteFontSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.tsRteFontSize.Items.AddRange(new object[] { "8pt", "10pt", "12pt", "14pt", "18pt", "24pt", "36pt" });
-            this.tsRteFontSize.Name = "tsRteFontSize";
-            this.tsRteFontSize.Size = new System.Drawing.Size(70, 27);
-            this.tsRteFontSize.Text = "12pt";
-            this.tsRteFontSize.ToolTipText = "Font Size";
-            this.tsRteFontSize.SelectedIndexChanged += new System.EventHandler(this.TsRteFontSize_SelectedIndexChanged);
-            //
-            // tsRteAlignLeft
-            //
-            this.tsRteAlignLeft.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteAlignLeft.Name = "tsRteAlignLeft";
-            this.tsRteAlignLeft.Size = new System.Drawing.Size(29, 24);
-            this.tsRteAlignLeft.Text = "≡L";
-            this.tsRteAlignLeft.ToolTipText = "ชิดซ้าย (Align Left)";
-            this.tsRteAlignLeft.Click += new System.EventHandler(this.TsRteAlignLeft_Click);
-            //
-            // tsRteAlignCenter
-            //
-            this.tsRteAlignCenter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteAlignCenter.Name = "tsRteAlignCenter";
-            this.tsRteAlignCenter.Size = new System.Drawing.Size(29, 24);
-            this.tsRteAlignCenter.Text = "≡C";
-            this.tsRteAlignCenter.ToolTipText = "กึ่งกลาง (Align Center)";
-            this.tsRteAlignCenter.Click += new System.EventHandler(this.TsRteAlignCenter_Click);
-            //
-            // tsRteAlignRight
-            //
-            this.tsRteAlignRight.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteAlignRight.Name = "tsRteAlignRight";
-            this.tsRteAlignRight.Size = new System.Drawing.Size(29, 24);
-            this.tsRteAlignRight.Text = "≡R";
-            this.tsRteAlignRight.ToolTipText = "ชิดขวา (Align Right)";
-            this.tsRteAlignRight.Click += new System.EventHandler(this.TsRteAlignRight_Click);
-            //
-            // tsRteTable
-            //
-            this.tsRteTable.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteTable.Name = "tsRteTable";
-            this.tsRteTable.Size = new System.Drawing.Size(34, 24);
-            this.tsRteTable.Text = "⊞";
-            this.tsRteTable.ToolTipText = "แทรกตาราง (Insert Table)";
-            this.tsRteTable.Click += new System.EventHandler(this.TsRteTable_Click);
-            //
-            // tsRteCode
-            //
-            this.tsRteCode.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteCode.Font = new System.Drawing.Font("Consolas", 8.5F, System.Drawing.FontStyle.Bold);
-            this.tsRteCode.Name = "tsRteCode";
-            this.tsRteCode.Size = new System.Drawing.Size(34, 24);
-            this.tsRteCode.Text = "<>";
-            this.tsRteCode.ToolTipText = "แทรก Code Block";
-            this.tsRteCode.Click += new System.EventHandler(this.TsRteCode_Click);
-            //
-            // tsRteSep5
-            //
-            this.tsRteSep5.Name = "tsRteSep5";
-            this.tsRteSep5.Size = new System.Drawing.Size(6, 27);
-            //
-            // tsRteSep6
-            //
-            this.tsRteSep6.Name = "tsRteSep6";
-            this.tsRteSep6.Size = new System.Drawing.Size(6, 27);
-            //
+            // 
             // pnlSummaryArea
             // 
             this.pnlSummaryArea.BackColor = System.Drawing.Color.White;
@@ -1169,7 +1183,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tlpGenInfo.Controls.Add(this.lblVerLabel, 3, 0);
             this.tlpGenInfo.Controls.Add(this.txtCode, 0, 1);
             this.tlpGenInfo.Controls.Add(this.cboType, 1, 1);
-            this.tlpGenInfo.Controls.Add(this.lblStatusDisplay, 2, 1);
+            this.tlpGenInfo.Controls.Add(this.cboStatus, 2, 1);
             this.tlpGenInfo.Controls.Add(this.lblCurVersion, 3, 1);
             this.tlpGenInfo.Controls.Add(this.lblTitle, 0, 3);
             this.tlpGenInfo.Controls.Add(this.lblCategory, 3, 3);
@@ -1177,7 +1191,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tlpGenInfo.Controls.Add(this.cboCategory, 3, 4);
             this.tlpGenInfo.Controls.Add(this.lblTags, 0, 6);
             this.tlpGenInfo.Controls.Add(this.lblExpiry, 2, 6);
-            this.tlpGenInfo.Controls.Add(this.txtTags, 0, 7);
+            this.tlpGenInfo.Controls.Add(this.flpTags, 0, 7);
             this.tlpGenInfo.Controls.Add(this.pnlExpiry, 2, 7);
             this.tlpGenInfo.Controls.Add(this.chkOfficialPolicy, 0, 9);
             this.tlpGenInfo.Controls.Add(this.lblViewCount, 2, 9);
@@ -1272,19 +1286,23 @@ namespace CMS.Presentation.Modules.KMS
             this.cboType.Size = new System.Drawing.Size(337, 27);
             this.cboType.TabIndex = 11;
             // 
-            // lblStatusDisplay
+            // cboStatus
             // 
-            this.lblStatusDisplay.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(253)))), ((int)(((byte)(237)))), ((int)(((byte)(236)))));
-            this.lblStatusDisplay.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblStatusDisplay.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblStatusDisplay.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(146)))), ((int)(((byte)(43)))), ((int)(((byte)(33)))));
-            this.lblStatusDisplay.Location = new System.Drawing.Point(694, 26);
-            this.lblStatusDisplay.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblStatusDisplay.Name = "lblStatusDisplay";
-            this.lblStatusDisplay.Size = new System.Drawing.Size(337, 28);
-            this.lblStatusDisplay.TabIndex = 12;
-            this.lblStatusDisplay.Text = "📝 Draft";
-            this.lblStatusDisplay.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.cboStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboStatus.FormattingEnabled = true;
+            this.cboStatus.Items.AddRange(new object[] {
+            "📝 Draft",
+            "🔍 รอ Review",
+            "✅ Published",
+            "📦 Archived"});
+            this.cboStatus.Location = new System.Drawing.Point(694, 26);
+            this.cboStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.cboStatus.Name = "cboStatus";
+            this.cboStatus.Size = new System.Drawing.Size(337, 28);
+            this.cboStatus.TabIndex = 12;
+            this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboStatus_SelectedIndexChanged);
             // 
             // lblCurVersion
             // 
@@ -1374,16 +1392,30 @@ namespace CMS.Presentation.Modules.KMS
             this.lblExpiry.TabIndex = 31;
             this.lblExpiry.Text = "วันหมดอายุ (Review Due)";
             // 
-            // txtTags
+            // flpTags
             // 
-            this.tlpGenInfo.SetColumnSpan(this.txtTags, 2);
-            this.txtTags.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtTags.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.txtTags.Location = new System.Drawing.Point(12, 138);
-            this.txtTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.txtTags.Name = "txtTags";
-            this.txtTags.Size = new System.Drawing.Size(678, 26);
-            this.txtTags.TabIndex = 32;
+            this.flpTags.AutoSize = true;
+            this.flpTags.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.tlpGenInfo.SetColumnSpan(this.flpTags, 2);
+            this.flpTags.Controls.Add(this.txtTagInput);
+            this.flpTags.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpTags.Location = new System.Drawing.Point(12, 138);
+            this.flpTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.flpTags.MinimumSize = new System.Drawing.Size(678, 28);
+            this.flpTags.Name = "flpTags";
+            this.flpTags.Padding = new System.Windows.Forms.Padding(2);
+            this.flpTags.Size = new System.Drawing.Size(678, 28);
+            this.flpTags.TabIndex = 32;
+            // 
+            // txtTagInput
+            // 
+            this.txtTagInput.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.txtTagInput.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtTagInput.Location = new System.Drawing.Point(5, 5);
+            this.txtTagInput.Name = "txtTagInput";
+            this.txtTagInput.Size = new System.Drawing.Size(150, 20);
+            this.txtTagInput.TabIndex = 0;
+            this.txtTagInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtTagInput_KeyDown);
             // 
             // pnlExpiry
             // 
@@ -1525,6 +1557,8 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlGenInfoOuter.ResumeLayout(false);
             this.tlpGenInfo.ResumeLayout(false);
             this.tlpGenInfo.PerformLayout();
+            this.flpTags.ResumeLayout(false);
+            this.flpTags.PerformLayout();
             this.pnlExpiry.ResumeLayout(false);
             this.pnlExpiry.PerformLayout();
             this.pnlGenInfoHeader.ResumeLayout(false);
@@ -1570,7 +1604,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label       lblType;
         private System.Windows.Forms.ComboBox    cboType;
         private System.Windows.Forms.Label       lblStatus;
-        private System.Windows.Forms.Label       lblStatusDisplay;
+        private System.Windows.Forms.ComboBox    cboStatus;
         private System.Windows.Forms.Label       lblVerLabel;
         private System.Windows.Forms.Label       lblCurVersion;
         private System.Windows.Forms.Label       lblTitle;
@@ -1578,7 +1612,8 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label       lblCategory;
         private System.Windows.Forms.ComboBox    cboCategory;
         private System.Windows.Forms.Label       lblTags;
-        private System.Windows.Forms.TextBox     txtTags;
+        private System.Windows.Forms.FlowLayoutPanel flpTags;
+        private System.Windows.Forms.TextBox     txtTagInput;
         private System.Windows.Forms.Label       lblExpiry;
         private System.Windows.Forms.Panel       pnlExpiry;
         private System.Windows.Forms.DateTimePicker dtpExpiry;

@@ -56,6 +56,7 @@ namespace CMS.Presentation
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
+        private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
 
         // Notification inbox controls (built programmatically)
         private Panel    _notificationPanel;
@@ -150,7 +151,8 @@ namespace CMS.Presentation
             IAuthorityOrgLookupController authorityOrgLookupController = null,
             Data.Repositories.FolderRepository folderRepository = null,
             CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
-            CMS.Services.Interfaces.IKBArticleService  kbArticleService  = null)
+            CMS.Services.Interfaces.IKBArticleService  kbArticleService  = null,
+            CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
             if (auditService        == null) throw new ArgumentNullException("auditService");
@@ -190,6 +192,7 @@ namespace CMS.Presentation
             _authorityOrgLookupController = authorityOrgLookupController;
             _kbCategoryService = kbCategoryService;
             _kbArticleService  = kbArticleService;
+            _kbDashboardService = kbDashboardService;
 
             InitializeComponent();
             BuildFileDetailPanel();
@@ -1202,6 +1205,16 @@ namespace CMS.Presentation
                     wizard, _kbArticleService, _kbCategoryService, _currentUser);
                 wizard.AttachPresenter(wizardPresenter);
                 return wizard.ShowDialog(this);
+            });
+
+            // dashboardFactory — สร้าง KBDashboardForm พร้อม presenter
+            form.AttachDashboardFactory(() =>
+            {
+                var dashboard = new KBDashboardForm(_currentUser);
+                var dashboardPresenter = new KBDashboardController(
+                    dashboard, _kbDashboardService, _currentUser);
+                dashboard.AttachPresenter(dashboardPresenter);
+                return dashboard.ShowDialog(this);
             });
 
             OpenChildForm(form);

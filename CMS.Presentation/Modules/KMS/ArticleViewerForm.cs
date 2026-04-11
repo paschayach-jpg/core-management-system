@@ -162,7 +162,47 @@ namespace CMS.Presentation.Modules.KMS
                 SwitchToTab(btn);
         }
 
-        private void webContent_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e) { }
+        private void webContent_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+        {
+            // Attach click handler to intercept link clicks
+            if (webContent.Document != null)
+            {
+                webContent.Document.Click -= WebContent_Document_Click;
+                webContent.Document.Click += WebContent_Document_Click;
+            }
+        }
+
+        private void WebContent_Document_Click(object sender, HtmlElementEventArgs e)
+        {
+            // Check if the clicked element is an anchor tag
+            var element = webContent.Document.GetElementFromPoint(e.ClientMousePosition);
+            if (element == null) return;
+
+            // Walk up the DOM tree to find an anchor tag
+            while (element != null && element.TagName.ToLower() != "a")
+                element = element.Parent;
+
+            if (element == null || element.TagName.ToLower() != "a") return;
+
+            // Get the href attribute
+            string href = element.GetAttribute("href");
+            if (string.IsNullOrWhiteSpace(href)) return;
+
+            // Only handle external links (http:// or https://)
+            if (href.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                href.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                e.ReturnValue = false; // Cancel navigation in WebBrowser
+                try
+                {
+                    System.Diagnostics.Process.Start(href);
+                }
+                catch (Exception ex)
+                {
+                    ShowError("ไม่สามารถเปิดลิงก์ได้: " + ex.Message);
+                }
+            }
+        }
 
         // ── Private UI helpers ───────────────────────────────────────────────
 
