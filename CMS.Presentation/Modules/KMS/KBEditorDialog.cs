@@ -63,6 +63,25 @@ namespace CMS.Presentation.Modules.KMS
             tabPrograms.Controls.Add(CreateProgramsToolbar());
             tabDocs.Controls.Add(CreateDocsToolbar());
             
+            // Initialize tabPrograms - NEW IMPLEMENTATION (Mockup)
+            LoadLinkedPrograms();
+            
+            // Initialize tabWorkflow - NEW IMPLEMENTATION (Mockup)
+            LoadLinkedWorkflows();
+            
+            // Initialize tabAttach - NEW IMPLEMENTATION (Mockup)
+            LoadAttachedFiles();
+            
+            // Initialize tabDocs - NEW IMPLEMENTATION (Mockup)
+            LoadLinkedDocuments();
+            
+            // Initialize tabRelated - NEW IMPLEMENTATION
+            InitializeRelatedCategoryDropdown();
+            if (_presenter.EditingArticle != null)
+            {
+                LoadRelatedArticles();
+            }
+            
             _presenter.Initialize();
         }
 
@@ -424,22 +443,22 @@ namespace CMS.Presentation.Modules.KMS
 
         public System.Windows.Forms.ListView GetRelatedListView()
         {
-            return lstRelated;
+            return lstRelatedLinked;
         }
 
         public System.Windows.Forms.ListView GetWorkflowListView()
         {
-            return lstWorkflow;
+            return lstWorkflowLinked;
         }
 
         public System.Windows.Forms.ListView GetProgramsListView()
         {
-            return lstPrograms;
+            return lstProgramsLinked;
         }
 
         public System.Windows.Forms.ListView GetDocsListView()
         {
-            return lstDocs;
+            return lstDocsLinked;
         }
 
         // ── Private UI Helpers ───────────────────────────────────────────────
@@ -886,10 +905,25 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveAttachment_Click;
             
+            var btnLoadFromKB = new Button
+            {
+                Location = new Point(502, 6),
+                Size = new Size(150, 24),
+                Text = "📚 โหลดจาก KB",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(39, 174, 96),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnLoadFromKB.FlatAppearance.BorderColor = Color.FromArgb(30, 132, 73);
+            btnLoadFromKB.Click += BtnLoadAttachFromKB_Click;
+            
             toolbar.Controls.Add(_txtSearchAttach);
             toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnUpload);
             toolbar.Controls.Add(btnRemove);
+            toolbar.Controls.Add(btnLoadFromKB);
             
             lblPlaceholder.BringToFront();
             
@@ -947,9 +981,24 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveRelated_Click;
             
+            var btnLoadFromKB = new Button
+            {
+                Location = new Point(354, 6),
+                Size = new Size(150, 24),
+                Text = "📚 โหลดจาก KB",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(39, 174, 96),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnLoadFromKB.FlatAppearance.BorderColor = Color.FromArgb(30, 132, 73);
+            btnLoadFromKB.Click += BtnLoadRelatedFromKB_Click;
+            
             toolbar.Controls.Add(_txtSearchRelated);
             toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnRemove);
+            toolbar.Controls.Add(btnLoadFromKB);
             
             lblPlaceholder.BringToFront();
             
@@ -1007,9 +1056,24 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveWorkflow_Click;
             
+            var btnLoadFromKB = new Button
+            {
+                Location = new Point(354, 6),
+                Size = new Size(150, 24),
+                Text = "📚 โหลดจาก KB",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(39, 174, 96),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnLoadFromKB.FlatAppearance.BorderColor = Color.FromArgb(30, 132, 73);
+            btnLoadFromKB.Click += BtnLoadWorkflowFromKB_Click;
+            
             toolbar.Controls.Add(_txtSearchWorkflow);
             toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnRemove);
+            toolbar.Controls.Add(btnLoadFromKB);
             
             lblPlaceholder.BringToFront();
             
@@ -1067,9 +1131,24 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveProgram_Click;
             
+            var btnLoadFromKB = new Button
+            {
+                Location = new Point(354, 6),
+                Size = new Size(150, 24),
+                Text = "📚 โหลดจาก KB",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(39, 174, 96),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnLoadFromKB.FlatAppearance.BorderColor = Color.FromArgb(30, 132, 73);
+            btnLoadFromKB.Click += BtnLoadProgramsFromKB_Click;
+            
             toolbar.Controls.Add(_txtSearchPrograms);
             toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnRemove);
+            toolbar.Controls.Add(btnLoadFromKB);
             
             lblPlaceholder.BringToFront();
             
@@ -1127,9 +1206,24 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveDoc_Click;
             
+            var btnLoadFromKB = new Button
+            {
+                Location = new Point(354, 6),
+                Size = new Size(150, 24),
+                Text = "📚 โหลดจาก KB",
+                Font = new Font("Segoe UI", 9f),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(39, 174, 96),
+                ForeColor = Color.White,
+                Cursor = Cursors.Hand
+            };
+            btnLoadFromKB.FlatAppearance.BorderColor = Color.FromArgb(30, 132, 73);
+            btnLoadFromKB.Click += BtnLoadDocsFromKB_Click;
+            
             toolbar.Controls.Add(_txtSearchDocs);
             toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnRemove);
+            toolbar.Controls.Add(btnLoadFromKB);
             
             lblPlaceholder.BringToFront();
             
@@ -1140,85 +1234,74 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnUploadAttachment_Click(object sender, EventArgs e)
         {
-            using (var ofd = new OpenFileDialog())
-            {
-                ofd.Title = "เลือกไฟล์ที่ต้องการแนบ";
-                ofd.Filter = "All Files (*.*)|*.*";
-                ofd.Multiselect = true;
-                
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    foreach (var file in ofd.FileNames)
-                    {
-                        var fi = new System.IO.FileInfo(file);
-                        var item = new ListViewItem(fi.Name);
-                        item.SubItems.Add(FormatFileSize(fi.Length));
-                        item.SubItems.Add(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
-                        item.Tag = file;
-                        lstAttach.Items.Add(item);
-                    }
-                    
-                    ShowInfo(string.Format("เพิ่มไฟล์แนบ {0} ไฟล์เรียบร้อยแล้ว", ofd.FileNames.Length));
-                }
-            }
+            // OLD toolbar button - redirect to new implementation
+            BtnUploadFileNew_Click(sender, e);
+        }
+
+        private void BtnLoadAttachFromKB_Click(object sender, EventArgs e)
+        {
+            // OLD toolbar button - deprecated
+            // This functionality is now handled by the new two-section design
+            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'อัพโหลดไฟล์' หรือ 'เลือกจาก DMS' แทน");
         }
 
         private void BtnRemoveAttachment_Click(object sender, EventArgs e)
         {
-            if (lstAttach.SelectedItems.Count == 0)
-            {
-                ShowInfo("กรุณาเลือกไฟล์ที่ต้องการลบ");
-                return;
-            }
-            
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการลบไฟล์ที่เลือก {0} ไฟล์ ใช่หรือไม่?", lstAttach.SelectedItems.Count),
-                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            
-            if (confirm == DialogResult.Yes)
-            {
-                while (lstAttach.SelectedItems.Count > 0)
-                {
-                    lstAttach.Items.Remove(lstAttach.SelectedItems[0]);
-                }
-                
-                // Refresh search list so removed items may reappear
-                PerformAttachSearch();
-                
-                ShowInfo("ลบไฟล์เรียบร้อยแล้ว");
-            }
+            // OLD toolbar button - redirect to new implementation
+            BtnRemoveAttachNew_Click(sender, e);
         }
 
         private void BtnAddRelated_Click(object sender, EventArgs e)
         {
-            // TODO: Open article selection dialog
-            ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือกบทความที่เกี่ยวข้อง\n\nสามารถเพิ่มการเชื่อมโยงไปยังบทความอื่นๆ ในระบบ");
+            // OLD toolbar button - deprecated
+            // This functionality is now handled by the new two-section design with search
+            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ช่องค้นหาและฟิลเตอร์ในแท็บ 'บทความที่เกี่ยวข้อง' แทน");
+        }
+
+        private void BtnLoadRelatedFromKB_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Load categories and articles from KB
+                var categories = _presenter.GetAllCategories();
+                var articles = _presenter.GetAllPublishedArticles();
+                
+                lstRelatedSearch.Items.Clear();
+                
+                // Exclude current article being edited
+                if (_presenter.EditingArticle != null)
+                    articles = articles.Where(a => a.ArticleID != _presenter.EditingArticle.ArticleID);
+                
+                // Exclude articles already in lstRelatedLinked (NEW control)
+                var existingIds = new HashSet<int>(
+                    lstRelatedLinked.Items.Cast<ListViewItem>()
+                        .Select(item => (int)item.Tag)
+                );
+                articles = articles.Where(a => !existingIds.Contains(a.ArticleID));
+                
+                // Populate search list with KB data
+                foreach (var article in articles.Take(50))
+                {
+                    var item = new ListViewItem(article.ArticleCode ?? "-");
+                    item.SubItems.Add(article.Title ?? "-");
+                    item.SubItems.Add(article.ArticleTypeName ?? "-");
+                    item.Tag = article.ArticleID;
+                    item.BackColor = Color.FromArgb(248, 250, 253);
+                    lstRelatedSearch.Items.Add(item);
+                }
+                
+                ShowInfo(string.Format("โหลดข้อมูลจาก KB เรียบร้อย ({0} รายการ)", lstRelatedSearch.Items.Count));
+            }
+            catch (Exception ex)
+            {
+                ShowError("โหลดข้อมูลจาก KB ไม่สำเร็จ: " + ex.Message);
+            }
         }
 
         private void BtnRemoveRelated_Click(object sender, EventArgs e)
         {
-            if (lstRelated.SelectedItems.Count == 0)
-            {
-                ShowInfo("กรุณาเลือกรายการที่ต้องการลบ");
-                return;
-            }
-            
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการลบความรู้ที่เกี่ยวข้อง {0} รายการ ใช่หรือไม่?", lstRelated.SelectedItems.Count),
-                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            
-            if (confirm == DialogResult.Yes)
-            {
-                while (lstRelated.SelectedItems.Count > 0)
-                {
-                    lstRelated.Items.Remove(lstRelated.SelectedItems[0]);
-                }
-                
-                // Refresh search list so removed items may reappear
-                PerformRelatedSearch();
-                
-                ShowInfo("ลบรายการเรียบร้อยแล้ว");
-            }
+            // This is the OLD toolbar button handler - redirects to new implementation
+            BtnRemoveRelatedNew_Click(sender, e);
         }
 
         private void BtnAddWorkflow_Click(object sender, EventArgs e)
@@ -1227,30 +1310,17 @@ namespace CMS.Presentation.Modules.KMS
             ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือก Workflow\n\nสามารถเชื่อมโยงบทความกับเส้นงาน (Workflow) ที่เกี่ยวข้อง");
         }
 
+        private void BtnLoadWorkflowFromKB_Click(object sender, EventArgs e)
+        {
+            // OLD toolbar button - deprecated (references non-existent lstSearchWorkflow control)
+            // This functionality is now handled by the new two-section design
+            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้การดับเบิลคลิกจากรายการ Workflow ที่มีอยู่แทน");
+        }
+
         private void BtnRemoveWorkflow_Click(object sender, EventArgs e)
         {
-            if (lstWorkflow.SelectedItems.Count == 0)
-            {
-                ShowInfo("กรุณาเลือกรายการที่ต้องการลบ");
-                return;
-            }
-            
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการลบ Workflow {0} รายการ ใช่หรือไม่?", lstWorkflow.SelectedItems.Count),
-                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            
-            if (confirm == DialogResult.Yes)
-            {
-                while (lstWorkflow.SelectedItems.Count > 0)
-                {
-                    lstWorkflow.Items.Remove(lstWorkflow.SelectedItems[0]);
-                }
-                
-                // Refresh search list so removed items may reappear
-                PerformWorkflowSearch();
-                
-                ShowInfo("ลบรายการเรียบร้อยแล้ว");
-            }
+            // OLD toolbar button - redirect to new implementation
+            BtnRemoveWorkflowNew_Click(sender, e);
         }
 
         private void BtnAddProgram_Click(object sender, EventArgs e)
@@ -1259,30 +1329,17 @@ namespace CMS.Presentation.Modules.KMS
             ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือกโปรแกรม\n\nสามารถเชื่อมโยงบทความกับโปรแกรมที่เกี่ยวข้อง");
         }
 
+        private void BtnLoadProgramsFromKB_Click(object sender, EventArgs e)
+        {
+            // OLD toolbar button - deprecated (references non-existent lstSearchPrograms control)
+            // This functionality is now handled by the new two-section design
+            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้การดับเบิลคลิกจากรายการโปรแกรมที่มีอยู่แทน");
+        }
+
         private void BtnRemoveProgram_Click(object sender, EventArgs e)
         {
-            if (lstPrograms.SelectedItems.Count == 0)
-            {
-                ShowInfo("กรุณาเลือกรายการที่ต้องการลบ");
-                return;
-            }
-            
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการลบโปรแกรม {0} รายการ ใช่หรือไม่?", lstPrograms.SelectedItems.Count),
-                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            
-            if (confirm == DialogResult.Yes)
-            {
-                while (lstPrograms.SelectedItems.Count > 0)
-                {
-                    lstPrograms.Items.Remove(lstPrograms.SelectedItems[0]);
-                }
-                
-                // Refresh search list so removed items may reappear
-                PerformProgramsSearch();
-                
-                ShowInfo("ลบรายการเรียบร้อยแล้ว");
-            }
+            // OLD toolbar button - redirect to new implementation
+            BtnRemoveProgramNew_Click(sender, e);
         }
 
         private void BtnAddDoc_Click(object sender, EventArgs e)
@@ -1291,30 +1348,17 @@ namespace CMS.Presentation.Modules.KMS
             ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือกเอกสารจากระบบ DMS\n\nสามารถเชื่อมโยงบทความกับเอกสารในระบบจัดการเอกสาร");
         }
 
+        private void BtnLoadDocsFromKB_Click(object sender, EventArgs e)
+        {
+            // OLD toolbar button - deprecated (references non-existent lstSearchDocs control)
+            // This functionality is now handled by the new two-section design
+            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'อัพโหลดเอกสาร' หรือ 'เลือกจาก DMS' แทน");
+        }
+
         private void BtnRemoveDoc_Click(object sender, EventArgs e)
         {
-            if (lstDocs.SelectedItems.Count == 0)
-            {
-                ShowInfo("กรุณาเลือกรายการที่ต้องการลบ");
-                return;
-            }
-            
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการลบเอกสาร {0} รายการ ใช่หรือไม่?", lstDocs.SelectedItems.Count),
-                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            
-            if (confirm == DialogResult.Yes)
-            {
-                while (lstDocs.SelectedItems.Count > 0)
-                {
-                    lstDocs.Items.Remove(lstDocs.SelectedItems[0]);
-                }
-                
-                // Refresh search list so removed items may reappear
-                PerformDocsSearch();
-                
-                ShowInfo("ลบรายการเรียบร้อยแล้ว");
-            }
+            // OLD toolbar button - redirect to new implementation
+            BtnRemoveDocNew_Click(sender, e);
         }
 
         // ── Search Event Handlers ────────────────────────────────────────────
@@ -1384,7 +1428,7 @@ namespace CMS.Presentation.Modules.KMS
             if (_txtSearchRelated == null) return;
             
             string searchText = _txtSearchRelated.Text.Trim();
-            lstSearchRelated.Items.Clear();
+            lstRelatedSearch.Items.Clear();
             
             if (string.IsNullOrEmpty(searchText)) return;
             
@@ -1397,9 +1441,9 @@ namespace CMS.Presentation.Modules.KMS
                 if (_presenter.EditingArticle != null)
                     results = results.Where(a => a.ArticleID != _presenter.EditingArticle.ArticleID);
                 
-                // Exclude articles already in lstRelated
+                // Exclude articles already in lstRelatedLinked (NEW control)
                 var existingIds = new HashSet<int>(
-                    lstRelated.Items.Cast<ListViewItem>()
+                    lstRelatedLinked.Items.Cast<ListViewItem>()
                         .Select(item => (int)item.Tag)
                 );
                 results = results.Where(a => !existingIds.Contains(a.ArticleID));
@@ -1411,7 +1455,7 @@ namespace CMS.Presentation.Modules.KMS
                     item.SubItems.Add(article.Title ?? "-");
                     item.SubItems.Add(article.ArticleTypeName ?? "-");
                     item.Tag = article.ArticleID;
-                    lstSearchRelated.Items.Add(item);
+                    lstRelatedSearch.Items.Add(item);
                 }
             }
             catch (Exception ex)
@@ -1422,178 +1466,46 @@ namespace CMS.Presentation.Modules.KMS
 
         private void PerformAttachSearch()
         {
-            if (_txtSearchAttach == null) return;
-            
-            string searchText = _txtSearchAttach.Text.Trim();
-            lstSearchAttach.Items.Clear();
-            
-            if (string.IsNullOrEmpty(searchText)) return;
-            
-            try
-            {
-                // TODO: Implement attachment search when data source is available
-                // For now, show placeholder message
-                var item = new ListViewItem("ยังไม่รองรับการค้นหาไฟล์แนบ");
-                item.SubItems.Add("-");
-                item.SubItems.Add("-");
-                lstSearchAttach.Items.Add(item);
-            }
-            catch (Exception ex)
-            {
-                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
-            }
+            // OLD method - deprecated (references non-existent lstSearchAttach control)
+            // This functionality is now handled by the new two-section design
+            // No search functionality needed for file attachments
         }
 
         private void PerformWorkflowSearch()
         {
-            if (_txtSearchWorkflow == null) return;
-            
-            string searchText = _txtSearchWorkflow.Text.Trim();
-            lstSearchWorkflow.Items.Clear();
-            
-            if (string.IsNullOrEmpty(searchText)) return;
-            
-            try
-            {
-                // TODO: Implement workflow search when data source is available
-                // For now, show placeholder message
-                var item = new ListViewItem("ยังไม่รองรับการค้นหา Workflow");
-                item.SubItems.Add("-");
-                item.SubItems.Add("-");
-                lstSearchWorkflow.Items.Add(item);
-            }
-            catch (Exception ex)
-            {
-                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
-            }
+            // OLD method - deprecated (references non-existent lstSearchWorkflow control)
+            // This functionality is now handled by the new two-section design
+            // Workflows are selected from available list, not searched
         }
 
         private void PerformProgramsSearch()
         {
-            if (_txtSearchPrograms == null) return;
-            
-            string searchText = _txtSearchPrograms.Text.Trim();
-            lstSearchPrograms.Items.Clear();
-            
-            if (string.IsNullOrEmpty(searchText)) return;
-            
-            try
-            {
-                // TODO: Implement programs search when data source is available
-                // For now, show placeholder message
-                var item = new ListViewItem("ยังไม่รองรับการค้นหาโปรแกรม");
-                item.SubItems.Add("-");
-                lstSearchPrograms.Items.Add(item);
-            }
-            catch (Exception ex)
-            {
-                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
-            }
+            // OLD method - deprecated (references non-existent lstSearchPrograms control)
+            // This functionality is now handled by the new two-section design
+            // Programs are selected from available list, not searched
         }
 
         private void PerformDocsSearch()
         {
-            if (_txtSearchDocs == null) return;
-            
-            string searchText = _txtSearchDocs.Text.Trim();
-            lstSearchDocs.Items.Clear();
-            
-            if (string.IsNullOrEmpty(searchText)) return;
-            
-            try
-            {
-                // TODO: Implement documents search when data source is available
-                // For now, show placeholder message
-                var item = new ListViewItem("ยังไม่รองรับการค้นหาเอกสาร");
-                item.SubItems.Add("-");
-                lstSearchDocs.Items.Add(item);
-            }
-            catch (Exception ex)
-            {
-                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
-            }
+            // OLD method - deprecated (references non-existent lstSearchDocs control)
+            // This functionality is now handled by the new two-section design
+            // No search functionality needed for document attachments
         }
 
         // ── Double-Click Event Handlers ──────────────────────────────────────
 
-        private void LstSearchRelated_DoubleClick(object sender, EventArgs e)
-        {
-            if (lstSearchRelated.SelectedItems.Count == 0) return;
-            
-            var selectedItem = lstSearchRelated.SelectedItems[0];
-            
-            // Clone item to main list
-            var newItem = (ListViewItem)selectedItem.Clone();
-            lstRelated.Items.Add(newItem);
-            
-            // Remove from search list
-            lstSearchRelated.Items.Remove(selectedItem);
-            
-            ShowInfo("เพิ่มบทความที่เกี่ยวข้องเรียบร้อยแล้ว");
-        }
+        // OLD handler removed - now using LstRelatedSearch_DoubleClick in new implementation
 
-        private void LstSearchAttach_DoubleClick(object sender, EventArgs e)
-        {
-            if (lstSearchAttach.SelectedItems.Count == 0) return;
-            
-            var selectedItem = lstSearchAttach.SelectedItems[0];
-            
-            // Clone item to main list
-            var newItem = (ListViewItem)selectedItem.Clone();
-            lstAttach.Items.Add(newItem);
-            
-            // Remove from search list
-            lstSearchAttach.Items.Remove(selectedItem);
-            
-            ShowInfo("เพิ่มไฟล์แนบเรียบร้อยแล้ว");
-        }
+        // OLD handler removed - now using new implementation
 
-        private void LstSearchWorkflow_DoubleClick(object sender, EventArgs e)
-        {
-            if (lstSearchWorkflow.SelectedItems.Count == 0) return;
-            
-            var selectedItem = lstSearchWorkflow.SelectedItems[0];
-            
-            // Clone item to main list
-            var newItem = (ListViewItem)selectedItem.Clone();
-            lstWorkflow.Items.Add(newItem);
-            
-            // Remove from search list
-            lstSearchWorkflow.Items.Remove(selectedItem);
-            
-            ShowInfo("เพิ่ม Workflow เรียบร้อยแล้ว");
-        }
+        // OLD handler removed - now using new implementation
 
-        private void LstSearchPrograms_DoubleClick(object sender, EventArgs e)
-        {
-            if (lstSearchPrograms.SelectedItems.Count == 0) return;
-            
-            var selectedItem = lstSearchPrograms.SelectedItems[0];
-            
-            // Clone item to main list
-            var newItem = (ListViewItem)selectedItem.Clone();
-            lstPrograms.Items.Add(newItem);
-            
-            // Remove from search list
-            lstSearchPrograms.Items.Remove(selectedItem);
-            
-            ShowInfo("เพิ่มโปรแกรมเรียบร้อยแล้ว");
-        }
+        // OLD handler removed - now using new implementation
 
         private void LstSearchDocs_DoubleClick(object sender, EventArgs e)
         {
-            if (lstSearchDocs.SelectedItems.Count == 0) return;
-            
-            var selectedItem = lstSearchDocs.SelectedItems[0];
-            
-            // Clone item to main list
-            var newItem = (ListViewItem)selectedItem.Clone();
-            lstDocs.Items.Add(newItem);
-            
-            // Remove from search list
-            lstSearchDocs.Items.Remove(selectedItem);
-            
-            ShowInfo("เพิ่มเอกสารเรียบร้อยแล้ว");
+            // OLD handler - deprecated (references non-existent lstSearchDocs and lstDocs controls)
+            // This functionality is now handled by the new two-section design
         }
 
         // ── Helper Methods ───────────────────────────────────────────────────
@@ -1609,6 +1521,837 @@ namespace CMS.Presentation.Modules.KMS
                 len = len / 1024;
             }
             return string.Format("{0:0.##} {1}", len, sizes[order]);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        // TAB PROGRAMS - NEW IMPLEMENTATION (Two-Section Design - Mockup)
+        // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Load linked programs when form initializes (Mockup data)
+        /// </summary>
+        private void LoadLinkedPrograms()
+        {
+            lstProgramsLinked.Items.Clear();
+            
+            // Mockup data - will be replaced with actual PMS integration
+            var mockupPrograms = new[]
+            {
+                new { Code = "PRG-INS-001", Name = "Insurance Management System", Type = "Core System" },
+                new { Code = "PRG-CRM-002", Name = "Customer Relationship Management", Type = "Business Application" }
+            };
+            
+            int index = 1;
+            foreach (var prog in mockupPrograms)
+            {
+                var item = new ListViewItem(index.ToString());
+                item.SubItems.Add(prog.Code);
+                item.SubItems.Add(prog.Name);
+                item.SubItems.Add(prog.Type);
+                item.Tag = index; // Mockup ID
+                item.BackColor = index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                lstProgramsLinked.Items.Add(item);
+                index++;
+            }
+            
+            UpdateProgramsLinkedCount();
+            LoadAvailablePrograms();
+        }
+
+        private void LoadAvailablePrograms()
+        {
+            lstProgramsAvailable.Items.Clear();
+            
+            // Mockup available programs
+            var mockupAvailable = new[]
+            {
+                new { Code = "PRG-RPT-003", Name = "Reporting & Analytics Platform", Type = "Business Intelligence" },
+                new { Code = "PRG-DOC-004", Name = "Document Management System", Type = "Core System" },
+                new { Code = "PRG-WF-005", Name = "Workflow Automation Engine", Type = "Business Application" }
+            };
+            
+            foreach (var prog in mockupAvailable)
+            {
+                var item = new ListViewItem(prog.Code);
+                item.SubItems.Add(prog.Name);
+                item.SubItems.Add(prog.Type);
+                item.Tag = prog.Code;
+                item.BackColor = Color.FromArgb(248, 250, 253);
+                lstProgramsAvailable.Items.Add(item);
+            }
+        }
+
+        private void UpdateProgramsLinkedCount()
+        {
+            lblProgramsLinked.Text = string.Format("โปรแกรมที่เชื่อมโยง ({0} รายการ)", lstProgramsLinked.Items.Count);
+        }
+
+        private void LstProgramsLinked_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstProgramsLinked.SelectedItems.Count == 0) return;
+            
+            try
+            {
+                string programName = lstProgramsLinked.SelectedItems[0].SubItems[2].Text;
+                ShowInfo(string.Format("ดูรายละเอียดโปรแกรม: {0}\n\n(Mockup - ยังไม่ได้เชื่อมต่อกับ PMS)", programName));
+            }
+            catch (Exception ex)
+            {
+                ShowError("เปิดโปรแกรมไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void BtnRemoveProgramNew_Click(object sender, EventArgs e)
+        {
+            if (lstProgramsLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกโปรแกรมที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบโปรแกรมที่เลือก {0} รายการ ใช่หรือไม่?", lstProgramsLinked.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstProgramsLinked.SelectedItems.Count > 0)
+                    lstProgramsLinked.Items.Remove(lstProgramsLinked.SelectedItems[0]);
+                
+                // Renumber
+                for (int i = 0; i < lstProgramsLinked.Items.Count; i++)
+                {
+                    lstProgramsLinked.Items[i].Text = (i + 1).ToString();
+                    lstProgramsLinked.Items[i].BackColor = (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                }
+                
+                UpdateProgramsLinkedCount();
+                ShowInfo("ลบโปรแกรมเรียบร้อยแล้ว");
+            }
+        }
+
+        private void BtnViewProgramDetails_Click(object sender, EventArgs e)
+        {
+            if (lstProgramsLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกโปรแกรมที่ต้องการดูรายละเอียด");
+                return;
+            }
+            
+            string programName = lstProgramsLinked.SelectedItems[0].SubItems[2].Text;
+            string programType = lstProgramsLinked.SelectedItems[0].SubItems[3].Text;
+            ShowInfo(string.Format("รายละเอียดโปรแกรม: {0}\n\n" +
+                     "ประเภท: {1}\n" +
+                     "สถานะ: ใช้งานอยู่\n" +
+                     "เจ้าของระบบ: IT Department\n" +
+                     "ผู้ดูแล: System Admin\n\n" +
+                     "ข้อมูลเพิ่มเติม:\n" +
+                     "• เอกสารคู่มือการใช้งาน\n" +
+                     "• ข้อมูลการติดต่อ Support\n" +
+                     "• ประวัติการอัพเดท\n\n" +
+                     "(Mockup - ยังไม่ได้เชื่อมต่อกับ PMS)", programName, programType));
+        }
+
+        private void LstProgramsAvailable_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstProgramsAvailable.SelectedItems.Count == 0) return;
+            
+            try
+            {
+                var selectedItem = lstProgramsAvailable.SelectedItems[0];
+                
+                int newIndex = lstProgramsLinked.Items.Count + 1;
+                var newItem = new ListViewItem(newIndex.ToString());
+                newItem.SubItems.Add(selectedItem.SubItems[0].Text);
+                newItem.SubItems.Add(selectedItem.SubItems[1].Text);
+                newItem.SubItems.Add(selectedItem.SubItems[2].Text);
+                newItem.Tag = newIndex;
+                newItem.BackColor = newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                
+                lstProgramsLinked.Items.Add(newItem);
+                lstProgramsAvailable.Items.Remove(selectedItem);
+                
+                UpdateProgramsLinkedCount();
+                ShowInfo("เพิ่มโปรแกรมเรียบร้อยแล้ว");
+            }
+            catch (Exception ex)
+            {
+                ShowError("เพิ่มโปรแกรมไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        // TAB WORKFLOW - NEW IMPLEMENTATION (Two-Section Design - Mockup)
+        // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Load linked workflows when form initializes (Mockup data)
+        /// </summary>
+        private void LoadLinkedWorkflows()
+        {
+            lstWorkflowLinked.Items.Clear();
+            
+            // Mockup data - will be replaced with actual Workflow Engine integration
+            var mockupWorkflows = new[]
+            {
+                new { Code = "WF-CLAIM-001", Name = "Claims Approval Process", Status = "Active" },
+                new { Code = "WF-UW-002", Name = "Underwriting Review Workflow", Status = "Active" }
+            };
+            
+            int index = 1;
+            foreach (var wf in mockupWorkflows)
+            {
+                var item = new ListViewItem(index.ToString());
+                item.SubItems.Add(wf.Code);
+                item.SubItems.Add(wf.Name);
+                item.SubItems.Add(wf.Status);
+                item.Tag = index; // Mockup ID
+                item.BackColor = index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                lstWorkflowLinked.Items.Add(item);
+                index++;
+            }
+            
+            UpdateWorkflowLinkedCount();
+            LoadAvailableWorkflows();
+        }
+
+        private void LoadAvailableWorkflows()
+        {
+            lstWorkflowAvailable.Items.Clear();
+            
+            // Mockup available workflows
+            var mockupAvailable = new[]
+            {
+                new { Code = "WF-DOC-003", Name = "Document Review Workflow", Status = "Active" },
+                new { Code = "WF-APPR-004", Name = "Multi-Level Approval", Status = "Active" },
+                new { Code = "WF-AUDIT-005", Name = "Audit Trail Workflow", Status = "Active" }
+            };
+            
+            foreach (var wf in mockupAvailable)
+            {
+                var item = new ListViewItem(wf.Code);
+                item.SubItems.Add(wf.Name);
+                item.SubItems.Add(wf.Status);
+                item.Tag = wf.Code;
+                item.BackColor = Color.FromArgb(248, 250, 253);
+                lstWorkflowAvailable.Items.Add(item);
+            }
+        }
+
+        private void UpdateWorkflowLinkedCount()
+        {
+            lblWorkflowLinked.Text = string.Format("Workflow ที่เชื่อมโยง ({0} รายการ)", lstWorkflowLinked.Items.Count);
+        }
+
+        private void LstWorkflowLinked_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstWorkflowLinked.SelectedItems.Count == 0) return;
+            
+            try
+            {
+                string workflowName = lstWorkflowLinked.SelectedItems[0].SubItems[2].Text;
+                ShowInfo(string.Format("ดู Workflow: {0}\n\n(Mockup - ยังไม่ได้เชื่อมต่อกับ Workflow Engine)", workflowName));
+            }
+            catch (Exception ex)
+            {
+                ShowError("เปิด Workflow ไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void BtnRemoveWorkflowNew_Click(object sender, EventArgs e)
+        {
+            if (lstWorkflowLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือก Workflow ที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบ Workflow ที่เลือก {0} รายการ ใช่หรือไม่?", lstWorkflowLinked.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstWorkflowLinked.SelectedItems.Count > 0)
+                    lstWorkflowLinked.Items.Remove(lstWorkflowLinked.SelectedItems[0]);
+                
+                // Renumber
+                for (int i = 0; i < lstWorkflowLinked.Items.Count; i++)
+                {
+                    lstWorkflowLinked.Items[i].Text = (i + 1).ToString();
+                    lstWorkflowLinked.Items[i].BackColor = (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                }
+                
+                UpdateWorkflowLinkedCount();
+                ShowInfo("ลบ Workflow เรียบร้อยแล้ว");
+            }
+        }
+
+        private void BtnViewWorkflowDiagram_Click(object sender, EventArgs e)
+        {
+            if (lstWorkflowLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือก Workflow ที่ต้องการดู Diagram");
+                return;
+            }
+            
+            string workflowName = lstWorkflowLinked.SelectedItems[0].SubItems[2].Text;
+            ShowInfo(string.Format("ดู Workflow Diagram: {0}\n\n" +
+                     "จะแสดง:\n" +
+                     "• ขั้นตอนการทำงาน (Steps)\n" +
+                     "• เงื่อนไขการอนุมัติ (Conditions)\n" +
+                     "• ผู้รับผิดชอบแต่ละขั้นตอน (Assignees)\n" +
+                     "• เส้นทางการไหล (Flow)\n\n" +
+                     "(Mockup - ยังไม่ได้เชื่อมต่อกับ Workflow Engine)", workflowName));
+        }
+
+        private void BtnStartWorkflow_Click(object sender, EventArgs e)
+        {
+            if (lstWorkflowLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือก Workflow ที่ต้องการเริ่ม");
+                return;
+            }
+            
+            string workflowName = lstWorkflowLinked.SelectedItems[0].SubItems[2].Text;
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการเริ่ม Workflow: {0} ใช่หรือไม่?\n\n" +
+                             "Workflow จะถูกเริ่มต้นและส่งไปยังผู้รับผิดชอบขั้นตอนแรก",
+                             workflowName),
+                "ยืนยันการเริ่ม Workflow", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                ShowInfo(string.Format("เริ่ม Workflow: {0} เรียบร้อยแล้ว\n\n" +
+                         "สถานะ: กำลังดำเนินการ\n" +
+                         "ขั้นตอนปัจจุบัน: รอการอนุมัติ\n\n" +
+                         "(Mockup - ยังไม่ได้เชื่อมต่อกับ Workflow Engine)", workflowName));
+            }
+        }
+
+        private void LstWorkflowAvailable_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstWorkflowAvailable.SelectedItems.Count == 0) return;
+            
+            try
+            {
+                var selectedItem = lstWorkflowAvailable.SelectedItems[0];
+                
+                int newIndex = lstWorkflowLinked.Items.Count + 1;
+                var newItem = new ListViewItem(newIndex.ToString());
+                newItem.SubItems.Add(selectedItem.SubItems[0].Text);
+                newItem.SubItems.Add(selectedItem.SubItems[1].Text);
+                newItem.SubItems.Add(selectedItem.SubItems[2].Text);
+                newItem.Tag = newIndex;
+                newItem.BackColor = newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                
+                lstWorkflowLinked.Items.Add(newItem);
+                lstWorkflowAvailable.Items.Remove(selectedItem);
+                
+                UpdateWorkflowLinkedCount();
+                ShowInfo("เพิ่ม Workflow เรียบร้อยแล้ว");
+            }
+            catch (Exception ex)
+            {
+                ShowError("เพิ่ม Workflow ไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        // TAB ATTACH - NEW IMPLEMENTATION (Two-Section Design - Mockup)
+        // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Load attached files when form initializes (Mockup data)
+        /// </summary>
+        private void LoadAttachedFiles()
+        {
+            lstAttachLinked.Items.Clear();
+            
+            // Mockup data - will be replaced with actual DMS integration
+            var mockupFiles = new[]
+            {
+                new { Name = "Claims_Form_2569.pdf", Size = 245 * 1024L, Date = DateTime.Now.AddDays(-5) },
+                new { Name = "UW_Criteria_Table.xlsx", Size = 89 * 1024L, Date = DateTime.Now.AddDays(-3) }
+            };
+            
+            int index = 1;
+            foreach (var file in mockupFiles)
+            {
+                var item = new ListViewItem(index.ToString());
+                item.SubItems.Add(file.Name);
+                item.SubItems.Add(FormatFileSize(file.Size));
+                item.SubItems.Add(file.Date.ToString("dd/MM/yyyy HH:mm"));
+                item.Tag = index; // Mockup ID
+                item.BackColor = index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                lstAttachLinked.Items.Add(item);
+                index++;
+            }
+            
+            UpdateAttachLinkedCount();
+        }
+
+        private void UpdateAttachLinkedCount()
+        {
+            lblAttachLinked.Text = string.Format("ไฟล์ที่แนบ ({0} ไฟล์)", lstAttachLinked.Items.Count);
+        }
+
+        private void LstAttachLinked_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstAttachLinked.SelectedItems.Count == 0) return;
+            
+            try
+            {
+                string fileName = lstAttachLinked.SelectedItems[0].SubItems[1].Text;
+                ShowInfo(string.Format("เปิดไฟล์: {0}\n\n(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS)", fileName));
+            }
+            catch (Exception ex)
+            {
+                ShowError("เปิดไฟล์ไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void BtnRemoveAttachNew_Click(object sender, EventArgs e)
+        {
+            if (lstAttachLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกไฟล์ที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบไฟล์ที่เลือก {0} ไฟล์ ใช่หรือไม่?", lstAttachLinked.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstAttachLinked.SelectedItems.Count > 0)
+                    lstAttachLinked.Items.Remove(lstAttachLinked.SelectedItems[0]);
+                
+                // Renumber
+                for (int i = 0; i < lstAttachLinked.Items.Count; i++)
+                {
+                    lstAttachLinked.Items[i].Text = (i + 1).ToString();
+                    lstAttachLinked.Items[i].BackColor = (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                }
+                
+                UpdateAttachLinkedCount();
+                ShowInfo("ลบไฟล์เรียบร้อยแล้ว");
+            }
+        }
+
+        private void BtnViewAttach_Click(object sender, EventArgs e)
+        {
+            if (lstAttachLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกไฟล์ที่ต้องการดู");
+                return;
+            }
+            
+            string fileName = lstAttachLinked.SelectedItems[0].SubItems[1].Text;
+            ShowInfo(string.Format("ดูไฟล์: {0}\n\n(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS)", fileName));
+        }
+
+        private void BtnUploadFileNew_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Title = "เลือกไฟล์ที่ต้องการแนบ";
+                ofd.Filter = "All Files (*.*)|*.*|" +
+                             "PDF Files (*.pdf)|*.pdf|" +
+                             "Excel Files (*.xlsx;*.xls)|*.xlsx;*.xls|" +
+                             "Word Files (*.docx;*.doc)|*.docx;*.doc|" +
+                             "Image Files (*.jpg;*.png;*.gif)|*.jpg;*.png;*.gif";
+                ofd.FilterIndex = 1;
+                ofd.Multiselect = true;
+                
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    foreach (var filePath in ofd.FileNames)
+                    {
+                        var fi = new System.IO.FileInfo(filePath);
+                        int newIndex = lstAttachLinked.Items.Count + 1;
+                        
+                        var item = new ListViewItem(newIndex.ToString());
+                        item.SubItems.Add(fi.Name);
+                        item.SubItems.Add(FormatFileSize(fi.Length));
+                        item.SubItems.Add(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+                        item.Tag = newIndex;
+                        item.BackColor = newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                        lstAttachLinked.Items.Add(item);
+                    }
+                    
+                    UpdateAttachLinkedCount();
+                    ShowInfo(string.Format("เพิ่มไฟล์แนบ {0} ไฟล์เรียบร้อยแล้ว\n\n(Mockup - ไฟล์จะถูกอัพโหลดจริงเมื่อบันทึกบทความ)", ofd.FileNames.Length));
+                }
+            }
+        }
+
+        private void BtnSelectFromDMS_Click(object sender, EventArgs e)
+        {
+            ShowInfo("ฟีเจอร์เลือกไฟล์จาก DMS จะเปิด File Browser\n\n" +
+                     "สามารถเลือกไฟล์จากระบบจัดการเอกสาร (DMS) ที่มีอยู่แล้ว\n\n" +
+                     "(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS Module)");
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        // TAB DOCS - NEW IMPLEMENTATION (Two-Section Design - Mockup)
+        // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Load linked documents when form initializes (Mockup data)
+        /// </summary>
+        private void LoadLinkedDocuments()
+        {
+            lstDocsLinked.Items.Clear();
+            
+            // Mockup data - will be replaced with actual DMS integration
+            var mockupDocs = new[]
+            {
+                new { Name = "Policy_Document_2569.pdf", Size = 1024 * 1024L, Date = DateTime.Now.AddDays(-10) },
+                new { Name = "Compliance_Guidelines.docx", Size = 512 * 1024L, Date = DateTime.Now.AddDays(-7) }
+            };
+            
+            int index = 1;
+            foreach (var doc in mockupDocs)
+            {
+                var item = new ListViewItem(index.ToString());
+                item.SubItems.Add(doc.Name);
+                item.SubItems.Add(FormatFileSize(doc.Size));
+                item.SubItems.Add(doc.Date.ToString("dd/MM/yyyy HH:mm"));
+                item.Tag = index; // Mockup ID
+                item.BackColor = index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                lstDocsLinked.Items.Add(item);
+                index++;
+            }
+            
+            UpdateDocsLinkedCount();
+        }
+
+        private void UpdateDocsLinkedCount()
+        {
+            lblDocsLinked.Text = string.Format("เอกสารที่แนบ ({0} เอกสาร)", lstDocsLinked.Items.Count);
+        }
+
+        private void LstDocsLinked_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstDocsLinked.SelectedItems.Count == 0) return;
+            
+            try
+            {
+                string docName = lstDocsLinked.SelectedItems[0].SubItems[1].Text;
+                ShowInfo(string.Format("เปิดเอกสาร: {0}\n\n(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS)", docName));
+            }
+            catch (Exception ex)
+            {
+                ShowError("เปิดเอกสารไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void BtnRemoveDocNew_Click(object sender, EventArgs e)
+        {
+            if (lstDocsLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกเอกสารที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบเอกสารที่เลือก {0} เอกสาร ใช่หรือไม่?", lstDocsLinked.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstDocsLinked.SelectedItems.Count > 0)
+                    lstDocsLinked.Items.Remove(lstDocsLinked.SelectedItems[0]);
+                
+                // Renumber
+                for (int i = 0; i < lstDocsLinked.Items.Count; i++)
+                {
+                    lstDocsLinked.Items[i].Text = (i + 1).ToString();
+                    lstDocsLinked.Items[i].BackColor = (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                }
+                
+                UpdateDocsLinkedCount();
+                ShowInfo("ลบเอกสารเรียบร้อยแล้ว");
+            }
+        }
+
+        private void BtnViewDocNew_Click(object sender, EventArgs e)
+        {
+            if (lstDocsLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกเอกสารที่ต้องการดู");
+                return;
+            }
+            
+            string docName = lstDocsLinked.SelectedItems[0].SubItems[1].Text;
+            ShowInfo(string.Format("ดูเอกสาร: {0}\n\n(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS)", docName));
+        }
+
+        private void BtnUploadDocNew_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Title = "เลือกเอกสารที่ต้องการแนบ";
+                ofd.Filter = "All Files (*.*)|*.*|" +
+                             "PDF Files (*.pdf)|*.pdf|" +
+                             "Word Files (*.docx;*.doc)|*.docx;*.doc|" +
+                             "Excel Files (*.xlsx;*.xls)|*.xlsx;*.xls|" +
+                             "PowerPoint Files (*.pptx;*.ppt)|*.pptx;*.ppt";
+                ofd.FilterIndex = 1;
+                ofd.Multiselect = true;
+                
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    foreach (var filePath in ofd.FileNames)
+                    {
+                        var fi = new System.IO.FileInfo(filePath);
+                        int newIndex = lstDocsLinked.Items.Count + 1;
+                        
+                        var item = new ListViewItem(newIndex.ToString());
+                        item.SubItems.Add(fi.Name);
+                        item.SubItems.Add(FormatFileSize(fi.Length));
+                        item.SubItems.Add(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+                        item.Tag = newIndex;
+                        item.BackColor = newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                        lstDocsLinked.Items.Add(item);
+                    }
+                    
+                    UpdateDocsLinkedCount();
+                    ShowInfo(string.Format("เพิ่มเอกสารแนบ {0} เอกสารเรียบร้อยแล้ว\n\n(Mockup - เอกสารจะถูกอัพโหลดจริงเมื่อบันทึกบทความ)", ofd.FileNames.Length));
+                }
+            }
+        }
+
+        private void BtnSelectDocFromDMSNew_Click(object sender, EventArgs e)
+        {
+            ShowInfo("ฟีเจอร์เลือกเอกสารจาก DMS จะเปิด Document Browser\n\n" +
+                     "สามารถเลือกเอกสารจากระบบจัดการเอกสาร (DMS) ที่มีอยู่แล้ว\n\n" +
+                     "(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS Module)");
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        // TAB RELATED - NEW IMPLEMENTATION (Two-Section Design)
+        // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Load linked articles when form initializes
+        /// </summary>
+        private void LoadRelatedArticles()
+        {
+            if (_presenter == null || _presenter.EditingArticle == null) return;
+            
+            try
+            {
+                var linkedArticles = _presenter.GetLinkedArticles(_presenter.EditingArticle.ArticleID);
+                lstRelatedLinked.Items.Clear();
+                
+                int index = 1;
+                foreach (var article in linkedArticles)
+                {
+                    var item = new ListViewItem(index.ToString());
+                    item.SubItems.Add(article.ArticleCode ?? "-");
+                    item.SubItems.Add(article.Title ?? "-");
+                    item.SubItems.Add(article.ArticleTypeName ?? "-");
+                    item.Tag = article.ArticleID;
+                    item.BackColor = index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    lstRelatedLinked.Items.Add(item);
+                    index++;
+                }
+                
+                UpdateRelatedLinkedCount();
+            }
+            catch (Exception ex)
+            {
+                ShowError("โหลดบทความที่เกี่ยวข้องไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void UpdateRelatedLinkedCount()
+        {
+            lblRelatedLinked.Text = string.Format("รายการที่ Link อยู่แล้ว ({0} รายการ)", lstRelatedLinked.Items.Count);
+        }
+
+        private void InitializeRelatedCategoryDropdown()
+        {
+            try
+            {
+                cboRelatedCategory.Items.Clear();
+                cboRelatedCategory.Items.Add(new ComboItem("หมวดหมู่ ▼", 0));
+                
+                var categories = _presenter.GetAllCategories();
+                foreach (var category in categories.OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName))
+                {
+                    cboRelatedCategory.Items.Add(new ComboItem(
+                        category.ParentCategoryID.HasValue 
+                            ? string.Format("  └ {0}", category.CategoryName)
+                            : category.CategoryName,
+                        category.CategoryID));
+                }
+                
+                cboRelatedCategory.DisplayMember = "Display";
+                cboRelatedCategory.ValueMember = "Value";
+                cboRelatedCategory.SelectedIndex = 0;
+            }
+            catch { }
+        }
+
+        private void BtnSearchRelated_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string searchText = txtSearchRelated.Text.Trim();
+                if (searchText == "🔍 ค้นหาชื่อบทความ / รหัส / แท็ก...")
+                    searchText = string.Empty;
+                
+                byte? articleType = cboRelatedType.SelectedIndex > 0 ? (byte?)cboRelatedType.SelectedIndex : null;
+                
+                int? categoryId = null;
+                if (cboRelatedCategory.SelectedIndex > 0)
+                {
+                    var selectedItem = cboRelatedCategory.SelectedItem as ComboItem;
+                    if (selectedItem != null && selectedItem.Value > 0)
+                        categoryId = selectedItem.Value;
+                }
+                
+                byte? status = 3; // Published
+                if (cboRelatedStatus.SelectedIndex > 0)
+                    status = (byte)cboRelatedStatus.SelectedIndex;
+                
+                var results = _presenter.SearchArticles(searchText, categoryId, status, articleType);
+                
+                if (_presenter.EditingArticle != null)
+                    results = results.Where(a => a.ArticleID != _presenter.EditingArticle.ArticleID);
+                
+                var linkedIds = new HashSet<int>(
+                    lstRelatedLinked.Items.Cast<ListViewItem>().Select(item => (int)item.Tag)
+                );
+                results = results.Where(a => !linkedIds.Contains(a.ArticleID));
+                
+                lstRelatedSearch.Items.Clear();
+                foreach (var article in results.Take(50))
+                {
+                    var item = new ListViewItem(article.ArticleCode ?? "-");
+                    item.SubItems.Add(article.Title ?? "-");
+                    item.SubItems.Add(article.ArticleTypeName ?? "-");
+                    item.SubItems.Add(article.ViewCount.ToString());
+                    item.Tag = article.ArticleID;
+                    item.BackColor = Color.FromArgb(248, 250, 253);
+                    lstRelatedSearch.Items.Add(item);
+                }
+                
+                lblRelatedSearch.Text = string.Format("ผลการค้นหา ({0} รายการ) — ดับเบิลคลิกเพื่อเพิ่ม", lstRelatedSearch.Items.Count);
+                
+                if (lstRelatedSearch.Items.Count == 0)
+                    ShowInfo("ไม่พบบทความที่ตรงกับเงื่อนไขการค้นหา");
+            }
+            catch (Exception ex)
+            {
+                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void LstRelatedLinked_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstRelatedLinked.SelectedItems.Count == 0) return;
+            
+            try
+            {
+                int articleId = (int)lstRelatedLinked.SelectedItems[0].Tag;
+                var viewerForm = new ArticleViewerForm();
+                viewerForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                ShowError("เปิดบทความไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void LstRelatedSearch_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstRelatedSearch.SelectedItems.Count == 0) return;
+            
+            try
+            {
+                var selectedItem = lstRelatedSearch.SelectedItems[0];
+                int articleId = (int)selectedItem.Tag;
+                
+                int newIndex = lstRelatedLinked.Items.Count + 1;
+                var newItem = new ListViewItem(newIndex.ToString());
+                newItem.SubItems.Add(selectedItem.SubItems[0].Text);
+                newItem.SubItems.Add(selectedItem.SubItems[1].Text);
+                newItem.SubItems.Add(selectedItem.SubItems[2].Text);
+                newItem.Tag = articleId;
+                newItem.BackColor = newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                
+                lstRelatedLinked.Items.Add(newItem);
+                lstRelatedSearch.Items.Remove(selectedItem);
+                
+                UpdateRelatedLinkedCount();
+                lblRelatedSearch.Text = string.Format("ผลการค้นหา ({0} รายการ) — ดับเบิลคลิกเพื่อเพิ่ม", lstRelatedSearch.Items.Count);
+                
+                ShowInfo("เพิ่มบทความที่เกี่ยวข้องเรียบร้อยแล้ว");
+            }
+            catch (Exception ex)
+            {
+                ShowError("เพิ่มรายการไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void BtnRemoveRelatedNew_Click(object sender, EventArgs e)
+        {
+            if (lstRelatedLinked.SelectedItems.Count == 0)
+            {
+                ShowInfo("กรุณาเลือกรายการที่ต้องการลบ");
+                return;
+            }
+            
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบรายการที่เลือก {0} รายการ ใช่หรือไม่?", lstRelatedLinked.SelectedItems.Count),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            
+            if (confirm == DialogResult.Yes)
+            {
+                while (lstRelatedLinked.SelectedItems.Count > 0)
+                    lstRelatedLinked.Items.Remove(lstRelatedLinked.SelectedItems[0]);
+                
+                for (int i = 0; i < lstRelatedLinked.Items.Count; i++)
+                {
+                    lstRelatedLinked.Items[i].Text = (i + 1).ToString();
+                    lstRelatedLinked.Items[i].BackColor = (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                }
+                
+                UpdateRelatedLinkedCount();
+                ShowInfo("ลบรายการเรียบร้อยแล้ว");
+            }
+        }
+
+        private void TxtSearchRelatedNew_Enter(object sender, EventArgs e)
+        {
+            if (txtSearchRelated.Text == "🔍 ค้นหาชื่อบทความ / รหัส / แท็ก...")
+            {
+                txtSearchRelated.Text = string.Empty;
+                txtSearchRelated.ForeColor = Color.Black;
+            }
+        }
+
+        private void TxtSearchRelatedNew_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtSearchRelated.Text))
+            {
+                txtSearchRelated.Text = "🔍 ค้นหาชื่อบทความ / รหัส / แท็ก...";
+                txtSearchRelated.ForeColor = Color.Gray;
+            }
+        }
+
+        private void TxtSearchRelatedNew_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                BtnSearchRelated_Click(sender, e);
+            }
         }
 
         // ── Helper Classes ───────────────────────────────────────────────────

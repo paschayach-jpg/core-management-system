@@ -60,7 +60,7 @@ namespace CMS.Services
 
             // Search only published articles (Status = 3)
             // Filter by Article Code OR Title containing search text
-            return _articleRepo.Search(searchText, categoryId: null, status: 3, articleType: null);
+            return _articleRepo.Search(searchText, categoryId: null, status: null, articleType: null);
         }
 
         // ── Write ─────────────────────────────────────────────────────────────

@@ -255,6 +255,74 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
+        /// Get all active categories from KB
+        /// </summary>
+        public IEnumerable<KBCategory> GetAllCategories()
+        {
+            try
+            {
+                return _categoryService.GetAllActive();
+            }
+            catch
+            {
+                return Enumerable.Empty<KBCategory>();
+            }
+        }
+
+        /// <summary>
+        /// Get all published articles from KB
+        /// </summary>
+        public IEnumerable<KBArticle> GetAllPublishedArticles()
+        {
+            try
+            {
+                // Get all articles with Status = 3 (Published)
+                return _articleService.Search(null, null, 3, null);
+            }
+            catch
+            {
+                return Enumerable.Empty<KBArticle>();
+            }
+        }
+
+        /// <summary>
+        /// Search articles with filters
+        /// </summary>
+        public IEnumerable<KBArticle> SearchArticles(string searchText, int? categoryId, byte? status, byte? articleType)
+        {
+            try
+            {
+                return _articleService.Search(searchText, categoryId, status, articleType);
+            }
+            catch
+            {
+                return Enumerable.Empty<KBArticle>();
+            }
+        }
+
+        /// <summary>
+        /// Get linked articles for the current article
+        /// </summary>
+        public IEnumerable<KBArticle> GetLinkedArticles(int articleId)
+        {
+            try
+            {
+                // TODO: Implement proper article-to-article linking
+                // For now, return empty list until schema is extended
+                return Enumerable.Empty<KBArticle>();
+                
+                // Future implementation:
+                // var links = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Article);
+                // var linkedIds = links.Select(l => l.EntityID).ToList();
+                // return _articleService.GetByIds(linkedIds);
+            }
+            catch
+            {
+                return Enumerable.Empty<KBArticle>();
+            }
+        }
+
+        /// <summary>
         /// Save article links to database
         /// </summary>
         private void SaveArticleLinks(int articleId)

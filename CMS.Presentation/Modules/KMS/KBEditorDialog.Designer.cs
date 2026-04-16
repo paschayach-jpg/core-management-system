@@ -39,46 +39,87 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingOuter = new System.Windows.Forms.Panel();
             this.tabMapping = new System.Windows.Forms.TabControl();
             this.tabAttach = new System.Windows.Forms.TabPage();
-            this.lstAttach = new System.Windows.Forms.ListView();
-            this.colAttFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colAttSize = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colAttDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.lstSearchAttach = new System.Windows.Forms.ListView();
-            this.colSearchAttFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colSearchAttSize = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colSearchAttDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.pnlDropZone = new System.Windows.Forms.Panel();
+            this.lblAttachUpload = new System.Windows.Forms.Label();
+            this.pnlAttachUpload = new System.Windows.Forms.Panel();
+            this.btnSelectFromDMS = new System.Windows.Forms.Button();
+            this.btnUploadFile = new System.Windows.Forms.Button();
+            this.pnlAttachLinkedActions = new System.Windows.Forms.Panel();
+            this.btnViewAttach = new System.Windows.Forms.Button();
+            this.btnRemoveAttach = new System.Windows.Forms.Button();
+            this.lstAttachLinked = new System.Windows.Forms.ListView();
+            this.colAttachLinkedNum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colAttachLinkedFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colAttachLinkedSize = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colAttachLinkedDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lblAttachLinked = new System.Windows.Forms.Label();
             this.tabRelated = new System.Windows.Forms.TabPage();
-            this.lstRelated = new System.Windows.Forms.ListView();
-            this.colRelCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colRelTitle = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colRelType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.lstSearchRelated = new System.Windows.Forms.ListView();
-            this.colSearchRelCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colSearchRelTitle = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colSearchRelType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lstRelatedSearch = new System.Windows.Forms.ListView();
+            this.colRelSearchCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colRelSearchTitle = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colRelSearchType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colRelSearchViews = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lblRelatedSearch = new System.Windows.Forms.Label();
+            this.pnlRelatedSearch = new System.Windows.Forms.Panel();
+            this.btnSearchRelated = new System.Windows.Forms.Button();
+            this.cboRelatedStatus = new System.Windows.Forms.ComboBox();
+            this.cboRelatedCategory = new System.Windows.Forms.ComboBox();
+            this.cboRelatedType = new System.Windows.Forms.ComboBox();
+            this.txtSearchRelated = new System.Windows.Forms.TextBox();
+            this.pnlRelatedLinkedActions = new System.Windows.Forms.Panel();
+            this.btnRemoveRelatedNew = new System.Windows.Forms.Button();
+            this.lstRelatedLinked = new System.Windows.Forms.ListView();
+            this.colRelLinkedNum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colRelLinkedCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colRelLinkedTitle = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colRelLinkedType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lblRelatedLinked = new System.Windows.Forms.Label();
             this.tabWorkflow = new System.Windows.Forms.TabPage();
-            this.lstWorkflow = new System.Windows.Forms.ListView();
-            this.colWfCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colWfName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colWfStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.lstSearchWorkflow = new System.Windows.Forms.ListView();
-            this.colSearchWfCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colSearchWfName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colSearchWfStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lstWorkflowAvailable = new System.Windows.Forms.ListView();
+            this.colWorkflowAvailCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colWorkflowAvailName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colWorkflowAvailStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lblWorkflowAvailable = new System.Windows.Forms.Label();
+            this.pnlWorkflowLinkedActions = new System.Windows.Forms.Panel();
+            this.btnStartWorkflow = new System.Windows.Forms.Button();
+            this.btnViewWorkflowDiagram = new System.Windows.Forms.Button();
+            this.btnRemoveWorkflow = new System.Windows.Forms.Button();
+            this.lstWorkflowLinked = new System.Windows.Forms.ListView();
+            this.colWorkflowLinkedNum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colWorkflowLinkedCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colWorkflowLinkedName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colWorkflowLinkedStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lblWorkflowLinked = new System.Windows.Forms.Label();
             this.tabPrograms = new System.Windows.Forms.TabPage();
-            this.lstPrograms = new System.Windows.Forms.ListView();
-            this.colProgName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colProgType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.lstSearchPrograms = new System.Windows.Forms.ListView();
-            this.colSearchProgName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colSearchProgType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lstProgramsAvailable = new System.Windows.Forms.ListView();
+            this.colProgramsAvailCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colProgramsAvailName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colProgramsAvailType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lblProgramsAvailable = new System.Windows.Forms.Label();
+            this.pnlProgramsLinkedActions = new System.Windows.Forms.Panel();
+            this.btnViewProgramDetails = new System.Windows.Forms.Button();
+            this.btnRemoveProgram = new System.Windows.Forms.Button();
+            this.lstProgramsLinked = new System.Windows.Forms.ListView();
+            this.colProgramsLinkedNum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colProgramsLinkedCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colProgramsLinkedName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colProgramsLinkedType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lblProgramsLinked = new System.Windows.Forms.Label();
             this.tabDocs = new System.Windows.Forms.TabPage();
-            this.lstDocs = new System.Windows.Forms.ListView();
-            this.colDocName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colDocStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.lstSearchDocs = new System.Windows.Forms.ListView();
-            this.colSearchDocName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colSearchDocStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.pnlDocsDropZone = new System.Windows.Forms.Panel();
+            this.lblDocsUpload = new System.Windows.Forms.Label();
+            this.pnlDocsUpload = new System.Windows.Forms.Panel();
+            this.btnSelectDocFromDMS = new System.Windows.Forms.Button();
+            this.btnUploadDoc = new System.Windows.Forms.Button();
+            this.pnlDocsLinkedActions = new System.Windows.Forms.Panel();
+            this.btnViewDoc = new System.Windows.Forms.Button();
+            this.btnRemoveDoc = new System.Windows.Forms.Button();
+            this.lstDocsLinked = new System.Windows.Forms.ListView();
+            this.colDocsLinkedNum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colDocsLinkedFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colDocsLinkedSize = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colDocsLinkedDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lblDocsLinked = new System.Windows.Forms.Label();
             this.tabVersions = new System.Windows.Forms.TabPage();
             this.lstVersions = new System.Windows.Forms.ListView();
             this.colVerNum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -160,10 +201,18 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingOuter.SuspendLayout();
             this.tabMapping.SuspendLayout();
             this.tabAttach.SuspendLayout();
+            this.pnlAttachUpload.SuspendLayout();
+            this.pnlAttachLinkedActions.SuspendLayout();
             this.tabRelated.SuspendLayout();
+            this.pnlRelatedSearch.SuspendLayout();
+            this.pnlRelatedLinkedActions.SuspendLayout();
             this.tabWorkflow.SuspendLayout();
+            this.pnlWorkflowLinkedActions.SuspendLayout();
             this.tabPrograms.SuspendLayout();
+            this.pnlProgramsLinkedActions.SuspendLayout();
             this.tabDocs.SuspendLayout();
+            this.pnlDocsUpload.SuspendLayout();
+            this.pnlDocsLinkedActions.SuspendLayout();
             this.tabVersions.SuspendLayout();
             this.pnlMappingHeader.SuspendLayout();
             this.pnlContentOuter.SuspendLayout();
@@ -451,21 +500,22 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlGap2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlGap2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlGap2.Location = new System.Drawing.Point(10, 810);
+            this.pnlGap2.Location = new System.Drawing.Point(10, 560);
             this.pnlGap2.Name = "pnlGap2";
             this.pnlGap2.Size = new System.Drawing.Size(1388, 8);
             this.pnlGap2.TabIndex = 13;
             // 
             // pnlMappingOuter
             // 
+            this.pnlMappingOuter.AutoScroll = true;
             this.pnlMappingOuter.BackColor = System.Drawing.Color.White;
             this.pnlMappingOuter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlMappingOuter.Controls.Add(this.tabMapping);
             this.pnlMappingOuter.Controls.Add(this.pnlMappingHeader);
-            this.pnlMappingOuter.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlMappingOuter.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlMappingOuter.Location = new System.Drawing.Point(10, 560);
             this.pnlMappingOuter.Name = "pnlMappingOuter";
-            this.pnlMappingOuter.Size = new System.Drawing.Size(1388, 250);
+            this.pnlMappingOuter.Size = new System.Drawing.Size(1388, 264);
             this.pnlMappingOuter.TabIndex = 14;
             // 
             // tabMapping
@@ -476,389 +526,938 @@ namespace CMS.Presentation.Modules.KMS
             this.tabMapping.Controls.Add(this.tabPrograms);
             this.tabMapping.Controls.Add(this.tabDocs);
             this.tabMapping.Controls.Add(this.tabVersions);
-            this.tabMapping.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabMapping.Dock = System.Windows.Forms.DockStyle.Top;
             this.tabMapping.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.tabMapping.Location = new System.Drawing.Point(0, 28);
             this.tabMapping.Name = "tabMapping";
             this.tabMapping.SelectedIndex = 0;
-            this.tabMapping.Size = new System.Drawing.Size(1386, 220);
+            this.tabMapping.Size = new System.Drawing.Size(1365, 500);
             this.tabMapping.TabIndex = 1;
             // 
             // tabAttach
             // 
             this.tabAttach.BackColor = System.Drawing.Color.White;
-            this.tabAttach.Controls.Add(this.lstSearchAttach);
-            this.tabAttach.Controls.Add(this.lstAttach);
+            this.tabAttach.Controls.Add(this.pnlDropZone);
+            this.tabAttach.Controls.Add(this.lblAttachUpload);
+            this.tabAttach.Controls.Add(this.pnlAttachUpload);
+            this.tabAttach.Controls.Add(this.pnlAttachLinkedActions);
+            this.tabAttach.Controls.Add(this.lstAttachLinked);
+            this.tabAttach.Controls.Add(this.lblAttachLinked);
             this.tabAttach.Location = new System.Drawing.Point(4, 29);
             this.tabAttach.Name = "tabAttach";
             this.tabAttach.Padding = new System.Windows.Forms.Padding(4);
-            this.tabAttach.Size = new System.Drawing.Size(1378, 187);
+            this.tabAttach.Size = new System.Drawing.Size(1357, 467);
             this.tabAttach.TabIndex = 0;
             this.tabAttach.Text = "📎 ไฟล์ที่แนบ";
             // 
-            // lstAttach
+            // pnlDropZone
             // 
-            this.lstAttach.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstAttach.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colAttFile,
-            this.colAttSize,
-            this.colAttDate});
-            this.lstAttach.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lstAttach.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstAttach.FullRowSelect = true;
-            this.lstAttach.HideSelection = false;
-            this.lstAttach.Location = new System.Drawing.Point(4, 4);
-            this.lstAttach.Name = "lstAttach";
-            this.lstAttach.Size = new System.Drawing.Size(1370, 200);
-            this.lstAttach.TabIndex = 0;
-            this.lstAttach.UseCompatibleStateImageBehavior = false;
-            this.lstAttach.View = System.Windows.Forms.View.Details;
+            this.pnlDropZone.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
+            this.pnlDropZone.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlDropZone.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlDropZone.Location = new System.Drawing.Point(4, 244);
+            this.pnlDropZone.Name = "pnlDropZone";
+            this.pnlDropZone.Size = new System.Drawing.Size(1349, 219);
+            this.pnlDropZone.TabIndex = 5;
             // 
-            // lstSearchAttach
+            // lblAttachUpload
             // 
-            this.lstSearchAttach.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstSearchAttach.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colSearchAttFile,
-            this.colSearchAttSize,
-            this.colSearchAttDate});
-            this.lstSearchAttach.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lstSearchAttach.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstSearchAttach.FullRowSelect = true;
-            this.lstSearchAttach.GridLines = true;
-            this.lstSearchAttach.HideSelection = false;
-            this.lstSearchAttach.Location = new System.Drawing.Point(4, 204);
-            this.lstSearchAttach.Name = "lstSearchAttach";
-            this.lstSearchAttach.Size = new System.Drawing.Size(1370, 0);
-            this.lstSearchAttach.TabIndex = 1;
-            this.lstSearchAttach.UseCompatibleStateImageBehavior = false;
-            this.lstSearchAttach.View = System.Windows.Forms.View.Details;
-            this.lstSearchAttach.DoubleClick += new System.EventHandler(this.LstSearchAttach_DoubleClick);
+            this.lblAttachUpload.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblAttachUpload.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblAttachUpload.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblAttachUpload.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblAttachUpload.Location = new System.Drawing.Point(4, 220);
+            this.lblAttachUpload.Name = "lblAttachUpload";
+            this.lblAttachUpload.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblAttachUpload.Size = new System.Drawing.Size(1349, 24);
+            this.lblAttachUpload.TabIndex = 4;
+            this.lblAttachUpload.Text = "เพิ่มไฟล์ใหม่";
             // 
-            // colAttFile
+            // pnlAttachUpload
             // 
-            this.colAttFile.Text = "ชื่อไฟล์";
-            this.colAttFile.Width = 400;
+            this.pnlAttachUpload.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.pnlAttachUpload.Controls.Add(this.btnSelectFromDMS);
+            this.pnlAttachUpload.Controls.Add(this.btnUploadFile);
+            this.pnlAttachUpload.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlAttachUpload.Location = new System.Drawing.Point(4, 184);
+            this.pnlAttachUpload.Name = "pnlAttachUpload";
+            this.pnlAttachUpload.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
+            this.pnlAttachUpload.Size = new System.Drawing.Size(1349, 36);
+            this.pnlAttachUpload.TabIndex = 3;
             // 
-            // colAttSize
+            // btnSelectFromDMS
             // 
-            this.colAttSize.Text = "ขนาด";
-            this.colAttSize.Width = 80;
+            this.btnSelectFromDMS.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
+            this.btnSelectFromDMS.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnSelectFromDMS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSelectFromDMS.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnSelectFromDMS.ForeColor = System.Drawing.Color.White;
+            this.btnSelectFromDMS.Location = new System.Drawing.Point(154, 6);
+            this.btnSelectFromDMS.Name = "btnSelectFromDMS";
+            this.btnSelectFromDMS.Size = new System.Drawing.Size(150, 24);
+            this.btnSelectFromDMS.TabIndex = 1;
+            this.btnSelectFromDMS.Text = "📁 เลือกจาก DMS";
+            this.btnSelectFromDMS.UseVisualStyleBackColor = false;
+            this.btnSelectFromDMS.Click += new System.EventHandler(this.BtnSelectFromDMS_Click);
             // 
-            // colAttDate
+            // btnUploadFile
             // 
-            this.colAttDate.Text = "วันที่อัพโหลด";
-            this.colAttDate.Width = 140;
+            this.btnUploadFile.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnUploadFile.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnUploadFile.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUploadFile.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnUploadFile.ForeColor = System.Drawing.Color.White;
+            this.btnUploadFile.Location = new System.Drawing.Point(8, 6);
+            this.btnUploadFile.Name = "btnUploadFile";
+            this.btnUploadFile.Size = new System.Drawing.Size(140, 24);
+            this.btnUploadFile.TabIndex = 0;
+            this.btnUploadFile.Text = "📤 อัพโหลดไฟล์";
+            this.btnUploadFile.UseVisualStyleBackColor = false;
+            this.btnUploadFile.Click += new System.EventHandler(this.BtnUploadFileNew_Click);
             // 
-            // colSearchAttFile
+            // pnlAttachLinkedActions
             // 
-            this.colSearchAttFile.Text = "ชื่อไฟล์";
-            this.colSearchAttFile.Width = 400;
+            this.pnlAttachLinkedActions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.pnlAttachLinkedActions.Controls.Add(this.btnViewAttach);
+            this.pnlAttachLinkedActions.Controls.Add(this.btnRemoveAttach);
+            this.pnlAttachLinkedActions.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlAttachLinkedActions.Location = new System.Drawing.Point(4, 148);
+            this.pnlAttachLinkedActions.Name = "pnlAttachLinkedActions";
+            this.pnlAttachLinkedActions.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
+            this.pnlAttachLinkedActions.Size = new System.Drawing.Size(1349, 36);
+            this.pnlAttachLinkedActions.TabIndex = 2;
             // 
-            // colSearchAttSize
+            // btnViewAttach
             // 
-            this.colSearchAttSize.Text = "ขนาด";
-            this.colSearchAttSize.Width = 80;
+            this.btnViewAttach.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnViewAttach.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnViewAttach.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnViewAttach.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnViewAttach.ForeColor = System.Drawing.Color.White;
+            this.btnViewAttach.Location = new System.Drawing.Point(114, 6);
+            this.btnViewAttach.Name = "btnViewAttach";
+            this.btnViewAttach.Size = new System.Drawing.Size(100, 24);
+            this.btnViewAttach.TabIndex = 1;
+            this.btnViewAttach.Text = "👁️ ดูไฟล์";
+            this.btnViewAttach.UseVisualStyleBackColor = false;
+            this.btnViewAttach.Click += new System.EventHandler(this.BtnViewAttach_Click);
             // 
-            // colSearchAttDate
+            // btnRemoveAttach
             // 
-            this.colSearchAttDate.Text = "วันที่อัพโหลด";
-            this.colSearchAttDate.Width = 140;
+            this.btnRemoveAttach.BackColor = System.Drawing.Color.White;
+            this.btnRemoveAttach.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRemoveAttach.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRemoveAttach.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnRemoveAttach.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnRemoveAttach.Location = new System.Drawing.Point(8, 6);
+            this.btnRemoveAttach.Name = "btnRemoveAttach";
+            this.btnRemoveAttach.Size = new System.Drawing.Size(100, 24);
+            this.btnRemoveAttach.TabIndex = 0;
+            this.btnRemoveAttach.Text = "🗑️ ลบไฟล์";
+            this.btnRemoveAttach.UseVisualStyleBackColor = false;
+            this.btnRemoveAttach.Click += new System.EventHandler(this.BtnRemoveAttachNew_Click);
+            // 
+            // lstAttachLinked
+            // 
+            this.lstAttachLinked.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lstAttachLinked.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colAttachLinkedNum,
+            this.colAttachLinkedFile,
+            this.colAttachLinkedSize,
+            this.colAttachLinkedDate});
+            this.lstAttachLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lstAttachLinked.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstAttachLinked.FullRowSelect = true;
+            this.lstAttachLinked.GridLines = true;
+            this.lstAttachLinked.HideSelection = false;
+            this.lstAttachLinked.Location = new System.Drawing.Point(4, 28);
+            this.lstAttachLinked.Name = "lstAttachLinked";
+            this.lstAttachLinked.Size = new System.Drawing.Size(1349, 120);
+            this.lstAttachLinked.TabIndex = 1;
+            this.lstAttachLinked.UseCompatibleStateImageBehavior = false;
+            this.lstAttachLinked.View = System.Windows.Forms.View.Details;
+            this.lstAttachLinked.DoubleClick += new System.EventHandler(this.LstAttachLinked_DoubleClick);
+            // 
+            // colAttachLinkedNum
+            // 
+            this.colAttachLinkedNum.Text = "#";
+            this.colAttachLinkedNum.Width = 40;
+            // 
+            // colAttachLinkedFile
+            // 
+            this.colAttachLinkedFile.Text = "ชื่อไฟล์";
+            this.colAttachLinkedFile.Width = 400;
+            // 
+            // colAttachLinkedSize
+            // 
+            this.colAttachLinkedSize.Text = "ขนาด";
+            this.colAttachLinkedSize.Width = 100;
+            // 
+            // colAttachLinkedDate
+            // 
+            this.colAttachLinkedDate.Text = "วันที่แนบ";
+            this.colAttachLinkedDate.Width = 140;
+            // 
+            // lblAttachLinked
+            // 
+            this.lblAttachLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblAttachLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblAttachLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblAttachLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblAttachLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblAttachLinked.Name = "lblAttachLinked";
+            this.lblAttachLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblAttachLinked.Size = new System.Drawing.Size(1349, 24);
+            this.lblAttachLinked.TabIndex = 0;
+            this.lblAttachLinked.Text = "ไฟล์ที่แนบ (0 ไฟล์)";
             // 
             // tabRelated
             // 
             this.tabRelated.BackColor = System.Drawing.Color.White;
-            this.tabRelated.Controls.Add(this.lstSearchRelated);
-            this.tabRelated.Controls.Add(this.lstRelated);
+            this.tabRelated.Controls.Add(this.lstRelatedSearch);
+            this.tabRelated.Controls.Add(this.lblRelatedSearch);
+            this.tabRelated.Controls.Add(this.pnlRelatedSearch);
+            this.tabRelated.Controls.Add(this.pnlRelatedLinkedActions);
+            this.tabRelated.Controls.Add(this.lstRelatedLinked);
+            this.tabRelated.Controls.Add(this.lblRelatedLinked);
             this.tabRelated.Location = new System.Drawing.Point(4, 29);
             this.tabRelated.Name = "tabRelated";
             this.tabRelated.Padding = new System.Windows.Forms.Padding(4);
-            this.tabRelated.Size = new System.Drawing.Size(1378, 187);
+            this.tabRelated.Size = new System.Drawing.Size(1378, 467);
             this.tabRelated.TabIndex = 1;
             this.tabRelated.Text = "🔗 ความรู้ที่เกี่ยวข้อง";
             // 
-            // lstRelated
+            // lstRelatedSearch
             // 
-            this.lstRelated.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstRelated.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colRelCode,
-            this.colRelTitle,
-            this.colRelType});
-            this.lstRelated.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lstRelated.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstRelated.FullRowSelect = true;
-            this.lstRelated.HideSelection = false;
-            this.lstRelated.Location = new System.Drawing.Point(4, 4);
-            this.lstRelated.Name = "lstRelated";
-            this.lstRelated.Size = new System.Drawing.Size(1370, 200);
-            this.lstRelated.TabIndex = 0;
-            this.lstRelated.UseCompatibleStateImageBehavior = false;
-            this.lstRelated.View = System.Windows.Forms.View.Details;
+            this.lstRelatedSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lstRelatedSearch.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colRelSearchCode,
+            this.colRelSearchTitle,
+            this.colRelSearchType,
+            this.colRelSearchViews});
+            this.lstRelatedSearch.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstRelatedSearch.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstRelatedSearch.FullRowSelect = true;
+            this.lstRelatedSearch.GridLines = true;
+            this.lstRelatedSearch.HideSelection = false;
+            this.lstRelatedSearch.Location = new System.Drawing.Point(4, 274);
+            this.lstRelatedSearch.Name = "lstRelatedSearch";
+            this.lstRelatedSearch.Size = new System.Drawing.Size(1370, 189);
+            this.lstRelatedSearch.TabIndex = 5;
+            this.lstRelatedSearch.UseCompatibleStateImageBehavior = false;
+            this.lstRelatedSearch.View = System.Windows.Forms.View.Details;
+            this.lstRelatedSearch.DoubleClick += new System.EventHandler(this.LstRelatedSearch_DoubleClick);
             // 
-            // lstSearchRelated
+            // colRelSearchCode
             // 
-            this.lstSearchRelated.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstSearchRelated.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colSearchRelCode,
-            this.colSearchRelTitle,
-            this.colSearchRelType});
-            this.lstSearchRelated.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lstSearchRelated.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstSearchRelated.FullRowSelect = true;
-            this.lstSearchRelated.GridLines = true;
-            this.lstSearchRelated.HideSelection = false;
-            this.lstSearchRelated.Location = new System.Drawing.Point(4, 204);
-            this.lstSearchRelated.Name = "lstSearchRelated";
-            this.lstSearchRelated.Size = new System.Drawing.Size(1370, 0);
-            this.lstSearchRelated.TabIndex = 1;
-            this.lstSearchRelated.UseCompatibleStateImageBehavior = false;
-            this.lstSearchRelated.View = System.Windows.Forms.View.Details;
-            this.lstSearchRelated.DoubleClick += new System.EventHandler(this.LstSearchRelated_DoubleClick);
+            this.colRelSearchCode.Text = "รหัสบทความ";
+            this.colRelSearchCode.Width = 120;
             // 
-            // colRelCode
+            // colRelSearchTitle
             // 
-            this.colRelCode.Text = "รหัสบทความ";
-            this.colRelCode.Width = 120;
+            this.colRelSearchTitle.Text = "ชื่อบทความ";
+            this.colRelSearchTitle.Width = 500;
             // 
-            // colRelTitle
+            // colRelSearchType
             // 
-            this.colRelTitle.Text = "ชื่อบทความ";
-            this.colRelTitle.Width = 380;
+            this.colRelSearchType.Text = "ประเภท";
+            this.colRelSearchType.Width = 100;
             // 
-            // colRelType
+            // colRelSearchViews
             // 
-            this.colRelType.Text = "ประเภท";
-            this.colRelType.Width = 100;
+            this.colRelSearchViews.Text = "ดู";
             // 
-            // colSearchRelCode
+            // lblRelatedSearch
             // 
-            this.colSearchRelCode.Text = "รหัสบทความ";
-            this.colSearchRelCode.Width = 120;
+            this.lblRelatedSearch.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblRelatedSearch.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblRelatedSearch.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblRelatedSearch.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblRelatedSearch.Location = new System.Drawing.Point(4, 250);
+            this.lblRelatedSearch.Name = "lblRelatedSearch";
+            this.lblRelatedSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblRelatedSearch.Size = new System.Drawing.Size(1370, 24);
+            this.lblRelatedSearch.TabIndex = 4;
+            this.lblRelatedSearch.Text = "ผลการค้นหา — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
-            // colSearchRelTitle
+            // pnlRelatedSearch
             // 
-            this.colSearchRelTitle.Text = "ชื่อบทความ";
-            this.colSearchRelTitle.Width = 380;
+            this.pnlRelatedSearch.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.pnlRelatedSearch.Controls.Add(this.btnSearchRelated);
+            this.pnlRelatedSearch.Controls.Add(this.cboRelatedStatus);
+            this.pnlRelatedSearch.Controls.Add(this.cboRelatedCategory);
+            this.pnlRelatedSearch.Controls.Add(this.cboRelatedType);
+            this.pnlRelatedSearch.Controls.Add(this.txtSearchRelated);
+            this.pnlRelatedSearch.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlRelatedSearch.Location = new System.Drawing.Point(4, 214);
+            this.pnlRelatedSearch.Name = "pnlRelatedSearch";
+            this.pnlRelatedSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
+            this.pnlRelatedSearch.Size = new System.Drawing.Size(1370, 36);
+            this.pnlRelatedSearch.TabIndex = 3;
             // 
-            // colSearchRelType
+            // btnSearchRelated
             // 
-            this.colSearchRelType.Text = "ประเภท";
-            this.colSearchRelType.Width = 100;
+            this.btnSearchRelated.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnSearchRelated.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnSearchRelated.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSearchRelated.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnSearchRelated.ForeColor = System.Drawing.Color.White;
+            this.btnSearchRelated.Location = new System.Drawing.Point(682, 6);
+            this.btnSearchRelated.Name = "btnSearchRelated";
+            this.btnSearchRelated.Size = new System.Drawing.Size(80, 24);
+            this.btnSearchRelated.TabIndex = 4;
+            this.btnSearchRelated.Text = "🔎 ค้นหา";
+            this.btnSearchRelated.UseVisualStyleBackColor = false;
+            this.btnSearchRelated.Click += new System.EventHandler(this.BtnSearchRelated_Click);
+            // 
+            // cboRelatedStatus
+            // 
+            this.cboRelatedStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboRelatedStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboRelatedStatus.FormattingEnabled = true;
+            this.cboRelatedStatus.Items.AddRange(new object[] {
+            "สถานะ: Published ▼",
+            "Draft",
+            "Review",
+            "Published",
+            "Archived"});
+            this.cboRelatedStatus.Location = new System.Drawing.Point(546, 6);
+            this.cboRelatedStatus.Name = "cboRelatedStatus";
+            this.cboRelatedStatus.Size = new System.Drawing.Size(130, 28);
+            this.cboRelatedStatus.TabIndex = 3;
+            // 
+            // cboRelatedCategory
+            // 
+            this.cboRelatedCategory.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboRelatedCategory.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboRelatedCategory.FormattingEnabled = true;
+            this.cboRelatedCategory.Items.AddRange(new object[] {
+            "หมวดหมู่ ▼"});
+            this.cboRelatedCategory.Location = new System.Drawing.Point(420, 6);
+            this.cboRelatedCategory.Name = "cboRelatedCategory";
+            this.cboRelatedCategory.Size = new System.Drawing.Size(120, 28);
+            this.cboRelatedCategory.TabIndex = 2;
+            // 
+            // cboRelatedType
+            // 
+            this.cboRelatedType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboRelatedType.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboRelatedType.FormattingEnabled = true;
+            this.cboRelatedType.Items.AddRange(new object[] {
+            "ประเภท ▼",
+            "SOP",
+            "FAQ",
+            "Guideline",
+            "Template",
+            "Policy"});
+            this.cboRelatedType.Location = new System.Drawing.Point(314, 6);
+            this.cboRelatedType.Name = "cboRelatedType";
+            this.cboRelatedType.Size = new System.Drawing.Size(100, 28);
+            this.cboRelatedType.TabIndex = 1;
+            // 
+            // txtSearchRelated
+            // 
+            this.txtSearchRelated.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtSearchRelated.ForeColor = System.Drawing.Color.Gray;
+            this.txtSearchRelated.Location = new System.Drawing.Point(8, 6);
+            this.txtSearchRelated.Name = "txtSearchRelated";
+            this.txtSearchRelated.Size = new System.Drawing.Size(300, 27);
+            this.txtSearchRelated.TabIndex = 0;
+            this.txtSearchRelated.Text = "🔍 ค้นหาชื่อบทความ / รหัส / แท็ก...";
+            this.txtSearchRelated.Enter += new System.EventHandler(this.TxtSearchRelatedNew_Enter);
+            this.txtSearchRelated.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearchRelatedNew_KeyDown);
+            this.txtSearchRelated.Leave += new System.EventHandler(this.TxtSearchRelatedNew_Leave);
+            // 
+            // pnlRelatedLinkedActions
+            // 
+            this.pnlRelatedLinkedActions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.pnlRelatedLinkedActions.Controls.Add(this.btnRemoveRelatedNew);
+            this.pnlRelatedLinkedActions.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlRelatedLinkedActions.Location = new System.Drawing.Point(4, 178);
+            this.pnlRelatedLinkedActions.Name = "pnlRelatedLinkedActions";
+            this.pnlRelatedLinkedActions.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
+            this.pnlRelatedLinkedActions.Size = new System.Drawing.Size(1370, 36);
+            this.pnlRelatedLinkedActions.TabIndex = 2;
+            // 
+            // btnRemoveRelatedNew
+            // 
+            this.btnRemoveRelatedNew.BackColor = System.Drawing.Color.White;
+            this.btnRemoveRelatedNew.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRemoveRelatedNew.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRemoveRelatedNew.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnRemoveRelatedNew.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnRemoveRelatedNew.Location = new System.Drawing.Point(8, 6);
+            this.btnRemoveRelatedNew.Name = "btnRemoveRelatedNew";
+            this.btnRemoveRelatedNew.Size = new System.Drawing.Size(100, 24);
+            this.btnRemoveRelatedNew.TabIndex = 0;
+            this.btnRemoveRelatedNew.Text = "🗑️ ลบรายการ";
+            this.btnRemoveRelatedNew.UseVisualStyleBackColor = false;
+            this.btnRemoveRelatedNew.Click += new System.EventHandler(this.BtnRemoveRelatedNew_Click);
+            // 
+            // lstRelatedLinked
+            // 
+            this.lstRelatedLinked.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lstRelatedLinked.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colRelLinkedNum,
+            this.colRelLinkedCode,
+            this.colRelLinkedTitle,
+            this.colRelLinkedType});
+            this.lstRelatedLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lstRelatedLinked.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstRelatedLinked.FullRowSelect = true;
+            this.lstRelatedLinked.GridLines = true;
+            this.lstRelatedLinked.HideSelection = false;
+            this.lstRelatedLinked.Location = new System.Drawing.Point(4, 28);
+            this.lstRelatedLinked.Name = "lstRelatedLinked";
+            this.lstRelatedLinked.Size = new System.Drawing.Size(1370, 150);
+            this.lstRelatedLinked.TabIndex = 1;
+            this.lstRelatedLinked.UseCompatibleStateImageBehavior = false;
+            this.lstRelatedLinked.View = System.Windows.Forms.View.Details;
+            this.lstRelatedLinked.DoubleClick += new System.EventHandler(this.LstRelatedLinked_DoubleClick);
+            // 
+            // colRelLinkedNum
+            // 
+            this.colRelLinkedNum.Text = "#";
+            this.colRelLinkedNum.Width = 40;
+            // 
+            // colRelLinkedCode
+            // 
+            this.colRelLinkedCode.Text = "รหัสบทความ";
+            this.colRelLinkedCode.Width = 120;
+            // 
+            // colRelLinkedTitle
+            // 
+            this.colRelLinkedTitle.Text = "ชื่อบทความ";
+            this.colRelLinkedTitle.Width = 500;
+            // 
+            // colRelLinkedType
+            // 
+            this.colRelLinkedType.Text = "ประเภท";
+            this.colRelLinkedType.Width = 100;
+            // 
+            // lblRelatedLinked
+            // 
+            this.lblRelatedLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblRelatedLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblRelatedLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblRelatedLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblRelatedLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblRelatedLinked.Name = "lblRelatedLinked";
+            this.lblRelatedLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblRelatedLinked.Size = new System.Drawing.Size(1370, 24);
+            this.lblRelatedLinked.TabIndex = 0;
+            this.lblRelatedLinked.Text = "รายการที่ Link อยู่แล้ว (0 รายการ)";
             // 
             // tabWorkflow
             // 
             this.tabWorkflow.BackColor = System.Drawing.Color.White;
-            this.tabWorkflow.Controls.Add(this.lstSearchWorkflow);
-            this.tabWorkflow.Controls.Add(this.lstWorkflow);
+            this.tabWorkflow.Controls.Add(this.lstWorkflowAvailable);
+            this.tabWorkflow.Controls.Add(this.lblWorkflowAvailable);
+            this.tabWorkflow.Controls.Add(this.pnlWorkflowLinkedActions);
+            this.tabWorkflow.Controls.Add(this.lstWorkflowLinked);
+            this.tabWorkflow.Controls.Add(this.lblWorkflowLinked);
             this.tabWorkflow.Location = new System.Drawing.Point(4, 29);
             this.tabWorkflow.Name = "tabWorkflow";
             this.tabWorkflow.Padding = new System.Windows.Forms.Padding(4);
-            this.tabWorkflow.Size = new System.Drawing.Size(1378, 187);
+            this.tabWorkflow.Size = new System.Drawing.Size(1378, 467);
             this.tabWorkflow.TabIndex = 2;
             this.tabWorkflow.Text = "⚖️ เส้นงาน (Workflow)";
             // 
-            // lstWorkflow
+            // lstWorkflowAvailable
             // 
-            this.lstWorkflow.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstWorkflow.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colWfCode,
-            this.colWfName,
-            this.colWfStatus});
-            this.lstWorkflow.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lstWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstWorkflow.FullRowSelect = true;
-            this.lstWorkflow.HideSelection = false;
-            this.lstWorkflow.Location = new System.Drawing.Point(4, 4);
-            this.lstWorkflow.Name = "lstWorkflow";
-            this.lstWorkflow.Size = new System.Drawing.Size(1370, 200);
-            this.lstWorkflow.TabIndex = 0;
-            this.lstWorkflow.UseCompatibleStateImageBehavior = false;
-            this.lstWorkflow.View = System.Windows.Forms.View.Details;
+            this.lstWorkflowAvailable.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lstWorkflowAvailable.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colWorkflowAvailCode,
+            this.colWorkflowAvailName,
+            this.colWorkflowAvailStatus});
+            this.lstWorkflowAvailable.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstWorkflowAvailable.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstWorkflowAvailable.FullRowSelect = true;
+            this.lstWorkflowAvailable.GridLines = true;
+            this.lstWorkflowAvailable.HideSelection = false;
+            this.lstWorkflowAvailable.Location = new System.Drawing.Point(4, 208);
+            this.lstWorkflowAvailable.Name = "lstWorkflowAvailable";
+            this.lstWorkflowAvailable.Size = new System.Drawing.Size(1370, 255);
+            this.lstWorkflowAvailable.TabIndex = 4;
+            this.lstWorkflowAvailable.UseCompatibleStateImageBehavior = false;
+            this.lstWorkflowAvailable.View = System.Windows.Forms.View.Details;
+            this.lstWorkflowAvailable.DoubleClick += new System.EventHandler(this.LstWorkflowAvailable_DoubleClick);
             // 
-            // lstSearchWorkflow
+            // colWorkflowAvailCode
             // 
-            this.lstSearchWorkflow.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstSearchWorkflow.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colSearchWfCode,
-            this.colSearchWfName,
-            this.colSearchWfStatus});
-            this.lstSearchWorkflow.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lstSearchWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstSearchWorkflow.FullRowSelect = true;
-            this.lstSearchWorkflow.GridLines = true;
-            this.lstSearchWorkflow.HideSelection = false;
-            this.lstSearchWorkflow.Location = new System.Drawing.Point(4, 204);
-            this.lstSearchWorkflow.Name = "lstSearchWorkflow";
-            this.lstSearchWorkflow.Size = new System.Drawing.Size(1370, 0);
-            this.lstSearchWorkflow.TabIndex = 1;
-            this.lstSearchWorkflow.UseCompatibleStateImageBehavior = false;
-            this.lstSearchWorkflow.View = System.Windows.Forms.View.Details;
-            this.lstSearchWorkflow.DoubleClick += new System.EventHandler(this.LstSearchWorkflow_DoubleClick);
+            this.colWorkflowAvailCode.Text = "รหัส Workflow";
+            this.colWorkflowAvailCode.Width = 140;
             // 
-            // colWfCode
+            // colWorkflowAvailName
             // 
-            this.colWfCode.Text = "รหัส Workflow";
-            this.colWfCode.Width = 140;
+            this.colWorkflowAvailName.Text = "ชื่อ Workflow";
+            this.colWorkflowAvailName.Width = 400;
             // 
-            // colWfName
+            // colWorkflowAvailStatus
             // 
-            this.colWfName.Text = "ชื่อ Workflow";
-            this.colWfName.Width = 360;
+            this.colWorkflowAvailStatus.Text = "สถานะ";
+            this.colWorkflowAvailStatus.Width = 120;
             // 
-            // colWfStatus
+            // lblWorkflowAvailable
             // 
-            this.colWfStatus.Text = "สถานะ";
-            this.colWfStatus.Width = 100;
+            this.lblWorkflowAvailable.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblWorkflowAvailable.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblWorkflowAvailable.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblWorkflowAvailable.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblWorkflowAvailable.Location = new System.Drawing.Point(4, 184);
+            this.lblWorkflowAvailable.Name = "lblWorkflowAvailable";
+            this.lblWorkflowAvailable.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblWorkflowAvailable.Size = new System.Drawing.Size(1370, 24);
+            this.lblWorkflowAvailable.TabIndex = 3;
+            this.lblWorkflowAvailable.Text = "Workflow ที่พร้อมใช้งาน — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
-            // colSearchWfCode
+            // pnlWorkflowLinkedActions
             // 
-            this.colSearchWfCode.Text = "รหัส Workflow";
-            this.colSearchWfCode.Width = 140;
+            this.pnlWorkflowLinkedActions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.pnlWorkflowLinkedActions.Controls.Add(this.btnStartWorkflow);
+            this.pnlWorkflowLinkedActions.Controls.Add(this.btnViewWorkflowDiagram);
+            this.pnlWorkflowLinkedActions.Controls.Add(this.btnRemoveWorkflow);
+            this.pnlWorkflowLinkedActions.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlWorkflowLinkedActions.Location = new System.Drawing.Point(4, 148);
+            this.pnlWorkflowLinkedActions.Name = "pnlWorkflowLinkedActions";
+            this.pnlWorkflowLinkedActions.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
+            this.pnlWorkflowLinkedActions.Size = new System.Drawing.Size(1370, 36);
+            this.pnlWorkflowLinkedActions.TabIndex = 2;
             // 
-            // colSearchWfName
+            // btnStartWorkflow
             // 
-            this.colSearchWfName.Text = "ชื่อ Workflow";
-            this.colSearchWfName.Width = 360;
+            this.btnStartWorkflow.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
+            this.btnStartWorkflow.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnStartWorkflow.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnStartWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnStartWorkflow.ForeColor = System.Drawing.Color.White;
+            this.btnStartWorkflow.Location = new System.Drawing.Point(240, 6);
+            this.btnStartWorkflow.Name = "btnStartWorkflow";
+            this.btnStartWorkflow.Size = new System.Drawing.Size(140, 24);
+            this.btnStartWorkflow.TabIndex = 2;
+            this.btnStartWorkflow.Text = "▶️ เริ่ม Workflow";
+            this.btnStartWorkflow.UseVisualStyleBackColor = false;
+            this.btnStartWorkflow.Click += new System.EventHandler(this.BtnStartWorkflow_Click);
             // 
-            // colSearchWfStatus
+            // btnViewWorkflowDiagram
             // 
-            this.colSearchWfStatus.Text = "สถานะ";
-            this.colSearchWfStatus.Width = 100;
+            this.btnViewWorkflowDiagram.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnViewWorkflowDiagram.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnViewWorkflowDiagram.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnViewWorkflowDiagram.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnViewWorkflowDiagram.ForeColor = System.Drawing.Color.White;
+            this.btnViewWorkflowDiagram.Location = new System.Drawing.Point(114, 6);
+            this.btnViewWorkflowDiagram.Name = "btnViewWorkflowDiagram";
+            this.btnViewWorkflowDiagram.Size = new System.Drawing.Size(120, 24);
+            this.btnViewWorkflowDiagram.TabIndex = 1;
+            this.btnViewWorkflowDiagram.Text = "📊 ดู Diagram";
+            this.btnViewWorkflowDiagram.UseVisualStyleBackColor = false;
+            this.btnViewWorkflowDiagram.Click += new System.EventHandler(this.BtnViewWorkflowDiagram_Click);
+            // 
+            // btnRemoveWorkflow
+            // 
+            this.btnRemoveWorkflow.BackColor = System.Drawing.Color.White;
+            this.btnRemoveWorkflow.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRemoveWorkflow.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRemoveWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnRemoveWorkflow.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnRemoveWorkflow.Location = new System.Drawing.Point(8, 6);
+            this.btnRemoveWorkflow.Name = "btnRemoveWorkflow";
+            this.btnRemoveWorkflow.Size = new System.Drawing.Size(100, 24);
+            this.btnRemoveWorkflow.TabIndex = 0;
+            this.btnRemoveWorkflow.Text = "🗑️ ลบ";
+            this.btnRemoveWorkflow.UseVisualStyleBackColor = false;
+            this.btnRemoveWorkflow.Click += new System.EventHandler(this.BtnRemoveWorkflowNew_Click);
+            // 
+            // lstWorkflowLinked
+            // 
+            this.lstWorkflowLinked.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lstWorkflowLinked.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colWorkflowLinkedNum,
+            this.colWorkflowLinkedCode,
+            this.colWorkflowLinkedName,
+            this.colWorkflowLinkedStatus});
+            this.lstWorkflowLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lstWorkflowLinked.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstWorkflowLinked.FullRowSelect = true;
+            this.lstWorkflowLinked.GridLines = true;
+            this.lstWorkflowLinked.HideSelection = false;
+            this.lstWorkflowLinked.Location = new System.Drawing.Point(4, 28);
+            this.lstWorkflowLinked.Name = "lstWorkflowLinked";
+            this.lstWorkflowLinked.Size = new System.Drawing.Size(1370, 120);
+            this.lstWorkflowLinked.TabIndex = 1;
+            this.lstWorkflowLinked.UseCompatibleStateImageBehavior = false;
+            this.lstWorkflowLinked.View = System.Windows.Forms.View.Details;
+            this.lstWorkflowLinked.DoubleClick += new System.EventHandler(this.LstWorkflowLinked_DoubleClick);
+            // 
+            // colWorkflowLinkedNum
+            // 
+            this.colWorkflowLinkedNum.Text = "#";
+            this.colWorkflowLinkedNum.Width = 40;
+            // 
+            // colWorkflowLinkedCode
+            // 
+            this.colWorkflowLinkedCode.Text = "รหัส Workflow";
+            this.colWorkflowLinkedCode.Width = 140;
+            // 
+            // colWorkflowLinkedName
+            // 
+            this.colWorkflowLinkedName.Text = "ชื่อ Workflow";
+            this.colWorkflowLinkedName.Width = 400;
+            // 
+            // colWorkflowLinkedStatus
+            // 
+            this.colWorkflowLinkedStatus.Text = "สถานะ";
+            this.colWorkflowLinkedStatus.Width = 120;
+            // 
+            // lblWorkflowLinked
+            // 
+            this.lblWorkflowLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblWorkflowLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblWorkflowLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblWorkflowLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblWorkflowLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblWorkflowLinked.Name = "lblWorkflowLinked";
+            this.lblWorkflowLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblWorkflowLinked.Size = new System.Drawing.Size(1370, 24);
+            this.lblWorkflowLinked.TabIndex = 0;
+            this.lblWorkflowLinked.Text = "Workflow ที่เชื่อมโยง (0 รายการ)";
             // 
             // tabPrograms
             // 
             this.tabPrograms.BackColor = System.Drawing.Color.White;
-            this.tabPrograms.Controls.Add(this.lstSearchPrograms);
-            this.tabPrograms.Controls.Add(this.lstPrograms);
+            this.tabPrograms.Controls.Add(this.lstProgramsAvailable);
+            this.tabPrograms.Controls.Add(this.lblProgramsAvailable);
+            this.tabPrograms.Controls.Add(this.pnlProgramsLinkedActions);
+            this.tabPrograms.Controls.Add(this.lstProgramsLinked);
+            this.tabPrograms.Controls.Add(this.lblProgramsLinked);
             this.tabPrograms.Location = new System.Drawing.Point(4, 29);
             this.tabPrograms.Name = "tabPrograms";
             this.tabPrograms.Padding = new System.Windows.Forms.Padding(4);
-            this.tabPrograms.Size = new System.Drawing.Size(1378, 187);
+            this.tabPrograms.Size = new System.Drawing.Size(1378, 467);
             this.tabPrograms.TabIndex = 3;
             this.tabPrograms.Text = "💻 โปรแกรมที่เกี่ยวข้อง";
             // 
-            // lstPrograms
+            // lstProgramsAvailable
             // 
-            this.lstPrograms.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstPrograms.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colProgName,
-            this.colProgType});
-            this.lstPrograms.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lstPrograms.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstPrograms.FullRowSelect = true;
-            this.lstPrograms.HideSelection = false;
-            this.lstPrograms.Location = new System.Drawing.Point(4, 4);
-            this.lstPrograms.Name = "lstPrograms";
-            this.lstPrograms.Size = new System.Drawing.Size(1370, 200);
-            this.lstPrograms.TabIndex = 0;
-            this.lstPrograms.UseCompatibleStateImageBehavior = false;
-            this.lstPrograms.View = System.Windows.Forms.View.Details;
+            this.lstProgramsAvailable.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lstProgramsAvailable.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colProgramsAvailCode,
+            this.colProgramsAvailName,
+            this.colProgramsAvailType});
+            this.lstProgramsAvailable.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstProgramsAvailable.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstProgramsAvailable.FullRowSelect = true;
+            this.lstProgramsAvailable.GridLines = true;
+            this.lstProgramsAvailable.HideSelection = false;
+            this.lstProgramsAvailable.Location = new System.Drawing.Point(4, 208);
+            this.lstProgramsAvailable.Name = "lstProgramsAvailable";
+            this.lstProgramsAvailable.Size = new System.Drawing.Size(1370, 255);
+            this.lstProgramsAvailable.TabIndex = 4;
+            this.lstProgramsAvailable.UseCompatibleStateImageBehavior = false;
+            this.lstProgramsAvailable.View = System.Windows.Forms.View.Details;
+            this.lstProgramsAvailable.DoubleClick += new System.EventHandler(this.LstProgramsAvailable_DoubleClick);
             // 
-            // lstSearchPrograms
+            // colProgramsAvailCode
             // 
-            this.lstSearchPrograms.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstSearchPrograms.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colSearchProgName,
-            this.colSearchProgType});
-            this.lstSearchPrograms.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lstSearchPrograms.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstSearchPrograms.FullRowSelect = true;
-            this.lstSearchPrograms.GridLines = true;
-            this.lstSearchPrograms.HideSelection = false;
-            this.lstSearchPrograms.Location = new System.Drawing.Point(4, 204);
-            this.lstSearchPrograms.Name = "lstSearchPrograms";
-            this.lstSearchPrograms.Size = new System.Drawing.Size(1370, 0);
-            this.lstSearchPrograms.TabIndex = 1;
-            this.lstSearchPrograms.UseCompatibleStateImageBehavior = false;
-            this.lstSearchPrograms.View = System.Windows.Forms.View.Details;
-            this.lstSearchPrograms.DoubleClick += new System.EventHandler(this.LstSearchPrograms_DoubleClick);
+            this.colProgramsAvailCode.Text = "รหัสโปรแกรม";
+            this.colProgramsAvailCode.Width = 120;
             // 
-            // colProgName
+            // colProgramsAvailName
             // 
-            this.colProgName.Text = "ชื่อโปรแกรม";
-            this.colProgName.Width = 380;
+            this.colProgramsAvailName.Text = "ชื่อโปรแกรม";
+            this.colProgramsAvailName.Width = 400;
             // 
-            // colProgType
+            // colProgramsAvailType
             // 
-            this.colProgType.Text = "ประเภท";
-            this.colProgType.Width = 180;
+            this.colProgramsAvailType.Text = "ประเภท";
+            this.colProgramsAvailType.Width = 150;
             // 
-            // colSearchProgName
+            // lblProgramsAvailable
             // 
-            this.colSearchProgName.Text = "ชื่อโปรแกรม";
-            this.colSearchProgName.Width = 380;
+            this.lblProgramsAvailable.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblProgramsAvailable.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblProgramsAvailable.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblProgramsAvailable.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblProgramsAvailable.Location = new System.Drawing.Point(4, 184);
+            this.lblProgramsAvailable.Name = "lblProgramsAvailable";
+            this.lblProgramsAvailable.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblProgramsAvailable.Size = new System.Drawing.Size(1370, 24);
+            this.lblProgramsAvailable.TabIndex = 3;
+            this.lblProgramsAvailable.Text = "โปรแกรมที่พร้อมใช้งาน — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
-            // colSearchProgType
+            // pnlProgramsLinkedActions
             // 
-            this.colSearchProgType.Text = "ประเภท";
-            this.colSearchProgType.Width = 180;
+            this.pnlProgramsLinkedActions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.pnlProgramsLinkedActions.Controls.Add(this.btnViewProgramDetails);
+            this.pnlProgramsLinkedActions.Controls.Add(this.btnRemoveProgram);
+            this.pnlProgramsLinkedActions.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlProgramsLinkedActions.Location = new System.Drawing.Point(4, 148);
+            this.pnlProgramsLinkedActions.Name = "pnlProgramsLinkedActions";
+            this.pnlProgramsLinkedActions.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
+            this.pnlProgramsLinkedActions.Size = new System.Drawing.Size(1370, 36);
+            this.pnlProgramsLinkedActions.TabIndex = 2;
+            // 
+            // btnViewProgramDetails
+            // 
+            this.btnViewProgramDetails.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnViewProgramDetails.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnViewProgramDetails.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnViewProgramDetails.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnViewProgramDetails.ForeColor = System.Drawing.Color.White;
+            this.btnViewProgramDetails.Location = new System.Drawing.Point(114, 6);
+            this.btnViewProgramDetails.Name = "btnViewProgramDetails";
+            this.btnViewProgramDetails.Size = new System.Drawing.Size(120, 24);
+            this.btnViewProgramDetails.TabIndex = 1;
+            this.btnViewProgramDetails.Text = "📋 ดูรายละเอียด";
+            this.btnViewProgramDetails.UseVisualStyleBackColor = false;
+            this.btnViewProgramDetails.Click += new System.EventHandler(this.BtnViewProgramDetails_Click);
+            // 
+            // btnRemoveProgram
+            // 
+            this.btnRemoveProgram.BackColor = System.Drawing.Color.White;
+            this.btnRemoveProgram.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRemoveProgram.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRemoveProgram.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnRemoveProgram.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnRemoveProgram.Location = new System.Drawing.Point(8, 6);
+            this.btnRemoveProgram.Name = "btnRemoveProgram";
+            this.btnRemoveProgram.Size = new System.Drawing.Size(100, 24);
+            this.btnRemoveProgram.TabIndex = 0;
+            this.btnRemoveProgram.Text = "🗑️ ลบ";
+            this.btnRemoveProgram.UseVisualStyleBackColor = false;
+            this.btnRemoveProgram.Click += new System.EventHandler(this.BtnRemoveProgramNew_Click);
+            // 
+            // lstProgramsLinked
+            // 
+            this.lstProgramsLinked.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lstProgramsLinked.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colProgramsLinkedNum,
+            this.colProgramsLinkedCode,
+            this.colProgramsLinkedName,
+            this.colProgramsLinkedType});
+            this.lstProgramsLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lstProgramsLinked.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstProgramsLinked.FullRowSelect = true;
+            this.lstProgramsLinked.GridLines = true;
+            this.lstProgramsLinked.HideSelection = false;
+            this.lstProgramsLinked.Location = new System.Drawing.Point(4, 28);
+            this.lstProgramsLinked.Name = "lstProgramsLinked";
+            this.lstProgramsLinked.Size = new System.Drawing.Size(1370, 120);
+            this.lstProgramsLinked.TabIndex = 1;
+            this.lstProgramsLinked.UseCompatibleStateImageBehavior = false;
+            this.lstProgramsLinked.View = System.Windows.Forms.View.Details;
+            this.lstProgramsLinked.DoubleClick += new System.EventHandler(this.LstProgramsLinked_DoubleClick);
+            // 
+            // colProgramsLinkedNum
+            // 
+            this.colProgramsLinkedNum.Text = "#";
+            this.colProgramsLinkedNum.Width = 40;
+            // 
+            // colProgramsLinkedCode
+            // 
+            this.colProgramsLinkedCode.Text = "รหัสโปรแกรม";
+            this.colProgramsLinkedCode.Width = 120;
+            // 
+            // colProgramsLinkedName
+            // 
+            this.colProgramsLinkedName.Text = "ชื่อโปรแกรม";
+            this.colProgramsLinkedName.Width = 400;
+            // 
+            // colProgramsLinkedType
+            // 
+            this.colProgramsLinkedType.Text = "ประเภท";
+            this.colProgramsLinkedType.Width = 150;
+            // 
+            // lblProgramsLinked
+            // 
+            this.lblProgramsLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblProgramsLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblProgramsLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblProgramsLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblProgramsLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblProgramsLinked.Name = "lblProgramsLinked";
+            this.lblProgramsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblProgramsLinked.Size = new System.Drawing.Size(1370, 24);
+            this.lblProgramsLinked.TabIndex = 0;
+            this.lblProgramsLinked.Text = "โปรแกรมที่เชื่อมโยง (0 รายการ)";
             // 
             // tabDocs
             // 
             this.tabDocs.BackColor = System.Drawing.Color.White;
-            this.tabDocs.Controls.Add(this.lstSearchDocs);
-            this.tabDocs.Controls.Add(this.lstDocs);
+            this.tabDocs.Controls.Add(this.pnlDocsDropZone);
+            this.tabDocs.Controls.Add(this.lblDocsUpload);
+            this.tabDocs.Controls.Add(this.pnlDocsUpload);
+            this.tabDocs.Controls.Add(this.pnlDocsLinkedActions);
+            this.tabDocs.Controls.Add(this.lstDocsLinked);
+            this.tabDocs.Controls.Add(this.lblDocsLinked);
             this.tabDocs.Location = new System.Drawing.Point(4, 29);
             this.tabDocs.Name = "tabDocs";
             this.tabDocs.Padding = new System.Windows.Forms.Padding(4);
-            this.tabDocs.Size = new System.Drawing.Size(1378, 187);
+            this.tabDocs.Size = new System.Drawing.Size(1378, 467);
             this.tabDocs.TabIndex = 4;
             this.tabDocs.Text = "📋 เอกสารที่เกี่ยวข้อง";
             // 
-            // lstDocs
+            // pnlDocsDropZone
             // 
-            this.lstDocs.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstDocs.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colDocName,
-            this.colDocStatus});
-            this.lstDocs.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lstDocs.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstDocs.FullRowSelect = true;
-            this.lstDocs.HideSelection = false;
-            this.lstDocs.Location = new System.Drawing.Point(4, 4);
-            this.lstDocs.Name = "lstDocs";
-            this.lstDocs.Size = new System.Drawing.Size(1370, 200);
-            this.lstDocs.TabIndex = 0;
-            this.lstDocs.UseCompatibleStateImageBehavior = false;
-            this.lstDocs.View = System.Windows.Forms.View.Details;
+            this.pnlDocsDropZone.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
+            this.pnlDocsDropZone.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlDocsDropZone.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlDocsDropZone.Location = new System.Drawing.Point(4, 244);
+            this.pnlDocsDropZone.Name = "pnlDocsDropZone";
+            this.pnlDocsDropZone.Size = new System.Drawing.Size(1370, 219);
+            this.pnlDocsDropZone.TabIndex = 5;
             // 
-            // lstSearchDocs
+            // lblDocsUpload
             // 
-            this.lstSearchDocs.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.lstSearchDocs.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colSearchDocName,
-            this.colSearchDocStatus});
-            this.lstSearchDocs.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lstSearchDocs.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstSearchDocs.FullRowSelect = true;
-            this.lstSearchDocs.GridLines = true;
-            this.lstSearchDocs.HideSelection = false;
-            this.lstSearchDocs.Location = new System.Drawing.Point(4, 204);
-            this.lstSearchDocs.Name = "lstSearchDocs";
-            this.lstSearchDocs.Size = new System.Drawing.Size(1370, 0);
-            this.lstSearchDocs.TabIndex = 1;
-            this.lstSearchDocs.UseCompatibleStateImageBehavior = false;
-            this.lstSearchDocs.View = System.Windows.Forms.View.Details;
-            this.lstSearchDocs.DoubleClick += new System.EventHandler(this.LstSearchDocs_DoubleClick);
+            this.lblDocsUpload.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblDocsUpload.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblDocsUpload.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblDocsUpload.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblDocsUpload.Location = new System.Drawing.Point(4, 220);
+            this.lblDocsUpload.Name = "lblDocsUpload";
+            this.lblDocsUpload.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblDocsUpload.Size = new System.Drawing.Size(1370, 24);
+            this.lblDocsUpload.TabIndex = 4;
+            this.lblDocsUpload.Text = "เพิ่มเอกสารใหม่";
             // 
-            // colDocName
+            // pnlDocsUpload
             // 
-            this.colDocName.Text = "ชื่อเอกสาร";
-            this.colDocName.Width = 420;
+            this.pnlDocsUpload.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.pnlDocsUpload.Controls.Add(this.btnSelectDocFromDMS);
+            this.pnlDocsUpload.Controls.Add(this.btnUploadDoc);
+            this.pnlDocsUpload.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlDocsUpload.Location = new System.Drawing.Point(4, 184);
+            this.pnlDocsUpload.Name = "pnlDocsUpload";
+            this.pnlDocsUpload.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
+            this.pnlDocsUpload.Size = new System.Drawing.Size(1370, 36);
+            this.pnlDocsUpload.TabIndex = 3;
             // 
-            // colDocStatus
+            // btnSelectDocFromDMS
             // 
-            this.colDocStatus.Text = "สถานะ";
-            this.colDocStatus.Width = 120;
+            this.btnSelectDocFromDMS.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
+            this.btnSelectDocFromDMS.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnSelectDocFromDMS.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSelectDocFromDMS.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnSelectDocFromDMS.ForeColor = System.Drawing.Color.White;
+            this.btnSelectDocFromDMS.Location = new System.Drawing.Point(154, 6);
+            this.btnSelectDocFromDMS.Name = "btnSelectDocFromDMS";
+            this.btnSelectDocFromDMS.Size = new System.Drawing.Size(150, 24);
+            this.btnSelectDocFromDMS.TabIndex = 1;
+            this.btnSelectDocFromDMS.Text = "📁 เลือกจาก DMS";
+            this.btnSelectDocFromDMS.UseVisualStyleBackColor = false;
+            this.btnSelectDocFromDMS.Click += new System.EventHandler(this.BtnSelectDocFromDMSNew_Click);
             // 
-            // colSearchDocName
+            // btnUploadDoc
             // 
-            this.colSearchDocName.Text = "ชื่อเอกสาร";
-            this.colSearchDocName.Width = 420;
+            this.btnUploadDoc.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnUploadDoc.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnUploadDoc.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUploadDoc.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnUploadDoc.ForeColor = System.Drawing.Color.White;
+            this.btnUploadDoc.Location = new System.Drawing.Point(8, 6);
+            this.btnUploadDoc.Name = "btnUploadDoc";
+            this.btnUploadDoc.Size = new System.Drawing.Size(140, 24);
+            this.btnUploadDoc.TabIndex = 0;
+            this.btnUploadDoc.Text = "📤 อัพโหลดเอกสาร";
+            this.btnUploadDoc.UseVisualStyleBackColor = false;
+            this.btnUploadDoc.Click += new System.EventHandler(this.BtnUploadDocNew_Click);
             // 
-            // colSearchDocStatus
+            // pnlDocsLinkedActions
             // 
-            this.colSearchDocStatus.Text = "สถานะ";
-            this.colSearchDocStatus.Width = 120;
+            this.pnlDocsLinkedActions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.pnlDocsLinkedActions.Controls.Add(this.btnViewDoc);
+            this.pnlDocsLinkedActions.Controls.Add(this.btnRemoveDoc);
+            this.pnlDocsLinkedActions.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlDocsLinkedActions.Location = new System.Drawing.Point(4, 148);
+            this.pnlDocsLinkedActions.Name = "pnlDocsLinkedActions";
+            this.pnlDocsLinkedActions.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
+            this.pnlDocsLinkedActions.Size = new System.Drawing.Size(1370, 36);
+            this.pnlDocsLinkedActions.TabIndex = 2;
+            // 
+            // btnViewDoc
+            // 
+            this.btnViewDoc.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnViewDoc.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnViewDoc.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnViewDoc.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnViewDoc.ForeColor = System.Drawing.Color.White;
+            this.btnViewDoc.Location = new System.Drawing.Point(114, 6);
+            this.btnViewDoc.Name = "btnViewDoc";
+            this.btnViewDoc.Size = new System.Drawing.Size(100, 24);
+            this.btnViewDoc.TabIndex = 1;
+            this.btnViewDoc.Text = "👁️ ดูเอกสาร";
+            this.btnViewDoc.UseVisualStyleBackColor = false;
+            this.btnViewDoc.Click += new System.EventHandler(this.BtnViewDocNew_Click);
+            // 
+            // btnRemoveDoc
+            // 
+            this.btnRemoveDoc.BackColor = System.Drawing.Color.White;
+            this.btnRemoveDoc.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRemoveDoc.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRemoveDoc.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnRemoveDoc.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnRemoveDoc.Location = new System.Drawing.Point(8, 6);
+            this.btnRemoveDoc.Name = "btnRemoveDoc";
+            this.btnRemoveDoc.Size = new System.Drawing.Size(100, 24);
+            this.btnRemoveDoc.TabIndex = 0;
+            this.btnRemoveDoc.Text = "🗑️ ลบเอกสาร";
+            this.btnRemoveDoc.UseVisualStyleBackColor = false;
+            this.btnRemoveDoc.Click += new System.EventHandler(this.BtnRemoveDocNew_Click);
+            // 
+            // lstDocsLinked
+            // 
+            this.lstDocsLinked.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lstDocsLinked.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colDocsLinkedNum,
+            this.colDocsLinkedFile,
+            this.colDocsLinkedSize,
+            this.colDocsLinkedDate});
+            this.lstDocsLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lstDocsLinked.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstDocsLinked.FullRowSelect = true;
+            this.lstDocsLinked.GridLines = true;
+            this.lstDocsLinked.HideSelection = false;
+            this.lstDocsLinked.Location = new System.Drawing.Point(4, 28);
+            this.lstDocsLinked.Name = "lstDocsLinked";
+            this.lstDocsLinked.Size = new System.Drawing.Size(1370, 120);
+            this.lstDocsLinked.TabIndex = 1;
+            this.lstDocsLinked.UseCompatibleStateImageBehavior = false;
+            this.lstDocsLinked.View = System.Windows.Forms.View.Details;
+            this.lstDocsLinked.DoubleClick += new System.EventHandler(this.LstDocsLinked_DoubleClick);
+            // 
+            // colDocsLinkedNum
+            // 
+            this.colDocsLinkedNum.Text = "#";
+            this.colDocsLinkedNum.Width = 40;
+            // 
+            // colDocsLinkedFile
+            // 
+            this.colDocsLinkedFile.Text = "ชื่อเอกสาร";
+            this.colDocsLinkedFile.Width = 400;
+            // 
+            // colDocsLinkedSize
+            // 
+            this.colDocsLinkedSize.Text = "ขนาด";
+            this.colDocsLinkedSize.Width = 100;
+            // 
+            // colDocsLinkedDate
+            // 
+            this.colDocsLinkedDate.Text = "วันที่แนบ";
+            this.colDocsLinkedDate.Width = 140;
+            // 
+            // lblDocsLinked
+            // 
+            this.lblDocsLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblDocsLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblDocsLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblDocsLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblDocsLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblDocsLinked.Name = "lblDocsLinked";
+            this.lblDocsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblDocsLinked.Size = new System.Drawing.Size(1370, 24);
+            this.lblDocsLinked.TabIndex = 0;
+            this.lblDocsLinked.Text = "เอกสารที่แนบ (0 เอกสาร)";
             // 
             // tabVersions
             // 
@@ -867,7 +1466,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabVersions.Location = new System.Drawing.Point(4, 29);
             this.tabVersions.Name = "tabVersions";
             this.tabVersions.Padding = new System.Windows.Forms.Padding(4);
-            this.tabVersions.Size = new System.Drawing.Size(1378, 187);
+            this.tabVersions.Size = new System.Drawing.Size(1378, 467);
             this.tabVersions.TabIndex = 5;
             this.tabVersions.Text = "🕐 ประวัติ Version";
             // 
@@ -886,7 +1485,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstVersions.HideSelection = false;
             this.lstVersions.Location = new System.Drawing.Point(4, 4);
             this.lstVersions.Name = "lstVersions";
-            this.lstVersions.Size = new System.Drawing.Size(1370, 179);
+            this.lstVersions.Size = new System.Drawing.Size(1370, 459);
             this.lstVersions.TabIndex = 0;
             this.lstVersions.UseCompatibleStateImageBehavior = false;
             this.lstVersions.View = System.Windows.Forms.View.Details;
@@ -918,7 +1517,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlMappingHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlMappingHeader.Name = "pnlMappingHeader";
-            this.pnlMappingHeader.Size = new System.Drawing.Size(1386, 28);
+            this.pnlMappingHeader.Size = new System.Drawing.Size(1365, 28);
             this.pnlMappingHeader.TabIndex = 0;
             // 
             // lblMappingHeader
@@ -929,7 +1528,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader.Location = new System.Drawing.Point(0, 0);
             this.lblMappingHeader.Name = "lblMappingHeader";
             this.lblMappingHeader.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.lblMappingHeader.Size = new System.Drawing.Size(1386, 28);
+            this.lblMappingHeader.Size = new System.Drawing.Size(1365, 28);
             this.lblMappingHeader.TabIndex = 0;
             this.lblMappingHeader.Text = "🔗  Mapping รายการที่เกี่ยวข้อง";
             this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -963,11 +1562,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.webEditor.IsWebBrowserContextMenuEnabled = false;
-            this.webEditor.Location = new System.Drawing.Point(0, 152);
+            this.webEditor.Location = new System.Drawing.Point(0, 115);
             this.webEditor.MinimumSize = new System.Drawing.Size(20, 20);
             this.webEditor.Name = "webEditor";
             this.webEditor.ScriptErrorsSuppressed = true;
-            this.webEditor.Size = new System.Drawing.Size(1386, 140);
+            this.webEditor.Size = new System.Drawing.Size(1386, 177);
             this.webEditor.TabIndex = 5;
             this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
             // 
@@ -999,7 +1598,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblContent.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblContent.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lblContent.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblContent.Location = new System.Drawing.Point(0, 130);
+            this.lblContent.Location = new System.Drawing.Point(0, 93);
             this.lblContent.Name = "lblContent";
             this.lblContent.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
             this.lblContent.Size = new System.Drawing.Size(1386, 22);
@@ -1039,7 +1638,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteSep6,
             this.tsRteUndo,
             this.tsRteRedo});
-            this.tsRte.Location = new System.Drawing.Point(0, 102);
+            this.tsRte.Location = new System.Drawing.Point(0, 65);
             this.tsRte.Name = "tsRte";
             this.tsRte.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.tsRte.Size = new System.Drawing.Size(1386, 28);
@@ -1293,20 +1892,18 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlSummaryArea.Location = new System.Drawing.Point(0, 28);
             this.pnlSummaryArea.Name = "pnlSummaryArea";
             this.pnlSummaryArea.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
-            this.pnlSummaryArea.Size = new System.Drawing.Size(1386, 74);
+            this.pnlSummaryArea.Size = new System.Drawing.Size(1386, 37);
             this.pnlSummaryArea.TabIndex = 1;
             // 
             // txtSummary
             // 
             this.txtSummary.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtSummary.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtSummary.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.txtSummary.Location = new System.Drawing.Point(10, 22);
+            this.txtSummary.Location = new System.Drawing.Point(174, 4);
             this.txtSummary.MaxLength = 1000;
-            this.txtSummary.Multiline = true;
             this.txtSummary.Name = "txtSummary";
             this.txtSummary.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtSummary.Size = new System.Drawing.Size(1366, 52);
+            this.txtSummary.Size = new System.Drawing.Size(1199, 27);
             this.txtSummary.TabIndex = 1;
             // 
             // lblSummary
@@ -1316,7 +1913,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblSummary.Location = new System.Drawing.Point(10, 4);
             this.lblSummary.Name = "lblSummary";
-            this.lblSummary.Size = new System.Drawing.Size(1366, 18);
+            this.lblSummary.Size = new System.Drawing.Size(1366, 27);
             this.lblSummary.TabIndex = 0;
             this.lblSummary.Text = "บทสรุปสั้น (Summary)";
             // 
@@ -1726,10 +2323,19 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingOuter.ResumeLayout(false);
             this.tabMapping.ResumeLayout(false);
             this.tabAttach.ResumeLayout(false);
+            this.pnlAttachUpload.ResumeLayout(false);
+            this.pnlAttachLinkedActions.ResumeLayout(false);
             this.tabRelated.ResumeLayout(false);
+            this.pnlRelatedSearch.ResumeLayout(false);
+            this.pnlRelatedSearch.PerformLayout();
+            this.pnlRelatedLinkedActions.ResumeLayout(false);
             this.tabWorkflow.ResumeLayout(false);
+            this.pnlWorkflowLinkedActions.ResumeLayout(false);
             this.tabPrograms.ResumeLayout(false);
+            this.pnlProgramsLinkedActions.ResumeLayout(false);
             this.tabDocs.ResumeLayout(false);
+            this.pnlDocsUpload.ResumeLayout(false);
+            this.pnlDocsLinkedActions.ResumeLayout(false);
             this.tabVersions.ResumeLayout(false);
             this.pnlMappingHeader.ResumeLayout(false);
             this.pnlContentOuter.ResumeLayout(false);
@@ -1854,46 +2460,97 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label       lblMappingHeader;
         private System.Windows.Forms.TabControl  tabMapping;
         private System.Windows.Forms.TabPage     tabAttach;
-        private System.Windows.Forms.ListView    lstAttach;
-        private System.Windows.Forms.ColumnHeader colAttFile;
-        private System.Windows.Forms.ColumnHeader colAttSize;
-        private System.Windows.Forms.ColumnHeader colAttDate;
-        private System.Windows.Forms.ListView    lstSearchAttach;
-        private System.Windows.Forms.ColumnHeader colSearchAttFile;
-        private System.Windows.Forms.ColumnHeader colSearchAttSize;
-        private System.Windows.Forms.ColumnHeader colSearchAttDate;
+        // tabAttach - Attached Files Section
+        private System.Windows.Forms.Label lblAttachLinked;
+        private System.Windows.Forms.ListView lstAttachLinked;
+        private System.Windows.Forms.ColumnHeader colAttachLinkedNum;
+        private System.Windows.Forms.ColumnHeader colAttachLinkedFile;
+        private System.Windows.Forms.ColumnHeader colAttachLinkedSize;
+        private System.Windows.Forms.ColumnHeader colAttachLinkedDate;
+        private System.Windows.Forms.Panel pnlAttachLinkedActions;
+        private System.Windows.Forms.Button btnRemoveAttach;
+        private System.Windows.Forms.Button btnViewAttach;
+        // tabAttach - Upload Section
+        private System.Windows.Forms.Panel pnlAttachUpload;
+        private System.Windows.Forms.Button btnUploadFile;
+        private System.Windows.Forms.Button btnSelectFromDMS;
+        private System.Windows.Forms.Label lblAttachUpload;
+        private System.Windows.Forms.Panel pnlDropZone;
         private System.Windows.Forms.TabPage     tabRelated;
-        private System.Windows.Forms.ListView    lstRelated;
-        private System.Windows.Forms.ColumnHeader colRelCode;
-        private System.Windows.Forms.ColumnHeader colRelTitle;
-        private System.Windows.Forms.ColumnHeader colRelType;
-        private System.Windows.Forms.ListView    lstSearchRelated;
-        private System.Windows.Forms.ColumnHeader colSearchRelCode;
-        private System.Windows.Forms.ColumnHeader colSearchRelTitle;
-        private System.Windows.Forms.ColumnHeader colSearchRelType;
+        // tabRelated - Linked Articles Section
+        private System.Windows.Forms.Label lblRelatedLinked;
+        private System.Windows.Forms.ListView lstRelatedLinked;
+        private System.Windows.Forms.ColumnHeader colRelLinkedNum;
+        private System.Windows.Forms.ColumnHeader colRelLinkedCode;
+        private System.Windows.Forms.ColumnHeader colRelLinkedTitle;
+        private System.Windows.Forms.ColumnHeader colRelLinkedType;
+        private System.Windows.Forms.Panel pnlRelatedLinkedActions;
+        private System.Windows.Forms.Button btnRemoveRelatedNew;
+        // tabRelated - Search Section
+        private System.Windows.Forms.Panel pnlRelatedSearch;
+        private System.Windows.Forms.TextBox txtSearchRelated;
+        private System.Windows.Forms.ComboBox cboRelatedType;
+        private System.Windows.Forms.ComboBox cboRelatedCategory;
+        private System.Windows.Forms.ComboBox cboRelatedStatus;
+        private System.Windows.Forms.Button btnSearchRelated;
+        private System.Windows.Forms.Label lblRelatedSearch;
+        private System.Windows.Forms.ListView lstRelatedSearch;
+        private System.Windows.Forms.ColumnHeader colRelSearchCode;
+        private System.Windows.Forms.ColumnHeader colRelSearchTitle;
+        private System.Windows.Forms.ColumnHeader colRelSearchType;
+        private System.Windows.Forms.ColumnHeader colRelSearchViews;
         private System.Windows.Forms.TabPage     tabWorkflow;
-        private System.Windows.Forms.ListView    lstWorkflow;
-        private System.Windows.Forms.ColumnHeader colWfCode;
-        private System.Windows.Forms.ColumnHeader colWfName;
-        private System.Windows.Forms.ColumnHeader colWfStatus;
-        private System.Windows.Forms.ListView    lstSearchWorkflow;
-        private System.Windows.Forms.ColumnHeader colSearchWfCode;
-        private System.Windows.Forms.ColumnHeader colSearchWfName;
-        private System.Windows.Forms.ColumnHeader colSearchWfStatus;
+        // tabWorkflow - Linked Workflows Section
+        private System.Windows.Forms.Label lblWorkflowLinked;
+        private System.Windows.Forms.ListView lstWorkflowLinked;
+        private System.Windows.Forms.ColumnHeader colWorkflowLinkedNum;
+        private System.Windows.Forms.ColumnHeader colWorkflowLinkedCode;
+        private System.Windows.Forms.ColumnHeader colWorkflowLinkedName;
+        private System.Windows.Forms.ColumnHeader colWorkflowLinkedStatus;
+        private System.Windows.Forms.Panel pnlWorkflowLinkedActions;
+        private System.Windows.Forms.Button btnRemoveWorkflow;
+        private System.Windows.Forms.Button btnViewWorkflowDiagram;
+        private System.Windows.Forms.Button btnStartWorkflow;
+        // tabWorkflow - Available Workflows Section
+        private System.Windows.Forms.Label lblWorkflowAvailable;
+        private System.Windows.Forms.ListView lstWorkflowAvailable;
+        private System.Windows.Forms.ColumnHeader colWorkflowAvailCode;
+        private System.Windows.Forms.ColumnHeader colWorkflowAvailName;
+        private System.Windows.Forms.ColumnHeader colWorkflowAvailStatus;
         private System.Windows.Forms.TabPage     tabPrograms;
-        private System.Windows.Forms.ListView    lstPrograms;
-        private System.Windows.Forms.ColumnHeader colProgName;
-        private System.Windows.Forms.ColumnHeader colProgType;
-        private System.Windows.Forms.ListView    lstSearchPrograms;
-        private System.Windows.Forms.ColumnHeader colSearchProgName;
-        private System.Windows.Forms.ColumnHeader colSearchProgType;
+        // tabPrograms - Linked Programs Section
+        private System.Windows.Forms.Label lblProgramsLinked;
+        private System.Windows.Forms.ListView lstProgramsLinked;
+        private System.Windows.Forms.ColumnHeader colProgramsLinkedNum;
+        private System.Windows.Forms.ColumnHeader colProgramsLinkedCode;
+        private System.Windows.Forms.ColumnHeader colProgramsLinkedName;
+        private System.Windows.Forms.ColumnHeader colProgramsLinkedType;
+        private System.Windows.Forms.Panel pnlProgramsLinkedActions;
+        private System.Windows.Forms.Button btnRemoveProgram;
+        private System.Windows.Forms.Button btnViewProgramDetails;
+        // tabPrograms - Available Programs Section
+        private System.Windows.Forms.Label lblProgramsAvailable;
+        private System.Windows.Forms.ListView lstProgramsAvailable;
+        private System.Windows.Forms.ColumnHeader colProgramsAvailCode;
+        private System.Windows.Forms.ColumnHeader colProgramsAvailName;
+        private System.Windows.Forms.ColumnHeader colProgramsAvailType;
         private System.Windows.Forms.TabPage     tabDocs;
-        private System.Windows.Forms.ListView    lstDocs;
-        private System.Windows.Forms.ColumnHeader colDocName;
-        private System.Windows.Forms.ColumnHeader colDocStatus;
-        private System.Windows.Forms.ListView    lstSearchDocs;
-        private System.Windows.Forms.ColumnHeader colSearchDocName;
-        private System.Windows.Forms.ColumnHeader colSearchDocStatus;
+        // tabDocs - Linked Documents Section
+        private System.Windows.Forms.Label lblDocsLinked;
+        private System.Windows.Forms.ListView lstDocsLinked;
+        private System.Windows.Forms.ColumnHeader colDocsLinkedNum;
+        private System.Windows.Forms.ColumnHeader colDocsLinkedFile;
+        private System.Windows.Forms.ColumnHeader colDocsLinkedSize;
+        private System.Windows.Forms.ColumnHeader colDocsLinkedDate;
+        private System.Windows.Forms.Panel pnlDocsLinkedActions;
+        private System.Windows.Forms.Button btnRemoveDoc;
+        private System.Windows.Forms.Button btnViewDoc;
+        // tabDocs - Upload Section
+        private System.Windows.Forms.Panel pnlDocsUpload;
+        private System.Windows.Forms.Button btnUploadDoc;
+        private System.Windows.Forms.Button btnSelectDocFromDMS;
+        private System.Windows.Forms.Label lblDocsUpload;
+        private System.Windows.Forms.Panel pnlDocsDropZone;
         private System.Windows.Forms.TabPage     tabVersions;
         private System.Windows.Forms.ListView    lstVersions;
         private System.Windows.Forms.ColumnHeader colVerNum;
