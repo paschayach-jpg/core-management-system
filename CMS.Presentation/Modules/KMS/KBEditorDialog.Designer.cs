@@ -43,24 +43,42 @@ namespace CMS.Presentation.Modules.KMS
             this.colAttFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colAttSize = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colAttDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lstSearchAttach = new System.Windows.Forms.ListView();
+            this.colSearchAttFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSearchAttSize = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSearchAttDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabRelated = new System.Windows.Forms.TabPage();
             this.lstRelated = new System.Windows.Forms.ListView();
             this.colRelCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colRelTitle = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colRelType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lstSearchRelated = new System.Windows.Forms.ListView();
+            this.colSearchRelCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSearchRelTitle = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSearchRelType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabWorkflow = new System.Windows.Forms.TabPage();
             this.lstWorkflow = new System.Windows.Forms.ListView();
             this.colWfCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colWfName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colWfStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lstSearchWorkflow = new System.Windows.Forms.ListView();
+            this.colSearchWfCode = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSearchWfName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSearchWfStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabPrograms = new System.Windows.Forms.TabPage();
             this.lstPrograms = new System.Windows.Forms.ListView();
             this.colProgName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colProgType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lstSearchPrograms = new System.Windows.Forms.ListView();
+            this.colSearchProgName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSearchProgType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabDocs = new System.Windows.Forms.TabPage();
             this.lstDocs = new System.Windows.Forms.ListView();
             this.colDocName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colDocStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lstSearchDocs = new System.Windows.Forms.ListView();
+            this.colSearchDocName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colSearchDocStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabVersions = new System.Windows.Forms.TabPage();
             this.lstVersions = new System.Windows.Forms.ListView();
             this.colVerNum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -469,6 +487,7 @@ namespace CMS.Presentation.Modules.KMS
             // tabAttach
             // 
             this.tabAttach.BackColor = System.Drawing.Color.White;
+            this.tabAttach.Controls.Add(this.lstSearchAttach);
             this.tabAttach.Controls.Add(this.lstAttach);
             this.tabAttach.Location = new System.Drawing.Point(4, 29);
             this.tabAttach.Name = "tabAttach";
@@ -484,16 +503,36 @@ namespace CMS.Presentation.Modules.KMS
             this.colAttFile,
             this.colAttSize,
             this.colAttDate});
-            this.lstAttach.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstAttach.Dock = System.Windows.Forms.DockStyle.Top;
             this.lstAttach.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lstAttach.FullRowSelect = true;
             this.lstAttach.HideSelection = false;
             this.lstAttach.Location = new System.Drawing.Point(4, 4);
             this.lstAttach.Name = "lstAttach";
-            this.lstAttach.Size = new System.Drawing.Size(1370, 179);
+            this.lstAttach.Size = new System.Drawing.Size(1370, 200);
             this.lstAttach.TabIndex = 0;
             this.lstAttach.UseCompatibleStateImageBehavior = false;
             this.lstAttach.View = System.Windows.Forms.View.Details;
+            // 
+            // lstSearchAttach
+            // 
+            this.lstSearchAttach.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.lstSearchAttach.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colSearchAttFile,
+            this.colSearchAttSize,
+            this.colSearchAttDate});
+            this.lstSearchAttach.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstSearchAttach.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstSearchAttach.FullRowSelect = true;
+            this.lstSearchAttach.GridLines = true;
+            this.lstSearchAttach.HideSelection = false;
+            this.lstSearchAttach.Location = new System.Drawing.Point(4, 204);
+            this.lstSearchAttach.Name = "lstSearchAttach";
+            this.lstSearchAttach.Size = new System.Drawing.Size(1370, 0);
+            this.lstSearchAttach.TabIndex = 1;
+            this.lstSearchAttach.UseCompatibleStateImageBehavior = false;
+            this.lstSearchAttach.View = System.Windows.Forms.View.Details;
+            this.lstSearchAttach.DoubleClick += new System.EventHandler(this.LstSearchAttach_DoubleClick);
             // 
             // colAttFile
             // 
@@ -510,9 +549,25 @@ namespace CMS.Presentation.Modules.KMS
             this.colAttDate.Text = "วันที่อัพโหลด";
             this.colAttDate.Width = 140;
             // 
+            // colSearchAttFile
+            // 
+            this.colSearchAttFile.Text = "ชื่อไฟล์";
+            this.colSearchAttFile.Width = 400;
+            // 
+            // colSearchAttSize
+            // 
+            this.colSearchAttSize.Text = "ขนาด";
+            this.colSearchAttSize.Width = 80;
+            // 
+            // colSearchAttDate
+            // 
+            this.colSearchAttDate.Text = "วันที่อัพโหลด";
+            this.colSearchAttDate.Width = 140;
+            // 
             // tabRelated
             // 
             this.tabRelated.BackColor = System.Drawing.Color.White;
+            this.tabRelated.Controls.Add(this.lstSearchRelated);
             this.tabRelated.Controls.Add(this.lstRelated);
             this.tabRelated.Location = new System.Drawing.Point(4, 29);
             this.tabRelated.Name = "tabRelated";
@@ -528,16 +583,36 @@ namespace CMS.Presentation.Modules.KMS
             this.colRelCode,
             this.colRelTitle,
             this.colRelType});
-            this.lstRelated.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstRelated.Dock = System.Windows.Forms.DockStyle.Top;
             this.lstRelated.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lstRelated.FullRowSelect = true;
             this.lstRelated.HideSelection = false;
             this.lstRelated.Location = new System.Drawing.Point(4, 4);
             this.lstRelated.Name = "lstRelated";
-            this.lstRelated.Size = new System.Drawing.Size(1370, 179);
+            this.lstRelated.Size = new System.Drawing.Size(1370, 200);
             this.lstRelated.TabIndex = 0;
             this.lstRelated.UseCompatibleStateImageBehavior = false;
             this.lstRelated.View = System.Windows.Forms.View.Details;
+            // 
+            // lstSearchRelated
+            // 
+            this.lstSearchRelated.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.lstSearchRelated.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colSearchRelCode,
+            this.colSearchRelTitle,
+            this.colSearchRelType});
+            this.lstSearchRelated.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstSearchRelated.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstSearchRelated.FullRowSelect = true;
+            this.lstSearchRelated.GridLines = true;
+            this.lstSearchRelated.HideSelection = false;
+            this.lstSearchRelated.Location = new System.Drawing.Point(4, 204);
+            this.lstSearchRelated.Name = "lstSearchRelated";
+            this.lstSearchRelated.Size = new System.Drawing.Size(1370, 0);
+            this.lstSearchRelated.TabIndex = 1;
+            this.lstSearchRelated.UseCompatibleStateImageBehavior = false;
+            this.lstSearchRelated.View = System.Windows.Forms.View.Details;
+            this.lstSearchRelated.DoubleClick += new System.EventHandler(this.LstSearchRelated_DoubleClick);
             // 
             // colRelCode
             // 
@@ -554,9 +629,25 @@ namespace CMS.Presentation.Modules.KMS
             this.colRelType.Text = "ประเภท";
             this.colRelType.Width = 100;
             // 
+            // colSearchRelCode
+            // 
+            this.colSearchRelCode.Text = "รหัสบทความ";
+            this.colSearchRelCode.Width = 120;
+            // 
+            // colSearchRelTitle
+            // 
+            this.colSearchRelTitle.Text = "ชื่อบทความ";
+            this.colSearchRelTitle.Width = 380;
+            // 
+            // colSearchRelType
+            // 
+            this.colSearchRelType.Text = "ประเภท";
+            this.colSearchRelType.Width = 100;
+            // 
             // tabWorkflow
             // 
             this.tabWorkflow.BackColor = System.Drawing.Color.White;
+            this.tabWorkflow.Controls.Add(this.lstSearchWorkflow);
             this.tabWorkflow.Controls.Add(this.lstWorkflow);
             this.tabWorkflow.Location = new System.Drawing.Point(4, 29);
             this.tabWorkflow.Name = "tabWorkflow";
@@ -572,16 +663,36 @@ namespace CMS.Presentation.Modules.KMS
             this.colWfCode,
             this.colWfName,
             this.colWfStatus});
-            this.lstWorkflow.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstWorkflow.Dock = System.Windows.Forms.DockStyle.Top;
             this.lstWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lstWorkflow.FullRowSelect = true;
             this.lstWorkflow.HideSelection = false;
             this.lstWorkflow.Location = new System.Drawing.Point(4, 4);
             this.lstWorkflow.Name = "lstWorkflow";
-            this.lstWorkflow.Size = new System.Drawing.Size(1370, 179);
+            this.lstWorkflow.Size = new System.Drawing.Size(1370, 200);
             this.lstWorkflow.TabIndex = 0;
             this.lstWorkflow.UseCompatibleStateImageBehavior = false;
             this.lstWorkflow.View = System.Windows.Forms.View.Details;
+            // 
+            // lstSearchWorkflow
+            // 
+            this.lstSearchWorkflow.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.lstSearchWorkflow.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colSearchWfCode,
+            this.colSearchWfName,
+            this.colSearchWfStatus});
+            this.lstSearchWorkflow.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstSearchWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstSearchWorkflow.FullRowSelect = true;
+            this.lstSearchWorkflow.GridLines = true;
+            this.lstSearchWorkflow.HideSelection = false;
+            this.lstSearchWorkflow.Location = new System.Drawing.Point(4, 204);
+            this.lstSearchWorkflow.Name = "lstSearchWorkflow";
+            this.lstSearchWorkflow.Size = new System.Drawing.Size(1370, 0);
+            this.lstSearchWorkflow.TabIndex = 1;
+            this.lstSearchWorkflow.UseCompatibleStateImageBehavior = false;
+            this.lstSearchWorkflow.View = System.Windows.Forms.View.Details;
+            this.lstSearchWorkflow.DoubleClick += new System.EventHandler(this.LstSearchWorkflow_DoubleClick);
             // 
             // colWfCode
             // 
@@ -598,9 +709,25 @@ namespace CMS.Presentation.Modules.KMS
             this.colWfStatus.Text = "สถานะ";
             this.colWfStatus.Width = 100;
             // 
+            // colSearchWfCode
+            // 
+            this.colSearchWfCode.Text = "รหัส Workflow";
+            this.colSearchWfCode.Width = 140;
+            // 
+            // colSearchWfName
+            // 
+            this.colSearchWfName.Text = "ชื่อ Workflow";
+            this.colSearchWfName.Width = 360;
+            // 
+            // colSearchWfStatus
+            // 
+            this.colSearchWfStatus.Text = "สถานะ";
+            this.colSearchWfStatus.Width = 100;
+            // 
             // tabPrograms
             // 
             this.tabPrograms.BackColor = System.Drawing.Color.White;
+            this.tabPrograms.Controls.Add(this.lstSearchPrograms);
             this.tabPrograms.Controls.Add(this.lstPrograms);
             this.tabPrograms.Location = new System.Drawing.Point(4, 29);
             this.tabPrograms.Name = "tabPrograms";
@@ -615,16 +742,35 @@ namespace CMS.Presentation.Modules.KMS
             this.lstPrograms.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.colProgName,
             this.colProgType});
-            this.lstPrograms.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstPrograms.Dock = System.Windows.Forms.DockStyle.Top;
             this.lstPrograms.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lstPrograms.FullRowSelect = true;
             this.lstPrograms.HideSelection = false;
             this.lstPrograms.Location = new System.Drawing.Point(4, 4);
             this.lstPrograms.Name = "lstPrograms";
-            this.lstPrograms.Size = new System.Drawing.Size(1370, 179);
+            this.lstPrograms.Size = new System.Drawing.Size(1370, 200);
             this.lstPrograms.TabIndex = 0;
             this.lstPrograms.UseCompatibleStateImageBehavior = false;
             this.lstPrograms.View = System.Windows.Forms.View.Details;
+            // 
+            // lstSearchPrograms
+            // 
+            this.lstSearchPrograms.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.lstSearchPrograms.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colSearchProgName,
+            this.colSearchProgType});
+            this.lstSearchPrograms.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstSearchPrograms.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstSearchPrograms.FullRowSelect = true;
+            this.lstSearchPrograms.GridLines = true;
+            this.lstSearchPrograms.HideSelection = false;
+            this.lstSearchPrograms.Location = new System.Drawing.Point(4, 204);
+            this.lstSearchPrograms.Name = "lstSearchPrograms";
+            this.lstSearchPrograms.Size = new System.Drawing.Size(1370, 0);
+            this.lstSearchPrograms.TabIndex = 1;
+            this.lstSearchPrograms.UseCompatibleStateImageBehavior = false;
+            this.lstSearchPrograms.View = System.Windows.Forms.View.Details;
+            this.lstSearchPrograms.DoubleClick += new System.EventHandler(this.LstSearchPrograms_DoubleClick);
             // 
             // colProgName
             // 
@@ -636,9 +782,20 @@ namespace CMS.Presentation.Modules.KMS
             this.colProgType.Text = "ประเภท";
             this.colProgType.Width = 180;
             // 
+            // colSearchProgName
+            // 
+            this.colSearchProgName.Text = "ชื่อโปรแกรม";
+            this.colSearchProgName.Width = 380;
+            // 
+            // colSearchProgType
+            // 
+            this.colSearchProgType.Text = "ประเภท";
+            this.colSearchProgType.Width = 180;
+            // 
             // tabDocs
             // 
             this.tabDocs.BackColor = System.Drawing.Color.White;
+            this.tabDocs.Controls.Add(this.lstSearchDocs);
             this.tabDocs.Controls.Add(this.lstDocs);
             this.tabDocs.Location = new System.Drawing.Point(4, 29);
             this.tabDocs.Name = "tabDocs";
@@ -653,16 +810,35 @@ namespace CMS.Presentation.Modules.KMS
             this.lstDocs.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.colDocName,
             this.colDocStatus});
-            this.lstDocs.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstDocs.Dock = System.Windows.Forms.DockStyle.Top;
             this.lstDocs.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lstDocs.FullRowSelect = true;
             this.lstDocs.HideSelection = false;
             this.lstDocs.Location = new System.Drawing.Point(4, 4);
             this.lstDocs.Name = "lstDocs";
-            this.lstDocs.Size = new System.Drawing.Size(1370, 179);
+            this.lstDocs.Size = new System.Drawing.Size(1370, 200);
             this.lstDocs.TabIndex = 0;
             this.lstDocs.UseCompatibleStateImageBehavior = false;
             this.lstDocs.View = System.Windows.Forms.View.Details;
+            // 
+            // lstSearchDocs
+            // 
+            this.lstSearchDocs.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.lstSearchDocs.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colSearchDocName,
+            this.colSearchDocStatus});
+            this.lstSearchDocs.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstSearchDocs.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lstSearchDocs.FullRowSelect = true;
+            this.lstSearchDocs.GridLines = true;
+            this.lstSearchDocs.HideSelection = false;
+            this.lstSearchDocs.Location = new System.Drawing.Point(4, 204);
+            this.lstSearchDocs.Name = "lstSearchDocs";
+            this.lstSearchDocs.Size = new System.Drawing.Size(1370, 0);
+            this.lstSearchDocs.TabIndex = 1;
+            this.lstSearchDocs.UseCompatibleStateImageBehavior = false;
+            this.lstSearchDocs.View = System.Windows.Forms.View.Details;
+            this.lstSearchDocs.DoubleClick += new System.EventHandler(this.LstSearchDocs_DoubleClick);
             // 
             // colDocName
             // 
@@ -673,6 +849,16 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.colDocStatus.Text = "สถานะ";
             this.colDocStatus.Width = 120;
+            // 
+            // colSearchDocName
+            // 
+            this.colSearchDocName.Text = "ชื่อเอกสาร";
+            this.colSearchDocName.Width = 420;
+            // 
+            // colSearchDocStatus
+            // 
+            this.colSearchDocStatus.Text = "สถานะ";
+            this.colSearchDocStatus.Width = 120;
             // 
             // tabVersions
             // 
@@ -1672,24 +1858,42 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ColumnHeader colAttFile;
         private System.Windows.Forms.ColumnHeader colAttSize;
         private System.Windows.Forms.ColumnHeader colAttDate;
+        private System.Windows.Forms.ListView    lstSearchAttach;
+        private System.Windows.Forms.ColumnHeader colSearchAttFile;
+        private System.Windows.Forms.ColumnHeader colSearchAttSize;
+        private System.Windows.Forms.ColumnHeader colSearchAttDate;
         private System.Windows.Forms.TabPage     tabRelated;
         private System.Windows.Forms.ListView    lstRelated;
         private System.Windows.Forms.ColumnHeader colRelCode;
         private System.Windows.Forms.ColumnHeader colRelTitle;
         private System.Windows.Forms.ColumnHeader colRelType;
+        private System.Windows.Forms.ListView    lstSearchRelated;
+        private System.Windows.Forms.ColumnHeader colSearchRelCode;
+        private System.Windows.Forms.ColumnHeader colSearchRelTitle;
+        private System.Windows.Forms.ColumnHeader colSearchRelType;
         private System.Windows.Forms.TabPage     tabWorkflow;
         private System.Windows.Forms.ListView    lstWorkflow;
         private System.Windows.Forms.ColumnHeader colWfCode;
         private System.Windows.Forms.ColumnHeader colWfName;
         private System.Windows.Forms.ColumnHeader colWfStatus;
+        private System.Windows.Forms.ListView    lstSearchWorkflow;
+        private System.Windows.Forms.ColumnHeader colSearchWfCode;
+        private System.Windows.Forms.ColumnHeader colSearchWfName;
+        private System.Windows.Forms.ColumnHeader colSearchWfStatus;
         private System.Windows.Forms.TabPage     tabPrograms;
         private System.Windows.Forms.ListView    lstPrograms;
         private System.Windows.Forms.ColumnHeader colProgName;
         private System.Windows.Forms.ColumnHeader colProgType;
+        private System.Windows.Forms.ListView    lstSearchPrograms;
+        private System.Windows.Forms.ColumnHeader colSearchProgName;
+        private System.Windows.Forms.ColumnHeader colSearchProgType;
         private System.Windows.Forms.TabPage     tabDocs;
         private System.Windows.Forms.ListView    lstDocs;
         private System.Windows.Forms.ColumnHeader colDocName;
         private System.Windows.Forms.ColumnHeader colDocStatus;
+        private System.Windows.Forms.ListView    lstSearchDocs;
+        private System.Windows.Forms.ColumnHeader colSearchDocName;
+        private System.Windows.Forms.ColumnHeader colSearchDocStatus;
         private System.Windows.Forms.TabPage     tabVersions;
         private System.Windows.Forms.ListView    lstVersions;
         private System.Windows.Forms.ColumnHeader colVerNum;

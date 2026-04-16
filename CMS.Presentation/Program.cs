@@ -421,6 +421,7 @@ namespace CMS.Presentation
                     folderRepository: folderRepository,
                     kbCategoryService,
                     kbArticleService,
+                    kbArticleLinkRepository,
                     kbDashboardService);
                 Application.Run(mainForm);
 

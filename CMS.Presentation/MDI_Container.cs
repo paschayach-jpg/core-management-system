@@ -56,6 +56,7 @@ namespace CMS.Presentation
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
+        private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
 
         // Notification inbox controls (built programmatically)
@@ -152,6 +153,7 @@ namespace CMS.Presentation
             Data.Repositories.FolderRepository folderRepository = null,
             CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
             CMS.Services.Interfaces.IKBArticleService  kbArticleService  = null,
+            CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null,
             CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
@@ -192,6 +194,7 @@ namespace CMS.Presentation
             _authorityOrgLookupController = authorityOrgLookupController;
             _kbCategoryService = kbCategoryService;
             _kbArticleService  = kbArticleService;
+            _kbArticleLinkRepository = kbArticleLinkRepository;
             _kbDashboardService = kbDashboardService;
 
             InitializeComponent();
@@ -1228,7 +1231,7 @@ namespace CMS.Presentation
         {
             var dlg       = new KBEditorDialog(_currentUser);
             var presenter = new KBEditorController(
-                dlg, _kbCategoryService, _kbArticleService, _currentUser, article);
+                dlg, _kbCategoryService, _kbArticleService, _kbArticleLinkRepository, _currentUser, article);
             dlg.AttachPresenter(presenter);
             return dlg.ShowDialog(this);
         }

@@ -1,4 +1,6 @@
 using CMS.Controllers.KMS.KB.Interfaces;
+using CMS.Data.Interfaces;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
@@ -18,24 +20,33 @@ namespace CMS.Controllers.KMS.KB
         private readonly IKBEditorController     _view;
         private readonly IKBCategoryService _categoryService;
         private readonly IKBArticleService  _articleService;
+        private readonly IKBArticleLinkRepository _articleLinkRepository;
         private readonly UserContext        _user;
         private readonly KBArticle         _editingArticle;
+
+        /// <summary>
+        /// Expose the editing article for search exclusion
+        /// </summary>
+        public KBArticle EditingArticle => _editingArticle;
 
         public KBEditorController(
             IKBEditorController     view,
             IKBCategoryService categoryService,
             IKBArticleService  articleService,
+            IKBArticleLinkRepository articleLinkRepository,
             UserContext        user,
             KBArticle          article)   // null = create new
         {
             if (view            == null) throw new ArgumentNullException("view");
             if (categoryService == null) throw new ArgumentNullException("categoryService");
             if (articleService  == null) throw new ArgumentNullException("articleService");
+            if (articleLinkRepository == null) throw new ArgumentNullException("articleLinkRepository");
             if (user            == null) throw new ArgumentNullException("user");
 
             _view            = view;
             _categoryService = categoryService;
             _articleService  = articleService;
+            _articleLinkRepository = articleLinkRepository;
             _user            = user;
             _editingArticle  = article;
         }
@@ -65,6 +76,7 @@ namespace CMS.Controllers.KMS.KB
                 _view.HeaderText = string.Format("  ✏️ แก้ไขบทความ: {0}", _editingArticle.Title ?? "");
                 PopulateFields(_editingArticle);
                 LoadVersionHistory(_editingArticle.ArticleID);
+                LoadArticleLinks(_editingArticle.ArticleID);
                 UpdateStatusButtons(_editingArticle.Status);
             }
         }
@@ -183,17 +195,22 @@ namespace CMS.Controllers.KMS.KB
                     CreatedBy        = _user.AdIdentity,
                 };
 
+                int articleId;
                 if (_editingArticle == null)
                 {
                     // Create new article
-                    _articleService.Create(article);
+                    articleId = _articleService.Create(article);
                 }
                 else
                 {
                     // Update existing article
                     article.ArticleID = _editingArticle.ArticleID;
                     _articleService.Update(article, changeDesc);
+                    articleId = _editingArticle.ArticleID;
                 }
+
+                // Save article links
+                SaveArticleLinks(articleId);
 
                 _view.CloseOk();
             }
@@ -224,6 +241,183 @@ namespace CMS.Controllers.KMS.KB
 
             _articleService.ChangeStatus(_editingArticle.ArticleID, 4, _user.AdIdentity);
             _view.CloseOk();
+        }
+
+        /// <summary>
+        /// Search published articles for inline search in Related tab
+        /// </summary>
+        public IEnumerable<KBArticle> SearchPublishedArticles(string searchText)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+                return Enumerable.Empty<KBArticle>();
+
+            return _articleService.SearchPublishedArticles(searchText);
+        }
+
+        /// <summary>
+        /// Save article links to database
+        /// </summary>
+        private void SaveArticleLinks(int articleId)
+        {
+            try
+            {
+                // Delete all existing links for this article
+                _articleLinkRepository.DeleteAllForArticle(articleId);
+
+                // Insert links for Folders (EntityType = 1)
+                var lstRelated = _view.GetRelatedListView();
+                foreach (System.Windows.Forms.ListViewItem item in lstRelated.Items)
+                {
+                    if (item.Tag != null && item.Tag is int)
+                    {
+                        int entityId = (int)item.Tag;
+                        _articleLinkRepository.Insert(new KBArticleLink
+                        {
+                            ArticleID = articleId,
+                            EntityType = (byte)KBEntityType.Folder,
+                            EntityID = entityId,
+                            CreatedBy = _user.AdIdentity,
+                            CreatedDate = DateTime.Now
+                        });
+                    }
+                }
+
+                // Insert links for Tasks (EntityType = 2)
+                var lstWorkflow = _view.GetWorkflowListView();
+                foreach (System.Windows.Forms.ListViewItem item in lstWorkflow.Items)
+                {
+                    if (item.Tag != null && item.Tag is int)
+                    {
+                        int entityId = (int)item.Tag;
+                        _articleLinkRepository.Insert(new KBArticleLink
+                        {
+                            ArticleID = articleId,
+                            EntityType = (byte)KBEntityType.Task,
+                            EntityID = entityId,
+                            CreatedBy = _user.AdIdentity,
+                            CreatedDate = DateTime.Now
+                        });
+                    }
+                }
+
+                // Insert links for Programs (EntityType = 3)
+                var lstPrograms = _view.GetProgramsListView();
+                foreach (System.Windows.Forms.ListViewItem item in lstPrograms.Items)
+                {
+                    if (item.Tag != null && item.Tag is int)
+                    {
+                        int entityId = (int)item.Tag;
+                        _articleLinkRepository.Insert(new KBArticleLink
+                        {
+                            ArticleID = articleId,
+                            EntityType = (byte)KBEntityType.Program,
+                            EntityID = entityId,
+                            CreatedBy = _user.AdIdentity,
+                            CreatedDate = DateTime.Now
+                        });
+                    }
+                }
+
+                // Insert links for Laws (EntityType = 4)
+                var lstDocs = _view.GetDocsListView();
+                foreach (System.Windows.Forms.ListViewItem item in lstDocs.Items)
+                {
+                    if (item.Tag != null && item.Tag is int)
+                    {
+                        int entityId = (int)item.Tag;
+                        _articleLinkRepository.Insert(new KBArticleLink
+                        {
+                            ArticleID = articleId,
+                            EntityType = (byte)KBEntityType.Law,
+                            EntityID = entityId,
+                            CreatedBy = _user.AdIdentity,
+                            CreatedDate = DateTime.Now
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to save article links: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Load article links from database and populate ListViews
+        /// </summary>
+        private void LoadArticleLinks(int articleId)
+        {
+            try
+            {
+                // Note: The old implementation had "Related" articles linking to other articles,
+                // but the database schema (KMS.t_KBArticleLink) only supports linking to entities
+                // (Folder/Task/Program/Law/Project), not to other articles.
+                // The "Related" section is commented out until the schema is clarified.
+
+                // Load Folder links (EntityType = 1)
+                var folderLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Folder);
+                var lstRelated = _view.GetRelatedListView();
+                lstRelated.Items.Clear();
+
+                foreach (var link in folderLinks)
+                {
+                    // Note: You may need to query folder details from appropriate service
+                    var item = new System.Windows.Forms.ListViewItem(link.EntityID.ToString());
+                    item.SubItems.Add("Folder"); // Placeholder
+                    item.SubItems.Add("-"); // Placeholder
+                    item.Tag = link.EntityID;
+                    lstRelated.Items.Add(item);
+                }
+
+                // Load Task links (EntityType = 2)
+                var taskLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Task);
+                var lstWorkflow = _view.GetWorkflowListView();
+                lstWorkflow.Items.Clear();
+
+                foreach (var link in taskLinks)
+                {
+                    // Note: You may need to query task details from appropriate service
+                    var item = new System.Windows.Forms.ListViewItem(link.EntityID.ToString());
+                    item.SubItems.Add("Task"); // Placeholder
+                    item.SubItems.Add("-"); // Placeholder
+                    item.Tag = link.EntityID;
+                    lstWorkflow.Items.Add(item);
+                }
+
+                // Load Program links (EntityType = 3)
+                var programLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Program);
+                var lstPrograms = _view.GetProgramsListView();
+                lstPrograms.Items.Clear();
+
+                foreach (var link in programLinks)
+                {
+                    // Note: You may need to query program details from appropriate service
+                    var item = new System.Windows.Forms.ListViewItem(link.EntityID.ToString());
+                    item.SubItems.Add("Program"); // Placeholder
+                    item.SubItems.Add("-"); // Placeholder
+                    item.Tag = link.EntityID;
+                    lstPrograms.Items.Add(item);
+                }
+
+                // Load Law links (EntityType = 4) - using Document list for now
+                var lawLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Law);
+                var lstDocs = _view.GetDocsListView();
+                lstDocs.Items.Clear();
+
+                foreach (var link in lawLinks)
+                {
+                    // Note: You may need to query law details from appropriate service
+                    var item = new System.Windows.Forms.ListViewItem(link.EntityID.ToString());
+                    item.SubItems.Add("Law"); // Placeholder
+                    item.SubItems.Add("-"); // Placeholder
+                    item.Tag = link.EntityID;
+                    lstDocs.Items.Add(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("โหลดข้อมูลความเชื่อมโยงไม่สำเร็จ: " + ex.Message);
+            }
         }
     }
 }

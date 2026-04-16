@@ -420,6 +420,28 @@ namespace CMS.Presentation.Modules.KMS
             MessageBox.Show(message, "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        // ── ListView Access for Article Links ────────────────────────────────
+
+        public System.Windows.Forms.ListView GetRelatedListView()
+        {
+            return lstRelated;
+        }
+
+        public System.Windows.Forms.ListView GetWorkflowListView()
+        {
+            return lstWorkflow;
+        }
+
+        public System.Windows.Forms.ListView GetProgramsListView()
+        {
+            return lstPrograms;
+        }
+
+        public System.Windows.Forms.ListView GetDocsListView()
+        {
+            return lstDocs;
+        }
+
         // ── Private UI Helpers ───────────────────────────────────────────────
 
         private void InitTypeCombo()
@@ -808,9 +830,37 @@ namespace CMS.Presentation.Modules.KMS
                 BackColor = Color.FromArgb(245, 247, 250)
             };
             
+            _txtSearchAttach = new TextBox
+            {
+                Name = "txtSearchAttach",
+                Location = new Point(8, 6),
+                Size = new Size(250, 24),
+                Font = new Font("Segoe UI", 9f)
+            };
+            _txtSearchAttach.TextChanged += TxtSearchAttach_TextChanged;
+            
+            // Add placeholder text using a label overlay
+            var lblPlaceholder = new Label
+            {
+                Name = "lblSearchAttachPlaceholder",
+                Text = "🔍 ค้นหาไฟล์แนบ...",
+                Location = new Point(10, 9),
+                AutoSize = true,
+                BackColor = Color.Transparent,
+                ForeColor = Color.Gray,
+                Font = new Font("Segoe UI", 9f),
+                Cursor = Cursors.IBeam
+            };
+            lblPlaceholder.Click += (s, e) => _txtSearchAttach.Focus();
+            
+            // Hide placeholder when textbox has focus or text
+            _txtSearchAttach.Enter += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchAttach.Text);
+            _txtSearchAttach.Leave += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchAttach.Text);
+            _txtSearchAttach.TextChanged += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchAttach.Text);
+            
             var btnUpload = new Button
             {
-                Location = new Point(8, 6),
+                Location = new Point(266, 6),
                 Size = new Size(120, 24),
                 Text = "📤 อัพโหลดไฟล์",
                 Font = new Font("Segoe UI", 9f),
@@ -824,7 +874,7 @@ namespace CMS.Presentation.Modules.KMS
             
             var btnRemove = new Button
             {
-                Location = new Point(136, 6),
+                Location = new Point(394, 6),
                 Size = new Size(100, 24),
                 Text = "🗑️ ลบไฟล์",
                 Font = new Font("Segoe UI", 9f),
@@ -836,8 +886,12 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveAttachment_Click;
             
+            toolbar.Controls.Add(_txtSearchAttach);
+            toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnUpload);
             toolbar.Controls.Add(btnRemove);
+            
+            lblPlaceholder.BringToFront();
             
             return toolbar;
         }
@@ -851,23 +905,37 @@ namespace CMS.Presentation.Modules.KMS
                 BackColor = Color.FromArgb(245, 247, 250)
             };
             
-            var btnAdd = new Button
+            _txtSearchRelated = new TextBox
             {
+                Name = "txtSearchRelated",
                 Location = new Point(8, 6),
-                Size = new Size(160, 24),
-                Text = "➕ เพิ่มความรู้ที่เกี่ยวข้อง",
-                Font = new Font("Segoe UI", 9f),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(46, 116, 181),
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
+                Size = new Size(250, 24),
+                Font = new Font("Segoe UI", 9f)
             };
-            btnAdd.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
-            btnAdd.Click += BtnAddRelated_Click;
+            _txtSearchRelated.TextChanged += TxtSearchRelated_TextChanged;
+            
+            // Add placeholder text using a label overlay (WinForms doesn't have native placeholder)
+            var lblPlaceholder = new Label
+            {
+                Name = "lblSearchRelatedPlaceholder",
+                Text = "🔍 ค้นหาบทความ...",
+                Location = new Point(10, 9),
+                AutoSize = true,
+                BackColor = Color.Transparent,
+                ForeColor = Color.Gray,
+                Font = new Font("Segoe UI", 9f),
+                Cursor = Cursors.IBeam
+            };
+            lblPlaceholder.Click += (s, e) => _txtSearchRelated.Focus();
+            
+            // Hide placeholder when textbox has focus or text
+            _txtSearchRelated.Enter += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchRelated.Text);
+            _txtSearchRelated.Leave += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchRelated.Text);
+            _txtSearchRelated.TextChanged += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchRelated.Text);
             
             var btnRemove = new Button
             {
-                Location = new Point(176, 6),
+                Location = new Point(266, 6),
                 Size = new Size(80, 24),
                 Text = "🗑️ ลบ",
                 Font = new Font("Segoe UI", 9f),
@@ -879,8 +947,11 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveRelated_Click;
             
-            toolbar.Controls.Add(btnAdd);
+            toolbar.Controls.Add(_txtSearchRelated);
+            toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnRemove);
+            
+            lblPlaceholder.BringToFront();
             
             return toolbar;
         }
@@ -894,23 +965,37 @@ namespace CMS.Presentation.Modules.KMS
                 BackColor = Color.FromArgb(245, 247, 250)
             };
             
-            var btnAdd = new Button
+            _txtSearchWorkflow = new TextBox
             {
+                Name = "txtSearchWorkflow",
                 Location = new Point(8, 6),
-                Size = new Size(120, 24),
-                Text = "➕ เพิ่ม Workflow",
-                Font = new Font("Segoe UI", 9f),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(46, 116, 181),
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
+                Size = new Size(250, 24),
+                Font = new Font("Segoe UI", 9f)
             };
-            btnAdd.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
-            btnAdd.Click += BtnAddWorkflow_Click;
+            _txtSearchWorkflow.TextChanged += TxtSearchWorkflow_TextChanged;
+            
+            // Add placeholder text using a label overlay
+            var lblPlaceholder = new Label
+            {
+                Name = "lblSearchWorkflowPlaceholder",
+                Text = "🔍 ค้นหา Workflow...",
+                Location = new Point(10, 9),
+                AutoSize = true,
+                BackColor = Color.Transparent,
+                ForeColor = Color.Gray,
+                Font = new Font("Segoe UI", 9f),
+                Cursor = Cursors.IBeam
+            };
+            lblPlaceholder.Click += (s, e) => _txtSearchWorkflow.Focus();
+            
+            // Hide placeholder when textbox has focus or text
+            _txtSearchWorkflow.Enter += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchWorkflow.Text);
+            _txtSearchWorkflow.Leave += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchWorkflow.Text);
+            _txtSearchWorkflow.TextChanged += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchWorkflow.Text);
             
             var btnRemove = new Button
             {
-                Location = new Point(136, 6),
+                Location = new Point(266, 6),
                 Size = new Size(80, 24),
                 Text = "🗑️ ลบ",
                 Font = new Font("Segoe UI", 9f),
@@ -922,8 +1007,11 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveWorkflow_Click;
             
-            toolbar.Controls.Add(btnAdd);
+            toolbar.Controls.Add(_txtSearchWorkflow);
+            toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnRemove);
+            
+            lblPlaceholder.BringToFront();
             
             return toolbar;
         }
@@ -937,23 +1025,37 @@ namespace CMS.Presentation.Modules.KMS
                 BackColor = Color.FromArgb(245, 247, 250)
             };
             
-            var btnAdd = new Button
+            _txtSearchPrograms = new TextBox
             {
+                Name = "txtSearchPrograms",
                 Location = new Point(8, 6),
-                Size = new Size(120, 24),
-                Text = "➕ เพิ่มโปรแกรม",
-                Font = new Font("Segoe UI", 9f),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(46, 116, 181),
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
+                Size = new Size(250, 24),
+                Font = new Font("Segoe UI", 9f)
             };
-            btnAdd.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
-            btnAdd.Click += BtnAddProgram_Click;
+            _txtSearchPrograms.TextChanged += TxtSearchPrograms_TextChanged;
+            
+            // Add placeholder text using a label overlay
+            var lblPlaceholder = new Label
+            {
+                Name = "lblSearchProgramsPlaceholder",
+                Text = "🔍 ค้นหาโปรแกรม...",
+                Location = new Point(10, 9),
+                AutoSize = true,
+                BackColor = Color.Transparent,
+                ForeColor = Color.Gray,
+                Font = new Font("Segoe UI", 9f),
+                Cursor = Cursors.IBeam
+            };
+            lblPlaceholder.Click += (s, e) => _txtSearchPrograms.Focus();
+            
+            // Hide placeholder when textbox has focus or text
+            _txtSearchPrograms.Enter += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchPrograms.Text);
+            _txtSearchPrograms.Leave += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchPrograms.Text);
+            _txtSearchPrograms.TextChanged += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchPrograms.Text);
             
             var btnRemove = new Button
             {
-                Location = new Point(136, 6),
+                Location = new Point(266, 6),
                 Size = new Size(80, 24),
                 Text = "🗑️ ลบ",
                 Font = new Font("Segoe UI", 9f),
@@ -965,8 +1067,11 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveProgram_Click;
             
-            toolbar.Controls.Add(btnAdd);
+            toolbar.Controls.Add(_txtSearchPrograms);
+            toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnRemove);
+            
+            lblPlaceholder.BringToFront();
             
             return toolbar;
         }
@@ -980,23 +1085,37 @@ namespace CMS.Presentation.Modules.KMS
                 BackColor = Color.FromArgb(245, 247, 250)
             };
             
-            var btnAdd = new Button
+            _txtSearchDocs = new TextBox
             {
+                Name = "txtSearchDocs",
                 Location = new Point(8, 6),
-                Size = new Size(120, 24),
-                Text = "➕ เพิ่มเอกสาร",
-                Font = new Font("Segoe UI", 9f),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(46, 116, 181),
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
+                Size = new Size(250, 24),
+                Font = new Font("Segoe UI", 9f)
             };
-            btnAdd.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
-            btnAdd.Click += BtnAddDoc_Click;
+            _txtSearchDocs.TextChanged += TxtSearchDocs_TextChanged;
+            
+            // Add placeholder text using a label overlay
+            var lblPlaceholder = new Label
+            {
+                Name = "lblSearchDocsPlaceholder",
+                Text = "🔍 ค้นหาเอกสาร...",
+                Location = new Point(10, 9),
+                AutoSize = true,
+                BackColor = Color.Transparent,
+                ForeColor = Color.Gray,
+                Font = new Font("Segoe UI", 9f),
+                Cursor = Cursors.IBeam
+            };
+            lblPlaceholder.Click += (s, e) => _txtSearchDocs.Focus();
+            
+            // Hide placeholder when textbox has focus or text
+            _txtSearchDocs.Enter += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchDocs.Text);
+            _txtSearchDocs.Leave += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchDocs.Text);
+            _txtSearchDocs.TextChanged += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchDocs.Text);
             
             var btnRemove = new Button
             {
-                Location = new Point(136, 6),
+                Location = new Point(266, 6),
                 Size = new Size(80, 24),
                 Text = "🗑️ ลบ",
                 Font = new Font("Segoe UI", 9f),
@@ -1008,8 +1127,11 @@ namespace CMS.Presentation.Modules.KMS
             btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
             btnRemove.Click += BtnRemoveDoc_Click;
             
-            toolbar.Controls.Add(btnAdd);
+            toolbar.Controls.Add(_txtSearchDocs);
+            toolbar.Controls.Add(lblPlaceholder);
             toolbar.Controls.Add(btnRemove);
+            
+            lblPlaceholder.BringToFront();
             
             return toolbar;
         }
@@ -1059,6 +1181,10 @@ namespace CMS.Presentation.Modules.KMS
                 {
                     lstAttach.Items.Remove(lstAttach.SelectedItems[0]);
                 }
+                
+                // Refresh search list so removed items may reappear
+                PerformAttachSearch();
+                
                 ShowInfo("ลบไฟล์เรียบร้อยแล้ว");
             }
         }
@@ -1087,6 +1213,10 @@ namespace CMS.Presentation.Modules.KMS
                 {
                     lstRelated.Items.Remove(lstRelated.SelectedItems[0]);
                 }
+                
+                // Refresh search list so removed items may reappear
+                PerformRelatedSearch();
+                
                 ShowInfo("ลบรายการเรียบร้อยแล้ว");
             }
         }
@@ -1115,6 +1245,10 @@ namespace CMS.Presentation.Modules.KMS
                 {
                     lstWorkflow.Items.Remove(lstWorkflow.SelectedItems[0]);
                 }
+                
+                // Refresh search list so removed items may reappear
+                PerformWorkflowSearch();
+                
                 ShowInfo("ลบรายการเรียบร้อยแล้ว");
             }
         }
@@ -1143,6 +1277,10 @@ namespace CMS.Presentation.Modules.KMS
                 {
                     lstPrograms.Items.Remove(lstPrograms.SelectedItems[0]);
                 }
+                
+                // Refresh search list so removed items may reappear
+                PerformProgramsSearch();
+                
                 ShowInfo("ลบรายการเรียบร้อยแล้ว");
             }
         }
@@ -1171,9 +1309,294 @@ namespace CMS.Presentation.Modules.KMS
                 {
                     lstDocs.Items.Remove(lstDocs.SelectedItems[0]);
                 }
+                
+                // Refresh search list so removed items may reappear
+                PerformDocsSearch();
+                
                 ShowInfo("ลบรายการเรียบร้อยแล้ว");
             }
         }
+
+        // ── Search Event Handlers ────────────────────────────────────────────
+
+        private System.Threading.Timer _searchRelatedTimer;
+        private System.Threading.Timer _searchAttachTimer;
+        private System.Threading.Timer _searchWorkflowTimer;
+        
+        // Search textbox references
+        private TextBox _txtSearchRelated;
+        private TextBox _txtSearchAttach;
+        private TextBox _txtSearchWorkflow;
+        private TextBox _txtSearchPrograms;
+        private TextBox _txtSearchDocs;
+        private System.Threading.Timer _searchProgramsTimer;
+        private System.Threading.Timer _searchDocsTimer;
+
+        private void TxtSearchRelated_TextChanged(object sender, EventArgs e)
+        {
+            // Debounce search to avoid excessive queries (300ms delay)
+            _searchRelatedTimer?.Dispose();
+            _searchRelatedTimer = new System.Threading.Timer(
+                _ => this.Invoke(new Action(PerformRelatedSearch)),
+                null, 300, System.Threading.Timeout.Infinite);
+        }
+
+        private void TxtSearchAttach_TextChanged(object sender, EventArgs e)
+        {
+            // Debounce search (300ms delay)
+            _searchAttachTimer?.Dispose();
+            _searchAttachTimer = new System.Threading.Timer(
+                _ => this.Invoke(new Action(PerformAttachSearch)),
+                null, 300, System.Threading.Timeout.Infinite);
+        }
+
+        private void TxtSearchWorkflow_TextChanged(object sender, EventArgs e)
+        {
+            // Debounce search (300ms delay)
+            _searchWorkflowTimer?.Dispose();
+            _searchWorkflowTimer = new System.Threading.Timer(
+                _ => this.Invoke(new Action(PerformWorkflowSearch)),
+                null, 300, System.Threading.Timeout.Infinite);
+        }
+
+        private void TxtSearchPrograms_TextChanged(object sender, EventArgs e)
+        {
+            // Debounce search (300ms delay)
+            _searchProgramsTimer?.Dispose();
+            _searchProgramsTimer = new System.Threading.Timer(
+                _ => this.Invoke(new Action(PerformProgramsSearch)),
+                null, 300, System.Threading.Timeout.Infinite);
+        }
+
+        private void TxtSearchDocs_TextChanged(object sender, EventArgs e)
+        {
+            // Debounce search (300ms delay)
+            _searchDocsTimer?.Dispose();
+            _searchDocsTimer = new System.Threading.Timer(
+                _ => this.Invoke(new Action(PerformDocsSearch)),
+                null, 300, System.Threading.Timeout.Infinite);
+        }
+
+        // ── Search Implementation Methods ─────────────────────────────────────
+
+        private void PerformRelatedSearch()
+        {
+            if (_txtSearchRelated == null) return;
+            
+            string searchText = _txtSearchRelated.Text.Trim();
+            lstSearchRelated.Items.Clear();
+            
+            if (string.IsNullOrEmpty(searchText)) return;
+            
+            try
+            {
+                // Call service to search published articles
+                var results = _presenter.SearchPublishedArticles(searchText);
+                
+                // Exclude current article being edited
+                if (_presenter.EditingArticle != null)
+                    results = results.Where(a => a.ArticleID != _presenter.EditingArticle.ArticleID);
+                
+                // Exclude articles already in lstRelated
+                var existingIds = new HashSet<int>(
+                    lstRelated.Items.Cast<ListViewItem>()
+                        .Select(item => (int)item.Tag)
+                );
+                results = results.Where(a => !existingIds.Contains(a.ArticleID));
+                
+                // Populate search list (limit to 50 results)
+                foreach (var article in results.Take(50))
+                {
+                    var item = new ListViewItem(article.ArticleCode ?? "-");
+                    item.SubItems.Add(article.Title ?? "-");
+                    item.SubItems.Add(article.ArticleTypeName ?? "-");
+                    item.Tag = article.ArticleID;
+                    lstSearchRelated.Items.Add(item);
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void PerformAttachSearch()
+        {
+            if (_txtSearchAttach == null) return;
+            
+            string searchText = _txtSearchAttach.Text.Trim();
+            lstSearchAttach.Items.Clear();
+            
+            if (string.IsNullOrEmpty(searchText)) return;
+            
+            try
+            {
+                // TODO: Implement attachment search when data source is available
+                // For now, show placeholder message
+                var item = new ListViewItem("ยังไม่รองรับการค้นหาไฟล์แนบ");
+                item.SubItems.Add("-");
+                item.SubItems.Add("-");
+                lstSearchAttach.Items.Add(item);
+            }
+            catch (Exception ex)
+            {
+                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void PerformWorkflowSearch()
+        {
+            if (_txtSearchWorkflow == null) return;
+            
+            string searchText = _txtSearchWorkflow.Text.Trim();
+            lstSearchWorkflow.Items.Clear();
+            
+            if (string.IsNullOrEmpty(searchText)) return;
+            
+            try
+            {
+                // TODO: Implement workflow search when data source is available
+                // For now, show placeholder message
+                var item = new ListViewItem("ยังไม่รองรับการค้นหา Workflow");
+                item.SubItems.Add("-");
+                item.SubItems.Add("-");
+                lstSearchWorkflow.Items.Add(item);
+            }
+            catch (Exception ex)
+            {
+                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void PerformProgramsSearch()
+        {
+            if (_txtSearchPrograms == null) return;
+            
+            string searchText = _txtSearchPrograms.Text.Trim();
+            lstSearchPrograms.Items.Clear();
+            
+            if (string.IsNullOrEmpty(searchText)) return;
+            
+            try
+            {
+                // TODO: Implement programs search when data source is available
+                // For now, show placeholder message
+                var item = new ListViewItem("ยังไม่รองรับการค้นหาโปรแกรม");
+                item.SubItems.Add("-");
+                lstSearchPrograms.Items.Add(item);
+            }
+            catch (Exception ex)
+            {
+                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        private void PerformDocsSearch()
+        {
+            if (_txtSearchDocs == null) return;
+            
+            string searchText = _txtSearchDocs.Text.Trim();
+            lstSearchDocs.Items.Clear();
+            
+            if (string.IsNullOrEmpty(searchText)) return;
+            
+            try
+            {
+                // TODO: Implement documents search when data source is available
+                // For now, show placeholder message
+                var item = new ListViewItem("ยังไม่รองรับการค้นหาเอกสาร");
+                item.SubItems.Add("-");
+                lstSearchDocs.Items.Add(item);
+            }
+            catch (Exception ex)
+            {
+                ShowError("ค้นหาไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
+        // ── Double-Click Event Handlers ──────────────────────────────────────
+
+        private void LstSearchRelated_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstSearchRelated.SelectedItems.Count == 0) return;
+            
+            var selectedItem = lstSearchRelated.SelectedItems[0];
+            
+            // Clone item to main list
+            var newItem = (ListViewItem)selectedItem.Clone();
+            lstRelated.Items.Add(newItem);
+            
+            // Remove from search list
+            lstSearchRelated.Items.Remove(selectedItem);
+            
+            ShowInfo("เพิ่มบทความที่เกี่ยวข้องเรียบร้อยแล้ว");
+        }
+
+        private void LstSearchAttach_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstSearchAttach.SelectedItems.Count == 0) return;
+            
+            var selectedItem = lstSearchAttach.SelectedItems[0];
+            
+            // Clone item to main list
+            var newItem = (ListViewItem)selectedItem.Clone();
+            lstAttach.Items.Add(newItem);
+            
+            // Remove from search list
+            lstSearchAttach.Items.Remove(selectedItem);
+            
+            ShowInfo("เพิ่มไฟล์แนบเรียบร้อยแล้ว");
+        }
+
+        private void LstSearchWorkflow_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstSearchWorkflow.SelectedItems.Count == 0) return;
+            
+            var selectedItem = lstSearchWorkflow.SelectedItems[0];
+            
+            // Clone item to main list
+            var newItem = (ListViewItem)selectedItem.Clone();
+            lstWorkflow.Items.Add(newItem);
+            
+            // Remove from search list
+            lstSearchWorkflow.Items.Remove(selectedItem);
+            
+            ShowInfo("เพิ่ม Workflow เรียบร้อยแล้ว");
+        }
+
+        private void LstSearchPrograms_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstSearchPrograms.SelectedItems.Count == 0) return;
+            
+            var selectedItem = lstSearchPrograms.SelectedItems[0];
+            
+            // Clone item to main list
+            var newItem = (ListViewItem)selectedItem.Clone();
+            lstPrograms.Items.Add(newItem);
+            
+            // Remove from search list
+            lstSearchPrograms.Items.Remove(selectedItem);
+            
+            ShowInfo("เพิ่มโปรแกรมเรียบร้อยแล้ว");
+        }
+
+        private void LstSearchDocs_DoubleClick(object sender, EventArgs e)
+        {
+            if (lstSearchDocs.SelectedItems.Count == 0) return;
+            
+            var selectedItem = lstSearchDocs.SelectedItems[0];
+            
+            // Clone item to main list
+            var newItem = (ListViewItem)selectedItem.Clone();
+            lstDocs.Items.Add(newItem);
+            
+            // Remove from search list
+            lstSearchDocs.Items.Remove(selectedItem);
+            
+            ShowInfo("เพิ่มเอกสารเรียบร้อยแล้ว");
+        }
+
+        // ── Helper Methods ───────────────────────────────────────────────────
 
         private string FormatFileSize(long bytes)
         {

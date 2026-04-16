@@ -47,5 +47,11 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         void CloseCancel();
         void ShowError(string message);
         void ShowInfo(string message);
+
+        // ── ListView Access for Article Links ────────────────────────────────
+        System.Windows.Forms.ListView GetRelatedListView();
+        System.Windows.Forms.ListView GetWorkflowListView();
+        System.Windows.Forms.ListView GetProgramsListView();
+        System.Windows.Forms.ListView GetDocsListView();
     }
 }
