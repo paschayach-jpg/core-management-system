@@ -35,7 +35,72 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatusInfo = new System.Windows.Forms.Label();
             this.lblVerInfo = new System.Windows.Forms.Label();
             this.pnlScroll = new System.Windows.Forms.Panel();
-            this.pnlGap2 = new System.Windows.Forms.Panel();
+            this.splitMain = new System.Windows.Forms.SplitContainer();
+            this.splitTopBottom = new System.Windows.Forms.SplitContainer();
+            this.pnlGenInfoOuter = new System.Windows.Forms.Panel();
+            this.tlpGenInfo = new System.Windows.Forms.TableLayoutPanel();
+            this.lblCode = new System.Windows.Forms.Label();
+            this.lblType = new System.Windows.Forms.Label();
+            this.lblStatus = new System.Windows.Forms.Label();
+            this.lblVerLabel = new System.Windows.Forms.Label();
+            this.txtCode = new System.Windows.Forms.TextBox();
+            this.cboType = new System.Windows.Forms.ComboBox();
+            this.cboStatus = new System.Windows.Forms.ComboBox();
+            this.lblCurVersion = new System.Windows.Forms.Label();
+            this.lblTitle = new System.Windows.Forms.Label();
+            this.lblCategory = new System.Windows.Forms.Label();
+            this.txtTitle = new System.Windows.Forms.TextBox();
+            this.cboCategory = new System.Windows.Forms.ComboBox();
+            this.lblTags = new System.Windows.Forms.Label();
+            this.lblExpiry = new System.Windows.Forms.Label();
+            this.flpTags = new System.Windows.Forms.FlowLayoutPanel();
+            this.txtTagInput = new System.Windows.Forms.TextBox();
+            this.pnlExpiry = new System.Windows.Forms.Panel();
+            this.chkNoExpiry = new System.Windows.Forms.CheckBox();
+            this.dtpExpiry = new System.Windows.Forms.DateTimePicker();
+            this.chkOfficialPolicy = new System.Windows.Forms.CheckBox();
+            this.lblViewCount = new System.Windows.Forms.Label();
+            this.lblLikeCount = new System.Windows.Forms.Label();
+            this.pnlGenInfoHeader = new System.Windows.Forms.Panel();
+            this.lblGenInfoHeader = new System.Windows.Forms.Label();
+            this.pnlContentOuter = new System.Windows.Forms.Panel();
+            this.webEditor = new System.Windows.Forms.WebBrowser();
+            this.pnlRteStatus = new System.Windows.Forms.Panel();
+            this.lblRteStatus = new System.Windows.Forms.Label();
+            this.lblContent = new System.Windows.Forms.Label();
+            this.tsRte = new System.Windows.Forms.ToolStrip();
+            this.tsRteFontFamily = new System.Windows.Forms.ToolStripComboBox();
+            this.tsRteSep0 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteFontSize = new System.Windows.Forms.ToolStripComboBox();
+            this.tsRteSep1 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteBold = new System.Windows.Forms.ToolStripButton();
+            this.tsRteItalic = new System.Windows.Forms.ToolStripButton();
+            this.tsRteUnder = new System.Windows.Forms.ToolStripButton();
+            this.tsRteSep2 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteH1 = new System.Windows.Forms.ToolStripButton();
+            this.tsRteH2 = new System.Windows.Forms.ToolStripButton();
+            this.tsRteH3 = new System.Windows.Forms.ToolStripButton();
+            this.tsRteSep3 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteAlignLeft = new System.Windows.Forms.ToolStripButton();
+            this.tsRteAlignCenter = new System.Windows.Forms.ToolStripButton();
+            this.tsRteAlignRight = new System.Windows.Forms.ToolStripButton();
+            this.tsRteSep4 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteBullet = new System.Windows.Forms.ToolStripButton();
+            this.tsRteNumList = new System.Windows.Forms.ToolStripButton();
+            this.tsRteSep5 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteLink = new System.Windows.Forms.ToolStripButton();
+            this.tsRteTable = new System.Windows.Forms.ToolStripButton();
+            this.tsRteCode = new System.Windows.Forms.ToolStripButton();
+            this.tsRteImage = new System.Windows.Forms.ToolStripButton();
+            this.tsRteAttach = new System.Windows.Forms.ToolStripButton();
+            this.tsRteSep6 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteUndo = new System.Windows.Forms.ToolStripButton();
+            this.tsRteRedo = new System.Windows.Forms.ToolStripButton();
+            this.pnlSummaryArea = new System.Windows.Forms.Panel();
+            this.txtSummary = new System.Windows.Forms.TextBox();
+            this.lblSummary = new System.Windows.Forms.Label();
+            this.pnlContentHeader = new System.Windows.Forms.Panel();
+            this.lblContentHeader = new System.Windows.Forms.Label();
             this.pnlMappingOuter = new System.Windows.Forms.Panel();
             this.tabMapping = new System.Windows.Forms.TabControl();
             this.tabAttach = new System.Windows.Forms.TabPage();
@@ -97,8 +162,6 @@ namespace CMS.Presentation.Modules.KMS
             this.colProgramsLinkedType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.lblProgramsLinked = new System.Windows.Forms.Label();
             this.tabDocs = new System.Windows.Forms.TabPage();
-            this.pnlDocsDropZone = new System.Windows.Forms.Panel();
-            this.lblDocsUpload = new System.Windows.Forms.Label();
             this.pnlDocsUpload = new System.Windows.Forms.Panel();
             this.btnSelectDocFromDMS = new System.Windows.Forms.Button();
             this.btnUploadDoc = new System.Windows.Forms.Button();
@@ -119,76 +182,29 @@ namespace CMS.Presentation.Modules.KMS
             this.colVerNote = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.pnlMappingHeader = new System.Windows.Forms.Panel();
             this.lblMappingHeader = new System.Windows.Forms.Label();
-            this.pnlGap1 = new System.Windows.Forms.Panel();
-            this.pnlContentOuter = new System.Windows.Forms.Panel();
-            this.webEditor = new System.Windows.Forms.WebBrowser();
-            this.pnlRteStatus = new System.Windows.Forms.Panel();
-            this.lblRteStatus = new System.Windows.Forms.Label();
-            this.lblContent = new System.Windows.Forms.Label();
-            this.tsRte = new System.Windows.Forms.ToolStrip();
-            this.tsRteFontFamily = new System.Windows.Forms.ToolStripComboBox();
-            this.tsRteSep0 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsRteFontSize = new System.Windows.Forms.ToolStripComboBox();
-            this.tsRteSep1 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsRteBold = new System.Windows.Forms.ToolStripButton();
-            this.tsRteItalic = new System.Windows.Forms.ToolStripButton();
-            this.tsRteUnder = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep2 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsRteH1 = new System.Windows.Forms.ToolStripButton();
-            this.tsRteH2 = new System.Windows.Forms.ToolStripButton();
-            this.tsRteH3 = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep3 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsRteAlignLeft = new System.Windows.Forms.ToolStripButton();
-            this.tsRteAlignCenter = new System.Windows.Forms.ToolStripButton();
-            this.tsRteAlignRight = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep4 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsRteBullet = new System.Windows.Forms.ToolStripButton();
-            this.tsRteNumList = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep5 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsRteLink = new System.Windows.Forms.ToolStripButton();
-            this.tsRteTable = new System.Windows.Forms.ToolStripButton();
-            this.tsRteCode = new System.Windows.Forms.ToolStripButton();
-            this.tsRteImage = new System.Windows.Forms.ToolStripButton();
-            this.tsRteAttach = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep6 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsRteUndo = new System.Windows.Forms.ToolStripButton();
-            this.tsRteRedo = new System.Windows.Forms.ToolStripButton();
-            this.pnlSummaryArea = new System.Windows.Forms.Panel();
-            this.txtSummary = new System.Windows.Forms.TextBox();
-            this.lblSummary = new System.Windows.Forms.Label();
-            this.pnlContentHeader = new System.Windows.Forms.Panel();
-            this.lblContentHeader = new System.Windows.Forms.Label();
-            this.pnlGenInfoOuter = new System.Windows.Forms.Panel();
-            this.tlpGenInfo = new System.Windows.Forms.TableLayoutPanel();
-            this.lblCode = new System.Windows.Forms.Label();
-            this.lblType = new System.Windows.Forms.Label();
-            this.lblStatus = new System.Windows.Forms.Label();
-            this.lblVerLabel = new System.Windows.Forms.Label();
-            this.txtCode = new System.Windows.Forms.TextBox();
-            this.cboType = new System.Windows.Forms.ComboBox();
-            this.cboStatus = new System.Windows.Forms.ComboBox();
-            this.lblCurVersion = new System.Windows.Forms.Label();
-            this.lblTitle = new System.Windows.Forms.Label();
-            this.lblCategory = new System.Windows.Forms.Label();
-            this.txtTitle = new System.Windows.Forms.TextBox();
-            this.cboCategory = new System.Windows.Forms.ComboBox();
-            this.lblTags = new System.Windows.Forms.Label();
-            this.lblExpiry = new System.Windows.Forms.Label();
-            this.flpTags = new System.Windows.Forms.FlowLayoutPanel();
-            this.txtTagInput = new System.Windows.Forms.TextBox();
-            this.pnlExpiry = new System.Windows.Forms.Panel();
-            this.chkNoExpiry = new System.Windows.Forms.CheckBox();
-            this.dtpExpiry = new System.Windows.Forms.DateTimePicker();
-            this.chkOfficialPolicy = new System.Windows.Forms.CheckBox();
-            this.lblViewCount = new System.Windows.Forms.Label();
-            this.lblLikeCount = new System.Windows.Forms.Label();
-            this.pnlGenInfoHeader = new System.Windows.Forms.Panel();
-            this.lblGenInfoHeader = new System.Windows.Forms.Label();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             this.flpToolbarLeft.SuspendLayout();
             this.pnlStatusBar.SuspendLayout();
             this.pnlScroll.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
+            this.splitMain.Panel1.SuspendLayout();
+            this.splitMain.Panel2.SuspendLayout();
+            this.splitMain.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitTopBottom)).BeginInit();
+            this.splitTopBottom.Panel1.SuspendLayout();
+            this.splitTopBottom.Panel2.SuspendLayout();
+            this.splitTopBottom.SuspendLayout();
+            this.pnlGenInfoOuter.SuspendLayout();
+            this.tlpGenInfo.SuspendLayout();
+            this.flpTags.SuspendLayout();
+            this.pnlExpiry.SuspendLayout();
+            this.pnlGenInfoHeader.SuspendLayout();
+            this.pnlContentOuter.SuspendLayout();
+            this.pnlRteStatus.SuspendLayout();
+            this.tsRte.SuspendLayout();
+            this.pnlSummaryArea.SuspendLayout();
+            this.pnlContentHeader.SuspendLayout();
             this.pnlMappingOuter.SuspendLayout();
             this.tabMapping.SuspendLayout();
             this.tabAttach.SuspendLayout();
@@ -206,16 +222,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlDocsLinkedActions.SuspendLayout();
             this.tabVersions.SuspendLayout();
             this.pnlMappingHeader.SuspendLayout();
-            this.pnlContentOuter.SuspendLayout();
-            this.pnlRteStatus.SuspendLayout();
-            this.tsRte.SuspendLayout();
-            this.pnlSummaryArea.SuspendLayout();
-            this.pnlContentHeader.SuspendLayout();
-            this.pnlGenInfoOuter.SuspendLayout();
-            this.tlpGenInfo.SuspendLayout();
-            this.flpTags.SuspendLayout();
-            this.pnlExpiry.SuspendLayout();
-            this.pnlGenInfoHeader.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlHeader
@@ -225,7 +231,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlHeader.Name = "pnlHeader";
-            this.pnlHeader.Size = new System.Drawing.Size(1408, 48);
+            this.pnlHeader.Size = new System.Drawing.Size(1372, 48);
             this.pnlHeader.TabIndex = 0;
             // 
             // lblHeader
@@ -236,7 +242,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblHeader.Location = new System.Drawing.Point(0, 0);
             this.lblHeader.Name = "lblHeader";
             this.lblHeader.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.lblHeader.Size = new System.Drawing.Size(1408, 48);
+            this.lblHeader.Size = new System.Drawing.Size(1372, 48);
             this.lblHeader.TabIndex = 0;
             this.lblHeader.Text = "✏️ แก้ไขบทความ — Knowledge Base";
             this.lblHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -250,7 +256,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlToolbar.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlToolbar.Location = new System.Drawing.Point(0, 48);
             this.pnlToolbar.Name = "pnlToolbar";
-            this.pnlToolbar.Size = new System.Drawing.Size(1408, 42);
+            this.pnlToolbar.Size = new System.Drawing.Size(1372, 42);
             this.pnlToolbar.TabIndex = 1;
             // 
             // lblBreadcrumb
@@ -258,7 +264,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblBreadcrumb.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblBreadcrumb.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblBreadcrumb.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(130)))), ((int)(((byte)(160)))));
-            this.lblBreadcrumb.Location = new System.Drawing.Point(1068, 12);
+            this.lblBreadcrumb.Location = new System.Drawing.Point(1032, 12);
             this.lblBreadcrumb.Name = "lblBreadcrumb";
             this.lblBreadcrumb.Size = new System.Drawing.Size(320, 18);
             this.lblBreadcrumb.TabIndex = 99;
@@ -384,7 +390,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlToolbarBorder.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlToolbarBorder.Location = new System.Drawing.Point(0, 40);
             this.pnlToolbarBorder.Name = "pnlToolbarBorder";
-            this.pnlToolbarBorder.Size = new System.Drawing.Size(1408, 2);
+            this.pnlToolbarBorder.Size = new System.Drawing.Size(1372, 2);
             this.pnlToolbarBorder.TabIndex = 99;
             // 
             // pnlStatusBar
@@ -397,10 +403,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStatusBar.Controls.Add(this.lblStatusInfo);
             this.pnlStatusBar.Controls.Add(this.lblVerInfo);
             this.pnlStatusBar.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlStatusBar.Location = new System.Drawing.Point(0, 924);
+            this.pnlStatusBar.Location = new System.Drawing.Point(0, 1276);
             this.pnlStatusBar.Name = "pnlStatusBar";
             this.pnlStatusBar.Padding = new System.Windows.Forms.Padding(10, 0, 10, 0);
-            this.pnlStatusBar.Size = new System.Drawing.Size(1408, 28);
+            this.pnlStatusBar.Size = new System.Drawing.Size(1372, 28);
             this.pnlStatusBar.TabIndex = 3;
             // 
             // txtChangeDesc
@@ -410,7 +416,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtChangeDesc.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtChangeDesc.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.txtChangeDesc.ForeColor = System.Drawing.Color.White;
-            this.txtChangeDesc.Location = new System.Drawing.Point(1032, 4);
+            this.txtChangeDesc.Location = new System.Drawing.Point(996, 4);
             this.txtChangeDesc.Name = "txtChangeDesc";
             this.txtChangeDesc.Size = new System.Drawing.Size(366, 26);
             this.txtChangeDesc.TabIndex = 5;
@@ -420,7 +426,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblChangeDescLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblChangeDescLabel.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblChangeDescLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(215)))), ((int)(((byte)(230)))));
-            this.lblChangeDescLabel.Location = new System.Drawing.Point(956, 5);
+            this.lblChangeDescLabel.Location = new System.Drawing.Point(920, 5);
             this.lblChangeDescLabel.Name = "lblChangeDescLabel";
             this.lblChangeDescLabel.Size = new System.Drawing.Size(70, 18);
             this.lblChangeDescLabel.TabIndex = 4;
@@ -473,28 +479,809 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // pnlScroll
             // 
-            this.pnlScroll.AutoScroll = true;
             this.pnlScroll.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.pnlScroll.Controls.Add(this.pnlGap2);
-            this.pnlScroll.Controls.Add(this.pnlMappingOuter);
-            this.pnlScroll.Controls.Add(this.pnlGap1);
-            this.pnlScroll.Controls.Add(this.pnlContentOuter);
-            this.pnlScroll.Controls.Add(this.pnlGenInfoOuter);
+            this.pnlScroll.Controls.Add(this.splitMain);
             this.pnlScroll.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlScroll.Location = new System.Drawing.Point(0, 90);
             this.pnlScroll.Name = "pnlScroll";
             this.pnlScroll.Padding = new System.Windows.Forms.Padding(10);
-            this.pnlScroll.Size = new System.Drawing.Size(1408, 834);
+            this.pnlScroll.Size = new System.Drawing.Size(1372, 1186);
             this.pnlScroll.TabIndex = 2;
             // 
-            // pnlGap2
+            // splitMain
             // 
-            this.pnlGap2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.pnlGap2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlGap2.Location = new System.Drawing.Point(10, 560);
-            this.pnlGap2.Name = "pnlGap2";
-            this.pnlGap2.Size = new System.Drawing.Size(1388, 8);
-            this.pnlGap2.TabIndex = 13;
+            this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitMain.Location = new System.Drawing.Point(10, 10);
+            this.splitMain.Name = "splitMain";
+            this.splitMain.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitMain.Panel1
+            // 
+            this.splitMain.Panel1.Controls.Add(this.splitTopBottom);
+            this.splitMain.Panel1MinSize = 300;
+            // 
+            // splitMain.Panel2
+            // 
+            this.splitMain.Panel2.Controls.Add(this.pnlMappingOuter);
+            this.splitMain.Panel2MinSize = 200;
+            this.splitMain.Size = new System.Drawing.Size(1352, 1166);
+            this.splitMain.SplitterDistance = 776;
+            this.splitMain.SplitterWidth = 6;
+            this.splitMain.TabIndex = 0;
+            // 
+            // splitTopBottom
+            // 
+            this.splitTopBottom.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitTopBottom.Location = new System.Drawing.Point(0, 0);
+            this.splitTopBottom.Name = "splitTopBottom";
+            this.splitTopBottom.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitTopBottom.Panel1
+            // 
+            this.splitTopBottom.Panel1.Controls.Add(this.pnlGenInfoOuter);
+            this.splitTopBottom.Panel1MinSize = 150;
+            // 
+            // splitTopBottom.Panel2
+            // 
+            this.splitTopBottom.Panel2.Controls.Add(this.pnlContentOuter);
+            this.splitTopBottom.Panel2MinSize = 150;
+            this.splitTopBottom.Size = new System.Drawing.Size(1352, 776);
+            this.splitTopBottom.SplitterDistance = 323;
+            this.splitTopBottom.SplitterWidth = 6;
+            this.splitTopBottom.TabIndex = 0;
+            // 
+            // pnlGenInfoOuter
+            // 
+            this.pnlGenInfoOuter.BackColor = System.Drawing.Color.White;
+            this.pnlGenInfoOuter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlGenInfoOuter.Controls.Add(this.tlpGenInfo);
+            this.pnlGenInfoOuter.Controls.Add(this.pnlGenInfoHeader);
+            this.pnlGenInfoOuter.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlGenInfoOuter.Location = new System.Drawing.Point(0, 0);
+            this.pnlGenInfoOuter.Name = "pnlGenInfoOuter";
+            this.pnlGenInfoOuter.Size = new System.Drawing.Size(1352, 323);
+            this.pnlGenInfoOuter.TabIndex = 10;
+            // 
+            // tlpGenInfo
+            // 
+            this.tlpGenInfo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(251)))), ((int)(((byte)(252)))));
+            this.tlpGenInfo.ColumnCount = 4;
+            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpGenInfo.Controls.Add(this.lblCode, 0, 0);
+            this.tlpGenInfo.Controls.Add(this.lblType, 1, 0);
+            this.tlpGenInfo.Controls.Add(this.lblStatus, 2, 0);
+            this.tlpGenInfo.Controls.Add(this.lblVerLabel, 3, 0);
+            this.tlpGenInfo.Controls.Add(this.txtCode, 0, 1);
+            this.tlpGenInfo.Controls.Add(this.cboType, 1, 1);
+            this.tlpGenInfo.Controls.Add(this.cboStatus, 2, 1);
+            this.tlpGenInfo.Controls.Add(this.lblCurVersion, 3, 1);
+            this.tlpGenInfo.Controls.Add(this.lblTitle, 0, 3);
+            this.tlpGenInfo.Controls.Add(this.lblCategory, 3, 3);
+            this.tlpGenInfo.Controls.Add(this.txtTitle, 0, 4);
+            this.tlpGenInfo.Controls.Add(this.cboCategory, 3, 4);
+            this.tlpGenInfo.Controls.Add(this.lblTags, 0, 6);
+            this.tlpGenInfo.Controls.Add(this.lblExpiry, 2, 6);
+            this.tlpGenInfo.Controls.Add(this.flpTags, 0, 7);
+            this.tlpGenInfo.Controls.Add(this.pnlExpiry, 2, 7);
+            this.tlpGenInfo.Controls.Add(this.chkOfficialPolicy, 0, 9);
+            this.tlpGenInfo.Controls.Add(this.lblViewCount, 2, 9);
+            this.tlpGenInfo.Controls.Add(this.lblLikeCount, 3, 9);
+            this.tlpGenInfo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tlpGenInfo.Location = new System.Drawing.Point(0, 28);
+            this.tlpGenInfo.Name = "tlpGenInfo";
+            this.tlpGenInfo.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
+            this.tlpGenInfo.RowCount = 10;
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 10F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 10F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 8F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
+            this.tlpGenInfo.Size = new System.Drawing.Size(1350, 293);
+            this.tlpGenInfo.TabIndex = 1;
+            // 
+            // lblCode
+            // 
+            this.lblCode.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblCode.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblCode.Location = new System.Drawing.Point(12, 8);
+            this.lblCode.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblCode.Name = "lblCode";
+            this.lblCode.Size = new System.Drawing.Size(328, 18);
+            this.lblCode.TabIndex = 0;
+            this.lblCode.Text = "รหัสบทความ";
+            // 
+            // lblType
+            // 
+            this.lblType.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblType.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblType.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblType.Location = new System.Drawing.Point(344, 8);
+            this.lblType.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblType.Name = "lblType";
+            this.lblType.Size = new System.Drawing.Size(328, 18);
+            this.lblType.TabIndex = 1;
+            this.lblType.Text = "ประเภทบทความ *";
+            // 
+            // lblStatus
+            // 
+            this.lblStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblStatus.Location = new System.Drawing.Point(676, 8);
+            this.lblStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblStatus.Name = "lblStatus";
+            this.lblStatus.Size = new System.Drawing.Size(328, 18);
+            this.lblStatus.TabIndex = 2;
+            this.lblStatus.Text = "สถานะ";
+            // 
+            // lblVerLabel
+            // 
+            this.lblVerLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblVerLabel.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblVerLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblVerLabel.Location = new System.Drawing.Point(1008, 8);
+            this.lblVerLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblVerLabel.Name = "lblVerLabel";
+            this.lblVerLabel.Size = new System.Drawing.Size(330, 18);
+            this.lblVerLabel.TabIndex = 3;
+            this.lblVerLabel.Text = "เวอร์ชัน";
+            // 
+            // txtCode
+            // 
+            this.txtCode.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.txtCode.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtCode.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.txtCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
+            this.txtCode.Location = new System.Drawing.Point(12, 26);
+            this.txtCode.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.txtCode.Name = "txtCode";
+            this.txtCode.ReadOnly = true;
+            this.txtCode.Size = new System.Drawing.Size(328, 26);
+            this.txtCode.TabIndex = 10;
+            // 
+            // cboType
+            // 
+            this.cboType.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboType.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.cboType.Location = new System.Drawing.Point(344, 26);
+            this.cboType.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.cboType.Name = "cboType";
+            this.cboType.Size = new System.Drawing.Size(328, 27);
+            this.cboType.TabIndex = 11;
+            // 
+            // cboStatus
+            // 
+            this.cboStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboStatus.FormattingEnabled = true;
+            this.cboStatus.Items.AddRange(new object[] {
+            "📝 Draft",
+            "🔍 รอ Review",
+            "✅ Published",
+            "📦 Archived"});
+            this.cboStatus.Location = new System.Drawing.Point(676, 26);
+            this.cboStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.cboStatus.Name = "cboStatus";
+            this.cboStatus.Size = new System.Drawing.Size(328, 28);
+            this.cboStatus.TabIndex = 12;
+            this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboStatus_SelectedIndexChanged);
+            // 
+            // lblCurVersion
+            // 
+            this.lblCurVersion.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.lblCurVersion.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblCurVersion.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblCurVersion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
+            this.lblCurVersion.Location = new System.Drawing.Point(1008, 26);
+            this.lblCurVersion.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblCurVersion.Name = "lblCurVersion";
+            this.lblCurVersion.Size = new System.Drawing.Size(330, 28);
+            this.lblCurVersion.TabIndex = 13;
+            this.lblCurVersion.Text = "v1.0";
+            this.lblCurVersion.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lblTitle
+            // 
+            this.tlpGenInfo.SetColumnSpan(this.lblTitle, 3);
+            this.lblTitle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblTitle.Location = new System.Drawing.Point(12, 64);
+            this.lblTitle.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblTitle.Name = "lblTitle";
+            this.lblTitle.Size = new System.Drawing.Size(992, 18);
+            this.lblTitle.TabIndex = 20;
+            this.lblTitle.Text = "ชื่อบทความ *";
+            // 
+            // lblCategory
+            // 
+            this.lblCategory.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblCategory.Location = new System.Drawing.Point(1008, 64);
+            this.lblCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblCategory.Name = "lblCategory";
+            this.lblCategory.Size = new System.Drawing.Size(330, 18);
+            this.lblCategory.TabIndex = 21;
+            this.lblCategory.Text = "หมวดหมู่ *";
+            // 
+            // txtTitle
+            // 
+            this.tlpGenInfo.SetColumnSpan(this.txtTitle, 3);
+            this.txtTitle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtTitle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.txtTitle.Location = new System.Drawing.Point(12, 82);
+            this.txtTitle.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.txtTitle.MaxLength = 500;
+            this.txtTitle.Name = "txtTitle";
+            this.txtTitle.Size = new System.Drawing.Size(992, 30);
+            this.txtTitle.TabIndex = 22;
+            // 
+            // cboCategory
+            // 
+            this.cboCategory.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cboCategory.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.cboCategory.Location = new System.Drawing.Point(1008, 82);
+            this.cboCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.cboCategory.Name = "cboCategory";
+            this.cboCategory.Size = new System.Drawing.Size(330, 27);
+            this.cboCategory.TabIndex = 23;
+            // 
+            // lblTags
+            // 
+            this.tlpGenInfo.SetColumnSpan(this.lblTags, 2);
+            this.lblTags.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTags.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblTags.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblTags.Location = new System.Drawing.Point(12, 120);
+            this.lblTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblTags.Name = "lblTags";
+            this.lblTags.Size = new System.Drawing.Size(660, 18);
+            this.lblTags.TabIndex = 30;
+            this.lblTags.Text = "แท็ก (Tags) — คั่นด้วยเครื่องหมาย ,";
+            // 
+            // lblExpiry
+            // 
+            this.tlpGenInfo.SetColumnSpan(this.lblExpiry, 2);
+            this.lblExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblExpiry.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblExpiry.Location = new System.Drawing.Point(676, 120);
+            this.lblExpiry.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblExpiry.Name = "lblExpiry";
+            this.lblExpiry.Size = new System.Drawing.Size(662, 18);
+            this.lblExpiry.TabIndex = 31;
+            this.lblExpiry.Text = "วันหมดอายุ (Review Due)";
+            // 
+            // flpTags
+            // 
+            this.flpTags.AutoSize = true;
+            this.flpTags.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.tlpGenInfo.SetColumnSpan(this.flpTags, 2);
+            this.flpTags.Controls.Add(this.txtTagInput);
+            this.flpTags.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flpTags.Location = new System.Drawing.Point(12, 138);
+            this.flpTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.flpTags.MinimumSize = new System.Drawing.Size(678, 28);
+            this.flpTags.Name = "flpTags";
+            this.flpTags.Padding = new System.Windows.Forms.Padding(2);
+            this.flpTags.Size = new System.Drawing.Size(678, 28);
+            this.flpTags.TabIndex = 32;
+            // 
+            // txtTagInput
+            // 
+            this.txtTagInput.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.txtTagInput.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtTagInput.Location = new System.Drawing.Point(5, 5);
+            this.txtTagInput.Name = "txtTagInput";
+            this.txtTagInput.Size = new System.Drawing.Size(150, 20);
+            this.txtTagInput.TabIndex = 0;
+            this.txtTagInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtTagInput_KeyDown);
+            // 
+            // pnlExpiry
+            // 
+            this.pnlExpiry.BackColor = System.Drawing.Color.Transparent;
+            this.tlpGenInfo.SetColumnSpan(this.pnlExpiry, 2);
+            this.pnlExpiry.Controls.Add(this.chkNoExpiry);
+            this.pnlExpiry.Controls.Add(this.dtpExpiry);
+            this.pnlExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlExpiry.Location = new System.Drawing.Point(676, 138);
+            this.pnlExpiry.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.pnlExpiry.Name = "pnlExpiry";
+            this.pnlExpiry.Size = new System.Drawing.Size(662, 28);
+            this.pnlExpiry.TabIndex = 33;
+            // 
+            // chkNoExpiry
+            // 
+            this.chkNoExpiry.AutoSize = true;
+            this.chkNoExpiry.Checked = true;
+            this.chkNoExpiry.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkNoExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.chkNoExpiry.Location = new System.Drawing.Point(158, 4);
+            this.chkNoExpiry.Name = "chkNoExpiry";
+            this.chkNoExpiry.Size = new System.Drawing.Size(118, 24);
+            this.chkNoExpiry.TabIndex = 1;
+            this.chkNoExpiry.Text = "ไม่มีวันหมดอายุ";
+            this.chkNoExpiry.CheckedChanged += new System.EventHandler(this.ChkNoExpiry_CheckedChanged);
+            // 
+            // dtpExpiry
+            // 
+            this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.dtpExpiry.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpExpiry.Location = new System.Drawing.Point(0, 1);
+            this.dtpExpiry.Name = "dtpExpiry";
+            this.dtpExpiry.Size = new System.Drawing.Size(150, 26);
+            this.dtpExpiry.TabIndex = 0;
+            // 
+            // chkOfficialPolicy
+            // 
+            this.chkOfficialPolicy.AutoSize = true;
+            this.tlpGenInfo.SetColumnSpan(this.chkOfficialPolicy, 2);
+            this.chkOfficialPolicy.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.chkOfficialPolicy.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.chkOfficialPolicy.Location = new System.Drawing.Point(12, 176);
+            this.chkOfficialPolicy.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
+            this.chkOfficialPolicy.Name = "chkOfficialPolicy";
+            this.chkOfficialPolicy.Size = new System.Drawing.Size(660, 109);
+            this.chkOfficialPolicy.TabIndex = 40;
+            this.chkOfficialPolicy.Text = "🏛 Official Policy";
+            // 
+            // lblViewCount
+            // 
+            this.lblViewCount.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblViewCount.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblViewCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblViewCount.Location = new System.Drawing.Point(676, 176);
+            this.lblViewCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
+            this.lblViewCount.Name = "lblViewCount";
+            this.lblViewCount.Size = new System.Drawing.Size(328, 109);
+            this.lblViewCount.TabIndex = 41;
+            this.lblViewCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblLikeCount
+            // 
+            this.lblLikeCount.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblLikeCount.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblLikeCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblLikeCount.Location = new System.Drawing.Point(1008, 176);
+            this.lblLikeCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
+            this.lblLikeCount.Name = "lblLikeCount";
+            this.lblLikeCount.Size = new System.Drawing.Size(330, 109);
+            this.lblLikeCount.TabIndex = 42;
+            this.lblLikeCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // pnlGenInfoHeader
+            // 
+            this.pnlGenInfoHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.pnlGenInfoHeader.Controls.Add(this.lblGenInfoHeader);
+            this.pnlGenInfoHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlGenInfoHeader.Location = new System.Drawing.Point(0, 0);
+            this.pnlGenInfoHeader.Name = "pnlGenInfoHeader";
+            this.pnlGenInfoHeader.Size = new System.Drawing.Size(1350, 28);
+            this.pnlGenInfoHeader.TabIndex = 0;
+            // 
+            // lblGenInfoHeader
+            // 
+            this.lblGenInfoHeader.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblGenInfoHeader.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblGenInfoHeader.ForeColor = System.Drawing.Color.White;
+            this.lblGenInfoHeader.Location = new System.Drawing.Point(0, 0);
+            this.lblGenInfoHeader.Name = "lblGenInfoHeader";
+            this.lblGenInfoHeader.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
+            this.lblGenInfoHeader.Size = new System.Drawing.Size(1350, 28);
+            this.lblGenInfoHeader.TabIndex = 0;
+            this.lblGenInfoHeader.Text = "📋  ข้อมูลทั่วไป (General Information)";
+            this.lblGenInfoHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // pnlContentOuter
+            // 
+            this.pnlContentOuter.BackColor = System.Drawing.Color.White;
+            this.pnlContentOuter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlContentOuter.Controls.Add(this.webEditor);
+            this.pnlContentOuter.Controls.Add(this.pnlRteStatus);
+            this.pnlContentOuter.Controls.Add(this.lblContent);
+            this.pnlContentOuter.Controls.Add(this.tsRte);
+            this.pnlContentOuter.Controls.Add(this.pnlSummaryArea);
+            this.pnlContentOuter.Controls.Add(this.pnlContentHeader);
+            this.pnlContentOuter.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlContentOuter.Location = new System.Drawing.Point(0, 0);
+            this.pnlContentOuter.Name = "pnlContentOuter";
+            this.pnlContentOuter.Size = new System.Drawing.Size(1352, 447);
+            this.pnlContentOuter.TabIndex = 12;
+            // 
+            // webEditor
+            // 
+            this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.webEditor.IsWebBrowserContextMenuEnabled = false;
+            this.webEditor.Location = new System.Drawing.Point(0, 115);
+            this.webEditor.MinimumSize = new System.Drawing.Size(20, 20);
+            this.webEditor.Name = "webEditor";
+            this.webEditor.ScriptErrorsSuppressed = true;
+            this.webEditor.Size = new System.Drawing.Size(1350, 308);
+            this.webEditor.TabIndex = 5;
+            this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
+            // 
+            // pnlRteStatus
+            // 
+            this.pnlRteStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.pnlRteStatus.Controls.Add(this.lblRteStatus);
+            this.pnlRteStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlRteStatus.Location = new System.Drawing.Point(0, 423);
+            this.pnlRteStatus.Name = "pnlRteStatus";
+            this.pnlRteStatus.Padding = new System.Windows.Forms.Padding(10, 0, 10, 0);
+            this.pnlRteStatus.Size = new System.Drawing.Size(1350, 22);
+            this.pnlRteStatus.TabIndex = 4;
+            // 
+            // lblRteStatus
+            // 
+            this.lblRteStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblRteStatus.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblRteStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblRteStatus.Location = new System.Drawing.Point(10, 0);
+            this.lblRteStatus.Name = "lblRteStatus";
+            this.lblRteStatus.Size = new System.Drawing.Size(1330, 22);
+            this.lblRteStatus.TabIndex = 0;
+            this.lblRteStatus.Text = "🖊️ พร้อมแก้ไข  |  จำนวนอักขระ: 0";
+            this.lblRteStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblContent
+            // 
+            this.lblContent.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblContent.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblContent.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblContent.Location = new System.Drawing.Point(0, 93);
+            this.lblContent.Name = "lblContent";
+            this.lblContent.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
+            this.lblContent.Size = new System.Drawing.Size(1350, 22);
+            this.lblContent.TabIndex = 3;
+            this.lblContent.Text = "เนื้อหาบทความ (HTML Editor — WYSIWYG)";
+            // 
+            // tsRte
+            // 
+            this.tsRte.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.tsRte.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.tsRte.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.tsRte.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tsRteFontFamily,
+            this.tsRteSep0,
+            this.tsRteFontSize,
+            this.tsRteSep1,
+            this.tsRteBold,
+            this.tsRteItalic,
+            this.tsRteUnder,
+            this.tsRteSep2,
+            this.tsRteH1,
+            this.tsRteH2,
+            this.tsRteH3,
+            this.tsRteSep3,
+            this.tsRteAlignLeft,
+            this.tsRteAlignCenter,
+            this.tsRteAlignRight,
+            this.tsRteSep4,
+            this.tsRteBullet,
+            this.tsRteNumList,
+            this.tsRteSep5,
+            this.tsRteLink,
+            this.tsRteTable,
+            this.tsRteCode,
+            this.tsRteImage,
+            this.tsRteAttach,
+            this.tsRteSep6,
+            this.tsRteUndo,
+            this.tsRteRedo});
+            this.tsRte.Location = new System.Drawing.Point(0, 65);
+            this.tsRte.Name = "tsRte";
+            this.tsRte.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
+            this.tsRte.Size = new System.Drawing.Size(1350, 28);
+            this.tsRte.TabIndex = 2;
+            // 
+            // tsRteFontFamily
+            // 
+            this.tsRteFontFamily.AutoSize = false;
+            this.tsRteFontFamily.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.tsRteFontFamily.Items.AddRange(new object[] {
+            "Segoe UI",
+            "Arial",
+            "Tahoma",
+            "Times New Roman",
+            "Calibri",
+            "Consolas",
+            "Courier New",
+            "Georgia"});
+            this.tsRteFontFamily.Name = "tsRteFontFamily";
+            this.tsRteFontFamily.Size = new System.Drawing.Size(130, 28);
+            this.tsRteFontFamily.ToolTipText = "Font Family";
+            this.tsRteFontFamily.SelectedIndexChanged += new System.EventHandler(this.TsRteFontFamily_SelectedIndexChanged);
+            // 
+            // tsRteSep0
+            // 
+            this.tsRteSep0.Name = "tsRteSep0";
+            this.tsRteSep0.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteFontSize
+            // 
+            this.tsRteFontSize.AutoSize = false;
+            this.tsRteFontSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.tsRteFontSize.Items.AddRange(new object[] {
+            "8pt",
+            "10pt",
+            "12pt",
+            "14pt",
+            "18pt",
+            "24pt",
+            "36pt"});
+            this.tsRteFontSize.Name = "tsRteFontSize";
+            this.tsRteFontSize.Size = new System.Drawing.Size(70, 28);
+            this.tsRteFontSize.ToolTipText = "Font Size";
+            this.tsRteFontSize.SelectedIndexChanged += new System.EventHandler(this.TsRteFontSize_SelectedIndexChanged);
+            // 
+            // tsRteSep1
+            // 
+            this.tsRteSep1.Name = "tsRteSep1";
+            this.tsRteSep1.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteBold
+            // 
+            this.tsRteBold.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteBold.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.tsRteBold.Name = "tsRteBold";
+            this.tsRteBold.Size = new System.Drawing.Size(29, 25);
+            this.tsRteBold.Text = "B";
+            this.tsRteBold.ToolTipText = "Bold (Ctrl+B)";
+            this.tsRteBold.Click += new System.EventHandler(this.TsRteBold_Click);
+            // 
+            // tsRteItalic
+            // 
+            this.tsRteItalic.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteItalic.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
+            this.tsRteItalic.Name = "tsRteItalic";
+            this.tsRteItalic.Size = new System.Drawing.Size(29, 25);
+            this.tsRteItalic.Text = "I";
+            this.tsRteItalic.ToolTipText = "Italic (Ctrl+I)";
+            this.tsRteItalic.Click += new System.EventHandler(this.TsRteItalic_Click);
+            // 
+            // tsRteUnder
+            // 
+            this.tsRteUnder.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteUnder.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Underline);
+            this.tsRteUnder.Name = "tsRteUnder";
+            this.tsRteUnder.Size = new System.Drawing.Size(29, 25);
+            this.tsRteUnder.Text = "U";
+            this.tsRteUnder.ToolTipText = "Underline (Ctrl+U)";
+            this.tsRteUnder.Click += new System.EventHandler(this.TsRteUnder_Click);
+            // 
+            // tsRteSep2
+            // 
+            this.tsRteSep2.Name = "tsRteSep2";
+            this.tsRteSep2.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteH1
+            // 
+            this.tsRteH1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteH1.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.tsRteH1.Name = "tsRteH1";
+            this.tsRteH1.Size = new System.Drawing.Size(33, 25);
+            this.tsRteH1.Text = "H1";
+            this.tsRteH1.ToolTipText = "หัวข้อหลัก (Heading 1)";
+            this.tsRteH1.Click += new System.EventHandler(this.TsRteH1_Click);
+            // 
+            // tsRteH2
+            // 
+            this.tsRteH2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteH2.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.tsRteH2.Name = "tsRteH2";
+            this.tsRteH2.Size = new System.Drawing.Size(33, 25);
+            this.tsRteH2.Text = "H2";
+            this.tsRteH2.ToolTipText = "หัวข้อรอง (Heading 2)";
+            this.tsRteH2.Click += new System.EventHandler(this.TsRteH2_Click);
+            // 
+            // tsRteH3
+            // 
+            this.tsRteH3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteH3.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.tsRteH3.Name = "tsRteH3";
+            this.tsRteH3.Size = new System.Drawing.Size(33, 25);
+            this.tsRteH3.Text = "H3";
+            this.tsRteH3.ToolTipText = "หัวข้อย่อย (Heading 3)";
+            this.tsRteH3.Click += new System.EventHandler(this.TsRteH3_Click);
+            // 
+            // tsRteSep3
+            // 
+            this.tsRteSep3.Name = "tsRteSep3";
+            this.tsRteSep3.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteAlignLeft
+            // 
+            this.tsRteAlignLeft.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAlignLeft.Name = "tsRteAlignLeft";
+            this.tsRteAlignLeft.Size = new System.Drawing.Size(30, 25);
+            this.tsRteAlignLeft.Text = "≡L";
+            this.tsRteAlignLeft.ToolTipText = "ชิดซ้าย (Align Left)";
+            this.tsRteAlignLeft.Click += new System.EventHandler(this.TsRteAlignLeft_Click);
+            // 
+            // tsRteAlignCenter
+            // 
+            this.tsRteAlignCenter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAlignCenter.Name = "tsRteAlignCenter";
+            this.tsRteAlignCenter.Size = new System.Drawing.Size(32, 25);
+            this.tsRteAlignCenter.Text = "≡C";
+            this.tsRteAlignCenter.ToolTipText = "กึ่งกลาง (Align Center)";
+            this.tsRteAlignCenter.Click += new System.EventHandler(this.TsRteAlignCenter_Click);
+            // 
+            // tsRteAlignRight
+            // 
+            this.tsRteAlignRight.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAlignRight.Name = "tsRteAlignRight";
+            this.tsRteAlignRight.Size = new System.Drawing.Size(32, 25);
+            this.tsRteAlignRight.Text = "≡R";
+            this.tsRteAlignRight.ToolTipText = "ชิดขวา (Align Right)";
+            this.tsRteAlignRight.Click += new System.EventHandler(this.TsRteAlignRight_Click);
+            // 
+            // tsRteSep4
+            // 
+            this.tsRteSep4.Name = "tsRteSep4";
+            this.tsRteSep4.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteBullet
+            // 
+            this.tsRteBullet.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteBullet.Name = "tsRteBullet";
+            this.tsRteBullet.Size = new System.Drawing.Size(29, 25);
+            this.tsRteBullet.Text = "•";
+            this.tsRteBullet.ToolTipText = "รายการสัญลักษณ์ (Bullet List)";
+            this.tsRteBullet.Click += new System.EventHandler(this.TsRteBullet_Click);
+            // 
+            // tsRteNumList
+            // 
+            this.tsRteNumList.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteNumList.Name = "tsRteNumList";
+            this.tsRteNumList.Size = new System.Drawing.Size(29, 25);
+            this.tsRteNumList.Text = "1.";
+            this.tsRteNumList.ToolTipText = "รายการตัวเลข (Numbered List)";
+            this.tsRteNumList.Click += new System.EventHandler(this.TsRteNumList_Click);
+            // 
+            // tsRteSep5
+            // 
+            this.tsRteSep5.Name = "tsRteSep5";
+            this.tsRteSep5.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteLink
+            // 
+            this.tsRteLink.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteLink.Name = "tsRteLink";
+            this.tsRteLink.Size = new System.Drawing.Size(34, 25);
+            this.tsRteLink.Text = "🔗";
+            this.tsRteLink.ToolTipText = "แทรก Hyperlink";
+            this.tsRteLink.Click += new System.EventHandler(this.TsRteLink_Click);
+            // 
+            // tsRteTable
+            // 
+            this.tsRteTable.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteTable.Name = "tsRteTable";
+            this.tsRteTable.Size = new System.Drawing.Size(29, 25);
+            this.tsRteTable.Text = "⊞";
+            this.tsRteTable.ToolTipText = "แทรกตาราง (Insert Table)";
+            this.tsRteTable.Click += new System.EventHandler(this.TsRteTable_Click);
+            // 
+            // tsRteCode
+            // 
+            this.tsRteCode.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteCode.Font = new System.Drawing.Font("Consolas", 8.5F, System.Drawing.FontStyle.Bold);
+            this.tsRteCode.Name = "tsRteCode";
+            this.tsRteCode.Size = new System.Drawing.Size(29, 25);
+            this.tsRteCode.Text = "<>";
+            this.tsRteCode.ToolTipText = "แทรก Code Block";
+            this.tsRteCode.Click += new System.EventHandler(this.TsRteCode_Click);
+            // 
+            // tsRteImage
+            // 
+            this.tsRteImage.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteImage.Name = "tsRteImage";
+            this.tsRteImage.Size = new System.Drawing.Size(34, 25);
+            this.tsRteImage.Text = "📷";
+            this.tsRteImage.ToolTipText = "แทรกรูปภาพ";
+            this.tsRteImage.Click += new System.EventHandler(this.TsRteImage_Click);
+            // 
+            // tsRteAttach
+            // 
+            this.tsRteAttach.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteAttach.Name = "tsRteAttach";
+            this.tsRteAttach.Size = new System.Drawing.Size(29, 25);
+            this.tsRteAttach.Text = "📎";
+            this.tsRteAttach.ToolTipText = "แนบไฟล์";
+            this.tsRteAttach.Click += new System.EventHandler(this.TsRteAttach_Click);
+            // 
+            // tsRteSep6
+            // 
+            this.tsRteSep6.Name = "tsRteSep6";
+            this.tsRteSep6.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteUndo
+            // 
+            this.tsRteUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteUndo.Name = "tsRteUndo";
+            this.tsRteUndo.Size = new System.Drawing.Size(29, 25);
+            this.tsRteUndo.Text = "↶";
+            this.tsRteUndo.ToolTipText = "Undo (Ctrl+Z)";
+            this.tsRteUndo.Click += new System.EventHandler(this.TsRteUndo_Click);
+            // 
+            // tsRteRedo
+            // 
+            this.tsRteRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteRedo.Name = "tsRteRedo";
+            this.tsRteRedo.Size = new System.Drawing.Size(29, 25);
+            this.tsRteRedo.Text = "↷";
+            this.tsRteRedo.ToolTipText = "Redo (Ctrl+Y)";
+            this.tsRteRedo.Click += new System.EventHandler(this.TsRteRedo_Click);
+            // 
+            // pnlSummaryArea
+            // 
+            this.pnlSummaryArea.BackColor = System.Drawing.Color.White;
+            this.pnlSummaryArea.Controls.Add(this.txtSummary);
+            this.pnlSummaryArea.Controls.Add(this.lblSummary);
+            this.pnlSummaryArea.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlSummaryArea.Location = new System.Drawing.Point(0, 28);
+            this.pnlSummaryArea.Name = "pnlSummaryArea";
+            this.pnlSummaryArea.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
+            this.pnlSummaryArea.Size = new System.Drawing.Size(1350, 37);
+            this.pnlSummaryArea.TabIndex = 1;
+            // 
+            // txtSummary
+            // 
+            this.txtSummary.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtSummary.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtSummary.Location = new System.Drawing.Point(174, 4);
+            this.txtSummary.MaxLength = 1000;
+            this.txtSummary.Name = "txtSummary";
+            this.txtSummary.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtSummary.Size = new System.Drawing.Size(1199, 27);
+            this.txtSummary.TabIndex = 1;
+            // 
+            // lblSummary
+            // 
+            this.lblSummary.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblSummary.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblSummary.Location = new System.Drawing.Point(10, 4);
+            this.lblSummary.Name = "lblSummary";
+            this.lblSummary.Size = new System.Drawing.Size(1330, 27);
+            this.lblSummary.TabIndex = 0;
+            this.lblSummary.Text = "บทสรุปสั้น (Summary)";
+            // 
+            // pnlContentHeader
+            // 
+            this.pnlContentHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.pnlContentHeader.Controls.Add(this.lblContentHeader);
+            this.pnlContentHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlContentHeader.Location = new System.Drawing.Point(0, 0);
+            this.pnlContentHeader.Name = "pnlContentHeader";
+            this.pnlContentHeader.Size = new System.Drawing.Size(1350, 28);
+            this.pnlContentHeader.TabIndex = 0;
+            // 
+            // lblContentHeader
+            // 
+            this.lblContentHeader.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblContentHeader.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblContentHeader.ForeColor = System.Drawing.Color.White;
+            this.lblContentHeader.Location = new System.Drawing.Point(0, 0);
+            this.lblContentHeader.Name = "lblContentHeader";
+            this.lblContentHeader.Padding = new System.Windows.Forms.Padding(10, 0, 10, 0);
+            this.lblContentHeader.Size = new System.Drawing.Size(1350, 28);
+            this.lblContentHeader.TabIndex = 0;
+            this.lblContentHeader.Text = "📝  เนื้อหาบทความ";
+            this.lblContentHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlMappingOuter
             // 
@@ -503,9 +1290,9 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingOuter.Controls.Add(this.tabMapping);
             this.pnlMappingOuter.Controls.Add(this.pnlMappingHeader);
             this.pnlMappingOuter.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlMappingOuter.Location = new System.Drawing.Point(10, 560);
+            this.pnlMappingOuter.Location = new System.Drawing.Point(0, 0);
             this.pnlMappingOuter.Name = "pnlMappingOuter";
-            this.pnlMappingOuter.Size = new System.Drawing.Size(1388, 264);
+            this.pnlMappingOuter.Size = new System.Drawing.Size(1352, 384);
             this.pnlMappingOuter.TabIndex = 14;
             // 
             // tabMapping
@@ -521,7 +1308,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabMapping.Location = new System.Drawing.Point(0, 28);
             this.tabMapping.Name = "tabMapping";
             this.tabMapping.SelectedIndex = 0;
-            this.tabMapping.Size = new System.Drawing.Size(1386, 500);
+            this.tabMapping.Size = new System.Drawing.Size(1350, 500);
             this.tabMapping.TabIndex = 1;
             // 
             // tabAttach
@@ -622,7 +1409,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabRelated.Location = new System.Drawing.Point(4, 29);
             this.tabRelated.Name = "tabRelated";
             this.tabRelated.Padding = new System.Windows.Forms.Padding(4);
-            this.tabRelated.Size = new System.Drawing.Size(1378, 467);
+            this.tabRelated.Size = new System.Drawing.Size(1342, 467);
             this.tabRelated.TabIndex = 1;
             this.tabRelated.Text = "🔗 ความรู้ที่เกี่ยวข้อง";
             // 
@@ -641,7 +1428,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstRelatedSearch.HideSelection = false;
             this.lstRelatedSearch.Location = new System.Drawing.Point(4, 274);
             this.lstRelatedSearch.Name = "lstRelatedSearch";
-            this.lstRelatedSearch.Size = new System.Drawing.Size(1370, 189);
+            this.lstRelatedSearch.Size = new System.Drawing.Size(1334, 189);
             this.lstRelatedSearch.TabIndex = 5;
             this.lstRelatedSearch.UseCompatibleStateImageBehavior = false;
             this.lstRelatedSearch.View = System.Windows.Forms.View.Details;
@@ -675,7 +1462,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblRelatedSearch.Location = new System.Drawing.Point(4, 250);
             this.lblRelatedSearch.Name = "lblRelatedSearch";
             this.lblRelatedSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblRelatedSearch.Size = new System.Drawing.Size(1370, 24);
+            this.lblRelatedSearch.Size = new System.Drawing.Size(1334, 24);
             this.lblRelatedSearch.TabIndex = 4;
             this.lblRelatedSearch.Text = "ผลการค้นหา — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
@@ -691,7 +1478,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRelatedSearch.Location = new System.Drawing.Point(4, 214);
             this.pnlRelatedSearch.Name = "pnlRelatedSearch";
             this.pnlRelatedSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlRelatedSearch.Size = new System.Drawing.Size(1370, 36);
+            this.pnlRelatedSearch.Size = new System.Drawing.Size(1334, 36);
             this.pnlRelatedSearch.TabIndex = 3;
             // 
             // btnSearchRelated
@@ -775,7 +1562,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRelatedLinkedActions.Location = new System.Drawing.Point(4, 178);
             this.pnlRelatedLinkedActions.Name = "pnlRelatedLinkedActions";
             this.pnlRelatedLinkedActions.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlRelatedLinkedActions.Size = new System.Drawing.Size(1370, 36);
+            this.pnlRelatedLinkedActions.Size = new System.Drawing.Size(1334, 36);
             this.pnlRelatedLinkedActions.TabIndex = 2;
             // 
             // btnRemoveRelatedNew
@@ -808,7 +1595,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstRelatedLinked.HideSelection = false;
             this.lstRelatedLinked.Location = new System.Drawing.Point(4, 28);
             this.lstRelatedLinked.Name = "lstRelatedLinked";
-            this.lstRelatedLinked.Size = new System.Drawing.Size(1370, 150);
+            this.lstRelatedLinked.Size = new System.Drawing.Size(1334, 150);
             this.lstRelatedLinked.TabIndex = 1;
             this.lstRelatedLinked.UseCompatibleStateImageBehavior = false;
             this.lstRelatedLinked.View = System.Windows.Forms.View.Details;
@@ -843,7 +1630,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblRelatedLinked.Location = new System.Drawing.Point(4, 4);
             this.lblRelatedLinked.Name = "lblRelatedLinked";
             this.lblRelatedLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblRelatedLinked.Size = new System.Drawing.Size(1370, 24);
+            this.lblRelatedLinked.Size = new System.Drawing.Size(1334, 24);
             this.lblRelatedLinked.TabIndex = 0;
             this.lblRelatedLinked.Text = "รายการที่ Link อยู่แล้ว (0 รายการ)";
             // 
@@ -1184,8 +1971,6 @@ namespace CMS.Presentation.Modules.KMS
             // tabDocs
             // 
             this.tabDocs.BackColor = System.Drawing.Color.White;
-            this.tabDocs.Controls.Add(this.pnlDocsDropZone);
-            this.tabDocs.Controls.Add(this.lblDocsUpload);
             this.tabDocs.Controls.Add(this.pnlDocsUpload);
             this.tabDocs.Controls.Add(this.pnlDocsLinkedActions);
             this.tabDocs.Controls.Add(this.lstDocsLinked);
@@ -1196,29 +1981,6 @@ namespace CMS.Presentation.Modules.KMS
             this.tabDocs.Size = new System.Drawing.Size(1378, 467);
             this.tabDocs.TabIndex = 4;
             this.tabDocs.Text = "📋 เอกสารที่เกี่ยวข้อง";
-            // 
-            // pnlDocsDropZone
-            // 
-            this.pnlDocsDropZone.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
-            this.pnlDocsDropZone.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlDocsDropZone.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlDocsDropZone.Location = new System.Drawing.Point(4, 244);
-            this.pnlDocsDropZone.Name = "pnlDocsDropZone";
-            this.pnlDocsDropZone.Size = new System.Drawing.Size(1370, 219);
-            this.pnlDocsDropZone.TabIndex = 5;
-            // 
-            // lblDocsUpload
-            // 
-            this.lblDocsUpload.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
-            this.lblDocsUpload.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblDocsUpload.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblDocsUpload.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblDocsUpload.Location = new System.Drawing.Point(4, 220);
-            this.lblDocsUpload.Name = "lblDocsUpload";
-            this.lblDocsUpload.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblDocsUpload.Size = new System.Drawing.Size(1370, 24);
-            this.lblDocsUpload.TabIndex = 4;
-            this.lblDocsUpload.Text = "เพิ่มเอกสารใหม่";
             // 
             // pnlDocsUpload
             // 
@@ -1416,7 +2178,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlMappingHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlMappingHeader.Name = "pnlMappingHeader";
-            this.pnlMappingHeader.Size = new System.Drawing.Size(1386, 28);
+            this.pnlMappingHeader.Size = new System.Drawing.Size(1350, 28);
             this.pnlMappingHeader.TabIndex = 0;
             // 
             // lblMappingHeader
@@ -1427,772 +2189,10 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader.Location = new System.Drawing.Point(0, 0);
             this.lblMappingHeader.Name = "lblMappingHeader";
             this.lblMappingHeader.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.lblMappingHeader.Size = new System.Drawing.Size(1386, 28);
+            this.lblMappingHeader.Size = new System.Drawing.Size(1350, 28);
             this.lblMappingHeader.TabIndex = 0;
             this.lblMappingHeader.Text = "🔗  Mapping รายการที่เกี่ยวข้อง";
             this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // pnlGap1
-            // 
-            this.pnlGap1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.pnlGap1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlGap1.Location = new System.Drawing.Point(10, 552);
-            this.pnlGap1.Name = "pnlGap1";
-            this.pnlGap1.Size = new System.Drawing.Size(1388, 8);
-            this.pnlGap1.TabIndex = 11;
-            // 
-            // pnlContentOuter
-            // 
-            this.pnlContentOuter.BackColor = System.Drawing.Color.White;
-            this.pnlContentOuter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlContentOuter.Controls.Add(this.webEditor);
-            this.pnlContentOuter.Controls.Add(this.pnlRteStatus);
-            this.pnlContentOuter.Controls.Add(this.lblContent);
-            this.pnlContentOuter.Controls.Add(this.tsRte);
-            this.pnlContentOuter.Controls.Add(this.pnlSummaryArea);
-            this.pnlContentOuter.Controls.Add(this.pnlContentHeader);
-            this.pnlContentOuter.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlContentOuter.Location = new System.Drawing.Point(10, 236);
-            this.pnlContentOuter.Name = "pnlContentOuter";
-            this.pnlContentOuter.Size = new System.Drawing.Size(1388, 316);
-            this.pnlContentOuter.TabIndex = 12;
-            // 
-            // webEditor
-            // 
-            this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.webEditor.IsWebBrowserContextMenuEnabled = false;
-            this.webEditor.Location = new System.Drawing.Point(0, 115);
-            this.webEditor.MinimumSize = new System.Drawing.Size(20, 20);
-            this.webEditor.Name = "webEditor";
-            this.webEditor.ScriptErrorsSuppressed = true;
-            this.webEditor.Size = new System.Drawing.Size(1386, 177);
-            this.webEditor.TabIndex = 5;
-            this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
-            // 
-            // pnlRteStatus
-            // 
-            this.pnlRteStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.pnlRteStatus.Controls.Add(this.lblRteStatus);
-            this.pnlRteStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlRteStatus.Location = new System.Drawing.Point(0, 292);
-            this.pnlRteStatus.Name = "pnlRteStatus";
-            this.pnlRteStatus.Padding = new System.Windows.Forms.Padding(10, 0, 10, 0);
-            this.pnlRteStatus.Size = new System.Drawing.Size(1386, 22);
-            this.pnlRteStatus.TabIndex = 4;
-            // 
-            // lblRteStatus
-            // 
-            this.lblRteStatus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblRteStatus.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblRteStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblRteStatus.Location = new System.Drawing.Point(10, 0);
-            this.lblRteStatus.Name = "lblRteStatus";
-            this.lblRteStatus.Size = new System.Drawing.Size(1366, 22);
-            this.lblRteStatus.TabIndex = 0;
-            this.lblRteStatus.Text = "🖊️ พร้อมแก้ไข  |  จำนวนอักขระ: 0";
-            this.lblRteStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lblContent
-            // 
-            this.lblContent.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblContent.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblContent.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblContent.Location = new System.Drawing.Point(0, 93);
-            this.lblContent.Name = "lblContent";
-            this.lblContent.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
-            this.lblContent.Size = new System.Drawing.Size(1386, 22);
-            this.lblContent.TabIndex = 3;
-            this.lblContent.Text = "เนื้อหาบทความ (HTML Editor — WYSIWYG)";
-            // 
-            // tsRte
-            // 
-            this.tsRte.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
-            this.tsRte.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
-            this.tsRte.ImageScalingSize = new System.Drawing.Size(20, 20);
-            this.tsRte.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsRteFontFamily,
-            this.tsRteSep0,
-            this.tsRteFontSize,
-            this.tsRteSep1,
-            this.tsRteBold,
-            this.tsRteItalic,
-            this.tsRteUnder,
-            this.tsRteSep2,
-            this.tsRteH1,
-            this.tsRteH2,
-            this.tsRteH3,
-            this.tsRteSep3,
-            this.tsRteAlignLeft,
-            this.tsRteAlignCenter,
-            this.tsRteAlignRight,
-            this.tsRteSep4,
-            this.tsRteBullet,
-            this.tsRteNumList,
-            this.tsRteSep5,
-            this.tsRteLink,
-            this.tsRteTable,
-            this.tsRteCode,
-            this.tsRteImage,
-            this.tsRteAttach,
-            this.tsRteSep6,
-            this.tsRteUndo,
-            this.tsRteRedo});
-            this.tsRte.Location = new System.Drawing.Point(0, 65);
-            this.tsRte.Name = "tsRte";
-            this.tsRte.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.tsRte.Size = new System.Drawing.Size(1386, 28);
-            this.tsRte.TabIndex = 2;
-            // 
-            // tsRteFontFamily
-            // 
-            this.tsRteFontFamily.AutoSize = false;
-            this.tsRteFontFamily.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.tsRteFontFamily.Items.AddRange(new object[] {
-            "Segoe UI",
-            "Arial",
-            "Tahoma",
-            "Times New Roman",
-            "Calibri",
-            "Consolas",
-            "Courier New",
-            "Georgia"});
-            this.tsRteFontFamily.Name = "tsRteFontFamily";
-            this.tsRteFontFamily.Size = new System.Drawing.Size(130, 28);
-            this.tsRteFontFamily.ToolTipText = "Font Family";
-            this.tsRteFontFamily.SelectedIndexChanged += new System.EventHandler(this.TsRteFontFamily_SelectedIndexChanged);
-            // 
-            // tsRteSep0
-            // 
-            this.tsRteSep0.Name = "tsRteSep0";
-            this.tsRteSep0.Size = new System.Drawing.Size(6, 28);
-            // 
-            // tsRteFontSize
-            // 
-            this.tsRteFontSize.AutoSize = false;
-            this.tsRteFontSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.tsRteFontSize.Items.AddRange(new object[] {
-            "8pt",
-            "10pt",
-            "12pt",
-            "14pt",
-            "18pt",
-            "24pt",
-            "36pt"});
-            this.tsRteFontSize.Name = "tsRteFontSize";
-            this.tsRteFontSize.Size = new System.Drawing.Size(70, 28);
-            this.tsRteFontSize.ToolTipText = "Font Size";
-            this.tsRteFontSize.SelectedIndexChanged += new System.EventHandler(this.TsRteFontSize_SelectedIndexChanged);
-            // 
-            // tsRteSep1
-            // 
-            this.tsRteSep1.Name = "tsRteSep1";
-            this.tsRteSep1.Size = new System.Drawing.Size(6, 28);
-            // 
-            // tsRteBold
-            // 
-            this.tsRteBold.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteBold.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.tsRteBold.Name = "tsRteBold";
-            this.tsRteBold.Size = new System.Drawing.Size(29, 25);
-            this.tsRteBold.Text = "B";
-            this.tsRteBold.ToolTipText = "Bold (Ctrl+B)";
-            this.tsRteBold.Click += new System.EventHandler(this.TsRteBold_Click);
-            // 
-            // tsRteItalic
-            // 
-            this.tsRteItalic.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteItalic.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
-            this.tsRteItalic.Name = "tsRteItalic";
-            this.tsRteItalic.Size = new System.Drawing.Size(29, 25);
-            this.tsRteItalic.Text = "I";
-            this.tsRteItalic.ToolTipText = "Italic (Ctrl+I)";
-            this.tsRteItalic.Click += new System.EventHandler(this.TsRteItalic_Click);
-            // 
-            // tsRteUnder
-            // 
-            this.tsRteUnder.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteUnder.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Underline);
-            this.tsRteUnder.Name = "tsRteUnder";
-            this.tsRteUnder.Size = new System.Drawing.Size(29, 25);
-            this.tsRteUnder.Text = "U";
-            this.tsRteUnder.ToolTipText = "Underline (Ctrl+U)";
-            this.tsRteUnder.Click += new System.EventHandler(this.TsRteUnder_Click);
-            // 
-            // tsRteSep2
-            // 
-            this.tsRteSep2.Name = "tsRteSep2";
-            this.tsRteSep2.Size = new System.Drawing.Size(6, 28);
-            // 
-            // tsRteH1
-            // 
-            this.tsRteH1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteH1.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.tsRteH1.Name = "tsRteH1";
-            this.tsRteH1.Size = new System.Drawing.Size(33, 25);
-            this.tsRteH1.Text = "H1";
-            this.tsRteH1.ToolTipText = "หัวข้อหลัก (Heading 1)";
-            this.tsRteH1.Click += new System.EventHandler(this.TsRteH1_Click);
-            // 
-            // tsRteH2
-            // 
-            this.tsRteH2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteH2.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.tsRteH2.Name = "tsRteH2";
-            this.tsRteH2.Size = new System.Drawing.Size(33, 25);
-            this.tsRteH2.Text = "H2";
-            this.tsRteH2.ToolTipText = "หัวข้อรอง (Heading 2)";
-            this.tsRteH2.Click += new System.EventHandler(this.TsRteH2_Click);
-            // 
-            // tsRteH3
-            // 
-            this.tsRteH3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteH3.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.tsRteH3.Name = "tsRteH3";
-            this.tsRteH3.Size = new System.Drawing.Size(33, 25);
-            this.tsRteH3.Text = "H3";
-            this.tsRteH3.ToolTipText = "หัวข้อย่อย (Heading 3)";
-            this.tsRteH3.Click += new System.EventHandler(this.TsRteH3_Click);
-            // 
-            // tsRteSep3
-            // 
-            this.tsRteSep3.Name = "tsRteSep3";
-            this.tsRteSep3.Size = new System.Drawing.Size(6, 28);
-            // 
-            // tsRteAlignLeft
-            // 
-            this.tsRteAlignLeft.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteAlignLeft.Name = "tsRteAlignLeft";
-            this.tsRteAlignLeft.Size = new System.Drawing.Size(30, 25);
-            this.tsRteAlignLeft.Text = "≡L";
-            this.tsRteAlignLeft.ToolTipText = "ชิดซ้าย (Align Left)";
-            this.tsRteAlignLeft.Click += new System.EventHandler(this.TsRteAlignLeft_Click);
-            // 
-            // tsRteAlignCenter
-            // 
-            this.tsRteAlignCenter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteAlignCenter.Name = "tsRteAlignCenter";
-            this.tsRteAlignCenter.Size = new System.Drawing.Size(32, 25);
-            this.tsRteAlignCenter.Text = "≡C";
-            this.tsRteAlignCenter.ToolTipText = "กึ่งกลาง (Align Center)";
-            this.tsRteAlignCenter.Click += new System.EventHandler(this.TsRteAlignCenter_Click);
-            // 
-            // tsRteAlignRight
-            // 
-            this.tsRteAlignRight.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteAlignRight.Name = "tsRteAlignRight";
-            this.tsRteAlignRight.Size = new System.Drawing.Size(32, 25);
-            this.tsRteAlignRight.Text = "≡R";
-            this.tsRteAlignRight.ToolTipText = "ชิดขวา (Align Right)";
-            this.tsRteAlignRight.Click += new System.EventHandler(this.TsRteAlignRight_Click);
-            // 
-            // tsRteSep4
-            // 
-            this.tsRteSep4.Name = "tsRteSep4";
-            this.tsRteSep4.Size = new System.Drawing.Size(6, 28);
-            // 
-            // tsRteBullet
-            // 
-            this.tsRteBullet.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteBullet.Name = "tsRteBullet";
-            this.tsRteBullet.Size = new System.Drawing.Size(29, 25);
-            this.tsRteBullet.Text = "•";
-            this.tsRteBullet.ToolTipText = "รายการสัญลักษณ์ (Bullet List)";
-            this.tsRteBullet.Click += new System.EventHandler(this.TsRteBullet_Click);
-            // 
-            // tsRteNumList
-            // 
-            this.tsRteNumList.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteNumList.Name = "tsRteNumList";
-            this.tsRteNumList.Size = new System.Drawing.Size(29, 25);
-            this.tsRteNumList.Text = "1.";
-            this.tsRteNumList.ToolTipText = "รายการตัวเลข (Numbered List)";
-            this.tsRteNumList.Click += new System.EventHandler(this.TsRteNumList_Click);
-            // 
-            // tsRteSep5
-            // 
-            this.tsRteSep5.Name = "tsRteSep5";
-            this.tsRteSep5.Size = new System.Drawing.Size(6, 28);
-            // 
-            // tsRteLink
-            // 
-            this.tsRteLink.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteLink.Name = "tsRteLink";
-            this.tsRteLink.Size = new System.Drawing.Size(34, 25);
-            this.tsRteLink.Text = "🔗";
-            this.tsRteLink.ToolTipText = "แทรก Hyperlink";
-            this.tsRteLink.Click += new System.EventHandler(this.TsRteLink_Click);
-            // 
-            // tsRteTable
-            // 
-            this.tsRteTable.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteTable.Name = "tsRteTable";
-            this.tsRteTable.Size = new System.Drawing.Size(29, 25);
-            this.tsRteTable.Text = "⊞";
-            this.tsRteTable.ToolTipText = "แทรกตาราง (Insert Table)";
-            this.tsRteTable.Click += new System.EventHandler(this.TsRteTable_Click);
-            // 
-            // tsRteCode
-            // 
-            this.tsRteCode.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteCode.Font = new System.Drawing.Font("Consolas", 8.5F, System.Drawing.FontStyle.Bold);
-            this.tsRteCode.Name = "tsRteCode";
-            this.tsRteCode.Size = new System.Drawing.Size(29, 25);
-            this.tsRteCode.Text = "<>";
-            this.tsRteCode.ToolTipText = "แทรก Code Block";
-            this.tsRteCode.Click += new System.EventHandler(this.TsRteCode_Click);
-            // 
-            // tsRteImage
-            // 
-            this.tsRteImage.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteImage.Name = "tsRteImage";
-            this.tsRteImage.Size = new System.Drawing.Size(34, 25);
-            this.tsRteImage.Text = "📷";
-            this.tsRteImage.ToolTipText = "แทรกรูปภาพ";
-            this.tsRteImage.Click += new System.EventHandler(this.TsRteImage_Click);
-            // 
-            // tsRteAttach
-            // 
-            this.tsRteAttach.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteAttach.Name = "tsRteAttach";
-            this.tsRteAttach.Size = new System.Drawing.Size(29, 25);
-            this.tsRteAttach.Text = "📎";
-            this.tsRteAttach.ToolTipText = "แนบไฟล์";
-            this.tsRteAttach.Click += new System.EventHandler(this.TsRteAttach_Click);
-            // 
-            // tsRteSep6
-            // 
-            this.tsRteSep6.Name = "tsRteSep6";
-            this.tsRteSep6.Size = new System.Drawing.Size(6, 28);
-            // 
-            // tsRteUndo
-            // 
-            this.tsRteUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteUndo.Name = "tsRteUndo";
-            this.tsRteUndo.Size = new System.Drawing.Size(29, 25);
-            this.tsRteUndo.Text = "↶";
-            this.tsRteUndo.ToolTipText = "Undo (Ctrl+Z)";
-            this.tsRteUndo.Click += new System.EventHandler(this.TsRteUndo_Click);
-            // 
-            // tsRteRedo
-            // 
-            this.tsRteRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteRedo.Name = "tsRteRedo";
-            this.tsRteRedo.Size = new System.Drawing.Size(29, 25);
-            this.tsRteRedo.Text = "↷";
-            this.tsRteRedo.ToolTipText = "Redo (Ctrl+Y)";
-            this.tsRteRedo.Click += new System.EventHandler(this.TsRteRedo_Click);
-            // 
-            // pnlSummaryArea
-            // 
-            this.pnlSummaryArea.BackColor = System.Drawing.Color.White;
-            this.pnlSummaryArea.Controls.Add(this.txtSummary);
-            this.pnlSummaryArea.Controls.Add(this.lblSummary);
-            this.pnlSummaryArea.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlSummaryArea.Location = new System.Drawing.Point(0, 28);
-            this.pnlSummaryArea.Name = "pnlSummaryArea";
-            this.pnlSummaryArea.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
-            this.pnlSummaryArea.Size = new System.Drawing.Size(1386, 37);
-            this.pnlSummaryArea.TabIndex = 1;
-            // 
-            // txtSummary
-            // 
-            this.txtSummary.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.txtSummary.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.txtSummary.Location = new System.Drawing.Point(174, 4);
-            this.txtSummary.MaxLength = 1000;
-            this.txtSummary.Name = "txtSummary";
-            this.txtSummary.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtSummary.Size = new System.Drawing.Size(1199, 27);
-            this.txtSummary.TabIndex = 1;
-            // 
-            // lblSummary
-            // 
-            this.lblSummary.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblSummary.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblSummary.Location = new System.Drawing.Point(10, 4);
-            this.lblSummary.Name = "lblSummary";
-            this.lblSummary.Size = new System.Drawing.Size(1366, 27);
-            this.lblSummary.TabIndex = 0;
-            this.lblSummary.Text = "บทสรุปสั้น (Summary)";
-            // 
-            // pnlContentHeader
-            // 
-            this.pnlContentHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.pnlContentHeader.Controls.Add(this.lblContentHeader);
-            this.pnlContentHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlContentHeader.Location = new System.Drawing.Point(0, 0);
-            this.pnlContentHeader.Name = "pnlContentHeader";
-            this.pnlContentHeader.Size = new System.Drawing.Size(1386, 28);
-            this.pnlContentHeader.TabIndex = 0;
-            // 
-            // lblContentHeader
-            // 
-            this.lblContentHeader.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblContentHeader.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblContentHeader.ForeColor = System.Drawing.Color.White;
-            this.lblContentHeader.Location = new System.Drawing.Point(0, 0);
-            this.lblContentHeader.Name = "lblContentHeader";
-            this.lblContentHeader.Padding = new System.Windows.Forms.Padding(10, 0, 10, 0);
-            this.lblContentHeader.Size = new System.Drawing.Size(1386, 28);
-            this.lblContentHeader.TabIndex = 0;
-            this.lblContentHeader.Text = "📝  เนื้อหาบทความ";
-            this.lblContentHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // pnlGenInfoOuter
-            // 
-            this.pnlGenInfoOuter.BackColor = System.Drawing.Color.White;
-            this.pnlGenInfoOuter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlGenInfoOuter.Controls.Add(this.tlpGenInfo);
-            this.pnlGenInfoOuter.Controls.Add(this.pnlGenInfoHeader);
-            this.pnlGenInfoOuter.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlGenInfoOuter.Location = new System.Drawing.Point(10, 10);
-            this.pnlGenInfoOuter.Name = "pnlGenInfoOuter";
-            this.pnlGenInfoOuter.Size = new System.Drawing.Size(1388, 226);
-            this.pnlGenInfoOuter.TabIndex = 10;
-            // 
-            // tlpGenInfo
-            // 
-            this.tlpGenInfo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(251)))), ((int)(((byte)(252)))));
-            this.tlpGenInfo.ColumnCount = 4;
-            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tlpGenInfo.Controls.Add(this.lblCode, 0, 0);
-            this.tlpGenInfo.Controls.Add(this.lblType, 1, 0);
-            this.tlpGenInfo.Controls.Add(this.lblStatus, 2, 0);
-            this.tlpGenInfo.Controls.Add(this.lblVerLabel, 3, 0);
-            this.tlpGenInfo.Controls.Add(this.txtCode, 0, 1);
-            this.tlpGenInfo.Controls.Add(this.cboType, 1, 1);
-            this.tlpGenInfo.Controls.Add(this.cboStatus, 2, 1);
-            this.tlpGenInfo.Controls.Add(this.lblCurVersion, 3, 1);
-            this.tlpGenInfo.Controls.Add(this.lblTitle, 0, 3);
-            this.tlpGenInfo.Controls.Add(this.lblCategory, 3, 3);
-            this.tlpGenInfo.Controls.Add(this.txtTitle, 0, 4);
-            this.tlpGenInfo.Controls.Add(this.cboCategory, 3, 4);
-            this.tlpGenInfo.Controls.Add(this.lblTags, 0, 6);
-            this.tlpGenInfo.Controls.Add(this.lblExpiry, 2, 6);
-            this.tlpGenInfo.Controls.Add(this.flpTags, 0, 7);
-            this.tlpGenInfo.Controls.Add(this.pnlExpiry, 2, 7);
-            this.tlpGenInfo.Controls.Add(this.chkOfficialPolicy, 0, 9);
-            this.tlpGenInfo.Controls.Add(this.lblViewCount, 2, 9);
-            this.tlpGenInfo.Controls.Add(this.lblLikeCount, 3, 9);
-            this.tlpGenInfo.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlpGenInfo.Location = new System.Drawing.Point(0, 28);
-            this.tlpGenInfo.Name = "tlpGenInfo";
-            this.tlpGenInfo.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.tlpGenInfo.RowCount = 10;
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 10F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 10F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 8F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-            this.tlpGenInfo.Size = new System.Drawing.Size(1386, 196);
-            this.tlpGenInfo.TabIndex = 1;
-            // 
-            // lblCode
-            // 
-            this.lblCode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblCode.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblCode.Location = new System.Drawing.Point(12, 8);
-            this.lblCode.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblCode.Name = "lblCode";
-            this.lblCode.Size = new System.Drawing.Size(337, 18);
-            this.lblCode.TabIndex = 0;
-            this.lblCode.Text = "รหัสบทความ";
-            // 
-            // lblType
-            // 
-            this.lblType.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblType.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblType.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblType.Location = new System.Drawing.Point(353, 8);
-            this.lblType.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblType.Name = "lblType";
-            this.lblType.Size = new System.Drawing.Size(337, 18);
-            this.lblType.TabIndex = 1;
-            this.lblType.Text = "ประเภทบทความ *";
-            // 
-            // lblStatus
-            // 
-            this.lblStatus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblStatus.Location = new System.Drawing.Point(694, 8);
-            this.lblStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(337, 18);
-            this.lblStatus.TabIndex = 2;
-            this.lblStatus.Text = "สถานะ";
-            // 
-            // lblVerLabel
-            // 
-            this.lblVerLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblVerLabel.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblVerLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblVerLabel.Location = new System.Drawing.Point(1035, 8);
-            this.lblVerLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblVerLabel.Name = "lblVerLabel";
-            this.lblVerLabel.Size = new System.Drawing.Size(339, 18);
-            this.lblVerLabel.TabIndex = 3;
-            this.lblVerLabel.Text = "เวอร์ชัน";
-            // 
-            // txtCode
-            // 
-            this.txtCode.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.txtCode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtCode.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.txtCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.txtCode.Location = new System.Drawing.Point(12, 26);
-            this.txtCode.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.txtCode.Name = "txtCode";
-            this.txtCode.ReadOnly = true;
-            this.txtCode.Size = new System.Drawing.Size(337, 26);
-            this.txtCode.TabIndex = 10;
-            // 
-            // cboType
-            // 
-            this.cboType.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboType.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.cboType.Location = new System.Drawing.Point(353, 26);
-            this.cboType.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.cboType.Name = "cboType";
-            this.cboType.Size = new System.Drawing.Size(337, 27);
-            this.cboType.TabIndex = 11;
-            // 
-            // cboStatus
-            // 
-            this.cboStatus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.cboStatus.FormattingEnabled = true;
-            this.cboStatus.Items.AddRange(new object[] {
-            "📝 Draft",
-            "🔍 รอ Review",
-            "✅ Published",
-            "📦 Archived"});
-            this.cboStatus.Location = new System.Drawing.Point(694, 26);
-            this.cboStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(337, 28);
-            this.cboStatus.TabIndex = 12;
-            this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboStatus_SelectedIndexChanged);
-            // 
-            // lblCurVersion
-            // 
-            this.lblCurVersion.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.lblCurVersion.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblCurVersion.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblCurVersion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.lblCurVersion.Location = new System.Drawing.Point(1035, 26);
-            this.lblCurVersion.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblCurVersion.Name = "lblCurVersion";
-            this.lblCurVersion.Size = new System.Drawing.Size(339, 28);
-            this.lblCurVersion.TabIndex = 13;
-            this.lblCurVersion.Text = "v1.0";
-            this.lblCurVersion.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblTitle
-            // 
-            this.tlpGenInfo.SetColumnSpan(this.lblTitle, 3);
-            this.lblTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblTitle.Location = new System.Drawing.Point(12, 64);
-            this.lblTitle.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(1019, 18);
-            this.lblTitle.TabIndex = 20;
-            this.lblTitle.Text = "ชื่อบทความ *";
-            // 
-            // lblCategory
-            // 
-            this.lblCategory.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblCategory.Location = new System.Drawing.Point(1035, 64);
-            this.lblCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblCategory.Name = "lblCategory";
-            this.lblCategory.Size = new System.Drawing.Size(339, 18);
-            this.lblCategory.TabIndex = 21;
-            this.lblCategory.Text = "หมวดหมู่ *";
-            // 
-            // txtTitle
-            // 
-            this.tlpGenInfo.SetColumnSpan(this.txtTitle, 3);
-            this.txtTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtTitle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.txtTitle.Location = new System.Drawing.Point(12, 82);
-            this.txtTitle.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.txtTitle.MaxLength = 500;
-            this.txtTitle.Name = "txtTitle";
-            this.txtTitle.Size = new System.Drawing.Size(1019, 30);
-            this.txtTitle.TabIndex = 22;
-            // 
-            // cboCategory
-            // 
-            this.cboCategory.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.cboCategory.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.cboCategory.Location = new System.Drawing.Point(1035, 82);
-            this.cboCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.cboCategory.Name = "cboCategory";
-            this.cboCategory.Size = new System.Drawing.Size(339, 27);
-            this.cboCategory.TabIndex = 23;
-            // 
-            // lblTags
-            // 
-            this.tlpGenInfo.SetColumnSpan(this.lblTags, 2);
-            this.lblTags.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTags.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblTags.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblTags.Location = new System.Drawing.Point(12, 120);
-            this.lblTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblTags.Name = "lblTags";
-            this.lblTags.Size = new System.Drawing.Size(678, 18);
-            this.lblTags.TabIndex = 30;
-            this.lblTags.Text = "แท็ก (Tags) — คั่นด้วยเครื่องหมาย ,";
-            // 
-            // lblExpiry
-            // 
-            this.tlpGenInfo.SetColumnSpan(this.lblExpiry, 2);
-            this.lblExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblExpiry.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblExpiry.Location = new System.Drawing.Point(694, 120);
-            this.lblExpiry.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblExpiry.Name = "lblExpiry";
-            this.lblExpiry.Size = new System.Drawing.Size(680, 18);
-            this.lblExpiry.TabIndex = 31;
-            this.lblExpiry.Text = "วันหมดอายุ (Review Due)";
-            // 
-            // flpTags
-            // 
-            this.flpTags.AutoSize = true;
-            this.flpTags.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.tlpGenInfo.SetColumnSpan(this.flpTags, 2);
-            this.flpTags.Controls.Add(this.txtTagInput);
-            this.flpTags.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flpTags.Location = new System.Drawing.Point(12, 138);
-            this.flpTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.flpTags.MinimumSize = new System.Drawing.Size(678, 28);
-            this.flpTags.Name = "flpTags";
-            this.flpTags.Padding = new System.Windows.Forms.Padding(2);
-            this.flpTags.Size = new System.Drawing.Size(678, 28);
-            this.flpTags.TabIndex = 32;
-            // 
-            // txtTagInput
-            // 
-            this.txtTagInput.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.txtTagInput.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.txtTagInput.Location = new System.Drawing.Point(5, 5);
-            this.txtTagInput.Name = "txtTagInput";
-            this.txtTagInput.Size = new System.Drawing.Size(150, 20);
-            this.txtTagInput.TabIndex = 0;
-            this.txtTagInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtTagInput_KeyDown);
-            // 
-            // pnlExpiry
-            // 
-            this.pnlExpiry.BackColor = System.Drawing.Color.Transparent;
-            this.tlpGenInfo.SetColumnSpan(this.pnlExpiry, 2);
-            this.pnlExpiry.Controls.Add(this.chkNoExpiry);
-            this.pnlExpiry.Controls.Add(this.dtpExpiry);
-            this.pnlExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlExpiry.Location = new System.Drawing.Point(694, 138);
-            this.pnlExpiry.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.pnlExpiry.Name = "pnlExpiry";
-            this.pnlExpiry.Size = new System.Drawing.Size(680, 28);
-            this.pnlExpiry.TabIndex = 33;
-            // 
-            // chkNoExpiry
-            // 
-            this.chkNoExpiry.AutoSize = true;
-            this.chkNoExpiry.Checked = true;
-            this.chkNoExpiry.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkNoExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.chkNoExpiry.Location = new System.Drawing.Point(158, 4);
-            this.chkNoExpiry.Name = "chkNoExpiry";
-            this.chkNoExpiry.Size = new System.Drawing.Size(118, 24);
-            this.chkNoExpiry.TabIndex = 1;
-            this.chkNoExpiry.Text = "ไม่มีวันหมดอายุ";
-            this.chkNoExpiry.CheckedChanged += new System.EventHandler(this.ChkNoExpiry_CheckedChanged);
-            // 
-            // dtpExpiry
-            // 
-            this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.dtpExpiry.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpExpiry.Location = new System.Drawing.Point(0, 1);
-            this.dtpExpiry.Name = "dtpExpiry";
-            this.dtpExpiry.Size = new System.Drawing.Size(150, 26);
-            this.dtpExpiry.TabIndex = 0;
-            // 
-            // chkOfficialPolicy
-            // 
-            this.chkOfficialPolicy.AutoSize = true;
-            this.tlpGenInfo.SetColumnSpan(this.chkOfficialPolicy, 2);
-            this.chkOfficialPolicy.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chkOfficialPolicy.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.chkOfficialPolicy.Location = new System.Drawing.Point(12, 176);
-            this.chkOfficialPolicy.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
-            this.chkOfficialPolicy.Name = "chkOfficialPolicy";
-            this.chkOfficialPolicy.Size = new System.Drawing.Size(678, 22);
-            this.chkOfficialPolicy.TabIndex = 40;
-            this.chkOfficialPolicy.Text = "🏛 Official Policy";
-            // 
-            // lblViewCount
-            // 
-            this.lblViewCount.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblViewCount.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblViewCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblViewCount.Location = new System.Drawing.Point(694, 176);
-            this.lblViewCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
-            this.lblViewCount.Name = "lblViewCount";
-            this.lblViewCount.Size = new System.Drawing.Size(337, 22);
-            this.lblViewCount.TabIndex = 41;
-            this.lblViewCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lblLikeCount
-            // 
-            this.lblLikeCount.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblLikeCount.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblLikeCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblLikeCount.Location = new System.Drawing.Point(1035, 176);
-            this.lblLikeCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
-            this.lblLikeCount.Name = "lblLikeCount";
-            this.lblLikeCount.Size = new System.Drawing.Size(339, 22);
-            this.lblLikeCount.TabIndex = 42;
-            this.lblLikeCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // pnlGenInfoHeader
-            // 
-            this.pnlGenInfoHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.pnlGenInfoHeader.Controls.Add(this.lblGenInfoHeader);
-            this.pnlGenInfoHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlGenInfoHeader.Location = new System.Drawing.Point(0, 0);
-            this.pnlGenInfoHeader.Name = "pnlGenInfoHeader";
-            this.pnlGenInfoHeader.Size = new System.Drawing.Size(1386, 28);
-            this.pnlGenInfoHeader.TabIndex = 0;
-            // 
-            // lblGenInfoHeader
-            // 
-            this.lblGenInfoHeader.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblGenInfoHeader.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblGenInfoHeader.ForeColor = System.Drawing.Color.White;
-            this.lblGenInfoHeader.Location = new System.Drawing.Point(0, 0);
-            this.lblGenInfoHeader.Name = "lblGenInfoHeader";
-            this.lblGenInfoHeader.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.lblGenInfoHeader.Size = new System.Drawing.Size(1386, 28);
-            this.lblGenInfoHeader.TabIndex = 0;
-            this.lblGenInfoHeader.Text = "📋  ข้อมูลทั่วไป (General Information)";
-            this.lblGenInfoHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // KBEditorDialog
             // 
@@ -2200,7 +2200,7 @@ namespace CMS.Presentation.Modules.KMS
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(1408, 952);
+            this.ClientSize = new System.Drawing.Size(1372, 1304);
             this.Controls.Add(this.pnlScroll);
             this.Controls.Add(this.pnlStatusBar);
             this.Controls.Add(this.pnlToolbar);
@@ -2219,6 +2219,30 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStatusBar.ResumeLayout(false);
             this.pnlStatusBar.PerformLayout();
             this.pnlScroll.ResumeLayout(false);
+            this.splitMain.Panel1.ResumeLayout(false);
+            this.splitMain.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitMain)).EndInit();
+            this.splitMain.ResumeLayout(false);
+            this.splitTopBottom.Panel1.ResumeLayout(false);
+            this.splitTopBottom.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitTopBottom)).EndInit();
+            this.splitTopBottom.ResumeLayout(false);
+            this.pnlGenInfoOuter.ResumeLayout(false);
+            this.tlpGenInfo.ResumeLayout(false);
+            this.tlpGenInfo.PerformLayout();
+            this.flpTags.ResumeLayout(false);
+            this.flpTags.PerformLayout();
+            this.pnlExpiry.ResumeLayout(false);
+            this.pnlExpiry.PerformLayout();
+            this.pnlGenInfoHeader.ResumeLayout(false);
+            this.pnlContentOuter.ResumeLayout(false);
+            this.pnlContentOuter.PerformLayout();
+            this.pnlRteStatus.ResumeLayout(false);
+            this.tsRte.ResumeLayout(false);
+            this.tsRte.PerformLayout();
+            this.pnlSummaryArea.ResumeLayout(false);
+            this.pnlSummaryArea.PerformLayout();
+            this.pnlContentHeader.ResumeLayout(false);
             this.pnlMappingOuter.ResumeLayout(false);
             this.tabMapping.ResumeLayout(false);
             this.tabAttach.ResumeLayout(false);
@@ -2237,22 +2261,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlDocsLinkedActions.ResumeLayout(false);
             this.tabVersions.ResumeLayout(false);
             this.pnlMappingHeader.ResumeLayout(false);
-            this.pnlContentOuter.ResumeLayout(false);
-            this.pnlContentOuter.PerformLayout();
-            this.pnlRteStatus.ResumeLayout(false);
-            this.tsRte.ResumeLayout(false);
-            this.tsRte.PerformLayout();
-            this.pnlSummaryArea.ResumeLayout(false);
-            this.pnlSummaryArea.PerformLayout();
-            this.pnlContentHeader.ResumeLayout(false);
-            this.pnlGenInfoOuter.ResumeLayout(false);
-            this.tlpGenInfo.ResumeLayout(false);
-            this.tlpGenInfo.PerformLayout();
-            this.flpTags.ResumeLayout(false);
-            this.flpTags.PerformLayout();
-            this.pnlExpiry.ResumeLayout(false);
-            this.pnlExpiry.PerformLayout();
-            this.pnlGenInfoHeader.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -2282,8 +2290,9 @@ namespace CMS.Presentation.Modules.KMS
 
         // ── Scroll area ───────────────────────────────────────────────────────
         private System.Windows.Forms.Panel       pnlScroll;
-        private System.Windows.Forms.Panel       pnlGap1;
-        private System.Windows.Forms.Panel       pnlGap2;
+        private System.Windows.Forms.SplitContainer splitMain;
+        private System.Windows.Forms.SplitContainer splitTopBottom;
+
 
         // ── General Info section ──────────────────────────────────────────────
         private System.Windows.Forms.Panel       pnlGenInfoOuter;
@@ -2315,8 +2324,6 @@ namespace CMS.Presentation.Modules.KMS
 
         // ── Content section ───────────────────────────────────────────────────
         private System.Windows.Forms.Panel       pnlContentOuter;
-        private System.Windows.Forms.Panel       pnlContentHeader;
-        private System.Windows.Forms.Label       lblContentHeader;
         private System.Windows.Forms.Panel       pnlSummaryArea;
         private System.Windows.Forms.Label       lblSummary;
         private System.Windows.Forms.TextBox     txtSummary;
@@ -2439,13 +2446,13 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel pnlDocsUpload;
         private System.Windows.Forms.Button btnUploadDoc;
         private System.Windows.Forms.Button btnSelectDocFromDMS;
-        private System.Windows.Forms.Label lblDocsUpload;
-        private System.Windows.Forms.Panel pnlDocsDropZone;
         private System.Windows.Forms.TabPage     tabVersions;
         private System.Windows.Forms.ListView    lstVersions;
         private System.Windows.Forms.ColumnHeader colVerNum;
         private System.Windows.Forms.ColumnHeader colVerDate;
         private System.Windows.Forms.ColumnHeader colVerBy;
         private System.Windows.Forms.ColumnHeader colVerNote;
+        private System.Windows.Forms.Panel pnlContentHeader;
+        private System.Windows.Forms.Label lblContentHeader;
     }
 }
