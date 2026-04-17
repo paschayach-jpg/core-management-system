@@ -12,7 +12,7 @@ namespace CMS.Data.Interfaces
         /// Get all links for an article, optionally filtered by entity type
         /// </summary>
         /// <param name="articleId">Article ID</param>
-        /// <param name="entityType">Optional entity type filter (1=Folder, 2=Task, 3=Program, 4=Law, 5=Project, null=all)</param>
+        /// <param name="entityType">Optional entity type filter (1=Folder, 2=Task, 3=Program, 4=Law, 5=Project, 6=Article, null=all)</param>
         /// <returns>Collection of article links</returns>
         IEnumerable<KBArticleLink> GetLinksForArticle(int articleId, byte? entityType = null);
 
@@ -22,6 +22,12 @@ namespace CMS.Data.Interfaces
         /// <param name="link">Article link to insert</param>
         /// <returns>LinkID of the inserted record</returns>
         int Insert(KBArticleLink link);
+
+        /// <summary>
+        /// Delete a specific link by LinkID
+        /// </summary>
+        /// <param name="linkId">Link ID to delete</param>
+        void Delete(int linkId);
 
         /// <summary>
         /// Delete all links for an article, optionally filtered by entity type

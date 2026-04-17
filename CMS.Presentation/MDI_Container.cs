@@ -57,6 +57,7 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
         private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;
+        private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
 
         // Notification inbox controls (built programmatically)
@@ -154,6 +155,7 @@ namespace CMS.Presentation
             CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
             CMS.Services.Interfaces.IKBArticleService  kbArticleService  = null,
             CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null,
+            CMS.Data.Interfaces.IKBVersionRepository kbVersionRepository = null,
             CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
@@ -195,6 +197,7 @@ namespace CMS.Presentation
             _kbCategoryService = kbCategoryService;
             _kbArticleService  = kbArticleService;
             _kbArticleLinkRepository = kbArticleLinkRepository;
+            _kbVersionRepository = kbVersionRepository;
             _kbDashboardService = kbDashboardService;
 
             InitializeComponent();
@@ -1175,7 +1178,7 @@ namespace CMS.Presentation
 
             var form      = new KBMainForm();
             var presenter = new KBMainController(
-                form, _kbCategoryService, _kbArticleService, _currentUser);
+                form, _kbCategoryService, _kbArticleService, _kbVersionRepository, _currentUser);
 
             form.AttachPresenter(presenter, _currentUser);
             form.AttachFactories(
@@ -1184,7 +1187,7 @@ namespace CMS.Presentation
                 {
                     var viewer          = new ArticleViewerForm();
                     var viewerPresenter = new ArticleViewerController(
-                        viewer, _kbArticleService, _currentUser, article);
+                        viewer, _kbArticleService, _kbVersionRepository, _currentUser, article);
                     viewer.AttachPresenter(viewerPresenter);
                     viewer.AttachEditorFactory(a => OpenKBEditorDialog(a));
                     return viewer;
@@ -1231,7 +1234,7 @@ namespace CMS.Presentation
         {
             var dlg       = new KBEditorDialog(_currentUser);
             var presenter = new KBEditorController(
-                dlg, _kbCategoryService, _kbArticleService, _kbArticleLinkRepository, _currentUser, article);
+                dlg, _kbCategoryService, _kbArticleService, _kbArticleLinkRepository, _kbVersionRepository, _currentUser, article);
             dlg.AttachPresenter(presenter);
             return dlg.ShowDialog(this);
         }

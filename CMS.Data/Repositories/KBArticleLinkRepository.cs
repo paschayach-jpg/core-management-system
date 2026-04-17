@@ -88,6 +88,22 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public void Delete(int linkId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                const string sql = "DELETE FROM KMS.t_KBArticleLink WHERE LinkID = @LinkID";
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@LinkID", linkId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         public void DeleteAllForArticle(int articleId, byte? entityType = null)
         {
             using (var conn = new SqlConnection(_connectionString))

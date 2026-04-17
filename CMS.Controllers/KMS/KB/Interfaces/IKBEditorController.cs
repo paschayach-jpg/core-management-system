@@ -35,6 +35,7 @@ namespace CMS.Controllers.KMS.KB.Interfaces
 
         // ── Status Bar Display ───────────────────────────────────────────────
         string VersionText { set; }
+        string CurVersionText { set; }
         string AuthorText { set; }
         string DateInfoText { set; }
 
@@ -48,10 +49,31 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         void ShowError(string message);
         void ShowInfo(string message);
 
-        // ── ListView Access for Article Links ────────────────────────────────
+        // ── DataGridView Access for Article Links ────────────────────────────────
+        System.Windows.Forms.DataGridView GetRelatedDataGridView();
+        
+        [System.Obsolete("Use GetRelatedDataGridView() instead")]
         System.Windows.Forms.ListView GetRelatedListView();
+        
+        // ── DataGridView Access for Workflows ────────────────────────────────
+        System.Windows.Forms.DataGridView GetWorkflowLinkedDataGridView();
+        System.Windows.Forms.DataGridView GetWorkflowSearchDataGridView();
+        
+        [System.Obsolete("Use GetWorkflowLinkedDataGridView() and GetWorkflowSearchDataGridView() instead")]
         System.Windows.Forms.ListView GetWorkflowListView();
+        
+        // ── DataGridView Access for Programs ─────────────────────────────────
+        System.Windows.Forms.DataGridView GetProgramsLinkedDataGridView();
+        System.Windows.Forms.DataGridView GetProgramsSearchDataGridView();
+        
+        [System.Obsolete("Use GetProgramsLinkedDataGridView() and GetProgramsSearchDataGridView() instead")]
         System.Windows.Forms.ListView GetProgramsListView();
+        
+        // ── DataGridView Access for Documents ────────────────────────────────
+        System.Windows.Forms.DataGridView GetDocsLinkedDataGridView();
+        System.Windows.Forms.DataGridView GetDocsSearchDataGridView();
+        
+        [System.Obsolete("Use GetDocsLinkedDataGridView() and GetDocsSearchDataGridView() instead")]
         System.Windows.Forms.ListView GetDocsListView();
     }
 }

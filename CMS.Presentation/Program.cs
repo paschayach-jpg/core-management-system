@@ -419,10 +419,11 @@ namespace CMS.Presentation
                     filePermissionAclController: filePermissionAclController,
                     authorityOrgLookupController: authorityOrgLookupController,
                     folderRepository: folderRepository,
-                    kbCategoryService,
-                    kbArticleService,
-                    kbArticleLinkRepository,
-                    kbDashboardService);
+                    kbCategoryService: kbCategoryService,
+                    kbArticleService: kbArticleService,
+                    kbArticleLinkRepository: kbArticleLinkRepository,
+                    kbVersionRepository: kbVersionRepository,
+                    kbDashboardService: kbDashboardService);
                 Application.Run(mainForm);
 
                 // ถ้า user กด Logout → restart process เพื่อแสดง LoginForm ใหม่
