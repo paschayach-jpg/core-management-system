@@ -39,19 +39,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingOuter = new System.Windows.Forms.Panel();
             this.tabMapping = new System.Windows.Forms.TabControl();
             this.tabAttach = new System.Windows.Forms.TabPage();
-            this.pnlDropZone = new System.Windows.Forms.Panel();
-            this.lblAttachUpload = new System.Windows.Forms.Label();
             this.pnlAttachUpload = new System.Windows.Forms.Panel();
             this.btnSelectFromDMS = new System.Windows.Forms.Button();
             this.btnUploadFile = new System.Windows.Forms.Button();
-            this.pnlAttachLinkedActions = new System.Windows.Forms.Panel();
-            this.btnViewAttach = new System.Windows.Forms.Button();
-            this.btnRemoveAttach = new System.Windows.Forms.Button();
-            this.lstAttachLinked = new System.Windows.Forms.ListView();
-            this.colAttachLinkedNum = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colAttachLinkedFile = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colAttachLinkedSize = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.colAttachLinkedDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.dgvAttachLinked = new System.Windows.Forms.DataGridView();
             this.lblAttachLinked = new System.Windows.Forms.Label();
             this.tabRelated = new System.Windows.Forms.TabPage();
             this.lstRelatedSearch = new System.Windows.Forms.ListView();
@@ -202,7 +193,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabMapping.SuspendLayout();
             this.tabAttach.SuspendLayout();
             this.pnlAttachUpload.SuspendLayout();
-            this.pnlAttachLinkedActions.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvAttachLinked)).BeginInit();
             this.tabRelated.SuspendLayout();
             this.pnlRelatedSearch.SuspendLayout();
             this.pnlRelatedLinkedActions.SuspendLayout();
@@ -507,7 +498,6 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // pnlMappingOuter
             // 
-            this.pnlMappingOuter.AutoScroll = true;
             this.pnlMappingOuter.BackColor = System.Drawing.Color.White;
             this.pnlMappingOuter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlMappingOuter.Controls.Add(this.tabMapping);
@@ -531,47 +521,21 @@ namespace CMS.Presentation.Modules.KMS
             this.tabMapping.Location = new System.Drawing.Point(0, 28);
             this.tabMapping.Name = "tabMapping";
             this.tabMapping.SelectedIndex = 0;
-            this.tabMapping.Size = new System.Drawing.Size(1365, 500);
+            this.tabMapping.Size = new System.Drawing.Size(1386, 500);
             this.tabMapping.TabIndex = 1;
             // 
             // tabAttach
             // 
             this.tabAttach.BackColor = System.Drawing.Color.White;
-            this.tabAttach.Controls.Add(this.pnlDropZone);
-            this.tabAttach.Controls.Add(this.lblAttachUpload);
             this.tabAttach.Controls.Add(this.pnlAttachUpload);
-            this.tabAttach.Controls.Add(this.pnlAttachLinkedActions);
-            this.tabAttach.Controls.Add(this.lstAttachLinked);
+            this.tabAttach.Controls.Add(this.dgvAttachLinked);
             this.tabAttach.Controls.Add(this.lblAttachLinked);
             this.tabAttach.Location = new System.Drawing.Point(4, 29);
             this.tabAttach.Name = "tabAttach";
             this.tabAttach.Padding = new System.Windows.Forms.Padding(4);
-            this.tabAttach.Size = new System.Drawing.Size(1357, 467);
+            this.tabAttach.Size = new System.Drawing.Size(1378, 467);
             this.tabAttach.TabIndex = 0;
             this.tabAttach.Text = "📎 ไฟล์ที่แนบ";
-            // 
-            // pnlDropZone
-            // 
-            this.pnlDropZone.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
-            this.pnlDropZone.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlDropZone.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlDropZone.Location = new System.Drawing.Point(4, 244);
-            this.pnlDropZone.Name = "pnlDropZone";
-            this.pnlDropZone.Size = new System.Drawing.Size(1349, 219);
-            this.pnlDropZone.TabIndex = 5;
-            // 
-            // lblAttachUpload
-            // 
-            this.lblAttachUpload.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
-            this.lblAttachUpload.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblAttachUpload.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblAttachUpload.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblAttachUpload.Location = new System.Drawing.Point(4, 220);
-            this.lblAttachUpload.Name = "lblAttachUpload";
-            this.lblAttachUpload.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblAttachUpload.Size = new System.Drawing.Size(1349, 24);
-            this.lblAttachUpload.TabIndex = 4;
-            this.lblAttachUpload.Text = "เพิ่มไฟล์ใหม่";
             // 
             // pnlAttachUpload
             // 
@@ -579,10 +543,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlAttachUpload.Controls.Add(this.btnSelectFromDMS);
             this.pnlAttachUpload.Controls.Add(this.btnUploadFile);
             this.pnlAttachUpload.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlAttachUpload.Location = new System.Drawing.Point(4, 184);
+            this.pnlAttachUpload.Location = new System.Drawing.Point(4, 148);
             this.pnlAttachUpload.Name = "pnlAttachUpload";
             this.pnlAttachUpload.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlAttachUpload.Size = new System.Drawing.Size(1349, 36);
+            this.pnlAttachUpload.Size = new System.Drawing.Size(1370, 54);
             this.pnlAttachUpload.TabIndex = 3;
             // 
             // btnSelectFromDMS
@@ -594,7 +558,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnSelectFromDMS.ForeColor = System.Drawing.Color.White;
             this.btnSelectFromDMS.Location = new System.Drawing.Point(154, 6);
             this.btnSelectFromDMS.Name = "btnSelectFromDMS";
-            this.btnSelectFromDMS.Size = new System.Drawing.Size(150, 24);
+            this.btnSelectFromDMS.Size = new System.Drawing.Size(150, 39);
             this.btnSelectFromDMS.TabIndex = 1;
             this.btnSelectFromDMS.Text = "📁 เลือกจาก DMS";
             this.btnSelectFromDMS.UseVisualStyleBackColor = false;
@@ -609,94 +573,29 @@ namespace CMS.Presentation.Modules.KMS
             this.btnUploadFile.ForeColor = System.Drawing.Color.White;
             this.btnUploadFile.Location = new System.Drawing.Point(8, 6);
             this.btnUploadFile.Name = "btnUploadFile";
-            this.btnUploadFile.Size = new System.Drawing.Size(140, 24);
+            this.btnUploadFile.Size = new System.Drawing.Size(140, 39);
             this.btnUploadFile.TabIndex = 0;
             this.btnUploadFile.Text = "📤 อัพโหลดไฟล์";
             this.btnUploadFile.UseVisualStyleBackColor = false;
             this.btnUploadFile.Click += new System.EventHandler(this.BtnUploadFileNew_Click);
             // 
-            // pnlAttachLinkedActions
+            // dgvAttachLinked
             // 
-            this.pnlAttachLinkedActions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.pnlAttachLinkedActions.Controls.Add(this.btnViewAttach);
-            this.pnlAttachLinkedActions.Controls.Add(this.btnRemoveAttach);
-            this.pnlAttachLinkedActions.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlAttachLinkedActions.Location = new System.Drawing.Point(4, 148);
-            this.pnlAttachLinkedActions.Name = "pnlAttachLinkedActions";
-            this.pnlAttachLinkedActions.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlAttachLinkedActions.Size = new System.Drawing.Size(1349, 36);
-            this.pnlAttachLinkedActions.TabIndex = 2;
-            // 
-            // btnViewAttach
-            // 
-            this.btnViewAttach.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnViewAttach.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnViewAttach.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewAttach.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnViewAttach.ForeColor = System.Drawing.Color.White;
-            this.btnViewAttach.Location = new System.Drawing.Point(114, 6);
-            this.btnViewAttach.Name = "btnViewAttach";
-            this.btnViewAttach.Size = new System.Drawing.Size(100, 24);
-            this.btnViewAttach.TabIndex = 1;
-            this.btnViewAttach.Text = "👁️ ดูไฟล์";
-            this.btnViewAttach.UseVisualStyleBackColor = false;
-            this.btnViewAttach.Click += new System.EventHandler(this.BtnViewAttach_Click);
-            // 
-            // btnRemoveAttach
-            // 
-            this.btnRemoveAttach.BackColor = System.Drawing.Color.White;
-            this.btnRemoveAttach.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnRemoveAttach.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRemoveAttach.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnRemoveAttach.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            this.btnRemoveAttach.Location = new System.Drawing.Point(8, 6);
-            this.btnRemoveAttach.Name = "btnRemoveAttach";
-            this.btnRemoveAttach.Size = new System.Drawing.Size(100, 24);
-            this.btnRemoveAttach.TabIndex = 0;
-            this.btnRemoveAttach.Text = "🗑️ ลบไฟล์";
-            this.btnRemoveAttach.UseVisualStyleBackColor = false;
-            this.btnRemoveAttach.Click += new System.EventHandler(this.BtnRemoveAttachNew_Click);
-            // 
-            // lstAttachLinked
-            // 
-            this.lstAttachLinked.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.lstAttachLinked.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.colAttachLinkedNum,
-            this.colAttachLinkedFile,
-            this.colAttachLinkedSize,
-            this.colAttachLinkedDate});
-            this.lstAttachLinked.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lstAttachLinked.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lstAttachLinked.FullRowSelect = true;
-            this.lstAttachLinked.GridLines = true;
-            this.lstAttachLinked.HideSelection = false;
-            this.lstAttachLinked.Location = new System.Drawing.Point(4, 28);
-            this.lstAttachLinked.Name = "lstAttachLinked";
-            this.lstAttachLinked.Size = new System.Drawing.Size(1349, 120);
-            this.lstAttachLinked.TabIndex = 1;
-            this.lstAttachLinked.UseCompatibleStateImageBehavior = false;
-            this.lstAttachLinked.View = System.Windows.Forms.View.Details;
-            this.lstAttachLinked.DoubleClick += new System.EventHandler(this.LstAttachLinked_DoubleClick);
-            // 
-            // colAttachLinkedNum
-            // 
-            this.colAttachLinkedNum.Text = "#";
-            this.colAttachLinkedNum.Width = 40;
-            // 
-            // colAttachLinkedFile
-            // 
-            this.colAttachLinkedFile.Text = "ชื่อไฟล์";
-            this.colAttachLinkedFile.Width = 400;
-            // 
-            // colAttachLinkedSize
-            // 
-            this.colAttachLinkedSize.Text = "ขนาด";
-            this.colAttachLinkedSize.Width = 100;
-            // 
-            // colAttachLinkedDate
-            // 
-            this.colAttachLinkedDate.Text = "วันที่แนบ";
-            this.colAttachLinkedDate.Width = 140;
+            this.dgvAttachLinked.AllowUserToAddRows = false;
+            this.dgvAttachLinked.AllowUserToDeleteRows = false;
+            this.dgvAttachLinked.AllowUserToResizeRows = false;
+            this.dgvAttachLinked.BackgroundColor = System.Drawing.Color.White;
+            this.dgvAttachLinked.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvAttachLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.dgvAttachLinked.Location = new System.Drawing.Point(4, 28);
+            this.dgvAttachLinked.Name = "dgvAttachLinked";
+            this.dgvAttachLinked.RowHeadersVisible = false;
+            this.dgvAttachLinked.RowHeadersWidth = 51;
+            this.dgvAttachLinked.RowTemplate.Height = 28;
+            this.dgvAttachLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvAttachLinked.Size = new System.Drawing.Size(1370, 120);
+            this.dgvAttachLinked.TabIndex = 1;
+            this.dgvAttachLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvAttachLinked_CellContentClick);
             // 
             // lblAttachLinked
             // 
@@ -707,7 +606,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblAttachLinked.Location = new System.Drawing.Point(4, 4);
             this.lblAttachLinked.Name = "lblAttachLinked";
             this.lblAttachLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblAttachLinked.Size = new System.Drawing.Size(1349, 24);
+            this.lblAttachLinked.Size = new System.Drawing.Size(1370, 24);
             this.lblAttachLinked.TabIndex = 0;
             this.lblAttachLinked.Text = "ไฟล์ที่แนบ (0 ไฟล์)";
             // 
@@ -1517,7 +1416,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlMappingHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlMappingHeader.Name = "pnlMappingHeader";
-            this.pnlMappingHeader.Size = new System.Drawing.Size(1365, 28);
+            this.pnlMappingHeader.Size = new System.Drawing.Size(1386, 28);
             this.pnlMappingHeader.TabIndex = 0;
             // 
             // lblMappingHeader
@@ -1528,7 +1427,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader.Location = new System.Drawing.Point(0, 0);
             this.lblMappingHeader.Name = "lblMappingHeader";
             this.lblMappingHeader.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.lblMappingHeader.Size = new System.Drawing.Size(1365, 28);
+            this.lblMappingHeader.Size = new System.Drawing.Size(1386, 28);
             this.lblMappingHeader.TabIndex = 0;
             this.lblMappingHeader.Text = "🔗  Mapping รายการที่เกี่ยวข้อง";
             this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -2324,7 +2223,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabMapping.ResumeLayout(false);
             this.tabAttach.ResumeLayout(false);
             this.pnlAttachUpload.ResumeLayout(false);
-            this.pnlAttachLinkedActions.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvAttachLinked)).EndInit();
             this.tabRelated.ResumeLayout(false);
             this.pnlRelatedSearch.ResumeLayout(false);
             this.pnlRelatedSearch.PerformLayout();
@@ -2462,20 +2361,11 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.TabPage     tabAttach;
         // tabAttach - Attached Files Section
         private System.Windows.Forms.Label lblAttachLinked;
-        private System.Windows.Forms.ListView lstAttachLinked;
-        private System.Windows.Forms.ColumnHeader colAttachLinkedNum;
-        private System.Windows.Forms.ColumnHeader colAttachLinkedFile;
-        private System.Windows.Forms.ColumnHeader colAttachLinkedSize;
-        private System.Windows.Forms.ColumnHeader colAttachLinkedDate;
-        private System.Windows.Forms.Panel pnlAttachLinkedActions;
-        private System.Windows.Forms.Button btnRemoveAttach;
-        private System.Windows.Forms.Button btnViewAttach;
+        private System.Windows.Forms.DataGridView dgvAttachLinked;
         // tabAttach - Upload Section
         private System.Windows.Forms.Panel pnlAttachUpload;
         private System.Windows.Forms.Button btnUploadFile;
         private System.Windows.Forms.Button btnSelectFromDMS;
-        private System.Windows.Forms.Label lblAttachUpload;
-        private System.Windows.Forms.Panel pnlDropZone;
         private System.Windows.Forms.TabPage     tabRelated;
         // tabRelated - Linked Articles Section
         private System.Windows.Forms.Label lblRelatedLinked;

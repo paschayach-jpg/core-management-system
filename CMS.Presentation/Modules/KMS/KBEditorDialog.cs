@@ -57,7 +57,6 @@ namespace CMS.Presentation.Modules.KMS
             InitTypeCombo();
             
             // Add toolbars to tabs
-            tabAttach.Controls.Add(CreateAttachToolbar());
             tabRelated.Controls.Add(CreateRelatedToolbar());
             tabWorkflow.Controls.Add(CreateWorkflowToolbar());
             tabPrograms.Controls.Add(CreateProgramsToolbar());
@@ -69,7 +68,8 @@ namespace CMS.Presentation.Modules.KMS
             // Initialize tabWorkflow - NEW IMPLEMENTATION (Mockup)
             LoadLinkedWorkflows();
             
-            // Initialize tabAttach - NEW IMPLEMENTATION (Mockup)
+            // Initialize tabAttach - NEW IMPLEMENTATION (Mockup with DataGridView)
+            InitializeAttachDataGridView();
             LoadAttachedFiles();
             
             // Initialize tabDocs - NEW IMPLEMENTATION (Mockup)
@@ -839,96 +839,7 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         // ── Tab Mapping Toolbars ─────────────────────────────────────────────
-
-        private Panel CreateAttachToolbar()
-        {
-            var toolbar = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 36,
-                BackColor = Color.FromArgb(245, 247, 250)
-            };
-            
-            _txtSearchAttach = new TextBox
-            {
-                Name = "txtSearchAttach",
-                Location = new Point(8, 6),
-                Size = new Size(250, 24),
-                Font = new Font("Segoe UI", 9f)
-            };
-            _txtSearchAttach.TextChanged += TxtSearchAttach_TextChanged;
-            
-            // Add placeholder text using a label overlay
-            var lblPlaceholder = new Label
-            {
-                Name = "lblSearchAttachPlaceholder",
-                Text = "🔍 ค้นหาไฟล์แนบ...",
-                Location = new Point(10, 9),
-                AutoSize = true,
-                BackColor = Color.Transparent,
-                ForeColor = Color.Gray,
-                Font = new Font("Segoe UI", 9f),
-                Cursor = Cursors.IBeam
-            };
-            lblPlaceholder.Click += (s, e) => _txtSearchAttach.Focus();
-            
-            // Hide placeholder when textbox has focus or text
-            _txtSearchAttach.Enter += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchAttach.Text);
-            _txtSearchAttach.Leave += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchAttach.Text);
-            _txtSearchAttach.TextChanged += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchAttach.Text);
-            
-            var btnUpload = new Button
-            {
-                Location = new Point(266, 6),
-                Size = new Size(120, 24),
-                Text = "📤 อัพโหลดไฟล์",
-                Font = new Font("Segoe UI", 9f),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(46, 116, 181),
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
-            };
-            btnUpload.FlatAppearance.BorderColor = Color.FromArgb(30, 95, 154);
-            btnUpload.Click += BtnUploadAttachment_Click;
-            
-            var btnRemove = new Button
-            {
-                Location = new Point(394, 6),
-                Size = new Size(100, 24),
-                Text = "🗑️ ลบไฟล์",
-                Font = new Font("Segoe UI", 9f),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(231, 76, 60),
-                Cursor = Cursors.Hand
-            };
-            btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
-            btnRemove.Click += BtnRemoveAttachment_Click;
-            
-            var btnLoadFromKB = new Button
-            {
-                Location = new Point(502, 6),
-                Size = new Size(150, 24),
-                Text = "📚 โหลดจาก KB",
-                Font = new Font("Segoe UI", 9f),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(39, 174, 96),
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
-            };
-            btnLoadFromKB.FlatAppearance.BorderColor = Color.FromArgb(30, 132, 73);
-            btnLoadFromKB.Click += BtnLoadAttachFromKB_Click;
-            
-            toolbar.Controls.Add(_txtSearchAttach);
-            toolbar.Controls.Add(lblPlaceholder);
-            toolbar.Controls.Add(btnUpload);
-            toolbar.Controls.Add(btnRemove);
-            toolbar.Controls.Add(btnLoadFromKB);
-            
-            lblPlaceholder.BringToFront();
-            
-            return toolbar;
-        }
+        // CreateAttachToolbar() removed - buttons now integrated into DataGridView
 
         private Panel CreateRelatedToolbar()
         {
@@ -1247,8 +1158,9 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnRemoveAttachment_Click(object sender, EventArgs e)
         {
-            // OLD toolbar button - redirect to new implementation
-            BtnRemoveAttachNew_Click(sender, e);
+            // OLD toolbar button - deprecated
+            // This functionality is now handled by button columns in DataGridView
+            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'ลบไฟล์' ใน DataGridView แทน");
         }
 
         private void BtnAddRelated_Click(object sender, EventArgs e)
@@ -1858,15 +1770,90 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         // ══════════════════════════════════════════════════════════════════════════
-        // TAB ATTACH - NEW IMPLEMENTATION (Two-Section Design - Mockup)
+        // TAB ATTACH - NEW IMPLEMENTATION (Two-Section Design - Mockup with DataGridView)
         // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Initialize DataGridView columns for attached files
+        /// </summary>
+        private void InitializeAttachDataGridView()
+        {
+            dgvAttachLinked.Columns.Clear();
+            
+            // Column 0: #
+            dgvAttachLinked.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colNum",
+                HeaderText = "#",
+                Width = 50,
+                ReadOnly = true
+            });
+            
+            // Column 1: ชื่อไฟล์
+            dgvAttachLinked.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colFilename",
+                HeaderText = "ชื่อไฟล์",
+                Width = 400,
+                ReadOnly = true
+            });
+            
+            // Column 2: ขนาด
+            dgvAttachLinked.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colSize",
+                HeaderText = "ขนาด",
+                Width = 100,
+                ReadOnly = true
+            });
+            
+            // Column 3: วันที่แนบ
+            dgvAttachLinked.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colDate",
+                HeaderText = "วันที่แนบ",
+                Width = 150,
+                ReadOnly = true
+            });
+            
+            // Column 4: View Button
+            var colView = new DataGridViewButtonColumn
+            {
+                Name = "colView",
+                HeaderText = "ดูไฟล์",
+                Text = "👁️ ดู",
+                UseColumnTextForButtonValue = true,
+                Width = 80
+            };
+            dgvAttachLinked.Columns.Add(colView);
+            
+            // Column 5: Delete Button
+            var colDelete = new DataGridViewButtonColumn
+            {
+                Name = "colDelete",
+                HeaderText = "ลบไฟล์",
+                Text = "🗑️ ลบ",
+                UseColumnTextForButtonValue = true,
+                Width = 80
+            };
+            dgvAttachLinked.Columns.Add(colDelete);
+            
+            // Style button columns
+            dgvAttachLinked.Columns["colView"].DefaultCellStyle.BackColor = Color.FromArgb(46, 116, 181);
+            dgvAttachLinked.Columns["colView"].DefaultCellStyle.ForeColor = Color.White;
+            dgvAttachLinked.Columns["colView"].DefaultCellStyle.SelectionBackColor = Color.FromArgb(30, 95, 154);
+            
+            dgvAttachLinked.Columns["colDelete"].DefaultCellStyle.BackColor = Color.FromArgb(231, 76, 60);
+            dgvAttachLinked.Columns["colDelete"].DefaultCellStyle.ForeColor = Color.White;
+            dgvAttachLinked.Columns["colDelete"].DefaultCellStyle.SelectionBackColor = Color.FromArgb(192, 57, 43);
+        }
 
         /// <summary>
         /// Load attached files when form initializes (Mockup data)
         /// </summary>
         private void LoadAttachedFiles()
         {
-            lstAttachLinked.Items.Clear();
+            dgvAttachLinked.Rows.Clear();
             
             // Mockup data - will be replaced with actual DMS integration
             var mockupFiles = new[]
@@ -1878,13 +1865,16 @@ namespace CMS.Presentation.Modules.KMS
             int index = 1;
             foreach (var file in mockupFiles)
             {
-                var item = new ListViewItem(index.ToString());
-                item.SubItems.Add(file.Name);
-                item.SubItems.Add(FormatFileSize(file.Size));
-                item.SubItems.Add(file.Date.ToString("dd/MM/yyyy HH:mm"));
-                item.Tag = index; // Mockup ID
-                item.BackColor = index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                lstAttachLinked.Items.Add(item);
+                int rowIndex = dgvAttachLinked.Rows.Add(
+                    index.ToString(),
+                    file.Name,
+                    FormatFileSize(file.Size),
+                    file.Date.ToString("dd/MM/yyyy HH:mm")
+                );
+                
+                dgvAttachLinked.Rows[rowIndex].Tag = index;
+                dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
+                    index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
                 index++;
             }
             
@@ -1893,63 +1883,46 @@ namespace CMS.Presentation.Modules.KMS
 
         private void UpdateAttachLinkedCount()
         {
-            lblAttachLinked.Text = string.Format("ไฟล์ที่แนบ ({0} ไฟล์)", lstAttachLinked.Items.Count);
+            lblAttachLinked.Text = string.Format("ไฟล์ที่แนบ ({0} ไฟล์)", dgvAttachLinked.Rows.Count);
         }
 
-        private void LstAttachLinked_DoubleClick(object sender, EventArgs e)
+        private void DgvAttachLinked_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (lstAttachLinked.SelectedItems.Count == 0) return;
+            if (e.RowIndex < 0) return; // Header clicked
             
-            try
+            // Check if View button clicked
+            if (e.ColumnIndex == dgvAttachLinked.Columns["colView"].Index)
             {
-                string fileName = lstAttachLinked.SelectedItems[0].SubItems[1].Text;
+                string fileName = dgvAttachLinked.Rows[e.RowIndex].Cells["colFilename"].Value?.ToString();
                 ShowInfo(string.Format("เปิดไฟล์: {0}\n\n(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS)", fileName));
             }
-            catch (Exception ex)
+            // Check if Delete button clicked
+            else if (e.ColumnIndex == dgvAttachLinked.Columns["colDelete"].Index)
             {
-                ShowError("เปิดไฟล์ไม่สำเร็จ: " + ex.Message);
-            }
-        }
-
-        private void BtnRemoveAttachNew_Click(object sender, EventArgs e)
-        {
-            if (lstAttachLinked.SelectedItems.Count == 0)
-            {
-                ShowInfo("กรุณาเลือกไฟล์ที่ต้องการลบ");
-                return;
-            }
-            
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการลบไฟล์ที่เลือก {0} ไฟล์ ใช่หรือไม่?", lstAttachLinked.SelectedItems.Count),
-                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            
-            if (confirm == DialogResult.Yes)
-            {
-                while (lstAttachLinked.SelectedItems.Count > 0)
-                    lstAttachLinked.Items.Remove(lstAttachLinked.SelectedItems[0]);
+                string fileName = dgvAttachLinked.Rows[e.RowIndex].Cells["colFilename"].Value?.ToString();
                 
-                // Renumber
-                for (int i = 0; i < lstAttachLinked.Items.Count; i++)
+                var confirm = MessageBox.Show(
+                    string.Format("ต้องการลบไฟล์ '{0}' ใช่หรือไม่?", fileName),
+                    "ยืนยันการลบ", 
+                    MessageBoxButtons.YesNo, 
+                    MessageBoxIcon.Question);
+                
+                if (confirm == DialogResult.Yes)
                 {
-                    lstAttachLinked.Items[i].Text = (i + 1).ToString();
-                    lstAttachLinked.Items[i].BackColor = (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    dgvAttachLinked.Rows.RemoveAt(e.RowIndex);
+                    
+                    // Renumber
+                    for (int i = 0; i < dgvAttachLinked.Rows.Count; i++)
+                    {
+                        dgvAttachLinked.Rows[i].Cells["colNum"].Value = (i + 1).ToString();
+                        dgvAttachLinked.Rows[i].DefaultCellStyle.BackColor = 
+                            (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    }
+                    
+                    UpdateAttachLinkedCount();
+                    ShowInfo("ลบไฟล์เรียบร้อยแล้ว");
                 }
-                
-                UpdateAttachLinkedCount();
-                ShowInfo("ลบไฟล์เรียบร้อยแล้ว");
             }
-        }
-
-        private void BtnViewAttach_Click(object sender, EventArgs e)
-        {
-            if (lstAttachLinked.SelectedItems.Count == 0)
-            {
-                ShowInfo("กรุณาเลือกไฟล์ที่ต้องการดู");
-                return;
-            }
-            
-            string fileName = lstAttachLinked.SelectedItems[0].SubItems[1].Text;
-            ShowInfo(string.Format("ดูไฟล์: {0}\n\n(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS)", fileName));
         }
 
         private void BtnUploadFileNew_Click(object sender, EventArgs e)
@@ -1970,15 +1943,18 @@ namespace CMS.Presentation.Modules.KMS
                     foreach (var filePath in ofd.FileNames)
                     {
                         var fi = new System.IO.FileInfo(filePath);
-                        int newIndex = lstAttachLinked.Items.Count + 1;
+                        int newIndex = dgvAttachLinked.Rows.Count + 1;
                         
-                        var item = new ListViewItem(newIndex.ToString());
-                        item.SubItems.Add(fi.Name);
-                        item.SubItems.Add(FormatFileSize(fi.Length));
-                        item.SubItems.Add(DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
-                        item.Tag = newIndex;
-                        item.BackColor = newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                        lstAttachLinked.Items.Add(item);
+                        int rowIndex = dgvAttachLinked.Rows.Add(
+                            newIndex.ToString(),
+                            fi.Name,
+                            FormatFileSize(fi.Length),
+                            DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                        );
+                        
+                        dgvAttachLinked.Rows[rowIndex].Tag = newIndex;
+                        dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
+                            newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
                     }
                     
                     UpdateAttachLinkedCount();
@@ -1989,9 +1965,26 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnSelectFromDMS_Click(object sender, EventArgs e)
         {
+            // Mockup: Show message and add sample file
             ShowInfo("ฟีเจอร์เลือกไฟล์จาก DMS จะเปิด File Browser\n\n" +
                      "สามารถเลือกไฟล์จากระบบจัดการเอกสาร (DMS) ที่มีอยู่แล้ว\n\n" +
-                     "(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS Module)");
+                     "(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS Module)\n\n" +
+                     "เพิ่มไฟล์ตัวอย่างเข้าไปแทน...");
+            
+            // Add sample file from "DMS"
+            int newIndex = dgvAttachLinked.Rows.Count + 1;
+            int rowIndex = dgvAttachLinked.Rows.Add(
+                newIndex.ToString(),
+                "Sample_From_DMS.pdf",
+                "1.2 MB",
+                DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+            );
+            
+            dgvAttachLinked.Rows[rowIndex].Tag = newIndex;
+            dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
+                newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+            
+            UpdateAttachLinkedCount();
         }
 
         // ══════════════════════════════════════════════════════════════════════════
