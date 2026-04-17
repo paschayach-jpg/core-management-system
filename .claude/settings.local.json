@@ -10,7 +10,22 @@
       "Read(//c/Users/pitakpong/Documents/cms_import/CMS.Domain/Enums//**)",
       "Read(//c/Users/pitakpong/Documents/cms_import/CMS.Domain/enums//**)",
       "Bash(find /c/Users/pitakpong/Documents/cms_import/CMS.Presentation -name *Presenter* -o -name *View*)",
-      "Bash(\"/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe\" \"CMS.Presentation/CMS.Presentation.csproj\" /verbosity:minimal)"
+      "Bash(\"/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe\" \"CMS.Presentation/CMS.Presentation.csproj\" /verbosity:minimal)",
+      "Bash(wc -l /c/ProjectBui/cms/CMS.Presentation/Modules/KMS/*.Designer.cs /c/ProjectBui/cms/MOD-006/kms_category.html)",
+      "Bash(\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\MSBuild.exe\" CMS.Presentation\\\\CMS.Presentation.csproj /p:Configuration=Debug /nologo /verbosity:minimal)",
+      "Bash(\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\MSBuild.exe\" CMS.Presentation.csproj /p:Configuration=Debug /nologo /verbosity:minimal)",
+      "Bash(\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\MSBuild.exe\" \"C:\\\\ProjectBui\\\\cms\\\\CMS.Presentation\\\\CMS.Presentation.csproj\" /p:Configuration=Debug /nologo /verbosity:minimal)",
+      "Bash(cmd /c \"\\\\\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\MSBuild.exe\\\\\" \\\\\"C:\\\\ProjectBui\\\\cms\\\\CMS.Presentation\\\\CMS.Presentation.csproj\\\\\" /nologo /verbosity:minimal\")",
+      "Bash(cmd /c \"\\\\\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\MSBuild.exe\\\\\" \\\\\"C:\\\\ProjectBui\\\\cms\\\\CMS.Presentation\\\\CMS.Presentation.csproj\\\\\" /nologo /verbosity:normal 2>&1\")",
+      "Bash(cmd /c \"\\\\\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\MSBuild.exe\\\\\" \\\\\"C:\\\\ProjectBui\\\\cms\\\\CMS.Presentation\\\\CMS.Presentation.csproj\\\\\" /nologo /verbosity:normal > C:\\\\Temp\\\\build_out.txt 2>&1\")",
+      "Bash(cmd /c \"\\\\\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\MSBuild.exe\\\\\" \\\\\"C:\\\\ProjectBui\\\\cms\\\\CMS.Presentation\\\\CMS.Presentation.csproj\\\\\" /nologo /verbosity:normal > C:\\\\\\\\Temp\\\\\\\\build_out.txt 2>&1\")",
+      "Read(//c/Temp/**)",
+      "Bash(mkdir -p /c/Temp)",
+      "Bash(cmd //c \"\\\\\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\MSBuild.exe\\\\\" \\\\\"C:\\\\ProjectBui\\\\cms\\\\CMS.Presentation\\\\CMS.Presentation.csproj\\\\\" /nologo /verbosity:minimal\")",
+      "Read(//c/Windows/Microsoft.NET/Framework//**)",
+      "Read(//c/Windows/Microsoft.NET/Framework/**)",
+      "Bash(\"/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe\" \"C:\\\\ProjectBui\\\\cms\\\\CMS.Presentation\\\\CMS.Presentation.csproj\" /nologo /verbosity:minimal)",
+      "Bash(\"/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe\" \"C:/ProjectBui/cms/CMS.Presentation/CMS.Presentation.csproj\")"
     ]
   }
 }
