@@ -116,6 +116,31 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public bool ExistsByNameUnderParent(string nameTH, int? parentId, int? excludeOrgUnitId = null)
+        {
+            const string sql = @"
+                SELECT COUNT(*) FROM core.OrgUnit
+                WHERE OrgUnitNameTH = @OrgUnitNameTH
+                  AND IsDeleted = 0
+                  AND (
+                        (@ParentOrgUnitID IS NULL AND ParentOrgUnitID IS NULL)
+                     OR (ParentOrgUnitID = @ParentOrgUnitID)
+                  )
+                  AND (@ExcludeID IS NULL OR OrgUnitID <> @ExcludeID)";
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@OrgUnitNameTH", nameTH);
+                    cmd.Parameters.AddWithValue("@ParentOrgUnitID", (object)parentId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ExcludeID",       (object)excludeOrgUnitId ?? DBNull.Value);
+                    return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+            }
+        }
+
         public IEnumerable<OrgUnit> GetHierarchy()
         {
             var results = new List<OrgUnit>();

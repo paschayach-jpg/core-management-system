@@ -67,7 +67,12 @@ namespace CMS.Presentation
                 if (_pendingRequests.Count > 0)
                     SetStatus(string.Format("พบรายการรออนุมัติ {0} รายการ", _pendingRequests.Count), Color.Green);
                 else
-                    SetStatus("ไม่มีรายการรออนุมัติ", Color.Gray);
+                {
+                    if (_currentUser.AppRole < 3)
+                        SetStatus("ไม่มีรายการรออนุมัติ (บัญชีนี้ไม่ใช่ผู้อนุมัติ Manager/Admin)", Color.Gray);
+                    else
+                        SetStatus("ไม่มีรายการรออนุมัติ", Color.Gray);
+                }
             }
             catch (Exception ex)
             {
@@ -169,6 +174,7 @@ namespace CMS.Presentation
         private void ProcessBatch(List<ApprovalRequest> targets, bool approve)
         {
             int success = 0, failed = 0;
+            int stillPending = 0;
             string remark = txtRemark.Text.Trim();
             if (string.IsNullOrEmpty(remark))
                 remark = approve ? "อนุมัติ" : "ปฏิเสธ";
@@ -183,10 +189,28 @@ namespace CMS.Presentation
                     var step  = steps.FirstOrDefault(
                         s => s.ApproverID == _currentUser.UserId && s.StepStatus == 1);
 
+                    // Recovery path: CREATE_HC อนุญาตให้ Manager/Admin ช่วยอนุมัติได้
+                    // แม้ step จะถูก assign ให้ผู้อนุมัติคนอื่น (ป้องกันงานค้าง)
+                    if (step == null
+                        && approve
+                        && _currentUser.AppRole >= 3
+                        && string.Equals(req.RequestType, "CREATE_HC", StringComparison.OrdinalIgnoreCase))
+                    {
+                        step = steps
+                            .Where(s => s.StepStatus == 1 || s.StepStatus == 4)
+                            .OrderBy(s => s.StepOrder)
+                            .FirstOrDefault();
+                    }
+
                     if (step == null) { failed++; continue; }
 
                     if (approve)
+                    {
                         _approvalInboxController.ApproveStep(step.StepID, remark, _currentUser);
+                        var updatedSteps = _approvalInboxController.GetApprovalSteps(req.RequestID).ToList();
+                        if (updatedSteps.Any(s => s.StepStatus == 1))
+                            stillPending++;
+                    }
                     else
                         _approvalInboxController.RejectStep(step.StepID, remark, _currentUser);
 
@@ -195,11 +219,23 @@ namespace CMS.Presentation
                 catch { failed++; }
             }
 
-            string resultMsg = approve
-                ? string.Format("✅ อนุมัติแล้ว {0} รายการ", success)
-                : string.Format("❌ ปฏิเสธแล้ว {0} รายการ", success);
+            string resultMsg;
+            if (approve)
+            {
+                resultMsg = stillPending > 0
+                    ? string.Format("✅ อนุมัติขั้นตอนแล้ว {0} รายการ", success)
+                    : string.Format("✅ อนุมัติแล้ว {0} รายการ", success);
+            }
+            else
+            {
+                resultMsg = string.Format("❌ ปฏิเสธแล้ว {0} รายการ", success);
+            }
+
             if (failed > 0)
                 resultMsg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
+
+            if (approve && stillPending > 0)
+                resultMsg += string.Format(" - ยังรอผู้อนุมัติคนอื่นอีก {0} รายการ", stillPending);
 
             SetStatus(resultMsg, success > 0 ? (approve ? Color.Green : Color.OrangeRed) : Color.Red);
             txtRemark.Clear();
@@ -237,12 +273,14 @@ namespace CMS.Presentation
         {
             switch ((t ?? "").ToUpper())
             {
+                case "CREATE_HC":        return "🔐 สร้าง Folder 1HC";
                 case "PERMISSION":        return "🔐 สิทธิ์ Folder";
                 case "CHANGE_PERMISSION": return "🔐 สิทธิ์ Folder";
                 case "UPLOAD":            return "📤 อัพโหลดไฟล์";
                 case "DELETE":            return "🗑 ลบไฟล์";
                 case "DELETE_FOLDER":     return "🗑 ลบ Folder";
                 case "FOLDER":            return "📁 จัดการ Folder";
+                case "EXTERNAL_SHARE":    return "🌐 แชร์ภายนอก";
                 default:                  return t ?? "—";
             }
         }

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(powershell -Command \"& 'C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Enterprise\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe' 'c:\\\\Users\\\\KPG\\\\Documents\\\\cms_import\\\\CMS.Presentation\\\\CMS.Presentation.csproj' /p:Configuration=Debug /t:Build /v:minimal 2>&1 | tail -15\")",
+      "Bash(powershell -Command \"& 'C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Enterprise\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe' 'c:\\\\Users\\\\KPG\\\\Documents\\\\cms_import\\\\CMS.Presentation\\\\CMS.Presentation.csproj' /p:Configuration=Debug /t:Build /v:minimal 2>&1 | tail -10\")",
+      "Bash(\"C:/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe\" CMS.sln /p:Configuration=Debug /t:Build /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin/MSBuild.exe\" CMS.sln -p:Configuration=Debug -t:Build -v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin/MSBuild.exe\" CMS.Presentation/CMS.Presentation.csproj -p:Configuration=Debug -v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin/MSBuild.exe\" CMS.sln -p:Configuration=Debug -v:minimal)",
+      "Bash(findstr /n \"toolStrip\")"
+    ]
+  }
+}

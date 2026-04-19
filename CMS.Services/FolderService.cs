@@ -12,6 +12,7 @@ namespace CMS.Services
     public class FolderService : IFolderService
     {
         private const int MaxFolderDepth = 10;
+        private static readonly int[] MainRootConfidentialityLevels = { 1, 2, 3, 4 };
 
         private static readonly char[] InvalidFolderNameChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' };
 
@@ -21,6 +22,102 @@ namespace CMS.Services
             if (found.Length > 0)
                 throw new ArgumentException(
                     string.Format("ชื่อ Folder ไม่อนุญาตให้ใช้อักขระ: {0}", string.Join(" ", found)));
+        }
+
+        private static bool IsRootFolder(Folder folder)
+        {
+            return folder != null && (!folder.ParentFolderID.HasValue || folder.ParentFolderID.Value == 0);
+        }
+
+        private static bool IsMainRootLevel(int confidentialityLevel)
+        {
+            return MainRootConfidentialityLevels.Contains(confidentialityLevel);
+        }
+
+        private static string GetMainRootCode(int confidentialityLevel)
+        {
+            switch (confidentialityLevel)
+            {
+                case 1: return "1HC";
+                case 2: return "2SC";
+                case 3: return "3NC";
+                case 4: return "4PC";
+                default: return string.Empty;
+            }
+        }
+
+        private static bool RootNameMatchesLevel(string folderName, int confidentialityLevel)
+        {
+            string expectedCode = GetMainRootCode(confidentialityLevel);
+            if (string.IsNullOrWhiteSpace(expectedCode) || string.IsNullOrWhiteSpace(folderName))
+                return false;
+
+            return folderName.Trim().StartsWith(expectedCode, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsMainRootFolder(Folder folder)
+        {
+            return IsRootFolder(folder)
+                && IsMainRootLevel(folder.ConfidentialityLevel)
+                && RootNameMatchesLevel(folder.FolderName, folder.ConfidentialityLevel);
+        }
+
+        private static bool IsMatchingCreateHcRequest(ApprovalRequest request, int orgUnitId, string folderName)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Remark) || string.IsNullOrWhiteSpace(folderName))
+                return false;
+
+            return request.Remark.Contains(string.Format("OrgUnitId={0}", orgUnitId))
+                && request.Remark.Contains(string.Format("FolderName={0}", folderName.Trim()));
+        }
+
+        private Folder GetRootAncestor(Folder folder)
+        {
+            var current = folder;
+            var visitedFolderIds = new HashSet<int>();
+
+            while (current != null && current.ParentFolderID.HasValue && current.ParentFolderID.Value > 0)
+            {
+                if (!visitedFolderIds.Add(current.FolderID))
+                    throw new InvalidOperationException("Folder hierarchy contains a cycle.");
+
+                current = _folderRepository.GetById(current.ParentFolderID.Value);
+            }
+
+            return current;
+        }
+
+        private void EnsureRootCreationAllowed(string folderName, int orgUnitId, int? confidentialityLevel)
+        {
+            if (!confidentialityLevel.HasValue || !IsMainRootLevel(confidentialityLevel.Value))
+                throw new InvalidOperationException(
+                    "ไม่อนุญาตให้สร้าง Root Folder ใหม่โดยตรง ยกเว้น 4 Folder หลัก (1HC, 2SC, 3NC, 4PC)");
+
+            string expectedCode = GetMainRootCode(confidentialityLevel.Value);
+            if (!RootNameMatchesLevel(folderName, confidentialityLevel.Value))
+                throw new InvalidOperationException(
+                    string.Format("Root Folder ระดับ {0} ต้องขึ้นต้นด้วย '{0}'", expectedCode));
+
+            var rootFolders = _folderRepository.GetRootFoldersByOrgUnit(orgUnitId)
+                .Where(f => f != null && !f.IsDeleted && !f.IsArchived)
+                .ToList();
+
+            if (rootFolders.Any(f => f.ConfidentialityLevel == confidentialityLevel.Value))
+                throw new InvalidOperationException(
+                    string.Format("มี Root Folder หลักระดับ {0} อยู่แล้ว", expectedCode));
+
+            int mainRootCount = rootFolders.Count(f => IsMainRootLevel(f.ConfidentialityLevel));
+            if (mainRootCount >= MainRootConfidentialityLevels.Length)
+                throw new InvalidOperationException(
+                    "ไม่อนุญาตให้สร้าง Root Folder เพิ่มนอก 4 Folder หลัก (1HC, 2SC, 3NC, 4PC)");
+        }
+
+        private void EnsureCreationUnderMainRoots(Folder parentFolder)
+        {
+            var rootFolder = GetRootAncestor(parentFolder);
+            if (!IsMainRootFolder(rootFolder))
+                throw new InvalidOperationException(
+                    "อนุญาตให้สร้าง Folder ภายใต้ 4 Folder หลัก (1HC, 2SC, 3NC, 4PC) เท่านั้น");
         }
 
         private readonly IFolderRepository            _folderRepository;
@@ -135,6 +232,8 @@ namespace CMS.Services
                 if (parent.IsArchived)
                     throw new InvalidOperationException("Cannot create a folder under an archived parent folder.");
 
+                EnsureCreationUnderMainRoots(parent);
+
                 depth = parent.FolderDepth + 1;
                 if (depth > MaxFolderDepth)
                     throw new InvalidOperationException("Maximum folder depth of 10 has been reached.");
@@ -152,6 +251,8 @@ namespace CMS.Services
             }
             else
             {
+                EnsureRootCreationAllowed(trimmedName, request.OrgUnitId, request.ConfidentialityLevel);
+
                 depth = 1;  // root folder อยู่ที่ depth 1 (ไม่มี parent)
                 confidentiality   = request.ConfidentialityLevel ?? 4; // 4=Public
                 inheritPermission = !request.ConfidentialityLevel.HasValue;
@@ -160,16 +261,61 @@ namespace CMS.Services
             // HC (ConfidentialityLevel=1) folders require approval before creation
             if (confidentiality == 1)
             {
-                // Store folder creation request data in Remark for later retrieval after approval
-                var folderData = new
+                if (_approvalRepository == null)
+                    throw new InvalidOperationException("ระบบอนุมัติยังไม่พร้อมใช้งาน (ApprovalRepository is null)");
+                if (_userAccountRepository == null)
+                    throw new InvalidOperationException("ระบบอนุมัติยังไม่พร้อมใช้งาน (UserAccountRepository is null)");
+
+                // หา approver ก่อน เพื่อไม่ให้เกิดคำขอ orphan ที่ไม่มี step
+                var approvers = _userAccountRepository.GetByRole(4)
+                    .Concat(_userAccountRepository.GetByRole(3))
+                    .Where(a => a != null && a.IsActive)
+                    .GroupBy(a => a.UserID)
+                    .Select(g => g.First())
+                    .ToList();
+                if (approvers == null || !approvers.Any())
+                    throw new InvalidOperationException("ไม่พบผู้อนุมัติ (Manager/Admin) ในระบบ ไม่สามารถสร้าง HC Folder ได้");
+
+                // กันการยิงคำขอ CREATE_HC ซ้ำสำหรับ OrgUnit + FolderName เดิมที่ยัง Pending และมี step ที่ actionable
+                var pendingHcRequests = _approvalRepository.GetPendingRequests()
+                    .Where(r => r.RequestType == "CREATE_HC" && r.RequestStatus == 1)
+                    .ToList();
+
+                bool alreadyPending = false;
+                foreach (var pending in pendingHcRequests)
                 {
-                    ParentFolderId = request.ParentFolderId,
-                    OrgUnitId = request.OrgUnitId,
-                    FolderName = request.Name.Trim(),
-                    FolderDepth = depth,
-                    ConfidentialityLevel = confidentiality,
-                    InheritPermission = inheritPermission
-                };
+                    if (!IsMatchingCreateHcRequest(pending, request.OrgUnitId, request.Name))
+                        continue;
+
+                    var steps = _approvalRepository.GetAllSteps(pending.RequestID).ToList();
+                    bool hasActionableStep = steps.Any(s => s.StepStatus == 1 || s.StepStatus == 4);
+                    if (hasActionableStep)
+                    {
+                        alreadyPending = true;
+                        break;
+                    }
+
+                    Log(user, "Workflow", "IGNORE_STALE_CREATE_HC", "workflow.ApprovalRequest", pending.RequestID, 1,
+                        string.Format("Ignored stale CREATE_HC request {0} (no actionable approval step).", pending.RequestID));
+                }
+
+                if (alreadyPending)
+                {
+                    // คืน placeholder เพื่อคง flow เดิม โดยไม่สร้าง request ซ้ำ
+                    return new Folder
+                    {
+                        FolderID = -1,
+                        FolderName = request.Name.Trim(),
+                        ParentFolderID = request.ParentFolderId,
+                        OrgUnitID = request.OrgUnitId,
+                        ConfidentialityLevel = confidentiality,
+                        FolderDepth = depth,
+                        IsDeleted = false,
+                        IsArchived = false,
+                        CreatedBy = user.UserID,
+                        CreatedDate = DateTime.Now
+                    };
+                }
 
                 var approvalRequest = new ApprovalRequest
                 {
@@ -185,19 +331,14 @@ namespace CMS.Services
 
                 int requestId = _approvalRepository.InsertRequest(approvalRequest);
 
-                // Get all admins to create approval steps
-                var admins = _userAccountRepository.GetByRole(4); // 4 = Admin
-                if (admins == null || !admins.Any())
-                    throw new InvalidOperationException("ไม่พบ Admin ในระบบ ไม่สามารถสร้าง HC Folder ได้");
-
                 int stepOrder = 1;
-                foreach (var admin in admins)
+                foreach (var approver in approvers)
                 {
                     var step = new ApprovalStep
                     {
                         RequestID = requestId,
                         StepOrder = stepOrder,
-                        ApproverID = admin.UserID,
+                        ApproverID = approver.UserID,
                         StepStatus = 1 // Pending
                     };
                     _approvalRepository.InsertStep(step);
@@ -309,6 +450,12 @@ namespace CMS.Services
                     throw new InvalidOperationException("Cannot create folder under a deleted parent.");
                 if (parent.IsArchived)
                     throw new InvalidOperationException("Cannot create folder under an archived parent.");
+
+                EnsureCreationUnderMainRoots(parent);
+            }
+            else
+            {
+                EnsureRootCreationAllowed(folderName.Trim(), orgUnitId, confidentiality);
             }
 
             // Check for duplicate name again (in case it was created while approval was pending)
@@ -337,9 +484,35 @@ namespace CMS.Services
             int newId = _folderRepository.Insert(folder);
             folder.FolderID = newId;
 
+            // ให้ผู้ยื่นคำขอเห็นโฟลเดอร์ที่สร้างแล้วทันที (แก้ปัญหา default-deny เมื่อยังไม่มี ACL)
+            try
+            {
+                if (_permissionService != null && approvalRequest.RequestedBy > 0)
+                {
+                    _permissionService.SetFolderPermission(new SetPermissionRequest
+                    {
+                        FolderID = newId,
+                        PrincipalType = CMS.Domain.Enums.PrincipalType.User,
+                        PrincipalID = approvalRequest.RequestedBy,
+                        CanRead = true,
+                        CanWrite = false,
+                        CanDelete = false,
+                        CanModify = false,
+                        CanFullControl = false,
+                        IsDeny = false,
+                        BreakInheritance = false
+                    }, user);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(user, "Folder", "GRANT_READ_FAILED", "security.FolderPermission", newId, 0,
+                    string.Format("Failed to grant requester read permission for HC folder '{0}': {1}", folderName, ex.Message));
+            }
+
             InvalidateFolderCache(folder.OrgUnitID);
-            Log(user, "Folder", "CREATE_HC_APPROVED", "storage.Folder", newId, 1,
-                string.Format("HC Folder '{0}' created after approval of request {1}.", folderName, approvalRequest.RequestID));
+            Log(user, "Folder", "APPROVE", "storage.Folder", newId, 1,
+                string.Format("CREATE_HC_APPROVED: HC Folder '{0}' created after approval of request {1}.", folderName, approvalRequest.RequestID));
 
             return folder;
 
@@ -455,13 +628,12 @@ namespace CMS.Services
                 throw new InvalidOperationException("Folder is already in the recycle bin.");
 
             // Modify permission: CanModify required (ลบ folder — สิทธิ์สูงสุด)
-            // ห้ามลบ Root Folders หลัก
+            // Root Folders หลัก — เฉพาะ Admin (AppRole >= 3) เท่านั้นที่ลบได้
             bool isRootFolder = !folder.ParentFolderID.HasValue || folder.ParentFolderID == 0;
-            if (isRootFolder)
+            bool isPrivileged = user.AppRole >= 3;
+            if (isRootFolder && !isPrivileged)
                 throw new InvalidOperationException(
                     string.Format("ไม่อนุญาตให้ลบ Root Folder หลัก '{0}'", folder.FolderName));
-
-            bool isPrivileged = user.AppRole >= 3;
             if (!isPrivileged)
             {
                 // เงื่อนไขที่ 1: FolderAuthorityConfig — CanEdit ตาม LevelCode/ตำแหน่ง/แผนก/ฝ่าย
@@ -851,6 +1023,8 @@ namespace CMS.Services
             // Clamp confidentialityLevel to valid range 1-4
             if (confidentialityLevel < 1 || confidentialityLevel > 4)
                 confidentialityLevel = 4;
+
+            EnsureRootCreationAllowed(rootFolderName.Trim(), orgUnitId, confidentialityLevel);
 
             // สร้าง root folder ของ OrgUnit
             var rootFolder = new Folder

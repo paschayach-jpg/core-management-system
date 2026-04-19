@@ -104,10 +104,15 @@ namespace CMS.Presentation
 
             _visibleList = visible;
 
-            if (SourceFolderId.HasValue && _folderMap.TryGetValue(SourceFolderId.Value, out var src))
-                _lblSourceInfo.Text = string.Format("ย้ายจาก: {0}", src.FolderName);
-            else
-                _lblSourceInfo.Text = "ย้ายจาก: —";
+            Folder src = null;
+            bool hasSourceFolder = SourceFolderId.HasValue && _folderMap.TryGetValue(SourceFolderId.Value, out src);
+
+            // Option 2: show source info in header instead of a separate strip.
+            _pnlSourceInfo.Visible = false;
+            _lblSourceInfo.Text = string.Empty;
+            _lblHeader.Text = hasSourceFolder
+                ? string.Format("📁  เลือก Folder ปลายทาง (ย้ายจาก: {0})", src.FolderName)
+                : "📁  เลือก Folder ปลายทาง";
 
             BuildTree(visible);
             PopulateListView(visible, "");
@@ -210,7 +215,13 @@ namespace CMS.Presentation
         private TreeNode CreateNode(Folder f)
         {
             string badge = LevelBadge(f.ConfidentialityLevel);
-            string label = string.Format("{0}  {1}", f.FolderName, badge);
+            // ไม่แสดง badge ซ้ำถ้าชื่อ folder มี level code อยู่แล้ว (เช่น "3NC - ..." หรือ "[3NC]")
+            bool badgeAlreadyInName = f.FolderName != null
+                && (f.FolderName.IndexOf(badge, StringComparison.OrdinalIgnoreCase) >= 0
+                    || f.FolderName.StartsWith(badge.TrimStart('[').TrimEnd(']'), StringComparison.OrdinalIgnoreCase));
+            string label = badgeAlreadyInName
+                ? f.FolderName
+                : string.Format("{0}  {1}", f.FolderName, badge);
             return new TreeNode(label)
             {
                 Tag       = f,

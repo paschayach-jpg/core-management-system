@@ -27,10 +27,12 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT DISTINCT Level AS LevelCode " +
+                    "SELECT LevelCode, COUNT(*) AS PositionCount " +
                     "FROM core.HR_Position " +
-                    "WHERE IsActive = 1 AND Level IS NOT NULL AND Level <> '' " +
-                    "ORDER BY Level", conn))
+                    "WHERE IsActive = 1 " +
+                    "  AND LevelCode IS NOT NULL AND LevelCode <> '' " +
+                    "GROUP BY LevelCode " +
+                    "ORDER BY LevelCode", conn))
                 {
                     using (var reader = cmd.ExecuteReader())
                     {

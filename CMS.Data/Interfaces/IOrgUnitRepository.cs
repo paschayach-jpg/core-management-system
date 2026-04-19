@@ -11,6 +11,13 @@ namespace CMS.Data.Interfaces
         OrgUnit GetById(int orgUnitId);
         OrgUnit GetByCode(string orgUnitCode);
         bool ExistsByCode(string orgUnitCode);
+
+        /// <summary>
+        /// ตรวจสอบว่ามีชื่อ OrgUnitNameTH ซ้ำกันภายใต้ Parent เดียวกันหรือไม่
+        /// excludeOrgUnitId ใช้สำหรับกรณี Update เพื่อยกเว้นตัวเองออกจากการตรวจ
+        /// </summary>
+        bool ExistsByNameUnderParent(string nameTH, int? parentId, int? excludeOrgUnitId = null);
+
         IEnumerable<OrgUnit> GetHierarchy();
         IEnumerable<OrgUnit> GetByConfidentialityLevel(ConfidentialityLevel level);
         bool HasActiveDependents(int orgUnitId);

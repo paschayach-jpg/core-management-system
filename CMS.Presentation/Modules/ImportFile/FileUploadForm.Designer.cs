@@ -137,7 +137,7 @@ namespace CMS.Presentation
             this.lblUploadLine2.Name = "lblUploadLine2";
             this.lblUploadLine2.Size = new System.Drawing.Size(524, 18);
             this.lblUploadLine2.TabIndex = 2;
-            this.lblUploadLine2.Text = "รองรับ: PDF, DOC/X, XLS/X, PPT/X, JPG, PNG, GIF, ZIP (สูงสุด 100 MB/ไฟล์ · 10 ไฟล" +
+                this.lblUploadLine2.Text = "รองรับ: PDF, DOC/X, XLS/X, PPT/X, JPG, PNG, GIF, ZIP (สูงสุด 100 MB/ไฟล์ · 40 ไฟล" +
     "์ต่อครั้ง)";
             this.lblUploadLine2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.lblUploadLine2.Click += new System.EventHandler(this.btnPickFiles_Click);

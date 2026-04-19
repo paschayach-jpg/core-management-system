@@ -223,6 +223,20 @@ namespace CMS.Presentation
             SearchRequested?.Invoke(this, EventArgs.Empty);
         }
 
+        public string PromptSaveFilePath(string defaultFileName)
+        {
+            using (var dlg = new SaveFileDialog())
+            {
+                dlg.Title            = "ส่งออก Audit Log เป็น CSV";
+                dlg.FileName         = defaultFileName;
+                dlg.Filter           = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*";
+                dlg.DefaultExt       = "csv";
+                dlg.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+                return dlg.ShowDialog(this) == DialogResult.OK ? dlg.FileName : null;
+            }
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
 
         private void PopulateFilterDropdowns()

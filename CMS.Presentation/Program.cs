@@ -1,4 +1,7 @@
 using System;
+using System.IO;
+using System.Reflection;
+using System.Text;
 using System.Windows.Forms;
 using CMS.Data.Repositories;
 using CMS.Controllers.DMS.Document;
@@ -90,7 +93,9 @@ namespace CMS.Presentation
                     notificationRepository,
                     userAccountRepo,
                     auditService,
-                    loggingService);
+                    loggingService,
+                    externalShareRepository,
+                    shareTokenRepository);
 
                 var fileService = new FileService(
                     fileDocumentRepository,
@@ -137,7 +142,9 @@ namespace CMS.Presentation
                     permissionService,
                     notificationService,
                     auditService,
-                    loggingService);
+                    loggingService,
+                    approvalRepository,
+                    userAccountRepo);
 
                 // ── KB Services (MOD-006) ─────────────────────────────────────
                 var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);
@@ -318,6 +325,7 @@ namespace CMS.Presentation
                     ADUserName     = account.ADUserName,
                     AppRole        = account.AppRole,
                     MachineName    = System.Net.Dns.GetHostName(),
+                    IPAddress      = GetLocalIPAddress(),
                     LevelCode      = account.LevelCode,
                     PositionName   = account.PositionName,
                     DepartmentCode = account.DepartmentCode,
@@ -332,7 +340,7 @@ namespace CMS.Presentation
                     Module      = "Auth",
                     Action      = "LOGIN",
                     UserID      = userContext.UserID,
-                    UserName    = account.DisplayName,
+                    UserName    = account.ADUserName,
                     TableName   = "core.UserAccount",
                     RecordID    = userContext.UserID,
                     MachineName = userContext.MachineName,
@@ -410,6 +418,7 @@ namespace CMS.Presentation
                     currentUser: userContext,
                     notificationService: notificationService,
                     approvalService: approvalService,
+                    folderAuthorityService: folderAuthorityService,
                     orgStructureService: orgStructureService,
                     folderService: folderService,
                     configManager: configManager,
@@ -453,11 +462,103 @@ namespace CMS.Presentation
             }
             catch (Exception ex)
             {
-                loggingService.Fatal("Unhandled exception in application entry point.", ex);
+                Exception root = UnwrapInvocationException(ex);
+                string details = BuildExceptionDetails(ex);
+
+                loggingService.Fatal("Unhandled exception in application entry point. Root: " + root.Message, ex);
+                TryWriteFatalLog(details);
+
                 MessageBox.Show(
-                    "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาติดต่อผู้ดูแลระบบ\r\n\r\n" + ex.Message,
+                    "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาติดต่อผู้ดูแลระบบ\r\n\r\n"
+                    + "สาเหตุหลัก: " + root.Message + "\r\n"
+                    + "(รายละเอียดถูกบันทึกในไฟล์ fatal-startup-error.log)",
                     "CMS - Fatal Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// หา IP address จริงของเครื่องนี้ (primary network adapter)
+        /// ใช้ UDP trick เพื่อให้ OS เลือก adapter หลัก โดยไม่ส่งข้อมูลจริง
+        /// </summary>
+        private static string GetLocalIPAddress()
+        {
+            // วิธีที่ 1: UDP trick — ให้ OS เลือก primary adapter โดยอัตโนมัติ
+            try
+            {
+                using (var socket = new System.Net.Sockets.Socket(
+                    System.Net.Sockets.AddressFamily.InterNetwork,
+                    System.Net.Sockets.SocketType.Dgram, 0))
+                {
+                    socket.Connect("8.8.8.8", 65530); // ไม่ส่งข้อมูลจริง
+                    var ep = socket.LocalEndPoint as System.Net.IPEndPoint;
+                    if (ep != null)
+                        return ep.Address.ToString();
+                }
+            }
+            catch { }
+
+            // วิธีที่ 2: ดึงจาก DNS hostname (กรณี network restricted)
+            try
+            {
+                var hostEntry = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                foreach (var addr in hostEntry.AddressList)
+                {
+                    if (addr.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork
+                        && !System.Net.IPAddress.IsLoopback(addr))
+                        return addr.ToString();
+                }
+            }
+            catch { }
+
+            return "127.0.0.1";
+        }
+
+        private static Exception UnwrapInvocationException(Exception ex)
+        {
+            var current = ex;
+            while (current is TargetInvocationException && current.InnerException != null)
+            {
+                current = current.InnerException;
+            }
+
+            return current;
+        }
+
+        private static string BuildExceptionDetails(Exception ex)
+        {
+            var sb = new StringBuilder();
+            int level = 0;
+            var current = ex;
+
+            while (current != null)
+            {
+                sb.AppendLine("=== Exception Level " + level + " ===");
+                sb.AppendLine("Type: " + current.GetType().FullName);
+                sb.AppendLine("Message: " + current.Message);
+                sb.AppendLine("Source: " + (current.Source ?? "(null)"));
+                sb.AppendLine("StackTrace:");
+                sb.AppendLine(current.StackTrace ?? "(null)");
+                sb.AppendLine();
+
+                current = current.InnerException;
+                level++;
+            }
+
+            return sb.ToString();
+        }
+
+        private static void TryWriteFatalLog(string details)
+        {
+            try
+            {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string path = Path.Combine(baseDir, "fatal-startup-error.log");
+                File.WriteAllText(path, details);
+            }
+            catch
+            {
+                // Last-resort path; swallowing avoids masking the original startup exception.
             }
         }
 

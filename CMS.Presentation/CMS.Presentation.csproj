@@ -9,8 +9,13 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CMS.Presentation</RootNamespace>
     <AssemblyName>CMS.Presentation</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <GenerateResourceMSBuildRuntime>CurrentRuntime</GenerateResourceMSBuildRuntime>
+    <GenerateResourceMSBuildArchitecture>CurrentArchitecture</GenerateResourceMSBuildArchitecture>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -40,6 +45,42 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Buffers.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Buffers.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Buffers.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Buffers.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Buffers.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Buffers.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Buffers.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Buffers.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Buffers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Memory.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Memory.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Memory.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Memory.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Memory.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Memory.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Memory.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Memory.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Memory.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Numerics.Vectors.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Numerics.Vectors.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Numerics.Vectors.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Numerics.Vectors.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Numerics.Vectors.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Numerics.Vectors.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Numerics.Vectors.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Numerics.Vectors.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Numerics.Vectors.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Resources.Extensions.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Resources.Extensions.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Resources.Extensions.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Resources.Extensions.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Resources.Extensions.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Resources.Extensions.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Resources.Extensions.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Resources.Extensions.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Resources.Extensions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Runtime.CompilerServices.Unsafe.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Runtime.CompilerServices.Unsafe.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Runtime.CompilerServices.Unsafe.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Runtime.CompilerServices.Unsafe.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Runtime.CompilerServices.Unsafe.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Runtime.CompilerServices.Unsafe.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Threading.Tasks.Extensions.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Threading.Tasks.Extensions.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Threading.Tasks.Extensions.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Threading.Tasks.Extensions.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Threading.Tasks.Extensions.dll</HintPath>
+      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Threading.Tasks.Extensions.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Threading.Tasks.Extensions.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Threading.Tasks.Extensions.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Threading.Tasks.Extensions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
@@ -107,6 +148,12 @@
     </Compile>
     <Compile Include="Modules\ImportFile\CreateOrgUnitDialog.Designer.cs">
       <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\ImportFile\DuplicateFileChoiceDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\ImportFile\DuplicateFileChoiceDialog.Designer.cs">
+      <DependentUpon>DuplicateFileChoiceDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\ImportFile\EmployeeOrgSelectionDialog.cs">
       <SubType>Form</SubType>
@@ -372,6 +419,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\FileUploadForm.resx">
       <DependentUpon>FileUploadForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\ImportFile\DuplicateFileChoiceDialog.resx">
+      <DependentUpon>DuplicateFileChoiceDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\FolderForm.resx">
       <DependentUpon>FolderForm.cs</DependentUpon>

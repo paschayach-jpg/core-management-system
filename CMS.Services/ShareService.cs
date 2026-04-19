@@ -30,6 +30,8 @@ namespace CMS.Services
         private readonly INotificationService _notificationService;
         private readonly IAuditService _auditService;
         private readonly ILoggingService _loggingService;
+        private readonly IApprovalRepository _approvalRepository;
+        private readonly IUserAccountRepository _userAccountRepository;
 
         public ShareService(
             IExternalShareRepository externalShareRepository,
@@ -43,7 +45,9 @@ namespace CMS.Services
             IPermissionService permissionService,
             INotificationService notificationService,
             IAuditService auditService,
-            ILoggingService loggingService)
+            ILoggingService loggingService,
+            IApprovalRepository approvalRepository = null,
+            IUserAccountRepository userAccountRepository = null)
         {
             if (externalShareRepository == null) throw new ArgumentNullException("externalShareRepository");
             if (shareTokenRepository == null) throw new ArgumentNullException("shareTokenRepository");
@@ -70,6 +74,8 @@ namespace CMS.Services
             _notificationService = notificationService;
             _auditService = auditService;
             _loggingService = loggingService;
+            _approvalRepository = approvalRepository;
+            _userAccountRepository = userAccountRepository;
         }
 
         // =====================================================================
@@ -277,6 +283,47 @@ namespace CMS.Services
                     "External share created for '{0}'. Link: {1}. Status: Pending approval. Expiry: {2}. Download limit: {3}",
                     targetName, token, request.ExpiryDate?.ToString("yyyy-MM-dd") ?? "None", request.DownloadLimit ?? 0)
             });
+
+            // Create ApprovalRequest so managers can approve in Approval Inbox
+            if (_approvalRepository != null && _userAccountRepository != null)
+            {
+                var approvers = _userAccountRepository.GetByRole(3) // Manager
+                    .Where(a => a.IsActive && a.UserID != user.UserID)
+                    .ToList();
+                if (!approvers.Any())
+                    approvers = _userAccountRepository.GetByRole(4) // Admin fallback
+                        .Where(a => a.IsActive)
+                        .ToList();
+
+                if (approvers.Any())
+                {
+                    var approvalRequest = new Domain.Models.ApprovalRequest
+                    {
+                        RequestType   = "EXTERNAL_SHARE",
+                        FileID        = request.FileID,
+                        FolderID      = request.FolderID,
+                        RequestedBy   = user.UserID,
+                        RequestedDate = DateTime.Now,
+                        RequestStatus = 1, // Pending
+                        Subject       = string.Format("ขออนุมัติแชร์ภายนอก: {0}", targetName),
+                        Remark        = string.Format("ExternalShareID:{0}", shareId),
+                        ExpiryDate    = DateTime.Now.AddDays(PendingApprovalExpiryDays)
+                    };
+                    int approvalId = _approvalRepository.InsertRequest(approvalRequest);
+
+                    int stepOrder = 1;
+                    foreach (var approver in approvers)
+                    {
+                        _approvalRepository.InsertStep(new Domain.Models.ApprovalStep
+                        {
+                            RequestID  = approvalId,
+                            StepOrder  = stepOrder++,
+                            ApproverID = approver.UserID,
+                            StepStatus = 1 // Pending
+                        });
+                    }
+                }
+            }
 
             return externalShare;
         }

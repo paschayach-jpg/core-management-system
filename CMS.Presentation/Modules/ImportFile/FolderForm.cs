@@ -103,12 +103,16 @@ namespace CMS.Presentation
         private int      _orgFilterDefaultHeight = 0;
         private bool     _orgTreeLoaded = false;
 
+        // ป้องกัน PromptToCreateFirstFolder ยิงซ้ำระหว่างสร้าง Auto 4 Folders
+        private bool     _suppressCreatePrompt = false;
+        // ตรวจจับว่ามี HC folder pending approval อยู่ → reload เมื่อ form กลับมา focus
+        private bool     _pendingHCApproval = false;
+
         // Clipboard state for Cut / Copy / Paste
         private enum ClipboardMode { None, Cut, Copy }
         private ClipboardMode    _clipboardMode    = ClipboardMode.None;
         private List<int>        _clipboardFileIds = new List<int>();
-        private Color?           _cutOriginalColor = null;
-        private ListViewItem     _cutItem          = null;
+        private readonly Dictionary<ListViewItem, Color> _cutHighlightedItems = new Dictionary<ListViewItem, Color>();
 
         // -----------------------------------------------------------------------
         // Constructor
@@ -199,7 +203,7 @@ namespace CMS.Presentation
             // Configure ListView for better selection behavior
             contentsListView.FullRowSelect = true;
             contentsListView.HideSelection = false;
-            contentsListView.MultiSelect = false;
+            contentsListView.MultiSelect = true;
             
             // Wire mouse events for better interaction
             contentsListView.MouseDown += ContentsListView_MouseDown;
@@ -208,6 +212,25 @@ namespace CMS.Presentation
             // F2 = inline rename (เหมือน Windows Explorer)
             contentsListView.KeyDown += (s, e2) =>
             {
+                if (e2.Control && e2.KeyCode == Keys.X)
+                {
+                    CtxFileCut_Click(s, EventArgs.Empty);
+                    e2.Handled = true;
+                    return;
+                }
+                if (e2.Control && e2.KeyCode == Keys.C)
+                {
+                    CtxFileCopy_Click(s, EventArgs.Empty);
+                    e2.Handled = true;
+                    return;
+                }
+                if (e2.Control && e2.KeyCode == Keys.V)
+                {
+                    CtxFilePaste_Click(s, EventArgs.Empty);
+                    e2.Handled = true;
+                    return;
+                }
+
                 if (e2.KeyCode == Keys.F2)
                     btnRename_Click(s, EventArgs.Empty);
                 else if (e2.KeyCode == Keys.Enter)
@@ -448,7 +471,12 @@ namespace CMS.Presentation
             // enable/disable based on selection + FolderAuthorityConfig
             ctx.Opening += (s, e) =>
             {
-                bool hasFile   = (SelectedFile != null);
+                var selectedFiles = GetSelectedFilesFromContents();
+                bool hasFileSelection = selectedFiles.Count > 0;
+                bool hasFolderSelection = contentsListView.SelectedItems
+                    .Cast<ListViewItem>()
+                    .Any(item => item.Tag is Folder);
+                bool singleFileSelected = hasFileSelection && !hasFolderSelection && selectedFiles.Count == 1;
                 bool isAtRoot  = !_currentNavFolderId.HasValue;
                 bool hasFolder = !isAtRoot && (_currentNavFolderId.HasValue || SelectedFolder != null);
 
@@ -464,11 +492,13 @@ namespace CMS.Presentation
                 Folder contentFolder = null;
                 if (contentsListView.SelectedItems.Count > 0)
                     contentFolder = contentsListView.SelectedItems[0].Tag as Folder;
-                bool canDeleteContent = canEdit && (hasFile || (contentFolder != null && CanDeleteFolder(contentFolder)));
+                bool canDeleteContent = canEdit && (hasFileSelection || (contentFolder != null && CanDeleteFolder(contentFolder)));
 
                 // Check if any item (file or folder) is selected in content list
                 bool hasSelection = contentsListView.SelectedItems.Count > 0 && 
-                                   (hasFile || contentFolder != null);
+                                   (hasFileSelection || contentFolder != null);
+
+                bool canUseFileClipboard = hasFileSelection && !hasFolderSelection;
 
                 bool hasPendingPaste = _clipboardMode != ClipboardMode.None
                                      && _clipboardFileIds.Count > 0
@@ -476,17 +506,17 @@ namespace CMS.Presentation
 
                 mnuUpload.Enabled      = hasFolder && canAdd  && _fileUploadController != null;
                 mnuNewFolder.Enabled   = hasFolder && canAdd;
-                mnuOpen.Enabled        = hasFile   && canView;
-                mnuDownload.Enabled    = hasFile   && canView && _fileBrowseController != null;
-                mnuCut.Enabled         = hasFile   && canEdit && _fileCommandController != null;
-                mnuCopy.Enabled        = hasFile   && canView && _fileCommandController != null;
+                mnuOpen.Enabled        = singleFileSelected && canView;
+                mnuDownload.Enabled    = singleFileSelected && canView && _fileBrowseController != null;
+                mnuCut.Enabled         = canUseFileClipboard && canEdit && _fileCommandController != null;
+                mnuCopy.Enabled        = canUseFileClipboard && canView && _fileCommandController != null;
                 mnuPaste.Enabled       = hasPendingPaste && canAdd && _fileCommandController != null;
                 mnuRename.Enabled      = hasSelection && canEdit;
                 mnuDelete.Enabled      = canDeleteContent;
                 mnuClearFolder.Enabled = _fileBrowseController != null && _fileCommandController != null && _currentNavFolderId.HasValue && canEdit;
-                mnuArchive.Enabled     = hasFile   && canEdit;
+                mnuArchive.Enabled     = singleFileSelected && canEdit;
                 mnuPermission.Enabled  = isPrivileged;
-                mnuProperties.Enabled  = hasFile   && canView;
+                mnuProperties.Enabled  = singleFileSelected && canView;
             };
 
             contentsListView.ContextMenuStrip = ctx;
@@ -756,37 +786,26 @@ namespace CMS.Presentation
 
         private void CtxFileCut_Click(object sender, EventArgs e)
         {
-            var file = SelectedFile;
-            if (file == null) return;
+            var files = GetSelectedFilesFromContents();
+            if (files.Count == 0) return;
 
-            // Clear previous cut highlight
-            if (_cutItem != null && _cutOriginalColor.HasValue)
-                _cutItem.ForeColor = _cutOriginalColor.Value;
+            ClearCutHighlight();
 
             _clipboardMode    = ClipboardMode.Cut;
-            _clipboardFileIds = new List<int> { file.FileID };
+            _clipboardFileIds = files.Select(f => f.FileID).Distinct().ToList();
 
-            // Dim selected item to indicate pending cut
-            _cutItem          = contentsListView.SelectedItems.Count > 0 ? contentsListView.SelectedItems[0] : null;
-            if (_cutItem != null)
-            {
-                _cutOriginalColor = _cutItem.ForeColor;
-                _cutItem.ForeColor = System.Drawing.Color.Gray;
-            }
+            ApplyCutHighlightToSelectedFiles();
         }
 
         private void CtxFileCopy_Click(object sender, EventArgs e)
         {
-            var file = SelectedFile;
-            if (file == null) return;
+            var files = GetSelectedFilesFromContents();
+            if (files.Count == 0) return;
 
-            // Cancel any pending cut highlight
-            if (_clipboardMode == ClipboardMode.Cut && _cutItem != null && _cutOriginalColor.HasValue)
-                _cutItem.ForeColor = _cutOriginalColor.Value;
+            ClearCutHighlight();
 
             _clipboardMode    = ClipboardMode.Copy;
-            _clipboardFileIds = new List<int> { file.FileID };
-            _cutItem          = null;
+            _clipboardFileIds = files.Select(f => f.FileID).Distinct().ToList();
         }
 
         private void CtxFilePaste_Click(object sender, EventArgs e)
@@ -807,10 +826,6 @@ namespace CMS.Presentation
                         DestinationFolderId = destFolderId
                     };
                     _fileCommandController.MoveFiles(req, _user);
-
-                    // Restore cut item color (it will be removed from list on refresh)
-                    if (_cutItem != null && _cutOriginalColor.HasValue)
-                        _cutItem.ForeColor = _cutOriginalColor.Value;
                 }
                 else // Copy
                 {
@@ -818,11 +833,11 @@ namespace CMS.Presentation
                         _fileCommandController.CopyFile(fileId, destFolderId, _user);
                 }
 
+                ClearCutHighlight();
+
                 // Clear clipboard state
                 _clipboardMode    = ClipboardMode.None;
                 _clipboardFileIds.Clear();
-                _cutItem          = null;
-                _cutOriginalColor = null;
 
                 // Refresh current folder view
                 if (_currentNavFolderId.HasValue)
@@ -831,13 +846,49 @@ namespace CMS.Presentation
             catch (Exception ex)
             {
                 // Restore cut color on failure
-                if (_cutItem != null && _cutOriginalColor.HasValue)
-                    _cutItem.ForeColor = _cutOriginalColor.Value;
+                ClearCutHighlight();
 
                 ShowError(string.Format("{0}ไม่สำเร็จ: {1}",
                     _clipboardMode == ClipboardMode.Cut ? "ย้ายไฟล์" : "คัดลอกไฟล์",
                     ex.Message));
             }
+        }
+
+        private List<FileDocument> GetSelectedFilesFromContents()
+        {
+            if (contentsListView.SelectedItems.Count == 0)
+                return new List<FileDocument>();
+
+            return contentsListView.SelectedItems
+                .Cast<ListViewItem>()
+                .Select(item => item.Tag as FileDocument)
+                .Where(file => file != null)
+                .ToList();
+        }
+
+        private void ApplyCutHighlightToSelectedFiles()
+        {
+            foreach (var item in contentsListView.SelectedItems.Cast<ListViewItem>())
+            {
+                if (!(item.Tag is FileDocument))
+                    continue;
+
+                if (!_cutHighlightedItems.ContainsKey(item))
+                    _cutHighlightedItems[item] = item.ForeColor;
+
+                item.ForeColor = Color.Gray;
+            }
+        }
+
+        private void ClearCutHighlight()
+        {
+            foreach (var pair in _cutHighlightedItems.ToList())
+            {
+                if (pair.Key != null && pair.Key.ListView != null && !pair.Key.ListView.IsDisposed)
+                    pair.Key.ForeColor = pair.Value;
+            }
+
+            _cutHighlightedItems.Clear();
         }
 
         // Event สำหรับแจ้ง MDI_Container ให้เปิด PermissionForm (folder)
@@ -1723,6 +1774,17 @@ namespace CMS.Presentation
 
         private async void BuildConfidentialityTreeFromAllFoldersAsync()
         {
+            // บันทึก expanded state และ selected folder ก่อน rebuild
+            var expandedTexts    = new HashSet<string>();
+            var selectedFolderId = -1;
+            CollectConfExpandedTexts(_treeConfidentiality.Nodes, expandedTexts);
+            var selNode = _treeConfidentiality.SelectedNode;
+            if (selNode != null)
+            {
+                var selFolder = selNode.Tag as Folder;
+                if (selFolder != null) selectedFolderId = selFolder.FolderId;
+            }
+
             _treeConfidentiality.BeginUpdate();
             _treeConfidentiality.Nodes.Clear();
             lblOrgUnitStatus.Text = "⏳ กำลังโหลด ตามความลับ...";
@@ -1763,6 +1825,15 @@ namespace CMS.Presentation
                 });
 
                 BuildConfidentialityTreeFromAllFolders(result.AllRootFolders, result.AllOrgUnits, result.ChildrenByParent);
+
+                // Restore expanded state ที่เคย expand ไว้
+                if (expandedTexts.Count > 0)
+                    RestoreConfExpandedTexts(_treeConfidentiality.Nodes, expandedTexts);
+
+                // Restore selected folder (ถ้ามี)
+                if (selectedFolderId > 0)
+                    RestoreConfSelectedFolder(_treeConfidentiality.Nodes, selectedFolderId);
+
                 lblOrgUnitStatus.Text = "✓ โหลดเสร็จ";
             }
             catch (Exception ex)
@@ -1774,6 +1845,49 @@ namespace CMS.Presentation
             {
                 this.Cursor = Cursors.Default;
                 _treeConfidentiality.EndUpdate();
+            }
+        }
+
+        /// <summary>เก็บ text ของ node ที่ expand ไว้ใน conf tree</summary>
+        private void CollectConfExpandedTexts(TreeNodeCollection nodes, HashSet<string> result)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                if (node.IsExpanded)
+                {
+                    result.Add(node.Text);
+                    CollectConfExpandedTexts(node.Nodes, result);
+                }
+            }
+        }
+
+        /// <summary>Restore expanded state ใน conf tree โดยใช้ node text เป็น key</summary>
+        private void RestoreConfExpandedTexts(TreeNodeCollection nodes, HashSet<string> expandedTexts)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                if (expandedTexts.Contains(node.Text))
+                {
+                    node.Expand();
+                    RestoreConfExpandedTexts(node.Nodes, expandedTexts);
+                }
+            }
+        }
+
+        /// <summary>Restore selected folder ใน conf tree โดย FolderId</summary>
+        private void RestoreConfSelectedFolder(TreeNodeCollection nodes, int folderId)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                var f = node.Tag as Folder;
+                if (f != null && f.FolderId == folderId)
+                {
+                    _treeConfidentiality.SelectedNode = node;
+                    node.EnsureVisible();
+                    return;
+                }
+                if (node.Nodes.Count > 0)
+                    RestoreConfSelectedFolder(node.Nodes, folderId);
             }
         }
 
@@ -1964,7 +2078,7 @@ namespace CMS.Presentation
                     _treeConfidentiality.Nodes.Add(groupNode);
                 }
 
-                _treeConfidentiality.CollapseAll();
+                // ไม่ CollapseAll — ให้ BuildConfidentialityTreeFromAllFoldersAsync restore expanded state เองหลัง build
             }
             catch (Exception ex)
             {
@@ -2371,6 +2485,7 @@ namespace CMS.Presentation
             _selectedOrgUnitId   = (int?)unit.OrgUnitId;
             _selectedOrgUnitName = unit.Name;
             _selectedOrgUnit     = unit;
+            _pendingHCApproval   = false; // reset ทุกครั้งที่เลือก OrgUnit ใหม่
 
             // Show loading feedback immediately (visible because we yield to UI via await)
             lblOrgUnitStatus.Text = string.Format("⏳ กำลังโหลด: {0}...", _selectedOrgUnitName);
@@ -3148,15 +3263,34 @@ namespace CMS.Presentation
                 var hitTest = contentsListView.HitTest(e.Location);
                 if (hitTest.Item != null)
                 {
-                    // Clear existing selection and select the clicked item
-                    contentsListView.SelectedItems.Clear();
-                    hitTest.Item.Selected = true;
-                    hitTest.Item.Focused = true;
+                    bool hasModifier = (Control.ModifierKeys & (Keys.Control | Keys.Shift)) != 0;
+
+                    if (e.Button == MouseButtons.Right)
+                    {
+                        if (!hitTest.Item.Selected)
+                        {
+                            contentsListView.SelectedItems.Clear();
+                            hitTest.Item.Selected = true;
+                        }
+                        hitTest.Item.Focused = true;
+                        return;
+                    }
+
+                    if (!hasModifier)
+                    {
+                        if (!hitTest.Item.Selected || contentsListView.SelectedItems.Count > 1)
+                            contentsListView.SelectedItems.Clear();
+
+                        hitTest.Item.Selected = true;
+                        hitTest.Item.Focused = true;
+                    }
                 }
                 else
                 {
-                    // Clicked on empty area - clear selection
-                    contentsListView.SelectedItems.Clear();
+                    // Clicked on empty area - clear selection only on plain left-click.
+                    bool hasModifier = (Control.ModifierKeys & (Keys.Control | Keys.Shift)) != 0;
+                    if (e.Button == MouseButtons.Left && !hasModifier)
+                        contentsListView.SelectedItems.Clear();
                 }
             }
             catch (Exception ex)
@@ -3673,6 +3807,10 @@ namespace CMS.Presentation
             lblConfidentialityBadge.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
             lblContentInfo.Text   = string.Format("กำลังดู: {0}", folder.Name);
             lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", folder.Name);
+
+            // Auto-expand node ที่เลือก เพื่อให้ tree แสดง subfolder ที่อยู่ด้านใน
+            if (e.Node.Nodes.Count > 0 && !e.Node.IsExpanded)
+                e.Node.Expand();
         }
 
         private void folderTreeView_AfterSelect(object sender, TreeViewEventArgs e)
@@ -4514,15 +4652,41 @@ namespace CMS.Presentation
         /// </summary>
         private void PromptToCreateFirstFolder()
         {
+            // ป้องกัน re-entry ระหว่างกำลังสร้าง Auto 4 Folders อยู่
+            if (_suppressCreatePrompt) return;
             if (!_selectedOrgUnitId.HasValue) return;
 
             // ตรวจสอบว่ามี 4 folder หลัก (1HC/2SC/3NC/4PC) หรือยัง
             bool has4Folders = HasAuto4RootFolders();
             if (has4Folders) return; // มีแล้ว ไม่ต้องถาม
 
+            // ถ้ามี HC folder รอ approve อยู่ → ไม่ถามซ้ำ แสดงสถานะแทน
+            if (_pendingHCApproval)
+            {
+                lblOrgUnitStatus.Text = "⏳ กำลังรอ Admin อนุมัติ 1HC Folder — จะแสดงหลังจากอนุมัติแล้ว";
+                return;
+            }
+                // ตรวจสอบ DB โดยตรง (ป้องกัน stale tree จาก async OrgUnit AfterSelect)
+                // ถ้า DB มี folder ใดๆ สำหรับ OrgUnit นี้ → ไม่ต้องถาม
+                if (_folderReadLookupController != null)
+                {
+                    try
+                    {
+                        var dbFolders = _folderReadLookupController.GetAllFolders(_selectedOrgUnitId, _user);
+                        if (dbFolders != null && dbFolders.Any(f => !f.IsDeleted && !f.IsArchived))
+                            return; // มีอยู่แล้วใน DB
+                    }
+                    catch { /* ถ้าเช็ค DB ไม่ได้ ให้ผ่านไป */ }
+                }
+
             string orgName = _selectedOrgUnitName ?? "หน่วยงานนี้";
             var result = MessageBox.Show(
-                string.Format("หน่วยงาน \"{0}\" ยังไม่มีโฟลเดอร์หลัก\n\nต้องการสร้าง 4 Folder หลัก (1HC, 2SC, 3NC, 4PC) หรือไม่?", orgName),
+                string.Format(
+                    "หน่วยงาน \"{0}\" ยังไม่มีโฟลเดอร์หลัก\n\n" +
+                    "ต้องการสร้าง 4 Folder หลัก (1HC, 2SC, 3NC, 4PC) หรือไม่?\n\n" +
+                    "หมายเหตุ: Folder 1HC (High Confidential) จะต้องรอ Admin อนุมัติ\n" +
+                    "ส่วน 2SC, 3NC, 4PC จะสร้างทันที",
+                    orgName),
                 "สร้างโฟลเดอร์หลัก",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
@@ -4580,7 +4744,7 @@ namespace CMS.Presentation
             // เก็บ folder ID ที่กำลังดูอยู่ก่อน upload
             int uploadFolderId = folder.FolderId;
 
-            var uploadForm = new FileUploadForm(_fileUploadController, _user, folder, _uploadCheckpointController);
+            var uploadForm = new FileUploadForm(_fileUploadController, _user, folder, _uploadCheckpointController, _auditLogController);
             var result = uploadForm.ShowDialog(this.MdiParent ?? this);
             
             if (result == DialogResult.OK)
@@ -4670,6 +4834,26 @@ namespace CMS.Presentation
         public void TriggerCopyStructure()
         {
             BtnCopyStructure_Click(this, EventArgs.Empty);
+        }
+
+        /// <summary>Public entry point for MDI_Container — สร้าง Folder จาก Template</summary>
+        public void TriggerApplyTemplate()
+        {
+            btnApplyTemplate_Click(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Reload folder tree — เรียกจาก MDI_Container หลัง ApprovalInboxForm ปิด
+        /// เพื่อแสดง 1HC folder ที่เพิ่งได้รับการอนุมัติ
+        /// </summary>
+        public void ReloadFolderTree()
+        {
+            _pendingHCApproval = false; // ล้าง flag
+            _currentNavFolderId = null;
+            _lastSelectedFolder = null;
+            _presenter.LoadFolderTree(_selectedOrgUnitId);
+            if (_selectedOrgUnitId.HasValue)
+                lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", _selectedOrgUnitName ?? "—");
         }
 
         private IEnumerable<CMS.Domain.Models.OrgUnit> GetOrgUnits()
@@ -5958,13 +6142,24 @@ namespace CMS.Presentation
         /// <summary>ตรวจสอบว่า OrgUnit ที่เลือกมี Auto4 root folders (1HC/2SC/3NC/4PC) อยู่แล้วหรือยัง</summary>
         private bool HasAuto4RootFolders()
         {
+            var levels = new HashSet<int>();
+
             foreach (System.Windows.Forms.TreeNode node in folderTreeView.Nodes)
             {
                 var folder = node.Tag as Folder;
-                if (folder != null && IsAuto4Folder(folder))
-                    return true;
+                if (folder == null) continue;
+
+                bool isRoot = !folder.ParentFolderID.HasValue || folder.ParentFolderID == 0;
+                if (!isRoot) continue;
+
+                if (IsAuto4Folder(folder))
+                    levels.Add(folder.ConfidentialityLevel);
             }
-            return false;
+
+            return levels.Contains(1)
+                && levels.Contains(2)
+                && levels.Contains(3)
+                && levels.Contains(4);
         }
 
         /// <summary>ตรวจสอบว่า folder นี้อยู่ภายใต้ Auto4 root folder (1HC/2SC/3NC/4PC) หรือไม่</summary>
@@ -6072,21 +6267,23 @@ namespace CMS.Presentation
         /// <summary>สร้าง Auto 4 Folders แบบเงียบ (ไม่แสดงข้อความใดๆ เลย)</summary>
         private void CreateAuto4FoldersQuiet(string baseName, int? parentFolderId, int orgUnitId)
         {
+            // ตั้ง flag ป้องกัน PromptToCreateFirstFolder ยิงซ้ำระหว่างสร้าง
+            _suppressCreatePrompt = true;
+            int createdCount = 0;
+            bool hcSentForApproval = false;
+            var skippedFolders  = new List<string>();
+            var errorFolders    = new List<string>();
+
             try
             {
-                // Debug: Show what we're trying to create
-                string debugMsg = $"Creating Auto 4 Folders with baseName='{baseName}', parentFolderId={parentFolderId}, orgUnitId={orgUnitId}";
-                System.Diagnostics.Debug.WriteLine(debugMsg);
-                
                 var folderConfigs = new[]
                 {
-                    new { Level = 1, Code = "1HC", Name = "High Confidential", Color = "#CC0000" },
-                    new { Level = 2, Code = "2SC", Name = "Semi Confidential", Color = "#FF6600" },
-                    new { Level = 3, Code = "3NC", Name = "Normal Confidential", Color = "#0066CC" },
+                    new { Level = 1, Code = "1HC", Name = "High Confidential",  Color = "#CC0000" },
+                    new { Level = 2, Code = "2SC", Name = "Semi Confidential",  Color = "#FF6600" },
+                    new { Level = 3, Code = "3NC", Name = "Normal Confidential",Color = "#0066CC" },
                     new { Level = 4, Code = "4PC", Name = "Public Confidential", Color = "#009933" }
                 };
 
-                int createdCount = 0;
                 foreach (var config in folderConfigs)
                 {
                     try
@@ -6094,47 +6291,62 @@ namespace CMS.Presentation
                         string folderName = string.IsNullOrWhiteSpace(baseName)
                             ? string.Format("{0} - ({1})", config.Code, config.Name)
                             : string.Format("{0} - {1} [{0}]", config.Code, baseName);
-                        
-                        // ตรวจสอบว่ามี folder นี้อยู่แล้วหรือไม่
+
                         if (IsFolderExists(folderName, parentFolderId, orgUnitId))
                         {
-                            System.Diagnostics.Debug.WriteLine($"Folder '{folderName}' already exists, skipping");
-                            continue; // ข้าม folder ที่มีอยู่แล้ว (เงียบ)
+                            skippedFolders.Add(config.Code);
+                            continue;
                         }
 
                         if (parentFolderId.HasValue)
-                        {
-                            // สร้าง sub-folder
                             _presenter.CreateFolder(parentFolderId.Value, folderName, orgUnitId, config.Level, false);
-                            System.Diagnostics.Debug.WriteLine($"Created sub-folder: '{folderName}'");
-                        }
                         else
-                        {
-                            // สร้าง root folder
                             _presenter.CreateRootFolder(folderName, orgUnitId, config.Level, false);
-                            System.Diagnostics.Debug.WriteLine($"Created root folder: '{folderName}'");
-                        }
-                        createdCount++;
+
+                        if (config.Level == 1) // HC → ส่งอนุมัติ ไม่ได้สร้างทันที
+                            hcSentForApproval = true;
+                        else
+                            createdCount++;
                     }
                     catch (Exception ex)
                     {
-                        // Debug: Show any errors
-                        System.Diagnostics.Debug.WriteLine($"Error creating folder {config.Code}: {ex.Message}");
-                        continue;
+                        errorFolders.Add(string.Format("{0}: {1}", config.Code, ex.Message));
                     }
                 }
-
-                System.Diagnostics.Debug.WriteLine($"Auto 4 Folders creation completed. Created {createdCount} folders.");
-
-                // Refresh folder tree เงียบๆ
-                _presenter.LoadFolderTree(_selectedOrgUnitId);
             }
-            catch (Exception ex)
+            finally
             {
-                // Debug: Show main error
-                System.Diagnostics.Debug.WriteLine($"CreateAuto4FoldersQuiet main error: {ex.Message}");
-                // ไม่แสดง error - ทำงานเงียบสนิท
+                // คืน flag ก่อน reload เสมอ (ป้องกัน finally leak)
+                _suppressCreatePrompt = false;
             }
+
+            // บันทึกสถานะ HC approval เพื่อใช้ใน PromptToCreateFirstFolder
+            if (hcSentForApproval)
+                _pendingHCApproval = true;
+
+            // Reload tree ครั้งเดียวหลังสร้างครบ
+            _presenter.LoadFolderTree(_selectedOrgUnitId);
+
+            // ── แสดงผลสรุปที่ชัดเจน ─────────────────────────────────────────
+            var sb = new System.Text.StringBuilder();
+
+            if (createdCount > 0)
+                sb.AppendLine(string.Format("✅ สร้าง Folder สำเร็จ {0} folder(s): 2SC, 3NC, 4PC", createdCount));
+
+            if (hcSentForApproval)
+            {
+                sb.AppendLine("⏳ 1HC (High Confidential) — ส่งคำขออนุมัติให้ Admin แล้ว");
+                sb.AppendLine("   Folder 1HC จะแสดงขึ้นหลังจาก Admin อนุมัติ\n   กรุณากด Refresh หรือเลือก OrgUnit ใหม่หลังอนุมัติ");
+            }
+
+            if (skippedFolders.Count > 0)
+                sb.AppendLine(string.Format("ℹ️ มีอยู่แล้ว (ข้าม): {0}", string.Join(", ", skippedFolders)));
+
+            if (errorFolders.Count > 0)
+                sb.AppendLine(string.Format("⚠️ เกิดข้อผิดพลาด:\n   {0}", string.Join("\n   ", errorFolders)));
+
+            if (sb.Length > 0)
+                ShowInfo(sb.ToString().TrimEnd());
         }
 
         // -----------------------------------------------------------------------

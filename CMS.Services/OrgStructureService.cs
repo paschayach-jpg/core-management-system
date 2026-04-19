@@ -56,6 +56,7 @@ namespace CMS.Services
             }
 
             ValidateParentTier(request.OrgUnitType, request.ParentOrgUnitID);
+            ValidateNameUnique(request.OrgUnitNameTH.Trim(), request.ParentOrgUnitID, excludeId: null);
 
             var orgUnit = new OrgUnit
             {
@@ -128,6 +129,8 @@ namespace CMS.Services
             existing.OrgUnitNameTH = request.OrgUnitNameTH.Trim();
             existing.OrgUnitNameEN = request.OrgUnitNameEN;
 
+            ValidateNameUnique(existing.OrgUnitNameTH, existing.ParentOrgUnitID, excludeId: existing.OrgUnitID);
+
             _orgUnitRepository.Update(existing);
 
             Log(user, "OrgStructure", "UPDATE", "core.OrgUnit", existing.OrgUnitID, 1,
@@ -155,6 +158,7 @@ namespace CMS.Services
 
             // Validate the new parent
             ValidateParentTier(existing.OrgUnitType, request.ParentOrgUnitID);
+            ValidateNameUnique(existing.OrgUnitNameTH, request.ParentOrgUnitID, excludeId: existing.OrgUnitID);
 
             var oldParentId = existing.ParentOrgUnitID;
             existing.ParentOrgUnitID = request.ParentOrgUnitID;
@@ -244,6 +248,24 @@ namespace CMS.Services
         // -----------------------------------------------------------------------
         // Private helpers
         // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// ตรวจสอบว่าชื่อ OrgUnitNameTH ไม่ซ้ำภายใต้ Parent เดียวกัน
+        /// excludeId ใช้กรณี Update/Move เพื่อยกเว้นตัวเองออกจากการตรวจ
+        /// </summary>
+        private void ValidateNameUnique(string nameTH, int? parentId, int? excludeId)
+        {
+            if (_orgUnitRepository.ExistsByNameUnderParent(nameTH, parentId, excludeId))
+            {
+                var parentDesc = parentId.HasValue
+                    ? string.Format("ภายใต้หน่วยงาน ID {0}", parentId.Value)
+                    : "ระดับ Sub-Committee";
+
+                throw new InvalidOperationException(string.Format(
+                    "ชื่อหน่วยงาน '{0}' มีอยู่แล้ว{1} กรุณาใช้ชื่ออื่น",
+                    nameTH, parentDesc));
+            }
+        }
 
         private void ValidateParentTier(int orgUnitType, int? parentId)
         {

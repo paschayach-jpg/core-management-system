@@ -540,6 +540,87 @@ namespace CMS.Tests
         }
 
         // -----------------------------------------------------------------------
+        // MoveFiles / CopyFile Tests
+        // -----------------------------------------------------------------------
+
+        [Test]
+        public void MoveFiles_RefreshesSourceAndDestinationFileCounts()
+        {
+            // Arrange
+            const int destinationFolderId = 200;
+            var destinationFolder = new Folder { FolderID = destinationFolderId, FolderName = "Dest", OrgUnitID = OrgUnitId };
+            var file = new FileDocument
+            {
+                FileID = 1,
+                FolderID = FolderId,
+                OriginalFileName = "test.pdf",
+                StoredFileName = "stored.pdf",
+                FileStatus = 1,
+                PhysicalPath = null
+            };
+
+            _folderRepo.GetById(destinationFolderId).Returns(destinationFolder);
+            _fileDocRepo.GetById(1).Returns(file);
+            _permService.CheckPermission(UserId, destinationFolderId, "Write").Returns(true);
+            _networkDriveHelper.BuildPath(OrgUnitId, destinationFolderId, "stored.pdf")
+                .Returns(@"C:\network\drive\10\200\stored.pdf");
+
+            var user = MakeUserContext();
+
+            // Act
+            _svc.MoveFiles(new MoveFileRequest
+            {
+                FileIds = new[] { 1 },
+                DestinationFolderId = destinationFolderId
+            }, user);
+
+            // Assert
+            _folderRepo.Received(1).UpdateFileCount(FolderId);
+            _folderRepo.Received(1).UpdateFileCount(destinationFolderId);
+            _fileDocRepo.Received(1).Update(Arg.Is<FileDocument>(d =>
+                d.FileID == 1 &&
+                d.FolderID == destinationFolderId &&
+                d.PhysicalPath == @"C:\network\drive\10\200\stored.pdf"));
+        }
+
+        [Test]
+        public void CopyFile_RefreshesDestinationFileCount()
+        {
+            // Arrange
+            const int destinationFolderId = 200;
+            var source = new FileDocument
+            {
+                FileID = 1,
+                FolderID = FolderId,
+                OriginalFileName = "test.pdf",
+                StoredFileName = "stored.pdf",
+                FileExtension = ".pdf",
+                MimeType = "application/pdf",
+                FileSizeBytes = 1234,
+                FileStatus = 1,
+                UploadedBy = UserId
+            };
+            var destinationFolder = new Folder { FolderID = destinationFolderId, FolderName = "Dest", OrgUnitID = OrgUnitId };
+
+            _fileDocRepo.GetById(1).Returns(source);
+            _folderRepo.GetById(destinationFolderId).Returns(destinationFolder);
+            _permService.CheckPermission(UserId, destinationFolderId, "Write").Returns(true);
+            _networkDriveHelper.BuildPath(OrgUnitId, destinationFolderId, "stored_copy.pdf")
+                .Returns(@"C:\network\drive\10\200\stored_copy.pdf");
+            _networkDriveHelper.FileExists(@"C:\network\drive\10\200\stored_copy.pdf").Returns(false);
+            _fileDocRepo.Insert(Arg.Any<FileDocument>()).Returns(99);
+
+            var user = MakeUserContext();
+
+            // Act
+            int newId = _svc.CopyFile(1, destinationFolderId, user);
+
+            // Assert
+            Assert.AreEqual(99, newId);
+            _folderRepo.Received(1).UpdateFileCount(destinationFolderId);
+        }
+
+        // -----------------------------------------------------------------------
         // DeleteFile Tests (Requirement 5.16)
         // -----------------------------------------------------------------------
 

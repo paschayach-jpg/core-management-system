@@ -110,7 +110,16 @@ namespace CMS.Presentation
                         return ShowTargetForm(context, new AccessLogView(context.ShareManagementController, context.User, 0));
 
                     case "AuditLog":
-                        return ShowTargetForm(context, new AuditLogForm(context.AuditService, context.User));
+                        if (!TryRequestMdiAction(context, "AuditLog"))
+                        {
+                            if (context.AuditService == null)
+                            {
+                                MessageBox.Show("Audit service is not available in this context.", "Audit Log", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return true;
+                            }
+                            return ShowTargetForm(context, new AuditLogForm(context.AuditService, context.User));
+                        }
+                        return true;
 
                     case "ConfigAdmin":
                         if (!TryRequestMdiAction(context, "ConfigAdmin"))

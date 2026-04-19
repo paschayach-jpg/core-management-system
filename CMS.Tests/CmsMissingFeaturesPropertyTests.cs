@@ -57,6 +57,36 @@ namespace CMS.Tests
         private static UserContext MakeUser(int role) =>
             new UserContext { UserID = 1, AppRole = role, OrgUnitID = 1 };
 
+        private static Folder MakeMainRoot(int folderId, int level, int orgUnitId = 1)
+        {
+            return new Folder
+            {
+                FolderID = folderId,
+                FolderName = string.Format("{0} - Main", level == 1 ? "1HC" : level == 2 ? "2SC" : level == 3 ? "3NC" : "4PC"),
+                ParentFolderID = null,
+                OrgUnitID = orgUnitId,
+                ConfidentialityLevel = level,
+                FolderDepth = 1,
+                IsDeleted = false,
+                IsArchived = false
+            };
+        }
+
+        private static Folder MakeChildFolder(int folderId, int parentFolderId, int level, int orgUnitId = 1)
+        {
+            return new Folder
+            {
+                FolderID = folderId,
+                FolderName = "Child",
+                ParentFolderID = parentFolderId,
+                OrgUnitID = orgUnitId,
+                ConfidentialityLevel = level,
+                FolderDepth = 2,
+                IsDeleted = false,
+                IsArchived = false
+            };
+        }
+
         // -----------------------------------------------------------------------
         // P1: Invalid characters are always rejected
         // Feature: cms-missing-features, Property 1: Invalid characters are always rejected
@@ -129,13 +159,18 @@ namespace CMS.Tests
             return Prop.ForAll(gen.ToArbitrary(), name =>
             {
                 var folderRepo = Substitute.For<IFolderRepository>();
+                var rootFolder = MakeMainRoot(10, 4);
+                var parentFolder = MakeChildFolder(20, rootFolder.FolderID, 4);
+
                 folderRepo.GetSiblings(Arg.Any<int?>(), Arg.Any<int>())
                           .Returns(Enumerable.Empty<Folder>());
+                folderRepo.GetById(parentFolder.FolderID).Returns(parentFolder);
+                folderRepo.GetById(rootFolder.FolderID).Returns(rootFolder);
                 folderRepo.Insert(Arg.Any<Folder>()).Returns(1);
 
                 var svc  = BuildFolderService(folderRepo);
                 var user = MakeUser(4);
-                var req  = new CreateFolderRequest { Name = name, OrgUnitId = 1 };
+                var req  = new CreateFolderRequest { Name = name, OrgUnitId = 1, ParentFolderId = parentFolder.FolderID };
 
                 try
                 {
@@ -190,12 +225,16 @@ namespace CMS.Tests
                 };
 
                 var folderRepo = Substitute.For<IFolderRepository>();
+                var rootFolder = MakeMainRoot(10, 4);
+                var parentFolder = MakeChildFolder(20, rootFolder.FolderID, 4);
                 folderRepo.GetSiblings(Arg.Any<int?>(), Arg.Any<int>())
                           .Returns(new[] { existingSibling });
+                folderRepo.GetById(parentFolder.FolderID).Returns(parentFolder);
+                folderRepo.GetById(rootFolder.FolderID).Returns(rootFolder);
 
                 var svc  = BuildFolderService(folderRepo);
                 var user = MakeUser(4);
-                var req  = new CreateFolderRequest { Name = pair.variant, OrgUnitId = 1 };
+                var req  = new CreateFolderRequest { Name = pair.variant, OrgUnitId = 1, ParentFolderId = parentFolder.FolderID };
 
                 try
                 {
@@ -239,13 +278,17 @@ namespace CMS.Tests
                 // GetSiblings returns only non-deleted siblings (IsDeleted=false filter is in the repo)
                 // So deleted siblings are NOT returned — simulating the correct repo behavior
                 var folderRepo = Substitute.For<IFolderRepository>();
+                var rootFolder = MakeMainRoot(10, 4);
+                var parentFolder = MakeChildFolder(20, rootFolder.FolderID, 4);
                 folderRepo.GetSiblings(Arg.Any<int?>(), Arg.Any<int>())
                           .Returns(Enumerable.Empty<Folder>()); // deleted sibling not returned
+                folderRepo.GetById(parentFolder.FolderID).Returns(parentFolder);
+                folderRepo.GetById(rootFolder.FolderID).Returns(rootFolder);
                 folderRepo.Insert(Arg.Any<Folder>()).Returns(1);
 
                 var svc  = BuildFolderService(folderRepo);
                 var user = MakeUser(4);
-                var req  = new CreateFolderRequest { Name = name, OrgUnitId = 1 };
+                var req  = new CreateFolderRequest { Name = name, OrgUnitId = 1, ParentFolderId = parentFolder.FolderID };
 
                 try
                 {
@@ -261,6 +304,56 @@ namespace CMS.Tests
                     return true; // other exceptions are fine
                 }
             });
+        }
+
+        [Test]
+        public void CreateFolder_RootOutsideMainRoots_Throws()
+        {
+            var folderRepo = Substitute.For<IFolderRepository>();
+            folderRepo.GetRootFoldersByOrgUnit(1).Returns(Enumerable.Empty<Folder>());
+            folderRepo.GetSiblings(Arg.Any<int?>(), Arg.Any<int>()).Returns(Enumerable.Empty<Folder>());
+
+            var svc = BuildFolderService(folderRepo);
+            var req = new CreateFolderRequest
+            {
+                OrgUnitId = 1,
+                Name = "Projects",
+                ConfidentialityLevel = 4
+            };
+
+            var ex = Assert.Throws<InvalidOperationException>(() => svc.CreateFolder(req, MakeUser(4)));
+            StringAssert.Contains("4PC", ex.Message);
+        }
+
+        [Test]
+        public void CreateFolder_UnderNonMainRoot_Throws()
+        {
+            var rogueRoot = new Folder
+            {
+                FolderID = 100,
+                FolderName = "Projects",
+                ParentFolderID = null,
+                OrgUnitID = 1,
+                ConfidentialityLevel = 4,
+                FolderDepth = 1,
+                IsDeleted = false,
+                IsArchived = false
+            };
+
+            var folderRepo = Substitute.For<IFolderRepository>();
+            folderRepo.GetById(rogueRoot.FolderID).Returns(rogueRoot);
+            folderRepo.GetSiblings(Arg.Any<int?>(), Arg.Any<int>()).Returns(Enumerable.Empty<Folder>());
+
+            var svc = BuildFolderService(folderRepo);
+            var req = new CreateFolderRequest
+            {
+                ParentFolderId = rogueRoot.FolderID,
+                OrgUnitId = 1,
+                Name = "Sub Folder"
+            };
+
+            var ex = Assert.Throws<InvalidOperationException>(() => svc.CreateFolder(req, MakeUser(4)));
+            StringAssert.Contains("4 Folder หลัก", ex.Message);
         }
 
         // -----------------------------------------------------------------------

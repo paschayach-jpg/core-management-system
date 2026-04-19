@@ -27,7 +27,7 @@ namespace CMS.Presentation
             this.pnlBtns = new System.Windows.Forms.Panel();
             this._btnChangeRole = new System.Windows.Forms.Button();
             this._btnDeactivate = new System.Windows.Forms.Button();
-            this._btnAssignOrg  = new System.Windows.Forms.Button();
+            this._btnAssignOrg = new System.Windows.Forms.Button();
             this._btnRefresh = new System.Windows.Forms.Button();
             this._lblStatus = new System.Windows.Forms.Label();
             this.pnlSearch = new System.Windows.Forms.Panel();
@@ -196,15 +196,16 @@ namespace CMS.Presentation
             this._btnDeactivate.Size = new System.Drawing.Size(110, 28);
             this._btnDeactivate.TabIndex = 1;
             this._btnDeactivate.Text = "ปิดใช้งาน";
-            //
+            // 
             // _btnAssignOrg
-            //
-            this._btnAssignOrg.Enabled  = false;
+            // 
+            this._btnAssignOrg.Enabled = false;
             this._btnAssignOrg.Location = new System.Drawing.Point(256, 8);
-            this._btnAssignOrg.Name     = "_btnAssignOrg";
-            this._btnAssignOrg.Size     = new System.Drawing.Size(140, 28);
+            this._btnAssignOrg.Name = "_btnAssignOrg";
+            this._btnAssignOrg.Size = new System.Drawing.Size(140, 28);
             this._btnAssignOrg.TabIndex = 2;
-            this._btnAssignOrg.Text     = "🏢 กำหนดหน่วยงาน";
+            this._btnAssignOrg.Text = "🏢 กำหนดหน่วยงาน";
+            this._btnAssignOrg.Click += new System.EventHandler(this._btnAssignOrg_Click);
             // 
             // _btnRefresh
             // 

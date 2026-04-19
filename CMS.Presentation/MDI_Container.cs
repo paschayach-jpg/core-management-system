@@ -29,6 +29,7 @@ namespace CMS.Presentation
         private readonly UserContext          _currentUser;
         private readonly INotificationService _notificationService;
         private readonly IApprovalService     _approvalService;
+        private readonly IFolderAuthorityService _folderAuthorityService;
         private readonly IOrgStructureService _orgStructureService;
         private readonly IFolderService       _folderService;
         private readonly IConfigManager       _configManager;
@@ -136,6 +137,7 @@ namespace CMS.Presentation
             UserContext               currentUser,
             INotificationService      notificationService,
             IApprovalService          approvalService,
+            IFolderAuthorityService   folderAuthorityService     = null,
             IOrgStructureService      orgStructureService       = null,
             IFolderService            folderService             = null,
             IConfigManager            configManager             = null,
@@ -189,6 +191,7 @@ namespace CMS.Presentation
             _currentUser              = currentUser;
             _notificationService      = notificationService;
             _approvalService          = approvalService;
+            _folderAuthorityService   = folderAuthorityService;
             _orgStructureService      = orgStructureService;
             _folderService            = folderService;
             _configManager            = configManager;
@@ -880,6 +883,21 @@ namespace CMS.Presentation
             //ตั้งค่า Category ของระบบ KMS
             toolStripButton1.Click       += (s, e) => OpenConfigCategoryKMS();
 
+            // ── ปุ่ม "📋 Template" — สร้าง Folder จาก Template สำหรับทุก user ที่มีสิทธิ์ ──
+            var sepTemplate = new ToolStripSeparator();
+            var btnTemplate = new ToolStripButton
+            {
+                Name         = "btnApplyTemplateHome",
+                Text         = "📋 Template",
+                ToolTipText  = "สร้าง Folder จาก Template",
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                Font         = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor    = Color.FromArgb(25, 55, 105),
+            };
+            btnTemplate.Click += (s, e) => TriggerOnActiveFolderForm(ff => ff.TriggerApplyTemplate());
+            ribbonStrip.Items.Add(sepTemplate);
+            ribbonStrip.Items.Add(btnTemplate);
+
             // ── ปุ่ม "สิทธิ์ของฉัน" — แสดงใน ribbonStrip (Home tab) สำหรับทุก user ──
             var sepMyPerm = new ToolStripSeparator();
             var btnMyPerm = new ToolStripButton
@@ -893,6 +911,7 @@ namespace CMS.Presentation
             };
             btnMyPerm.Click += (s, e) =>
             {
+                RefreshCurrentUserAuthority();
                 using (var frm = new UserPermissionSummaryForm(_currentUser, _shareLookupController))
                     frm.ShowDialog(this);
             };
@@ -928,6 +947,28 @@ namespace CMS.Presentation
 
             // โหลด badge count ตอนเริ่มต้น
             RefreshSharedWithMeBadge();
+        }
+
+        private void RefreshCurrentUserAuthority()
+        {
+            if (_currentUser == null || _folderAuthorityService == null || _userAccountLookupController == null)
+                return;
+
+            try
+            {
+                var latest = _userAccountLookupController.GetUserById(_currentUser.UserID);
+                if (latest == null) return;
+
+                _currentUser.LevelCode = latest.LevelCode;
+                _currentUser.PositionName = latest.PositionName;
+                _currentUser.DepartmentCode = latest.DepartmentCode;
+                _currentUser.DepartmentName = latest.DepartmentName;
+                _currentUser.Authority = _folderAuthorityService.ResolveForUser(latest);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn("RefreshCurrentUserAuthority failed. Using cached authority. " + ex.Message);
+            }
         }
 
         private void OpenSharedWithMe()
@@ -1172,11 +1213,22 @@ namespace CMS.Presentation
 
         public void OpenApprovalInbox()
         {
-            if (_approvalInboxController != null)
-                OpenChildForm(new ApprovalInboxForm(_approvalInboxController, _currentUser));
-            else
+            if (_approvalInboxController == null)
+            {
                 MessageBox.Show("Approval inbox controller is not available.", "Approval Inbox",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = new ApprovalInboxForm(_approvalInboxController, _currentUser))
+            {
+                dlg.ShowDialog(this);
+
+                // หลัง ApprovalInboxForm ปิด → reload FolderForm เพื่อแสดง 1HC ที่เพิ่งอนุมัติ
+                var ff = MdiChildren.OfType<FolderForm>().FirstOrDefault();
+                if (ff != null)
+                    ff.ReloadFolderTree();
+            }
         }
 
         private void OpenConfigCategoryKMS()
@@ -1482,6 +1534,25 @@ namespace CMS.Presentation
                     return true;
                 case "KBCategoryConfig":
                     OpenKBCategorySettings();
+                    return true;
+                case "AuditLog":
+                    OpenAuditLog();
+                    return true;
+                case "OrgStructure":
+                    OpenOrgStructure();
+                    return true;
+                case "UserManagement":
+                    OpenUserManagement();
+                    return true;
+                case "UserAccess":
+                    OpenUserAccess();
+                    return true;
+                case "MenuManagement":
+                    OpenMenuManagement();
+                    return true;
+                case "PermissionAdmin":
+                case "FolderSettings":
+                    OpenFolderSettings();
                     return true;
                 default:
                     return false;

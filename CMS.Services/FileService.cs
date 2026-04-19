@@ -470,6 +470,8 @@ namespace CMS.Services
                     throw;
                 }
 
+                RefreshFolderFileCounts(oldFolderId, request.DestinationFolderId);
+
                 _auditService.Log(new AuditEntry
                 {
                     Module      = "File",
@@ -488,6 +490,12 @@ namespace CMS.Services
                     AuditDate   = DateTime.Now
                 });
             }
+        }
+
+        private void RefreshFolderFileCounts(params int[] folderIds)
+        {
+            foreach (int folderId in folderIds.Where(id => id > 0).Distinct())
+                _folderRepository.UpdateFileCount(folderId);
         }
 
 
@@ -562,6 +570,7 @@ namespace CMS.Services
             };
 
             int newId = _fileDocumentRepository.Insert(newDoc);
+            RefreshFolderFileCounts(destinationFolderId);
 
             _auditService.Log(new AuditEntry
             {
