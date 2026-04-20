@@ -670,6 +670,51 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private Panel CloneTagChipTemplate(string tagText)
+        {
+            // Create new instances based on template properties
+            var chip = new Panel
+            {
+                AutoSize = pnlTagChipTemplate.AutoSize,
+                Height = pnlTagChipTemplate.Height,
+                Margin = pnlTagChipTemplate.Margin,
+                Padding = pnlTagChipTemplate.Padding,
+                BackColor = pnlTagChipTemplate.BackColor,
+                BorderStyle = pnlTagChipTemplate.BorderStyle
+            };
+            
+            var lblTag = new Label
+            {
+                Text = tagText,
+                AutoSize = lblTagChipTemplate.AutoSize,
+                Font = lblTagChipTemplate.Font,
+                ForeColor = lblTagChipTemplate.ForeColor,
+                Padding = lblTagChipTemplate.Padding,
+                Location = lblTagChipTemplate.Location
+            };
+            
+            var btnRemove = new Button
+            {
+                Text = btnTagChipRemoveTemplate.Text,
+                Size = btnTagChipRemoveTemplate.Size,
+                FlatStyle = btnTagChipRemoveTemplate.FlatStyle,
+                Font = btnTagChipRemoveTemplate.Font,
+                ForeColor = btnTagChipRemoveTemplate.ForeColor,
+                Cursor = btnTagChipRemoveTemplate.Cursor,
+                Margin = btnTagChipRemoveTemplate.Margin,
+                Padding = btnTagChipRemoveTemplate.Padding
+            };
+            btnRemove.FlatAppearance.BorderSize = 0;
+            btnRemove.Click += (s, ev) => flpTags.Controls.Remove(chip);
+            btnRemove.Location = new Point(lblTag.Right + 2, 2);
+            
+            chip.Controls.Add(lblTag);
+            chip.Controls.Add(btnRemove);
+            chip.Width = lblTag.Width + btnRemove.Width + 12;
+            
+            return chip;
+        }
+
         private void AddTagChip(string tag)
         {
             if (string.IsNullOrWhiteSpace(tag)) return;
@@ -678,45 +723,8 @@ namespace CMS.Presentation.Modules.KMS
             tag = tag.TrimEnd(',');
             if (string.IsNullOrWhiteSpace(tag)) return;
             
-            // Create chip panel
-            var chip = new Panel
-            {
-                AutoSize = true,
-                Height = 22,
-                Margin = new Padding(2),
-                Padding = new Padding(6, 2, 2, 2),
-                BackColor = Color.FromArgb(214, 234, 248),
-                BorderStyle = BorderStyle.FixedSingle
-            };
-            
-            var lblTag = new Label
-            {
-                Text = tag,
-                AutoSize = true,
-                Font = new Font("Segoe UI", 8.5f),
-                ForeColor = Color.FromArgb(26, 82, 118),
-                Padding = new Padding(0, 2, 4, 0)
-            };
-            
-            var btnRemove = new Button
-            {
-                Text = "×",
-                Size = new Size(16, 16),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(26, 82, 118),
-                Cursor = Cursors.Hand,
-                Margin = new Padding(0),
-                Padding = new Padding(0)
-            };
-            btnRemove.FlatAppearance.BorderSize = 0;
-            btnRemove.Click += (s, ev) => flpTags.Controls.Remove(chip);
-            
-            chip.Controls.Add(lblTag);
-            chip.Controls.Add(btnRemove);
-            lblTag.Location = new Point(6, 2);
-            btnRemove.Location = new Point(lblTag.Right + 2, 2);
-            chip.Width = lblTag.Width + btnRemove.Width + 12;
+            // Clone the template panel
+            var chip = CloneTagChipTemplate(tag);
             
             // Insert before the input textbox
             int inputIndex = flpTags.Controls.IndexOf(txtTagInput);
@@ -915,80 +923,7 @@ namespace CMS.Presentation.Modules.KMS
             return null;
         }
 
-        private Panel CreateDocsToolbar()
-        {
-            var toolbar = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 36,
-                BackColor = Color.FromArgb(245, 247, 250)
-            };
-            
-            _txtSearchDocs = new TextBox
-            {
-                Name = "txtSearchDocs",
-                Location = new Point(8, 6),
-                Size = new Size(250, 24),
-                Font = new Font("Segoe UI", 9f)
-            };
-            _txtSearchDocs.TextChanged += TxtSearchDocs_TextChanged;
-            
-            // Add placeholder text using a label overlay
-            var lblPlaceholder = new Label
-            {
-                Name = "lblSearchDocsPlaceholder",
-                Text = "🔍 ค้นหาเอกสาร...",
-                Location = new Point(10, 9),
-                AutoSize = true,
-                BackColor = Color.Transparent,
-                ForeColor = Color.Gray,
-                Font = new Font("Segoe UI", 9f),
-                Cursor = Cursors.IBeam
-            };
-            lblPlaceholder.Click += (s, e) => _txtSearchDocs.Focus();
-            
-            // Hide placeholder when textbox has focus or text
-            _txtSearchDocs.Enter += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchDocs.Text);
-            _txtSearchDocs.Leave += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchDocs.Text);
-            _txtSearchDocs.TextChanged += (s, e) => lblPlaceholder.Visible = string.IsNullOrEmpty(_txtSearchDocs.Text);
-            
-            var btnRemove = new Button
-            {
-                Location = new Point(266, 6),
-                Size = new Size(80, 24),
-                Text = "🗑️ ลบ",
-                Font = new Font("Segoe UI", 9f),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(231, 76, 60),
-                Cursor = Cursors.Hand
-            };
-            btnRemove.FlatAppearance.BorderColor = Color.FromArgb(231, 76, 60);
-            btnRemove.Click += BtnRemoveDoc_Click;
-            
-            var btnLoadFromKB = new Button
-            {
-                Location = new Point(354, 6),
-                Size = new Size(150, 24),
-                Text = "📚 โหลดจาก KB",
-                Font = new Font("Segoe UI", 9f),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(39, 174, 96),
-                ForeColor = Color.White,
-                Cursor = Cursors.Hand
-            };
-            btnLoadFromKB.FlatAppearance.BorderColor = Color.FromArgb(30, 132, 73);
-            btnLoadFromKB.Click += BtnLoadDocsFromKB_Click;
-            
-            toolbar.Controls.Add(_txtSearchDocs);
-            toolbar.Controls.Add(lblPlaceholder);
-            toolbar.Controls.Add(btnRemove);
-            toolbar.Controls.Add(btnLoadFromKB);
-            
-            lblPlaceholder.BringToFront();
-            
-            return toolbar;
-        }
+
 
         // ── Tab Mapping Event Handlers ───────────────────────────────────────
 
@@ -1133,7 +1068,6 @@ namespace CMS.Presentation.Modules.KMS
         
         // Search textbox references (deprecated - using Designer controls now)
         private TextBox _txtSearchAttach;
-        private TextBox _txtSearchDocs;
         private System.Threading.Timer _searchProgramsTimer;
         private System.Threading.Timer _searchDocsTimer;
 
@@ -1298,99 +1232,7 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private void InitializeProgramsDataGridViews()
         {
-            // Initialize dgvProgramsLinked columns
-            dgvProgramsLinked.Columns.Clear();
-            
-            // Column 0: #
-            dgvProgramsLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colNum",
-                HeaderText = "#",
-                Width = 40,
-                ReadOnly = true
-            });
-            
-            // Column 1: รหัสโปรแกรม
-            dgvProgramsLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colCode",
-                HeaderText = "รหัสโปรแกรม",
-                Width = 120,
-                ReadOnly = true
-            });
-            
-            // Column 2: ชื่อโปรแกรม
-            dgvProgramsLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colName",
-                HeaderText = "ชื่อโปรแกรม",
-                Width = 300,
-                ReadOnly = true
-            });
-            
-            // Column 3: ประเภท
-            dgvProgramsLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colType",
-                HeaderText = "ประเภท",
-                Width = 150,
-                ReadOnly = true
-            });
-            
-            // Column 4: Delete Button
-            var colDelete = new DataGridViewButtonColumn
-            {
-                Name = "colDelete",
-                HeaderText = "ลบ",
-                Text = "🗑️ ลบ",
-                UseColumnTextForButtonValue = true,
-                Width = 80
-            };
-            dgvProgramsLinked.Columns.Add(colDelete);
-            
-            // Style delete button column
-            dgvProgramsLinked.Columns["colDelete"].DefaultCellStyle.BackColor = Color.FromArgb(231, 76, 60);
-            dgvProgramsLinked.Columns["colDelete"].DefaultCellStyle.ForeColor = Color.White;
-            dgvProgramsLinked.Columns["colDelete"].DefaultCellStyle.SelectionBackColor = Color.FromArgb(192, 57, 43);
-            
-            // Initialize dgvProgramsSearch columns
-            dgvProgramsSearch.Columns.Clear();
-            
-            // Column 0: รหัสโปรแกรม
-            dgvProgramsSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchCode",
-                HeaderText = "รหัสโปรแกรม",
-                Width = 120,
-                ReadOnly = true
-            });
-            
-            // Column 1: ชื่อโปรแกรม
-            dgvProgramsSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchName",
-                HeaderText = "ชื่อโปรแกรม",
-                Width = 300,
-                ReadOnly = true
-            });
-            
-            // Column 2: ประเภท
-            dgvProgramsSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchType",
-                HeaderText = "ประเภท",
-                Width = 150,
-                ReadOnly = true
-            });
-            
-            // Column 3: สถานะ
-            dgvProgramsSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchStatus",
-                HeaderText = "สถานะ",
-                Width = 100,
-                ReadOnly = true
-            });
+            // Columns are now defined in Designer.cs
             
             // ── Initialize Search Filters ──
             // Type filter
@@ -1642,101 +1484,12 @@ namespace CMS.Presentation.Modules.KMS
         private void InitializeWorkflowDataGridViews()
         {
             // ── dgvWorkflowLinked (Linked Workflows) ──
-            dgvWorkflowLinked.Columns.Clear();
-            
-            // Column 0: #
-            dgvWorkflowLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colNum",
-                HeaderText = "#",
-                Width = 40,
-                ReadOnly = true
-            });
-            
-            // Column 1: รหัส Workflow
-            dgvWorkflowLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colCode",
-                HeaderText = "รหัส Workflow",
-                Width = 120,
-                ReadOnly = true
-            });
-            
-            // Column 2: ชื่อ Workflow
-            dgvWorkflowLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colName",
-                HeaderText = "ชื่อ Workflow",
-                Width = 250,
-                ReadOnly = true
-            });
-            
-            // Column 3: สถานะ
-            dgvWorkflowLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colStatus",
-                HeaderText = "สถานะ",
-                Width = 100,
-                ReadOnly = true
-            });
-            
-            // Column 4: Delete Button
-            var btnDelete = new DataGridViewButtonColumn
-            {
-                Name = "colDelete",
-                HeaderText = "ลบ",
-                Text = "🗑️ ลบ",
-                UseColumnTextForButtonValue = true,
-                Width = 80
-            };
-            btnDelete.DefaultCellStyle.BackColor = Color.FromArgb(231, 76, 60);
-            btnDelete.DefaultCellStyle.ForeColor = Color.White;
-            btnDelete.DefaultCellStyle.SelectionBackColor = Color.FromArgb(192, 57, 43);
-            btnDelete.DefaultCellStyle.SelectionForeColor = Color.White;
-            dgvWorkflowLinked.Columns.Add(btnDelete);
-            
+            // Columns are now defined in Designer.cs
             dgvWorkflowLinked.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
             dgvWorkflowLinked.AllowUserToResizeRows = false;
             
             // ── dgvWorkflowSearch (Search Results) ──
-            dgvWorkflowSearch.Columns.Clear();
-            
-            // Column 0: รหัส Workflow
-            dgvWorkflowSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colCode",
-                HeaderText = "รหัส Workflow",
-                Width = 120,
-                ReadOnly = true
-            });
-            
-            // Column 1: ชื่อ Workflow
-            dgvWorkflowSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colName",
-                HeaderText = "ชื่อ Workflow",
-                Width = 300,
-                ReadOnly = true
-            });
-            
-            // Column 2: ประเภท
-            dgvWorkflowSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colType",
-                HeaderText = "ประเภท",
-                Width = 120,
-                ReadOnly = true
-            });
-            
-            // Column 3: สถานะ
-            dgvWorkflowSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colStatus",
-                HeaderText = "สถานะ",
-                Width = 100,
-                ReadOnly = true
-            });
-            
+            // Columns are now defined in Designer.cs
             dgvWorkflowSearch.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
             dgvWorkflowSearch.AllowUserToResizeRows = false;
             
@@ -2006,74 +1759,8 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private void InitializeAttachDataGridView()
         {
-            dgvAttachLinked.Columns.Clear();
-            
-            // Column 0: #
-            dgvAttachLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colNum",
-                HeaderText = "#",
-                Width = 50,
-                ReadOnly = true
-            });
-            
-            // Column 1: ชื่อไฟล์
-            dgvAttachLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colFilename",
-                HeaderText = "ชื่อไฟล์",
-                Width = 400,
-                ReadOnly = true
-            });
-            
-            // Column 2: ขนาด
-            dgvAttachLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSize",
-                HeaderText = "ขนาด",
-                Width = 100,
-                ReadOnly = true
-            });
-            
-            // Column 3: วันที่แนบ
-            dgvAttachLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colDate",
-                HeaderText = "วันที่แนบ",
-                Width = 150,
-                ReadOnly = true
-            });
-            
-            // Column 4: View Button
-            var colView = new DataGridViewButtonColumn
-            {
-                Name = "colView",
-                HeaderText = "ดูไฟล์",
-                Text = "👁️ ดู",
-                UseColumnTextForButtonValue = true,
-                Width = 80
-            };
-            dgvAttachLinked.Columns.Add(colView);
-            
-            // Column 5: Delete Button
-            var colDelete = new DataGridViewButtonColumn
-            {
-                Name = "colDelete",
-                HeaderText = "ลบไฟล์",
-                Text = "🗑️ ลบ",
-                UseColumnTextForButtonValue = true,
-                Width = 80
-            };
-            dgvAttachLinked.Columns.Add(colDelete);
-            
-            // Style button columns
-            dgvAttachLinked.Columns["colView"].DefaultCellStyle.BackColor = Color.FromArgb(46, 116, 181);
-            dgvAttachLinked.Columns["colView"].DefaultCellStyle.ForeColor = Color.White;
-            dgvAttachLinked.Columns["colView"].DefaultCellStyle.SelectionBackColor = Color.FromArgb(30, 95, 154);
-            
-            dgvAttachLinked.Columns["colDelete"].DefaultCellStyle.BackColor = Color.FromArgb(231, 76, 60);
-            dgvAttachLinked.Columns["colDelete"].DefaultCellStyle.ForeColor = Color.White;
-            dgvAttachLinked.Columns["colDelete"].DefaultCellStyle.SelectionBackColor = Color.FromArgb(192, 57, 43);
+            // Columns are now defined in Designer.cs
+            // No column creation needed here
         }
 
         /// <summary>
@@ -2224,99 +1911,8 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private void InitializeRelatedDataGridViews()
         {
-            // Initialize dgvRelatedLinked columns
-            dgvRelatedLinked.Columns.Clear();
-            
-            // Column 0: #
-            dgvRelatedLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colNum",
-                HeaderText = "#",
-                Width = 40,
-                ReadOnly = true
-            });
-            
-            // Column 1: รหัสบทความ
-            dgvRelatedLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colCode",
-                HeaderText = "รหัสบทความ",
-                Width = 120,
-                ReadOnly = true
-            });
-            
-            // Column 2: ชื่อบทความ
-            dgvRelatedLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colTitle",
-                HeaderText = "ชื่อบทความ",
-                Width = 500,
-                ReadOnly = true
-            });
-            
-            // Column 3: ประเภท
-            dgvRelatedLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colType",
-                HeaderText = "ประเภท",
-                Width = 100,
-                ReadOnly = true
-            });
-            
-            // Column 4: Delete Button
-            var colDelete = new DataGridViewButtonColumn
-            {
-                Name = "colDelete",
-                HeaderText = "ลบ",
-                Text = "🗑️ ลบ",
-                UseColumnTextForButtonValue = true,
-                Width = 80
-            };
-            dgvRelatedLinked.Columns.Add(colDelete);
-            
-            // Style delete button column
-            dgvRelatedLinked.Columns["colDelete"].DefaultCellStyle.BackColor = Color.FromArgb(231, 76, 60);
-            dgvRelatedLinked.Columns["colDelete"].DefaultCellStyle.ForeColor = Color.White;
-            dgvRelatedLinked.Columns["colDelete"].DefaultCellStyle.SelectionBackColor = Color.FromArgb(192, 57, 43);
-            
-            // Initialize dgvRelatedSearch columns
-            dgvRelatedSearch.Columns.Clear();
-            
-            // Column 0: รหัสบทความ
-            dgvRelatedSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchCode",
-                HeaderText = "รหัสบทความ",
-                Width = 120,
-                ReadOnly = true
-            });
-            
-            // Column 1: ชื่อบทความ
-            dgvRelatedSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchTitle",
-                HeaderText = "ชื่อบทความ",
-                Width = 500,
-                ReadOnly = true
-            });
-            
-            // Column 2: ประเภท
-            dgvRelatedSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchType",
-                HeaderText = "ประเภท",
-                Width = 100,
-                ReadOnly = true
-            });
-            
-            // Column 3: ดู
-            dgvRelatedSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchViews",
-                HeaderText = "ดู",
-                Width = 60,
-                ReadOnly = true
-            });
+            // Columns are now defined in Designer.cs
+            // No need to create columns here anymore
             
             // ── Initialize Search Filters ──
             // Type filter
@@ -2357,114 +1953,8 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private void InitializeDocsDataGridViews()
         {
-            // Initialize dgvDocsLinked columns
-            dgvDocsLinked.Columns.Clear();
-            
-            // Column 0: #
-            dgvDocsLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colNum",
-                HeaderText = "#",
-                Width = 40,
-                ReadOnly = true
-            });
-            
-            // Column 1: ชื่อเอกสาร
-            dgvDocsLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colDocName",
-                HeaderText = "ชื่อเอกสาร",
-                Width = 250,
-                ReadOnly = true
-            });
-            
-            // Column 2: ขนาด
-            dgvDocsLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSize",
-                HeaderText = "ขนาด",
-                Width = 80,
-                ReadOnly = true
-            });
-            
-            // Column 3: วันที่
-            dgvDocsLinked.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colDate",
-                HeaderText = "วันที่",
-                Width = 120,
-                ReadOnly = true
-            });
-            
-            // Column 4: View Button
-            var colView = new DataGridViewButtonColumn
-            {
-                Name = "colView",
-                HeaderText = "ดู",
-                Text = "👁️ ดู",
-                UseColumnTextForButtonValue = true,
-                Width = 70
-            };
-            dgvDocsLinked.Columns.Add(colView);
-            
-            // Column 5: Delete Button
-            var colDelete = new DataGridViewButtonColumn
-            {
-                Name = "colDelete",
-                HeaderText = "ลบ",
-                Text = "🗑️ ลบ",
-                UseColumnTextForButtonValue = true,
-                Width = 70
-            };
-            dgvDocsLinked.Columns.Add(colDelete);
-            
-            // Style button columns
-            dgvDocsLinked.Columns["colView"].DefaultCellStyle.BackColor = Color.FromArgb(46, 116, 181);
-            dgvDocsLinked.Columns["colView"].DefaultCellStyle.ForeColor = Color.White;
-            dgvDocsLinked.Columns["colView"].DefaultCellStyle.SelectionBackColor = Color.FromArgb(30, 95, 154);
-            
-            dgvDocsLinked.Columns["colDelete"].DefaultCellStyle.BackColor = Color.FromArgb(231, 76, 60);
-            dgvDocsLinked.Columns["colDelete"].DefaultCellStyle.ForeColor = Color.White;
-            dgvDocsLinked.Columns["colDelete"].DefaultCellStyle.SelectionBackColor = Color.FromArgb(192, 57, 43);
-            
-            // Initialize dgvDocsSearch columns
-            dgvDocsSearch.Columns.Clear();
-            
-            // Column 0: รหัสเอกสาร
-            dgvDocsSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchCode",
-                HeaderText = "รหัสเอกสาร",
-                Width = 120,
-                ReadOnly = true
-            });
-            
-            // Column 1: ชื่อเอกสาร
-            dgvDocsSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchTitle",
-                HeaderText = "ชื่อเอกสาร",
-                Width = 250,
-                ReadOnly = true
-            });
-            
-            // Column 2: โฟลเดอร์
-            dgvDocsSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchFolder",
-                HeaderText = "โฟลเดอร์",
-                Width = 150,
-                ReadOnly = true
-            });
-            
-            // Column 3: ขนาด
-            dgvDocsSearch.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colSearchSize",
-                HeaderText = "ขนาด",
-                Width = 80,
-                ReadOnly = true
-            });
+            // Columns are now defined in Designer.cs
+            // No column creation needed here
             
             // ── Initialize Search Filters ──
             // Type filter
@@ -2927,9 +2417,9 @@ namespace CMS.Presentation.Modules.KMS
                 int newIndex = dgvRelatedLinked.Rows.Count + 1;
                 int rowIndex = dgvRelatedLinked.Rows.Add(
                     newIndex.ToString(),
-                    dgvRelatedSearch.Rows[e.RowIndex].Cells["colSearchCode"].Value,
-                    dgvRelatedSearch.Rows[e.RowIndex].Cells["colSearchTitle"].Value,
-                    dgvRelatedSearch.Rows[e.RowIndex].Cells["colSearchType"].Value
+                    dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchCode"].Value,
+                    dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchTitle"].Value,
+                    dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchType"].Value
                 );
                 
                 dgvRelatedLinked.Rows[rowIndex].Tag = articleId;
