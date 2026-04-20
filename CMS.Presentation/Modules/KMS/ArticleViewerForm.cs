@@ -29,8 +29,24 @@ namespace CMS.Presentation.Modules.KMS
         /// <summary>Local display copy of the article — set by PopulateArticle().</summary>
         private KBArticle _article;
 
+        /// <summary>
+        /// The ArticleID of the article currently displayed.
+        /// Used by KBMainForm to restore _activeViewerArticleId when popping the history stack.
+        /// </summary>
+        public int CurrentArticleId { get { return _article != null ? _article.ArticleID : 0; } }
+
+        /// <summary>Related articles loaded from DB — populated by BindRelatedArticles().</summary>
+        private IEnumerable<KBArticle> _relatedArticles = new List<KBArticle>();
+
         /// <summary>Fired when the user clicks "← กลับ"; parent form handles navigation.</summary>
         public event EventHandler BackRequested;
+
+        /// <summary>
+        /// Fired when the user clicks a related article item.
+        /// The EventArgs carries the <see cref="KBArticle"/> to open.
+        /// Parent form (KBMainForm) subscribes and calls ShowArticleViewer.
+        /// </summary>
+        public event EventHandler<KBArticle> ArticleOpenRequested;
 
         public ArticleViewerForm()
         {
@@ -100,6 +116,15 @@ namespace CMS.Presentation.Modules.KMS
         {
             // Version history is no longer displayed in the new tabbed design
             // This method is kept for interface compatibility
+        }
+
+        public void BindRelatedArticles(IEnumerable<KBArticle> articles)
+        {
+            _relatedArticles = articles ?? new List<KBArticle>();
+
+            // If the Related tab is currently active, refresh it immediately
+            if (btnTabRelated.BackColor == Color.White)
+                LoadRelatedTab();
         }
 
         public void ShowError(string message)
@@ -375,16 +400,28 @@ namespace CMS.Presentation.Modules.KMS
             pnlTabContent.SuspendLayout();
             pnlTabContent.Controls.Clear();
 
-            var items = new[]
-            {
-                ("[SOP] กฎระเบียบข้อบังคับการรับสินไหม", "KB-2569-005"),
-                ("[FAQ] วิธีการเคลมประกันรถยนต์", "KB-2569-015"),
-                ("[แนวทาง] คู่มือ UW ฉบับ 2", "KB-2569-003"),
-            };
+            var articles = _relatedArticles.ToList();
 
-            foreach (var item in items)
+            if (!articles.Any())
             {
-                var pnl = CreateRelatedItem(item.Item1, item.Item2);
+                var lblEmpty = new Label
+                {
+                    Text      = "ไม่มีบทความที่เชื่อมโยง",
+                    Font      = new Font("Segoe UI", 9f),
+                    ForeColor = Color.FromArgb(150, 150, 150),
+                    Dock      = DockStyle.Top,
+                    Height    = 40,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                };
+                pnlTabContent.Controls.Add(lblEmpty);
+                pnlTabContent.ResumeLayout();
+                return;
+            }
+
+            // Render newest-first so the list matches insertion order from the editor
+            foreach (var article in articles)
+            {
+                var pnl = CreateRelatedItem(article);
                 pnl.Dock = DockStyle.Top;
                 pnlTabContent.Controls.Add(pnl);
             }
@@ -392,50 +429,64 @@ namespace CMS.Presentation.Modules.KMS
             pnlTabContent.ResumeLayout();
         }
 
-        private Panel CreateRelatedItem(string title, string code)
+        private Panel CreateRelatedItem(KBArticle article)
         {
             var pnl = new Panel
             {
-                Height = 42,
-                BackColor = Color.White,
-                Padding = new Padding(5, 4, 5, 4),
-                Cursor = Cursors.Hand,
+                Height      = 52,
+                BackColor   = Color.White,
+                Padding     = new Padding(5, 4, 5, 4),
+                Cursor      = Cursors.Hand,
             };
 
             var lblDot = new Label
             {
-                Text = "●",
-                Font = new Font("Segoe UI", 10f),
+                Text      = "●",
+                Font      = new Font("Segoe UI", 10f),
                 ForeColor = Color.FromArgb(46, 116, 181),
-                Width = 20,
-                Dock = DockStyle.Left,
+                Width     = 20,
+                Dock      = DockStyle.Left,
                 TextAlign = ContentAlignment.MiddleCenter,
             };
 
             var pnlInfo = new Panel { Dock = DockStyle.Fill };
+
             var lblTitle = new Label
             {
-                Text = title,
-                Font = new Font("Segoe UI", 8.5f),
+                Text      = article.Title ?? "(ไม่มีชื่อ)",
+                Font      = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(46, 116, 181),
-                Dock = DockStyle.Top,
-                Height = 18,
-            };
-            var lblCode = new Label
-            {
-                Text = code,
-                Font = new Font("Segoe UI", 7.5f),
-                ForeColor = Color.FromArgb(120, 120, 120),
-                Dock = DockStyle.Top,
-                Height = 16,
+                Dock      = DockStyle.Top,
+                Height    = 20,
             };
 
-            pnlInfo.Controls.Add(lblCode);
+            var lblMeta = new Label
+            {
+                Text      = string.Format("{0}  |  {1}  |  v{2}",
+                    article.ArticleCode ?? "-",
+                    article.ArticleTypeName ?? "-",
+                    article.CurrentVersion),
+                Font      = new Font("Segoe UI", 7.5f),
+                ForeColor = Color.FromArgb(120, 120, 120),
+                Dock      = DockStyle.Top,
+                Height    = 16,
+            };
+
+            pnlInfo.Controls.Add(lblMeta);
             pnlInfo.Controls.Add(lblTitle);
             pnl.Controls.Add(pnlInfo);
             pnl.Controls.Add(lblDot);
 
-            pnl.Click += (s, e) => ShowInfo($"เปิด {code}");
+            // Capture for lambda
+            var captured = article;
+            EventHandler openHandler = (s, e) =>
+            {
+                if (ArticleOpenRequested != null)
+                    ArticleOpenRequested(this, captured);
+            };
+            pnl.Click      += openHandler;
+            lblTitle.Click += openHandler;
+            lblMeta.Click  += openHandler;
 
             var sep = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = Color.FromArgb(238, 238, 238) };
             pnl.Controls.Add(sep);

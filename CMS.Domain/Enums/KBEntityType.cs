@@ -29,6 +29,11 @@ namespace CMS.Domain.Enums
         /// <summary>
         /// Link to Project (PMS.t_Project)
         /// </summary>
-        Project = 5
+        Project = 5,
+
+        /// <summary>
+        /// Link to another KB Article (KMS.t_KBArticle) — article-to-article relationship
+        /// </summary>
+        Article = 6
     }
 }

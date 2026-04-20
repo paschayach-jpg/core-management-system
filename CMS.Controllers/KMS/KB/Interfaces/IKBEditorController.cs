@@ -15,9 +15,7 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string Summary { get; set; }
         string ContentHTML { get; set; }
         string Tags { get; set; }
-        bool IsOfficialPolicy { get; set; }
-        bool NoExpiry { get; set; }
-        System.DateTime? ExpiryDate { get; set; }
+        string SelectedCrafLevel { get; set; }
         int SelectedCategoryId { get; set; }
         byte SelectedArticleType { get; set; }
         byte SelectedStatus { get; set; }

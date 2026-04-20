@@ -38,29 +38,6 @@ namespace CMS.Presentation.Modules.KMS
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.splitTopBottom = new System.Windows.Forms.SplitContainer();
             this.pnlGenInfoOuter = new System.Windows.Forms.Panel();
-            this.tlpGenInfo = new System.Windows.Forms.TableLayoutPanel();
-            this.lblCode = new System.Windows.Forms.Label();
-            this.lblType = new System.Windows.Forms.Label();
-            this.lblStatus = new System.Windows.Forms.Label();
-            this.lblVerLabel = new System.Windows.Forms.Label();
-            this.txtCode = new System.Windows.Forms.TextBox();
-            this.cboType = new System.Windows.Forms.ComboBox();
-            this.cboStatus = new System.Windows.Forms.ComboBox();
-            this.lblCurVersion = new System.Windows.Forms.Label();
-            this.lblTitle = new System.Windows.Forms.Label();
-            this.lblCategory = new System.Windows.Forms.Label();
-            this.txtTitle = new System.Windows.Forms.TextBox();
-            this.cboCategory = new System.Windows.Forms.ComboBox();
-            this.lblTags = new System.Windows.Forms.Label();
-            this.lblExpiry = new System.Windows.Forms.Label();
-            this.flpTags = new System.Windows.Forms.FlowLayoutPanel();
-            this.txtTagInput = new System.Windows.Forms.TextBox();
-            this.pnlExpiry = new System.Windows.Forms.Panel();
-            this.chkNoExpiry = new System.Windows.Forms.CheckBox();
-            this.dtpExpiry = new System.Windows.Forms.DateTimePicker();
-            this.chkOfficialPolicy = new System.Windows.Forms.CheckBox();
-            this.lblViewCount = new System.Windows.Forms.Label();
-            this.lblLikeCount = new System.Windows.Forms.Label();
             this.pnlGenInfoHeader = new System.Windows.Forms.Panel();
             this.lblGenInfoHeader = new System.Windows.Forms.Label();
             this.pnlContentOuter = new System.Windows.Forms.Panel();
@@ -161,6 +138,25 @@ namespace CMS.Presentation.Modules.KMS
             this.colVerNote = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.pnlMappingHeader = new System.Windows.Forms.Panel();
             this.lblMappingHeader = new System.Windows.Forms.Label();
+            this.lblLikeCount = new System.Windows.Forms.Label();
+            this.cboCraf = new System.Windows.Forms.ComboBox();
+            this.lblViewCount = new System.Windows.Forms.Label();
+            this.lblCraf = new System.Windows.Forms.Label();
+            this.lblTags = new System.Windows.Forms.Label();
+            this.cboCategory = new System.Windows.Forms.ComboBox();
+            this.txtTitle = new System.Windows.Forms.TextBox();
+            this.lblCategory = new System.Windows.Forms.Label();
+            this.lblTitle = new System.Windows.Forms.Label();
+            this.lblCurVersion = new System.Windows.Forms.Label();
+            this.cboStatus = new System.Windows.Forms.ComboBox();
+            this.cboType = new System.Windows.Forms.ComboBox();
+            this.txtCode = new System.Windows.Forms.TextBox();
+            this.lblVerLabel = new System.Windows.Forms.Label();
+            this.lblStatus = new System.Windows.Forms.Label();
+            this.lblType = new System.Windows.Forms.Label();
+            this.lblCode = new System.Windows.Forms.Label();
+            this.txtTagInput = new System.Windows.Forms.TextBox();
+            this.tlpGenInfo = new System.Windows.Forms.TableLayoutPanel();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             this.flpToolbarLeft.SuspendLayout();
@@ -175,9 +171,6 @@ namespace CMS.Presentation.Modules.KMS
             this.splitTopBottom.Panel2.SuspendLayout();
             this.splitTopBottom.SuspendLayout();
             this.pnlGenInfoOuter.SuspendLayout();
-            this.tlpGenInfo.SuspendLayout();
-            this.flpTags.SuspendLayout();
-            this.pnlExpiry.SuspendLayout();
             this.pnlGenInfoHeader.SuspendLayout();
             this.pnlContentOuter.SuspendLayout();
             this.pnlRteStatus.SuspendLayout();
@@ -207,6 +200,7 @@ namespace CMS.Presentation.Modules.KMS
             ((System.ComponentModel.ISupportInitialize)(this.dgvDocsLinked)).BeginInit();
             this.tabVersions.SuspendLayout();
             this.pnlMappingHeader.SuspendLayout();
+            this.tlpGenInfo.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlHeader
@@ -403,7 +397,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtChangeDesc.ForeColor = System.Drawing.Color.White;
             this.txtChangeDesc.Location = new System.Drawing.Point(1357, 4);
             this.txtChangeDesc.Name = "txtChangeDesc";
-            this.txtChangeDesc.Size = new System.Drawing.Size(366, 23);
+            this.txtChangeDesc.Size = new System.Drawing.Size(366, 26);
             this.txtChangeDesc.TabIndex = 5;
             // 
             // lblChangeDescLabel
@@ -425,7 +419,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblDateInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(200)))), ((int)(((byte)(220)))));
             this.lblDateInfo.Location = new System.Drawing.Point(420, 6);
             this.lblDateInfo.Name = "lblDateInfo";
-            this.lblDateInfo.Size = new System.Drawing.Size(44, 15);
+            this.lblDateInfo.Size = new System.Drawing.Size(56, 20);
             this.lblDateInfo.TabIndex = 3;
             this.lblDateInfo.Text = "วันที่: —";
             // 
@@ -436,7 +430,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblAuthorInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(200)))), ((int)(((byte)(220)))));
             this.lblAuthorInfo.Location = new System.Drawing.Point(240, 6);
             this.lblAuthorInfo.Name = "lblAuthorInfo";
-            this.lblAuthorInfo.Size = new System.Drawing.Size(62, 15);
+            this.lblAuthorInfo.Size = new System.Drawing.Size(79, 20);
             this.lblAuthorInfo.TabIndex = 2;
             this.lblAuthorInfo.Text = "สร้างโดย: —";
             // 
@@ -447,7 +441,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatusInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(230)))), ((int)(((byte)(240)))));
             this.lblStatusInfo.Location = new System.Drawing.Point(120, 6);
             this.lblStatusInfo.Name = "lblStatusInfo";
-            this.lblStatusInfo.Size = new System.Drawing.Size(48, 15);
+            this.lblStatusInfo.Size = new System.Drawing.Size(68, 20);
             this.lblStatusInfo.TabIndex = 1;
             this.lblStatusInfo.Text = "📝 Draft";
             // 
@@ -458,7 +452,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblVerInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(230)))), ((int)(((byte)(240)))));
             this.lblVerInfo.Location = new System.Drawing.Point(10, 6);
             this.lblVerInfo.Name = "lblVerInfo";
-            this.lblVerInfo.Size = new System.Drawing.Size(63, 15);
+            this.lblVerInfo.Size = new System.Drawing.Size(79, 20);
             this.lblVerInfo.TabIndex = 0;
             this.lblVerInfo.Text = "Version: —";
             // 
@@ -489,8 +483,8 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.splitMain.Panel2.Controls.Add(this.pnlMappingOuter);
             this.splitMain.Panel2MinSize = 400;
-            this.splitMain.Size = new System.Drawing.Size(1696, 1166);
-            this.splitMain.SplitterDistance = 1065;
+            this.splitMain.Size = new System.Drawing.Size(1692, 1166);
+            this.splitMain.SplitterDistance = 1164;
             this.splitMain.SplitterWidth = 6;
             this.splitMain.TabIndex = 0;
             // 
@@ -510,8 +504,8 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.splitTopBottom.Panel2.Controls.Add(this.pnlContentOuter);
             this.splitTopBottom.Panel2MinSize = 150;
-            this.splitTopBottom.Size = new System.Drawing.Size(1065, 1166);
-            this.splitTopBottom.SplitterDistance = 485;
+            this.splitTopBottom.Size = new System.Drawing.Size(1164, 1166);
+            this.splitTopBottom.SplitterDistance = 326;
             this.splitTopBottom.SplitterWidth = 6;
             this.splitTopBottom.TabIndex = 0;
             // 
@@ -524,328 +518,8 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlGenInfoOuter.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlGenInfoOuter.Location = new System.Drawing.Point(0, 0);
             this.pnlGenInfoOuter.Name = "pnlGenInfoOuter";
-            this.pnlGenInfoOuter.Size = new System.Drawing.Size(1065, 485);
+            this.pnlGenInfoOuter.Size = new System.Drawing.Size(1164, 326);
             this.pnlGenInfoOuter.TabIndex = 10;
-            // 
-            // tlpGenInfo
-            // 
-            this.tlpGenInfo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(251)))), ((int)(((byte)(252)))));
-            this.tlpGenInfo.ColumnCount = 4;
-            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tlpGenInfo.Controls.Add(this.lblCode, 0, 0);
-            this.tlpGenInfo.Controls.Add(this.lblType, 1, 0);
-            this.tlpGenInfo.Controls.Add(this.lblStatus, 2, 0);
-            this.tlpGenInfo.Controls.Add(this.lblVerLabel, 3, 0);
-            this.tlpGenInfo.Controls.Add(this.txtCode, 0, 1);
-            this.tlpGenInfo.Controls.Add(this.cboType, 1, 1);
-            this.tlpGenInfo.Controls.Add(this.cboStatus, 2, 1);
-            this.tlpGenInfo.Controls.Add(this.lblCurVersion, 3, 1);
-            this.tlpGenInfo.Controls.Add(this.lblTitle, 0, 3);
-            this.tlpGenInfo.Controls.Add(this.lblCategory, 3, 3);
-            this.tlpGenInfo.Controls.Add(this.txtTitle, 0, 4);
-            this.tlpGenInfo.Controls.Add(this.cboCategory, 3, 4);
-            this.tlpGenInfo.Controls.Add(this.lblTags, 0, 6);
-            this.tlpGenInfo.Controls.Add(this.lblExpiry, 2, 6);
-            this.tlpGenInfo.Controls.Add(this.flpTags, 0, 7);
-            this.tlpGenInfo.Controls.Add(this.pnlExpiry, 2, 7);
-            this.tlpGenInfo.Controls.Add(this.chkOfficialPolicy, 0, 9);
-            this.tlpGenInfo.Controls.Add(this.lblViewCount, 2, 9);
-            this.tlpGenInfo.Controls.Add(this.lblLikeCount, 3, 9);
-            this.tlpGenInfo.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlpGenInfo.Location = new System.Drawing.Point(0, 28);
-            this.tlpGenInfo.Name = "tlpGenInfo";
-            this.tlpGenInfo.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.tlpGenInfo.RowCount = 10;
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 10F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 10F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 8F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
-            this.tlpGenInfo.Size = new System.Drawing.Size(1063, 455);
-            this.tlpGenInfo.TabIndex = 1;
-            // 
-            // lblCode
-            // 
-            this.lblCode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblCode.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblCode.Location = new System.Drawing.Point(12, 8);
-            this.lblCode.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblCode.Name = "lblCode";
-            this.lblCode.Size = new System.Drawing.Size(256, 18);
-            this.lblCode.TabIndex = 0;
-            this.lblCode.Text = "รหัสบทความ";
-            // 
-            // lblType
-            // 
-            this.lblType.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblType.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblType.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblType.Location = new System.Drawing.Point(272, 8);
-            this.lblType.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblType.Name = "lblType";
-            this.lblType.Size = new System.Drawing.Size(256, 18);
-            this.lblType.TabIndex = 1;
-            this.lblType.Text = "ประเภทบทความ *";
-            // 
-            // lblStatus
-            // 
-            this.lblStatus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblStatus.Location = new System.Drawing.Point(532, 8);
-            this.lblStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(256, 18);
-            this.lblStatus.TabIndex = 2;
-            this.lblStatus.Text = "สถานะ";
-            // 
-            // lblVerLabel
-            // 
-            this.lblVerLabel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblVerLabel.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblVerLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblVerLabel.Location = new System.Drawing.Point(792, 8);
-            this.lblVerLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblVerLabel.Name = "lblVerLabel";
-            this.lblVerLabel.Size = new System.Drawing.Size(259, 18);
-            this.lblVerLabel.TabIndex = 3;
-            this.lblVerLabel.Text = "เวอร์ชัน";
-            // 
-            // txtCode
-            // 
-            this.txtCode.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.txtCode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtCode.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.txtCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.txtCode.Location = new System.Drawing.Point(12, 26);
-            this.txtCode.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.txtCode.Name = "txtCode";
-            this.txtCode.ReadOnly = true;
-            this.txtCode.Size = new System.Drawing.Size(256, 23);
-            this.txtCode.TabIndex = 10;
-            // 
-            // cboType
-            // 
-            this.cboType.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboType.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.cboType.Location = new System.Drawing.Point(272, 26);
-            this.cboType.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.cboType.Name = "cboType";
-            this.cboType.Size = new System.Drawing.Size(256, 21);
-            this.cboType.TabIndex = 11;
-            // 
-            // cboStatus
-            // 
-            this.cboStatus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.cboStatus.FormattingEnabled = true;
-            this.cboStatus.Items.AddRange(new object[] {
-            "📝 Draft",
-            "🔍 รอ Review",
-            "✅ Published",
-            "📦 Archived"});
-            this.cboStatus.Location = new System.Drawing.Point(532, 26);
-            this.cboStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(256, 23);
-            this.cboStatus.TabIndex = 12;
-            this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboStatus_SelectedIndexChanged);
-            // 
-            // lblCurVersion
-            // 
-            this.lblCurVersion.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.lblCurVersion.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblCurVersion.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblCurVersion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.lblCurVersion.Location = new System.Drawing.Point(792, 26);
-            this.lblCurVersion.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblCurVersion.Name = "lblCurVersion";
-            this.lblCurVersion.Size = new System.Drawing.Size(259, 28);
-            this.lblCurVersion.TabIndex = 13;
-            this.lblCurVersion.Text = "v1.0";
-            this.lblCurVersion.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblTitle
-            // 
-            this.tlpGenInfo.SetColumnSpan(this.lblTitle, 3);
-            this.lblTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblTitle.Location = new System.Drawing.Point(12, 64);
-            this.lblTitle.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(776, 18);
-            this.lblTitle.TabIndex = 20;
-            this.lblTitle.Text = "ชื่อบทความ *";
-            // 
-            // lblCategory
-            // 
-            this.lblCategory.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblCategory.Location = new System.Drawing.Point(792, 64);
-            this.lblCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblCategory.Name = "lblCategory";
-            this.lblCategory.Size = new System.Drawing.Size(259, 18);
-            this.lblCategory.TabIndex = 21;
-            this.lblCategory.Text = "หมวดหมู่ *";
-            // 
-            // txtTitle
-            // 
-            this.tlpGenInfo.SetColumnSpan(this.txtTitle, 3);
-            this.txtTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtTitle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.txtTitle.Location = new System.Drawing.Point(12, 82);
-            this.txtTitle.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.txtTitle.MaxLength = 500;
-            this.txtTitle.Name = "txtTitle";
-            this.txtTitle.Size = new System.Drawing.Size(776, 25);
-            this.txtTitle.TabIndex = 22;
-            // 
-            // cboCategory
-            // 
-            this.cboCategory.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.cboCategory.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.cboCategory.Location = new System.Drawing.Point(792, 82);
-            this.cboCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.cboCategory.Name = "cboCategory";
-            this.cboCategory.Size = new System.Drawing.Size(259, 21);
-            this.cboCategory.TabIndex = 23;
-            // 
-            // lblTags
-            // 
-            this.tlpGenInfo.SetColumnSpan(this.lblTags, 2);
-            this.lblTags.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTags.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblTags.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblTags.Location = new System.Drawing.Point(12, 120);
-            this.lblTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblTags.Name = "lblTags";
-            this.lblTags.Size = new System.Drawing.Size(516, 18);
-            this.lblTags.TabIndex = 30;
-            this.lblTags.Text = "แท็ก (Tags) — คั่นด้วยเครื่องหมาย ,";
-            // 
-            // lblExpiry
-            // 
-            this.tlpGenInfo.SetColumnSpan(this.lblExpiry, 2);
-            this.lblExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblExpiry.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblExpiry.Location = new System.Drawing.Point(532, 120);
-            this.lblExpiry.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblExpiry.Name = "lblExpiry";
-            this.lblExpiry.Size = new System.Drawing.Size(519, 18);
-            this.lblExpiry.TabIndex = 31;
-            this.lblExpiry.Text = "วันหมดอายุ (Review Due)";
-            // 
-            // flpTags
-            // 
-            this.flpTags.AutoSize = true;
-            this.flpTags.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.tlpGenInfo.SetColumnSpan(this.flpTags, 2);
-            this.flpTags.Controls.Add(this.txtTagInput);
-            this.flpTags.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flpTags.Location = new System.Drawing.Point(12, 138);
-            this.flpTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.flpTags.MinimumSize = new System.Drawing.Size(678, 28);
-            this.flpTags.Name = "flpTags";
-            this.flpTags.Padding = new System.Windows.Forms.Padding(2);
-            this.flpTags.Size = new System.Drawing.Size(678, 28);
-            this.flpTags.TabIndex = 32;
-            // 
-            // txtTagInput
-            // 
-            this.txtTagInput.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.txtTagInput.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.txtTagInput.Location = new System.Drawing.Point(5, 5);
-            this.txtTagInput.Name = "txtTagInput";
-            this.txtTagInput.Size = new System.Drawing.Size(150, 16);
-            this.txtTagInput.TabIndex = 0;
-            this.txtTagInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtTagInput_KeyDown);
-            // 
-            // pnlExpiry
-            // 
-            this.pnlExpiry.BackColor = System.Drawing.Color.Transparent;
-            this.tlpGenInfo.SetColumnSpan(this.pnlExpiry, 2);
-            this.pnlExpiry.Controls.Add(this.chkNoExpiry);
-            this.pnlExpiry.Controls.Add(this.dtpExpiry);
-            this.pnlExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlExpiry.Location = new System.Drawing.Point(532, 138);
-            this.pnlExpiry.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.pnlExpiry.Name = "pnlExpiry";
-            this.pnlExpiry.Size = new System.Drawing.Size(519, 28);
-            this.pnlExpiry.TabIndex = 33;
-            // 
-            // chkNoExpiry
-            // 
-            this.chkNoExpiry.AutoSize = true;
-            this.chkNoExpiry.Checked = true;
-            this.chkNoExpiry.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkNoExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.chkNoExpiry.Location = new System.Drawing.Point(158, 4);
-            this.chkNoExpiry.Name = "chkNoExpiry";
-            this.chkNoExpiry.Size = new System.Drawing.Size(95, 19);
-            this.chkNoExpiry.TabIndex = 1;
-            this.chkNoExpiry.Text = "ไม่มีวันหมดอายุ";
-            this.chkNoExpiry.CheckedChanged += new System.EventHandler(this.ChkNoExpiry_CheckedChanged);
-            // 
-            // dtpExpiry
-            // 
-            this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.dtpExpiry.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpExpiry.Location = new System.Drawing.Point(0, 1);
-            this.dtpExpiry.Name = "dtpExpiry";
-            this.dtpExpiry.Size = new System.Drawing.Size(150, 23);
-            this.dtpExpiry.TabIndex = 0;
-            // 
-            // chkOfficialPolicy
-            // 
-            this.chkOfficialPolicy.AutoSize = true;
-            this.tlpGenInfo.SetColumnSpan(this.chkOfficialPolicy, 2);
-            this.chkOfficialPolicy.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chkOfficialPolicy.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.chkOfficialPolicy.Location = new System.Drawing.Point(12, 176);
-            this.chkOfficialPolicy.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
-            this.chkOfficialPolicy.Name = "chkOfficialPolicy";
-            this.chkOfficialPolicy.Size = new System.Drawing.Size(516, 271);
-            this.chkOfficialPolicy.TabIndex = 40;
-            this.chkOfficialPolicy.Text = "🏛 Official Policy";
-            // 
-            // lblViewCount
-            // 
-            this.lblViewCount.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblViewCount.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblViewCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblViewCount.Location = new System.Drawing.Point(532, 176);
-            this.lblViewCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
-            this.lblViewCount.Name = "lblViewCount";
-            this.lblViewCount.Size = new System.Drawing.Size(256, 271);
-            this.lblViewCount.TabIndex = 41;
-            this.lblViewCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lblLikeCount
-            // 
-            this.lblLikeCount.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblLikeCount.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblLikeCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblLikeCount.Location = new System.Drawing.Point(792, 176);
-            this.lblLikeCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
-            this.lblLikeCount.Name = "lblLikeCount";
-            this.lblLikeCount.Size = new System.Drawing.Size(259, 271);
-            this.lblLikeCount.TabIndex = 42;
-            this.lblLikeCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlGenInfoHeader
             // 
@@ -854,7 +528,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlGenInfoHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlGenInfoHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlGenInfoHeader.Name = "pnlGenInfoHeader";
-            this.pnlGenInfoHeader.Size = new System.Drawing.Size(1063, 28);
+            this.pnlGenInfoHeader.Size = new System.Drawing.Size(1162, 28);
             this.pnlGenInfoHeader.TabIndex = 0;
             // 
             // lblGenInfoHeader
@@ -865,7 +539,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblGenInfoHeader.Location = new System.Drawing.Point(0, 0);
             this.lblGenInfoHeader.Name = "lblGenInfoHeader";
             this.lblGenInfoHeader.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.lblGenInfoHeader.Size = new System.Drawing.Size(1063, 28);
+            this.lblGenInfoHeader.Size = new System.Drawing.Size(1162, 28);
             this.lblGenInfoHeader.TabIndex = 0;
             this.lblGenInfoHeader.Text = "📋  ข้อมูลทั่วไป (General Information)";
             this.lblGenInfoHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -883,18 +557,18 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContentOuter.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContentOuter.Location = new System.Drawing.Point(0, 0);
             this.pnlContentOuter.Name = "pnlContentOuter";
-            this.pnlContentOuter.Size = new System.Drawing.Size(1065, 675);
+            this.pnlContentOuter.Size = new System.Drawing.Size(1164, 834);
             this.pnlContentOuter.TabIndex = 12;
             // 
             // webEditor
             // 
             this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.webEditor.IsWebBrowserContextMenuEnabled = false;
-            this.webEditor.Location = new System.Drawing.Point(0, 112);
+            this.webEditor.Location = new System.Drawing.Point(0, 115);
             this.webEditor.MinimumSize = new System.Drawing.Size(20, 20);
             this.webEditor.Name = "webEditor";
             this.webEditor.ScriptErrorsSuppressed = true;
-            this.webEditor.Size = new System.Drawing.Size(1063, 539);
+            this.webEditor.Size = new System.Drawing.Size(1162, 695);
             this.webEditor.TabIndex = 5;
             this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
             // 
@@ -903,10 +577,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRteStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlRteStatus.Controls.Add(this.lblRteStatus);
             this.pnlRteStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlRteStatus.Location = new System.Drawing.Point(0, 651);
+            this.pnlRteStatus.Location = new System.Drawing.Point(0, 810);
             this.pnlRteStatus.Name = "pnlRteStatus";
             this.pnlRteStatus.Padding = new System.Windows.Forms.Padding(10, 0, 10, 0);
-            this.pnlRteStatus.Size = new System.Drawing.Size(1063, 22);
+            this.pnlRteStatus.Size = new System.Drawing.Size(1162, 22);
             this.pnlRteStatus.TabIndex = 4;
             // 
             // lblRteStatus
@@ -916,7 +590,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblRteStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblRteStatus.Location = new System.Drawing.Point(10, 0);
             this.lblRteStatus.Name = "lblRteStatus";
-            this.lblRteStatus.Size = new System.Drawing.Size(1043, 22);
+            this.lblRteStatus.Size = new System.Drawing.Size(1142, 22);
             this.lblRteStatus.TabIndex = 0;
             this.lblRteStatus.Text = "🖊️ พร้อมแก้ไข  |  จำนวนอักขระ: 0";
             this.lblRteStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -926,10 +600,10 @@ namespace CMS.Presentation.Modules.KMS
             this.lblContent.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblContent.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lblContent.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblContent.Location = new System.Drawing.Point(0, 90);
+            this.lblContent.Location = new System.Drawing.Point(0, 93);
             this.lblContent.Name = "lblContent";
             this.lblContent.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
-            this.lblContent.Size = new System.Drawing.Size(1063, 22);
+            this.lblContent.Size = new System.Drawing.Size(1162, 22);
             this.lblContent.TabIndex = 3;
             this.lblContent.Text = "เนื้อหาบทความ (HTML Editor — WYSIWYG)";
             // 
@@ -969,7 +643,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRte.Location = new System.Drawing.Point(0, 65);
             this.tsRte.Name = "tsRte";
             this.tsRte.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.tsRte.Size = new System.Drawing.Size(1063, 25);
+            this.tsRte.Size = new System.Drawing.Size(1162, 28);
             this.tsRte.TabIndex = 2;
             // 
             // tsRteFontFamily
@@ -986,14 +660,14 @@ namespace CMS.Presentation.Modules.KMS
             "Courier New",
             "Georgia"});
             this.tsRteFontFamily.Name = "tsRteFontFamily";
-            this.tsRteFontFamily.Size = new System.Drawing.Size(130, 23);
+            this.tsRteFontFamily.Size = new System.Drawing.Size(130, 28);
             this.tsRteFontFamily.ToolTipText = "Font Family";
             this.tsRteFontFamily.SelectedIndexChanged += new System.EventHandler(this.TsRteFontFamily_SelectedIndexChanged);
             // 
             // tsRteSep0
             // 
             this.tsRteSep0.Name = "tsRteSep0";
-            this.tsRteSep0.Size = new System.Drawing.Size(6, 25);
+            this.tsRteSep0.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteFontSize
             // 
@@ -1008,21 +682,21 @@ namespace CMS.Presentation.Modules.KMS
             "24pt",
             "36pt"});
             this.tsRteFontSize.Name = "tsRteFontSize";
-            this.tsRteFontSize.Size = new System.Drawing.Size(70, 23);
+            this.tsRteFontSize.Size = new System.Drawing.Size(70, 28);
             this.tsRteFontSize.ToolTipText = "Font Size";
             this.tsRteFontSize.SelectedIndexChanged += new System.EventHandler(this.TsRteFontSize_SelectedIndexChanged);
             // 
             // tsRteSep1
             // 
             this.tsRteSep1.Name = "tsRteSep1";
-            this.tsRteSep1.Size = new System.Drawing.Size(6, 25);
+            this.tsRteSep1.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteBold
             // 
             this.tsRteBold.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteBold.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.tsRteBold.Name = "tsRteBold";
-            this.tsRteBold.Size = new System.Drawing.Size(23, 22);
+            this.tsRteBold.Size = new System.Drawing.Size(29, 25);
             this.tsRteBold.Text = "B";
             this.tsRteBold.ToolTipText = "Bold (Ctrl+B)";
             this.tsRteBold.Click += new System.EventHandler(this.TsRteBold_Click);
@@ -1032,7 +706,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteItalic.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteItalic.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic);
             this.tsRteItalic.Name = "tsRteItalic";
-            this.tsRteItalic.Size = new System.Drawing.Size(23, 22);
+            this.tsRteItalic.Size = new System.Drawing.Size(29, 25);
             this.tsRteItalic.Text = "I";
             this.tsRteItalic.ToolTipText = "Italic (Ctrl+I)";
             this.tsRteItalic.Click += new System.EventHandler(this.TsRteItalic_Click);
@@ -1042,7 +716,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteUnder.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteUnder.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Underline);
             this.tsRteUnder.Name = "tsRteUnder";
-            this.tsRteUnder.Size = new System.Drawing.Size(23, 22);
+            this.tsRteUnder.Size = new System.Drawing.Size(29, 25);
             this.tsRteUnder.Text = "U";
             this.tsRteUnder.ToolTipText = "Underline (Ctrl+U)";
             this.tsRteUnder.Click += new System.EventHandler(this.TsRteUnder_Click);
@@ -1050,14 +724,14 @@ namespace CMS.Presentation.Modules.KMS
             // tsRteSep2
             // 
             this.tsRteSep2.Name = "tsRteSep2";
-            this.tsRteSep2.Size = new System.Drawing.Size(6, 25);
+            this.tsRteSep2.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteH1
             // 
             this.tsRteH1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteH1.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.tsRteH1.Name = "tsRteH1";
-            this.tsRteH1.Size = new System.Drawing.Size(27, 22);
+            this.tsRteH1.Size = new System.Drawing.Size(33, 25);
             this.tsRteH1.Text = "H1";
             this.tsRteH1.ToolTipText = "หัวข้อหลัก (Heading 1)";
             this.tsRteH1.Click += new System.EventHandler(this.TsRteH1_Click);
@@ -1067,7 +741,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteH2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteH2.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.tsRteH2.Name = "tsRteH2";
-            this.tsRteH2.Size = new System.Drawing.Size(27, 22);
+            this.tsRteH2.Size = new System.Drawing.Size(33, 25);
             this.tsRteH2.Text = "H2";
             this.tsRteH2.ToolTipText = "หัวข้อรอง (Heading 2)";
             this.tsRteH2.Click += new System.EventHandler(this.TsRteH2_Click);
@@ -1077,7 +751,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteH3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteH3.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.tsRteH3.Name = "tsRteH3";
-            this.tsRteH3.Size = new System.Drawing.Size(27, 22);
+            this.tsRteH3.Size = new System.Drawing.Size(33, 25);
             this.tsRteH3.Text = "H3";
             this.tsRteH3.ToolTipText = "หัวข้อย่อย (Heading 3)";
             this.tsRteH3.Click += new System.EventHandler(this.TsRteH3_Click);
@@ -1085,13 +759,13 @@ namespace CMS.Presentation.Modules.KMS
             // tsRteSep3
             // 
             this.tsRteSep3.Name = "tsRteSep3";
-            this.tsRteSep3.Size = new System.Drawing.Size(6, 25);
+            this.tsRteSep3.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteAlignLeft
             // 
             this.tsRteAlignLeft.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteAlignLeft.Name = "tsRteAlignLeft";
-            this.tsRteAlignLeft.Size = new System.Drawing.Size(25, 22);
+            this.tsRteAlignLeft.Size = new System.Drawing.Size(30, 25);
             this.tsRteAlignLeft.Text = "≡L";
             this.tsRteAlignLeft.ToolTipText = "ชิดซ้าย (Align Left)";
             this.tsRteAlignLeft.Click += new System.EventHandler(this.TsRteAlignLeft_Click);
@@ -1100,7 +774,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteAlignCenter.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteAlignCenter.Name = "tsRteAlignCenter";
-            this.tsRteAlignCenter.Size = new System.Drawing.Size(27, 22);
+            this.tsRteAlignCenter.Size = new System.Drawing.Size(32, 25);
             this.tsRteAlignCenter.Text = "≡C";
             this.tsRteAlignCenter.ToolTipText = "กึ่งกลาง (Align Center)";
             this.tsRteAlignCenter.Click += new System.EventHandler(this.TsRteAlignCenter_Click);
@@ -1109,7 +783,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteAlignRight.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteAlignRight.Name = "tsRteAlignRight";
-            this.tsRteAlignRight.Size = new System.Drawing.Size(26, 22);
+            this.tsRteAlignRight.Size = new System.Drawing.Size(32, 25);
             this.tsRteAlignRight.Text = "≡R";
             this.tsRteAlignRight.ToolTipText = "ชิดขวา (Align Right)";
             this.tsRteAlignRight.Click += new System.EventHandler(this.TsRteAlignRight_Click);
@@ -1117,13 +791,13 @@ namespace CMS.Presentation.Modules.KMS
             // tsRteSep4
             // 
             this.tsRteSep4.Name = "tsRteSep4";
-            this.tsRteSep4.Size = new System.Drawing.Size(6, 25);
+            this.tsRteSep4.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteBullet
             // 
             this.tsRteBullet.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteBullet.Name = "tsRteBullet";
-            this.tsRteBullet.Size = new System.Drawing.Size(23, 22);
+            this.tsRteBullet.Size = new System.Drawing.Size(29, 25);
             this.tsRteBullet.Text = "•";
             this.tsRteBullet.ToolTipText = "รายการสัญลักษณ์ (Bullet List)";
             this.tsRteBullet.Click += new System.EventHandler(this.TsRteBullet_Click);
@@ -1132,7 +806,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteNumList.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteNumList.Name = "tsRteNumList";
-            this.tsRteNumList.Size = new System.Drawing.Size(23, 22);
+            this.tsRteNumList.Size = new System.Drawing.Size(29, 25);
             this.tsRteNumList.Text = "1.";
             this.tsRteNumList.ToolTipText = "รายการตัวเลข (Numbered List)";
             this.tsRteNumList.Click += new System.EventHandler(this.TsRteNumList_Click);
@@ -1140,13 +814,13 @@ namespace CMS.Presentation.Modules.KMS
             // tsRteSep5
             // 
             this.tsRteSep5.Name = "tsRteSep5";
-            this.tsRteSep5.Size = new System.Drawing.Size(6, 25);
+            this.tsRteSep5.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteLink
             // 
             this.tsRteLink.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteLink.Name = "tsRteLink";
-            this.tsRteLink.Size = new System.Drawing.Size(23, 22);
+            this.tsRteLink.Size = new System.Drawing.Size(34, 25);
             this.tsRteLink.Text = "🔗";
             this.tsRteLink.ToolTipText = "แทรก Hyperlink";
             this.tsRteLink.Click += new System.EventHandler(this.TsRteLink_Click);
@@ -1155,7 +829,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteTable.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteTable.Name = "tsRteTable";
-            this.tsRteTable.Size = new System.Drawing.Size(23, 22);
+            this.tsRteTable.Size = new System.Drawing.Size(29, 25);
             this.tsRteTable.Text = "⊞";
             this.tsRteTable.ToolTipText = "แทรกตาราง (Insert Table)";
             this.tsRteTable.Click += new System.EventHandler(this.TsRteTable_Click);
@@ -1165,7 +839,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteCode.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteCode.Font = new System.Drawing.Font("Consolas", 8.5F, System.Drawing.FontStyle.Bold);
             this.tsRteCode.Name = "tsRteCode";
-            this.tsRteCode.Size = new System.Drawing.Size(25, 22);
+            this.tsRteCode.Size = new System.Drawing.Size(29, 25);
             this.tsRteCode.Text = "<>";
             this.tsRteCode.ToolTipText = "แทรก Code Block";
             this.tsRteCode.Click += new System.EventHandler(this.TsRteCode_Click);
@@ -1174,7 +848,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteImage.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteImage.Name = "tsRteImage";
-            this.tsRteImage.Size = new System.Drawing.Size(23, 22);
+            this.tsRteImage.Size = new System.Drawing.Size(34, 25);
             this.tsRteImage.Text = "📷";
             this.tsRteImage.ToolTipText = "แทรกรูปภาพ";
             this.tsRteImage.Click += new System.EventHandler(this.TsRteImage_Click);
@@ -1183,7 +857,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteAttach.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteAttach.Name = "tsRteAttach";
-            this.tsRteAttach.Size = new System.Drawing.Size(23, 22);
+            this.tsRteAttach.Size = new System.Drawing.Size(29, 25);
             this.tsRteAttach.Text = "📎";
             this.tsRteAttach.ToolTipText = "แนบไฟล์";
             this.tsRteAttach.Click += new System.EventHandler(this.TsRteAttach_Click);
@@ -1191,13 +865,13 @@ namespace CMS.Presentation.Modules.KMS
             // tsRteSep6
             // 
             this.tsRteSep6.Name = "tsRteSep6";
-            this.tsRteSep6.Size = new System.Drawing.Size(6, 25);
+            this.tsRteSep6.Size = new System.Drawing.Size(6, 28);
             // 
             // tsRteUndo
             // 
             this.tsRteUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteUndo.Name = "tsRteUndo";
-            this.tsRteUndo.Size = new System.Drawing.Size(23, 22);
+            this.tsRteUndo.Size = new System.Drawing.Size(29, 25);
             this.tsRteUndo.Text = "↶";
             this.tsRteUndo.ToolTipText = "Undo (Ctrl+Z)";
             this.tsRteUndo.Click += new System.EventHandler(this.TsRteUndo_Click);
@@ -1206,7 +880,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.tsRteRedo.Name = "tsRteRedo";
-            this.tsRteRedo.Size = new System.Drawing.Size(23, 22);
+            this.tsRteRedo.Size = new System.Drawing.Size(29, 25);
             this.tsRteRedo.Text = "↷";
             this.tsRteRedo.ToolTipText = "Redo (Ctrl+Y)";
             this.tsRteRedo.Click += new System.EventHandler(this.TsRteRedo_Click);
@@ -1220,7 +894,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlSummaryArea.Location = new System.Drawing.Point(0, 28);
             this.pnlSummaryArea.Name = "pnlSummaryArea";
             this.pnlSummaryArea.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
-            this.pnlSummaryArea.Size = new System.Drawing.Size(1063, 37);
+            this.pnlSummaryArea.Size = new System.Drawing.Size(1162, 37);
             this.pnlSummaryArea.TabIndex = 1;
             // 
             // txtSummary
@@ -1231,7 +905,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtSummary.MaxLength = 1000;
             this.txtSummary.Name = "txtSummary";
             this.txtSummary.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtSummary.Size = new System.Drawing.Size(1199, 23);
+            this.txtSummary.Size = new System.Drawing.Size(1199, 27);
             this.txtSummary.TabIndex = 1;
             // 
             // lblSummary
@@ -1241,7 +915,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblSummary.Location = new System.Drawing.Point(10, 4);
             this.lblSummary.Name = "lblSummary";
-            this.lblSummary.Size = new System.Drawing.Size(1043, 27);
+            this.lblSummary.Size = new System.Drawing.Size(1142, 27);
             this.lblSummary.TabIndex = 0;
             this.lblSummary.Text = "บทสรุปสั้น (Summary)";
             // 
@@ -1252,7 +926,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContentHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlContentHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlContentHeader.Name = "pnlContentHeader";
-            this.pnlContentHeader.Size = new System.Drawing.Size(1063, 28);
+            this.pnlContentHeader.Size = new System.Drawing.Size(1162, 28);
             this.pnlContentHeader.TabIndex = 0;
             // 
             // lblContentHeader
@@ -1263,7 +937,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblContentHeader.Location = new System.Drawing.Point(0, 0);
             this.lblContentHeader.Name = "lblContentHeader";
             this.lblContentHeader.Padding = new System.Windows.Forms.Padding(10, 0, 10, 0);
-            this.lblContentHeader.Size = new System.Drawing.Size(1063, 28);
+            this.lblContentHeader.Size = new System.Drawing.Size(1162, 28);
             this.lblContentHeader.TabIndex = 0;
             this.lblContentHeader.Text = "📝  เนื้อหาบทความ";
             this.lblContentHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1278,7 +952,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingOuter.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlMappingOuter.Location = new System.Drawing.Point(0, 0);
             this.pnlMappingOuter.Name = "pnlMappingOuter";
-            this.pnlMappingOuter.Size = new System.Drawing.Size(625, 1166);
+            this.pnlMappingOuter.Size = new System.Drawing.Size(522, 1166);
             this.pnlMappingOuter.TabIndex = 14;
             // 
             // tabMapping
@@ -1294,7 +968,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabMapping.Location = new System.Drawing.Point(0, 28);
             this.tabMapping.Name = "tabMapping";
             this.tabMapping.SelectedIndex = 0;
-            this.tabMapping.Size = new System.Drawing.Size(623, 1136);
+            this.tabMapping.Size = new System.Drawing.Size(520, 1136);
             this.tabMapping.TabIndex = 1;
             // 
             // tabAttach
@@ -1304,10 +978,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tabAttach.Controls.Add(this.pnlAttachUpload);
             this.tabAttach.Controls.Add(this.dgvAttachLinked);
             this.tabAttach.Controls.Add(this.lblAttachLinked);
-            this.tabAttach.Location = new System.Drawing.Point(4, 24);
+            this.tabAttach.Location = new System.Drawing.Point(4, 29);
             this.tabAttach.Name = "tabAttach";
             this.tabAttach.Padding = new System.Windows.Forms.Padding(4);
-            this.tabAttach.Size = new System.Drawing.Size(480, 1108);
+            this.tabAttach.Size = new System.Drawing.Size(512, 1103);
             this.tabAttach.TabIndex = 0;
             this.tabAttach.Text = "📎 ไฟล์ที่แนบ";
             // 
@@ -1320,7 +994,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlAttachUpload.Location = new System.Drawing.Point(4, 148);
             this.pnlAttachUpload.Name = "pnlAttachUpload";
             this.pnlAttachUpload.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlAttachUpload.Size = new System.Drawing.Size(472, 54);
+            this.pnlAttachUpload.Size = new System.Drawing.Size(504, 54);
             this.pnlAttachUpload.TabIndex = 3;
             // 
             // btnSelectFromDMS
@@ -1367,7 +1041,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvAttachLinked.RowHeadersWidth = 51;
             this.dgvAttachLinked.RowTemplate.Height = 28;
             this.dgvAttachLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvAttachLinked.Size = new System.Drawing.Size(472, 120);
+            this.dgvAttachLinked.Size = new System.Drawing.Size(504, 120);
             this.dgvAttachLinked.TabIndex = 1;
             this.dgvAttachLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvAttachLinked_CellContentClick);
             // 
@@ -1380,7 +1054,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblAttachLinked.Location = new System.Drawing.Point(4, 4);
             this.lblAttachLinked.Name = "lblAttachLinked";
             this.lblAttachLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblAttachLinked.Size = new System.Drawing.Size(472, 24);
+            this.lblAttachLinked.Size = new System.Drawing.Size(504, 24);
             this.lblAttachLinked.TabIndex = 0;
             this.lblAttachLinked.Text = "ไฟล์ที่แนบ (0 ไฟล์)";
             // 
@@ -1393,10 +1067,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tabRelated.Controls.Add(this.pnlRelatedSearch);
             this.tabRelated.Controls.Add(this.dgvRelatedLinked);
             this.tabRelated.Controls.Add(this.lblRelatedLinked);
-            this.tabRelated.Location = new System.Drawing.Point(4, 24);
+            this.tabRelated.Location = new System.Drawing.Point(4, 29);
             this.tabRelated.Name = "tabRelated";
             this.tabRelated.Padding = new System.Windows.Forms.Padding(4);
-            this.tabRelated.Size = new System.Drawing.Size(615, 1108);
+            this.tabRelated.Size = new System.Drawing.Size(512, 1103);
             this.tabRelated.TabIndex = 1;
             this.tabRelated.Text = "🔗 ความรู้ที่เกี่ยวข้อง";
             // 
@@ -1415,7 +1089,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvRelatedSearch.RowHeadersWidth = 51;
             this.dgvRelatedSearch.RowTemplate.Height = 28;
             this.dgvRelatedSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvRelatedSearch.Size = new System.Drawing.Size(607, 300);
+            this.dgvRelatedSearch.Size = new System.Drawing.Size(504, 300);
             this.dgvRelatedSearch.TabIndex = 5;
             this.dgvRelatedSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvRelatedSearch_CellDoubleClick);
             // 
@@ -1428,7 +1102,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblRelatedSearch.Location = new System.Drawing.Point(4, 250);
             this.lblRelatedSearch.Name = "lblRelatedSearch";
             this.lblRelatedSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblRelatedSearch.Size = new System.Drawing.Size(607, 24);
+            this.lblRelatedSearch.Size = new System.Drawing.Size(504, 24);
             this.lblRelatedSearch.TabIndex = 4;
             this.lblRelatedSearch.Text = "ผลการค้นหา — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
@@ -1444,7 +1118,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRelatedSearch.Location = new System.Drawing.Point(4, 214);
             this.pnlRelatedSearch.Name = "pnlRelatedSearch";
             this.pnlRelatedSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlRelatedSearch.Size = new System.Drawing.Size(607, 36);
+            this.pnlRelatedSearch.Size = new System.Drawing.Size(504, 36);
             this.pnlRelatedSearch.TabIndex = 3;
             // 
             // btnSearchRelated
@@ -1469,7 +1143,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboRelatedStatus.FormattingEnabled = true;
             this.cboRelatedStatus.Location = new System.Drawing.Point(546, 6);
             this.cboRelatedStatus.Name = "cboRelatedStatus";
-            this.cboRelatedStatus.Size = new System.Drawing.Size(130, 23);
+            this.cboRelatedStatus.Size = new System.Drawing.Size(130, 28);
             this.cboRelatedStatus.TabIndex = 3;
             // 
             // cboRelatedCategory
@@ -1479,7 +1153,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboRelatedCategory.FormattingEnabled = true;
             this.cboRelatedCategory.Location = new System.Drawing.Point(420, 6);
             this.cboRelatedCategory.Name = "cboRelatedCategory";
-            this.cboRelatedCategory.Size = new System.Drawing.Size(120, 23);
+            this.cboRelatedCategory.Size = new System.Drawing.Size(120, 28);
             this.cboRelatedCategory.TabIndex = 2;
             // 
             // cboRelatedType
@@ -1489,7 +1163,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboRelatedType.FormattingEnabled = true;
             this.cboRelatedType.Location = new System.Drawing.Point(314, 6);
             this.cboRelatedType.Name = "cboRelatedType";
-            this.cboRelatedType.Size = new System.Drawing.Size(100, 23);
+            this.cboRelatedType.Size = new System.Drawing.Size(100, 28);
             this.cboRelatedType.TabIndex = 1;
             // 
             // txtSearchRelated
@@ -1498,7 +1172,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtSearchRelated.ForeColor = System.Drawing.Color.Gray;
             this.txtSearchRelated.Location = new System.Drawing.Point(8, 6);
             this.txtSearchRelated.Name = "txtSearchRelated";
-            this.txtSearchRelated.Size = new System.Drawing.Size(300, 23);
+            this.txtSearchRelated.Size = new System.Drawing.Size(300, 27);
             this.txtSearchRelated.TabIndex = 0;
             this.txtSearchRelated.Text = "🔍 ค้นหาชื่อบทความ / รหัส / แท็ก...";
             this.txtSearchRelated.TextChanged += new System.EventHandler(this.TxtSearchRelated_TextChanged);
@@ -1520,7 +1194,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvRelatedLinked.RowHeadersWidth = 51;
             this.dgvRelatedLinked.RowTemplate.Height = 28;
             this.dgvRelatedLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvRelatedLinked.Size = new System.Drawing.Size(607, 186);
+            this.dgvRelatedLinked.Size = new System.Drawing.Size(504, 186);
             this.dgvRelatedLinked.TabIndex = 1;
             this.dgvRelatedLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvRelatedLinked_CellContentClick);
             // 
@@ -1533,7 +1207,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblRelatedLinked.Location = new System.Drawing.Point(4, 4);
             this.lblRelatedLinked.Name = "lblRelatedLinked";
             this.lblRelatedLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblRelatedLinked.Size = new System.Drawing.Size(607, 24);
+            this.lblRelatedLinked.Size = new System.Drawing.Size(504, 24);
             this.lblRelatedLinked.TabIndex = 0;
             this.lblRelatedLinked.Text = "รายการที่ Link อยู่แล้ว (0 รายการ)";
             // 
@@ -1546,10 +1220,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tabWorkflow.Controls.Add(this.pnlWorkflowSearch);
             this.tabWorkflow.Controls.Add(this.dgvWorkflowLinked);
             this.tabWorkflow.Controls.Add(this.lblWorkflowLinked);
-            this.tabWorkflow.Location = new System.Drawing.Point(4, 24);
+            this.tabWorkflow.Location = new System.Drawing.Point(4, 29);
             this.tabWorkflow.Name = "tabWorkflow";
             this.tabWorkflow.Padding = new System.Windows.Forms.Padding(4);
-            this.tabWorkflow.Size = new System.Drawing.Size(480, 1108);
+            this.tabWorkflow.Size = new System.Drawing.Size(512, 1103);
             this.tabWorkflow.TabIndex = 2;
             this.tabWorkflow.Text = "⚖️ เส้นงาน (Workflow)";
             // 
@@ -1565,8 +1239,9 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvWorkflowSearch.Name = "dgvWorkflowSearch";
             this.dgvWorkflowSearch.ReadOnly = true;
             this.dgvWorkflowSearch.RowHeadersVisible = false;
+            this.dgvWorkflowSearch.RowHeadersWidth = 51;
             this.dgvWorkflowSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvWorkflowSearch.Size = new System.Drawing.Size(472, 896);
+            this.dgvWorkflowSearch.Size = new System.Drawing.Size(504, 891);
             this.dgvWorkflowSearch.TabIndex = 4;
             this.dgvWorkflowSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvWorkflowSearch_CellDoubleClick);
             // 
@@ -1579,7 +1254,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblWorkflowSearch.Location = new System.Drawing.Point(4, 184);
             this.lblWorkflowSearch.Name = "lblWorkflowSearch";
             this.lblWorkflowSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblWorkflowSearch.Size = new System.Drawing.Size(472, 24);
+            this.lblWorkflowSearch.Size = new System.Drawing.Size(504, 24);
             this.lblWorkflowSearch.TabIndex = 3;
             this.lblWorkflowSearch.Text = "ผลการค้นหา (0 รายการ) — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
@@ -1595,7 +1270,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlWorkflowSearch.Location = new System.Drawing.Point(4, 148);
             this.pnlWorkflowSearch.Name = "pnlWorkflowSearch";
             this.pnlWorkflowSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlWorkflowSearch.Size = new System.Drawing.Size(472, 36);
+            this.pnlWorkflowSearch.Size = new System.Drawing.Size(504, 36);
             this.pnlWorkflowSearch.TabIndex = 2;
             // 
             // btnSearchWorkflow
@@ -1606,7 +1281,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnSearchWorkflow.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSearchWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnSearchWorkflow.ForeColor = System.Drawing.Color.White;
-            this.btnSearchWorkflow.Location = new System.Drawing.Point(396, 6);
+            this.btnSearchWorkflow.Location = new System.Drawing.Point(428, 6);
             this.btnSearchWorkflow.Name = "btnSearchWorkflow";
             this.btnSearchWorkflow.Size = new System.Drawing.Size(68, 24);
             this.btnSearchWorkflow.TabIndex = 4;
@@ -1620,9 +1295,9 @@ namespace CMS.Presentation.Modules.KMS
             this.cboWorkflowStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboWorkflowStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cboWorkflowStatus.FormattingEnabled = true;
-            this.cboWorkflowStatus.Location = new System.Drawing.Point(316, 6);
+            this.cboWorkflowStatus.Location = new System.Drawing.Point(348, 6);
             this.cboWorkflowStatus.Name = "cboWorkflowStatus";
-            this.cboWorkflowStatus.Size = new System.Drawing.Size(74, 23);
+            this.cboWorkflowStatus.Size = new System.Drawing.Size(74, 28);
             this.cboWorkflowStatus.TabIndex = 3;
             // 
             // cboWorkflowCategory
@@ -1631,9 +1306,9 @@ namespace CMS.Presentation.Modules.KMS
             this.cboWorkflowCategory.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboWorkflowCategory.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cboWorkflowCategory.FormattingEnabled = true;
-            this.cboWorkflowCategory.Location = new System.Drawing.Point(216, 6);
+            this.cboWorkflowCategory.Location = new System.Drawing.Point(248, 6);
             this.cboWorkflowCategory.Name = "cboWorkflowCategory";
-            this.cboWorkflowCategory.Size = new System.Drawing.Size(94, 23);
+            this.cboWorkflowCategory.Size = new System.Drawing.Size(94, 28);
             this.cboWorkflowCategory.TabIndex = 2;
             // 
             // cboWorkflowType
@@ -1642,9 +1317,9 @@ namespace CMS.Presentation.Modules.KMS
             this.cboWorkflowType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboWorkflowType.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cboWorkflowType.FormattingEnabled = true;
-            this.cboWorkflowType.Location = new System.Drawing.Point(126, 6);
+            this.cboWorkflowType.Location = new System.Drawing.Point(158, 6);
             this.cboWorkflowType.Name = "cboWorkflowType";
-            this.cboWorkflowType.Size = new System.Drawing.Size(84, 23);
+            this.cboWorkflowType.Size = new System.Drawing.Size(84, 28);
             this.cboWorkflowType.TabIndex = 1;
             // 
             // txtSearchWorkflow
@@ -1654,7 +1329,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtSearchWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.txtSearchWorkflow.Location = new System.Drawing.Point(8, 6);
             this.txtSearchWorkflow.Name = "txtSearchWorkflow";
-            this.txtSearchWorkflow.Size = new System.Drawing.Size(112, 23);
+            this.txtSearchWorkflow.Size = new System.Drawing.Size(144, 27);
             this.txtSearchWorkflow.TabIndex = 0;
             this.txtSearchWorkflow.Enter += new System.EventHandler(this.TxtSearchWorkflow_Enter);
             this.txtSearchWorkflow.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearchWorkflow_KeyDown);
@@ -1672,8 +1347,9 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvWorkflowLinked.Name = "dgvWorkflowLinked";
             this.dgvWorkflowLinked.ReadOnly = true;
             this.dgvWorkflowLinked.RowHeadersVisible = false;
+            this.dgvWorkflowLinked.RowHeadersWidth = 51;
             this.dgvWorkflowLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvWorkflowLinked.Size = new System.Drawing.Size(472, 120);
+            this.dgvWorkflowLinked.Size = new System.Drawing.Size(504, 120);
             this.dgvWorkflowLinked.TabIndex = 1;
             this.dgvWorkflowLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvWorkflowLinked_CellContentClick);
             // 
@@ -1686,7 +1362,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblWorkflowLinked.Location = new System.Drawing.Point(4, 4);
             this.lblWorkflowLinked.Name = "lblWorkflowLinked";
             this.lblWorkflowLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblWorkflowLinked.Size = new System.Drawing.Size(472, 24);
+            this.lblWorkflowLinked.Size = new System.Drawing.Size(504, 24);
             this.lblWorkflowLinked.TabIndex = 0;
             this.lblWorkflowLinked.Text = "Workflow ที่เชื่อมโยง (0 รายการ)";
             // 
@@ -1699,10 +1375,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tabPrograms.Controls.Add(this.pnlProgramsSearch);
             this.tabPrograms.Controls.Add(this.dgvProgramsLinked);
             this.tabPrograms.Controls.Add(this.lblProgramsLinked);
-            this.tabPrograms.Location = new System.Drawing.Point(4, 24);
+            this.tabPrograms.Location = new System.Drawing.Point(4, 29);
             this.tabPrograms.Name = "tabPrograms";
             this.tabPrograms.Padding = new System.Windows.Forms.Padding(4);
-            this.tabPrograms.Size = new System.Drawing.Size(615, 1108);
+            this.tabPrograms.Size = new System.Drawing.Size(512, 1103);
             this.tabPrograms.TabIndex = 3;
             this.tabPrograms.Text = "💻 โปรแกรมที่เกี่ยวข้อง";
             // 
@@ -1721,7 +1397,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvProgramsSearch.RowHeadersWidth = 51;
             this.dgvProgramsSearch.RowTemplate.Height = 28;
             this.dgvProgramsSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvProgramsSearch.Size = new System.Drawing.Size(607, 300);
+            this.dgvProgramsSearch.Size = new System.Drawing.Size(504, 300);
             this.dgvProgramsSearch.TabIndex = 5;
             this.dgvProgramsSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvProgramsSearch_CellDoubleClick);
             // 
@@ -1734,7 +1410,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblProgramsSearch.Location = new System.Drawing.Point(4, 250);
             this.lblProgramsSearch.Name = "lblProgramsSearch";
             this.lblProgramsSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblProgramsSearch.Size = new System.Drawing.Size(607, 24);
+            this.lblProgramsSearch.Size = new System.Drawing.Size(504, 24);
             this.lblProgramsSearch.TabIndex = 4;
             this.lblProgramsSearch.Text = "ผลการค้นหา — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
@@ -1750,7 +1426,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlProgramsSearch.Location = new System.Drawing.Point(4, 214);
             this.pnlProgramsSearch.Name = "pnlProgramsSearch";
             this.pnlProgramsSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlProgramsSearch.Size = new System.Drawing.Size(607, 36);
+            this.pnlProgramsSearch.Size = new System.Drawing.Size(504, 36);
             this.pnlProgramsSearch.TabIndex = 3;
             // 
             // btnSearchPrograms
@@ -1775,7 +1451,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboProgramsStatus.FormattingEnabled = true;
             this.cboProgramsStatus.Location = new System.Drawing.Point(546, 6);
             this.cboProgramsStatus.Name = "cboProgramsStatus";
-            this.cboProgramsStatus.Size = new System.Drawing.Size(130, 23);
+            this.cboProgramsStatus.Size = new System.Drawing.Size(130, 28);
             this.cboProgramsStatus.TabIndex = 3;
             // 
             // cboProgramsCategory
@@ -1785,7 +1461,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboProgramsCategory.FormattingEnabled = true;
             this.cboProgramsCategory.Location = new System.Drawing.Point(420, 6);
             this.cboProgramsCategory.Name = "cboProgramsCategory";
-            this.cboProgramsCategory.Size = new System.Drawing.Size(120, 23);
+            this.cboProgramsCategory.Size = new System.Drawing.Size(120, 28);
             this.cboProgramsCategory.TabIndex = 2;
             // 
             // cboProgramsType
@@ -1795,7 +1471,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboProgramsType.FormattingEnabled = true;
             this.cboProgramsType.Location = new System.Drawing.Point(314, 6);
             this.cboProgramsType.Name = "cboProgramsType";
-            this.cboProgramsType.Size = new System.Drawing.Size(100, 23);
+            this.cboProgramsType.Size = new System.Drawing.Size(100, 28);
             this.cboProgramsType.TabIndex = 1;
             // 
             // txtSearchPrograms
@@ -1804,7 +1480,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtSearchPrograms.ForeColor = System.Drawing.Color.Gray;
             this.txtSearchPrograms.Location = new System.Drawing.Point(8, 6);
             this.txtSearchPrograms.Name = "txtSearchPrograms";
-            this.txtSearchPrograms.Size = new System.Drawing.Size(300, 23);
+            this.txtSearchPrograms.Size = new System.Drawing.Size(300, 27);
             this.txtSearchPrograms.TabIndex = 0;
             this.txtSearchPrograms.Text = "🔍 ค้นหาชื่อโปรแกรม / รหัส...";
             this.txtSearchPrograms.Enter += new System.EventHandler(this.TxtSearchPrograms_Enter);
@@ -1825,7 +1501,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvProgramsLinked.RowHeadersWidth = 51;
             this.dgvProgramsLinked.RowTemplate.Height = 28;
             this.dgvProgramsLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvProgramsLinked.Size = new System.Drawing.Size(607, 186);
+            this.dgvProgramsLinked.Size = new System.Drawing.Size(504, 186);
             this.dgvProgramsLinked.TabIndex = 1;
             this.dgvProgramsLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvProgramsLinked_CellContentClick);
             // 
@@ -1838,7 +1514,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblProgramsLinked.Location = new System.Drawing.Point(4, 4);
             this.lblProgramsLinked.Name = "lblProgramsLinked";
             this.lblProgramsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblProgramsLinked.Size = new System.Drawing.Size(607, 24);
+            this.lblProgramsLinked.Size = new System.Drawing.Size(504, 24);
             this.lblProgramsLinked.TabIndex = 0;
             this.lblProgramsLinked.Text = "โปรแกรมที่เชื่อมโยง (0 รายการ)";
             // 
@@ -1851,10 +1527,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tabDocs.Controls.Add(this.pnlDocsSearch);
             this.tabDocs.Controls.Add(this.dgvDocsLinked);
             this.tabDocs.Controls.Add(this.lblDocsLinked);
-            this.tabDocs.Location = new System.Drawing.Point(4, 24);
+            this.tabDocs.Location = new System.Drawing.Point(4, 29);
             this.tabDocs.Name = "tabDocs";
             this.tabDocs.Padding = new System.Windows.Forms.Padding(4);
-            this.tabDocs.Size = new System.Drawing.Size(615, 1108);
+            this.tabDocs.Size = new System.Drawing.Size(512, 1103);
             this.tabDocs.TabIndex = 4;
             this.tabDocs.Text = "📋 เอกสารที่เกี่ยวข้อง";
             // 
@@ -1873,7 +1549,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvDocsSearch.RowHeadersWidth = 51;
             this.dgvDocsSearch.RowTemplate.Height = 28;
             this.dgvDocsSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvDocsSearch.Size = new System.Drawing.Size(607, 300);
+            this.dgvDocsSearch.Size = new System.Drawing.Size(504, 300);
             this.dgvDocsSearch.TabIndex = 5;
             this.dgvDocsSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvDocsSearch_CellDoubleClick);
             // 
@@ -1886,7 +1562,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblDocsSearch.Location = new System.Drawing.Point(4, 250);
             this.lblDocsSearch.Name = "lblDocsSearch";
             this.lblDocsSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblDocsSearch.Size = new System.Drawing.Size(607, 24);
+            this.lblDocsSearch.Size = new System.Drawing.Size(504, 24);
             this.lblDocsSearch.TabIndex = 4;
             this.lblDocsSearch.Text = "ผลการค้นหา — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
@@ -1902,7 +1578,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlDocsSearch.Location = new System.Drawing.Point(4, 214);
             this.pnlDocsSearch.Name = "pnlDocsSearch";
             this.pnlDocsSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlDocsSearch.Size = new System.Drawing.Size(607, 36);
+            this.pnlDocsSearch.Size = new System.Drawing.Size(504, 36);
             this.pnlDocsSearch.TabIndex = 3;
             // 
             // btnSearchDocs
@@ -1927,7 +1603,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboDocsStatus.FormattingEnabled = true;
             this.cboDocsStatus.Location = new System.Drawing.Point(546, 6);
             this.cboDocsStatus.Name = "cboDocsStatus";
-            this.cboDocsStatus.Size = new System.Drawing.Size(130, 23);
+            this.cboDocsStatus.Size = new System.Drawing.Size(130, 28);
             this.cboDocsStatus.TabIndex = 3;
             // 
             // cboDocsFolder
@@ -1937,7 +1613,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboDocsFolder.FormattingEnabled = true;
             this.cboDocsFolder.Location = new System.Drawing.Point(420, 6);
             this.cboDocsFolder.Name = "cboDocsFolder";
-            this.cboDocsFolder.Size = new System.Drawing.Size(120, 23);
+            this.cboDocsFolder.Size = new System.Drawing.Size(120, 28);
             this.cboDocsFolder.TabIndex = 2;
             // 
             // cboDocsType
@@ -1947,7 +1623,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboDocsType.FormattingEnabled = true;
             this.cboDocsType.Location = new System.Drawing.Point(314, 6);
             this.cboDocsType.Name = "cboDocsType";
-            this.cboDocsType.Size = new System.Drawing.Size(100, 23);
+            this.cboDocsType.Size = new System.Drawing.Size(100, 28);
             this.cboDocsType.TabIndex = 1;
             // 
             // txtSearchDocs
@@ -1956,7 +1632,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtSearchDocs.ForeColor = System.Drawing.Color.Gray;
             this.txtSearchDocs.Location = new System.Drawing.Point(8, 6);
             this.txtSearchDocs.Name = "txtSearchDocs";
-            this.txtSearchDocs.Size = new System.Drawing.Size(300, 23);
+            this.txtSearchDocs.Size = new System.Drawing.Size(300, 27);
             this.txtSearchDocs.TabIndex = 0;
             this.txtSearchDocs.Text = "🔍 ค้นหาชื่อเอกสาร / รหัส...";
             this.txtSearchDocs.Enter += new System.EventHandler(this.TxtSearchDocs_Enter);
@@ -1977,7 +1653,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvDocsLinked.RowHeadersWidth = 51;
             this.dgvDocsLinked.RowTemplate.Height = 28;
             this.dgvDocsLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvDocsLinked.Size = new System.Drawing.Size(607, 186);
+            this.dgvDocsLinked.Size = new System.Drawing.Size(504, 186);
             this.dgvDocsLinked.TabIndex = 1;
             this.dgvDocsLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvDocsLinked_CellContentClick);
             // 
@@ -1990,7 +1666,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblDocsLinked.Location = new System.Drawing.Point(4, 4);
             this.lblDocsLinked.Name = "lblDocsLinked";
             this.lblDocsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblDocsLinked.Size = new System.Drawing.Size(607, 24);
+            this.lblDocsLinked.Size = new System.Drawing.Size(504, 24);
             this.lblDocsLinked.TabIndex = 0;
             this.lblDocsLinked.Text = "เอกสารที่เชื่อมโยง (0 เอกสาร)";
             // 
@@ -1999,10 +1675,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tabVersions.AutoScroll = true;
             this.tabVersions.BackColor = System.Drawing.Color.White;
             this.tabVersions.Controls.Add(this.lstVersions);
-            this.tabVersions.Location = new System.Drawing.Point(4, 24);
+            this.tabVersions.Location = new System.Drawing.Point(4, 29);
             this.tabVersions.Name = "tabVersions";
             this.tabVersions.Padding = new System.Windows.Forms.Padding(4);
-            this.tabVersions.Size = new System.Drawing.Size(480, 1108);
+            this.tabVersions.Size = new System.Drawing.Size(512, 1103);
             this.tabVersions.TabIndex = 5;
             this.tabVersions.Text = "🕐 ประวัติ Version";
             // 
@@ -2021,7 +1697,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstVersions.HideSelection = false;
             this.lstVersions.Location = new System.Drawing.Point(4, 4);
             this.lstVersions.Name = "lstVersions";
-            this.lstVersions.Size = new System.Drawing.Size(472, 400);
+            this.lstVersions.Size = new System.Drawing.Size(504, 400);
             this.lstVersions.TabIndex = 0;
             this.lstVersions.UseCompatibleStateImageBehavior = false;
             this.lstVersions.View = System.Windows.Forms.View.Details;
@@ -2053,7 +1729,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlMappingHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlMappingHeader.Name = "pnlMappingHeader";
-            this.pnlMappingHeader.Size = new System.Drawing.Size(623, 28);
+            this.pnlMappingHeader.Size = new System.Drawing.Size(520, 28);
             this.pnlMappingHeader.TabIndex = 0;
             // 
             // lblMappingHeader
@@ -2064,14 +1740,278 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader.Location = new System.Drawing.Point(0, 0);
             this.lblMappingHeader.Name = "lblMappingHeader";
             this.lblMappingHeader.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.lblMappingHeader.Size = new System.Drawing.Size(623, 28);
+            this.lblMappingHeader.Size = new System.Drawing.Size(520, 28);
             this.lblMappingHeader.TabIndex = 0;
             this.lblMappingHeader.Text = "🔗  Mapping รายการที่เกี่ยวข้อง";
             this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // lblLikeCount
+            // 
+            this.lblLikeCount.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblLikeCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblLikeCount.Location = new System.Drawing.Point(582, 186);
+            this.lblLikeCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
+            this.lblLikeCount.Name = "lblLikeCount";
+            this.lblLikeCount.Size = new System.Drawing.Size(281, 26);
+            this.lblLikeCount.TabIndex = 42;
+            this.lblLikeCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // cboCraf
+            // 
+            this.cboCraf.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cboCraf.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboCraf.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.cboCraf.Location = new System.Drawing.Point(867, 82);
+            this.cboCraf.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.cboCraf.Name = "cboCraf";
+            this.cboCraf.Size = new System.Drawing.Size(283, 27);
+            this.cboCraf.TabIndex = 33;
+            // 
+            // lblViewCount
+            // 
+            this.lblViewCount.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblViewCount.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblViewCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblViewCount.Location = new System.Drawing.Point(582, 226);
+            this.lblViewCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
+            this.lblViewCount.Name = "lblViewCount";
+            this.lblViewCount.Size = new System.Drawing.Size(281, 62);
+            this.lblViewCount.TabIndex = 41;
+            this.lblViewCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblCraf
+            // 
+            this.lblCraf.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblCraf.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblCraf.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblCraf.Location = new System.Drawing.Point(867, 63);
+            this.lblCraf.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblCraf.Name = "lblCraf";
+            this.lblCraf.Size = new System.Drawing.Size(283, 19);
+            this.lblCraf.TabIndex = 31;
+            this.lblCraf.Text = "ระดับความลับ (CRAF)";
+            // 
+            // lblTags
+            // 
+            this.lblTags.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTags.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblTags.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblTags.Location = new System.Drawing.Point(12, 118);
+            this.lblTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblTags.Name = "lblTags";
+            this.lblTags.Size = new System.Drawing.Size(281, 30);
+            this.lblTags.TabIndex = 30;
+            this.lblTags.Text = "แท็ก (Tags) — คั่นด้วยเครื่องหมาย ,";
+            // 
+            // cboCategory
+            // 
+            this.cboCategory.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cboCategory.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.cboCategory.Location = new System.Drawing.Point(582, 82);
+            this.cboCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.cboCategory.Name = "cboCategory";
+            this.cboCategory.Size = new System.Drawing.Size(281, 27);
+            this.cboCategory.TabIndex = 23;
+            // 
+            // txtTitle
+            // 
+            this.tlpGenInfo.SetColumnSpan(this.txtTitle, 2);
+            this.txtTitle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtTitle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.txtTitle.Location = new System.Drawing.Point(12, 82);
+            this.txtTitle.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.txtTitle.MaxLength = 500;
+            this.txtTitle.Name = "txtTitle";
+            this.txtTitle.Size = new System.Drawing.Size(566, 30);
+            this.txtTitle.TabIndex = 22;
+            // 
+            // lblCategory
+            // 
+            this.lblCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblCategory.Location = new System.Drawing.Point(582, 63);
+            this.lblCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblCategory.Name = "lblCategory";
+            this.lblCategory.Size = new System.Drawing.Size(281, 18);
+            this.lblCategory.TabIndex = 21;
+            this.lblCategory.Text = "หมวดหมู่ *";
+            // 
+            // lblTitle
+            // 
+            this.lblTitle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblTitle.Location = new System.Drawing.Point(12, 63);
+            this.lblTitle.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblTitle.Name = "lblTitle";
+            this.lblTitle.Size = new System.Drawing.Size(281, 19);
+            this.lblTitle.TabIndex = 20;
+            this.lblTitle.Text = "ชื่อบทความ *";
+            // 
+            // lblCurVersion
+            // 
+            this.lblCurVersion.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.lblCurVersion.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblCurVersion.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblCurVersion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
+            this.lblCurVersion.Location = new System.Drawing.Point(867, 26);
+            this.lblCurVersion.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblCurVersion.Name = "lblCurVersion";
+            this.lblCurVersion.Size = new System.Drawing.Size(283, 28);
+            this.lblCurVersion.TabIndex = 13;
+            this.lblCurVersion.Text = "v1.0";
+            this.lblCurVersion.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // cboStatus
+            // 
+            this.cboStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboStatus.FormattingEnabled = true;
+            this.cboStatus.Items.AddRange(new object[] {
+            "📝 Draft",
+            "🔍 รอ Review",
+            "✅ Published",
+            "📦 Archived"});
+            this.cboStatus.Location = new System.Drawing.Point(582, 26);
+            this.cboStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.cboStatus.Name = "cboStatus";
+            this.cboStatus.Size = new System.Drawing.Size(281, 28);
+            this.cboStatus.TabIndex = 12;
+            this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboStatus_SelectedIndexChanged);
+            // 
+            // cboType
+            // 
+            this.cboType.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboType.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.cboType.Location = new System.Drawing.Point(297, 26);
+            this.cboType.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.cboType.Name = "cboType";
+            this.cboType.Size = new System.Drawing.Size(281, 27);
+            this.cboType.TabIndex = 11;
+            // 
+            // txtCode
+            // 
+            this.txtCode.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.txtCode.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtCode.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.txtCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
+            this.txtCode.Location = new System.Drawing.Point(12, 26);
+            this.txtCode.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.txtCode.Name = "txtCode";
+            this.txtCode.ReadOnly = true;
+            this.txtCode.Size = new System.Drawing.Size(281, 26);
+            this.txtCode.TabIndex = 10;
+            // 
+            // lblVerLabel
+            // 
+            this.lblVerLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblVerLabel.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblVerLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblVerLabel.Location = new System.Drawing.Point(867, 8);
+            this.lblVerLabel.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblVerLabel.Name = "lblVerLabel";
+            this.lblVerLabel.Size = new System.Drawing.Size(283, 18);
+            this.lblVerLabel.TabIndex = 3;
+            this.lblVerLabel.Text = "เวอร์ชัน";
+            // 
+            // lblStatus
+            // 
+            this.lblStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblStatus.Location = new System.Drawing.Point(582, 8);
+            this.lblStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblStatus.Name = "lblStatus";
+            this.lblStatus.Size = new System.Drawing.Size(281, 18);
+            this.lblStatus.TabIndex = 2;
+            this.lblStatus.Text = "สถานะ";
+            // 
+            // lblType
+            // 
+            this.lblType.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblType.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblType.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblType.Location = new System.Drawing.Point(297, 8);
+            this.lblType.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblType.Name = "lblType";
+            this.lblType.Size = new System.Drawing.Size(281, 18);
+            this.lblType.TabIndex = 1;
+            this.lblType.Text = "ประเภทบทความ *";
+            // 
+            // lblCode
+            // 
+            this.lblCode.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblCode.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblCode.Location = new System.Drawing.Point(12, 8);
+            this.lblCode.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblCode.Name = "lblCode";
+            this.lblCode.Size = new System.Drawing.Size(281, 18);
+            this.lblCode.TabIndex = 0;
+            this.lblCode.Text = "รหัสบทความ";
+            // 
+            // txtTagInput
+            // 
+            this.tlpGenInfo.SetColumnSpan(this.txtTagInput, 2);
+            this.txtTagInput.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtTagInput.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.txtTagInput.Location = new System.Drawing.Point(13, 151);
+            this.txtTagInput.Name = "txtTagInput";
+            this.txtTagInput.Size = new System.Drawing.Size(564, 30);
+            this.txtTagInput.TabIndex = 0;
+            this.txtTagInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtTagInput_KeyDown);
+            // 
+            // tlpGenInfo
+            // 
+            this.tlpGenInfo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(250)))), ((int)(((byte)(251)))), ((int)(((byte)(252)))));
+            this.tlpGenInfo.ColumnCount = 4;
+            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpGenInfo.Controls.Add(this.txtTagInput, 0, 7);
+            this.tlpGenInfo.Controls.Add(this.lblCode, 0, 0);
+            this.tlpGenInfo.Controls.Add(this.lblType, 1, 0);
+            this.tlpGenInfo.Controls.Add(this.lblStatus, 2, 0);
+            this.tlpGenInfo.Controls.Add(this.lblVerLabel, 3, 0);
+            this.tlpGenInfo.Controls.Add(this.txtCode, 0, 1);
+            this.tlpGenInfo.Controls.Add(this.cboType, 1, 1);
+            this.tlpGenInfo.Controls.Add(this.cboStatus, 2, 1);
+            this.tlpGenInfo.Controls.Add(this.lblCurVersion, 3, 1);
+            this.tlpGenInfo.Controls.Add(this.lblTitle, 0, 3);
+            this.tlpGenInfo.Controls.Add(this.lblCategory, 2, 3);
+            this.tlpGenInfo.Controls.Add(this.txtTitle, 0, 4);
+            this.tlpGenInfo.Controls.Add(this.cboCategory, 2, 4);
+            this.tlpGenInfo.Controls.Add(this.lblTags, 0, 6);
+            this.tlpGenInfo.Controls.Add(this.lblCraf, 3, 3);
+            this.tlpGenInfo.Controls.Add(this.lblViewCount, 2, 9);
+            this.tlpGenInfo.Controls.Add(this.cboCraf, 3, 4);
+            this.tlpGenInfo.Controls.Add(this.lblLikeCount, 2, 8);
+            this.tlpGenInfo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tlpGenInfo.Location = new System.Drawing.Point(0, 28);
+            this.tlpGenInfo.Name = "tlpGenInfo";
+            this.tlpGenInfo.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
+            this.tlpGenInfo.RowCount = 10;
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 9F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 19F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 8F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 19F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
+            this.tlpGenInfo.Size = new System.Drawing.Size(1162, 296);
+            this.tlpGenInfo.TabIndex = 1;
+            // 
             // KBEditorDialog
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoScroll = true;
             this.BackColor = System.Drawing.Color.White;
@@ -2104,12 +2044,6 @@ namespace CMS.Presentation.Modules.KMS
             ((System.ComponentModel.ISupportInitialize)(this.splitTopBottom)).EndInit();
             this.splitTopBottom.ResumeLayout(false);
             this.pnlGenInfoOuter.ResumeLayout(false);
-            this.tlpGenInfo.ResumeLayout(false);
-            this.tlpGenInfo.PerformLayout();
-            this.flpTags.ResumeLayout(false);
-            this.flpTags.PerformLayout();
-            this.pnlExpiry.ResumeLayout(false);
-            this.pnlExpiry.PerformLayout();
             this.pnlGenInfoHeader.ResumeLayout(false);
             this.pnlContentOuter.ResumeLayout(false);
             this.pnlContentOuter.PerformLayout();
@@ -2146,6 +2080,8 @@ namespace CMS.Presentation.Modules.KMS
             ((System.ComponentModel.ISupportInitialize)(this.dgvDocsLinked)).EndInit();
             this.tabVersions.ResumeLayout(false);
             this.pnlMappingHeader.ResumeLayout(false);
+            this.tlpGenInfo.ResumeLayout(false);
+            this.tlpGenInfo.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -2183,29 +2119,6 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel       pnlGenInfoOuter;
         private System.Windows.Forms.Panel       pnlGenInfoHeader;
         private System.Windows.Forms.Label       lblGenInfoHeader;
-        private System.Windows.Forms.TableLayoutPanel tlpGenInfo;
-        private System.Windows.Forms.Label       lblCode;
-        private System.Windows.Forms.TextBox     txtCode;
-        private System.Windows.Forms.Label       lblType;
-        private System.Windows.Forms.ComboBox    cboType;
-        private System.Windows.Forms.Label       lblStatus;
-        private System.Windows.Forms.ComboBox    cboStatus;
-        private System.Windows.Forms.Label       lblVerLabel;
-        private System.Windows.Forms.Label       lblCurVersion;
-        private System.Windows.Forms.Label       lblTitle;
-        private System.Windows.Forms.TextBox     txtTitle;
-        private System.Windows.Forms.Label       lblCategory;
-        private System.Windows.Forms.ComboBox    cboCategory;
-        private System.Windows.Forms.Label       lblTags;
-        private System.Windows.Forms.FlowLayoutPanel flpTags;
-        private System.Windows.Forms.TextBox     txtTagInput;
-        private System.Windows.Forms.Label       lblExpiry;
-        private System.Windows.Forms.Panel       pnlExpiry;
-        private System.Windows.Forms.DateTimePicker dtpExpiry;
-        private System.Windows.Forms.CheckBox    chkNoExpiry;
-        private System.Windows.Forms.CheckBox    chkOfficialPolicy;
-        private System.Windows.Forms.Label       lblViewCount;
-        private System.Windows.Forms.Label       lblLikeCount;
 
         // ── Content section ───────────────────────────────────────────────────
         private System.Windows.Forms.Panel       pnlContentOuter;
@@ -2318,5 +2231,24 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel pnlContentHeader;
         private System.Windows.Forms.Label lblContentHeader;
         private System.Windows.Forms.Label lblMappingHeader;
+        private System.Windows.Forms.TableLayoutPanel tlpGenInfo;
+        private System.Windows.Forms.TextBox txtTagInput;
+        private System.Windows.Forms.Label lblCode;
+        private System.Windows.Forms.Label lblType;
+        private System.Windows.Forms.Label lblStatus;
+        private System.Windows.Forms.Label lblVerLabel;
+        private System.Windows.Forms.TextBox txtCode;
+        private System.Windows.Forms.ComboBox cboType;
+        private System.Windows.Forms.ComboBox cboStatus;
+        private System.Windows.Forms.Label lblCurVersion;
+        private System.Windows.Forms.Label lblTitle;
+        private System.Windows.Forms.Label lblCategory;
+        private System.Windows.Forms.TextBox txtTitle;
+        private System.Windows.Forms.ComboBox cboCategory;
+        private System.Windows.Forms.Label lblTags;
+        private System.Windows.Forms.Label lblCraf;
+        private System.Windows.Forms.Label lblViewCount;
+        private System.Windows.Forms.ComboBox cboCraf;
+        private System.Windows.Forms.Label lblLikeCount;
     }
 }

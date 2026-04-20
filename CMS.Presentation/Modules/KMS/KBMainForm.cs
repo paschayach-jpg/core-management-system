@@ -25,6 +25,12 @@ namespace CMS.Presentation.Modules.KMS
         private ArticleViewerForm _activeViewer          = null;
         private int?              _activeViewerArticleId = null;
 
+        /// <summary>
+        /// Navigation history stack — each entry is a viewer that was pushed aside
+        /// when the user clicked a related article. Popped on btnBack.
+        /// </summary>
+        private readonly Stack<ArticleViewerForm> _viewerHistory = new Stack<ArticleViewerForm>();
+
         // ── Category settings embedded panel state ───────────────────────────────
         private KBCategoryForm _activeCategoryForm = null;
 
@@ -299,20 +305,30 @@ namespace CMS.Presentation.Modules.KMS
 
         private void ShowArticleViewer(KBArticle article)
         {
+            // If the same article is already the active viewer, do nothing
             if (_activeViewerArticleId.HasValue && _activeViewerArticleId.Value == article.ArticleID)
                 return;
 
-            CloseActiveViewer();
+            // Push the current viewer onto the history stack instead of disposing it,
+            // so btnBack can return to it later
+            if (_activeViewer != null)
+            {
+                _activeViewer.Hide();
+                pnlViewerHost.Controls.Remove(_activeViewer);
+                _viewerHistory.Push(_activeViewer);
+                _activeViewer          = null;
+                _activeViewerArticleId = null;
+            }
 
             var viewer = _viewerFactory != null ? _viewerFactory(article) : null;
             if (viewer == null) return;
 
-            viewer.BackRequested  += OnViewerBackRequested;
+            viewer.BackRequested        += OnViewerBackRequested;
+            viewer.ArticleOpenRequested += (s, a) => ShowArticleViewer(a);
             viewer.TopLevel        = false;
             viewer.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             viewer.Dock            = System.Windows.Forms.DockStyle.Fill;
 
-            // Hide the split layout and show the full-screen host in its place
             splitMain.Visible      = false;
             pnlViewerHost.Controls.Add(viewer);
             pnlViewerHost.Visible  = true;
@@ -325,9 +341,29 @@ namespace CMS.Presentation.Modules.KMS
 
         private void OnViewerBackRequested(object sender, EventArgs e)
         {
-            CloseActiveViewer();
+            // Dispose the current viewer
+            if (_activeViewer != null)
+            {
+                _activeViewer.BackRequested -= OnViewerBackRequested;
+                pnlViewerHost.Controls.Remove(_activeViewer);
+                _activeViewer.Dispose();
+                _activeViewer          = null;
+                _activeViewerArticleId = null;
+            }
 
-            // Restore the normal split layout
+            // If there is a previous viewer on the stack, restore it
+            if (_viewerHistory.Count > 0)
+            {
+                var previous = _viewerHistory.Pop();
+                pnlViewerHost.Controls.Add(previous);
+                previous.Show();
+
+                _activeViewer          = previous;
+                _activeViewerArticleId = previous.CurrentArticleId;
+                return;
+            }
+
+            // Stack is empty — return to the article list
             pnlViewerHost.Visible = false;
             splitMain.Visible     = true;
 
@@ -337,12 +373,22 @@ namespace CMS.Presentation.Modules.KMS
 
         private void CloseActiveViewer()
         {
-            if (_activeViewer == null) return;
-            _activeViewer.BackRequested -= OnViewerBackRequested;
-            pnlViewerHost.Controls.Remove(_activeViewer);
-            _activeViewer.Dispose();
-            _activeViewer          = null;
-            _activeViewerArticleId = null;
+            // Dispose the active viewer
+            if (_activeViewer != null)
+            {
+                _activeViewer.BackRequested -= OnViewerBackRequested;
+                pnlViewerHost.Controls.Remove(_activeViewer);
+                _activeViewer.Dispose();
+                _activeViewer          = null;
+                _activeViewerArticleId = null;
+            }
+
+            // Dispose every viewer in the history stack
+            while (_viewerHistory.Count > 0)
+            {
+                var old = _viewerHistory.Pop();
+                old.Dispose();
+            }
         }
 
         // ── Private UI helpers ────────────────────────────────────────────────────

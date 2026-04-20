@@ -1187,7 +1187,7 @@ namespace CMS.Presentation
                 {
                     var viewer          = new ArticleViewerForm();
                     var viewerPresenter = new ArticleViewerController(
-                        viewer, _kbArticleService, _kbVersionRepository, _currentUser, article);
+                        viewer, _kbArticleService, _kbVersionRepository, _kbArticleLinkRepository, _currentUser, article);
                     viewer.AttachPresenter(viewerPresenter);
                     viewer.AttachEditorFactory(a => OpenKBEditorDialog(a));
                     return viewer;

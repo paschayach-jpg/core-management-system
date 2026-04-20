@@ -314,7 +314,7 @@ namespace CMS.Presentation.Modules.KMS
             "100 รายการ"});
             this.cboPageSize.Location = new System.Drawing.Point(148, 0);
             this.cboPageSize.Name = "cboPageSize";
-            this.cboPageSize.Size = new System.Drawing.Size(120, 25);
+            this.cboPageSize.Size = new System.Drawing.Size(120, 21);
             this.cboPageSize.TabIndex = 0;
             // 
             // lblPageSizeLabel
@@ -342,7 +342,7 @@ namespace CMS.Presentation.Modules.KMS
             "คะแนน"});
             this.cboSortBy.Location = new System.Drawing.Point(70, 0);
             this.cboSortBy.Name = "cboSortBy";
-            this.cboSortBy.Size = new System.Drawing.Size(140, 25);
+            this.cboSortBy.Size = new System.Drawing.Size(140, 21);
             this.cboSortBy.TabIndex = 2;
             // 
             // lblSortByLabel
@@ -387,7 +387,7 @@ namespace CMS.Presentation.Modules.KMS
             "IT"});
             this.cboDepartment.Location = new System.Drawing.Point(310, 5);
             this.cboDepartment.Name = "cboDepartment";
-            this.cboDepartment.Size = new System.Drawing.Size(150, 25);
+            this.cboDepartment.Size = new System.Drawing.Size(150, 21);
             this.cboDepartment.TabIndex = 2;
             // 
             // cboStatus
@@ -398,7 +398,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboStatus.FormattingEnabled = true;
             this.cboStatus.Location = new System.Drawing.Point(190, 5);
             this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(120, 25);
+            this.cboStatus.Size = new System.Drawing.Size(120, 21);
             this.cboStatus.TabIndex = 3;
             this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboFilter_SelectedIndexChanged);
             // 
@@ -416,7 +416,7 @@ namespace CMS.Presentation.Modules.KMS
             "แนวทาง"});
             this.cboType.Location = new System.Drawing.Point(70, 5);
             this.cboType.Name = "cboType";
-            this.cboType.Size = new System.Drawing.Size(120, 25);
+            this.cboType.Size = new System.Drawing.Size(120, 21);
             this.cboType.TabIndex = 4;
             // 
             // lblFilterLabel
@@ -463,7 +463,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtToolbarSearch.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.txtToolbarSearch.Location = new System.Drawing.Point(48, 0);
             this.txtToolbarSearch.Name = "txtToolbarSearch";
-            this.txtToolbarSearch.Size = new System.Drawing.Size(200, 26);
+            this.txtToolbarSearch.Size = new System.Drawing.Size(200, 23);
             this.txtToolbarSearch.TabIndex = 0;
             this.txtToolbarSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearch_KeyDown);
             // 
@@ -673,7 +673,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // KBMainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1100, 680);

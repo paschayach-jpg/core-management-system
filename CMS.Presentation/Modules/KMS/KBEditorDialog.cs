@@ -55,6 +55,7 @@ namespace CMS.Presentation.Modules.KMS
 
             webEditor.DocumentText = GetEditorHtml();
             InitTypeCombo();
+            InitCrafCombo();
             
             // Initialize tabPrograms - NEW IMPLEMENTATION (Mockup)
             InitializeProgramsDataGridViews();
@@ -78,11 +79,6 @@ namespace CMS.Presentation.Modules.KMS
             LoadRelatedArticles();
             
             _presenter.Initialize();
-        }
-
-        private void ChkNoExpiry_CheckedChanged(object sender, EventArgs e)
-        {
-            dtpExpiry.Enabled = !chkNoExpiry.Checked;
         }
 
         private void BtnSaveDraft_Click(object sender, EventArgs e)
@@ -258,24 +254,43 @@ namespace CMS.Presentation.Modules.KMS
 
         public bool IsOfficialPolicy
         {
-            get { return chkOfficialPolicy.Checked; }
-            set { chkOfficialPolicy.Checked = value; }
+            get { return false; }
+            set { }
         }
 
         public bool NoExpiry
         {
-            get { return chkNoExpiry.Checked; }
-            set
-            {
-                chkNoExpiry.Checked = value;
-                dtpExpiry.Enabled   = !value;
-            }
+            get { return true; }
+            set { }
         }
 
         public DateTime? ExpiryDate
         {
-            get { return chkNoExpiry.Checked ? (DateTime?)null : dtpExpiry.Value; }
-            set { if (value.HasValue) dtpExpiry.Value = value.Value; }
+            get { return null; }
+            set { }
+        }
+
+        public string SelectedCrafLevel
+        {
+            get
+            {
+                var item = cboCraf.SelectedItem as ComboItem;
+                return item != null ? item.Display : string.Empty;
+            }
+            set
+            {
+                for (int i = 0; i < cboCraf.Items.Count; i++)
+                {
+                    var ci = cboCraf.Items[i] as ComboItem;
+                    if (ci != null && ci.Display == value)
+                    {
+                        cboCraf.SelectedIndex = i;
+                        return;
+                    }
+                }
+                if (cboCraf.Items.Count > 0)
+                    cboCraf.SelectedIndex = 0;
+            }
         }
 
         public int SelectedCategoryId
@@ -511,6 +526,16 @@ namespace CMS.Presentation.Modules.KMS
             cboType.Items.Add(new ComboItem("Template (แม่แบบเอกสาร)",            4));
             cboType.Items.Add(new ComboItem("Policy (นโยบาย)",                    5));
             cboType.SelectedIndex = 0;
+        }
+
+        private void InitCrafCombo()
+        {
+            cboCraf.Items.Clear();
+            cboCraf.Items.Add(new ComboItem("1HC - (High Confidential)",   1));
+            cboCraf.Items.Add(new ComboItem("2SC - (Semi Confidential)",   2));
+            cboCraf.Items.Add(new ComboItem("3NC - (Normal Confidential)", 3));
+            cboCraf.Items.Add(new ComboItem("4PC - (Public Confidential)", 4));
+            cboCraf.SelectedIndex = 0;
         }
 
         private void SetStatusDisplay(byte status)

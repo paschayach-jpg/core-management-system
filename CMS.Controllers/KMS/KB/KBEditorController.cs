@@ -67,7 +67,6 @@ namespace CMS.Controllers.KMS.KB
                 // Create mode
                 _view.HeaderText           = "  ✏️ เพิ่มบทความใหม่";
                 _view.ArticleCode          = string.Format("KB-{0}-NEW", DateTime.Now.Year);
-                _view.NoExpiry             = true;
                 _view.ArchiveButtonVisible = false;
                 _view.PublishButtonText    = "📤 ส่งขอ Review";
                 _view.VersionText          = "Version: 1.0";
@@ -110,14 +109,10 @@ namespace CMS.Controllers.KMS.KB
             _view.Summary             = a.Summary     ?? string.Empty;
             _view.ContentHTML         = a.ContentHTML ?? string.Empty;
             _view.Tags                = a.Tags        ?? string.Empty;
-            _view.IsOfficialPolicy    = a.IsOfficialPolicy;
+            _view.SelectedCrafLevel   = a.CrafLevel   ?? "1HC - (High Confidential)";
             _view.SelectedCategoryId  = a.CategoryID;
             _view.SelectedArticleType = (byte)a.ArticleType;
             _view.SelectedStatus      = a.Status;
-            _view.NoExpiry            = !a.ExpiryDate.HasValue;
-
-            if (a.ExpiryDate.HasValue)
-                _view.ExpiryDate = a.ExpiryDate.Value;
 
             _view.ViewCountText  = string.Format("👁  ดู {0} ครั้ง", a.ViewCount);
             _view.LikeCountText  = string.Format("👍  {0} Like", a.LikeCount);
@@ -219,9 +214,9 @@ namespace CMS.Controllers.KMS.KB
                     CategoryID       = _view.SelectedCategoryId,
                     ArticleType      = _view.SelectedArticleType,
                     Status           = 1,  // Always save as Draft
-                    IsOfficialPolicy = _view.IsOfficialPolicy,
+                    CrafLevel        = _view.SelectedCrafLevel,
                     Tags             = _view.Tags,
-                    ExpiryDate       = _view.NoExpiry ? (DateTime?)null : _view.ExpiryDate,
+                    ExpiryDate       = null,
                     CreatedBy        = _user.AdIdentity,
                 };
 
@@ -338,7 +333,7 @@ namespace CMS.Controllers.KMS.KB
             try
             {
                 // Get article-to-article links (EntityType = 6)
-                var links = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Law);
+                var links = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Article);
                 var linkedIds = links.Select(l => l.EntityID).ToList();
                 
                 if (!linkedIds.Any())
@@ -375,7 +370,7 @@ namespace CMS.Controllers.KMS.KB
                 _articleLinkRepository.Insert(new KBArticleLink
                 {
                     ArticleID = _editingArticle.ArticleID,
-                    EntityType = (byte)KBEntityType.Law,
+                    EntityType = (byte)KBEntityType.Article,
                     EntityID = relatedArticleId,
                     CreatedBy = _user.AdIdentity,
                     CreatedDate = DateTime.Now
@@ -398,7 +393,7 @@ namespace CMS.Controllers.KMS.KB
             try
             {
                 // Find and delete the article-to-article link (EntityType = 6)
-                var link = _articleLinkRepository.GetLinksForArticle(_editingArticle.ArticleID, (byte)KBEntityType.Law)
+                var link = _articleLinkRepository.GetLinksForArticle(_editingArticle.ArticleID, (byte)KBEntityType.Article)
                     .FirstOrDefault(l => l.EntityID == relatedArticleId);
                 
                 if (link != null)
@@ -432,7 +427,7 @@ namespace CMS.Controllers.KMS.KB
                         _articleLinkRepository.Insert(new KBArticleLink
                         {
                             ArticleID = articleId,
-                            EntityType = (byte)KBEntityType.Law,
+                            EntityType = (byte)KBEntityType.Article,
                             EntityID = entityId,
                             CreatedBy = _user.AdIdentity,
                             CreatedDate = DateTime.Now
@@ -508,7 +503,7 @@ namespace CMS.Controllers.KMS.KB
             try
             {
                 // Load Related Articles (EntityType = 6) - Article-to-Article links
-                var articleLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Law);
+                var articleLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Article);
                 var dgvRelated = _view.GetRelatedDataGridView();
                 dgvRelated.Rows.Clear();
 
