@@ -1,0 +1,300 @@
+using CMS.Presentation.Modules.ImportFile;
+using CMS.Presentation.Modules.KMS;
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+using CMS.Controllers.DMS.Document;
+
+namespace CMS.Presentation
+{
+    internal static class MenuActionRegistry
+    {
+        public static bool TryExecute(string configuredActionKey, MenuActionContext context, out string errorMessage)
+        {
+            errorMessage = null;
+
+            if (context == null)
+            {
+                errorMessage = "Menu action context is not available.";
+                return false;
+            }
+
+            string actionKey = MenuActionKeyCatalog.ResolveConfiguredActionKey(configuredActionKey) ?? configuredActionKey;
+            if (string.IsNullOrWhiteSpace(actionKey))
+                return false;
+
+            try
+            {
+                switch (actionKey)
+                {
+                    case "Home":
+                        if (context.SwitchToOrgView != null)
+                            context.SwitchToOrgView();
+                        return true;
+
+                    case "Admin":
+                    case "DocumentGroup":
+                    case "OrgGroup":
+                    case "PermissionGroup":
+                    case "ReportGroup":
+                    case "SystemGroup":
+                        if (context.SwitchToMainMenuView != null)
+                            context.SwitchToMainMenuView();
+                        return true;
+
+                    case "ShareDialog":
+                        return ExecuteShareDialog(context);
+
+                    case "SharedWithMe":
+                        return ShowTargetForm(context, new SharedWithMeForm(context.User, context.ShareLookupController));
+
+                    case "ShareManagement":
+                        if (context.ShareManagementController == null)
+                        {
+                            MessageBox.Show("Share management controller is not available.", "Manage Shares", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new ShareManagementForm(context.ShareManagementController, context.User, context.ShareLookupController));
+
+                    case "OrgStructure":
+                        if (context.OrgStructureService == null)
+                        {
+                            if (!TryRequestMdiAction(context, "OrgStructure"))
+                                MessageBox.Show("Org structure service is not available in this context.", "Org Structure", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new OrgStructureForm(context.OrgStructureService, context.User, null));
+
+                    case "UserManagement":
+                        return ShowTargetForm(context, new UserManagementForm(context.UserAdminController, context.User, context.AuditService));
+
+                    case "UserAccess":
+                        if (context.OrgLookupController == null && context.OrgStructureService == null)
+                        {
+                            MessageBox.Show("Org lookup is not available.", "User Access", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new UserAccessForm(
+                            context.UserAdminController,
+                            context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService),
+                            context.User,
+                            null,
+                            new AuditLogController(context.AuditService)));
+
+                    case "PermissionAdmin":
+                    case "FolderSettings":
+                        if (context.OrgLookupController == null && context.OrgStructureService == null)
+                        {
+                            MessageBox.Show("Org lookup is not available.", "Folder Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new PermissionForm(context.PermissionService, context.ApprovalService, context.FolderService, context.FolderPermissionLookupController, context.User, context.SelectedFolder, context.UserAccountLookupController, context.FolderSettingsController, null, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), null, null));
+
+                    case "UserPermissionSummary":
+                        return ShowTargetForm(context, new UserPermissionSummaryForm(context.User, context.ShareLookupController));
+
+                    case "ApprovalInbox":
+                        if (context.ApprovalInboxController == null)
+                        {
+                            MessageBox.Show("Approval inbox controller is not available.", "Approval Inbox", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new ApprovalInboxForm(context.ApprovalInboxController, context.User));
+
+                    case "AccessLog":
+                        if (context.ShareManagementController == null)
+                        {
+                            MessageBox.Show("Share management controller is not available.", "Access Log", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new AccessLogView(context.ShareManagementController, context.User, 0));
+
+                    case "AuditLog":
+                        if (!TryRequestMdiAction(context, "AuditLog"))
+                        {
+                            if (context.AuditService == null)
+                            {
+                                MessageBox.Show("Audit service is not available in this context.", "Audit Log", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return true;
+                            }
+                            return ShowTargetForm(context, new AuditLogForm(context.AuditService, context.User));
+                        }
+                        return true;
+
+                    case "ConfigAdmin":
+                        if (!TryRequestMdiAction(context, "ConfigAdmin"))
+                            MessageBox.Show("กรุณาเปิดผ่าน MDI Container เพื่อเข้าถึงตั้งค่าระบบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "ReportExcel":
+                        if (!TryRequestMdiAction(context, "ReportExcel"))
+                            MessageBox.Show("เมนูรายงาน Excel ยังต้องเรียกผ่าน MDI Container", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "PdpaConsent":
+                        return ShowTargetForm(context, new PdpaConsentDialog());
+
+                    case "PdpaReport":
+                        if (!TryRequestMdiAction(context, "PdpaReport"))
+                            MessageBox.Show("PDPA Report ต้องมีข้อมูลรายงานจาก service ก่อนเปิด กรุณาเปิดผ่านเมนูรายงานหลัก", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "MenuManagement":
+                        if (context.MenuManagementController == null)
+                        {
+                            MessageBox.Show("Menu management controller is not available.", "Menu Management", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new MenuManagementForm(context.MenuManagementController, context.User));
+
+                    case "AuthorityConfig":
+                        if (!TryRequestMdiAction(context, "AuthorityConfig"))
+                            MessageBox.Show("Authority Config ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "FolderTemplate":
+                        return ShowTargetForm(context, new FolderTemplateForm(context.FolderTemplateController, context.User));
+
+                    case "ArchiveFolder":
+                        if (context.TriggerArchive != null)
+                            context.TriggerArchive();
+                        return true;
+
+                    case "CopyStructure":
+                        if (context.TriggerCopyStructure != null)
+                            context.TriggerCopyStructure();
+                        return true;
+
+                    case "ChangeLevel":
+                        if (context.TriggerChangeLevel != null)
+                            context.TriggerChangeLevel();
+                        return true;
+
+                    case "SyncEmployee":
+                        if (!TryRequestMdiAction(context, "SyncEmployee"))
+                            MessageBox.Show("กำลังเริ่มกระบวนการ Sync ข้อมูลพนักงานจากระบบ HR...", "Sync ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "RecycleBin":
+                        if (context.RecycleBinController == null)
+                        {
+                            MessageBox.Show("Recycle bin controller is not available.", "Recycle Bin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new RecycleBinForm(context.RecycleBinController, context.User));
+
+                    case "KnowledgeBase":
+                    case "KnowledgeBaseForm":
+                    case "KBMainForm":
+                        if (!TryRequestMdiAction(context, "KBMainForm"))
+                            MessageBox.Show("กรุณาเปิด Knowledge Base ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+                    case "KBCategoryForm":
+                        if (!TryRequestMdiAction(context, "KBCategoryForm"))
+                            MessageBox.Show("กรุณาเปิด KB Category Form ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+
+            return false;
+        }
+
+        private static bool ExecuteShareDialog(MenuActionContext context)
+        {
+            if (context.SelectedFile == null && context.SelectedFolder == null)
+            {
+                MessageBox.Show("กรุณาเลือกไฟล์หรือโฟลเดอร์ก่อนแชร์", "Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return true;
+            }
+
+            using (var shareType = new Form())
+            {
+                shareType.Text = "เลือกประเภทการแบ่งปัน";
+                shareType.ClientSize = new Size(330, 150);
+                shareType.FormBorderStyle = FormBorderStyle.FixedDialog;
+                shareType.StartPosition = FormStartPosition.CenterParent;
+                shareType.MaximizeBox = false;
+                shareType.MinimizeBox = false;
+
+                var btnInternal = new Button { Text = "ภายใน (Internal)", Width = 130, Height = 34, Left = 25, Top = 70 };
+                var btnExternal = new Button { Text = "ภายนอก (External)", Width = 130, Height = 34, Left = 175, Top = 70 };
+                var lbl = new Label { Text = "เลือกประเภทการแชร์", AutoSize = true, Left = 25, Top = 25, Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
+
+                btnInternal.Click += (s, e) =>
+                {
+                    shareType.DialogResult = DialogResult.OK;
+                    shareType.Tag = "internal";
+                    shareType.Close();
+                };
+                btnExternal.Click += (s, e) =>
+                {
+                    shareType.DialogResult = DialogResult.OK;
+                    shareType.Tag = "external";
+                    shareType.Close();
+                };
+
+                shareType.Controls.Add(lbl);
+                shareType.Controls.Add(btnInternal);
+                shareType.Controls.Add(btnExternal);
+
+                if (shareType.ShowDialog(context.Owner) == DialogResult.OK)
+                {
+                    bool isInternal = string.Equals(shareType.Tag as string, "internal", StringComparison.OrdinalIgnoreCase);
+                    if (context.ShareCommandController == null)
+                    {
+                        MessageBox.Show("Share command controller is not available.", "Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return true;
+                    }
+
+                    if (isInternal)
+                    {
+                        if (context.OrgLookupController == null && context.OrgStructureService == null)
+                        {
+                            MessageBox.Show("Org structure service is not available for internal sharing in this context.", "Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        using (var dlg = new ShareDialogInternal(context.ShareCommandController, context.UserAccountLookupController, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), context.User, context.SelectedFile, context.SelectedFolder))
+                            dlg.ShowDialog(context.Owner);
+                    }
+                    else
+                    {
+                        using (var dlg = new ShareDialogExternal(context.ShareCommandController, context.User, context.SelectedFile, context.SelectedFolder))
+                            dlg.ShowDialog(context.Owner);
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static bool ShowTargetForm(MenuActionContext context, Form targetForm)
+        {
+            if (targetForm == null)
+                return false;
+
+            if (context.ClearContentPanel != null)
+                context.ClearContentPanel();
+            if (context.SetContentInfo != null)
+                context.SetContentInfo(context.MenuText);
+
+            // Respect caller-defined size/state; only recover from a minimized window.
+            if (targetForm.WindowState == FormWindowState.Minimized)
+                targetForm.WindowState = FormWindowState.Normal;
+            targetForm.ShowDialog(context.Owner);
+            return true;
+        }
+
+        private static bool TryRequestMdiAction(MenuActionContext context, string actionKey)
+        {
+            if (context == null || context.RequestMdiAction == null || string.IsNullOrWhiteSpace(actionKey))
+                return false;
+
+            return context.RequestMdiAction(actionKey);
+        }
+    }
+}

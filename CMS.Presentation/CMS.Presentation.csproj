@@ -9,13 +9,11 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CMS.Presentation</RootNamespace>
     <AssemblyName>CMS.Presentation</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
-    <GenerateResourceMSBuildRuntime>CurrentRuntime</GenerateResourceMSBuildRuntime>
-    <GenerateResourceMSBuildArchitecture>CurrentArchitecture</GenerateResourceMSBuildArchitecture>
-    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -45,45 +43,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Buffers.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Buffers.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Buffers.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Buffers.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Buffers.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Buffers.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Buffers.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Buffers.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Buffers.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Memory.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Memory.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Memory.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Memory.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Memory.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Memory.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Memory.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Memory.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Memory.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Numerics.Vectors.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Numerics.Vectors.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Numerics.Vectors.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Numerics.Vectors.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Numerics.Vectors.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Numerics.Vectors.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Numerics.Vectors.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Numerics.Vectors.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Numerics.Vectors.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Resources.Extensions.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Resources.Extensions.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Resources.Extensions.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Resources.Extensions.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Resources.Extensions.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Resources.Extensions.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Resources.Extensions.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Resources.Extensions.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Resources.Extensions.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Runtime.CompilerServices.Unsafe.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Runtime.CompilerServices.Unsafe.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Runtime.CompilerServices.Unsafe.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Runtime.CompilerServices.Unsafe.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Runtime.CompilerServices.Unsafe.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Runtime.CompilerServices.Unsafe.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath Condition="Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Threading.Tasks.Extensions.dll')">$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Threading.Tasks.Extensions.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Threading.Tasks.Extensions.dll') and Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Threading.Tasks.Extensions.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Threading.Tasks.Extensions.dll</HintPath>
-      <HintPath Condition="!Exists('$(ProgramFiles(x86))\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\System.Threading.Tasks.Extensions.dll') and !Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\System.Threading.Tasks.Extensions.dll') and Exists('$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Threading.Tasks.Extensions.dll')">$(ProgramFiles)\Azure Data Studio\resources\app\extensions\mssql\sqltoolsservice\Windows\4.7.1.4\System.Threading.Tasks.Extensions.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
-    </Reference>
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="Microsoft.VisualBasic" />
@@ -97,10 +57,10 @@
   <ItemGroup>
     <!-- Root: Shell -->
     <Compile Include="Program.cs" />
-    <Compile Include="Modules\ImportFile\LoginForm.cs">
+    <Compile Include="Modules\DMS\LoginForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\LoginForm.Designer.cs">
+    <Compile Include="Modules\DMS\LoginForm.Designer.cs">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MDI_Container.cs">
@@ -110,112 +70,112 @@
       <DependentUpon>MDI_Container.cs</DependentUpon>
     </Compile>
     <!-- Module: ImportFile — Forms -->
-    <Compile Include="Modules\ImportFile\ApplyTemplateDialog.cs">
+    <Compile Include="Modules\DMS\ApplyTemplateDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\ApplyTemplateDialog.Designer.cs">
+    <Compile Include="Modules\DMS\ApplyTemplateDialog.Designer.cs">
       <DependentUpon>ApplyTemplateDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\ApprovalInboxForm.cs">
+    <Compile Include="Modules\DMS\ApprovalInboxForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\ApprovalInboxForm.Designer.cs">
+    <Compile Include="Modules\DMS\ApprovalInboxForm.Designer.cs">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuditLogForm.cs">
+    <Compile Include="Modules\DMS\AuditLogForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuditLogForm.Designer.cs">
+    <Compile Include="Modules\DMS\AuditLogForm.Designer.cs">
       <DependentUpon>AuditLogForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuthorityConfigForm.cs">
+    <Compile Include="Modules\DMS\AuthorityConfigForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuthorityConfigForm.Designer.cs">
+    <Compile Include="Modules\DMS\AuthorityConfigForm.Designer.cs">
       <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuthorityConfigEditDialog.cs">
+    <Compile Include="Modules\DMS\AuthorityConfigEditDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\ConfigAdminForm.cs">
+    <Compile Include="Modules\DMS\ConfigAdminForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\ConfigAdminForm.Designer.cs">
+    <Compile Include="Modules\DMS\ConfigAdminForm.Designer.cs">
       <DependentUpon>ConfigAdminForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\CreateOrgUnitDialog.cs">
+    <Compile Include="Modules\DMS\CreateOrgUnitDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\CreateOrgUnitDialog.Designer.cs">
+    <Compile Include="Modules\DMS\CreateOrgUnitDialog.Designer.cs">
       <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\DuplicateFileChoiceDialog.cs">
+    <Compile Include="Modules\DMS\DuplicateFileChoiceDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\DuplicateFileChoiceDialog.Designer.cs">
+    <Compile Include="Modules\DMS\DuplicateFileChoiceDialog.Designer.cs">
       <DependentUpon>DuplicateFileChoiceDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\EmployeeOrgSelectionDialog.cs">
+    <Compile Include="Modules\DMS\EmployeeOrgSelectionDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\EmployeeOrgSelectionDialog.Designer.cs">
+    <Compile Include="Modules\DMS\EmployeeOrgSelectionDialog.Designer.cs">
       <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\EmployeeSearchDialog.cs">
+    <Compile Include="Modules\DMS\EmployeeSearchDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\EmployeeSearchDialog.Designer.cs">
+    <Compile Include="Modules\DMS\EmployeeSearchDialog.Designer.cs">
       <DependentUpon>EmployeeSearchDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePermissionAddDialog.cs">
+    <Compile Include="Modules\DMS\FilePermissionAddDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePermissionAddDialog.Designer.cs">
+    <Compile Include="Modules\DMS\FilePermissionAddDialog.Designer.cs">
       <DependentUpon>FilePermissionAddDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePermissionForm.cs">
+    <Compile Include="Modules\DMS\FilePermissionForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePermissionForm.Designer.cs">
+    <Compile Include="Modules\DMS\FilePermissionForm.Designer.cs">
       <DependentUpon>FilePermissionForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePreviewPanel.cs">
+    <Compile Include="Modules\DMS\FilePreviewPanel.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FileUploadForm.cs">
+    <Compile Include="Modules\DMS\FileUploadForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FileUploadForm.Designer.cs">
+    <Compile Include="Modules\DMS\FileUploadForm.Designer.cs">
       <DependentUpon>FileUploadForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilesByFolderForm.cs">
+    <Compile Include="Modules\DMS\FilesByFolderForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilesByFolderForm.Designer.cs">
+    <Compile Include="Modules\DMS\FilesByFolderForm.Designer.cs">
       <DependentUpon>FilesByFolderForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderForm.cs">
+    <Compile Include="Modules\DMS\FolderForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderForm.Designer.cs">
+    <Compile Include="Modules\DMS\FolderForm.Designer.cs">
       <DependentUpon>FolderForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderCreationChoiceDialog.cs">
+    <Compile Include="Modules\DMS\FolderCreationChoiceDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderCreationChoiceDialog.Designer.cs">
+    <Compile Include="Modules\DMS\FolderCreationChoiceDialog.Designer.cs">
       <DependentUpon>FolderCreationChoiceDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderPickerDialog.cs">
+    <Compile Include="Modules\DMS\FolderPickerDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderPickerDialog.Designer.cs">
+    <Compile Include="Modules\DMS\FolderPickerDialog.Designer.cs">
       <DependentUpon>FolderPickerDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderTemplateForm.cs">
+    <Compile Include="Modules\DMS\FolderTemplateForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderTemplateForm.Designer.cs">
+    <Compile Include="Modules\DMS\FolderTemplateForm.Designer.cs">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </Compile>
     <!-- Module: KMS — Forms -->
@@ -255,68 +215,68 @@
     <Compile Include="Modules\KMS\KBDashboardForm.Designer.cs">
       <DependentUpon>KBDashboardForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgStructureForm.cs">
+    <Compile Include="Modules\DMS\OrgStructureForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgStructureForm.Designer.cs">
+    <Compile Include="Modules\DMS\OrgStructureForm.Designer.cs">
       <DependentUpon>OrgStructureForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgStructureSelectionDialog.cs">
+    <Compile Include="Modules\DMS\OrgStructureSelectionDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgStructureSelectionDialog.Designer.cs">
+    <Compile Include="Modules\DMS\OrgStructureSelectionDialog.Designer.cs">
       <DependentUpon>OrgStructureSelectionDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgUnitPickerDialog.cs">
+    <Compile Include="Modules\DMS\OrgUnitPickerDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgUnitPickerDialog.Designer.cs">
+    <Compile Include="Modules\DMS\OrgUnitPickerDialog.Designer.cs">
       <DependentUpon>OrgUnitPickerDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgUnitSelectorDialog.cs">
+    <Compile Include="Modules\DMS\OrgUnitSelectorDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgUnitSelectorDialog.Designer.cs">
+    <Compile Include="Modules\DMS\OrgUnitSelectorDialog.Designer.cs">
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\PdfSecurityHelper.cs" />
-    <Compile Include="Modules\ImportFile\PdpaConsentDialog.cs">
+    <Compile Include="Modules\DMS\PdfSecurityHelper.cs" />
+    <Compile Include="Modules\DMS\PdpaConsentDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\PdpaConsentDialog.Designer.cs">
+    <Compile Include="Modules\DMS\PdpaConsentDialog.Designer.cs">
       <DependentUpon>PdpaConsentDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\PdpaReportForm.cs">
+    <Compile Include="Modules\DMS\PdpaReportForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\PdpaReportForm.Designer.cs">
+    <Compile Include="Modules\DMS\PdpaReportForm.Designer.cs">
       <DependentUpon>PdpaReportForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\PermissionForm.cs">
+    <Compile Include="Modules\DMS\PermissionForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\PermissionForm.Designer.cs">
+    <Compile Include="Modules\DMS\PermissionForm.Designer.cs">
       <DependentUpon>PermissionForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserPermissionSummaryForm.cs">
+    <Compile Include="Modules\DMS\UserPermissionSummaryForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\RecycleBinForm.cs">
+    <Compile Include="Modules\DMS\RecycleBinForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\RecycleBinForm.Designer.cs">
+    <Compile Include="Modules\DMS\RecycleBinForm.Designer.cs">
       <DependentUpon>RecycleBinForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserAccessForm.cs">
+    <Compile Include="Modules\DMS\UserAccessForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserAccessForm.Designer.cs">
+    <Compile Include="Modules\DMS\UserAccessForm.Designer.cs">
       <DependentUpon>UserAccessForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserManagementForm.cs">
+    <Compile Include="Modules\DMS\UserManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserManagementForm.Designer.cs">
+    <Compile Include="Modules\DMS\UserManagementForm.Designer.cs">
       <DependentUpon>UserManagementForm.cs</DependentUpon>
     </Compile>
     <!-- Module: ImportFile — Presenters (ย้ายไปไว้ใน CMS.Controllers แล้ว) -->
@@ -342,13 +302,13 @@
     <Compile Include="AccessShareForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\MenuActions\MenuActionContext.cs" />
-    <Compile Include="Modules\ImportFile\MenuActions\MenuActionKeyCatalog.cs" />
-    <Compile Include="Modules\ImportFile\MenuActions\MenuActionRegistry.cs" />
-    <Compile Include="Modules\ImportFile\MenuManagementForm.cs">
+    <Compile Include="Modules\DMS\MenuActions\MenuActionContext.cs" />
+    <Compile Include="Modules\DMS\MenuActions\MenuActionKeyCatalog.cs" />
+    <Compile Include="Modules\DMS\MenuActions\MenuActionRegistry.cs" />
+    <Compile Include="Modules\DMS\MenuManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\MenuManagementForm.Designer.cs">
+    <Compile Include="Modules\DMS\MenuManagementForm.Designer.cs">
       <DependentUpon>MenuManagementForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MenuTreeViewManager.cs" />
@@ -386,53 +346,53 @@
     <EmbeddedResource Include="MDI_Container.resx">
       <DependentUpon>MDI_Container.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\MenuManagementForm.resx">
+    <EmbeddedResource Include="Modules\DMS\MenuManagementForm.resx">
       <DependentUpon>MenuManagementForm.cs</DependentUpon>
     </EmbeddedResource>
     <!-- Module: ImportFile — EmbeddedResources -->
-    <EmbeddedResource Include="Modules\ImportFile\ApplyTemplateDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\ApplyTemplateDialog.resx">
       <DependentUpon>ApplyTemplateDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\ApprovalInboxForm.resx">
+    <EmbeddedResource Include="Modules\DMS\ApprovalInboxForm.resx">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBEditorDialog.resx">
       <DependentUpon>KBEditorDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\AuthorityConfigForm.resx">
+    <EmbeddedResource Include="Modules\DMS\AuthorityConfigForm.resx">
       <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\ConfigAdminForm.resx">
+    <EmbeddedResource Include="Modules\DMS\ConfigAdminForm.resx">
       <DependentUpon>ConfigAdminForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\CreateOrgUnitDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\CreateOrgUnitDialog.resx">
       <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\EmployeeOrgSelectionDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\EmployeeOrgSelectionDialog.resx">
       <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\EmployeeSearchDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\EmployeeSearchDialog.resx">
       <DependentUpon>EmployeeSearchDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FilePermissionAddDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\FilePermissionAddDialog.resx">
       <DependentUpon>FilePermissionAddDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FileUploadForm.resx">
+    <EmbeddedResource Include="Modules\DMS\FileUploadForm.resx">
       <DependentUpon>FileUploadForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\DuplicateFileChoiceDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\DuplicateFileChoiceDialog.resx">
       <DependentUpon>DuplicateFileChoiceDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FolderForm.resx">
+    <EmbeddedResource Include="Modules\DMS\FolderForm.resx">
       <DependentUpon>FolderForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FolderCreationChoiceDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\FolderCreationChoiceDialog.resx">
       <DependentUpon>FolderCreationChoiceDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FolderPickerDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\FolderPickerDialog.resx">
       <DependentUpon>FolderPickerDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FolderTemplateForm.resx">
+    <EmbeddedResource Include="Modules\DMS\FolderTemplateForm.resx">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\ArticleViewerForm.resx">
@@ -445,25 +405,25 @@
       <DependentUpon>KBMainForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\LoginForm.resx">
+    <EmbeddedResource Include="Modules\DMS\LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\OrgStructureForm.resx">
+    <EmbeddedResource Include="Modules\DMS\OrgStructureForm.resx">
       <DependentUpon>OrgStructureForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\OrgUnitPickerDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\OrgUnitPickerDialog.resx">
       <DependentUpon>OrgUnitPickerDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\OrgUnitSelectorDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\OrgUnitSelectorDialog.resx">
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\PermissionForm.resx">
+    <EmbeddedResource Include="Modules\DMS\PermissionForm.resx">
       <DependentUpon>PermissionForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\RecycleBinForm.resx">
+    <EmbeddedResource Include="Modules\DMS\RecycleBinForm.resx">
       <DependentUpon>RecycleBinForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\UserAccessForm.resx">
+    <EmbeddedResource Include="Modules\DMS\UserAccessForm.resx">
       <DependentUpon>UserAccessForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
