@@ -266,8 +266,8 @@ namespace CMS.Presentation.Modules.KMS
 
         public DateTime? ExpiryDate
         {
-            get { return null; }
-            set { }
+            get { return dtpExpiry.Value; }
+            set { if (value.HasValue) dtpExpiry.Value = value.Value; }
         }
 
         public string SelectedCrafLevel

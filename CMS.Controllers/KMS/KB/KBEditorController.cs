@@ -114,6 +114,9 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedArticleType = (byte)a.ArticleType;
             _view.SelectedStatus      = a.Status;
 
+            if (a.ExpiryDate.HasValue)
+                _view.ExpiryDate = a.ExpiryDate.Value;
+
             _view.ViewCountText  = string.Format("👁  ดู {0} ครั้ง", a.ViewCount);
             _view.LikeCountText  = string.Format("👍  {0} Like", a.LikeCount);
             
@@ -216,7 +219,7 @@ namespace CMS.Controllers.KMS.KB
                     Status           = 1,  // Always save as Draft
                     CrafLevel        = _view.SelectedCrafLevel,
                     Tags             = _view.Tags,
-                    ExpiryDate       = null,
+                    ExpiryDate       = _view.ExpiryDate,
                     CreatedBy        = _user.AdIdentity,
                 };
 
