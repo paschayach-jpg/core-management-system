@@ -302,26 +302,6 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                if (confidentialityLevel == 1)
-                {
-                    var result = MessageBox.Show(
-                        string.Format(
-                            "สร้าง HC Folder \"{0}\"\n\n" +
-                            "ℹ️ คำขอสร้าง HC Folder จะถูกส่งให้ Admin อนุมัติ\n\n" +
-                            "รายละเอียด:\n" +
-                            "• Folder ที่มี Confidentiality Level = HC ต้องได้รับการอนุมัติจาก Admin\n" +
-                            "• คำขอของคุณจะถูกส่งให้ Admin ทั้งหมดในระบบ\n" +
-                            "• Folder จะถูกสร้างหลังจากที่ Admin อนุมัติแล้ว\n" +
-                            "• คุณจะได้รับการแจ้งเตือนเมื่อคำขอได้รับการอนุมัติ",
-                            name),
-                        "สร้าง HC Folder",
-                        MessageBoxButtons.OKCancel,
-                        MessageBoxIcon.Information);
-
-                    if (result != DialogResult.OK)
-                        return;
-                }
-
                 var request = new CreateFolderRequest
                 {
                     ParentFolderId       = parentFolderId,
@@ -334,9 +314,7 @@ namespace CMS.Controllers.DMS.Document
                 LoadFolderTree(_currentOrgUnitId);
                 RefreshContentPanel();
 
-                if (confidentialityLevel == 1)
-                    _view.ShowInfo(string.Format("คำขอสร้าง HC Folder '{0}' ได้ถูกส่งให้ Admin อนุมัติแล้ว\n\nFolder จะถูกสร้างหลังจากที่ได้รับการอนุมัติ", created.FolderName));
-                else if (showSuccessMessage)
+                if (showSuccessMessage)
                     _view.ShowInfo(string.Format("Folder '{0}' สร้างสำเร็จ", created.FolderName));
             }
             catch (InvalidOperationException ex) { _view.ShowError(ex.Message); }

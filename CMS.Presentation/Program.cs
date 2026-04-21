@@ -451,6 +451,7 @@ namespace CMS.Presentation
                     authorityConfigController: authorityConfigController,
                     employeeDirectoryController: employeeDirectoryController,
                     userOrgVisibilityController: userOrgVisibilityController,
+                    employeeApiService: employeeApiService,
                     folderRepository: folderRepository,
                     kbCategoryService: kbCategoryService,
                     kbArticleService: kbArticleService);

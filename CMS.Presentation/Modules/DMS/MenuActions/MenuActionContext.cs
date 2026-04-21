@@ -31,6 +31,7 @@ namespace CMS.Presentation
         public IApprovalInboxController ApprovalInboxController { get; set; }
         public IRecycleBinController RecycleBinController { get; set; }
         public IShareLookupController ShareLookupController { get; set; }
+        public IEmployeeApiService EmployeeApiService { get; set; }
 
         public Action SwitchToOrgView { get; set; }
         public Action SwitchToMainMenuView { get; set; }

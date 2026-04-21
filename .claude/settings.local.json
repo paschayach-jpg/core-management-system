@@ -10,7 +10,8 @@
       "Read(//c/Users/pitakpong/Documents/cms_import/CMS.Domain/Enums//**)",
       "Read(//c/Users/pitakpong/Documents/cms_import/CMS.Domain/enums//**)",
       "Bash(find /c/Users/pitakpong/Documents/cms_import/CMS.Presentation -name *Presenter* -o -name *View*)",
-      "Bash(\"/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe\" \"CMS.Presentation/CMS.Presentation.csproj\" /verbosity:minimal)"
+      "Bash(\"/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe\" \"CMS.Presentation/CMS.Presentation.csproj\" /verbosity:minimal)",
+      "Bash(find CMS.Services/Interfaces -type f -name \"*.cs\" -exec grep -l \"interface I\" {} \\\\;)"
     ]
   }
 }

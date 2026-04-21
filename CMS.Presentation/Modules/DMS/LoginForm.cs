@@ -35,7 +35,10 @@ namespace CMS.Presentation
                     if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
                         return ip.ToString();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("GetLocalIP error: " + ex.Message);
+            }
             return "127.0.0.1";
         }
 
@@ -92,28 +95,28 @@ namespace CMS.Presentation
         // ─────────────────────────────────────────────────────────────────────
         // Event Handlers
         // ─────────────────────────────────────────────────────────────────────
-
+        string username;
+        string password;
         private async void btnLogin_Click(object sender, EventArgs e)
-        {
-            string username;
-            string password;
+         {
+            //string username = txtUsername.Text.Trim();
+            //string password = txtPassword.Text;
+
+            //string username = "pitakpong";
+            //string password = "P@takpong01714";
 
             if (checkBox1.Checked == true)
             {
-                  //username = "khanitthac";
-                  //password = "Knid_poonpun@1412K";
-
-                username = "thitirat";
-                password = "8;k,legiH0l^'l6f";
-                 
+                username = "khanitthac";
+                password = "Knid_poonpun@1412K";
             }
-            else {
-                username = txtUsername.Text.Trim();
-                password = txtPassword.Text;
-
-                //username = "pitakpong";
-                //password = "P@takpong01714";
+            else
+            {
+                username = "pitakpong";
+                password = "P@takpong01714";
             }
+
+
 
             if (username.Length == 0)
             {
@@ -128,7 +131,11 @@ namespace CMS.Presentation
                 return;
             }
 
-            SetLoading(true);
+
+           
+
+
+                SetLoading(true);
             lblStatus.Text = "กำลังตรวจสอบ...";
 
             try
@@ -146,7 +153,10 @@ namespace CMS.Presentation
                             if (account != null)
                                 _loginAccountController.UpdateLastLoginWithIP(account.UserID, GetLocalIP());
                         }
-                        catch { /* ไม่ block login */ }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Failed to update login IP: " + ex.Message);
+                        }
                     }
 
                     AuthResult      = result;

@@ -409,26 +409,34 @@ namespace CMS.Services
             try
             {
                 var approverUser = _userAccountRepository.GetById(approverId);
-                bool canReviewAllCreateHc = approverUser != null
-                    && approverUser.IsActive
-                    && approverUser.AppRole >= 3;
+                bool isAdmin    = approverUser != null && approverUser.IsActive && approverUser.AppRole == 4;
+                bool isPrivileged = approverUser != null && approverUser.IsActive && approverUser.AppRole >= 3;
 
-                // Get all pending requests (not just expired ones)
                 var allPendingRequests = _approvalRepository.GetPendingRequests().ToList();
                 
-                // For each request, check if the approver has a pending step
                 foreach (var request in allPendingRequests)
                 {
-                    var pendingSteps = _approvalRepository.GetPendingSteps(request.RequestID).ToList();
-                    bool hasOwnPendingStep = pendingSteps.Any(step => step.ApproverID == approverId && step.StepStatus == 1);
-                    bool isCreateHcVisibleForManagerAdmin = canReviewAllCreateHc
-                        && string.Equals(request.RequestType, "CREATE_HC", StringComparison.OrdinalIgnoreCase)
-                        && pendingSteps.Any(step => step.StepStatus == 1 || step.StepStatus == 4);
+                    string requestType = (request.RequestType ?? string.Empty).Trim().ToUpperInvariant();
 
-                    if (hasOwnPendingStep || isCreateHcVisibleForManagerAdmin)
+                    // CREATE_HC — แสดงให้ Admin ทุกคนเห็นโดยตรง (ไม่ต้อง check step)
+                    if (requestType == "CREATE_HC" && isAdmin)
                     {
                         results.Add(request);
+                        continue;
                     }
+
+                    // Request types อื่น — ตรวจ pending step ที่ assign หา approver นี้
+                    var pendingSteps = _approvalRepository.GetPendingSteps(request.RequestID).ToList();
+                    bool hasOwnPendingStep = pendingSteps.Any(step => step.ApproverID == approverId);
+
+                    // Fallback: Manager/Admin เห็น delete request ที่ยังมี step ค้าง
+                    bool isDeleteFallback = isPrivileged
+                        && (requestType == "DELETE" || requestType == "DELETE_FILE"
+                            || requestType == "FILE_DELETE" || requestType == "DELETE_FOLDER")
+                        && pendingSteps.Any();
+
+                    if (hasOwnPendingStep || isDeleteFallback)
+                        results.Add(request);
                 }
             }
             catch (Exception ex)

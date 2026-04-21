@@ -186,20 +186,27 @@ namespace CMS.Presentation
                 try
                 {
                     var steps = _approvalInboxController.GetApprovalSteps(req.RequestID);
-                    var step  = steps.FirstOrDefault(
-                        s => s.ApproverID == _currentUser.UserId && s.StepStatus == 1);
+                    ApprovalStep step = null;
 
-                    // Recovery path: CREATE_HC อนุญาตให้ Manager/Admin ช่วยอนุมัติได้
-                    // แม้ step จะถูก assign ให้ผู้อนุมัติคนอื่น (ป้องกันงานค้าง)
-                    if (step == null
-                        && approve
-                        && _currentUser.AppRole >= 3
-                        && string.Equals(req.RequestType, "CREATE_HC", StringComparison.OrdinalIgnoreCase))
+                    // หา step ที่ assign ให้ user นี้ก่อน
+                    step = steps.FirstOrDefault(s => s.ApproverID == _currentUser.UserId && s.StepStatus == 1);
+
+                    // CREATE_HC: Admin อนุมัติได้ทุก step ที่ยัง pending
+                    if (step == null && _currentUser.AppRole == 4
+                        && (req.RequestType ?? "").ToUpperInvariant() == "CREATE_HC")
                     {
-                        step = steps
-                            .Where(s => s.StepStatus == 1 || s.StepStatus == 4)
-                            .OrderBy(s => s.StepOrder)
-                            .FirstOrDefault();
+                        step = steps.Where(s => s.StepStatus == 1 || s.StepStatus == 4)
+                                    .OrderBy(s => s.StepOrder)
+                                    .FirstOrDefault();
+                    }
+
+                    // Fallback Manager/Admin: delete-type requests
+                    if (step == null && approve && _currentUser.AppRole >= 3
+                        && IsManagerAdminFallbackRequestType(req.RequestType))
+                    {
+                        step = steps.Where(s => s.StepStatus == 1 || s.StepStatus == 4)
+                                    .OrderBy(s => s.StepOrder)
+                                    .FirstOrDefault();
                     }
 
                     if (step == null) { failed++; continue; }
@@ -278,10 +285,27 @@ namespace CMS.Presentation
                 case "CHANGE_PERMISSION": return "🔐 สิทธิ์ Folder";
                 case "UPLOAD":            return "📤 อัพโหลดไฟล์";
                 case "DELETE":            return "🗑 ลบไฟล์";
+                case "DELETE_FILE":       return "🗑 ลบไฟล์";
+                case "FILE_DELETE":       return "🗑 ลบไฟล์";
                 case "DELETE_FOLDER":     return "🗑 ลบ Folder";
                 case "FOLDER":            return "📁 จัดการ Folder";
                 case "EXTERNAL_SHARE":    return "🌐 แชร์ภายนอก";
                 default:                  return t ?? "—";
+            }
+        }
+
+        private static bool IsManagerAdminFallbackRequestType(string requestType)
+        {
+            switch ((requestType ?? string.Empty).Trim().ToUpperInvariant())
+            {
+                case "CREATE_HC":
+                case "DELETE":
+                case "DELETE_FILE":
+                case "FILE_DELETE":
+                case "DELETE_FOLDER":
+                    return true;
+                default:
+                    return false;
             }
         }
     }

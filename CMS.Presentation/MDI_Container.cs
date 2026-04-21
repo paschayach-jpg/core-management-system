@@ -68,6 +68,7 @@ namespace CMS.Presentation
         private readonly IAuthorityConfigController _authorityConfigController;
         private readonly IEmployeeDirectoryController _employeeDirectoryController;
         private readonly IUserOrgVisibilityController _userOrgVisibilityController;
+        private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
 
@@ -89,6 +90,7 @@ namespace CMS.Presentation
         // Cache ข้อมูลที่ใช้บ่อยในหน้า Dashboard เพื่อลด DB round-trips
         private List<OrgUnit> _cachedOrgUnits;
         private List<FileDocument> _cachedAllFiles;
+        private List<Folder> _cachedAllFolders;
 
         // Tracks whether the logout audit has already been recorded
         private bool _logoutRecorded;
@@ -176,6 +178,7 @@ namespace CMS.Presentation
             IAuthorityConfigController authorityConfigController = null,
             IEmployeeDirectoryController employeeDirectoryController = null,
             IUserOrgVisibilityController userOrgVisibilityController = null,
+            CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
             Data.Repositories.FolderRepository folderRepository = null,
             CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
             CMS.Services.Interfaces.IKBArticleService  kbArticleService  = null)
@@ -230,6 +233,7 @@ namespace CMS.Presentation
             _authorityConfigController = authorityConfigController;
             _employeeDirectoryController = employeeDirectoryController;
             _userOrgVisibilityController = userOrgVisibilityController;
+            _employeeApiService = employeeApiService;
             _kbCategoryService = kbCategoryService;
             _kbArticleService  = kbArticleService;
 
@@ -259,10 +263,6 @@ namespace CMS.Presentation
                 WireRibbonHandlers();
                 WireDashboardHandlers();
                 SetupRecentFilesColumns();
-                LoadDashboardFolderTree();
-                LoadRecentFiles();
-                UpdateStatusBar();
-                LoadDashboardStats();
                 _escalationTimer.Start();
 
                 // ซ่อน detail panel จนกว่าจะมีการคลิกไฟล์
@@ -294,7 +294,7 @@ namespace CMS.Presentation
                 // Handle MDI child activation to show/hide dashboard
                 this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
 
-                // Auto-open FolderForm as MDI child
+                // Auto-open FolderForm first — must appear before dashboard data loads
                 // Requirement: FolderForm (MOD-002) should open automatically on startup
                 this.BeginInvoke(new Action(() =>
                 {
@@ -306,8 +306,24 @@ namespace CMS.Presentation
                     catch (Exception ex)
                     {
                         _logger.Error($"Error opening FolderForm: {ex.Message}", ex);
-                        MessageBox.Show($"Error opening Folder Manager: {ex.Message}", "Error", 
+                        MessageBox.Show($"Error opening Folder Manager: {ex.Message}", "Error",
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }));
+
+                // Load dashboard data after FolderForm is open — runs after FolderForm BeginInvoke
+                this.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        LoadDashboardFolderTree();
+                        LoadRecentFiles();
+                        UpdateStatusBar();
+                        LoadDashboardStats();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error($"Error loading dashboard data: {ex.Message}", ex);
                     }
                 }));
             }
@@ -383,8 +399,9 @@ namespace CMS.Presentation
         /// </summary>
         private void RefreshDashboardFiles()
         {
-            // Invalidate file cache เพื่อให้ดึงข้อมูลล่าสุดจาก DB
+            // Invalidate caches เพื่อให้ดึงข้อมูลล่าสุดจาก DB
             _cachedAllFiles = null;
+            _cachedAllFolders = null;
             var selectedNode = treeViewFolders.SelectedNode;
             if (selectedNode != null)
             {
@@ -1500,7 +1517,8 @@ namespace CMS.Presentation
                 folderPermissionLookupController: _folderPermissionLookupController,
                 userAccountLookupController: _userAccountLookupController,
                 userAdminController: _userAdminController,
-                folderReadLookupController: _folderReadLookupController);
+                folderReadLookupController: _folderReadLookupController,
+                employeeApiService: _employeeApiService);
             folderForm.OpenPermissionRequested     += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file)   => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged            += (s, ev)     => UpdateMoveControlsState();
@@ -2092,8 +2110,9 @@ namespace CMS.Presentation
                 {
                     try
                     {
-                        totalFolders = _folderReadLookupController.GetAllFolders(null, _currentUser)
-                            .Where(f => !f.IsDeleted).Count();
+                        if (_cachedAllFolders == null)
+                            _cachedAllFolders = _folderReadLookupController.GetAllFolders(null, _currentUser).ToList();
+                        totalFolders = _cachedAllFolders.Where(f => !f.IsDeleted).Count();
                     }
                     catch { }
                 }
@@ -2726,7 +2745,9 @@ namespace CMS.Presentation
                 var folderLookup = new Dictionary<int, Folder>();
                 try
                 {
-                    foreach (var f in _folderReadLookupController.GetAllFolders(null, _currentUser))
+                    if (_cachedAllFolders == null)
+                        _cachedAllFolders = _folderReadLookupController.GetAllFolders(null, _currentUser).ToList();
+                    foreach (var f in _cachedAllFolders)
                         folderLookup[f.FolderID] = f;
                 }
                 catch { }
@@ -3436,7 +3457,9 @@ namespace CMS.Presentation
                 var folderLookup = new Dictionary<int, Folder>();
                 try
                 {
-                    foreach (var f in _folderReadLookupController.GetAllFolders(null, _currentUser))
+                    if (_cachedAllFolders == null)
+                        _cachedAllFolders = _folderReadLookupController.GetAllFolders(null, _currentUser).ToList();
+                    foreach (var f in _cachedAllFolders)
                         folderLookup[f.FolderID] = f;
                 }
                 catch { }

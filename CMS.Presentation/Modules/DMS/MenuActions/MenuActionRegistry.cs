@@ -88,7 +88,7 @@ namespace CMS.Presentation
                             MessageBox.Show("Org lookup is not available.", "Folder Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return true;
                         }
-                        return ShowTargetForm(context, new PermissionForm(context.PermissionService, context.ApprovalService, context.FolderService, context.FolderPermissionLookupController, context.User, context.SelectedFolder, context.UserAccountLookupController, context.FolderSettingsController, null, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), null, null));
+                        return ShowTargetForm(context, new PermissionForm(context.PermissionService, context.ApprovalService, context.FolderService, context.FolderPermissionLookupController, context.User, context.SelectedFolder, context.UserAccountLookupController, context.FolderSettingsController, context.EmployeeApiService, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), null, null));
 
                     case "UserPermissionSummary":
                         return ShowTargetForm(context, new UserPermissionSummaryForm(context.User, context.ShareLookupController));

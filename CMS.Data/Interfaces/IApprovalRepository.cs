@@ -18,5 +18,8 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Hard-deletes all ApprovalSteps then ApprovalRequests for the given folder (used during permanent folder deletion).</summary>
         void DeleteByFolder(int folderId);
+
+        /// <summary>ลบ pending CREATE_HC requests (และ steps) ทั้งหมดของ OrgUnit ที่กำหนด เพื่อเคลียร์ข้อมูลเก่าก่อนสร้างคำขอใหม่</summary>
+        void DeletePendingHCRequestsForOrgUnit(int orgUnitId);
     }
 }

@@ -57,6 +57,7 @@ namespace CMS.Presentation
         private readonly IFolderPermissionLookupController _folderPermissionLookupController;
         private readonly IUserAccountLookupController _userAccountLookupController;
         private readonly IUserAdminController _userAdminController;
+        private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
         private readonly UserContext          _user;
 
         // Quick Access panel (Req 7)
@@ -105,6 +106,8 @@ namespace CMS.Presentation
 
         // ป้องกัน PromptToCreateFirstFolder ยิงซ้ำระหว่างสร้าง Auto 4 Folders
         private bool     _suppressCreatePrompt = false;
+        // ป้องกัน MessageBox ซ้อน/เด้งซ้ำจาก event ที่วิ่งทับกัน
+        private bool     _isCreatePromptOpen = false;
         // ตรวจจับว่ามี HC folder pending approval อยู่ → reload เมื่อ form กลับมา focus
         private bool     _pendingHCApproval = false;
 
@@ -140,7 +143,8 @@ namespace CMS.Presentation
                           IFolderPermissionLookupController folderPermissionLookupController = null,
                           IUserAccountLookupController userAccountLookupController = null,
                           IUserAdminController userAdminController = null,
-                          IFolderReadLookupController folderReadLookupController = null)
+                          IFolderReadLookupController folderReadLookupController = null,
+                          CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null)
         {
             if (user    == null) throw new ArgumentNullException("user");
             if (folderCommandController == null) throw new ArgumentNullException("folderCommandController");
@@ -170,6 +174,7 @@ namespace CMS.Presentation
             _userAccountLookupController = userAccountLookupController ?? new UserAccountLookupController();
             _userAdminController = userAdminController ?? new UserAdminController();
             _folderReadLookupController = folderReadLookupController ?? new FolderReadLookupController(null);
+            _employeeApiService = employeeApiService;
             _user                     = user;
 
             InitializeComponent();
@@ -196,6 +201,7 @@ namespace CMS.Presentation
             btnChangeLevel.Visible    = canManage;
             btnCopyStructure.Visible  = canManage;
             sep3.Visible              = canManage;   // separator หน้า ChangeLevel
+
 
             // Wire content list selection for detail panel
             contentsListView.SelectedIndexChanged += ContentsListView_SelectedIndexChanged;
@@ -306,6 +312,16 @@ namespace CMS.Presentation
             // Add view switcher tabs to OrgUnit panel
             InitializeOrgFilterSwitcher();
 
+            // เมนูหลัก — Manager/Admin เท่านั้น (Officer/SrOfficer ไม่เห็น)
+            // ต้องเซ็ตหลัง InitializeOrgFilterSwitcher() เพราะ _btnMainMenu สร้างในนั้น
+            _btnMainMenu.Visible = canManage;
+            if (!canManage)
+            {
+                // ซ่อน เมนูหลัก → เลื่อน ตามองค์กร + ความลับ ชิดซ้าย (btnWidth=90, gap=2)
+                _btnOrgView.Location  = new Point(5, 5);
+                _btnConfView.Location = new Point(5 + 90 + 2, 5);
+            }
+
             // Wire navigation buttons
             btnNavBack.Click    += BtnNavBack_Click;
             btnNavForward.Click += BtnNavForward_Click;
@@ -364,7 +380,7 @@ namespace CMS.Presentation
             var mnuCopy       = new ToolStripMenuItem("📋  คัดลอก",              null, CtxCopy_Click) { Enabled = false };
             var mnuPaste      = new ToolStripMenuItem("📄  วาง",                 null, CtxPaste_Click){ Enabled = false };
             var mnuRename     = new ToolStripMenuItem("✏️  เปลี่ยนชื่อ",         null, (s, e) => btnRename_Click(s, e));
-            var mnuDelete     = new ToolStripMenuItem("🗑️  ลบ",                  null, (s, e) => btnDelete_Click(s, e));
+            var mnuDelete     = new ToolStripMenuItem("🗑️  ลบ Folder",            null, (s, e) => btnDelete_Click(s, e));
             var mnuArchive    = new ToolStripMenuItem("📦  Archive",              null, (s, e) => btnArchive_Click(s, e));
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...",    null, CtxPermission_Click);
             var mnuProperties = new ToolStripMenuItem("ℹ️  คุณสมบัติ",           null, CtxProperties_Click);
@@ -1649,6 +1665,7 @@ namespace CMS.Presentation
                 ApprovalInboxController = _approvalInboxController,
                 RecycleBinController = _recycleBinController,
                 ShareLookupController = _shareLookupController,
+                EmployeeApiService = _employeeApiService,
                 SwitchToOrgView = SwitchToOrgView,
                 SwitchToMainMenuView = SwitchToMainMenuView,
                 TriggerArchive = TriggerArchive,
@@ -4654,6 +4671,7 @@ namespace CMS.Presentation
         {
             // ป้องกัน re-entry ระหว่างกำลังสร้าง Auto 4 Folders อยู่
             if (_suppressCreatePrompt) return;
+            if (_isCreatePromptOpen) return;
             if (!_selectedOrgUnitId.HasValue) return;
 
             // ตรวจสอบว่ามี 4 folder หลัก (1HC/2SC/3NC/4PC) หรือยัง
@@ -4679,20 +4697,32 @@ namespace CMS.Presentation
                     catch { /* ถ้าเช็ค DB ไม่ได้ ให้ผ่านไป */ }
                 }
 
-            string orgName = _selectedOrgUnitName ?? "หน่วยงานนี้";
-            var result = MessageBox.Show(
-                string.Format(
-                    "หน่วยงาน \"{0}\" ยังไม่มีโฟลเดอร์หลัก\n\n" +
-                    "ต้องการสร้าง 4 Folder หลัก (1HC, 2SC, 3NC, 4PC) หรือไม่?\n\n" +
-                    "หมายเหตุ: Folder 1HC (High Confidential) จะต้องรอ Admin อนุมัติ\n" +
-                    "ส่วน 2SC, 3NC, 4PC จะสร้างทันที",
-                    orgName),
-                "สร้างโฟลเดอร์หลัก",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
+            try
+            {
+                _isCreatePromptOpen = true;
 
-            if (result == DialogResult.Yes)
-                CreateAuto4FoldersQuiet("", null, _selectedOrgUnitId.Value);
+                string orgName = _selectedOrgUnitName ?? "หน่วยงานนี้";
+                var result = MessageBox.Show(
+                    string.Format(
+                        "หน่วยงาน \"{0}\" ยังไม่มีโฟลเดอร์หลัก\n\n" +
+                        "ต้องการสร้าง 4 Folder หลัก (1HC, 2SC, 3NC, 4PC) หรือไม่?\n\n" +
+                        "หมายเหตุ: ระบบจะสร้างทั้ง 4 Folder ทันที",
+                        orgName),
+                    "สร้างโฟลเดอร์หลัก",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    // suppress ทันทีเพื่อตัดวงจรถามซ้ำจาก event ที่วิ่งค้างอยู่
+                    _suppressCreatePrompt = true;
+                    CreateAuto4FoldersQuiet("", null, _selectedOrgUnitId.Value);
+                }
+            }
+            finally
+            {
+                _isCreatePromptOpen = false;
+            }
         }
 
         // -----------------------------------------------------------------------
@@ -6270,7 +6300,6 @@ namespace CMS.Presentation
             // ตั้ง flag ป้องกัน PromptToCreateFirstFolder ยิงซ้ำระหว่างสร้าง
             _suppressCreatePrompt = true;
             int createdCount = 0;
-            bool hcSentForApproval = false;
             var skippedFolders  = new List<string>();
             var errorFolders    = new List<string>();
 
@@ -6288,6 +6317,12 @@ namespace CMS.Presentation
                 {
                     try
                     {
+                        if (_folderCommandController == null)
+                        {
+                            errorFolders.Add(string.Format("{0}: Folder command controller is not available", config.Code));
+                            continue;
+                        }
+
                         string folderName = string.IsNullOrWhiteSpace(baseName)
                             ? string.Format("{0} - ({1})", config.Code, config.Name)
                             : string.Format("{0} - {1} [{0}]", config.Code, baseName);
@@ -6298,15 +6333,25 @@ namespace CMS.Presentation
                             continue;
                         }
 
-                        if (parentFolderId.HasValue)
-                            _presenter.CreateFolder(parentFolderId.Value, folderName, orgUnitId, config.Level, false);
-                        else
-                            _presenter.CreateRootFolder(folderName, orgUnitId, config.Level, false);
+                        var request = new CMS.Services.DTOs.CreateFolderRequest
+                        {
+                            ParentFolderId = parentFolderId,
+                            OrgUnitId = orgUnitId,
+                            Name = folderName,
+                            ConfidentialityLevel = config.Level
+                        };
 
-                        if (config.Level == 1) // HC → ส่งอนุมัติ ไม่ได้สร้างทันที
-                            hcSentForApproval = true;
-                        else
+                        var created = _folderCommandController.CreateFolder(request, _user);
+                        if (created == null)
+                        {
+                            errorFolders.Add(string.Format("{0}: ระบบไม่สามารถสร้างโฟลเดอร์ได้ (ผลลัพธ์เป็นค่าว่าง)", config.Code));
+                            continue;
+                        }
+
+                        if (created.FolderID > 0)
                             createdCount++;
+                        else
+                            errorFolders.Add(string.Format("{0}: ไม่สามารถยืนยันการสร้างโฟลเดอร์ได้", config.Code));
                     }
                     catch (Exception ex)
                     {
@@ -6320,9 +6365,7 @@ namespace CMS.Presentation
                 _suppressCreatePrompt = false;
             }
 
-            // บันทึกสถานะ HC approval เพื่อใช้ใน PromptToCreateFirstFolder
-            if (hcSentForApproval)
-                _pendingHCApproval = true;
+            _pendingHCApproval = false;
 
             // Reload tree ครั้งเดียวหลังสร้างครบ
             _presenter.LoadFolderTree(_selectedOrgUnitId);
@@ -6331,13 +6374,7 @@ namespace CMS.Presentation
             var sb = new System.Text.StringBuilder();
 
             if (createdCount > 0)
-                sb.AppendLine(string.Format("✅ สร้าง Folder สำเร็จ {0} folder(s): 2SC, 3NC, 4PC", createdCount));
-
-            if (hcSentForApproval)
-            {
-                sb.AppendLine("⏳ 1HC (High Confidential) — ส่งคำขออนุมัติให้ Admin แล้ว");
-                sb.AppendLine("   Folder 1HC จะแสดงขึ้นหลังจาก Admin อนุมัติ\n   กรุณากด Refresh หรือเลือก OrgUnit ใหม่หลังอนุมัติ");
-            }
+                sb.AppendLine(string.Format("✅ สร้าง Folder สำเร็จ {0} folder(s)", createdCount));
 
             if (skippedFolders.Count > 0)
                 sb.AppendLine(string.Format("ℹ️ มีอยู่แล้ว (ข้าม): {0}", string.Join(", ", skippedFolders)));
