@@ -686,7 +686,7 @@ namespace CMS.Presentation.Modules.KMS
             var lblTag = new Label
             {
                 Text = tagText,
-                AutoSize = lblTagChipTemplate.AutoSize,
+                AutoSize = true,  // Ensure AutoSize is enabled
                 Font = lblTagChipTemplate.Font,
                 ForeColor = lblTagChipTemplate.ForeColor,
                 Padding = lblTagChipTemplate.Padding,
@@ -706,10 +706,22 @@ namespace CMS.Presentation.Modules.KMS
             };
             btnRemove.FlatAppearance.BorderSize = 0;
             btnRemove.Click += (s, ev) => flpTags.Controls.Remove(chip);
-            btnRemove.Location = new Point(lblTag.Right + 2, 2);
             
+            // Add label first to allow it to calculate its size
             chip.Controls.Add(lblTag);
+            
+            // Force the label to calculate its preferred size based on text
+            using (var g = lblTag.CreateGraphics())
+            {
+                var textSize = g.MeasureString(tagText, lblTag.Font);
+                lblTag.Width = (int)Math.Ceiling(textSize.Width) + lblTag.Padding.Horizontal;
+            }
+            
+            // Position remove button after label
+            btnRemove.Location = new Point(lblTag.Right + 2, 2);
             chip.Controls.Add(btnRemove);
+            
+            // Calculate panel width based on actual label width
             chip.Width = lblTag.Width + btnRemove.Width + 12;
             
             return chip;
@@ -722,6 +734,42 @@ namespace CMS.Presentation.Modules.KMS
             // Remove comma if present
             tag = tag.TrimEnd(',');
             if (string.IsNullOrWhiteSpace(tag)) return;
+            
+            // Validate tag input - allow only alphanumeric, spaces, hyphens, and underscores
+            if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9\s\-_]+$"))
+            {
+                MessageBox.Show("Tag can only contain letters, numbers, spaces, hyphens, and underscores.", 
+                    "Invalid Tag", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
+            // Limit tag length
+            if (tag.Length > 50)
+            {
+                MessageBox.Show("Tag cannot exceed 50 characters.", 
+                    "Tag Too Long", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
+            // Check for duplicate tags (case-insensitive)
+            foreach (Control control in flpTags.Controls)
+            {
+                if (control is Panel panel)
+                {
+                    foreach (Control childControl in panel.Controls)
+                    {
+                        if (childControl is Label label)
+                        {
+                            if (string.Equals(label.Text, tag, StringComparison.OrdinalIgnoreCase))
+                            {
+                                MessageBox.Show($"Tag '{tag}' already exists.", 
+                                    "Duplicate Tag", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
             
             // Clone the template panel
             var chip = CloneTagChipTemplate(tag);
