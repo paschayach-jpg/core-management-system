@@ -276,7 +276,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_currentStep > n)
             {
-                circle.BackColor = Color.FromArgb(39, 174, 96);
+                circle.BackColor = Color.Transparent;
                 circle.ForeColor = Color.White;
                 circle.Text      = "✓";
                 label.ForeColor  = Color.FromArgb(39, 174, 96);
@@ -284,7 +284,7 @@ namespace CMS.Presentation.Modules.KMS
             }
             else if (_currentStep == n)
             {
-                circle.BackColor = Color.FromArgb(46, 116, 181);
+                circle.BackColor = Color.Transparent;
                 circle.ForeColor = Color.White;
                 circle.Text      = n.ToString();
                 label.ForeColor  = Color.FromArgb(46, 116, 181);
@@ -292,12 +292,13 @@ namespace CMS.Presentation.Modules.KMS
             }
             else
             {
-                circle.BackColor = Color.White;
+                circle.BackColor = Color.Transparent;
                 circle.ForeColor = Color.FromArgb(127, 140, 141);
                 circle.Text      = n.ToString();
                 label.ForeColor  = Color.FromArgb(127, 140, 141);
                 label.Font       = new Font("Segoe UI", 8.5f);
             }
+            pnlStepProgress.Invalidate();
         }
 
         // ── Upload Zone — dashed border paint ───────────────────────────────────
@@ -565,9 +566,39 @@ namespace CMS.Presentation.Modules.KMS
         // ── Step progress bottom border ──────────────────────────────────────────
         private void PnlStepProgress_Paint(object sender, PaintEventArgs e)
         {
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            // bottom separator
             using (var pen = new Pen(Color.FromArgb(208, 215, 222), 1))
-                e.Graphics.DrawLine(pen, 0, pnlStepProgress.Height - 1,
+                g.DrawLine(pen, 0, pnlStepProgress.Height - 1,
                     pnlStepProgress.Width, pnlStepProgress.Height - 1);
+
+            // draw rounded circles over each badge label
+            foreach (var (lbl, active, done) in new[]
+            {
+                (lblStep1Circle, _currentStep == 1, _currentStep > 1),
+                (lblStep2Circle, _currentStep == 2, _currentStep > 2),
+                (lblStep3Circle, _currentStep == 3, _currentStep > 3),
+            })
+            {
+                var r = new Rectangle(
+                    lbl.Parent.Left + lbl.Left,
+                    lbl.Parent.Top  + lbl.Top,
+                    lbl.Width, lbl.Height);
+
+                Color fill = done   ? Color.FromArgb(39, 174, 96)  :
+                             active ? Color.FromArgb(46, 116, 181) :
+                                      Color.FromArgb(230, 236, 245);
+
+                using (var brush = new System.Drawing.SolidBrush(fill))
+                    g.FillEllipse(brush, r);
+
+                // subtle ring for inactive
+                if (!active && !done)
+                    using (var pen = new Pen(Color.FromArgb(189, 195, 199), 1.5f))
+                        g.DrawEllipse(pen, r);
+            }
         }
     }
 }
