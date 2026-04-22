@@ -5,6 +5,7 @@ using CMS.Controllers.DMS.Document;
 using CMS.Domain.Models;
 using CMS.Infrastructure;
 using CMS.Services;
+using CMS.Presentation.Services;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 
@@ -48,6 +49,7 @@ namespace CMS.Presentation
                 var kbCategoryRepository     = new KBCategoryRepository(configManager);
                 var kbArticleRepository      = new KBArticleRepository(configManager);
                 var kbVersionRepository      = new KBVersionRepository(configManager);
+                var kbDashboardRepository    = new KBDashboardRepository(configManager);
                 var kbArticleLinkRepository  = new KBArticleLinkRepository(configManager);
 
                 var auditService        = new AuditService(auditRepository, loggingService);
@@ -142,6 +144,7 @@ namespace CMS.Presentation
                 // ── KB Services (MOD-006) ─────────────────────────────────────
                 var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);
                 var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, auditService);
+                var kbDashboardService = new KBDashboardService(kbDashboardRepository, loggingService);
 
                 // ── AD Auth Service ───────────────────────────────────────────
                 var adAuthService = new AdAuthService(configManager);
@@ -403,6 +406,7 @@ namespace CMS.Presentation
                     userAccountRepo);
                 var employeeDirectoryController = new EmployeeDirectoryController(employeeApiService);
                 var userOrgVisibilityController = new UserOrgVisibilityController(userOrgVisibilityService);
+                
                 // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(
                     logger: loggingService,
@@ -444,7 +448,11 @@ namespace CMS.Presentation
                     userOrgVisibilityController: userOrgVisibilityController,
                     folderRepository: folderRepository,
                     kbCategoryService: kbCategoryService,
-                    kbArticleService: kbArticleService);
+                    kbArticleService: kbArticleService,
+                    kbArticleLinkRepository: kbArticleLinkRepository,
+                    kbVersionRepository: kbVersionRepository,
+                    kbDashboardService: kbDashboardService);
+
                 Application.Run(mainForm);
 
                 // ถ้า user กด Logout → restart process เพื่อแสดง LoginForm ใหม่

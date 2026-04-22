@@ -14,6 +14,12 @@ namespace CMS.Services.Interfaces
         IEnumerable<KBArticle> Search(string keyword, int? categoryId, byte? status, byte? articleType);
         KBArticle GetById(int articleId);
 
+        /// <summary>
+        /// ค้นหาบทความที่เผยแพร่แล้ว (Status = 3) โดยใช้ Article Code หรือ Title
+        /// ใช้สำหรับ inline search ใน KB Editor
+        /// </summary>
+        IEnumerable<KBArticle> SearchPublishedArticles(string searchText);
+
         // ── Write ─────────────────────────────────────────────────────────────
         /// <summary>
         /// สร้าง ArticleCode ถัดไปในรูปแบบ KB-YYYY-NNN (เช่น KB-2566-001)

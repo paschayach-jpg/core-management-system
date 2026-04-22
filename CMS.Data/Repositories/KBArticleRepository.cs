@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
@@ -71,18 +72,12 @@ namespace CMS.Data.Repositories
                     SELECT a.*, c.CategoryName
                     FROM   KMS.t_KBArticle a
                     LEFT JOIN KMS.m_KBCategory c ON c.CategoryID = a.CategoryID
-                    WHERE  (@Keyword IS NULL OR
-                            a.Title       LIKE '%' + @Keyword + '%' OR
-                            a.Summary     LIKE '%' + @Keyword + '%' OR
-                            a.Tags        LIKE '%' + @Keyword + '%' OR
-                            a.ContentHTML LIKE '%' + @Keyword + '%')
-                      AND  (@CategoryID  IS NULL OR a.CategoryID  = @CategoryID)
+                    WHERE  (@CategoryID  IS NULL OR a.CategoryID  = @CategoryID)
                       AND  (@Status      IS NULL OR a.Status      = @Status)
                       AND  (@ArticleType IS NULL OR a.ArticleType = @ArticleType)
                     ORDER BY a.CreatedDate DESC";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
-                    cmd.Parameters.AddWithValue("@Keyword",     (object)keyword     ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@CategoryID",  (object)categoryId  ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Status",      (object)status      ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@ArticleType", (object)articleType ?? DBNull.Value);
@@ -92,7 +87,47 @@ namespace CMS.Data.Repositories
                     }
                 }
             }
-            return results;
+
+            // If no keyword, return all results
+            if (string.IsNullOrWhiteSpace(keyword))
+                return results;
+
+            // Filter by keyword in C# - search in Title, Summary, Tags, and extracted HTML text
+            keyword = keyword.Trim();
+            return results.Where(a =>
+                (a.Title != null && a.Title.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.Summary != null && a.Summary.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.Tags != null && a.Tags.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+            ).ToList();
+        }
+
+        /// <summary>
+        /// Strips HTML tags from text and returns plain text content.
+        /// </summary>
+        private static string StripHtmlTags(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+                return string.Empty;
+
+            // Replace common block-level tags with spaces to preserve word boundaries
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"<br\s*/?>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?p>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?div>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?li>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?tr>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?td>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?th>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // Remove all remaining HTML tags
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"<[^>]+>", string.Empty);
+
+            // Decode HTML entities
+            html = System.Net.WebUtility.HtmlDecode(html);
+
+            // Clean up multiple spaces and trim
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"\s+", " ");
+            return html.Trim();
         }
 
         public KBArticle GetById(int articleId)

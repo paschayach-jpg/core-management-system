@@ -160,7 +160,7 @@ namespace CMS.Data.Repositories
             cmd.Parameters.AddWithValue("@ParentCategoryID", (object)c.ParentCategoryID ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CategoryCode",     c.CategoryCode ?? string.Empty);
             cmd.Parameters.AddWithValue("@CategoryName",     c.CategoryName ?? string.Empty);
-            cmd.Parameters.AddWithValue("@Icon",             (object)c.Icon        ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Icon",             (object)c.Icon ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Description",      (object)c.Description ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@SortOrder",        c.SortOrder);
             cmd.Parameters.AddWithValue("@CreatedBy",        c.CreatedBy ?? string.Empty);
@@ -174,7 +174,7 @@ namespace CMS.Data.Repositories
                 ParentCategoryID   = r.IsDBNull(r.GetOrdinal("ParentCategoryID")) ? (int?)null : r.GetInt32(r.GetOrdinal("ParentCategoryID")),
                 CategoryCode       = r["CategoryCode"]     as string,
                 CategoryName       = r["CategoryName"]     as string,
-                Icon               = r["Icon"]             as string,
+                Icon               = r["Icon"] as string,
                 Description        = r["Description"]      as string,
                 SortOrder          = r.IsDBNull(r.GetOrdinal("SortOrder")) ? 0 : r.GetInt32(r.GetOrdinal("SortOrder")),
                 IsActive           = !r.IsDBNull(r.GetOrdinal("IsActive")) && r.GetBoolean(r.GetOrdinal("IsActive")),

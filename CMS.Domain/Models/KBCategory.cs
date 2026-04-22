@@ -1,4 +1,5 @@
 using System;
+using CMS.Domain.Enums;
 
 namespace CMS.Domain.Models
 {
@@ -9,18 +10,33 @@ namespace CMS.Domain.Models
     /// </summary>
     public class KBCategory
     {
-        public int     CategoryID       { get; set; }
-        public int?    ParentCategoryID { get; set; }
-        public string  CategoryCode     { get; set; }
-        public string  CategoryName     { get; set; }
-        public string  Icon             { get; set; }
-        public string  Description      { get; set; }
-        public int     SortOrder        { get; set; }
-        public bool    IsActive         { get; set; }
-        public string  CreatedBy        { get; set; }
-        public DateTime CreatedDate     { get; set; }
+        public int      CategoryID       { get; set; }
+        public int?     ParentCategoryID { get; set; }
+        public string   CategoryCode     { get; set; }
+        public string   CategoryName     { get; set; }
+
+        /// <summary>Icon type stored as a string representation of the enum value (e.g., "1", "2", etc.).</summary>
+        public string   Icon             { get; set; }
+
+        public string   Description      { get; set; }
+        public int      SortOrder        { get; set; }
+        public bool     IsActive         { get; set; }
+        public string   CreatedBy        { get; set; }
+        public DateTime CreatedDate      { get; set; }
 
         // Display helper — set by repository when joining parent name
         public string ParentCategoryName { get; set; }
+
+        /// <summary>Returns the emoji symbol for the icon value.</summary>
+        public string IconSymbol
+        {
+            get
+            {
+                byte iconValue;
+                if (byte.TryParse(Icon, out iconValue) && iconValue >= 1 && iconValue <= 9)
+                    return KBCategoryIconHelper.ToSymbol((KBCategoryIcon)iconValue);
+                return "📂"; // default: Folder
+            }
+        }
     }
 }

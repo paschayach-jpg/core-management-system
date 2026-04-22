@@ -57,6 +57,27 @@ namespace CMS.Data.Repositories
             return null;
         }
 
+        public KBVersion GetLatestByArticle(int articleId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT TOP 1 * FROM KMS.t_KBVersion
+                    WHERE  ArticleID = @ArticleID
+                    ORDER  BY VersionNumber DESC";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ArticleID", articleId);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        if (r.Read()) return Map(r);
+                    }
+                }
+            }
+            return null;
+        }
+
         public int Insert(KBVersion version)
         {
             using (var conn = new SqlConnection(_connectionString))

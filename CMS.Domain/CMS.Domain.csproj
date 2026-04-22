@@ -35,6 +35,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Enums\ConfidentialityLevel.cs" />
+    <Compile Include="Enums\KBCategoryIcon.cs" />
+    <Compile Include="Enums\KBCategoryIconHelper.cs" />
+    <Compile Include="Enums\KBEntityType.cs" />
     <Compile Include="Enums\PermissionType.cs" />
     <Compile Include="Enums\PermissionState.cs" />
     <Compile Include="Enums\UserRole.cs" />
@@ -83,6 +86,7 @@
     <Compile Include="Models\KBDashboardStats.cs" />
     <Compile Include="Models\KBMonthlyArticle.cs" />
     <Compile Include="Models\KBTopArticle.cs" />
+    <Compile Include="Models\NotificationDto.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

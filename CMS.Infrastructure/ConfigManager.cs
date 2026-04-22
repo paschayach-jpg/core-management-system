@@ -45,6 +45,29 @@ namespace CMS.Infrastructure
         }
 
         /// <summary>
+        /// Retrieves a configuration value by key with a default fallback value.
+        /// Returns the default value if the key is not found.
+        /// </summary>
+        public T GetOrDefault<T>(string key, T defaultValue)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return defaultValue;
+
+            string raw = GetRawValue(key);
+            if (raw == null)
+                return defaultValue;
+
+            try
+            {
+                return ConvertValue<T>(key, raw);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        /// <summary>
         /// Persists a configuration value to the database.
         /// Requires Admin role (Requirement 14.2).
         /// </summary>

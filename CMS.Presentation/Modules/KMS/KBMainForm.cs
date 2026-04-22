@@ -8,6 +8,8 @@ using System.Windows.Forms;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
+using CMS.Services;
+using CMS.Presentation.Services;
 
 namespace CMS.Presentation.Modules.KMS
 {
@@ -25,21 +27,57 @@ namespace CMS.Presentation.Modules.KMS
         private ArticleViewerForm _activeViewer          = null;
         private int?              _activeViewerArticleId = null;
 
+        /// <summary>
+        /// Navigation history stack — each entry is a viewer that was pushed aside
+        /// when the user clicked a related article. Popped on btnBack.
+        /// </summary>
+        private readonly Stack<ArticleViewerForm> _viewerHistory = new Stack<ArticleViewerForm>();
+
+        // ── Category settings embedded panel state ───────────────────────────────
+        private KBCategoryForm _activeCategoryForm = null;
+
         // ── Dialog / child-form factories (injected by composition root) ────────
         /// <summary>Creates and returns a pre-wired ArticleViewerForm for a given article.</summary>
         private Func<KBArticle, ArticleViewerForm> _viewerFactory;
         /// <summary>Shows a pre-wired KBEditorDialog. Returns the dialog result.</summary>
         private Func<KBArticle, DialogResult> _editorFactory;
-        /// <summary>Shows the pre-wired KBCategoryForm as a modal dialog.</summary>
-        private Action _categorySettingsFactory;
+        /// <summary>Creates and returns a pre-wired KBCategoryForm ready to be embedded.</summary>
+        private Func<KBCategoryForm> _categoryFormFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBImportWizardForm. Returns DialogResult.</summary>
         private Func<DialogResult> _importWizardFactory;
+        /// <summary>Creates, wires, and shows a pre-wired KBDashboardForm. Returns DialogResult.</summary>
+        private Func<DialogResult> _dashboardFactory;
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
 
         public KBMainForm()
         {
             InitializeComponent();
+
+            // pnlViewerHost is created here so the designer stays free of a Dock=Fill panel
+            // that would block adding other controls. Runtime behaviour is identical.
+            pnlViewerHost = new System.Windows.Forms.Panel
+            {
+                Name      = "pnlViewerHost",
+                BackColor = System.Drawing.Color.White,
+                Dock      = System.Windows.Forms.DockStyle.Fill,
+                Visible   = false,
+            };
+            Controls.Add(pnlViewerHost);
+            pnlViewerHost.BringToFront();
+
+            // pnlCategoryHost hosts the embedded KBCategoryForm (same pattern as pnlViewerHost)
+            pnlCategoryHost = new System.Windows.Forms.Panel
+            {
+                Name      = "pnlCategoryHost",
+                BackColor = System.Drawing.Color.White,
+                Dock      = System.Windows.Forms.DockStyle.Fill,
+                Visible   = false,
+            };
+            Controls.Add(pnlCategoryHost);
+            pnlCategoryHost.BringToFront();
+
+            splitMain.BringToFront();          // restore splitMain as the visible default layer
         }
 
         /// <summary>
@@ -61,11 +99,11 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachFactories(
             Func<KBArticle, ArticleViewerForm> viewerFactory,
             Func<KBArticle, DialogResult>       editorFactory,
-            Action                              categorySettingsFactory)
+            Func<KBCategoryForm>                categoryFormFactory)
         {
-            _viewerFactory           = viewerFactory;
-            _editorFactory           = editorFactory;
-            _categorySettingsFactory = categorySettingsFactory;
+            _viewerFactory       = viewerFactory;
+            _editorFactory       = editorFactory;
+            _categoryFormFactory = categoryFormFactory;
         }
 
         /// <summary>
@@ -75,6 +113,15 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachImportWizardFactory(Func<DialogResult> factory)
         {
             _importWizardFactory = factory;
+        }
+
+        /// <summary>
+        /// Inject the factory used to create and show the KB Dashboard with its
+        /// pre-wired presenter. Must be called before the form is shown.
+        /// </summary>
+        public void AttachDashboardFactory(Func<DialogResult> factory)
+        {
+            _dashboardFactory = factory;
         }
 
         // ── Form events ──────────────────────────────────────────────────────────
@@ -178,15 +225,20 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnNewCategory_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            _categorySettingsFactory?.Invoke();
-            _presenter.LoadCategoryTree();
+            ShowCategorySettings();
         }
 
         private void BtnSettings_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            _categorySettingsFactory?.Invoke();
-            _presenter.LoadCategoryTree();
+            ShowCategorySettings();
+        }
+
+        private void BtnDashboard_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            if (_dashboardFactory == null) return;
+            _dashboardFactory();
         }
 
         private void BtnImportExcel_Click(object sender, EventArgs e)
@@ -208,31 +260,141 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.ShowReport();
         }
 
-        // ── Viewer navigation (embedded child form) ──────────────────────────────
+        private async void BtnTestNotification_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!NotificationManager.Instance.IsConnected)
+                {
+                    MessageBox.Show(
+                        "Notification system is not connected.\nPlease check your connection.",
+                        "Notification Test",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Get current user AD name
+                string currentUserAd = _user != null ? _user.ADUserName : "unknown";
+                
+                // Send test notification to yourself
+                var result = await NotificationManager.Instance.SendNotificationAsync(
+                    typeCode: "ASSIGN",
+                    title: "Test Notification from KMS",
+                    message: "This is a test notification from Knowledge Management System. Click to view details.",
+                    recipientUserAd: currentUserAd,
+                    senderUserAd: currentUserAd,
+                    referenceType: "kb_article",
+                    referenceId: "TEST001",
+                    referenceCode: "KB-TEST-001",
+                    priority: 2
+                );
+
+                if (result != null)
+                {
+                    MessageBox.Show(
+                        "Test notification sent successfully!\n\n" +
+                        "Notification ID: " + result.NotificationId + "\n" +
+                        "Recipient: " + currentUserAd + "\n\n" +
+                        "You should see a popup notification shortly.",
+                        "Notification Test",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "Failed to send test notification.\nPlease check the logs for details.",
+                        "Notification Test",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Error sending test notification:\n\n" + ex.Message,
+                    "Notification Test",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+
+        // ── Category settings navigation (embedded over splitMain) ──────────────
+
+        private void ShowCategorySettings()
+        {
+            CloseActiveCategoryForm();
+
+            var catForm = _categoryFormFactory != null ? _categoryFormFactory() : null;
+            if (catForm == null) return;
+
+            catForm.BackRequested  += OnCategoryBackRequested;
+            catForm.TopLevel        = false;
+            catForm.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            catForm.Dock            = System.Windows.Forms.DockStyle.Fill;
+
+            splitMain.Visible = false;
+            pnlCategoryHost.Controls.Add(catForm);
+            pnlCategoryHost.Visible = true;
+            pnlCategoryHost.BringToFront();
+            catForm.Show();
+
+            _activeCategoryForm = catForm;
+        }
+
+        private void OnCategoryBackRequested(object sender, EventArgs e)
+        {
+            CloseActiveCategoryForm();
+
+            pnlCategoryHost.Visible = false;
+            splitMain.Visible       = true;
+
+            if (_presenter != null)
+                _presenter.LoadCategoryTree();
+        }
+
+        private void CloseActiveCategoryForm()
+        {
+            if (_activeCategoryForm == null) return;
+            _activeCategoryForm.BackRequested -= OnCategoryBackRequested;
+            pnlCategoryHost.Controls.Remove(_activeCategoryForm);
+            _activeCategoryForm.Dispose();
+            _activeCategoryForm = null;
+        }
+
+        // ── Viewer navigation (full-screen over splitMain) ───────────────────────
 
         private void ShowArticleViewer(KBArticle article)
         {
+            // If the same article is already the active viewer, do nothing
             if (_activeViewerArticleId.HasValue && _activeViewerArticleId.Value == article.ArticleID)
                 return;
 
-            CloseActiveViewer();
+            // Push the current viewer onto the history stack instead of disposing it,
+            // so btnBack can return to it later
+            if (_activeViewer != null)
+            {
+                _activeViewer.Hide();
+                pnlViewerHost.Controls.Remove(_activeViewer);
+                _viewerHistory.Push(_activeViewer);
+                _activeViewer          = null;
+                _activeViewerArticleId = null;
+            }
 
-            pnlRightTop.Visible    = false;
-            pnlToolbar.Visible     = false;
-            pnlFilterBar.Visible   = false;
-            pnlPagination.Visible  = false;
-            pnlArticleList.Visible = false;
-
-            var viewer = _viewerFactory != null
-                ? _viewerFactory(article)
-                : null;
+            var viewer = _viewerFactory != null ? _viewerFactory(article) : null;
             if (viewer == null) return;
 
-            viewer.BackRequested  += OnViewerBackRequested;
+            viewer.BackRequested        += OnViewerBackRequested;
+            viewer.ArticleOpenRequested += (s, a) => ShowArticleViewer(a);
             viewer.TopLevel        = false;
             viewer.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             viewer.Dock            = System.Windows.Forms.DockStyle.Fill;
-            panelMainRight.Controls.Add(viewer);
+
+            splitMain.Visible      = false;
+            pnlViewerHost.Controls.Add(viewer);
+            pnlViewerHost.Visible  = true;
+            pnlViewerHost.BringToFront();
             viewer.Show();
 
             _activeViewer          = viewer;
@@ -241,13 +403,31 @@ namespace CMS.Presentation.Modules.KMS
 
         private void OnViewerBackRequested(object sender, EventArgs e)
         {
-            CloseActiveViewer();
+            // Dispose the current viewer
+            if (_activeViewer != null)
+            {
+                _activeViewer.BackRequested -= OnViewerBackRequested;
+                pnlViewerHost.Controls.Remove(_activeViewer);
+                _activeViewer.Dispose();
+                _activeViewer          = null;
+                _activeViewerArticleId = null;
+            }
 
-            pnlRightTop.Visible    = true;
-            pnlToolbar.Visible     = true;
-            pnlFilterBar.Visible   = true;
-            pnlPagination.Visible  = true;
-            pnlArticleList.Visible = true;
+            // If there is a previous viewer on the stack, restore it
+            if (_viewerHistory.Count > 0)
+            {
+                var previous = _viewerHistory.Pop();
+                pnlViewerHost.Controls.Add(previous);
+                previous.Show();
+
+                _activeViewer          = previous;
+                _activeViewerArticleId = previous.CurrentArticleId;
+                return;
+            }
+
+            // Stack is empty — return to the article list
+            pnlViewerHost.Visible = false;
+            splitMain.Visible     = true;
 
             if (_presenter != null)
                 _presenter.LoadArticles();
@@ -255,12 +435,22 @@ namespace CMS.Presentation.Modules.KMS
 
         private void CloseActiveViewer()
         {
-            if (_activeViewer == null) return;
-            _activeViewer.BackRequested -= OnViewerBackRequested;
-            panelMainRight.Controls.Remove(_activeViewer);
-            _activeViewer.Dispose();
-            _activeViewer          = null;
-            _activeViewerArticleId = null;
+            // Dispose the active viewer
+            if (_activeViewer != null)
+            {
+                _activeViewer.BackRequested -= OnViewerBackRequested;
+                pnlViewerHost.Controls.Remove(_activeViewer);
+                _activeViewer.Dispose();
+                _activeViewer          = null;
+                _activeViewerArticleId = null;
+            }
+
+            // Dispose every viewer in the history stack
+            while (_viewerHistory.Count > 0)
+            {
+                var old = _viewerHistory.Pop();
+                old.Dispose();
+            }
         }
 
         // ── Private UI helpers ────────────────────────────────────────────────────

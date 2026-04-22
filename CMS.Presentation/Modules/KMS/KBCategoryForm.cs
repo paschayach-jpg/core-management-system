@@ -14,6 +14,8 @@ namespace CMS.Presentation.Modules.KMS
     /// <summary>
     /// หน้าตั้งค่า Category สำหรับ Knowledge Base (MOD-006)
     /// รองรับ: เพิ่ม / แก้ไข / Soft-Delete รายการใน KMS.m_KBCategory
+    /// ออกแบบตาม kms_category.html (lines 603–788)
+    /// เปิดแบบฝังใน KBMainForm เหมือน ArticleViewerForm (TopLevel=false, Dock=Fill)
     /// </summary>
     public partial class KBCategoryForm : Form, IKBCategoryController
     {
@@ -21,6 +23,11 @@ namespace CMS.Presentation.Modules.KMS
         private readonly UserContext _user;
 
         private List<KBCategory> _categories = new List<KBCategory>();
+
+        /// <summary>
+        /// Fired when the user clicks "← กลับ"; parent form handles navigation.
+        /// </summary>
+        public event EventHandler BackRequested;
 
         public KBCategoryForm(UserContext user)
         {
@@ -54,28 +61,97 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.Initialize();
         }
 
-        private void LstCategories_SelectedIndexChanged(object sender, EventArgs e)
+        private void TreeCategories_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (_presenter == null) return;
-            if (lstCategories.SelectedItems.Count == 0) return;
-            var cat = lstCategories.SelectedItems[0].Tag as KBCategory;
+            var cat = e.Node != null ? e.Node.Tag as KBCategory : null;
+            if (cat == null) return;
             _presenter.OnCategorySelected(cat);
+            lblEditCardHeader.Text = "  \u270F\uFE0F แก้ไขหมวดหมู่: " + cat.CategoryName;
+            ClearDirty();
         }
 
-        private void BtnNew_Click(object sender, EventArgs e)
+        private void TxtSearch_TextChanged(object sender, EventArgs e)
+        {
+            RefreshTree();
+        }
+
+        private void TxtSearch_Enter(object sender, EventArgs e)
+        {
+            if (txtSearch.ForeColor == System.Drawing.Color.FromArgb(160, 160, 160))
+            {
+                txtSearch.Text = string.Empty;
+                txtSearch.ForeColor = System.Drawing.Color.FromArgb(20, 20, 20);
+            }
+        }
+
+        private void TxtSearch_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtSearch.Text))
+            {
+                txtSearch.ForeColor = System.Drawing.Color.FromArgb(160, 160, 160);
+                txtSearch.Text = "\uD83D\uDD0D ค้นหาหมวดหมู่...";
+            }
+        }
+
+        private void BtnBack_Click(object sender, EventArgs e)
+        {
+            if (BackRequested != null)
+                BackRequested(this, EventArgs.Empty);
+        }
+
+        private void BtnNewRoot_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            _presenter.Initialize();
+            
+            // Clear the form for new entry
             _view_ClearForm();
+            
+            // Ensure Root is selected (index 0 = no parent)
+            cboParent.SelectedIndex = 0;
+            
+            lblEditCardHeader.Text = "  ✏️ เพิ่มหมวดหมู่หลัก";
+            txtName.Focus();
         }
 
-        private void BtnClear_Click(object sender, EventArgs e) { _view_ClearForm(); }
+        private void BtnNewSub_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            
+            // Store the selected category before clearing
+            var selected = treeCategories.SelectedNode;
+            KBCategory selectedCat = null;
+            if (selected != null)
+            {
+                selectedCat = selected.Tag as KBCategory;
+            }
+            
+            // Clear the form for new entry
+            _view_ClearForm();
+            
+            // Pre-select the previously highlighted tree node as parent
+            if (selectedCat != null)
+            {
+                SelectParentInCombo(selectedCat.CategoryID);
+            }
+            else if (cboParent.Items.Count > 1)
+            {
+                // If no node was selected, select the first available category as parent
+                cboParent.SelectedIndex = 1;
+            }
+            
+            lblEditCardHeader.Text = "  ✏️ เพิ่มหมวดหมู่ย่อย";
+            txtName.Focus();
+        }
+
+        private void BtnClear_Click(object sender, EventArgs e) { treeCategories.SelectedNode = null; _view_ClearForm(); }
 
         private void BtnSave_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
             if (!ValidateInput()) return;
             _presenter.Save();
+            ClearDirty();
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
@@ -91,12 +167,45 @@ namespace CMS.Presentation.Modules.KMS
                 _presenter.Deactivate();
         }
 
-        // ── IKBCategoryView ──────────────────────────────────────────────────
+        // ── Dirty tracking ────────────────────────────────────────────────────
 
+        private void TxtName_TextChanged(object sender, EventArgs e)
+        {
+            MarkDirty();
+        }
+
+        private void TxtDescription_TextChanged(object sender, EventArgs e) { MarkDirty(); }
+
+        private void TxtCategoryCode_TextChanged(object sender, EventArgs e) { MarkDirty(); }
+
+        private void NumSortOrder_ValueChanged(object sender, EventArgs e) { MarkDirty(); }
+
+        private void CboParent_SelectedIndexChanged(object sender, EventArgs e) { MarkDirty(); }
+
+        private void CboIcon_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            MarkDirty();
+        }
+
+        private void MarkDirty()
+        {
+            lblDirtyHint.Visible = true;
+        }
+
+        private void ClearDirty()
+        {
+            lblDirtyHint.Visible = false;
+        }
+
+        // ── IKBCategoryController ─────────────────────────────────────────────
+
+        /// <summary>
+        /// CategoryCode is now displayed in txtCategoryCode.
+        /// </summary>
         public string CategoryCode
         {
-            get { return txtCode.Text.Trim(); }
-            set { txtCode.Text = value; }
+            get { return txtCategoryCode.Text.Trim(); }
+            set { txtCategoryCode.Text = value ?? string.Empty; }
         }
 
         public string CategoryName
@@ -105,10 +214,26 @@ namespace CMS.Presentation.Modules.KMS
             set { txtName.Text = value; }
         }
 
+        /// <summary>
+        /// Icon stored as a byte value (1–9) matching <see cref="CMS.Domain.Enums.KBCategoryIcon"/>.
+        /// The combo index is 0-based; the enum value is 1-based.
+        /// </summary>
         public string Icon
         {
-            get { return txtIcon.Text.Trim(); }
-            set { txtIcon.Text = value; }
+            get
+            {
+                // combo index 0 → enum value 1, etc.
+                byte val = (byte)(cboIcon.SelectedIndex + 1);
+                return val.ToString();
+            }
+            set
+            {
+                byte parsed;
+                if (byte.TryParse(value, out parsed) && parsed >= 1 && parsed <= cboIcon.Items.Count)
+                    cboIcon.SelectedIndex = parsed - 1;
+                else
+                    cboIcon.SelectedIndex = 0;
+            }
         }
 
         public string Description
@@ -120,7 +245,11 @@ namespace CMS.Presentation.Modules.KMS
         public int SortOrder
         {
             get { return (int)numSortOrder.Value; }
-            set { numSortOrder.Value = value; }
+            set
+            {
+                if (value >= numSortOrder.Minimum && value <= numSortOrder.Maximum)
+                    numSortOrder.Value = value;
+            }
         }
 
         public int? ParentCategoryId
@@ -133,12 +262,22 @@ namespace CMS.Presentation.Modules.KMS
 
         public string FormTitleText
         {
-            set { lblFormTitle.Text = value; }
+            set { lblEditCardHeader.Text = "  ✏️ " + value; }
         }
 
         public bool DeleteEnabled
         {
-            set { btnDelete.Enabled = value; }
+            set
+            {
+                btnDelete.Enabled = value;
+                // Mirror active/inactive state in the read-only status combo
+                cboStatus.SelectedIndex = value ? 0 : 1;
+                // Update info-row status badge
+                lblInfoStatusVal.Text = value ? "● Active" : "○ Inactive";
+                lblInfoStatusVal.ForeColor = value
+                    ? Color.FromArgb(30, 132, 73)
+                    : Color.FromArgb(150, 150, 150);
+            }
         }
 
         public string DeleteButtonText
@@ -149,7 +288,7 @@ namespace CMS.Presentation.Modules.KMS
         public void BindCategories(IEnumerable<KBCategory> categories)
         {
             _categories = new List<KBCategory>(categories);
-            RefreshList();
+            RefreshTree();
             RefreshParentCombo();
         }
 
@@ -168,65 +307,188 @@ namespace CMS.Presentation.Modules.KMS
             MessageBox.Show(message, "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        // ── Private UI helpers ───────────────────────────────────────────────
+        public void BindCategoryDetails(KBCategory category)
+        {
+            if (category == null) { ClearDetailPanel(); return; }
+
+            lblInfoCreatedByVal.Text   = string.IsNullOrEmpty(category.CreatedBy) ? "—" : category.CreatedBy;
+            lblInfoCreatedDateVal.Text = category.CreatedDate == default(DateTime)
+                ? "—"
+                : category.CreatedDate.ToString("dd/MM/yyyy HH:mm");
+            lblInfoUpdatedVal.Text     = "—";   // KBCategory has no UpdatedDate field
+
+            // Build full path: Parent > Category
+            if (!string.IsNullOrEmpty(category.ParentCategoryName))
+                lblInfoPathVal.Text = category.ParentCategoryName + " > " + category.CategoryName;
+            else
+                lblInfoPathVal.Text = category.CategoryName;
+        }
+
+        public void BindCategoryStats(int total, int published, int draft)
+        {
+            lblStatTotalNum.Text     = total.ToString();
+            lblStatPublishedNum.Text = published.ToString();
+            lblStatDraftNum.Text     = draft.ToString();
+        }
+
+        public void BindArticleUsage(IEnumerable<KBArticle> articles)
+        {
+            lstArticleUsage.Items.Clear();
+            foreach (var a in articles)
+            {
+                var item = new ListViewItem(a.ArticleCode ?? string.Empty);
+                item.SubItems.Add(a.Title ?? string.Empty);
+                item.SubItems.Add(a.StatusName);
+                item.SubItems.Add(a.CreatedBy ?? string.Empty);
+                item.Tag = a;
+                lstArticleUsage.Items.Add(item);
+            }
+        }
+
+        // ── Private UI helpers ────────────────────────────────────────────────
 
         private void _view_ClearForm()
         {
-            EditingId           = null;
-            lblFormTitle.Text   = "เพิ่ม Category ใหม่";
-            txtCode.Text        = string.Empty;
-            txtName.Text        = string.Empty;
-            txtIcon.Text        = string.Empty;
-            txtDescription.Text = string.Empty;
-            numSortOrder.Value  = 0;
-            btnDelete.Enabled   = false;
-            btnDelete.Text      = "🗑️ ปิดใช้งาน";
-            lstCategories.SelectedItems.Clear();
+            EditingId              = null;
+            lblEditCardHeader.Text = "  ✏️ เพิ่ม Category ใหม่";
+            txtName.Text           = string.Empty;
+            txtCategoryCode.Text   = string.Empty;
+            if (cboIcon.Items.Count > 0)
+                cboIcon.SelectedIndex = 0;
+            txtDescription.Text    = string.Empty;
+            numSortOrder.Value     = 1;
+            cboStatus.SelectedIndex = 0;
+            btnDelete.Enabled      = false;
+            btnDelete.Text         = "🗑️ ลบหมวดหมู่";
+            treeCategories.SelectedNode = null;
+            ClearDirty();
+            ClearDetailPanel();
+            
+            // Refresh parent combo to show all available categories
             RefreshParentCombo();
-            txtCode.Focus();
+            
+            // Default to Root (no parent) for new categories
+            // This will be overridden by BtnNewSub_Click if creating a subcategory
+            if (cboParent.Items.Count > 0)
+                cboParent.SelectedIndex = 0;
+            
+            txtName.Focus();
         }
 
-        private void RefreshList()
+        private void ClearDetailPanel()
         {
-            lstCategories.Items.Clear();
-            foreach (var c in _categories)
+            lblStatTotalNum.Text     = "—";
+            lblStatPublishedNum.Text = "—";
+            lblStatDraftNum.Text     = "—";
+            lblInfoCreatedByVal.Text  = "—";
+            lblInfoCreatedDateVal.Text = "—";
+            lblInfoUpdatedVal.Text    = "—";
+            lblInfoStatusVal.Text     = "—";
+            lblInfoStatusVal.ForeColor = Color.FromArgb(120, 120, 120);
+            lblInfoPathVal.Text       = "—";
+            lstArticleUsage.Items.Clear();
+        }
+
+        private void RefreshTree()
+        {
+            string search = GetSearchText().ToLower();
+
+            treeCategories.BeginUpdate();
+            treeCategories.Nodes.Clear();
+
+            var roots = _categories
+                .Where(c => !c.ParentCategoryID.HasValue)
+                .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
+
+            foreach (var root in roots)
             {
-                var item = new ListViewItem(c.CategoryCode ?? "");
-                item.SubItems.Add(c.CategoryName ?? "");
-                item.SubItems.Add(c.ParentCategoryName ?? "(Root)");
-                item.SubItems.Add(c.SortOrder.ToString());
-                item.SubItems.Add(c.IsActive ? "ใช้งาน" : "ปิด");
-                item.Tag       = c;
-                item.ForeColor = c.IsActive
-                    ? Color.FromArgb(20, 20, 20)
-                    : Color.FromArgb(160, 160, 160);
-                lstCategories.Items.Add(item);
+                var children = _categories
+                    .Where(c => c.ParentCategoryID.HasValue && c.ParentCategoryID.Value == root.CategoryID)
+                    .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName)
+                    .ToList();
+
+                bool rootMatches = string.IsNullOrEmpty(search) || root.CategoryName.ToLower().Contains(search);
+                bool anyChildMatches = children.Any(c => string.IsNullOrEmpty(search) || c.CategoryName.ToLower().Contains(search));
+
+                if (!rootMatches && !anyChildMatches) continue;
+
+                var rootNode = BuildTreeNode(root);
+                foreach (var child in children)
+                {
+                    bool childMatches = string.IsNullOrEmpty(search) || child.CategoryName.ToLower().Contains(search);
+                    if (!childMatches && !rootMatches) continue;
+                    rootNode.Nodes.Add(BuildTreeNode(child));
+                }
+                treeCategories.Nodes.Add(rootNode);
+                rootNode.Expand();
             }
-            for (int i = 0; i < lstCategories.Items.Count; i++)
-            {
-                var lvi = lstCategories.Items[i];
-                var cat = lvi.Tag as KBCategory;
-                if (cat != null && !cat.IsActive)
-                    lvi.BackColor = Color.FromArgb(250, 240, 240);
-                else if (i % 2 == 0)
-                    lvi.BackColor = Color.White;
-                else
-                    lvi.BackColor = Color.FromArgb(248, 250, 253);
-            }
+
+            treeCategories.EndUpdate();
+        }
+
+        private TreeNode BuildTreeNode(KBCategory cat)
+        {
+            string symbol = cat.IconSymbol;
+            string text   = symbol + "  " + cat.CategoryName;
+            if (!cat.IsActive) text += "  (ปิด)";
+            var node = new TreeNode(text);
+            node.Tag       = cat;
+            node.ForeColor = cat.IsActive
+                ? Color.FromArgb(20, 20, 20)
+                : Color.FromArgb(160, 160, 160);
+            return node;
+        }
+
+        private string GetSearchText()
+        {
+            if (txtSearch.ForeColor == Color.FromArgb(160, 160, 160)) return string.Empty;
+            return txtSearch.Text.Trim();
         }
 
         private void RefreshParentCombo()
         {
+            // Store the currently selected parent ID before refreshing
+            int? currentSelection = GetSelectedParentId();
+
             cboParent.Items.Clear();
-            cboParent.Items.Add(new ComboItem("(ไม่มี Parent — Root Category)", null));
-            foreach (var c in _categories.Where(x => x.IsActive))
+            cboParent.Items.Add(new ComboItem("— ไม่มี (หมวดหมู่หลัก / Root) —", null));
+
+            // Mirror treeCategories: roots first, then their children — same sort order
+            var roots = _categories
+                .Where(c => !c.ParentCategoryID.HasValue && c.IsActive)
+                .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
+
+            foreach (var root in roots)
             {
-                if (EditingId.HasValue && c.CategoryID == EditingId.Value) continue;
+                if (EditingId.HasValue && root.CategoryID == EditingId.Value) continue;
+
+                string rootIcon = root.IconSymbol;
                 cboParent.Items.Add(new ComboItem(
-                    string.Format("[{0}] {1}", c.CategoryCode, c.CategoryName),
-                    c.CategoryID));
+                    string.Format("{0} {1}", rootIcon, root.CategoryName),
+                    root.CategoryID));
+
+                var children = _categories
+                    .Where(c => c.ParentCategoryID.HasValue
+                             && c.ParentCategoryID.Value == root.CategoryID
+                             && c.IsActive)
+                    .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
+
+                foreach (var child in children)
+                {
+                    if (EditingId.HasValue && child.CategoryID == EditingId.Value) continue;
+
+                    string childIcon = child.IconSymbol;
+                    cboParent.Items.Add(new ComboItem(
+                        string.Format("    └─ {0} {1}", childIcon, child.CategoryName),
+                        child.CategoryID));
+                }
             }
-            cboParent.SelectedIndex = 0;
+
+            // Restore previous selection if it still exists
+            if (currentSelection.HasValue)
+                SelectParentInCombo(currentSelection);
+            else
+                cboParent.SelectedIndex = 0;
         }
 
         private void SelectParentInCombo(int? parentId)
@@ -252,13 +514,6 @@ namespace CMS.Presentation.Modules.KMS
 
         private bool ValidateInput()
         {
-            if (string.IsNullOrWhiteSpace(txtCode.Text))
-            {
-                MessageBox.Show("กรุณากรอกรหัส Category", "กรุณากรอกข้อมูล",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                txtCode.Focus();
-                return false;
-            }
             if (string.IsNullOrWhiteSpace(txtName.Text))
             {
                 MessageBox.Show("กรุณากรอกชื่อ Category", "กรุณากรอกข้อมูล",

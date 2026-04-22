@@ -1,4 +1,5 @@
 using CMS.Controllers.KMS.KB.Interfaces;
+using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
@@ -12,6 +13,7 @@ namespace CMS.Controllers.KMS.KB
         private readonly IKBMainController  _view;
         private readonly IKBCategoryService  _categoryService;
         private readonly IKBArticleService   _articleService;
+        private readonly IKBVersionRepository _versionRepository;
         private readonly UserContext         _user;
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
@@ -20,14 +22,16 @@ namespace CMS.Controllers.KMS.KB
             IKBMainController  view,
             IKBCategoryService  categoryService,
             IKBArticleService   articleService,
+            IKBVersionRepository versionRepository,
             UserContext         user)
         {
             if (view            == null) throw new ArgumentNullException("view");
             if (categoryService == null) throw new ArgumentNullException("categoryService");
             if (articleService  == null) throw new ArgumentNullException("articleService");
+            if (versionRepository == null) throw new ArgumentNullException("versionRepository");
             if (user            == null) throw new ArgumentNullException("user");
             _view = view; _categoryService = categoryService;
-            _articleService = articleService; _user = user;
+            _articleService = articleService; _versionRepository = versionRepository; _user = user;
         }
 
         public void Initialize() { LoadCategoryTree(); }
@@ -83,6 +87,13 @@ namespace CMS.Controllers.KMS.KB
                         catId, statusFilter, null);
 
                 var list = articles.ToList();
+                
+                // Resolve latest version from KMS.t_KBVersion for each article
+                foreach (var article in list)
+                {
+                    ResolveLatestVersion(article);
+                }
+                
                 _view.RenderArticles(list);
                 _view.ArticleCountText = string.Format("{0} บทความ", list.Count);
             }
@@ -124,6 +135,21 @@ namespace CMS.Controllers.KMS.KB
         {
             if (index < 0 || index >= StatusFilterValues.Length) return null;
             return StatusFilterValues[index];
+        }
+
+        /// <summary>
+        /// Resolves the latest VersionNumber from KMS.t_KBVersion and writes it
+        /// back to article.CurrentVersion so lblMeta always shows the DB value.
+        /// </summary>
+        private void ResolveLatestVersion(KBArticle article)
+        {
+            try
+            {
+                var latest = _versionRepository.GetLatestByArticle(article.ArticleID);
+                if (latest != null)
+                    article.CurrentVersion = latest.VersionNumber;
+            }
+            catch { /* non-critical — keep whatever CurrentVersion was already set */ }
         }
     }
 }

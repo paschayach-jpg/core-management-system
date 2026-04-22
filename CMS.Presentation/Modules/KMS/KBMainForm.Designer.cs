@@ -14,8 +14,10 @@ namespace CMS.Presentation.Modules.KMS
         private void InitializeComponent()
         {
             this.pnlHeader = new System.Windows.Forms.Panel();
+            this.btnDashboard = new System.Windows.Forms.Button();
             this.btnSettings = new System.Windows.Forms.Button();
             this.lblTitle = new System.Windows.Forms.Label();
+            this.pnlViewerHost = new System.Windows.Forms.Panel();
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.treeCategories = new System.Windows.Forms.TreeView();
             this.pnlLeftFooter = new System.Windows.Forms.Panel();
@@ -40,6 +42,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlToolbarRight = new System.Windows.Forms.Panel();
             this.txtToolbarSearch = new System.Windows.Forms.TextBox();
             this.lblToolbarSearchLabel = new System.Windows.Forms.Label();
+            this.btnTestNotification = new System.Windows.Forms.Button();
             this.btnExportPdf = new System.Windows.Forms.Button();
             this.btnImportExcel = new System.Windows.Forms.Button();
             this.btnNewArticle = new System.Windows.Forms.Button();
@@ -74,6 +77,7 @@ namespace CMS.Presentation.Modules.KMS
             // pnlHeader
             // 
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.pnlHeader.Controls.Add(this.btnDashboard);
             this.pnlHeader.Controls.Add(this.btnSettings);
             this.pnlHeader.Controls.Add(this.lblTitle);
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
@@ -81,6 +85,24 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlHeader.Name = "pnlHeader";
             this.pnlHeader.Size = new System.Drawing.Size(1100, 32);
             this.pnlHeader.TabIndex = 1;
+            // 
+            // btnDashboard
+            // 
+            this.btnDashboard.BackColor = System.Drawing.Color.Transparent;
+            this.btnDashboard.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnDashboard.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnDashboard.FlatAppearance.BorderSize = 0;
+            this.btnDashboard.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(74)))), ((int)(((byte)(111)))));
+            this.btnDashboard.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDashboard.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnDashboard.ForeColor = System.Drawing.Color.White;
+            this.btnDashboard.Location = new System.Drawing.Point(841, 0);
+            this.btnDashboard.Name = "btnDashboard";
+            this.btnDashboard.Size = new System.Drawing.Size(169, 32);
+            this.btnDashboard.TabIndex = 1;
+            this.btnDashboard.Text = "📊 Dashboard";
+            this.btnDashboard.UseVisualStyleBackColor = false;
+            this.btnDashboard.Click += new System.EventHandler(this.BtnDashboard_Click);
             // 
             // btnSettings
             // 
@@ -112,6 +134,13 @@ namespace CMS.Presentation.Modules.KMS
             this.lblTitle.TabIndex = 1;
             this.lblTitle.Text = "🏢 Core Management System — คลังความรู้ (KMS)";
             this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // pnlViewerHost
+            // 
+            this.pnlViewerHost.Location = new System.Drawing.Point(0, 0);
+            this.pnlViewerHost.Name = "pnlViewerHost";
+            this.pnlViewerHost.Size = new System.Drawing.Size(200, 100);
+            this.pnlViewerHost.TabIndex = 0;
             // 
             // splitMain
             // 
@@ -186,6 +215,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlLeftHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
             this.pnlLeftHeader.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlLeftHeader.Controls.Add(this.pnlViewerHost);
             this.pnlLeftHeader.Controls.Add(this.lblCategoryHeader);
             this.pnlLeftHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlLeftHeader.Location = new System.Drawing.Point(0, 0);
@@ -407,6 +437,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlToolbar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(251)))));
             this.pnlToolbar.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlToolbar.Controls.Add(this.pnlToolbarRight);
+            this.pnlToolbar.Controls.Add(this.btnTestNotification);
             this.pnlToolbar.Controls.Add(this.btnExportPdf);
             this.pnlToolbar.Controls.Add(this.btnImportExcel);
             this.pnlToolbar.Controls.Add(this.btnNewArticle);
@@ -449,6 +480,24 @@ namespace CMS.Presentation.Modules.KMS
             this.lblToolbarSearchLabel.TabIndex = 1;
             this.lblToolbarSearchLabel.Text = "ค้นหา:";
             this.lblToolbarSearchLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // btnTestNotification
+            // 
+            this.btnTestNotification.BackColor = System.Drawing.Color.White;
+            this.btnTestNotification.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnTestNotification.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnTestNotification.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
+            this.btnTestNotification.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
+            this.btnTestNotification.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTestNotification.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnTestNotification.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
+            this.btnTestNotification.Location = new System.Drawing.Point(360, 4);
+            this.btnTestNotification.Name = "btnTestNotification";
+            this.btnTestNotification.Size = new System.Drawing.Size(140, 26);
+            this.btnTestNotification.TabIndex = 4;
+            this.btnTestNotification.Text = "🔔 Test Notification";
+            this.btnTestNotification.UseVisualStyleBackColor = false;
+            this.btnTestNotification.Click += new System.EventHandler(this.BtnTestNotification_Click);
             // 
             // btnExportPdf
             // 
@@ -679,8 +728,11 @@ namespace CMS.Presentation.Modules.KMS
 
         private System.Windows.Forms.Panel           pnlHeader;
         private System.Windows.Forms.Label           lblTitle;
+        private System.Windows.Forms.Button          btnDashboard;
         private System.Windows.Forms.Button          btnSettings;
         private System.Windows.Forms.SplitContainer  splitMain;
+        private System.Windows.Forms.Panel           pnlViewerHost;    // created in KBMainForm.cs constructor
+        private System.Windows.Forms.Panel           pnlCategoryHost;  // created in KBMainForm.cs constructor
         private System.Windows.Forms.Panel           panelMainRight;
         private System.Windows.Forms.Panel           pnlLeftHeader;
         private System.Windows.Forms.Label           lblCategoryHeader;
@@ -694,6 +746,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.TextBox         txtToolbarSearch;
         private System.Windows.Forms.Label           lblToolbarSearchLabel;
         private System.Windows.Forms.Button          btnExportPdf;
+        private System.Windows.Forms.Button          btnTestNotification;
         private System.Windows.Forms.Button          btnImportExcel;
         private System.Windows.Forms.Button          btnNewArticle;
         private System.Windows.Forms.Panel           pnlFilterBar;

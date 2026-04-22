@@ -207,79 +207,36 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        // ── Validation items (Step 2) — built programmatically ──────────────────
+        // ── Validation items (Step 2) — update text properties only ──────────────
         private void BuildValidationItems()
         {
-            pnlValidationItems.Controls.Clear();
-            var items = new[]
-            {
-                new { Icon="✅", Title="รูปแบบไฟล์: Excel (.xlsx)",       Detail="ไฟล์ถูกต้องและสามารถเปิดได้",                                              Kind="ok"   },
-                new { Icon="✅", Title="โครงสร้าง Template: ถูกต้อง",    Detail="พบคอลัมน์ครบตาม Template \"ความรู้ประกันภัย\" — 8 คอลัมน์ (A-H)",        Kind="ok"   },
-                new { Icon="✅", Title="คอลัมน์จำเป็น: ครบถ้วน",         Detail="คอลัมน์ ชื่อบทความ, ประเภท, หมวดหมู่, CRAF ครบทุกแถว",                   Kind="ok"   },
-                new { Icon="⚠️", Title="พบ 2 คำเตือน",                   Detail="แถวที่ 5: ไม่มีวันหมดอายุ  |  แถวที่ 12: หมวดหมู่ใหม่ (จะสร้างอัตโนมัติ)", Kind="warn" },
-                new { Icon="✅", Title="ข้อมูล CRAF: ถูกต้องทุกแถว",    Detail="ค่า CRAF ทุกแถวเป็น 1HC/2SC/3NC/4PC ตามที่กำหนด",                        Kind="ok"   },
-            };
+            // Validation item panels are pre-created in Designer.
+            // This method only updates the Text properties of existing labels.
+            
+            // Item 1: File format validation
+            lblValItem1Icon.Text   = "✅";
+            lblValItem1Title.Text  = "รูปแบบไฟล์: Excel (.xlsx)";
+            lblValItem1Detail.Text = "ไฟล์ถูกต้องและสามารถเปิดได้";
 
-            int y = 0;
-            foreach (var v in items)
-            {
-                var pnl = new Panel
-                {
-                    Location  = new Point(0, y),
-                    Size      = new Size(pnlValidationItems.Width, 48),
-                    Anchor    = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                    BackColor = v.Kind == "ok"
-                        ? Color.FromArgb(240, 255, 244)
-                        : Color.FromArgb(254, 249, 231),
-                };
-                var stripe = new Panel
-                {
-                    Dock      = DockStyle.Left,
-                    Width     = 4,
-                    BackColor = v.Kind == "ok"
-                        ? Color.FromArgb(39, 174, 96)
-                        : Color.FromArgb(243, 156, 18),
-                };
-                var lblIcon = new Label
-                {
-                    Location  = new Point(14, 14),
-                    Size      = new Size(22, 22),
-                    Font      = new Font("Segoe UI", 11f),
-                    Text      = v.Icon,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                };
-                var lblTitle = new Label
-                {
-                    Location  = new Point(40, 6),
-                    Size      = new Size(pnl.Width - 50, 18),
-                    Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(26, 35, 50),
-                    Text      = v.Title,
-                    Anchor    = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                };
-                var lblDetail = new Label
-                {
-                    Location  = new Point(40, 25),
-                    Size      = new Size(pnl.Width - 50, 16),
-                    Font      = new Font("Segoe UI", 8f),
-                    ForeColor = Color.FromArgb(74, 85, 104),
-                    Text      = v.Detail,
-                    Anchor    = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                };
-                pnl.Controls.Add(stripe);
-                pnl.Controls.Add(lblIcon);
-                pnl.Controls.Add(lblTitle);
-                pnl.Controls.Add(lblDetail);
-                pnl.Controls.Add(new Panel
-                {
-                    Dock      = DockStyle.Bottom,
-                    Height    = 1,
-                    BackColor = Color.FromArgb(208, 215, 222),
-                });
-                pnlValidationItems.Controls.Add(pnl);
-                y += 50;
-            }
-            pnlValidationItems.Height = y;
+            // Item 2: Template structure validation
+            lblValItem2Icon.Text   = "✅";
+            lblValItem2Title.Text  = "โครงสร้าง Template: ถูกต้อง";
+            lblValItem2Detail.Text = "พบคอลัมน์ครบตาม Template \"ความรู้ประกันภัย\" — 8 คอลัมน์ (A-H)";
+
+            // Item 3: Required columns validation
+            lblValItem3Icon.Text   = "✅";
+            lblValItem3Title.Text  = "คอลัมน์จำเป็น: ครบถ้วน";
+            lblValItem3Detail.Text = "คอลัมน์ ชื่อบทความ, ประเภท, หมวดหมู่, CRAF ครบทุกแถว";
+
+            // Item 4: Data warnings
+            lblValItem4Icon.Text   = "⚠️";
+            lblValItem4Title.Text  = "พบ 2 คำเตือน";
+            lblValItem4Detail.Text = "แถวที่ 5: ไม่มีวันหมดอายุ  |  แถวที่ 12: หมวดหมู่ใหม่ (จะสร้างอัตโนมัติ)";
+
+            // Item 5: CRAF validation
+            lblValItem5Icon.Text   = "✅";
+            lblValItem5Title.Text  = "ข้อมูล CRAF: ถูกต้องทุกแถว";
+            lblValItem5Detail.Text = "ค่า CRAF ทุกแถวเป็น 1HC/2SC/3NC/4PC ตามที่กำหนด";
         }
 
         // ── Step navigation ──────────────────────────────────────────────────────
@@ -319,7 +276,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_currentStep > n)
             {
-                circle.BackColor = Color.FromArgb(39, 174, 96);
+                circle.BackColor = Color.Transparent;
                 circle.ForeColor = Color.White;
                 circle.Text      = "✓";
                 label.ForeColor  = Color.FromArgb(39, 174, 96);
@@ -327,7 +284,7 @@ namespace CMS.Presentation.Modules.KMS
             }
             else if (_currentStep == n)
             {
-                circle.BackColor = Color.FromArgb(46, 116, 181);
+                circle.BackColor = Color.Transparent;
                 circle.ForeColor = Color.White;
                 circle.Text      = n.ToString();
                 label.ForeColor  = Color.FromArgb(46, 116, 181);
@@ -335,12 +292,13 @@ namespace CMS.Presentation.Modules.KMS
             }
             else
             {
-                circle.BackColor = Color.White;
+                circle.BackColor = Color.Transparent;
                 circle.ForeColor = Color.FromArgb(127, 140, 141);
                 circle.Text      = n.ToString();
                 label.ForeColor  = Color.FromArgb(127, 140, 141);
                 label.Font       = new Font("Segoe UI", 8.5f);
             }
+            pnlStepProgress.Invalidate();
         }
 
         // ── Upload Zone — dashed border paint ───────────────────────────────────
@@ -608,9 +566,39 @@ namespace CMS.Presentation.Modules.KMS
         // ── Step progress bottom border ──────────────────────────────────────────
         private void PnlStepProgress_Paint(object sender, PaintEventArgs e)
         {
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            // bottom separator
             using (var pen = new Pen(Color.FromArgb(208, 215, 222), 1))
-                e.Graphics.DrawLine(pen, 0, pnlStepProgress.Height - 1,
+                g.DrawLine(pen, 0, pnlStepProgress.Height - 1,
                     pnlStepProgress.Width, pnlStepProgress.Height - 1);
+
+            // draw rounded circles over each badge label
+            foreach (var (lbl, active, done) in new[]
+            {
+                (lblStep1Circle, _currentStep == 1, _currentStep > 1),
+                (lblStep2Circle, _currentStep == 2, _currentStep > 2),
+                (lblStep3Circle, _currentStep == 3, _currentStep > 3),
+            })
+            {
+                var r = new Rectangle(
+                    lbl.Parent.Left + lbl.Left,
+                    lbl.Parent.Top  + lbl.Top,
+                    lbl.Width, lbl.Height);
+
+                Color fill = done   ? Color.FromArgb(39, 174, 96)  :
+                             active ? Color.FromArgb(46, 116, 181) :
+                                      Color.FromArgb(230, 236, 245);
+
+                using (var brush = new System.Drawing.SolidBrush(fill))
+                    g.FillEllipse(brush, r);
+
+                // subtle ring for inactive
+                if (!active && !done)
+                    using (var pen = new Pen(Color.FromArgb(189, 195, 199), 1.5f))
+                        g.DrawEllipse(pen, r);
+            }
         }
     }
 }

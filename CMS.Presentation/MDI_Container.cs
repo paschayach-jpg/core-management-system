@@ -12,6 +12,7 @@ using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Modules.KMS;
+using CMS.Presentation.Services;
 using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
@@ -69,6 +70,9 @@ namespace CMS.Presentation
         private readonly IUserOrgVisibilityController _userOrgVisibilityController;
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
+        private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;
+        private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
+        private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
 
         // Notification inbox controls (built programmatically)
         private Panel    _notificationPanel;
@@ -176,7 +180,10 @@ namespace CMS.Presentation
             IUserOrgVisibilityController userOrgVisibilityController = null,
             Data.Repositories.FolderRepository folderRepository = null,
             CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
-            CMS.Services.Interfaces.IKBArticleService  kbArticleService  = null)
+            CMS.Services.Interfaces.IKBArticleService  kbArticleService  = null,
+            CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null,
+            CMS.Data.Interfaces.IKBVersionRepository kbVersionRepository = null,
+            CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
             if (auditService        == null) throw new ArgumentNullException("auditService");
@@ -229,6 +236,9 @@ namespace CMS.Presentation
             _userOrgVisibilityController = userOrgVisibilityController;
             _kbCategoryService = kbCategoryService;
             _kbArticleService  = kbArticleService;
+            _kbArticleLinkRepository = kbArticleLinkRepository;
+            _kbVersionRepository = kbVersionRepository;
+            _kbDashboardService = kbDashboardService;
 
             InitializeComponent();
             BuildFileDetailPanel();
@@ -243,7 +253,7 @@ namespace CMS.Presentation
         // Form lifecycle
         // -----------------------------------------------------------------------
 
-        private void MDI_Container_Load(object sender, EventArgs e)
+        private async void MDI_Container_Load(object sender, EventArgs e)
         {
             try
             {
@@ -291,6 +301,9 @@ namespace CMS.Presentation
                 // Handle MDI child activation to show/hide dashboard
                 this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
 
+                // ── Initialize Notification System ────────────────────────────
+                await InitializeNotificationSystemAsync();
+
                 // Auto-open FolderForm as MDI child
                 // Requirement: FolderForm (MOD-002) should open automatically on startup
                 this.BeginInvoke(new Action(() =>
@@ -313,6 +326,93 @@ namespace CMS.Presentation
                 _logger.Error($"Error during MDI_Container initialization: {ex.Message}", ex);
                 MessageBox.Show($"Initialization error: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Initializes the Notification System using configuration from IConfigManager.
+        /// Subscribes to notification events and connects to the notification server.
+        /// </summary>
+        private async System.Threading.Tasks.Task InitializeNotificationSystemAsync()
+        {
+            try
+            {
+                // Get configuration values from IConfigManager with fallback defaults
+                var notificationServerUrl = _configManager.GetOrDefault<string>(
+                    "NotificationServerUrl", 
+                    "https://150.1.8.29:7157");
+                
+                var notificationAppCode = _configManager.GetOrDefault<string>(
+                    "NotificationAppCode", 
+                    "CMS");
+                
+                var notificationApiKey = _configManager.GetOrDefault<string>(
+                    "NotificationApiKey", 
+                    "im_DB6037E2-BFAE-488E-AE24-2EA83C7309D8");
+
+                // Initialize the notification manager
+                NotificationManager.Instance.Initialize(
+                    this,
+                    notificationServerUrl,
+                    notificationAppCode,
+                    notificationApiKey
+                );
+
+                // Subscribe to notification events
+                NotificationManager.Instance.NotificationReceived += (s, notification) =>
+                {
+                    System.Diagnostics.Debug.WriteLine("[CMS] Notification received: " + notification.Title);
+                };
+
+                NotificationManager.Instance.UnreadCountChanged += (s, count) =>
+                {
+                    System.Diagnostics.Debug.WriteLine("[CMS] Unread count: " + count);
+                    // TODO: Update UI badge with count
+                };
+
+                NotificationManager.Instance.NotificationClicked += (s, notification) =>
+                {
+                    System.Diagnostics.Debug.WriteLine("[CMS] Notification clicked: " + notification.ReferenceType);
+                    // TODO: Navigate to relevant page based on notification.ReferenceType
+                    // Example:
+                    // switch (notification.ReferenceType?.ToLower())
+                    // {
+                    //     case "document":
+                    //         // Open document form
+                    //         break;
+                    //     case "approval":
+                    //         // Open approval form
+                    //         break;
+                    //     case "kb_article":
+                    //         // Open KB article
+                    //         break;
+                    // }
+                };
+
+                NotificationManager.Instance.ConnectionStateChanged += (s, state) =>
+                {
+                    System.Diagnostics.Debug.WriteLine("[CMS] Notification connection state: " + state);
+                };
+
+                NotificationManager.Instance.Error += (s, ex) =>
+                {
+                    _logger.Error("Notification system error", ex);
+                };
+
+                NotificationManager.Instance.Connected += (s, connectionId) =>
+                {
+                    _logger.Info("Notification system connected: " + connectionId);
+                };
+
+                // Connect to notification server using AD username
+                await NotificationManager.Instance.ConnectAsync(_currentUser.ADUserName);
+                
+                _logger.Info("Notification system initialized for user: " + _currentUser.ADUserName);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to initialize notification system", ex);
+                // Don't block app startup if notification fails
             }
         }
 
@@ -1195,7 +1295,7 @@ namespace CMS.Presentation
 
             var form      = new KBMainForm();
             var presenter = new KBMainController(
-                form, _kbCategoryService, _kbArticleService, _currentUser);
+                form, _kbCategoryService, _kbArticleService, _kbVersionRepository, _currentUser);
 
             form.AttachPresenter(presenter, _currentUser);
             form.AttachFactories(
@@ -1204,15 +1304,21 @@ namespace CMS.Presentation
                 {
                     var viewer          = new ArticleViewerForm();
                     var viewerPresenter = new ArticleViewerController(
-                        viewer, _kbArticleService, _currentUser, article);
+                        viewer, _kbArticleService, _kbVersionRepository, _kbArticleLinkRepository, _currentUser, article);
                     viewer.AttachPresenter(viewerPresenter);
                     viewer.AttachEditorFactory(a => OpenKBEditorDialog(a));
                     return viewer;
                 },
                 // editorFactory — เปิด KBEditorDialog พร้อม presenter
                 article => OpenKBEditorDialog(article),
-                // categorySettingsFactory — เปิดหน้าตั้งค่า Category
-                () => OpenKBCategorySettings());
+                // categoryFormFactory — สร้าง KBCategoryForm พร้อม presenter สำหรับฝังใน KBMainForm
+                () =>
+                {
+                    var catForm      = new KBCategoryForm(_currentUser);
+                    var catPresenter = new KBCategoryController(catForm, _kbCategoryService, _kbArticleService, _currentUser);
+                    catForm.AttachPresenter(catPresenter);
+                    return catForm;
+                });
 
             // importWizardFactory — สร้าง KBImportWizardForm พร้อม presenter
             form.AttachImportWizardFactory(() =>
@@ -1222,6 +1328,16 @@ namespace CMS.Presentation
                     wizard, _kbArticleService, _kbCategoryService, _currentUser);
                 wizard.AttachPresenter(wizardPresenter);
                 return wizard.ShowDialog(this);
+            });
+
+            // dashboardFactory — สร้าง KBDashboardForm พร้อม presenter
+            form.AttachDashboardFactory(() =>
+            {
+                var dashboard = new KBDashboardForm(_currentUser);
+                var dashboardPresenter = new KBDashboardController(
+                    dashboard, _kbDashboardService, _currentUser);
+                dashboard.AttachPresenter(dashboardPresenter);
+                return dashboard.ShowDialog(this);
             });
 
             OpenChildForm(form);
@@ -1235,7 +1351,7 @@ namespace CMS.Presentation
         {
             var dlg       = new KBEditorDialog(_currentUser);
             var presenter = new KBEditorController(
-                dlg, _kbCategoryService, _kbArticleService, _currentUser, article);
+                dlg, _kbCategoryService, _kbArticleService, _kbArticleLinkRepository, _kbVersionRepository, _currentUser, article);
             dlg.AttachPresenter(presenter);
             return dlg.ShowDialog(this);
         }
@@ -1539,8 +1655,10 @@ namespace CMS.Presentation
             }
 
             var form      = new KBCategoryForm(_currentUser);
-            var presenter = new KBCategoryController(form, _kbCategoryService, _currentUser);
+            var presenter = new KBCategoryController(form, _kbCategoryService, _kbArticleService, _currentUser);
             form.AttachPresenter(presenter);
+            // When opened standalone (menu route), "← กลับ" closes the MDI child
+            form.BackRequested += (s, e) => form.Close();
             OpenChildForm(form);
         }
         private void SyncEmployeeFromApi()

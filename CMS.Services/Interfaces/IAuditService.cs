@@ -18,6 +18,6 @@ namespace CMS.Services.Interfaces
         /// Returns a paged set of AuditLog records matching the query filters.
         /// Caller must have Manager or Admin role (Req 9.5).
         /// </summary>
-        PagedResult<AuditLog> Query(AuditQuery query, UserContext user);
+        CMS.Data.Models.PagedResult<AuditLog> Query(AuditQuery query, UserContext user);
     }
 }

@@ -53,6 +53,16 @@ namespace CMS.Services
             return article;
         }
 
+        public IEnumerable<KBArticle> SearchPublishedArticles(string searchText)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+                return new List<KBArticle>();
+
+            // Search only published articles (Status = 3)
+            // Filter by Article Code OR Title containing search text
+            return _articleRepo.Search(searchText, categoryId: null, status: null, articleType: null);
+        }
+
         // ── Write ─────────────────────────────────────────────────────────────
 
         public string GenerateNextArticleCode()

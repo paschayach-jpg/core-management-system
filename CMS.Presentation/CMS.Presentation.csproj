@@ -38,6 +38,10 @@
       <HintPath>..\packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -305,6 +309,17 @@
       <DependentUpon>MenuManagementForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MenuTreeViewManager.cs" />
+    <!-- Notification System -->
+    <Compile Include="UserControls\NotificationItemControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\NotificationItemControl.Designer.cs">
+      <DependentUpon>NotificationItemControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\NotificationAlertPopup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Services\NotificationManager.cs" />
     <!-- Properties -->
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -348,6 +363,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\ImportFile\ApprovalInboxForm.resx">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\KBCategoryForm.resx">
+      <DependentUpon>KBCategoryForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBEditorDialog.resx">
       <DependentUpon>KBEditorDialog.cs</DependentUpon>
