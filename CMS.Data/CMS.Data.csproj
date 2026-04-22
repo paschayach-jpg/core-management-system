@@ -103,9 +103,5 @@
     <Compile Include="Repositories\MenuItemRepository.cs" />
     <Compile Include="Repositories\KBDashboardRepository.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Scripts\001_CreateSchema.sql" />
-    <None Include="Scripts\002_StoredProcedures.sql" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
