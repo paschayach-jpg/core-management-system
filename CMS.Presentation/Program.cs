@@ -5,6 +5,7 @@ using CMS.Controllers.DMS.Document;
 using CMS.Domain.Models;
 using CMS.Infrastructure;
 using CMS.Services;
+using CMS.Presentation.Services;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 
@@ -386,6 +387,7 @@ namespace CMS.Presentation
                     hrPositionRepository,
                     hrPositionMappingRepository,
                     userAccountRepo);
+                
                 // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(
                     logger: loggingService,
@@ -424,6 +426,78 @@ namespace CMS.Presentation
                     kbArticleLinkRepository: kbArticleLinkRepository,
                     kbVersionRepository: kbVersionRepository,
                     kbDashboardService: kbDashboardService);
+
+                // ── Initialize Notification System ────────────────────────────
+                var notificationServerUrl = System.Configuration.ConfigurationManager.AppSettings["NotificationServerUrl"] ?? "https://150.1.8.29:7157";
+                var notificationAppCode = System.Configuration.ConfigurationManager.AppSettings["NotificationAppCode"] ?? "CMS";
+                var notificationApiKey = System.Configuration.ConfigurationManager.AppSettings["NotificationApiKey"] ?? "im_DB6037E2-BFAE-488E-AE24-2EA83C7309D8";
+
+                try
+                {
+                    NotificationManager.Instance.Initialize(
+                        mainForm,
+                        notificationServerUrl,
+                        notificationAppCode,
+                        notificationApiKey
+                    );
+
+                    // Subscribe to notification events
+                    NotificationManager.Instance.NotificationReceived += (s, notification) =>
+                    {
+                        System.Diagnostics.Debug.WriteLine("[CMS] Notification received: " + notification.Title);
+                    };
+
+                    NotificationManager.Instance.UnreadCountChanged += (s, count) =>
+                    {
+                        System.Diagnostics.Debug.WriteLine("[CMS] Unread count: " + count);
+                        // TODO: Update UI badge with count
+                    };
+
+                    NotificationManager.Instance.NotificationClicked += (s, notification) =>
+                    {
+                        System.Diagnostics.Debug.WriteLine("[CMS] Notification clicked: " + notification.ReferenceType);
+                        // TODO: Navigate to relevant page based on notification.ReferenceType
+                        // Example:
+                        // switch (notification.ReferenceType?.ToLower())
+                        // {
+                        //     case "document":
+                        //         // Open document form
+                        //         break;
+                        //     case "approval":
+                        //         // Open approval form
+                        //         break;
+                        //     case "kb_article":
+                        //         // Open KB article
+                        //         break;
+                        // }
+                    };
+
+                    NotificationManager.Instance.ConnectionStateChanged += (s, state) =>
+                    {
+                        System.Diagnostics.Debug.WriteLine("[CMS] Notification connection state: " + state);
+                    };
+
+                    NotificationManager.Instance.Error += (s, ex) =>
+                    {
+                        loggingService.Error("Notification system error", ex);
+                    };
+
+                    NotificationManager.Instance.Connected += (s, connectionId) =>
+                    {
+                        loggingService.Info("Notification system connected: " + connectionId);
+                    };
+
+                    // Connect to notification server using AD username
+                    //NotificationManager.Instance.ConnectAsync(userContext.ADUserName).Wait();
+                    
+                    loggingService.Info("Notification system initialized for user: " + userContext.ADUserName);
+                }
+                catch (Exception ex)
+                {
+                    loggingService.Error("Failed to initialize notification system", ex);
+                    // Don't block app startup if notification fails
+                }
+
                 Application.Run(mainForm);
 
                 // ถ้า user กด Logout → restart process เพื่อแสดง LoginForm ใหม่

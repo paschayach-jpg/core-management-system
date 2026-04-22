@@ -42,6 +42,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlToolbarRight = new System.Windows.Forms.Panel();
             this.txtToolbarSearch = new System.Windows.Forms.TextBox();
             this.lblToolbarSearchLabel = new System.Windows.Forms.Label();
+            this.btnTestNotification = new System.Windows.Forms.Button();
             this.btnExportPdf = new System.Windows.Forms.Button();
             this.btnImportExcel = new System.Windows.Forms.Button();
             this.btnNewArticle = new System.Windows.Forms.Button();
@@ -314,7 +315,7 @@ namespace CMS.Presentation.Modules.KMS
             "100 รายการ"});
             this.cboPageSize.Location = new System.Drawing.Point(148, 0);
             this.cboPageSize.Name = "cboPageSize";
-            this.cboPageSize.Size = new System.Drawing.Size(120, 21);
+            this.cboPageSize.Size = new System.Drawing.Size(120, 25);
             this.cboPageSize.TabIndex = 0;
             // 
             // lblPageSizeLabel
@@ -342,7 +343,7 @@ namespace CMS.Presentation.Modules.KMS
             "คะแนน"});
             this.cboSortBy.Location = new System.Drawing.Point(70, 0);
             this.cboSortBy.Name = "cboSortBy";
-            this.cboSortBy.Size = new System.Drawing.Size(140, 21);
+            this.cboSortBy.Size = new System.Drawing.Size(140, 25);
             this.cboSortBy.TabIndex = 2;
             // 
             // lblSortByLabel
@@ -387,7 +388,7 @@ namespace CMS.Presentation.Modules.KMS
             "IT"});
             this.cboDepartment.Location = new System.Drawing.Point(310, 5);
             this.cboDepartment.Name = "cboDepartment";
-            this.cboDepartment.Size = new System.Drawing.Size(150, 21);
+            this.cboDepartment.Size = new System.Drawing.Size(150, 25);
             this.cboDepartment.TabIndex = 2;
             // 
             // cboStatus
@@ -398,7 +399,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboStatus.FormattingEnabled = true;
             this.cboStatus.Location = new System.Drawing.Point(190, 5);
             this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(120, 21);
+            this.cboStatus.Size = new System.Drawing.Size(120, 25);
             this.cboStatus.TabIndex = 3;
             this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboFilter_SelectedIndexChanged);
             // 
@@ -416,7 +417,7 @@ namespace CMS.Presentation.Modules.KMS
             "แนวทาง"});
             this.cboType.Location = new System.Drawing.Point(70, 5);
             this.cboType.Name = "cboType";
-            this.cboType.Size = new System.Drawing.Size(120, 21);
+            this.cboType.Size = new System.Drawing.Size(120, 25);
             this.cboType.TabIndex = 4;
             // 
             // lblFilterLabel
@@ -436,6 +437,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlToolbar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(251)))));
             this.pnlToolbar.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlToolbar.Controls.Add(this.pnlToolbarRight);
+            this.pnlToolbar.Controls.Add(this.btnTestNotification);
             this.pnlToolbar.Controls.Add(this.btnExportPdf);
             this.pnlToolbar.Controls.Add(this.btnImportExcel);
             this.pnlToolbar.Controls.Add(this.btnNewArticle);
@@ -463,7 +465,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtToolbarSearch.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.txtToolbarSearch.Location = new System.Drawing.Point(48, 0);
             this.txtToolbarSearch.Name = "txtToolbarSearch";
-            this.txtToolbarSearch.Size = new System.Drawing.Size(200, 23);
+            this.txtToolbarSearch.Size = new System.Drawing.Size(200, 26);
             this.txtToolbarSearch.TabIndex = 0;
             this.txtToolbarSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearch_KeyDown);
             // 
@@ -478,6 +480,24 @@ namespace CMS.Presentation.Modules.KMS
             this.lblToolbarSearchLabel.TabIndex = 1;
             this.lblToolbarSearchLabel.Text = "ค้นหา:";
             this.lblToolbarSearchLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // btnTestNotification
+            // 
+            this.btnTestNotification.BackColor = System.Drawing.Color.White;
+            this.btnTestNotification.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnTestNotification.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnTestNotification.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
+            this.btnTestNotification.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
+            this.btnTestNotification.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTestNotification.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnTestNotification.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
+            this.btnTestNotification.Location = new System.Drawing.Point(360, 4);
+            this.btnTestNotification.Name = "btnTestNotification";
+            this.btnTestNotification.Size = new System.Drawing.Size(140, 26);
+            this.btnTestNotification.TabIndex = 4;
+            this.btnTestNotification.Text = "🔔 Test Notification";
+            this.btnTestNotification.UseVisualStyleBackColor = false;
+            this.btnTestNotification.Click += new System.EventHandler(this.BtnTestNotification_Click);
             // 
             // btnExportPdf
             // 
@@ -673,7 +693,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // KBMainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1100, 680);
@@ -726,6 +746,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.TextBox         txtToolbarSearch;
         private System.Windows.Forms.Label           lblToolbarSearchLabel;
         private System.Windows.Forms.Button          btnExportPdf;
+        private System.Windows.Forms.Button          btnTestNotification;
         private System.Windows.Forms.Button          btnImportExcel;
         private System.Windows.Forms.Button          btnNewArticle;
         private System.Windows.Forms.Panel           pnlFilterBar;

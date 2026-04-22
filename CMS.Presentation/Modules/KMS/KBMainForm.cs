@@ -8,6 +8,8 @@ using System.Windows.Forms;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
+using CMS.Services;
+using CMS.Presentation.Services;
 
 namespace CMS.Presentation.Modules.KMS
 {
@@ -256,6 +258,66 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             _presenter.ShowReport();
+        }
+
+        private async void BtnTestNotification_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!NotificationManager.Instance.IsConnected)
+                {
+                    MessageBox.Show(
+                        "Notification system is not connected.\nPlease check your connection.",
+                        "Notification Test",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Get current user AD name
+                string currentUserAd = _user != null ? _user.ADUserName : "unknown";
+                
+                // Send test notification to yourself
+                var result = await NotificationManager.Instance.SendNotificationAsync(
+                    typeCode: "SYSTEM_ALERT",
+                    title: "Test Notification from KMS",
+                    message: "This is a test notification from Knowledge Management System. Click to view details.",
+                    recipientUserAd: currentUserAd,
+                    senderUserAd: currentUserAd,
+                    referenceType: "kb_article",
+                    referenceId: "TEST001",
+                    referenceCode: "KB-TEST-001",
+                    priority: 2
+                );
+
+                if (result != null)
+                {
+                    MessageBox.Show(
+                        "Test notification sent successfully!\n\n" +
+                        "Notification ID: " + result.NotificationId + "\n" +
+                        "Recipient: " + currentUserAd + "\n\n" +
+                        "You should see a popup notification shortly.",
+                        "Notification Test",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "Failed to send test notification.\nPlease check the logs for details.",
+                        "Notification Test",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Error sending test notification:\n\n" + ex.Message,
+                    "Notification Test",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
         // ── Category settings navigation (embedded over splitMain) ──────────────

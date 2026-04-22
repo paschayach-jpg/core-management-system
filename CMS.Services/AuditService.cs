@@ -66,7 +66,7 @@ namespace CMS.Services
         // Query  (Req 9.5, 9.7)
         // -----------------------------------------------------------------------
 
-        public PagedResult<AuditLog> Query(AuditQuery query, UserContext user)
+        public CMS.Data.Models.PagedResult<AuditLog> Query(AuditQuery query, UserContext user)
         {
             if (query == null) throw new ArgumentNullException("query");
             if (user  == null) throw new ArgumentNullException("user");

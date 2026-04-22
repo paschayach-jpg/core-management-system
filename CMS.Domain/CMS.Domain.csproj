@@ -84,6 +84,7 @@
     <Compile Include="Models\KBDashboardStats.cs" />
     <Compile Include="Models\KBMonthlyArticle.cs" />
     <Compile Include="Models\KBTopArticle.cs" />
+    <Compile Include="Models\NotificationDto.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
