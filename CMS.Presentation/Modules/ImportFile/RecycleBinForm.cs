@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -16,8 +16,7 @@ namespace CMS.Presentation
     public partial class RecycleBinForm : Form
     {
         // ── Services ────────────────────────────────────────────────────────────
-        private readonly IFolderService       _folderService;
-        private readonly IOrgStructureService _orgService;
+        private readonly IRecycleBinController _recycleBinController;
         private readonly UserContext          _user;
 
         // ── State ───────────────────────────────────────────────────────────────
@@ -27,16 +26,14 @@ namespace CMS.Presentation
 
         // ────────────────────────────────────────────────────────────────────────
         public RecycleBinForm(
-            IFolderService       folderService,
-            UserContext          user,
-            IOrgStructureService orgService = null)
+            IRecycleBinController recycleBinController,
+            UserContext user)
         {
-            if (folderService == null) throw new ArgumentNullException("folderService");
-            if (user          == null) throw new ArgumentNullException("user");
+            if (recycleBinController == null) throw new ArgumentNullException("recycleBinController");
+            if (user == null) throw new ArgumentNullException("user");
 
-            _folderService = folderService;
-            _user          = user;
-            _orgService    = orgService;
+            _recycleBinController = recycleBinController;
+            _user = user;
 
             InitializeComponent();
             LoadOrgUnits();
@@ -50,16 +47,13 @@ namespace CMS.Presentation
             _cmbOrgUnit.Items.Clear();
             _cmbOrgUnit.Items.Add(new OrgUnitItem { Id = null, Name = "— ทั้งหมด —" });
 
-            if (_orgService != null)
+            try
             {
-                try
-                {
-                    _orgUnits = _orgService.GetHierarchy().ToList();
-                    foreach (var ou in _orgUnits.OrderBy(o => o.Name))
-                        _cmbOrgUnit.Items.Add(new OrgUnitItem { Id = ou.OrgUnitId, Name = ou.Name });
-                }
-                catch { /* ignore */ }
+                _orgUnits = _recycleBinController.GetOrgHierarchy().ToList();
+                foreach (var ou in _orgUnits.OrderBy(o => o.Name))
+                    _cmbOrgUnit.Items.Add(new OrgUnitItem { Id = ou.OrgUnitId, Name = ou.Name });
             }
+            catch { /* ignore */ }
 
             _cmbOrgUnit.SelectedIndex = 0;
         }
@@ -68,7 +62,7 @@ namespace CMS.Presentation
         {
             try
             {
-                _folders = _folderService.GetDeletedFolders(_filterOrgUnit, _user).ToList();
+                _folders = _recycleBinController.GetDeletedFolders(_filterOrgUnit, _user).ToList();
             }
             catch (Exception ex)
             {
@@ -219,7 +213,7 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    _folderService.PermanentlyDeleteFolder(folder.FolderId, _user);
+                    _recycleBinController.PermanentlyDeleteFolder(folder.FolderId, _user);
                     success++;
                 }
                 catch { failed++; }
@@ -253,7 +247,7 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    _folderService.RestoreFolder(folder.FolderId, null, _user);
+                    _recycleBinController.RestoreFolder(folder.FolderId, null, _user);
                     success++;
                 }
                 catch (InvalidOperationException ex)
@@ -264,7 +258,7 @@ namespace CMS.Presentation
                         "ไม่พบตำแหน่งเดิม", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     if (choice == DialogResult.Yes)
                     {
-                        try { _folderService.RestoreFolder(folder.FolderId, 0, _user); success++; }
+                        try { _recycleBinController.RestoreFolder(folder.FolderId, 0, _user); success++; }
                         catch { failed++; }
                     }
                     else failed++;
@@ -298,7 +292,7 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    _folderService.PermanentlyDeleteFolder(folder.FolderId, _user);
+                    _recycleBinController.PermanentlyDeleteFolder(folder.FolderId, _user);
                     success++;
                 }
                 catch { failed++; }

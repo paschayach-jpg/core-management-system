@@ -7,7 +7,6 @@ using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -20,25 +19,20 @@ namespace CMS.Presentation
     public partial class OrgStructureForm : Form, IOrgStructureView
     {
         private readonly OrgStructurePresenter  _presenter;
-        private readonly IOrgStructureService   _service;
         private readonly UserContext            _currentUser;
         private List<OrgUnit> _allUnits = new List<OrgUnit>();
-        private readonly IEmployeeApiService    _employeeApiService;
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
 
         // ตัวเลือกมุมมองปัจจุบัน: false = ตามองค์กร, true = ตามความลับ
         private bool _isConfView = false;
 
-        public OrgStructureForm(IOrgStructureService service, UserContext user,
-            IEmployeeApiService employeeApiService = null,
+        public OrgStructureForm(CMS.Services.Interfaces.IOrgStructureService service, UserContext user,
             IAuthorityOrgLookupController authorityOrgLookupController = null)
         {
             if (service == null) throw new ArgumentNullException("service");
             if (user    == null) throw new ArgumentNullException("user");
 
-            _service            = service;
             _currentUser        = user;
-            _employeeApiService = employeeApiService;
             _authorityOrgLookupController = authorityOrgLookupController;
 
             InitializeComponent();
@@ -381,7 +375,7 @@ namespace CMS.Presentation
             }
 
             // Step 4: เปิด dialog สร้างหน่วยงาน พร้อมส่ง context ของ selected node
-            using (var dlg = new CreateOrgUnitDialog(_allUnits, _employeeApiService, null, _service, selectedOrgUnit, _authorityOrgLookupController))
+            using (var dlg = new CreateOrgUnitDialog(_allUnits, null, null, selectedParent: selectedOrgUnit, authorityOrgLookupController: _authorityOrgLookupController))
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK && dlg.Result != null)
                     _presenter.CreateOrgUnit(dlg.Result);

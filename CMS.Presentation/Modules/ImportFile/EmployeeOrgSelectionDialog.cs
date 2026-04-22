@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Services.Interfaces;
+using CMS.Controllers.DMS.Document.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -11,15 +11,15 @@ namespace CMS.Presentation
     {
         public List<EmployeeOrgUnit> SelectedUnits { get; private set; } = new List<EmployeeOrgUnit>();
 
-        private readonly IEmployeeApiService _apiService;
+        private readonly IEmployeeDirectoryController _employeeDirectoryController;
 
         private List<DivisionGroup>   _divisionGroups = new List<DivisionGroup>();
         private List<EmployeeOrgUnit> _filteredItems  = new List<EmployeeOrgUnit>();
 
-        public EmployeeOrgSelectionDialog(IEmployeeApiService apiService)
+        public EmployeeOrgSelectionDialog(IEmployeeDirectoryController employeeDirectoryController)
         {
-            if (apiService == null) throw new ArgumentNullException("apiService");
-            _apiService = apiService;
+            if (employeeDirectoryController == null) throw new ArgumentNullException("employeeDirectoryController");
+            _employeeDirectoryController = employeeDirectoryController;
             InitializeComponent();
             
             // ให้ปุ่มชิดขวาเสมอเมื่อ resize
@@ -40,7 +40,7 @@ namespace CMS.Presentation
                 lblStatus.Text = "กำลังโหลดข้อมูลพนักงานจาก API...";
                 Application.DoEvents();
 
-                var employees = _apiService.GetAllEmployees().ToList();
+                var employees = _employeeDirectoryController.GetAllEmployees().ToList();
 
                 _divisionGroups = employees
                     .Where(e => !string.IsNullOrEmpty(e.DivisionCode))

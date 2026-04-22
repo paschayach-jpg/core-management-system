@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 using MenuItem = CMS.Domain.Models.MenuItem;
 
 namespace CMS.Presentation
@@ -15,17 +15,17 @@ namespace CMS.Presentation
     public class MenuTreeViewManager
     {
         private readonly TreeView _treeView;
-        private readonly IMenuService _menuService;
+        private readonly IMenuManagementController _menuManagementController;
         private readonly UserContext _currentUser;
         private Dictionary<string, Image> _iconCache = new Dictionary<string, Image>();
 
         // Event for menu selection
         public event EventHandler<MenuSelectedEventArgs> MenuSelected;
 
-        public MenuTreeViewManager(TreeView treeView, IMenuService menuService, UserContext currentUser)
+        public MenuTreeViewManager(TreeView treeView, IMenuManagementController menuManagementController, UserContext currentUser)
         {
             _treeView = treeView ?? throw new ArgumentNullException(nameof(treeView));
-            _menuService = menuService ?? throw new ArgumentNullException(nameof(menuService));
+            _menuManagementController = menuManagementController ?? throw new ArgumentNullException(nameof(menuManagementController));
             _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
 
             // Wire up tree view events
@@ -44,7 +44,7 @@ namespace CMS.Presentation
                 _treeView.BeginUpdate();
                 _treeView.Nodes.Clear();
 
-                var rootMenus = _menuService.GetRootMenus(_currentUser);
+                var rootMenus = _menuManagementController.GetRootMenus(_currentUser);
 
                 foreach (var menu in rootMenus)
                 {
@@ -112,7 +112,7 @@ namespace CMS.Presentation
         /// </summary>
         public List<MenuItem> GetAllVisibleMenus()
         {
-            return _menuService.GetVisibleMenus(_currentUser);
+            return new List<MenuItem>(_menuManagementController.GetVisibleMenus(_currentUser));
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ namespace CMS.Presentation
 
         private void LoadChildNodes(TreeNode parentNode, int parentMenuItemID)
         {
-            var childMenus = _menuService.GetChildMenus(parentMenuItemID, _currentUser);
+            var childMenus = _menuManagementController.GetChildMenus(parentMenuItemID, _currentUser);
 
             foreach (var childMenu in childMenus)
             {

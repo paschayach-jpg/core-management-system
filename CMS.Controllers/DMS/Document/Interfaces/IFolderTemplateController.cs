@@ -17,5 +17,7 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         void UpdateItem(FolderTemplateItem item);
         void DeleteItem(int itemId);
         void DeleteItemsByTemplate(int templateId);
+        void ApplyTemplateToFolder(int parentFolderId, int templateId, int confidentialityLevel, UserContext currentUser);
+        void ApplyTemplateToOrgUnit(int orgUnitId, int templateId, string rootFolderName, int confidentialityLevel, UserContext currentUser);
     }
 }

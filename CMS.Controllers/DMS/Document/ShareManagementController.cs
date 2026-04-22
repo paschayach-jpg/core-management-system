@@ -1,0 +1,74 @@
+using System.Collections.Generic;
+using System.Linq;
+using CMS.Controllers.DMS.Document.Interfaces;
+using CMS.Domain.Models;
+using CMS.Services.Interfaces;
+
+namespace CMS.Controllers.DMS.Document
+{
+    public sealed class ShareManagementController : IShareManagementController
+    {
+        private readonly IShareService _shareService;
+
+        public ShareManagementController(IShareService shareService = null)
+        {
+            _shareService = shareService;
+        }
+
+        public IList<FilePermission> GetInternalSharesForUser(int userId, UserContext user)
+        {
+            if (_shareService == null)
+                return new List<FilePermission>();
+
+            return _shareService.GetInternalSharesForUser(userId, user).ToList();
+        }
+
+        public IList<ExternalShare> GetExternalSharesForUser(int userId, UserContext user)
+        {
+            if (_shareService == null)
+                return new List<ExternalShare>();
+
+            return _shareService.GetExternalSharesForUser(userId, user).ToList();
+        }
+
+        public IList<ShareAccessLog> GetAccessLog(int externalShareId, UserContext user)
+        {
+            if (_shareService == null)
+                return new List<ShareAccessLog>();
+
+            return _shareService.GetAccessLog(externalShareId, user).ToList();
+        }
+
+        public void RevokeInternalShare(int filePermissionId, UserContext user)
+        {
+            if (_shareService == null)
+                return;
+
+            _shareService.RevokeInternalShare(filePermissionId, user);
+        }
+
+        public void ApproveExternalShare(int externalShareId, UserContext user)
+        {
+            if (_shareService == null)
+                return;
+
+            _shareService.ApproveExternalShare(externalShareId, user);
+        }
+
+        public void RejectExternalShare(int externalShareId, string reason, UserContext user)
+        {
+            if (_shareService == null)
+                return;
+
+            _shareService.RejectExternalShare(externalShareId, reason, user);
+        }
+
+        public void RevokeExternalShare(int externalShareId, string reason, UserContext user)
+        {
+            if (_shareService == null)
+                return;
+
+            _shareService.RevokeExternalShare(externalShareId, reason, user);
+        }
+    }
+}

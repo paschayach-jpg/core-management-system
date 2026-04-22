@@ -3,6 +3,7 @@ using CMS.Presentation.Modules.KMS;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document;
 
 namespace CMS.Presentation
 {
@@ -48,29 +49,65 @@ namespace CMS.Presentation
                         return ShowTargetForm(context, new SharedWithMeForm(context.User, context.ShareLookupController));
 
                     case "ShareManagement":
-                        return ShowTargetForm(context, new ShareManagementForm(context.ShareService, context.User, context.ShareLookupController));
+                        if (context.ShareManagementController == null)
+                        {
+                            MessageBox.Show("Share management controller is not available.", "Manage Shares", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new ShareManagementForm(context.ShareManagementController, context.User, context.ShareLookupController));
 
                     case "OrgStructure":
-                        return ShowTargetForm(context, new OrgStructureForm(context.OrgStructureService, context.User, null, null));
+                        if (context.OrgStructureService == null)
+                        {
+                            if (!TryRequestMdiAction(context, "OrgStructure"))
+                                MessageBox.Show("Org structure service is not available in this context.", "Org Structure", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new OrgStructureForm(context.OrgStructureService, context.User, null));
 
                     case "UserManagement":
                         return ShowTargetForm(context, new UserManagementForm(context.UserAdminController, context.User, context.AuditService));
 
                     case "UserAccess":
-                        return ShowTargetForm(context, new UserAccessForm(context.UserAdminController, context.OrgStructureService, context.User, null, null, context.AuditService));
+                        if (context.OrgLookupController == null && context.OrgStructureService == null)
+                        {
+                            MessageBox.Show("Org lookup is not available.", "User Access", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new UserAccessForm(
+                            context.UserAdminController,
+                            context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService),
+                            context.User,
+                            null,
+                            new AuditLogController(context.AuditService)));
 
                     case "PermissionAdmin":
                     case "FolderSettings":
-                        return ShowTargetForm(context, new PermissionForm(context.PermissionService, context.ApprovalService, context.FolderService, context.FolderPermissionLookupController, context.User, context.SelectedFolder, context.UserAccountLookupController, context.FolderSettingsController, null, context.OrgStructureService, null, null));
+                        if (context.OrgLookupController == null && context.OrgStructureService == null)
+                        {
+                            MessageBox.Show("Org lookup is not available.", "Folder Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new PermissionForm(context.PermissionService, context.ApprovalService, context.FolderService, context.FolderPermissionLookupController, context.User, context.SelectedFolder, context.UserAccountLookupController, context.FolderSettingsController, null, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), null, null));
 
                     case "UserPermissionSummary":
                         return ShowTargetForm(context, new UserPermissionSummaryForm(context.User, context.ShareLookupController));
 
                     case "ApprovalInbox":
-                        return ShowTargetForm(context, new ApprovalInboxForm(context.ApprovalService, context.User));
+                        if (context.ApprovalInboxController == null)
+                        {
+                            MessageBox.Show("Approval inbox controller is not available.", "Approval Inbox", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new ApprovalInboxForm(context.ApprovalInboxController, context.User));
 
                     case "AccessLog":
-                        return ShowTargetForm(context, new AccessLogView(context.ShareService, context.User, 0));
+                        if (context.ShareManagementController == null)
+                        {
+                            MessageBox.Show("Share management controller is not available.", "Access Log", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new AccessLogView(context.ShareManagementController, context.User, 0));
 
                     case "AuditLog":
                         return ShowTargetForm(context, new AuditLogForm(context.AuditService, context.User));
@@ -94,12 +131,12 @@ namespace CMS.Presentation
                         return true;
 
                     case "MenuManagement":
-                        if (context.MenuService == null)
+                        if (context.MenuManagementController == null)
                         {
-                            MessageBox.Show("Menu service is not available.", "Menu Management", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            MessageBox.Show("Menu management controller is not available.", "Menu Management", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return true;
                         }
-                        return ShowTargetForm(context, new MenuManagementForm(context.MenuService, context.User));
+                        return ShowTargetForm(context, new MenuManagementForm(context.MenuManagementController, context.User));
 
                     case "AuthorityConfig":
                         if (!TryRequestMdiAction(context, "AuthorityConfig"))
@@ -130,7 +167,12 @@ namespace CMS.Presentation
                         return true;
 
                     case "RecycleBin":
-                        return ShowTargetForm(context, new RecycleBinForm(context.FolderService, context.User, context.OrgStructureService));
+                        if (context.RecycleBinController == null)
+                        {
+                            MessageBox.Show("Recycle bin controller is not available.", "Recycle Bin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        return ShowTargetForm(context, new RecycleBinForm(context.RecycleBinController, context.User));
 
                     case "KnowledgeBase":
                     case "KnowledgeBaseForm":
@@ -194,14 +236,25 @@ namespace CMS.Presentation
                 if (shareType.ShowDialog(context.Owner) == DialogResult.OK)
                 {
                     bool isInternal = string.Equals(shareType.Tag as string, "internal", StringComparison.OrdinalIgnoreCase);
+                    if (context.ShareCommandController == null)
+                    {
+                        MessageBox.Show("Share command controller is not available.", "Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return true;
+                    }
+
                     if (isInternal)
                     {
-                        using (var dlg = new ShareDialogInternal(context.ShareService, context.FileService, context.FolderService, context.PermissionService, context.UserAccountLookupController, context.OrgStructureService, context.User, context.SelectedFile, context.SelectedFolder))
+                        if (context.OrgLookupController == null && context.OrgStructureService == null)
+                        {
+                            MessageBox.Show("Org structure service is not available for internal sharing in this context.", "Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return true;
+                        }
+                        using (var dlg = new ShareDialogInternal(context.ShareCommandController, context.UserAccountLookupController, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), context.User, context.SelectedFile, context.SelectedFolder))
                             dlg.ShowDialog(context.Owner);
                     }
                     else
                     {
-                        using (var dlg = new ShareDialogExternal(context.ShareService, context.FileService, context.FolderService, context.User, context.SelectedFile, context.SelectedFolder))
+                        using (var dlg = new ShareDialogExternal(context.ShareCommandController, context.User, context.SelectedFile, context.SelectedFolder))
                             dlg.ShowDialog(context.Owner);
                     }
                 }

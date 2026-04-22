@@ -3,29 +3,29 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 using MenuItem = CMS.Domain.Models.MenuItem;
 
 namespace CMS.Presentation
 {
     public partial class MenuManagementForm : Form
     {
-        private readonly IMenuService _menuService;
+        private readonly IMenuManagementController _menuManagementController;
         private readonly UserContext _currentUser;
         private System.Collections.Generic.List<MenuItem> _allMenus = new System.Collections.Generic.List<MenuItem>();
         private ComboBox _cmbLevel;
         private Label _lblLevel;
         private ComboBox _cmbActionKey;
 
-        public MenuManagementForm(IMenuService menuService, UserContext currentUser)
+        public MenuManagementForm(IMenuManagementController menuManagementController, UserContext currentUser)
         {
-            if (menuService == null) throw new ArgumentNullException(nameof(menuService));
+            if (menuManagementController == null) throw new ArgumentNullException(nameof(menuManagementController));
             if (currentUser == null) throw new ArgumentNullException(nameof(currentUser));
 
             InitializeComponent();
 
-            _menuService = menuService;
+            _menuManagementController = menuManagementController;
             _currentUser = currentUser;
 
             if (currentUser.AppRole != 4)
@@ -61,7 +61,7 @@ namespace CMS.Presentation
         {
             try
             {
-                var hierarchyMenus = _menuService.GetAllMenusForManagement(_currentUser) ?? new List<MenuItem>();
+                var hierarchyMenus = (_menuManagementController.GetAllMenusForManagement(_currentUser) ?? new List<MenuItem>()).ToList();
                 _allMenus = FlattenMenus(hierarchyMenus);
                 RefreshMenuTree();
                 PopulateParentCombo();
@@ -520,7 +520,7 @@ namespace CMS.Presentation
 
             try
             {
-                _menuService.DeleteMenu(menu.MenuItemID, _currentUser);
+                _menuManagementController.DeleteMenu(menu.MenuItemID, _currentUser);
                 MessageBox.Show("Menu deleted successfully.");
                 LoadMenus();
                 ClearForm();
@@ -606,7 +606,7 @@ namespace CMS.Presentation
                         CreatedByUserID = _currentUser.UserID
                     };
 
-                    int newID = _menuService.CreateMenu(newMenu, _currentUser);
+                    int newID = _menuManagementController.CreateMenu(newMenu, _currentUser);
                     savedMenuID = newID;
                 }
                 else
@@ -624,7 +624,7 @@ namespace CMS.Presentation
                         existingMenu.IsActive = isActive;
                         existingMenu.ParentMenuItemID = parentID;
 
-                        _menuService.UpdateMenu(existingMenu, _currentUser);
+                        _menuManagementController.UpdateMenu(existingMenu, _currentUser);
                         savedMenuID = id;
                     }
                 }
@@ -714,7 +714,7 @@ namespace CMS.Presentation
         {
             try
             {
-                var stats = _menuService.GetMenuStatistics();
+                var stats = _menuManagementController.GetMenuStatistics();
                 string statsText = $"📊 Total: {stats.TotalMenuItems} | Active: {stats.ActiveMenuItems} | Admin: {stats.AdminOnlyMenus}";
                 lblStats.Text = statsText;
             }

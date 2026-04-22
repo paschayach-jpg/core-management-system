@@ -196,7 +196,7 @@ namespace CMS.Presentation
                 {
                     // เปิดตรง — แสดง LoginForm ให้กรอก
                     loggingService.Info("Startup mode: Manual login (no args)");
-                    using (var loginForm = new LoginForm(adAuthService, new LoginAccountController(userAccountRepo)))
+                    using (var loginForm = new LoginForm(new LoginAuthController(adAuthService), new LoginAccountController(userAccountRepo)))
                     {
                         if (loginForm.ShowDialog() != DialogResult.OK)
                             return; // ผู้ใช้ปิด form
@@ -371,22 +371,41 @@ namespace CMS.Presentation
                 // ── Menu management ──────────────────────────────────────
                 var menuItemRepository = new CMS.Data.Repositories.MenuItemRepository(configManager);
                 var menuService = new MenuService(menuItemRepository, loggingService, auditService);
-                var folderTemplateController = new FolderTemplateController(folderTemplateRepository);
+                var folderTemplateController = new FolderTemplateController(folderTemplateRepository, folderService);
                 var shareLookupController = new ShareLookupController(permissionRepository, filePermissionRepository, folderRepository, fileDocumentRepository, userAccountRepo);
+                var accessShareController = new AccessShareController(shareAccessService);
+                var shareManagementController = new ShareManagementController(shareService);
+                var shareCommandController = new ShareCommandController(shareService, permissionService);
                 var folderSettingsController = new FolderSettingsController(folderRepository);
                 var folderPermissionLookupController = new FolderPermissionLookupController(permissionRepository);
                 var userAccountLookupController = new UserAccountLookupController(userAccountRepo);
+                var userAccessOrgLookupController = new UserAccessOrgLookupController(orgStructureService);
                 var userAdminController = new UserAdminController(userAccountRepo);
                 var userAdminWithHrController = new UserAdminController(userAccountRepo, hrDivisionRepository, hrDepartmentRepository, hrPositionRepository, hrPositionLevelRepository);
-                var folderReadLookupController = new FolderReadLookupController(folderRepository);
+                var menuManagementController = new MenuManagementController(menuService);
+                var approvalInboxController = new ApprovalInboxController(approvalService);
+                var recycleBinController = new RecycleBinController(folderService, orgStructureService);
+                var fileUploadController = new FileUploadController(fileService, folderService);
+                var fileBrowseController = new FileBrowseController(fileService);
+                var fileCommandController = new FileCommandController(fileService);
+                var uploadCheckpointController = new UploadCheckpointController(uploadCheckpointService);
+                var folderReadLookupController = new FolderReadLookupController(folderRepository, folderService);
                 var fileDocumentLookupController = new FileDocumentLookupController(fileDocumentRepository);
                 var filePermissionAclController = new FilePermissionAclController(filePermissionRepository);
+                var filePermissionCommandController = new FilePermissionCommandController(
+                    filePermissionService,
+                    filePermissionAclController,
+                    folderPermissionLookupController,
+                    auditService);
+                var authorityConfigController = new AuthorityConfigController(folderAuthorityService);
                 var authorityOrgLookupController = new AuthorityOrgLookupController(
                     hrDivisionRepository,
                     hrDepartmentRepository,
                     hrPositionRepository,
                     hrPositionMappingRepository,
                     userAccountRepo);
+                var employeeDirectoryController = new EmployeeDirectoryController(employeeApiService);
+                var userOrgVisibilityController = new UserOrgVisibilityController(userOrgVisibilityService);
                 
                 // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(
@@ -397,29 +416,36 @@ namespace CMS.Presentation
                     approvalService: approvalService,
                     orgStructureService: orgStructureService,
                     folderService: folderService,
-                    fileService: fileService,
                     configManager: configManager,
                     permissionService: permissionService,
                     filePermissionService: filePermissionService,
                     folderTemplateController: folderTemplateController,
-                    employeeApiService: employeeApiService,
-                    uploadCheckpointService: uploadCheckpointService,
+                    uploadCheckpointController: uploadCheckpointController,
                     quickAccessService: quickAccessService,
-                    userOrgVisibilityService: userOrgVisibilityService,
-                    folderAuthorityService: folderAuthorityService,
-                    shareService: shareService,
-                    shareAccessService: shareAccessService,
-                    menuService: menuService,
+                    shareCommandController: shareCommandController,
                     shareLookupController: shareLookupController,
+                    accessShareController: accessShareController,
+                    shareManagementController: shareManagementController,
                     folderSettingsController: folderSettingsController,
                     folderPermissionLookupController: folderPermissionLookupController,
                     userAccountLookupController: userAccountLookupController,
+                    userAccessOrgLookupController: userAccessOrgLookupController,
                     userAdminController: userAdminController,
                     userAdminWithHrController: userAdminWithHrController,
+                    menuManagementController: menuManagementController,
+                    approvalInboxController: approvalInboxController,
+                    recycleBinController: recycleBinController,
+                    fileUploadController: fileUploadController,
+                    fileBrowseController: fileBrowseController,
+                    fileCommandController: fileCommandController,
                     folderReadLookupController: folderReadLookupController,
                     fileDocumentLookupController: fileDocumentLookupController,
                     filePermissionAclController: filePermissionAclController,
+                    filePermissionCommandController: filePermissionCommandController,
                     authorityOrgLookupController: authorityOrgLookupController,
+                    authorityConfigController: authorityConfigController,
+                    employeeDirectoryController: employeeDirectoryController,
+                    userOrgVisibilityController: userOrgVisibilityController,
                     folderRepository: folderRepository,
                     kbCategoryService: kbCategoryService,
                     kbArticleService: kbArticleService,

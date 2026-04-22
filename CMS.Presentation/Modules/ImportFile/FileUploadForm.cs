@@ -8,6 +8,7 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Domain.Models;
 using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 
@@ -33,14 +34,13 @@ namespace CMS.Presentation
             public int?        FileDocId  { get; set; }
         }
 
-        private FilePresenter _presenter;
+        private readonly IFileUploadController _fileUploadController;
 
         private int     _folderId;
         private readonly UserContext _user;
         private Folder  _selectedFolder;
 
-        private readonly IFolderService _folderService;
-        private readonly IUploadCheckpointService _checkpointService;
+        private readonly IUploadCheckpointController _checkpointController;
 
         private readonly List<FileUploadRequest>  _pendingFiles = new List<FileUploadRequest>();
         private readonly Dictionary<int, int>     _uploadedIds  = new Dictionary<int, int>();
@@ -58,26 +58,23 @@ namespace CMS.Presentation
         // ── Constructor ───────────────────────────────────────────────────────
 
         public FileUploadForm(
-            IFileService   fileService,
-            IFolderService folderService,
+            IFileUploadController fileUploadController,
             UserContext    user,
             Folder         targetFolder,
-            IUploadCheckpointService checkpointService = null)
+            IUploadCheckpointController checkpointController = null)
         {
-            if (fileService   == null) throw new ArgumentNullException("fileService");
-            if (folderService == null) throw new ArgumentNullException("folderService");
+            if (fileUploadController == null) throw new ArgumentNullException("fileUploadController");
             if (user          == null) throw new ArgumentNullException("user");
             if (targetFolder  == null) throw new ArgumentNullException("targetFolder");
 
             _user              = user;
-            _folderService     = folderService;
+            _fileUploadController = fileUploadController;
             _selectedFolder    = targetFolder;
             _folderId          = targetFolder.FolderID;
-            _checkpointService = checkpointService;
+            _checkpointController = checkpointController;
 
             InitializeComponent();
 
-            _presenter = new FilePresenter(fileService, folderService, this, user);
             BuildUploadWorker();
 
             // Drag & drop on the upload zone
@@ -102,8 +99,8 @@ namespace CMS.Presentation
         private void FileUploadForm_Load(object sender, EventArgs e)
         {
             // Req 10.6 — purge stale checkpoints before checking for resume
-            if (_checkpointService != null)
-                _checkpointService.DeleteExpired(TimeSpan.FromHours(24));
+            if (_checkpointController != null)
+                _checkpointController.DeleteExpired(TimeSpan.FromHours(24));
 
             if (_selectedFolder != null)
                 ApplyFolderContext(_selectedFolder);
@@ -199,7 +196,7 @@ namespace CMS.Presentation
 
         private void UploadWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            _presenter.UploadFiles((List<FileUploadRequest>)e.Argument, _folderId);
+            _fileUploadController.UploadFiles(this, (List<FileUploadRequest>)e.Argument, _folderId, _user);
         }
 
         private void UploadWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -283,10 +280,10 @@ namespace CMS.Presentation
         {
             if (_folderId <= 0 || _selectedFolder == null) { ShowError("ไม่พบข้อมูล Folder ปลายทาง"); return; }
             if (_pendingFiles.Count == 0)                  { ShowError("กรุณาเลือกไฟล์ที่ต้องการอัพโหลด"); return; }
-            if (_presenter == null)                        { ShowError("บริการอัพโหลดไม่พร้อม"); return; }
+            if (_fileUploadController == null)             { ShowError("บริการอัพโหลดไม่พร้อม"); return; }
 
             // Req 10.1 — save checkpoint for each file before starting
-            if (_checkpointService != null)
+            if (_checkpointController != null)
             {
                 foreach (var req in _pendingFiles)
                 {
@@ -295,7 +292,7 @@ namespace CMS.Presentation
                         : 0L;
                     try
                     {
-                        _checkpointService.Save(new UploadCheckpoint
+                        _checkpointController.Save(new UploadCheckpoint
                         {
                             FileName       = req.FileName,
                             FileSizeBytes  = req.FileSizeBytes,
@@ -320,12 +317,12 @@ namespace CMS.Presentation
 
         private void btnDownload_Click(object sender, EventArgs e)
         {
-            if (_presenter == null) { ShowError("Download service is not available."); return; }
+            if (_fileUploadController == null) { ShowError("Download service is not available."); return; }
 
             int? docId = SelectedFileDocumentId;
             if (!docId.HasValue) { ShowError("กรุณาเลือกไฟล์ที่อัพโหลดสำเร็จก่อนดาวน์โหลด"); return; }
 
-            _presenter.DownloadFile(docId.Value, suggestedName =>
+            _fileUploadController.DownloadFile(this, docId.Value, _user, suggestedName =>
             {
                 using (var dlg = new SaveFileDialog())
                 {
@@ -399,9 +396,9 @@ namespace CMS.Presentation
                 }
 
                 // Req 10.5 — delete checkpoint on successful upload
-                if (_checkpointService != null && rowIndex < _pendingFiles.Count)
+                if (_checkpointController != null && rowIndex < _pendingFiles.Count)
                 {
-                    try { _checkpointService.Delete(_folderId, _pendingFiles[rowIndex].FileName); } catch { }
+                    try { _checkpointController.Delete(_folderId, _pendingFiles[rowIndex].FileName); } catch { }
                 }
             }
             else
@@ -547,7 +544,7 @@ namespace CMS.Presentation
             UpdateSummary();
 
             // Req 10.2 — check for resume checkpoint after files are selected
-            if (_checkpointService != null && _pendingFiles.Count > 0 && _selectedFolder != null)
+            if (_checkpointController != null && _pendingFiles.Count > 0 && _selectedFolder != null)
                 CheckAndOfferResume(paths);
 
             // Auto-start upload if folder is ready
@@ -566,7 +563,7 @@ namespace CMS.Presentation
             {
                 var req = _pendingFiles[i];
                 UploadCheckpoint cp = null;
-                try { cp = _checkpointService.Load(_folderId, req.FileName); }
+                try { cp = _checkpointController.Load(_folderId, req.FileName); }
                 catch { /* ignore — treat as no checkpoint */ }
 
                 if (cp == null || cp.BytesUploaded <= 0) continue;
@@ -597,7 +594,7 @@ namespace CMS.Presentation
                 else
                 {
                     // Req 10.4 — delete checkpoint and start fresh
-                    try { _checkpointService.Delete(_folderId, req.FileName); } catch { }
+                    try { _checkpointController.Delete(_folderId, req.FileName); } catch { }
                 }
             }
         }

@@ -6,7 +6,6 @@ using System.Windows.Forms;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -16,40 +15,34 @@ namespace CMS.Presentation
     /// </summary>
     public partial class FilePermissionForm : Form
     {
-        private readonly IFilePermissionService    _filePermissionService;
+        private readonly IFilePermissionCommandController _filePermissionCommandController;
         private readonly IFilePermissionAclController _filePermissionAclController;
         private readonly IUserAccountLookupController _userAccountLookupController;
-        private readonly IFolderPermissionLookupController _folderPermissionLookupController;
         private readonly UserContext               _currentUser;
         private readonly FileDocument              _file;
-        private readonly IAuditService             _auditService;
 
         private List<FilePermission>    _aclEntries     = new List<FilePermission>();
         private Dictionary<int, string> _userDisplayMap  = new Dictionary<int, string>();
         private Dictionary<int, string> _orgUnitNameMap  = new Dictionary<int, string>(); // OrgUnitID → Name
 
         public FilePermissionForm(
-            IFilePermissionService    filePermissionService,
+            IFilePermissionCommandController filePermissionCommandController,
             IFilePermissionAclController filePermissionAclController,
             UserContext               currentUser,
             FileDocument              file,
             IUserAccountLookupController userAccountLookupController = null,
-            IFolderPermissionLookupController folderPermissionLookupController = null,
-            CMS.Services.Interfaces.IOrgStructureService orgStructureService = null,
-            IAuditService             auditService          = null)
+            IUserAccessOrgLookupController orgLookupController = null)
         {
-            if (filePermissionService    == null) throw new ArgumentNullException("filePermissionService");
+            if (filePermissionCommandController == null) throw new ArgumentNullException("filePermissionCommandController");
             if (filePermissionAclController == null) throw new ArgumentNullException("filePermissionAclController");
             if (currentUser              == null) throw new ArgumentNullException("currentUser");
             if (file                     == null) throw new ArgumentNullException("file");
 
-            _filePermissionService    = filePermissionService;
+            _filePermissionCommandController = filePermissionCommandController;
             _filePermissionAclController = filePermissionAclController;
             _currentUser              = currentUser;
             _file                     = file;
             _userAccountLookupController = userAccountLookupController;
-            _folderPermissionLookupController = folderPermissionLookupController;
-            _auditService             = auditService;
 
             InitializeComponent();
 
@@ -71,11 +64,11 @@ namespace CMS.Presentation
             }
 
             // Pre-load OrgUnit names (Division/Department) keyed by OrgUnitID
-            if (orgStructureService != null)
+            if (orgLookupController != null)
             {
                 try
                 {
-                    foreach (var u in orgStructureService.GetHierarchy())
+                    foreach (var u in orgLookupController.GetHierarchy())
                         _orgUnitNameMap[u.OrgUnitID] = u.OrgUnitNameTH ?? u.OrgUnitNameEN ?? u.OrgUnitCode ?? u.OrgUnitID.ToString();
                 }
                 catch { }
@@ -150,23 +143,7 @@ namespace CMS.Presentation
                         CanFullControl = dlg.CanFullControl,
                         IsDeny         = dlg.IsDeny
                     };
-                    _filePermissionService.SetFilePermission(req, _currentUser);
-                    if (_auditService != null)
-                        _auditService.Log(new AuditEntry
-                        {
-                            Module      = "FilePermission",
-                            Action      = "SET_FILE_PERMISSION",
-                            UserID      = _currentUser.UserID,
-                            TableName   = "FilePermission",
-                            RecordID    = _file.FileID,
-                            NewValue    = string.Format("File:{0} PrincipalType:{1} PrincipalID:{2} IsDeny:{3}",
-                                             _file.OriginalFileName, req.PrincipalType, req.PrincipalID, req.IsDeny),
-                            MachineName = _currentUser.MachineName,
-                            IPAddress   = _currentUser.IPAddress,
-                            SessionID   = _currentUser.SessionID,
-                            Result      = 1,
-                            AuditDate   = DateTime.Now
-                        });
+                    _filePermissionCommandController.SetFilePermission(_file, req, _currentUser);
                     LoadAcl();
                     MessageBox.Show("✅ บันทึกสิทธิ์เรียบร้อยแล้ว", "สำเร็จ",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -206,24 +183,7 @@ namespace CMS.Presentation
 
             try
             {
-                _filePermissionService.RevokeFilePermission(
-                    entry.FilePermissionID, _currentUser, "ลบโดยผู้ดูแล");
-                if (_auditService != null)
-                    _auditService.Log(new AuditEntry
-                    {
-                        Module      = "FilePermission",
-                        Action      = "REVOKE_FILE_PERMISSION",
-                        UserID      = _currentUser.UserID,
-                        TableName   = "FilePermission",
-                        RecordID    = _file.FileID,
-                        OldValue    = string.Format("File:{0} FilePermissionID:{1}",
-                                         _file.OriginalFileName, entry.FilePermissionID),
-                        MachineName = _currentUser.MachineName,
-                        IPAddress   = _currentUser.IPAddress,
-                        SessionID   = _currentUser.SessionID,
-                        Result      = 1,
-                        AuditDate   = DateTime.Now
-                    });
+                _filePermissionCommandController.RevokeFilePermission(_file, entry, _currentUser, "ลบโดยผู้ดูแล");
                 LoadAcl();
                 MessageBox.Show("ลบรายการสิทธิ์เรียบร้อยแล้ว", "สำเร็จ",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -244,70 +204,28 @@ namespace CMS.Presentation
 
         private void BtnSyncFolder_Click(object sender, EventArgs e)
         {
-            if (_folderPermissionLookupController == null)
+            if (_filePermissionCommandController == null)
             {
-                MessageBox.Show("ไม่สามารถซิงค์ได้ — FolderPermissionLookupController ไม่พร้อมใช้งาน",
+                MessageBox.Show("ไม่สามารถซิงค์ได้ — FilePermissionCommandController ไม่พร้อมใช้งาน",
                     "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            var folderPerms = _folderPermissionLookupController.GetByFolder(_file.FolderID)
-                .Where(p => p.RevokedDate == null
-                         && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < System.DateTime.Today))
-                .ToList();
+            int activeFolderPermissionCount = _filePermissionCommandController.GetActiveFolderPermissionCount(_file.FolderID);
 
-            string msg = folderPerms.Count == 0
+            string msg = activeFolderPermissionCount == 0
                 ? "Folder นี้ไม่มีสิทธิ์ที่ active อยู่\n\nต้องการล้างสิทธิ์ไฟล์ทั้งหมดหรือไม่?"
                 : string.Format("ซิงค์สิทธิ์จาก Folder ({0} รายการ) มาแทนที่สิทธิ์ไฟล์ปัจจุบัน?\n\nสิทธิ์เดิมของไฟล์จะถูกยกเลิกทั้งหมด",
-                    folderPerms.Count);
+                    activeFolderPermissionCount);
 
             if (MessageBox.Show(msg, "ยืนยันการซิงค์",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
             try
             {
-                // Revoke all existing file permissions
-                foreach (var fp in _aclEntries)
-                    _filePermissionAclController.Revoke(fp.FilePermissionID, _currentUser.UserID, "ซิงค์จาก Folder");
-
-                // Insert folder permissions as file permissions
-                foreach (var fp in folderPerms)
-                {
-                    _filePermissionAclController.Insert(new FilePermission
-                    {
-                        FileID         = _file.FileID,
-                        PrincipalType  = (int)fp.PrincipalType,
-                        PrincipalID    = fp.PrincipalID,
-                        CanRead        = fp.CanRead,
-                        CanWrite       = fp.CanWrite,
-                        CanDelete      = fp.CanDelete,
-                        CanModify      = fp.CanModify,
-                        CanFullControl = fp.CanFullControl,
-                        IsDeny         = fp.IsDeny,
-                        ExpiryDate     = fp.ExpiryDate,
-                        GrantedBy      = _currentUser.UserID,
-                        GrantedDate    = System.DateTime.Now
-                    });
-                }
-
-                if (_auditService != null)
-                    _auditService.Log(new AuditEntry
-                    {
-                        Module      = "FilePermission",
-                        Action      = "SYNC_FILE_PERMISSION",
-                        UserID      = _currentUser.UserID,
-                        TableName   = "FilePermission",
-                        RecordID    = _file.FileID,
-                        NewValue    = string.Format("File:{0} SyncedFromFolder:{1} Count:{2}",
-                                         _file.OriginalFileName, _file.FolderID, folderPerms.Count),
-                        MachineName = _currentUser.MachineName,
-                        IPAddress   = _currentUser.IPAddress,
-                        SessionID   = _currentUser.SessionID,
-                        Result      = 1,
-                        AuditDate   = DateTime.Now
-                    });
+                int syncedCount = _filePermissionCommandController.SyncFromFolderPermissions(_file, _aclEntries, _currentUser);
                 LoadAcl();
-                MessageBox.Show(string.Format("✅ ซิงค์สิทธิ์เรียบร้อยแล้ว ({0} รายการ)", folderPerms.Count),
+                MessageBox.Show(string.Format("✅ ซิงค์สิทธิ์เรียบร้อยแล้ว ({0} รายการ)", syncedCount),
                     "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)

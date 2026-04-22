@@ -103,8 +103,5 @@
     <Compile Include="Repositories\MenuItemRepository.cs" />
     <Compile Include="Repositories\KBDashboardRepository.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Scripts\" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

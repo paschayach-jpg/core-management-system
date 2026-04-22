@@ -302,10 +302,10 @@
     <Compile Include="Modules\ImportFile\MenuActions\MenuActionContext.cs" />
     <Compile Include="Modules\ImportFile\MenuActions\MenuActionKeyCatalog.cs" />
     <Compile Include="Modules\ImportFile\MenuActions\MenuActionRegistry.cs" />
-    <Compile Include="MenuManagementForm.cs">
+    <Compile Include="Modules\ImportFile\MenuManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="MenuManagementForm.Designer.cs">
+    <Compile Include="Modules\ImportFile\MenuManagementForm.Designer.cs">
       <DependentUpon>MenuManagementForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MenuTreeViewManager.cs" />
@@ -354,7 +354,7 @@
     <EmbeddedResource Include="MDI_Container.resx">
       <DependentUpon>MDI_Container.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="MenuManagementForm.resx">
+    <EmbeddedResource Include="Modules\ImportFile\MenuManagementForm.resx">
       <DependentUpon>MenuManagementForm.cs</DependentUpon>
     </EmbeddedResource>
     <!-- Module: ImportFile — EmbeddedResources -->

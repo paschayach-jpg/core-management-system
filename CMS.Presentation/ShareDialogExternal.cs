@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -14,9 +14,7 @@ namespace CMS.Presentation
     /// </summary>
     public partial class ShareDialogExternal : Form
     {
-        private readonly IShareService _shareService;
-        private readonly IFileService _fileService;
-        private readonly IFolderService _folderService;
+        private readonly IShareCommandController _shareCommandController;
         private readonly UserContext _currentUser;
 
         private FileDocument _selectedFile;
@@ -25,17 +23,13 @@ namespace CMS.Presentation
         private Dictionary<string, object> _controls;
 
         public ShareDialogExternal(
-            IShareService shareService,
-            IFileService fileService,
-            IFolderService folderService,
+            IShareCommandController shareCommandController,
             UserContext currentUser,
             FileDocument file = null,
             Folder folder = null)
         {
             InitializeComponent();
-            _shareService = shareService;
-            _fileService = fileService;
-            _folderService = folderService;
+            _shareCommandController = shareCommandController;
             _currentUser = currentUser;
             _selectedFile = file;
             _selectedFolder = folder;
@@ -434,7 +428,7 @@ namespace CMS.Presentation
                     NotifyOnAccess = chkNotifyOnAccess.Checked
                 };
 
-                var result = _shareService.CreateExternalShare(request, _currentUser);
+                var result = _shareCommandController.CreateExternalShare(request, _currentUser);
                 _generatedToken = result.ShareToken;
 
                 // Display share link and security settings

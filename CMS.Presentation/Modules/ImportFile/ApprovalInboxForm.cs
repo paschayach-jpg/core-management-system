@@ -3,25 +3,25 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
-using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
 {
     public partial class ApprovalInboxForm : Form
     {
-        private readonly IApprovalService _approvalService;
+        private readonly IApprovalInboxController _approvalInboxController;
         private readonly UserContext      _currentUser;
         private List<ApprovalRequest>     _pendingRequests = new List<ApprovalRequest>();
 
         // ── Constructor ──────────────────────────────────────────────────────
 
-        public ApprovalInboxForm(IApprovalService approvalService, UserContext currentUser)
+        public ApprovalInboxForm(IApprovalInboxController approvalInboxController, UserContext currentUser)
         {
-            if (approvalService == null) throw new ArgumentNullException("approvalService");
+            if (approvalInboxController == null) throw new ArgumentNullException("approvalInboxController");
             if (currentUser     == null) throw new ArgumentNullException("currentUser");
 
-            _approvalService = approvalService;
+            _approvalInboxController = approvalInboxController;
             _currentUser     = currentUser;
 
             InitializeComponent();
@@ -36,7 +36,7 @@ namespace CMS.Presentation
             {
                 SetStatus("กำลังโหลดรายการรออนุมัติ...", Color.RoyalBlue);
 
-                _pendingRequests = _approvalService
+                _pendingRequests = _approvalInboxController
                     .GetPendingForApprover(_currentUser.UserId)
                     .ToList();
 
@@ -179,16 +179,16 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    var steps = _approvalService.GetApprovalSteps(req.RequestID);
+                    var steps = _approvalInboxController.GetApprovalSteps(req.RequestID);
                     var step  = steps.FirstOrDefault(
                         s => s.ApproverID == _currentUser.UserId && s.StepStatus == 1);
 
                     if (step == null) { failed++; continue; }
 
                     if (approve)
-                        _approvalService.ApproveStep(step.StepID, remark, _currentUser);
+                        _approvalInboxController.ApproveStep(step.StepID, remark, _currentUser);
                     else
-                        _approvalService.RejectStep(step.StepID, remark, _currentUser);
+                        _approvalInboxController.RejectStep(step.StepID, remark, _currentUser);
 
                     success++;
                 }
