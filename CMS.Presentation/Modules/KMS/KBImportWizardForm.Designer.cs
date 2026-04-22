@@ -15,7 +15,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblHeaderTitle = new System.Windows.Forms.Label();
             this.pnlStepProgress = new System.Windows.Forms.Panel();
@@ -393,9 +393,10 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlStep1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep1.Controls.Add(this.pnlStep1Inner);
+            this.pnlStep1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlStep1.Location = new System.Drawing.Point(0, 0);
             this.pnlStep1.Name = "pnlStep1";
-            this.pnlStep1.Size = new System.Drawing.Size(2396, 1214);
+            this.pnlStep1.Size = new System.Drawing.Size(1636, 824);
             this.pnlStep1.TabIndex = 0;
             // 
             // pnlStep1Inner
@@ -407,7 +408,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep1Inner.Location = new System.Drawing.Point(0, 0);
             this.pnlStep1Inner.Name = "pnlStep1Inner";
             this.pnlStep1Inner.Padding = new System.Windows.Forms.Padding(16);
-            this.pnlStep1Inner.Size = new System.Drawing.Size(2396, 1214);
+            this.pnlStep1Inner.Size = new System.Drawing.Size(1636, 824);
             this.pnlStep1Inner.TabIndex = 0;
             // 
             // pnlColumnRef
@@ -419,7 +420,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlColumnRef.Location = new System.Drawing.Point(436, 16);
             this.pnlColumnRef.Name = "pnlColumnRef";
             this.pnlColumnRef.Padding = new System.Windows.Forms.Padding(16, 0, 0, 0);
-            this.pnlColumnRef.Size = new System.Drawing.Size(1944, 1182);
+            this.pnlColumnRef.Size = new System.Drawing.Size(1184, 792);
             this.pnlColumnRef.TabIndex = 0;
             // 
             // pnlColumnRefBody
@@ -429,7 +430,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlColumnRefBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlColumnRefBody.Location = new System.Drawing.Point(16, 36);
             this.pnlColumnRefBody.Name = "pnlColumnRefBody";
-            this.pnlColumnRefBody.Size = new System.Drawing.Size(1928, 1146);
+            this.pnlColumnRefBody.Size = new System.Drawing.Size(1168, 756);
             this.pnlColumnRefBody.TabIndex = 0;
             // 
             // lvColumnRef
@@ -448,7 +449,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lvColumnRef.HideSelection = false;
             this.lvColumnRef.Location = new System.Drawing.Point(0, 0);
             this.lvColumnRef.Name = "lvColumnRef";
-            this.lvColumnRef.Size = new System.Drawing.Size(1928, 1146);
+            this.lvColumnRef.Size = new System.Drawing.Size(1168, 756);
             this.lvColumnRef.TabIndex = 0;
             this.lvColumnRef.UseCompatibleStateImageBehavior = false;
             this.lvColumnRef.View = System.Windows.Forms.View.Details;
@@ -485,7 +486,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlColumnRefHdr.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlColumnRefHdr.Location = new System.Drawing.Point(16, 0);
             this.pnlColumnRefHdr.Name = "pnlColumnRefHdr";
-            this.pnlColumnRefHdr.Size = new System.Drawing.Size(1928, 36);
+            this.pnlColumnRefHdr.Size = new System.Drawing.Size(1168, 36);
             this.pnlColumnRefHdr.TabIndex = 1;
             // 
             // lblColumnRefHdr
@@ -495,7 +496,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblColumnRefHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblColumnRefHdr.Location = new System.Drawing.Point(0, 0);
             this.lblColumnRefHdr.Name = "lblColumnRefHdr";
-            this.lblColumnRefHdr.Size = new System.Drawing.Size(1928, 36);
+            this.lblColumnRefHdr.Size = new System.Drawing.Size(1168, 36);
             this.lblColumnRefHdr.TabIndex = 0;
             this.lblColumnRefHdr.Text = "📋  รูปแบบ Column ใน Template";
             this.lblColumnRefHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -508,7 +509,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlUploadSection.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlUploadSection.Location = new System.Drawing.Point(16, 16);
             this.pnlUploadSection.Name = "pnlUploadSection";
-            this.pnlUploadSection.Size = new System.Drawing.Size(420, 1182);
+            this.pnlUploadSection.Size = new System.Drawing.Size(420, 792);
             this.pnlUploadSection.TabIndex = 1;
             // 
             // pnlUploadSectionBody
@@ -521,7 +522,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlUploadSectionBody.Location = new System.Drawing.Point(0, 36);
             this.pnlUploadSectionBody.Name = "pnlUploadSectionBody";
             this.pnlUploadSectionBody.Padding = new System.Windows.Forms.Padding(0, 4, 16, 0);
-            this.pnlUploadSectionBody.Size = new System.Drawing.Size(420, 1146);
+            this.pnlUploadSectionBody.Size = new System.Drawing.Size(420, 756);
             this.pnlUploadSectionBody.TabIndex = 0;
             // 
             // pnlTemplateRow
@@ -800,14 +801,14 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvPreview.AllowUserToDeleteRows = false;
             this.dgvPreview.BackgroundColor = System.Drawing.Color.White;
             this.dgvPreview.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 8F);
-            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvPreview.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 8F);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvPreview.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvPreview.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvPreview.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colPreviewNo,
@@ -1191,7 +1192,6 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlValidationBody.BackColor = System.Drawing.Color.White;
             this.pnlValidationBody.Controls.Add(this.pnlValidationItems);
-            this.pnlValidationBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlValidationBody.Location = new System.Drawing.Point(0, 36);
             this.pnlValidationBody.Name = "pnlValidationBody";
             this.pnlValidationBody.Size = new System.Drawing.Size(310, 1146);

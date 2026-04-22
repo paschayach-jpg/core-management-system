@@ -60,7 +60,20 @@ namespace CMS.Domain.Models
         {
             get
             {
+                // Handle default/invalid DateTime values
+                if (CreatedDate == DateTime.MinValue || CreatedDate == default(DateTime))
+                {
+                    return "เมื่อสักครู่";
+                }
+
                 var span = DateTime.Now - CreatedDate;
+                
+                // Handle future dates (clock skew or invalid data)
+                if (span.TotalSeconds < 0)
+                {
+                    return "เมื่อสักครู่";
+                }
+                
                 if (span.TotalSeconds < 60) return "เมื่อสักครู่";
                 if (span.TotalMinutes < 60) return string.Format("{0} นาทีที่แล้ว", (int)span.TotalMinutes);
                 if (span.TotalHours < 24) return string.Format("{0} ชั่วโมงที่แล้ว", (int)span.TotalHours);

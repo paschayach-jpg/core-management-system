@@ -12,6 +12,12 @@ namespace CMS.Infrastructure.Interfaces
         T Get<T>(string key);
 
         /// <summary>
+        /// Retrieves a configuration value by key with a default fallback value.
+        /// Returns the default value if the key is not found.
+        /// </summary>
+        T GetOrDefault<T>(string key, T defaultValue);
+
+        /// <summary>
         /// Persists a configuration value. Requires Admin context.
         /// Raises an exception if the value fails type/range validation.
         /// </summary>

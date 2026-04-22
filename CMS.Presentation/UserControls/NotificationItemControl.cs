@@ -126,8 +126,18 @@ namespace CMS.Presentation.UserControls
 
             lblTitle.Text = notification.Title ?? "";
             lblMessage.Text = notification.Message ?? "";
-            lblTime.Text = notification.TimeAgo;
-            toolTip.SetToolTip(lblTime, notification.CreatedDate.ToString("dd/MM/yyyy HH:mm:ss"));
+            
+            // Display time with validation for default DateTime values
+            if (notification.CreatedDate == DateTime.MinValue || notification.CreatedDate == default(DateTime))
+            {
+                lblTime.Text = "เมื่อสักครู่";
+                toolTip.SetToolTip(lblTime, "ไม่มีข้อมูลเวลา");
+            }
+            else
+            {
+                lblTime.Text = notification.TimeAgo;
+                toolTip.SetToolTip(lblTime, notification.CreatedDate.ToString("dd/MM/yyyy HH:mm:ss"));
+            }
 
             if (!string.IsNullOrEmpty(notification.ReferenceCode))
             {
@@ -243,10 +253,18 @@ namespace CMS.Presentation.UserControls
 
         private void BtnMarkRead_Click(object sender, EventArgs e)
         {
-            var handler = MarkAsReadClicked;
-            if (handler != null)
+            // First, raise the MarkAsReadClicked event to update the server
+            var markReadHandler = MarkAsReadClicked;
+            if (markReadHandler != null)
             {
-                handler(this, CreateEventArgs());
+                markReadHandler(this, CreateEventArgs());
+            }
+
+            // Then, raise the DismissClicked event to close/remove the notification
+            var dismissHandler = DismissClicked;
+            if (dismissHandler != null)
+            {
+                dismissHandler(this, CreateEventArgs());
             }
         }
 

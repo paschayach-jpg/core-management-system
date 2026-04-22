@@ -279,7 +279,7 @@ namespace CMS.Presentation.Modules.KMS
                 
                 // Send test notification to yourself
                 var result = await NotificationManager.Instance.SendNotificationAsync(
-                    typeCode: "SYSTEM_ALERT",
+                    typeCode: "ASSIGN",
                     title: "Test Notification from KMS",
                     message: "This is a test notification from Knowledge Management System. Click to view details.",
                     recipientUserAd: currentUserAd,

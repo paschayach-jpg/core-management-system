@@ -12,6 +12,7 @@ using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Modules.KMS;
+using CMS.Presentation.Services;
 using CMS.Services.Interfaces;
 
 namespace CMS.Presentation
@@ -213,7 +214,7 @@ namespace CMS.Presentation
         // Form lifecycle
         // -----------------------------------------------------------------------
 
-        private void MDI_Container_Load(object sender, EventArgs e)
+        private async void MDI_Container_Load(object sender, EventArgs e)
         {
             try
             {
@@ -261,6 +262,9 @@ namespace CMS.Presentation
                 // Handle MDI child activation to show/hide dashboard
                 this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
 
+                // ── Initialize Notification System ────────────────────────────
+                await InitializeNotificationSystemAsync();
+
                 // Auto-open FolderForm as MDI child
                 // Requirement: FolderForm (MOD-002) should open automatically on startup
                 this.BeginInvoke(new Action(() =>
@@ -283,6 +287,93 @@ namespace CMS.Presentation
                 _logger.Error($"Error during MDI_Container initialization: {ex.Message}", ex);
                 MessageBox.Show($"Initialization error: {ex.Message}", "Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Initializes the Notification System using configuration from IConfigManager.
+        /// Subscribes to notification events and connects to the notification server.
+        /// </summary>
+        private async System.Threading.Tasks.Task InitializeNotificationSystemAsync()
+        {
+            try
+            {
+                // Get configuration values from IConfigManager with fallback defaults
+                var notificationServerUrl = _configManager.GetOrDefault<string>(
+                    "NotificationServerUrl", 
+                    "https://150.1.8.29:7157");
+                
+                var notificationAppCode = _configManager.GetOrDefault<string>(
+                    "NotificationAppCode", 
+                    "CMS");
+                
+                var notificationApiKey = _configManager.GetOrDefault<string>(
+                    "NotificationApiKey", 
+                    "im_DB6037E2-BFAE-488E-AE24-2EA83C7309D8");
+
+                // Initialize the notification manager
+                NotificationManager.Instance.Initialize(
+                    this,
+                    notificationServerUrl,
+                    notificationAppCode,
+                    notificationApiKey
+                );
+
+                // Subscribe to notification events
+                NotificationManager.Instance.NotificationReceived += (s, notification) =>
+                {
+                    System.Diagnostics.Debug.WriteLine("[CMS] Notification received: " + notification.Title);
+                };
+
+                NotificationManager.Instance.UnreadCountChanged += (s, count) =>
+                {
+                    System.Diagnostics.Debug.WriteLine("[CMS] Unread count: " + count);
+                    // TODO: Update UI badge with count
+                };
+
+                NotificationManager.Instance.NotificationClicked += (s, notification) =>
+                {
+                    System.Diagnostics.Debug.WriteLine("[CMS] Notification clicked: " + notification.ReferenceType);
+                    // TODO: Navigate to relevant page based on notification.ReferenceType
+                    // Example:
+                    // switch (notification.ReferenceType?.ToLower())
+                    // {
+                    //     case "document":
+                    //         // Open document form
+                    //         break;
+                    //     case "approval":
+                    //         // Open approval form
+                    //         break;
+                    //     case "kb_article":
+                    //         // Open KB article
+                    //         break;
+                    // }
+                };
+
+                NotificationManager.Instance.ConnectionStateChanged += (s, state) =>
+                {
+                    System.Diagnostics.Debug.WriteLine("[CMS] Notification connection state: " + state);
+                };
+
+                NotificationManager.Instance.Error += (s, ex) =>
+                {
+                    _logger.Error("Notification system error", ex);
+                };
+
+                NotificationManager.Instance.Connected += (s, connectionId) =>
+                {
+                    _logger.Info("Notification system connected: " + connectionId);
+                };
+
+                // Connect to notification server using AD username
+                await NotificationManager.Instance.ConnectAsync(_currentUser.ADUserName);
+                
+                _logger.Info("Notification system initialized for user: " + _currentUser.ADUserName);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to initialize notification system", ex);
+                // Don't block app startup if notification fails
             }
         }
 
