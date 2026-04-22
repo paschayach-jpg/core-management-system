@@ -69,7 +69,6 @@ namespace CMS.Presentation.Modules.KMS
             this.txtCategoryCode = new System.Windows.Forms.TextBox();
             this.lblIcon = new System.Windows.Forms.Label();
             this.cboIcon = new System.Windows.Forms.ComboBox();
-            this.lblIconFullPreview = new System.Windows.Forms.Label();
             this.lblSortOrder = new System.Windows.Forms.Label();
             this.numSortOrder = new System.Windows.Forms.NumericUpDown();
             this.lblStatusLabel = new System.Windows.Forms.Label();
@@ -644,7 +643,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlEditCardBody.Controls.Add(this.txtCategoryCode);
             this.pnlEditCardBody.Controls.Add(this.lblIcon);
             this.pnlEditCardBody.Controls.Add(this.cboIcon);
-            this.pnlEditCardBody.Controls.Add(this.lblIconFullPreview);
             this.pnlEditCardBody.Controls.Add(this.lblSortOrder);
             this.pnlEditCardBody.Controls.Add(this.numSortOrder);
             this.pnlEditCardBody.Controls.Add(this.lblStatusLabel);
@@ -799,16 +797,6 @@ namespace CMS.Presentation.Modules.KMS
             this.cboIcon.Size = new System.Drawing.Size(130, 28);
             this.cboIcon.TabIndex = 6;
             this.cboIcon.SelectedIndexChanged += new System.EventHandler(this.CboIcon_SelectedIndexChanged);
-            // 
-            // lblIconFullPreview
-            // 
-            this.lblIconFullPreview.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblIconFullPreview.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(80)))), ((int)(((byte)(180)))));
-            this.lblIconFullPreview.Location = new System.Drawing.Point(323, 59);
-            this.lblIconFullPreview.Name = "lblIconFullPreview";
-            this.lblIconFullPreview.Size = new System.Drawing.Size(127, 22);
-            this.lblIconFullPreview.TabIndex = 8;
-            this.lblIconFullPreview.Text = "❓ ชื่อ Category";
             // 
             // lblSortOrder
             // 
@@ -1130,7 +1118,6 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.TextBox txtCategoryCode;
         private System.Windows.Forms.Label lblIcon;
         private System.Windows.Forms.ComboBox cboIcon;
-        private System.Windows.Forms.Label lblIconFullPreview;
         private System.Windows.Forms.Label lblSortOrder;
         private System.Windows.Forms.NumericUpDown numSortOrder;
         private System.Windows.Forms.Label lblStatusLabel;

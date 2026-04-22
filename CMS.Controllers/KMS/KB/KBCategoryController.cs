@@ -2,21 +2,32 @@ using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CMS.Controllers.KMS.KB
 {
     public class KBCategoryController
     {
-        private readonly IKBCategoryController    _view;
-        private readonly IKBCategoryService _service;
-        private readonly UserContext        _user;
+        private readonly IKBCategoryController _view;
+        private readonly IKBCategoryService    _service;
+        private readonly IKBArticleService     _articleService;
+        private readonly UserContext           _user;
 
-        public KBCategoryController(IKBCategoryController view, IKBCategoryService service, UserContext user)
+        public KBCategoryController(
+            IKBCategoryController view,
+            IKBCategoryService    service,
+            IKBArticleService     articleService,
+            UserContext           user)
         {
-            if (view    == null) throw new ArgumentNullException("view");
-            if (service == null) throw new ArgumentNullException("service");
-            if (user    == null) throw new ArgumentNullException("user");
-            _view = view; _service = service; _user = user;
+            if (view           == null) throw new ArgumentNullException("view");
+            if (service        == null) throw new ArgumentNullException("service");
+            if (articleService == null) throw new ArgumentNullException("articleService");
+            if (user           == null) throw new ArgumentNullException("user");
+            _view           = view;
+            _service        = service;
+            _articleService = articleService;
+            _user           = user;
         }
 
         public void Initialize() { LoadCategories(); }
@@ -30,16 +41,48 @@ namespace CMS.Controllers.KMS.KB
         public void OnCategorySelected(KBCategory cat)
         {
             if (cat == null) return;
-            _view.EditingId      = cat.CategoryID;
-            _view.FormTitleText  = "แก้ไข Category";
-            _view.CategoryCode   = cat.CategoryCode;
-            _view.CategoryName   = cat.CategoryName;
-            _view.Icon           = cat.Icon;
-            _view.Description    = cat.Description;
-            _view.SortOrder      = cat.SortOrder;
+            _view.EditingId         = cat.CategoryID;
+            _view.FormTitleText     = "แก้ไข Category";
+            _view.CategoryCode      = cat.CategoryCode;
+            _view.CategoryName      = cat.CategoryName;
+            _view.Icon              = cat.Icon;
+            _view.Description       = cat.Description;
+            _view.SortOrder         = cat.SortOrder;
             _view.ParentCategoryId  = cat.ParentCategoryID;
             _view.DeleteEnabled     = cat.IsActive;
             _view.DeleteButtonText  = cat.IsActive ? "🗑️ ปิดใช้งาน" : "⛔ ปิดแล้ว";
+            _view.BindCategoryDetails(cat);
+
+            try
+            {
+                // Collect IDs to query: the selected category + all its direct children
+                bool isParent = !cat.ParentCategoryID.HasValue;
+                var articles  = _articleService.GetByCategory(cat.CategoryID).ToList();
+
+                if (isParent)
+                {
+                    // Also pull articles from every subcategory
+                    var childIds = _service.GetAll()
+                        .Where(c => c.ParentCategoryID.HasValue && c.ParentCategoryID.Value == cat.CategoryID)
+                        .Select(c => c.CategoryID);
+
+                    foreach (var childId in childIds)
+                        articles.AddRange(_articleService.GetByCategory(childId));
+                }
+
+                int total     = articles.Count;
+                int published = articles.Count(a => a.Status == 3);                   // 3 = Published
+                int draft     = articles.Count(a => a.Status == 1 || a.Status == 2);  // 1 = Draft, 2 = Review
+                _view.BindCategoryStats(total, published, draft);
+
+                // Show the 5 most recent articles (same pool as total count)
+                var recent = articles.OrderByDescending(a => a.CreatedDate).Take(5);
+                _view.BindArticleUsage(recent);
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("โหลดข้อมูลบทความล้มเหลว: " + ex.Message);
+            }
         }
 
         public void Save()

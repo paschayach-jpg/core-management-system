@@ -1289,7 +1289,7 @@ namespace CMS.Presentation
                 () =>
                 {
                     var catForm      = new KBCategoryForm(_currentUser);
-                    var catPresenter = new KBCategoryController(catForm, _kbCategoryService, _currentUser);
+                    var catPresenter = new KBCategoryController(catForm, _kbCategoryService, _kbArticleService, _currentUser);
                     catForm.AttachPresenter(catPresenter);
                     return catForm;
                 });
@@ -1624,7 +1624,7 @@ namespace CMS.Presentation
             }
 
             var form      = new KBCategoryForm(_currentUser);
-            var presenter = new KBCategoryController(form, _kbCategoryService, _currentUser);
+            var presenter = new KBCategoryController(form, _kbCategoryService, _kbArticleService, _currentUser);
             form.AttachPresenter(presenter);
             // When opened standalone (menu route), "← กลับ" closes the MDI child
             form.BackRequested += (s, e) => form.Close();

@@ -172,7 +172,6 @@ namespace CMS.Presentation.Modules.KMS
         private void TxtName_TextChanged(object sender, EventArgs e)
         {
             MarkDirty();
-            UpdateIconFullPreview();
         }
 
         private void TxtDescription_TextChanged(object sender, EventArgs e) { MarkDirty(); }
@@ -186,7 +185,6 @@ namespace CMS.Presentation.Modules.KMS
         private void CboIcon_SelectedIndexChanged(object sender, EventArgs e)
         {
             MarkDirty();
-            UpdateIconPreview();
         }
 
         private void MarkDirty()
@@ -213,22 +211,29 @@ namespace CMS.Presentation.Modules.KMS
         public string CategoryName
         {
             get { return txtName.Text.Trim(); }
-            set
-            {
-                txtName.Text = value;
-                UpdateIconFullPreview();
-            }
+            set { txtName.Text = value; }
         }
 
         /// <summary>
-        /// Icon stored as the emoji prefix of the selected combo item (e.g. "❓").
-        /// On get: returns the first "word" (emoji) of the selected item.
-        /// On set: finds the matching item by emoji prefix.
+        /// Icon stored as a byte value (1–9) matching <see cref="CMS.Domain.Enums.KBCategoryIcon"/>.
+        /// The combo index is 0-based; the enum value is 1-based.
         /// </summary>
         public string Icon
         {
-            get { return GetIconEmoji(); }
-            set { SelectIconByEmoji(value); }
+            get
+            {
+                // combo index 0 → enum value 1, etc.
+                byte val = (byte)(cboIcon.SelectedIndex + 1);
+                return val.ToString();
+            }
+            set
+            {
+                byte parsed;
+                if (byte.TryParse(value, out parsed) && parsed >= 1 && parsed <= cboIcon.Items.Count)
+                    cboIcon.SelectedIndex = parsed - 1;
+                else
+                    cboIcon.SelectedIndex = 0;
+            }
         }
 
         public string Description
@@ -300,6 +305,44 @@ namespace CMS.Presentation.Modules.KMS
         public void ShowSuccess(string message)
         {
             MessageBox.Show(message, "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        public void BindCategoryDetails(KBCategory category)
+        {
+            if (category == null) { ClearDetailPanel(); return; }
+
+            lblInfoCreatedByVal.Text   = string.IsNullOrEmpty(category.CreatedBy) ? "—" : category.CreatedBy;
+            lblInfoCreatedDateVal.Text = category.CreatedDate == default(DateTime)
+                ? "—"
+                : category.CreatedDate.ToString("dd/MM/yyyy HH:mm");
+            lblInfoUpdatedVal.Text     = "—";   // KBCategory has no UpdatedDate field
+
+            // Build full path: Parent > Category
+            if (!string.IsNullOrEmpty(category.ParentCategoryName))
+                lblInfoPathVal.Text = category.ParentCategoryName + " > " + category.CategoryName;
+            else
+                lblInfoPathVal.Text = category.CategoryName;
+        }
+
+        public void BindCategoryStats(int total, int published, int draft)
+        {
+            lblStatTotalNum.Text     = total.ToString();
+            lblStatPublishedNum.Text = published.ToString();
+            lblStatDraftNum.Text     = draft.ToString();
+        }
+
+        public void BindArticleUsage(IEnumerable<KBArticle> articles)
+        {
+            lstArticleUsage.Items.Clear();
+            foreach (var a in articles)
+            {
+                var item = new ListViewItem(a.ArticleCode ?? string.Empty);
+                item.SubItems.Add(a.Title ?? string.Empty);
+                item.SubItems.Add(a.StatusName);
+                item.SubItems.Add(a.CreatedBy ?? string.Empty);
+                item.Tag = a;
+                lstArticleUsage.Items.Add(item);
+            }
         }
 
         // ── Private UI helpers ────────────────────────────────────────────────
@@ -385,11 +428,11 @@ namespace CMS.Presentation.Modules.KMS
 
         private TreeNode BuildTreeNode(KBCategory cat)
         {
-            string icon = string.IsNullOrEmpty(cat.Icon) ? "\uD83D\uDCC2" : cat.Icon;
-            string text = icon + "  " + cat.CategoryName;
+            string symbol = cat.IconSymbol;
+            string text   = symbol + "  " + cat.CategoryName;
             if (!cat.IsActive) text += "  (ปิด)";
             var node = new TreeNode(text);
-            node.Tag      = cat;
+            node.Tag       = cat;
             node.ForeColor = cat.IsActive
                 ? Color.FromArgb(20, 20, 20)
                 : Color.FromArgb(160, 160, 160);
@@ -406,33 +449,46 @@ namespace CMS.Presentation.Modules.KMS
         {
             // Store the currently selected parent ID before refreshing
             int? currentSelection = GetSelectedParentId();
-            
+
             cboParent.Items.Clear();
             cboParent.Items.Add(new ComboItem("— ไม่มี (หมวดหมู่หลัก / Root) —", null));
-            
-            // Add all active categories as potential parents
-            foreach (var c in _categories.Where(x => x.IsActive).OrderBy(x => x.SortOrder).ThenBy(x => x.CategoryName))
+
+            // Mirror treeCategories: roots first, then their children — same sort order
+            var roots = _categories
+                .Where(c => !c.ParentCategoryID.HasValue && c.IsActive)
+                .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
+
+            foreach (var root in roots)
             {
-                // Prevent a category from being its own parent
-                if (EditingId.HasValue && c.CategoryID == EditingId.Value) 
-                    continue;
-                
-                // Show hierarchy in the combo box
-                string prefix = c.ParentCategoryID.HasValue ? "    └─ " : "";
+                if (EditingId.HasValue && root.CategoryID == EditingId.Value) continue;
+
+                string rootIcon = root.IconSymbol;
                 cboParent.Items.Add(new ComboItem(
-                    string.Format("{0}{1} {2}", prefix, c.Icon ?? "📁", c.CategoryName),
-                    c.CategoryID));
+                    string.Format("{0} {1}", rootIcon, root.CategoryName),
+                    root.CategoryID));
+
+                var children = _categories
+                    .Where(c => c.ParentCategoryID.HasValue
+                             && c.ParentCategoryID.Value == root.CategoryID
+                             && c.IsActive)
+                    .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
+
+                foreach (var child in children)
+                {
+                    if (EditingId.HasValue && child.CategoryID == EditingId.Value) continue;
+
+                    string childIcon = child.IconSymbol;
+                    cboParent.Items.Add(new ComboItem(
+                        string.Format("    └─ {0} {1}", childIcon, child.CategoryName),
+                        child.CategoryID));
+                }
             }
-            
+
             // Restore previous selection if it still exists
             if (currentSelection.HasValue)
-            {
                 SelectParentInCombo(currentSelection);
-            }
             else
-            {
                 cboParent.SelectedIndex = 0;
-            }
         }
 
         private void SelectParentInCombo(int? parentId)
@@ -454,48 +510,6 @@ namespace CMS.Presentation.Modules.KMS
         {
             var ci = cboParent.SelectedItem as ComboItem;
             return ci != null ? ci.Value : null;
-        }
-
-        /// <summary>Returns the emoji portion of the selected icon combo item.</summary>
-        private string GetIconEmoji()
-        {
-            if (cboIcon.SelectedItem == null) return string.Empty;
-            string item = cboIcon.SelectedItem.ToString();
-            // Items are formatted as "❓ คำถาม" — split on first space
-            int spaceIdx = item.IndexOf(' ');
-            return spaceIdx > 0 ? item.Substring(0, spaceIdx) : item;
-        }
-
-        /// <summary>Selects the combo item whose emoji prefix matches <paramref name="emoji"/>.</summary>
-        private void SelectIconByEmoji(string emoji)
-        {
-            if (string.IsNullOrEmpty(emoji)) { cboIcon.SelectedIndex = 0; return; }
-            for (int i = 0; i < cboIcon.Items.Count; i++)
-            {
-                string item = cboIcon.Items[i].ToString();
-                if (item.StartsWith(emoji))
-                {
-                    cboIcon.SelectedIndex = i;
-                    return;
-                }
-            }
-            cboIcon.SelectedIndex = 0;
-        }
-
-        private void UpdateIconPreview()
-        {
-            string emoji = GetIconEmoji();
-            //lblIconPreview.Text = string.IsNullOrEmpty(emoji) ? "❓" : emoji;
-            UpdateIconFullPreview();
-        }
-
-        private void UpdateIconFullPreview()
-        {
-            string emoji = GetIconEmoji();
-            string name  = txtName.Text.Trim();
-            lblIconFullPreview.Text = string.Format("{0} {1}",
-                string.IsNullOrEmpty(emoji) ? "❓" : emoji,
-                string.IsNullOrEmpty(name)  ? "ชื่อ Category" : name);
         }
 
         private bool ValidateInput()

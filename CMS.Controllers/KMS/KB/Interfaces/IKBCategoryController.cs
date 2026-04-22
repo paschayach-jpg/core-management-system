@@ -16,6 +16,9 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         bool DeleteEnabled { set; }
         string DeleteButtonText { set; }
         void BindCategories(IEnumerable<KBCategory> categories);
+        void BindCategoryDetails(KBCategory category);
+        void BindCategoryStats(int total, int published, int draft);
+        void BindArticleUsage(IEnumerable<KBArticle> articles);
         void ClearForm();
         void ShowError(string message);
         void ShowSuccess(string message);
