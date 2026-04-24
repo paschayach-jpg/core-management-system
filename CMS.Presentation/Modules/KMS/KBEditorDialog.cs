@@ -78,6 +78,10 @@ namespace CMS.Presentation.Modules.KMS
             InitializeRelatedCategoryDropdown();
             LoadRelatedArticles();
             
+            // Initialize tabDepartments - NEW IMPLEMENTATION (Mockup)
+            InitializeDepartmentsDataGridView();
+            LoadLinkedDepartments();
+            
             _presenter.Initialize();
         }
 
@@ -99,6 +103,7 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnSendReview_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
+            if (!ValidateInput()) return;
 
             string action = btnSendReview.Text.Contains("Review") ? "ส่งขอ Review" : "เผยแพร่";
             var confirm = MessageBox.Show(
@@ -109,7 +114,15 @@ namespace CMS.Presentation.Modules.KMS
 
             try
             {
-                _presenter.Publish();
+                // Check if this is "Send Review" or "Publish" based on button text
+                if (btnSendReview.Text.Contains("Review"))
+                {
+                    _presenter.SendReview();
+                }
+                else
+                {
+                    _presenter.Publish();
+                }
             }
             catch (Exception ex)
             {
@@ -347,11 +360,6 @@ namespace CMS.Presentation.Modules.KMS
             set { lblLikeCount.Text = value; }
         }
 
-        public string VersionTabText
-        {
-            set { tabVersions.Text = value; }
-        }
-
         public bool PublishButtonVisible
         {
             set { btnSendReview.Visible = value; }
@@ -412,24 +420,6 @@ namespace CMS.Presentation.Modules.KMS
             }
 
             cboCategory.SelectedIndex = 0;
-        }
-
-        public void BindVersionHistory(IEnumerable<KBVersion> versions)
-        {
-            lstVersions.Items.Clear();
-
-            foreach (var v in versions)
-            {
-                var item = new ListViewItem(string.Format("v{0}", v.VersionNumber));
-                item.SubItems.Add(v.CreatedDate.ToString("dd/MM/yyyy HH:mm"));
-                item.SubItems.Add(v.CreatedBy ?? "-");
-                item.SubItems.Add(v.ChangeDescription ?? "-");
-                item.Tag       = v;
-                item.BackColor = v.VersionNumber % 2 == 0
-                    ? Color.White
-                    : Color.FromArgb(248, 250, 253);
-                lstVersions.Items.Add(item);
-            }
         }
 
         public void CloseOk()
@@ -2531,6 +2521,92 @@ namespace CMS.Presentation.Modules.KMS
             {
                 e.SuppressKeyPress = true;
                 BtnSearchRelated_Click(sender, e);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        // TAB DEPARTMENTS - NEW IMPLEMENTATION (Mockup with DataGridView)
+        // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Initialize DataGridView for departments
+        /// </summary>
+        private void InitializeDepartmentsDataGridView()
+        {
+            // Columns are now defined in Designer.cs
+            // No column creation needed here
+        }
+
+        /// <summary>
+        /// Load linked departments when form initializes (Mockup data)
+        /// </summary>
+        private void LoadLinkedDepartments()
+        {
+            dgvDepartmentsLinked.Rows.Clear();
+            
+            // Mockup data - will be replaced with actual HR/Org integration
+            var mockupDepartments = new[]
+            {
+                new { Code = "DEPT-UW-001", Name = "ฝ่ายรับประกันภัย (Underwriting)", Type = "ฝ่าย" },
+                new { Code = "DEPT-CLM-002", Name = "ฝ่ายสินไหมทดแทน (Claims)", Type = "ฝ่าย" },
+                new { Code = "DEPT-ACT-003", Name = "แผนกคณิตศาสตร์ประกันภัย (Actuarial)", Type = "แผนก" },
+                new { Code = "DEPT-IT-004", Name = "ฝ่ายเทคโนโลยีสารสนเทศ (IT)", Type = "ฝ่าย" }
+            };
+            
+            int index = 1;
+            foreach (var dept in mockupDepartments)
+            {
+                int rowIndex = dgvDepartmentsLinked.Rows.Add(
+                    index.ToString(),
+                    dept.Code,
+                    dept.Name,
+                    dept.Type
+                );
+                
+                dgvDepartmentsLinked.Rows[rowIndex].Tag = index; // Mockup ID
+                dgvDepartmentsLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
+                    index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                index++;
+            }
+            
+            UpdateDepartmentsLinkedCount();
+        }
+
+        private void UpdateDepartmentsLinkedCount()
+        {
+            lblDepartmentsLinked.Text = string.Format("ฝ่าย/แผนก ที่เกี่ยวข้อง ({0} รายการ)", dgvDepartmentsLinked.Rows.Count);
+        }
+
+        private void DgvDepartmentsLinked_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return; // Header clicked
+            
+            // Check if Delete button clicked
+            if (e.ColumnIndex == dgvDepartmentsLinked.Columns["colDeptDelete"].Index)
+            {
+                string deptName = dgvDepartmentsLinked.Rows[e.RowIndex].Cells["colDeptName"].Value?.ToString();
+                
+                var confirm = MessageBox.Show(
+                    string.Format("ต้องการลบ '{0}' ใช่หรือไม่?", deptName),
+                    "ยืนยันการลบ", 
+                    MessageBoxButtons.YesNo, 
+                    MessageBoxIcon.Question);
+                
+                if (confirm == DialogResult.Yes)
+                {
+                    dgvDepartmentsLinked.Rows.RemoveAt(e.RowIndex);
+                    
+                    // Renumber
+                    for (int i = 0; i < dgvDepartmentsLinked.Rows.Count; i++)
+                    {
+                        dgvDepartmentsLinked.Rows[i].Cells["colDeptNum"].Value = (i + 1).ToString();
+                        dgvDepartmentsLinked.Rows[i].DefaultCellStyle.BackColor = 
+                            (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    }
+                    
+                    UpdateDepartmentsLinkedCount();
+                    ShowInfo("ลบฝ่าย/แผนกเรียบร้อยแล้ว");
+                }
             }
         }
 

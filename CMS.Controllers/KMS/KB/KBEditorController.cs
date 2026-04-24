@@ -23,7 +23,7 @@ namespace CMS.Controllers.KMS.KB
         private readonly IKBArticleLinkRepository _articleLinkRepository;
         private readonly IKBVersionRepository _versionRepository;
         private readonly UserContext        _user;
-        private readonly KBArticle         _editingArticle;
+        private KBArticle         _editingArticle;  // Changed from readonly to allow updates
 
         /// <summary>
         /// Expose the editing article for search exclusion
@@ -64,9 +64,12 @@ namespace CMS.Controllers.KMS.KB
 
             if (_editingArticle == null)
             {
-                // Create mode
+                // Create mode - Generate next article code
+                string nextCode = GenerateArticleCode();
+                
                 _view.HeaderText           = "  ✏️ เพิ่มบทความใหม่";
-                _view.ArticleCode          = string.Format("KB-{0}-NEW", DateTime.Now.Year);
+                _view.ArticleCode          = nextCode;
+                _view.SelectedStatus       = 1;  // Default to Draft status
                 _view.ArchiveButtonVisible = false;
                 _view.PublishButtonText    = "📤 ส่งขอ Review";
                 _view.VersionText          = "Version: 1.0";
@@ -78,9 +81,24 @@ namespace CMS.Controllers.KMS.KB
                 // Edit mode
                 _view.HeaderText = string.Format("  ✏️ แก้ไขบทความ: {0}", _editingArticle.Title ?? "");
                 PopulateFields(_editingArticle);
-                LoadVersionHistory(_editingArticle.ArticleID);
                 LoadArticleLinks(_editingArticle.ArticleID);
                 UpdateStatusButtons(_editingArticle.Status);
+            }
+        }
+
+        /// <summary>
+        /// Generate next article code in format KB-YYYY-NNN
+        /// </summary>
+        private string GenerateArticleCode()
+        {
+            try
+            {
+                return _articleService.GenerateNextArticleCode();
+            }
+            catch (Exception ex)
+            {
+                // Fallback to default format if generation fails
+                return string.Format("KB-{0}-001", DateTime.Now.Year);
             }
         }
 
@@ -151,23 +169,6 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
-        /// Load version history for the article
-        /// </summary>
-        private void LoadVersionHistory(int articleId)
-        {
-            try
-            {
-                var versions = _articleService.GetVersionHistory(articleId).ToList();
-                _view.BindVersionHistory(versions);
-                _view.VersionTabText = string.Format("🕐 ประวัติ Version ({0})", versions.Count);
-            }
-            catch
-            {
-                // Silently fail - version history is optional
-            }
-        }
-
-        /// <summary>
         /// Update button visibility and text based on article status
         /// </summary>
         private void UpdateStatusButtons(byte status)
@@ -202,7 +203,7 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
-        /// Save as Draft (status stays at 1) or update existing
+        /// Save as Draft (status = 1) - Create new or update existing
         /// </summary>
         public void Save(string changeDesc)
         {
@@ -228,6 +229,13 @@ namespace CMS.Controllers.KMS.KB
                 {
                     // Create new article
                     articleId = _articleService.Create(article);
+                    
+                    // Update _editingArticle so subsequent saves will update instead of create
+                    article.ArticleID = articleId;
+                    _editingArticle = article;
+                    
+                    // Update view to reflect we're now editing an existing article
+                    _view.HeaderText = string.Format("  ✏️ แก้ไขบทความ: {0}", article.Title ?? "");
                 }
                 else
                 {
@@ -235,12 +243,15 @@ namespace CMS.Controllers.KMS.KB
                     article.ArticleID = _editingArticle.ArticleID;
                     _articleService.Update(article, changeDesc);
                     articleId = _editingArticle.ArticleID;
+                    
+                    // Update _editingArticle with latest data
+                    _editingArticle = article;
                 }
 
                 // Save article links
                 SaveArticleLinks(articleId);
 
-                _view.CloseOk();
+                _view.ShowInfo("บันทึก Draft เรียบร้อยแล้ว");
             }
             catch (Exception ex)
             {
@@ -249,15 +260,84 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
-        /// Advance status: Draft→Review or Review→Published
+        /// Send for Review (status = 2) - Create new or update existing, then change status
+        /// </summary>
+        public void SendReview()
+        {
+            try
+            {
+                var article = new KBArticle
+                {
+                    ArticleCode      = _view.ArticleCode,
+                    Title            = _view.Title,
+                    Summary          = _view.Summary,
+                    ContentHTML      = _view.ContentHTML,
+                    CategoryID       = _view.SelectedCategoryId,
+                    ArticleType      = _view.SelectedArticleType,
+                    Status           = 2,  // Send for Review
+                    CrafLevel        = _view.SelectedCrafLevel,
+                    Tags             = _view.Tags,
+                    ExpiryDate       = _view.ExpiryDate,
+                    CreatedBy        = _user.AdIdentity,
+                };
+
+                int articleId;
+                if (_editingArticle == null)
+                {
+                    // Create new article with Status = 2
+                    articleId = _articleService.Create(article);
+                    
+                    // Update _editingArticle
+                    article.ArticleID = articleId;
+                    _editingArticle = article;
+                }
+                else
+                {
+                    // Update existing article and change status to Review
+                    article.ArticleID = _editingArticle.ArticleID;
+                    _articleService.Update(article, "ส่งขอ Review");
+                    articleId = _editingArticle.ArticleID;
+                    
+                    // Update _editingArticle
+                    _editingArticle = article;
+                }
+
+                // Save article links
+                SaveArticleLinks(articleId);
+
+                _view.ShowInfo("ส่งขอ Review เรียบร้อยแล้ว");
+                _view.CloseOk();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Send review failed: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Publish article (status = 3) - Only for existing articles in Review status
         /// </summary>
         public void Publish()
         {
-            if (_editingArticle == null) return;
+            if (_editingArticle == null)
+            {
+                _view.ShowError("ไม่สามารถเผยแพร่บทความที่ยังไม่ได้บันทึกได้");
+                return;
+            }
 
-            byte targetStatus = _editingArticle.Status == 1 ? (byte)2 : (byte)3;
-            _articleService.ChangeStatus(_editingArticle.ArticleID, targetStatus, _user.AdIdentity);
-            _view.CloseOk();
+            try
+            {
+                // Change status to Published
+                _articleService.ChangeStatus(_editingArticle.ArticleID, 3, _user.AdIdentity);
+                _editingArticle.Status = 3;
+                
+                _view.ShowInfo("เผยแพร่บทความเรียบร้อยแล้ว");
+                _view.CloseOk();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Publish failed: " + ex.Message, ex);
+            }
         }
 
         /// <summary>
@@ -420,7 +500,7 @@ namespace CMS.Controllers.KMS.KB
                 // Delete all existing links for this article
                 _articleLinkRepository.DeleteAllForArticle(articleId);
 
-                // Insert links for Folders (EntityType = 1)
+                // Insert links for Related Articles (EntityType = Article)
                 var dgvRelated = _view.GetRelatedDataGridView();
                 foreach (System.Windows.Forms.DataGridViewRow row in dgvRelated.Rows)
                 {
@@ -438,13 +518,13 @@ namespace CMS.Controllers.KMS.KB
                     }
                 }
 
-                // Insert links for Tasks (EntityType = 2)
-                var lstWorkflow = _view.GetWorkflowListView();
-                foreach (System.Windows.Forms.ListViewItem item in lstWorkflow.Items)
+                // Insert links for Workflows (EntityType = Task)
+                var dgvWorkflow = _view.GetWorkflowLinkedDataGridView();
+                foreach (System.Windows.Forms.DataGridViewRow row in dgvWorkflow.Rows)
                 {
-                    if (item.Tag != null && item.Tag is int)
+                    if (row.Tag != null && row.Tag is int)
                     {
-                        int entityId = (int)item.Tag;
+                        int entityId = (int)row.Tag;
                         _articleLinkRepository.Insert(new KBArticleLink
                         {
                             ArticleID = articleId,
@@ -456,13 +536,13 @@ namespace CMS.Controllers.KMS.KB
                     }
                 }
 
-                // Insert links for Programs (EntityType = 3)
-                var lstPrograms = _view.GetProgramsListView();
-                foreach (System.Windows.Forms.ListViewItem item in lstPrograms.Items)
+                // Insert links for Programs (EntityType = Program)
+                var dgvPrograms = _view.GetProgramsLinkedDataGridView();
+                foreach (System.Windows.Forms.DataGridViewRow row in dgvPrograms.Rows)
                 {
-                    if (item.Tag != null && item.Tag is int)
+                    if (row.Tag != null && row.Tag is int)
                     {
-                        int entityId = (int)item.Tag;
+                        int entityId = (int)row.Tag;
                         _articleLinkRepository.Insert(new KBArticleLink
                         {
                             ArticleID = articleId,
@@ -474,13 +554,13 @@ namespace CMS.Controllers.KMS.KB
                     }
                 }
 
-                // Insert links for Laws (EntityType = 4)
-                var lstDocs = _view.GetDocsListView();
-                foreach (System.Windows.Forms.ListViewItem item in lstDocs.Items)
+                // Insert links for Documents (EntityType = Law)
+                var dgvDocs = _view.GetDocsLinkedDataGridView();
+                foreach (System.Windows.Forms.DataGridViewRow row in dgvDocs.Rows)
                 {
-                    if (item.Tag != null && item.Tag is int)
+                    if (row.Tag != null && row.Tag is int)
                     {
-                        int entityId = (int)item.Tag;
+                        int entityId = (int)row.Tag;
                         _articleLinkRepository.Insert(new KBArticleLink
                         {
                             ArticleID = articleId,
@@ -499,13 +579,13 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
-        /// Load article links from database and populate ListViews/DataGridViews
+        /// Load article links from database and populate DataGridViews
         /// </summary>
         private void LoadArticleLinks(int articleId)
         {
             try
             {
-                // Load Related Articles (EntityType = 6) - Article-to-Article links
+                // Load Related Articles (EntityType = Article) - Article-to-Article links
                 var articleLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Article);
                 var dgvRelated = _view.GetRelatedDataGridView();
                 dgvRelated.Rows.Clear();
@@ -532,85 +612,73 @@ namespace CMS.Controllers.KMS.KB
                     }
                 }
 
-                // Load Task links (EntityType = 2)
+                // Load Workflow links (EntityType = Task)
                 var taskLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Task);
-                var dgvWorkflow = _view.GetWorkflowSearchDataGridView();
+                var dgvWorkflow = _view.GetWorkflowLinkedDataGridView();
                 dgvWorkflow.Rows.Clear();
 
                 index = 1;
-                foreach (var link in articleLinks)
+                foreach (var link in taskLinks)
                 {
-                    // Retrieve the full article details including Title using ArticleID (EntityID)
-                    var linkedArticle = _articleService.GetById(link.EntityID);
+                    // For workflows, we would retrieve workflow details from workflow system
+                    // For now, using mock data structure similar to articles
+                    int rowIndex = dgvWorkflow.Rows.Add(
+                        index.ToString(),
+                        string.Format("WF-{0:D3}", link.EntityID),
+                        "Workflow Name",  // TODO: Get from workflow system
+                        "Active"
+                    );
 
-                    if (linkedArticle != null)
-                    {
-                        int rowIndex = dgvWorkflow.Rows.Add(
-                            index.ToString(),
-                            linkedArticle.ArticleCode ?? "-",
-                            linkedArticle.Title ?? "-",
-                            linkedArticle.ArticleTypeName ?? "-"
-                        );
-
-                        dgvWorkflow.Rows[rowIndex].Tag = linkedArticle.ArticleID;
-                        dgvWorkflow.Rows[rowIndex].DefaultCellStyle.BackColor =
-                            index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                        index++;
-                    }
+                    dgvWorkflow.Rows[rowIndex].Tag = link.EntityID;
+                    dgvWorkflow.Rows[rowIndex].DefaultCellStyle.BackColor =
+                        index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    index++;
                 }
 
-                // Load Program links (EntityType = 3)
+                // Load Program links (EntityType = Program)
                 var programLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Program);
-                var dgvPrograms = _view.GetProgramsSearchDataGridView();
+                var dgvPrograms = _view.GetProgramsLinkedDataGridView();
                 dgvPrograms.Rows.Clear();
 
                 index = 1;
-                foreach (var link in articleLinks)
+                foreach (var link in programLinks)
                 {
-                    // Retrieve the full article details including Title using ArticleID (EntityID)
-                    var linkedArticle = _articleService.GetById(link.EntityID);
+                    // For programs, we would retrieve program details from program system
+                    // For now, using mock data structure
+                    int rowIndex = dgvPrograms.Rows.Add(
+                        index.ToString(),
+                        string.Format("PRG-{0:D3}", link.EntityID),
+                        "Program Name",  // TODO: Get from program system
+                        "Active"
+                    );
 
-                    if (linkedArticle != null)
-                    {
-                        int rowIndex = dgvPrograms.Rows.Add(
-                            index.ToString(),
-                            linkedArticle.ArticleCode ?? "-",
-                            linkedArticle.Title ?? "-",
-                            linkedArticle.ArticleTypeName ?? "-"
-                        );
-
-                        dgvPrograms.Rows[rowIndex].Tag = linkedArticle.ArticleID;
-                        dgvPrograms.Rows[rowIndex].DefaultCellStyle.BackColor =
-                            index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                        index++;
-                    }
+                    dgvPrograms.Rows[rowIndex].Tag = link.EntityID;
+                    dgvPrograms.Rows[rowIndex].DefaultCellStyle.BackColor =
+                        index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    index++;
                 }
 
-                // Load Document/Law links (EntityType = 4) - using Document list for now
-                var lawLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Project);
-                var dgvDocs = _view.GetDocsSearchDataGridView();
+                // Load Document/Law links (EntityType = Law)
+                var lawLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Law);
+                var dgvDocs = _view.GetDocsLinkedDataGridView();
                 dgvDocs.Rows.Clear();
 
                 index = 1;
-                foreach (var link in articleLinks)
+                foreach (var link in lawLinks)
                 {
-                    // Retrieve the full article details including Title using ArticleID (EntityID)
-                    var linkedArticle = _articleService.GetById(link.EntityID);
+                    // For documents, we would retrieve document details from DMS
+                    // For now, using mock data structure
+                    int rowIndex = dgvDocs.Rows.Add(
+                        index.ToString(),
+                        string.Format("DOC-{0:D3}", link.EntityID),
+                        "1.2 MB",
+                        DateTime.Now.ToString("dd/MM/yyyy")
+                    );
 
-                    if (linkedArticle != null)
-                    {
-                        int rowIndex = dgvDocs.Rows.Add(
-                            index.ToString(),
-                            linkedArticle.ArticleCode ?? "-",
-                            linkedArticle.Title ?? "-",
-                            linkedArticle.ArticleTypeName ?? "-"
-                        );
-
-                        dgvDocs.Rows[rowIndex].Tag = linkedArticle.ArticleID;
-                        dgvDocs.Rows[rowIndex].DefaultCellStyle.BackColor =
-                            index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                        index++;
-                    }
+                    dgvDocs.Rows[rowIndex].Tag = link.EntityID;
+                    dgvDocs.Rows[rowIndex].DefaultCellStyle.BackColor =
+                        index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    index++;
                 }
             }
             catch (Exception ex)

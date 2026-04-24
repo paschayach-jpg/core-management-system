@@ -25,7 +25,6 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string HeaderText { set; }
         string ViewCountText { set; }
         string LikeCountText { set; }
-        string VersionTabText { set; }
         bool PublishButtonVisible { set; }
         bool ArchiveButtonVisible { set; }
         bool SaveEnabled { set; }
@@ -40,7 +39,6 @@ namespace CMS.Controllers.KMS.KB.Interfaces
 
         // ── Data Binding Methods ─────────────────────────────────────────────
         void BindCategories(IEnumerable<KBCategory> categories);
-        void BindVersionHistory(IEnumerable<KBVersion> versions);
 
         // ── Dialog Control ───────────────────────────────────────────────────
         void CloseOk();
