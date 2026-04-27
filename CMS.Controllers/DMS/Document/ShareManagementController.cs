@@ -31,6 +31,22 @@ namespace CMS.Controllers.DMS.Document
             return _shareService.GetExternalSharesForUser(userId, user).ToList();
         }
 
+        public IList<FilePermission> GetAllInternalShares(UserContext admin)
+        {
+            if (_shareService == null)
+                return new List<FilePermission>();
+
+            return _shareService.GetAllInternalShares(admin).ToList();
+        }
+
+        public IList<ExternalShare> GetAllExternalShares(UserContext admin)
+        {
+            if (_shareService == null)
+                return new List<ExternalShare>();
+
+            return _shareService.GetAllExternalShares(admin).ToList();
+        }
+
         public IList<ShareAccessLog> GetAccessLog(int externalShareId, UserContext user)
         {
             if (_shareService == null)
@@ -69,6 +85,14 @@ namespace CMS.Controllers.DMS.Document
                 return;
 
             _shareService.RevokeExternalShare(externalShareId, reason, user);
+        }
+
+        public void ToggleExternalShare(int externalShareId, UserContext user)
+        {
+            if (_shareService == null)
+                return;
+
+            _shareService.ToggleExternalShare(externalShareId, user);
         }
     }
 }

@@ -213,6 +213,50 @@ namespace CMS.Data.Repositories
             SoftDelete(orgUnitId, 0);
         }
 
+        public void ForceDeleteWithDependents(int orgUnitId, int deletedBy)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. Soft-delete all active folders belonging to this OrgUnit
+                        var cmdFolders = new SqlCommand(
+                            @"UPDATE storage.Folder
+                              SET    IsDeleted = 1, DeletedDate = GETDATE(), DeletedBy = @DeletedBy
+                              WHERE  OrgUnitID = @OrgUnitID AND IsDeleted = 0", conn, tx);
+                        cmdFolders.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                        cmdFolders.Parameters.AddWithValue("@DeletedBy", deletedBy);
+                        cmdFolders.ExecuteNonQuery();
+
+                        // 2. Detach users — clear OrgUnitID (do NOT deactivate their accounts)
+                        var cmdUsers = new SqlCommand(
+                            @"UPDATE core.UserAccount
+                              SET    OrgUnitID = NULL
+                              WHERE  OrgUnitID = @OrgUnitID", conn, tx);
+                        cmdUsers.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                        cmdUsers.ExecuteNonQuery();
+
+                        // 3. Soft-delete the OrgUnit itself
+                        var cmdOrg = new SqlCommand("core.sp_SoftDeleteOrgUnit", conn, tx);
+                        cmdOrg.CommandType = CommandType.StoredProcedure;
+                        cmdOrg.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                        cmdOrg.Parameters.AddWithValue("@DeletedBy", deletedBy);
+                        cmdOrg.ExecuteNonQuery();
+
+                        tx.Commit();
+                    }
+                    catch
+                    {
+                        tx.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
         private static OrgUnit MapOrgUnit(SqlDataReader reader)
         {
             return new OrgUnit

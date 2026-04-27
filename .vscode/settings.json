@@ -1,4 +1,5 @@
 {
     "dotnet.preferCSharpExtension": true,
-    "chat.agent.maxRequests": 60
+    "chat.agent.maxRequests": 60,
+    "dotnet.defaultSolution": "disable"
 }

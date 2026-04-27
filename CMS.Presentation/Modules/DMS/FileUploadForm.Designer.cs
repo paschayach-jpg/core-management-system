@@ -25,8 +25,7 @@ namespace CMS.Presentation
             this.pnlFileRows = new System.Windows.Forms.Panel();
             this.lblSummary = new System.Windows.Forms.Label();
             this.pnlFooter = new System.Windows.Forms.Panel();
-            this.btnCancelAll = new System.Windows.Forms.Button();
-            this.btnPause = new System.Windows.Forms.Button();
+            this.btnClearErrors = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.lblProgressText = new System.Windows.Forms.Label();
             this.lblQuotaWarning = new System.Windows.Forms.Label();
@@ -177,45 +176,30 @@ namespace CMS.Presentation
             this.lblSummary.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // pnlFooter
-            // 
+            //
             this.pnlFooter.BackColor = System.Drawing.Color.White;
-            this.pnlFooter.Controls.Add(this.btnCancelAll);
-            this.pnlFooter.Controls.Add(this.btnPause);
+            this.pnlFooter.Controls.Add(this.btnClearErrors);
             this.pnlFooter.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlFooter.Location = new System.Drawing.Point(0, 448);
             this.pnlFooter.Name = "pnlFooter";
             this.pnlFooter.Size = new System.Drawing.Size(540, 52);
             this.pnlFooter.TabIndex = 3;
-            // 
-            // btnCancelAll
-            // 
-            this.btnCancelAll.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.btnCancelAll.FlatAppearance.BorderSize = 0;
-            this.btnCancelAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancelAll.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnCancelAll.ForeColor = System.Drawing.Color.White;
-            this.btnCancelAll.Location = new System.Drawing.Point(408, 10);
-            this.btnCancelAll.Name = "btnCancelAll";
-            this.btnCancelAll.Size = new System.Drawing.Size(130, 32);
-            this.btnCancelAll.TabIndex = 0;
-            this.btnCancelAll.Text = "✕ ยกเลิกทั้งหมด";
-            this.btnCancelAll.UseVisualStyleBackColor = false;
-            this.btnCancelAll.Click += new System.EventHandler(this.btnCancelAll_Click);
-            // 
-            // btnPause
-            // 
-            this.btnPause.BackColor = System.Drawing.Color.White;
-            this.btnPause.Enabled = false;
-            this.btnPause.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(180)))), ((int)(((byte)(180)))));
-            this.btnPause.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnPause.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnPause.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
-            this.btnPause.Location = new System.Drawing.Point(270, 10);
-            this.btnPause.Name = "btnPause";
-            this.btnPause.Size = new System.Drawing.Size(130, 32);
-            this.btnPause.TabIndex = 1;
-            this.btnPause.Text = "⏸ หยุดชั่วคราว";
-            this.btnPause.UseVisualStyleBackColor = false;
+            //
+            // btnClearErrors
+            //
+            this.btnClearErrors.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(100)))), ((int)(((byte)(0)))));
+            this.btnClearErrors.FlatAppearance.BorderSize = 0;
+            this.btnClearErrors.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClearErrors.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnClearErrors.ForeColor = System.Drawing.Color.White;
+            this.btnClearErrors.Location = new System.Drawing.Point(12, 10);
+            this.btnClearErrors.Name = "btnClearErrors";
+            this.btnClearErrors.Size = new System.Drawing.Size(160, 32);
+            this.btnClearErrors.TabIndex = 0;
+            this.btnClearErrors.Text = "🗑 Clear รายการ Error";
+            this.btnClearErrors.UseVisualStyleBackColor = false;
+            this.btnClearErrors.Visible = false;
+            this.btnClearErrors.Click += new System.EventHandler(this.btnClearErrors_Click);
             // 
             // progressBar
             // 
@@ -316,8 +300,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.Label  lblSummary;
 
         private System.Windows.Forms.Panel  pnlFooter;
-        private System.Windows.Forms.Button btnPause;
-        private System.Windows.Forms.Button btnCancelAll;
+        private System.Windows.Forms.Button btnClearErrors;
 
         private System.Windows.Forms.ProgressBar progressBar;
         private System.Windows.Forms.Label       lblProgressText;

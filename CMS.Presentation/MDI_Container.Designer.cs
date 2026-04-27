@@ -81,6 +81,7 @@ namespace CMS.Presentation
             this.btnRibbonRename = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonMove = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonDelete = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.sepRibbon1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnRibbonTemplate = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonFavorites = new System.Windows.Forms.ToolStripButton();
@@ -117,7 +118,6 @@ namespace CMS.Presentation
             this.lblStatusFolder = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblStatusPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblStatusDateTime = new System.Windows.Forms.ToolStripStatusLabel();
-            this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.pnlDashboard.SuspendLayout();
             this.pnlDashContent.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -140,10 +140,9 @@ namespace CMS.Presentation
             this.pnlDashboard.Controls.Add(this.pnlDashLeft);
             this.pnlDashboard.Controls.Add(this.lblDashTitle);
             this.pnlDashboard.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlDashboard.Location = new System.Drawing.Point(0, 61);
-            this.pnlDashboard.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.pnlDashboard.Location = new System.Drawing.Point(0, 54);
             this.pnlDashboard.Name = "pnlDashboard";
-            this.pnlDashboard.Size = new System.Drawing.Size(1959, 858);
+            this.pnlDashboard.Size = new System.Drawing.Size(1469, 692);
             this.pnlDashboard.TabIndex = 0;
             // 
             // pnlDashContent
@@ -152,11 +151,10 @@ namespace CMS.Presentation
             this.pnlDashContent.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(255)))));
             this.pnlDashContent.Controls.Add(this.splitContainer1);
             this.pnlDashContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlDashContent.Location = new System.Drawing.Point(404, 62);
-            this.pnlDashContent.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.pnlDashContent.Location = new System.Drawing.Point(304, 50);
             this.pnlDashContent.Name = "pnlDashContent";
-            this.pnlDashContent.Padding = new System.Windows.Forms.Padding(27, 25, 27, 25);
-            this.pnlDashContent.Size = new System.Drawing.Size(1555, 796);
+            this.pnlDashContent.Padding = new System.Windows.Forms.Padding(20);
+            this.pnlDashContent.Size = new System.Drawing.Size(1165, 642);
             this.pnlDashContent.TabIndex = 0;
             // 
             // splitContainer1
@@ -164,8 +162,7 @@ namespace CMS.Presentation
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
             this.splitContainer1.IsSplitterFixed = true;
-            this.splitContainer1.Location = new System.Drawing.Point(27, 25);
-            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.splitContainer1.Location = new System.Drawing.Point(20, 20);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -184,9 +181,8 @@ namespace CMS.Presentation
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.lvRecentFiles);
-            this.splitContainer1.Size = new System.Drawing.Size(1501, 746);
+            this.splitContainer1.Size = new System.Drawing.Size(1125, 602);
             this.splitContainer1.SplitterDistance = 258;
-            this.splitContainer1.SplitterWidth = 5;
             this.splitContainer1.TabIndex = 10;
             // 
             // lblRecentFiles
@@ -194,10 +190,9 @@ namespace CMS.Presentation
             this.lblRecentFiles.AutoSize = true;
             this.lblRecentFiles.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
             this.lblRecentFiles.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.lblRecentFiles.Location = new System.Drawing.Point(267, 267);
-            this.lblRecentFiles.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblRecentFiles.Location = new System.Drawing.Point(200, 217);
             this.lblRecentFiles.Name = "lblRecentFiles";
-            this.lblRecentFiles.Size = new System.Drawing.Size(198, 25);
+            this.lblRecentFiles.Size = new System.Drawing.Size(160, 20);
             this.lblRecentFiles.TabIndex = 8;
             this.lblRecentFiles.Text = "📄 ไฟล์ที่อัพโหลดล่าสุด";
             // 
@@ -206,10 +201,9 @@ namespace CMS.Presentation
             this.lblStats.AutoSize = true;
             this.lblStats.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
             this.lblStats.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.lblStats.Location = new System.Drawing.Point(1097, 181);
-            this.lblStats.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblStats.Location = new System.Drawing.Point(823, 147);
             this.lblStats.Name = "lblStats";
-            this.lblStats.Size = new System.Drawing.Size(115, 25);
+            this.lblStats.Size = new System.Drawing.Size(94, 20);
             this.lblStats.TabIndex = 6;
             this.lblStats.Text = "📈 สถิติระบบ";
             // 
@@ -218,10 +212,9 @@ namespace CMS.Presentation
             this.lblStatsContent.AutoSize = true;
             this.lblStatsContent.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblStatsContent.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(100)))));
-            this.lblStatsContent.Location = new System.Drawing.Point(1097, 218);
-            this.lblStatsContent.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblStatsContent.Location = new System.Drawing.Point(823, 177);
             this.lblStatsContent.Name = "lblStatsContent";
-            this.lblStatsContent.Size = new System.Drawing.Size(129, 80);
+            this.lblStatsContent.Size = new System.Drawing.Size(102, 60);
             this.lblStatsContent.TabIndex = 7;
             this.lblStatsContent.Text = "• ไฟล์ทั้งหมด: --\n• Folder ทั้งหมด: --\n• รายการรออนุมัติ: --\n• ผู้ใช้งาน: --";
             this.lblStatsContent.Click += new System.EventHandler(this.lblStatsContent_Click);
@@ -231,10 +224,9 @@ namespace CMS.Presentation
             this.lblWelcome.AutoSize = true;
             this.lblWelcome.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Bold);
             this.lblWelcome.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
-            this.lblWelcome.Location = new System.Drawing.Point(27, 20);
-            this.lblWelcome.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblWelcome.Location = new System.Drawing.Point(20, 16);
             this.lblWelcome.Name = "lblWelcome";
-            this.lblWelcome.Size = new System.Drawing.Size(453, 32);
+            this.lblWelcome.Size = new System.Drawing.Size(356, 25);
             this.lblWelcome.TabIndex = 0;
             this.lblWelcome.Text = "ยินดีต้อนรับสู่ Core Management System";
             // 
@@ -243,10 +235,9 @@ namespace CMS.Presentation
             this.lblQuickAccess.AutoSize = true;
             this.lblQuickAccess.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
             this.lblQuickAccess.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.lblQuickAccess.Location = new System.Drawing.Point(53, 63);
-            this.lblQuickAccess.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblQuickAccess.Location = new System.Drawing.Point(40, 51);
             this.lblQuickAccess.Name = "lblQuickAccess";
-            this.lblQuickAccess.Size = new System.Drawing.Size(189, 25);
+            this.lblQuickAccess.Size = new System.Drawing.Size(155, 20);
             this.lblQuickAccess.TabIndex = 1;
             this.lblQuickAccess.Text = "🚀 เข้าถึงอย่างรวดเร็ว";
             // 
@@ -257,10 +248,9 @@ namespace CMS.Presentation
             this.btnDashOrgUnit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDashOrgUnit.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnDashOrgUnit.ForeColor = System.Drawing.Color.White;
-            this.btnDashOrgUnit.Location = new System.Drawing.Point(653, 112);
-            this.btnDashOrgUnit.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnDashOrgUnit.Location = new System.Drawing.Point(490, 91);
             this.btnDashOrgUnit.Name = "btnDashOrgUnit";
-            this.btnDashOrgUnit.Size = new System.Drawing.Size(187, 74);
+            this.btnDashOrgUnit.Size = new System.Drawing.Size(140, 60);
             this.btnDashOrgUnit.TabIndex = 5;
             this.btnDashOrgUnit.Text = "🏢 โครงสร้างองค์กร";
             this.btnDashOrgUnit.UseVisualStyleBackColor = false;
@@ -272,10 +262,9 @@ namespace CMS.Presentation
             this.btnDashUpload.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDashUpload.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnDashUpload.ForeColor = System.Drawing.Color.White;
-            this.btnDashUpload.Location = new System.Drawing.Point(53, 112);
-            this.btnDashUpload.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnDashUpload.Location = new System.Drawing.Point(40, 91);
             this.btnDashUpload.Name = "btnDashUpload";
-            this.btnDashUpload.Size = new System.Drawing.Size(187, 74);
+            this.btnDashUpload.Size = new System.Drawing.Size(140, 60);
             this.btnDashUpload.TabIndex = 2;
             this.btnDashUpload.Text = "📤 อัพโหลดไฟล์";
             this.btnDashUpload.UseVisualStyleBackColor = false;
@@ -287,10 +276,9 @@ namespace CMS.Presentation
             this.btnDashApproval.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDashApproval.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnDashApproval.ForeColor = System.Drawing.Color.White;
-            this.btnDashApproval.Location = new System.Drawing.Point(453, 112);
-            this.btnDashApproval.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnDashApproval.Location = new System.Drawing.Point(340, 91);
             this.btnDashApproval.Name = "btnDashApproval";
-            this.btnDashApproval.Size = new System.Drawing.Size(187, 74);
+            this.btnDashApproval.Size = new System.Drawing.Size(140, 60);
             this.btnDashApproval.TabIndex = 4;
             this.btnDashApproval.Text = "✅ อนุมัติ";
             this.btnDashApproval.UseVisualStyleBackColor = false;
@@ -302,10 +290,9 @@ namespace CMS.Presentation
             this.btnDashFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDashFolder.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnDashFolder.ForeColor = System.Drawing.Color.White;
-            this.btnDashFolder.Location = new System.Drawing.Point(253, 112);
-            this.btnDashFolder.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnDashFolder.Location = new System.Drawing.Point(190, 91);
             this.btnDashFolder.Name = "btnDashFolder";
-            this.btnDashFolder.Size = new System.Drawing.Size(187, 74);
+            this.btnDashFolder.Size = new System.Drawing.Size(140, 60);
             this.btnDashFolder.TabIndex = 3;
             this.btnDashFolder.Text = "📁 สร้าง Folder";
             this.btnDashFolder.UseVisualStyleBackColor = false;
@@ -321,10 +308,8 @@ namespace CMS.Presentation
             this.lvRecentFiles.GridLines = true;
             this.lvRecentFiles.HideSelection = false;
             this.lvRecentFiles.Location = new System.Drawing.Point(0, 0);
-            this.lvRecentFiles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.lvRecentFiles.MultiSelect = true;
             this.lvRecentFiles.Name = "lvRecentFiles";
-            this.lvRecentFiles.Size = new System.Drawing.Size(1501, 483);
+            this.lvRecentFiles.Size = new System.Drawing.Size(1125, 340);
             this.lvRecentFiles.TabIndex = 9;
             this.lvRecentFiles.UseCompatibleStateImageBehavior = false;
             this.lvRecentFiles.View = System.Windows.Forms.View.Details;
@@ -332,10 +317,9 @@ namespace CMS.Presentation
             // splitterDash
             // 
             this.splitterDash.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(197)))), ((int)(((byte)(211)))), ((int)(((byte)(232)))));
-            this.splitterDash.Location = new System.Drawing.Point(399, 62);
-            this.splitterDash.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.splitterDash.Location = new System.Drawing.Point(300, 50);
             this.splitterDash.Name = "splitterDash";
-            this.splitterDash.Size = new System.Drawing.Size(5, 796);
+            this.splitterDash.Size = new System.Drawing.Size(4, 642);
             this.splitterDash.TabIndex = 1;
             this.splitterDash.TabStop = false;
             // 
@@ -348,11 +332,10 @@ namespace CMS.Presentation
             this.pnlDashLeft.Controls.Add(this.pnlTreeViewToggle);
             this.pnlDashLeft.Controls.Add(this.lblTreeTitle);
             this.pnlDashLeft.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlDashLeft.Location = new System.Drawing.Point(0, 62);
-            this.pnlDashLeft.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.pnlDashLeft.Location = new System.Drawing.Point(0, 50);
             this.pnlDashLeft.Name = "pnlDashLeft";
-            this.pnlDashLeft.Padding = new System.Windows.Forms.Padding(11, 10, 11, 10);
-            this.pnlDashLeft.Size = new System.Drawing.Size(399, 796);
+            this.pnlDashLeft.Padding = new System.Windows.Forms.Padding(8);
+            this.pnlDashLeft.Size = new System.Drawing.Size(300, 642);
             this.pnlDashLeft.TabIndex = 2;
             // 
             // treeViewFolders
@@ -363,8 +346,9 @@ namespace CMS.Presentation
             this.treeViewFolders.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
             this.treeViewFolders.ItemHeight = 22;
             this.treeViewFolders.Location = new System.Drawing.Point(8, 97);
+            this.treeViewFolders.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewFolders.Name = "treeViewFolders";
-            this.treeViewFolders.Size = new System.Drawing.Size(375, 666);
+            this.treeViewFolders.Size = new System.Drawing.Size(282, 535);
             this.treeViewFolders.TabIndex = 0;
             // 
             // txtSearchFolder
@@ -372,10 +356,10 @@ namespace CMS.Presentation
             this.txtSearchFolder.Dock = System.Windows.Forms.DockStyle.Top;
             this.txtSearchFolder.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.txtSearchFolder.ForeColor = System.Drawing.Color.Gray;
-            this.txtSearchFolder.Location = new System.Drawing.Point(11, 91);
-            this.txtSearchFolder.Margin = new System.Windows.Forms.Padding(0, 0, 0, 10);
+            this.txtSearchFolder.Location = new System.Drawing.Point(8, 74);
+            this.txtSearchFolder.Margin = new System.Windows.Forms.Padding(0, 0, 0, 8);
             this.txtSearchFolder.Name = "txtSearchFolder";
-            this.txtSearchFolder.Size = new System.Drawing.Size(375, 27);
+            this.txtSearchFolder.Size = new System.Drawing.Size(282, 23);
             this.txtSearchFolder.TabIndex = 1;
             this.txtSearchFolder.Text = "🔍 ค้นหา Folder...";
             // 
@@ -385,11 +369,10 @@ namespace CMS.Presentation
             this.pnlTreeViewToggle.Controls.Add(this.btnToggleByOrg);
             this.pnlTreeViewToggle.Controls.Add(this.btnToggleByConfidentiality);
             this.pnlTreeViewToggle.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlTreeViewToggle.Location = new System.Drawing.Point(11, 47);
-            this.pnlTreeViewToggle.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.pnlTreeViewToggle.Location = new System.Drawing.Point(8, 38);
             this.pnlTreeViewToggle.Name = "pnlTreeViewToggle";
-            this.pnlTreeViewToggle.Padding = new System.Windows.Forms.Padding(0, 5, 0, 5);
-            this.pnlTreeViewToggle.Size = new System.Drawing.Size(375, 44);
+            this.pnlTreeViewToggle.Padding = new System.Windows.Forms.Padding(0, 4, 0, 4);
+            this.pnlTreeViewToggle.Size = new System.Drawing.Size(282, 36);
             this.pnlTreeViewToggle.TabIndex = 2;
             // 
             // btnToggleByOrg
@@ -400,10 +383,9 @@ namespace CMS.Presentation
             this.btnToggleByOrg.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnToggleByOrg.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnToggleByOrg.ForeColor = System.Drawing.Color.White;
-            this.btnToggleByOrg.Location = new System.Drawing.Point(0, 5);
-            this.btnToggleByOrg.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnToggleByOrg.Location = new System.Drawing.Point(0, 4);
             this.btnToggleByOrg.Name = "btnToggleByOrg";
-            this.btnToggleByOrg.Size = new System.Drawing.Size(137, 34);
+            this.btnToggleByOrg.Size = new System.Drawing.Size(103, 28);
             this.btnToggleByOrg.TabIndex = 0;
             this.btnToggleByOrg.Text = "🏢 ตามองค์กร";
             this.btnToggleByOrg.UseVisualStyleBackColor = false;
@@ -416,10 +398,9 @@ namespace CMS.Presentation
             this.btnToggleByConfidentiality.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnToggleByConfidentiality.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnToggleByConfidentiality.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.btnToggleByConfidentiality.Location = new System.Drawing.Point(0, 5);
-            this.btnToggleByConfidentiality.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnToggleByConfidentiality.Location = new System.Drawing.Point(0, 4);
             this.btnToggleByConfidentiality.Name = "btnToggleByConfidentiality";
-            this.btnToggleByConfidentiality.Size = new System.Drawing.Size(375, 34);
+            this.btnToggleByConfidentiality.Size = new System.Drawing.Size(282, 28);
             this.btnToggleByConfidentiality.TabIndex = 1;
             this.btnToggleByConfidentiality.Text = "🔒 ตามความลับ";
             this.btnToggleByConfidentiality.UseVisualStyleBackColor = false;
@@ -429,10 +410,9 @@ namespace CMS.Presentation
             this.lblTreeTitle.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblTreeTitle.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
             this.lblTreeTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
-            this.lblTreeTitle.Location = new System.Drawing.Point(11, 10);
-            this.lblTreeTitle.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblTreeTitle.Location = new System.Drawing.Point(8, 8);
             this.lblTreeTitle.Name = "lblTreeTitle";
-            this.lblTreeTitle.Size = new System.Drawing.Size(375, 37);
+            this.lblTreeTitle.Size = new System.Drawing.Size(282, 30);
             this.lblTreeTitle.TabIndex = 2;
             this.lblTreeTitle.Text = "📁 ตามองค์กร";
             this.lblTreeTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -444,10 +424,9 @@ namespace CMS.Presentation
             this.lblDashTitle.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
             this.lblDashTitle.ForeColor = System.Drawing.Color.White;
             this.lblDashTitle.Location = new System.Drawing.Point(0, 0);
-            this.lblDashTitle.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblDashTitle.Name = "lblDashTitle";
-            this.lblDashTitle.Padding = new System.Windows.Forms.Padding(27, 0, 0, 0);
-            this.lblDashTitle.Size = new System.Drawing.Size(1959, 62);
+            this.lblDashTitle.Padding = new System.Windows.Forms.Padding(20, 0, 0, 0);
+            this.lblDashTitle.Size = new System.Drawing.Size(1469, 50);
             this.lblDashTitle.TabIndex = 3;
             this.lblDashTitle.Text = "📊 Dashboard";
             this.lblDashTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -465,32 +444,31 @@ namespace CMS.Presentation
             this.menuItemManageShares});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
-            this.menuStrip.Padding = new System.Windows.Forms.Padding(8, 2, 0, 2);
-            this.menuStrip.Size = new System.Drawing.Size(1959, 31);
+            this.menuStrip.Size = new System.Drawing.Size(1469, 27);
             this.menuStrip.TabIndex = 0;
             // 
             // menuItemHome
             // 
             this.menuItemHome.Name = "menuItemHome";
-            this.menuItemHome.Size = new System.Drawing.Size(81, 27);
+            this.menuItemHome.Size = new System.Drawing.Size(67, 23);
             this.menuItemHome.Text = "หน้าหลัก";
             // 
             // menuItemAdmin
             // 
             this.menuItemAdmin.Name = "menuItemAdmin";
-            this.menuItemAdmin.Size = new System.Drawing.Size(61, 27);
+            this.menuItemAdmin.Size = new System.Drawing.Size(52, 23);
             this.menuItemAdmin.Text = "ผู้ดูแล";
             // 
             // menuItemShare
             // 
             this.menuItemShare.Name = "menuItemShare";
-            this.menuItemShare.Size = new System.Drawing.Size(95, 27);
+            this.menuItemShare.Size = new System.Drawing.Size(78, 23);
             this.menuItemShare.Text = "📤 Share";
             // 
             // menuItemManageShares
             // 
             this.menuItemManageShares.Name = "menuItemManageShares";
-            this.menuItemManageShares.Size = new System.Drawing.Size(166, 27);
+            this.menuItemManageShares.Size = new System.Drawing.Size(135, 23);
             this.menuItemManageShares.Text = "📋 Manage Shares";
             // 
             // menuItemUpload
@@ -578,19 +556,19 @@ namespace CMS.Presentation
             // menuItemInsertDoc
             // 
             this.menuItemInsertDoc.Name = "menuItemInsertDoc";
-            this.menuItemInsertDoc.Size = new System.Drawing.Size(174, 26);
+            this.menuItemInsertDoc.Size = new System.Drawing.Size(134, 22);
             this.menuItemInsertDoc.Text = "📄 เอกสาร";
             // 
             // menuItemInsertImage
             // 
             this.menuItemInsertImage.Name = "menuItemInsertImage";
-            this.menuItemInsertImage.Size = new System.Drawing.Size(174, 26);
+            this.menuItemInsertImage.Size = new System.Drawing.Size(134, 22);
             this.menuItemInsertImage.Text = "🖼️ รูปภาพ";
             // 
             // menuItemInsertZip
             // 
             this.menuItemInsertZip.Name = "menuItemInsertZip";
-            this.menuItemInsertZip.Size = new System.Drawing.Size(174, 26);
+            this.menuItemInsertZip.Size = new System.Drawing.Size(134, 22);
             this.menuItemInsertZip.Text = "🗜️ ไฟล์บีบอัด";
             // 
             // menuItemView
@@ -606,19 +584,19 @@ namespace CMS.Presentation
             // menuItemViewList
             // 
             this.menuItemViewList.Name = "menuItemViewList";
-            this.menuItemViewList.Size = new System.Drawing.Size(209, 26);
+            this.menuItemViewList.Size = new System.Drawing.Size(162, 22);
             this.menuItemViewList.Text = "☰ รายการ";
             // 
             // menuItemViewGrid
             // 
             this.menuItemViewGrid.Name = "menuItemViewGrid";
-            this.menuItemViewGrid.Size = new System.Drawing.Size(209, 26);
+            this.menuItemViewGrid.Size = new System.Drawing.Size(162, 22);
             this.menuItemViewGrid.Text = "⊞ ตาราง";
             // 
             // menuItemViewOrg
             // 
             this.menuItemViewOrg.Name = "menuItemViewOrg";
-            this.menuItemViewOrg.Size = new System.Drawing.Size(209, 26);
+            this.menuItemViewOrg.Size = new System.Drawing.Size(162, 22);
             this.menuItemViewOrg.Text = "🏢 โครงสร้างองค์กร";
             // 
             // menuItemTools
@@ -635,25 +613,25 @@ namespace CMS.Presentation
             // menuItemVirusScan
             // 
             this.menuItemVirusScan.Name = "menuItemVirusScan";
-            this.menuItemVirusScan.Size = new System.Drawing.Size(183, 26);
+            this.menuItemVirusScan.Size = new System.Drawing.Size(145, 22);
             this.menuItemVirusScan.Text = "🛡️ Virus Scan";
             // 
             // menuItemChecksum
             // 
             this.menuItemChecksum.Name = "menuItemChecksum";
-            this.menuItemChecksum.Size = new System.Drawing.Size(183, 26);
+            this.menuItemChecksum.Size = new System.Drawing.Size(145, 22);
             this.menuItemChecksum.Text = "🔢 Checksum";
             // 
             // menuItemRecycleBin
             // 
             this.menuItemRecycleBin.Name = "menuItemRecycleBin";
-            this.menuItemRecycleBin.Size = new System.Drawing.Size(183, 26);
+            this.menuItemRecycleBin.Size = new System.Drawing.Size(145, 22);
             this.menuItemRecycleBin.Text = "🗑️ ถังขยะ";
             // 
             // menuItemArchive
             // 
             this.menuItemArchive.Name = "menuItemArchive";
-            this.menuItemArchive.Size = new System.Drawing.Size(183, 26);
+            this.menuItemArchive.Size = new System.Drawing.Size(145, 22);
             this.menuItemArchive.Text = "📦 Archive";
             // 
             // menuItemConfig
@@ -719,23 +697,24 @@ namespace CMS.Presentation
             this.btnRibbonMove,
             this.btnRibbonDelete,
             this.toolStripButton1});
-            this.ribbonStrip.Location = new System.Drawing.Point(0, 31);
+            this.ribbonStrip.Location = new System.Drawing.Point(0, 27);
             this.ribbonStrip.Name = "ribbonStrip";
-            this.ribbonStrip.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.ribbonStrip.Size = new System.Drawing.Size(1959, 30);
+            this.ribbonStrip.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.ribbonStrip.Size = new System.Drawing.Size(1469, 27);
             this.ribbonStrip.TabIndex = 1;
             // 
             // btnRibbonUpload
             // 
             this.btnRibbonUpload.Name = "btnRibbonUpload";
-            this.btnRibbonUpload.Size = new System.Drawing.Size(96, 27);
+            this.btnRibbonUpload.Size = new System.Drawing.Size(80, 24);
             this.btnRibbonUpload.Text = "📤 อัพโหลด";
             this.btnRibbonUpload.ToolTipText = "อัพโหลดไฟล์ไปยัง Folder ที่เลือก";
+            this.btnRibbonUpload.Visible = false;
             // 
             // btnRibbonNewFolder
             // 
             this.btnRibbonNewFolder.Name = "btnRibbonNewFolder";
-            this.btnRibbonNewFolder.Size = new System.Drawing.Size(121, 27);
+            this.btnRibbonNewFolder.Size = new System.Drawing.Size(99, 24);
             this.btnRibbonNewFolder.Text = "📁 Folder ใหม่";
             this.btnRibbonNewFolder.ToolTipText = "สร้าง Folder ใหม่";
             this.btnRibbonNewFolder.Visible = false;
@@ -743,7 +722,7 @@ namespace CMS.Presentation
             // btnRibbonDownload
             // 
             this.btnRibbonDownload.Name = "btnRibbonDownload";
-            this.btnRibbonDownload.Size = new System.Drawing.Size(100, 27);
+            this.btnRibbonDownload.Size = new System.Drawing.Size(83, 24);
             this.btnRibbonDownload.Text = "⬇ ดาวน์โหลด";
             this.btnRibbonDownload.ToolTipText = "ดาวน์โหลดไฟล์ที่เลือก";
             this.btnRibbonDownload.Visible = false;
@@ -751,33 +730,46 @@ namespace CMS.Presentation
             // btnRibbonRename
             // 
             this.btnRibbonRename.Name = "btnRibbonRename";
-            this.btnRibbonRename.Size = new System.Drawing.Size(104, 27);
+            this.btnRibbonRename.Size = new System.Drawing.Size(86, 24);
             this.btnRibbonRename.Text = "✏️ เปลี่ยนชื่อ";
             this.btnRibbonRename.ToolTipText = "เปลี่ยนชื่อรายการที่เลือก";
+            this.btnRibbonRename.Visible = false;
             // 
             // btnRibbonMove
             // 
             this.btnRibbonMove.Name = "btnRibbonMove";
-            this.btnRibbonMove.Size = new System.Drawing.Size(68, 27);
+            this.btnRibbonMove.Size = new System.Drawing.Size(56, 24);
             this.btnRibbonMove.Text = "✂️ ย้าย";
             this.btnRibbonMove.ToolTipText = "ย้ายรายการที่เลือก";
+            this.btnRibbonMove.Visible = false;
             // 
             // btnRibbonDelete
             // 
             this.btnRibbonDelete.Name = "btnRibbonDelete";
-            this.btnRibbonDelete.Size = new System.Drawing.Size(61, 27);
+            this.btnRibbonDelete.Size = new System.Drawing.Size(52, 24);
             this.btnRibbonDelete.Text = "🗑️ ลบ";
             this.btnRibbonDelete.ToolTipText = "ลบรายการที่เลือก";
+            this.btnRibbonDelete.Visible = false;
+            // 
+            // toolStripButton1
+            // 
+            this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
+            this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripButton1.Name = "toolStripButton1";
+            this.toolStripButton1.Size = new System.Drawing.Size(24, 24);
+            this.toolStripButton1.Text = "toolStripButton1";
+            this.toolStripButton1.Visible = false;
             // 
             // sepRibbon1
             // 
             this.sepRibbon1.Name = "sepRibbon1";
-            this.sepRibbon1.Size = new System.Drawing.Size(6, 32);
+            this.sepRibbon1.Size = new System.Drawing.Size(6, 26);
             // 
             // btnRibbonTemplate
             // 
             this.btnRibbonTemplate.Name = "btnRibbonTemplate";
-            this.btnRibbonTemplate.Size = new System.Drawing.Size(108, 29);
+            this.btnRibbonTemplate.Size = new System.Drawing.Size(88, 23);
             this.btnRibbonTemplate.Text = "📋 Template";
             this.btnRibbonTemplate.ToolTipText = "Apply Folder Template";
             // 
@@ -792,14 +784,14 @@ namespace CMS.Presentation
             // btnRibbonFolderSettings
             // 
             this.btnRibbonFolderSettings.Name = "btnRibbonFolderSettings";
-            this.btnRibbonFolderSettings.Size = new System.Drawing.Size(129, 29);
+            this.btnRibbonFolderSettings.Size = new System.Drawing.Size(105, 23);
             this.btnRibbonFolderSettings.Text = "⚙️ ตั้งค่า Folder";
             this.btnRibbonFolderSettings.ToolTipText = "ตั้งค่า Folder ที่เลือก";
             // 
             // btnRibbonPermission
             // 
             this.btnRibbonPermission.Name = "btnRibbonPermission";
-            this.btnRibbonPermission.Size = new System.Drawing.Size(67, 29);
+            this.btnRibbonPermission.Size = new System.Drawing.Size(56, 23);
             this.btnRibbonPermission.Text = "🔒 สิทธิ์";
             this.btnRibbonPermission.ToolTipText = "จัดการสิทธิ์การเข้าถึง";
             // 
@@ -811,14 +803,14 @@ namespace CMS.Presentation
             // btnRibbonAuditLog
             // 
             this.btnRibbonAuditLog.Name = "btnRibbonAuditLog";
-            this.btnRibbonAuditLog.Size = new System.Drawing.Size(116, 29);
+            this.btnRibbonAuditLog.Size = new System.Drawing.Size(96, 23);
             this.btnRibbonAuditLog.Text = "📜 Audit Log";
             this.btnRibbonAuditLog.ToolTipText = "ดูประวัติการใช้งาน";
             // 
             // btnRibbonApproval
             // 
             this.btnRibbonApproval.Name = "btnRibbonApproval";
-            this.btnRibbonApproval.Size = new System.Drawing.Size(81, 29);
+            this.btnRibbonApproval.Size = new System.Drawing.Size(67, 23);
             this.btnRibbonApproval.Text = "✅ อนุมัติ";
             this.btnRibbonApproval.ToolTipText = "รายการรออนุมัติ";
             // 
@@ -829,20 +821,20 @@ namespace CMS.Presentation
             this.lblApprovalBadge.ForeColor = System.Drawing.Color.White;
             this.lblApprovalBadge.Name = "lblApprovalBadge";
             this.lblApprovalBadge.Padding = new System.Windows.Forms.Padding(3, 1, 3, 1);
-            this.lblApprovalBadge.Size = new System.Drawing.Size(6, 29);
+            this.lblApprovalBadge.Size = new System.Drawing.Size(6, 23);
             this.lblApprovalBadge.Visible = false;
             // 
             // btnRibbonUserAccess
             // 
             this.btnRibbonUserAccess.Name = "btnRibbonUserAccess";
-            this.btnRibbonUserAccess.Size = new System.Drawing.Size(138, 29);
+            this.btnRibbonUserAccess.Size = new System.Drawing.Size(112, 23);
             this.btnRibbonUserAccess.Text = "👤 จัดการสิทธิ์ผู้ใช้";
             this.btnRibbonUserAccess.ToolTipText = "จัดการสิทธิ์และบัญชีผู้ใช้";
             // 
             // btnRibbonUserMgmt
             // 
             this.btnRibbonUserMgmt.Name = "btnRibbonUserMgmt";
-            this.btnRibbonUserMgmt.Size = new System.Drawing.Size(147, 29);
+            this.btnRibbonUserMgmt.Size = new System.Drawing.Size(120, 23);
             this.btnRibbonUserMgmt.Text = "🗂️ จัดการบัญชีผู้ใช้";
             this.btnRibbonUserMgmt.ToolTipText = "เพิ่ม/แก้ไข/ปิดใช้งานบัญชีผู้ใช้";
             // 
@@ -872,73 +864,73 @@ namespace CMS.Presentation
             this.btnRibbonUserMgmt,
             this.btnRibbonPermission,
             this.btnRibbonFolderSettings});
-            this.ribbonStripAdmin.Location = new System.Drawing.Point(0, 65);
+            this.ribbonStripAdmin.Location = new System.Drawing.Point(0, 53);
             this.ribbonStripAdmin.Name = "ribbonStripAdmin";
-            this.ribbonStripAdmin.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.ribbonStripAdmin.Size = new System.Drawing.Size(1959, 32);
+            this.ribbonStripAdmin.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.ribbonStripAdmin.Size = new System.Drawing.Size(1469, 26);
             this.ribbonStripAdmin.TabIndex = 2;
             this.ribbonStripAdmin.Visible = false;
             // 
             // btnRibbonSysConfig
             // 
             this.btnRibbonSysConfig.Name = "btnRibbonSysConfig";
-            this.btnRibbonSysConfig.Size = new System.Drawing.Size(110, 29);
+            this.btnRibbonSysConfig.Size = new System.Drawing.Size(90, 23);
             this.btnRibbonSysConfig.Text = "⚙️ ตั้งค่าระบบ";
             this.btnRibbonSysConfig.ToolTipText = "ตั้งค่าระบบ (Admin)";
             // 
             // btnRibbonOrgAdmin
             // 
             this.btnRibbonOrgAdmin.Name = "btnRibbonOrgAdmin";
-            this.btnRibbonOrgAdmin.Size = new System.Drawing.Size(147, 29);
+            this.btnRibbonOrgAdmin.Size = new System.Drawing.Size(120, 23);
             this.btnRibbonOrgAdmin.Text = "🏢 โครงสร้างองค์กร";
             this.btnRibbonOrgAdmin.ToolTipText = "จัดการโครงสร้างองค์กร";
             // 
             // btnRibbonReportExcel
             // 
             this.btnRibbonReportExcel.Name = "btnRibbonReportExcel";
-            this.btnRibbonReportExcel.Size = new System.Drawing.Size(133, 29);
+            this.btnRibbonReportExcel.Size = new System.Drawing.Size(106, 23);
             this.btnRibbonReportExcel.Text = "📊 รายงาน Excel";
             this.btnRibbonReportExcel.ToolTipText = "ออกรายงาน Excel";
             // 
             // btnRibbonPDPA
             // 
             this.btnRibbonPDPA.Name = "btnRibbonPDPA";
-            this.btnRibbonPDPA.Size = new System.Drawing.Size(151, 29);
+            this.btnRibbonPDPA.Size = new System.Drawing.Size(124, 23);
             this.btnRibbonPDPA.Text = "🔏 PDPA Consent";
             this.btnRibbonPDPA.ToolTipText = "จัดการ PDPA Consent";
             // 
             // btnRibbonFolderArchive
             // 
             this.btnRibbonFolderArchive.Name = "btnRibbonFolderArchive";
-            this.btnRibbonFolderArchive.Size = new System.Drawing.Size(98, 29);
+            this.btnRibbonFolderArchive.Size = new System.Drawing.Size(81, 23);
             this.btnRibbonFolderArchive.Text = "📦 Archive";
             this.btnRibbonFolderArchive.ToolTipText = "Archive Folder ที่เลือก";
             // 
             // btnRibbonCopyStructure
             // 
             this.btnRibbonCopyStructure.Name = "btnRibbonCopyStructure";
-            this.btnRibbonCopyStructure.Size = new System.Drawing.Size(150, 29);
+            this.btnRibbonCopyStructure.Size = new System.Drawing.Size(123, 23);
             this.btnRibbonCopyStructure.Text = "📂 คัดลอกโครงสร้าง";
             this.btnRibbonCopyStructure.ToolTipText = "คัดลอกโครงสร้าง Folder ไปยัง Parent ใหม่";
             // 
             // btnRibbonChangeLevel
             // 
             this.btnRibbonChangeLevel.Name = "btnRibbonChangeLevel";
-            this.btnRibbonChangeLevel.Size = new System.Drawing.Size(115, 29);
+            this.btnRibbonChangeLevel.Size = new System.Drawing.Size(95, 23);
             this.btnRibbonChangeLevel.Text = "🔒 เปลี่ยนระดับ";
             this.btnRibbonChangeLevel.ToolTipText = "เปลี่ยน Confidentiality Level ของ Folder";
             // 
             // btnRibbonRecycleBin
             // 
             this.btnRibbonRecycleBin.Name = "btnRibbonRecycleBin";
-            this.btnRibbonRecycleBin.Size = new System.Drawing.Size(84, 29);
+            this.btnRibbonRecycleBin.Size = new System.Drawing.Size(69, 23);
             this.btnRibbonRecycleBin.Text = "🗑️ ถังขยะ";
             this.btnRibbonRecycleBin.ToolTipText = "เปิดถังขยะ";
             // 
             // sepRibbon3
             // 
             this.sepRibbon3.Name = "sepRibbon3";
-            this.sepRibbon3.Size = new System.Drawing.Size(6, 32);
+            this.sepRibbon3.Size = new System.Drawing.Size(6, 26);
             // 
             // sepRibbon5
             // 
@@ -1004,17 +996,16 @@ namespace CMS.Presentation
             this.lblStatusFolder,
             this.lblStatusPath,
             this.lblStatusDateTime});
-            this.statusStrip.Location = new System.Drawing.Point(0, 919);
+            this.statusStrip.Location = new System.Drawing.Point(0, 746);
             this.statusStrip.Name = "statusStrip";
-            this.statusStrip.Padding = new System.Windows.Forms.Padding(1, 0, 19, 0);
-            this.statusStrip.Size = new System.Drawing.Size(1959, 26);
+            this.statusStrip.Size = new System.Drawing.Size(1469, 22);
             this.statusStrip.TabIndex = 2;
             // 
             // lblStatusReady
             // 
             this.lblStatusReady.ForeColor = System.Drawing.Color.White;
             this.lblStatusReady.Name = "lblStatusReady";
-            this.lblStatusReady.Size = new System.Drawing.Size(101, 20);
+            this.lblStatusReady.Size = new System.Drawing.Size(75, 17);
             this.lblStatusReady.Text = "✅ พร้อมใช้งาน";
             // 
             // lblStatusUser
@@ -1022,21 +1013,21 @@ namespace CMS.Presentation
             this.lblStatusUser.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Left;
             this.lblStatusUser.ForeColor = System.Drawing.Color.White;
             this.lblStatusUser.Name = "lblStatusUser";
-            this.lblStatusUser.Size = new System.Drawing.Size(4, 20);
+            this.lblStatusUser.Size = new System.Drawing.Size(4, 17);
             // 
             // lblStatusDept
             // 
             this.lblStatusDept.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Left;
             this.lblStatusDept.ForeColor = System.Drawing.Color.White;
             this.lblStatusDept.Name = "lblStatusDept";
-            this.lblStatusDept.Size = new System.Drawing.Size(4, 20);
+            this.lblStatusDept.Size = new System.Drawing.Size(4, 17);
             // 
             // lblStatusFolder
             // 
             this.lblStatusFolder.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Left;
             this.lblStatusFolder.ForeColor = System.Drawing.Color.White;
             this.lblStatusFolder.Name = "lblStatusFolder";
-            this.lblStatusFolder.Size = new System.Drawing.Size(1822, 20);
+            this.lblStatusFolder.Size = new System.Drawing.Size(1363, 17);
             this.lblStatusFolder.Spring = true;
             // 
             // lblStatusPath
@@ -1044,29 +1035,20 @@ namespace CMS.Presentation
             this.lblStatusPath.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Left;
             this.lblStatusPath.ForeColor = System.Drawing.Color.White;
             this.lblStatusPath.Name = "lblStatusPath";
-            this.lblStatusPath.Size = new System.Drawing.Size(4, 20);
+            this.lblStatusPath.Size = new System.Drawing.Size(4, 17);
             // 
             // lblStatusDateTime
             // 
             this.lblStatusDateTime.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Left;
             this.lblStatusDateTime.ForeColor = System.Drawing.Color.White;
             this.lblStatusDateTime.Name = "lblStatusDateTime";
-            this.lblStatusDateTime.Size = new System.Drawing.Size(4, 20);
-            // 
-            // toolStripButton1
-            // 
-            this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
-            this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButton1.Name = "toolStripButton1";
-            this.toolStripButton1.Size = new System.Drawing.Size(29, 27);
-            this.toolStripButton1.Text = "toolStripButton1";
+            this.lblStatusDateTime.Size = new System.Drawing.Size(4, 17);
             // 
             // MDI_Container
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1959, 945);
+            this.ClientSize = new System.Drawing.Size(1469, 768);
             this.Controls.Add(this.pnlDashboard);
             this.Controls.Add(this.statusStrip);
             this.Controls.Add(this.ribbonStripAdmin);
@@ -1074,7 +1056,6 @@ namespace CMS.Presentation
             this.Controls.Add(this.menuStrip);
             this.IsMdiContainer = true;
             this.MainMenuStrip = this.menuStrip;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "MDI_Container";
             this.Text = "Core Management System (CMS)";
             this.Load += new System.EventHandler(this.MDI_Container_Load);

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CMS.Controllers.DMS.Document.Interfaces;
+using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -10,13 +11,16 @@ namespace CMS.Controllers.DMS.Document
     {
         private readonly IFolderService _folderService;
         private readonly IOrgStructureService _orgStructureService;
+        private readonly IFileDocumentRepository _fileDocumentRepository;
 
         public RecycleBinController(
             IFolderService folderService = null,
-            IOrgStructureService orgStructureService = null)
+            IOrgStructureService orgStructureService = null,
+            IFileDocumentRepository fileDocumentRepository = null)
         {
             _folderService = folderService;
             _orgStructureService = orgStructureService;
+            _fileDocumentRepository = fileDocumentRepository;
         }
 
         public IList<OrgUnit> GetOrgHierarchy()
@@ -49,6 +53,30 @@ namespace CMS.Controllers.DMS.Document
                 return;
 
             _folderService.PermanentlyDeleteFolder(folderId, user);
+        }
+
+        public IList<FileDocument> GetDeletedFiles(int? orgUnitId, UserContext user)
+        {
+            if (_fileDocumentRepository == null)
+                return new List<FileDocument>();
+
+            return _fileDocumentRepository.GetDeletedFiles(orgUnitId).ToList();
+        }
+
+        public void RestoreFile(int fileId, UserContext user)
+        {
+            if (_fileDocumentRepository == null)
+                return;
+
+            _fileDocumentRepository.RestoreFile(fileId);
+        }
+
+        public void PermanentlyDeleteFile(int fileId, UserContext user)
+        {
+            if (_fileDocumentRepository == null)
+                return;
+
+            _fileDocumentRepository.PermanentDelete(fileId);
         }
     }
 }

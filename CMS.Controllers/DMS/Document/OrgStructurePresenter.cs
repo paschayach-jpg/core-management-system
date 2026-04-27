@@ -160,6 +160,12 @@ namespace CMS.Controllers.DMS.Document
             catch (Exception ex)                 { _view.ShowError("Failed to deactivate OrgUnit: " + ex.Message); }
         }
 
+        public bool HasActiveDependents(int orgUnitId)
+        {
+            try   { return _service.HasActiveDependents(orgUnitId); }
+            catch { return false; }
+        }
+
         public void DeleteOrgUnit(int orgUnitId)
         {
             try
@@ -169,6 +175,18 @@ namespace CMS.Controllers.DMS.Document
                 RefreshCurrentView();
             }
             catch (InvalidOperationException ex)   { _view.ShowError(ex.Message); }
+            catch (UnauthorizedAccessException ex) { _view.ShowError("ไม่มีสิทธิ์ในการลบหน่วยงาน: " + ex.Message); }
+            catch (Exception ex)                   { _view.ShowError("ไม่สามารถลบหน่วยงานได้: " + ex.Message); }
+        }
+
+        public void ForceDeleteOrgUnit(int orgUnitId)
+        {
+            try
+            {
+                _service.ForceDeleteOrgUnit(orgUnitId, _user);
+                _view.ShowInfo("ลบหน่วยงานพร้อมข้อมูลที่เกี่ยวข้องเรียบร้อยแล้ว");
+                RefreshCurrentView();
+            }
             catch (UnauthorizedAccessException ex) { _view.ShowError("ไม่มีสิทธิ์ในการลบหน่วยงาน: " + ex.Message); }
             catch (Exception ex)                   { _view.ShowError("ไม่สามารถลบหน่วยงานได้: " + ex.Message); }
         }

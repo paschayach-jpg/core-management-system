@@ -224,6 +224,31 @@ namespace CMS.Services
                 string.Format("Deleted OrgUnit '{0}'.", existing.OrgUnitNameTH));
         }
 
+        public void ForceDeleteOrgUnit(int orgUnitId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            if (user.AppRole != 4)
+                throw new UnauthorizedAccessException("Force-deleting an OrgUnit requires Admin role.");
+
+            var existing = _orgUnitRepository.GetById(orgUnitId);
+            if (existing == null)
+                throw new InvalidOperationException(string.Format(
+                    "OrgUnit with ID {0} was not found.", orgUnitId));
+
+            if (existing.IsDeleted) return;
+
+            _orgUnitRepository.ForceDeleteWithDependents(orgUnitId, user.UserID);
+
+            Log(user, "OrgStructure", "FORCE_DELETE", "core.OrgUnit", orgUnitId, 1,
+                string.Format("Force-deleted OrgUnit '{0}' with all dependents.", existing.OrgUnitNameTH));
+        }
+
+        public bool HasActiveDependents(int orgUnitId)
+        {
+            return _orgUnitRepository.HasActiveDependents(orgUnitId);
+        }
+
         public IEnumerable<OrgUnit> GetHierarchy()
         {
             return _orgUnitRepository.GetHierarchy();

@@ -7,10 +7,13 @@ namespace CMS.Controllers.DMS.Document.Interfaces
     {
         IList<FilePermission> GetInternalSharesForUser(int userId, UserContext user);
         IList<ExternalShare> GetExternalSharesForUser(int userId, UserContext user);
+        IList<FilePermission> GetAllInternalShares(UserContext admin);
+        IList<ExternalShare>  GetAllExternalShares(UserContext admin);
         IList<ShareAccessLog> GetAccessLog(int externalShareId, UserContext user);
         void RevokeInternalShare(int filePermissionId, UserContext user);
         void ApproveExternalShare(int externalShareId, UserContext user);
         void RejectExternalShare(int externalShareId, string reason, UserContext user);
         void RevokeExternalShare(int externalShareId, string reason, UserContext user);
+        void ToggleExternalShare(int externalShareId, UserContext user);
     }
 }

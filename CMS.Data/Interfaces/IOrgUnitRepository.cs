@@ -25,5 +25,11 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Alias for SoftDelete — deactivates the OrgUnit (no deletedBy required).</summary>
         void Deactivate(int orgUnitId);
+
+        /// <summary>
+        /// Cascade soft-delete: soft-deletes all Folders, detaches UserAccounts,
+        /// then soft-deletes the OrgUnit itself — bypasses the active-dependents guard.
+        /// </summary>
+        void ForceDeleteWithDependents(int orgUnitId, int deletedBy);
     }
 }

@@ -15,21 +15,21 @@ namespace CMS.Presentation
     /// </summary>
     public partial class UserManagementForm : Form
     {
-        private readonly IUserAdminController        _userAdminController;
-        private readonly UserContext                 _currentUser;
-        private readonly IAuditLogController         _auditLogController;
+        private readonly IUserAdminController _userAdminController;
+        private readonly UserContext _currentUser;
+        private readonly IAuditLogController _auditLogController;
 
-        private List<UserAccount>      _allUsers    = new List<UserAccount>();
-        private List<HrDivision>       _divisions   = new List<HrDivision>();
-        private List<HrDepartment>     _departments = new List<HrDepartment>();
-        private List<HrPosition>       _positions   = new List<HrPosition>();
-        private List<HrPositionLevel>  _levels      = new List<HrPositionLevel>();
+        private List<UserAccount> _allUsers = new List<UserAccount>();
+        private List<HrDivision> _divisions = new List<HrDivision>();
+        private List<HrDepartment> _departments = new List<HrDepartment>();
+        private List<HrPosition> _positions = new List<HrPosition>();
+        private List<HrPositionLevel> _levels = new List<HrPositionLevel>();
 
         public UserManagementForm(IUserAdminController userAdminController, UserContext currentUser,
                                    CMS.Services.Interfaces.IAuditService auditService = null)
         {
             _userAdminController = userAdminController;
-            _currentUser  = currentUser;
+            _currentUser = currentUser;
             _auditLogController = new AuditLogController(auditService);
 
             InitializeComponent();
@@ -44,15 +44,15 @@ namespace CMS.Presentation
 
         private void WireEvents()
         {
-            txtSearch.KeyDown                  += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyFilter(); };
-            cmbStatus.SelectedIndexChanged     += (s, e) => ApplyFilter();
-            btnSearch.Click                    += (s, e) => ApplyFilter();
-            btnCreate.Click                    += BtnCreate_Click;
-            btnEdit.Click                      += BtnEdit_Click;
-            btnToggle.Click                    += BtnToggle_Click;
-            btnRefresh.Click                   += (s, e) => LoadUsers();
-            lvUsers.SelectedIndexChanged       += LvUsers_SelectionChanged;
-            lvUsers.DoubleClick                += BtnEdit_Click;
+            txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyFilter(); };
+            cmbStatus.SelectedIndexChanged += (s, e) => ApplyFilter();
+            btnSearch.Click += (s, e) => ApplyFilter();
+            btnCreate.Click += BtnCreate_Click;
+            btnEdit.Click += BtnEdit_Click;
+            btnToggle.Click += BtnToggle_Click;
+            btnRefresh.Click += (s, e) => LoadUsers();
+            lvUsers.SelectedIndexChanged += LvUsers_SelectionChanged;
+            lvUsers.DoubleClick += BtnEdit_Click;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -64,16 +64,16 @@ namespace CMS.Presentation
             // ── Phase 1: โหลดจาก HR master tables ──────────────────────────────
             if (_userAdminController != null)
             {
-                try { _divisions   = _userAdminController.GetDivisions().OrderBy(d => d.DivisionCode).ToList(); }
+                try { _divisions = _userAdminController.GetDivisions().OrderBy(d => d.DivisionCode).ToList(); }
                 catch { _divisions = new List<HrDivision>(); }
 
                 try { _departments = _userAdminController.GetDepartments().OrderBy(d => d.DepartmentCode).ToList(); }
                 catch { _departments = new List<HrDepartment>(); }
 
-                try { _positions   = _userAdminController.GetPositions().OrderBy(p => p.PositionName).ToList(); }
+                try { _positions = _userAdminController.GetPositions().OrderBy(p => p.PositionName).ToList(); }
                 catch { _positions = new List<HrPosition>(); }
 
-                try { _levels      = _userAdminController.GetPositionLevels().OrderBy(l => l.LevelCode).ToList(); }
+                try { _levels = _userAdminController.GetPositionLevels().OrderBy(l => l.LevelCode).ToList(); }
                 catch { _levels = new List<HrPositionLevel>(); }
             }
 
@@ -91,10 +91,10 @@ namespace CMS.Presentation
                         var sample = g.First();
                         return new HrDivision
                         {
-                            DivisionID   = seq++,
+                            DivisionID = seq++,
                             DivisionCode = sample.DivisionCode ?? "",
                             DivisionName = g.Key,
-                            IsActive     = true
+                            IsActive = true
                         };
                     })
                     .ToList();
@@ -122,12 +122,12 @@ namespace CMS.Presentation
                         }
                         return new HrDepartment
                         {
-                            DepartmentID     = seq++,
-                            DivisionID       = divId,
-                            DepartmentCode   = sample.DepartmentCode ?? "",
-                            DepartmentName   = g.Key,
+                            DepartmentID = seq++,
+                            DivisionID = divId,
+                            DepartmentCode = sample.DepartmentCode ?? "",
+                            DepartmentName = g.Key,
                             DepartmentNameTh = g.Key,
-                            IsActive         = true
+                            IsActive = true
                         };
                     })
                     .ToList();
@@ -142,10 +142,10 @@ namespace CMS.Presentation
                     .OrderBy(g => g.Key)
                     .Select(g => new HrPosition
                     {
-                        PositionID   = seq++,
+                        PositionID = seq++,
                         PositionCode = "",
                         PositionName = g.Key,
-                        IsActive     = true
+                        IsActive = true
                     })
                     .ToList();
             }
@@ -178,10 +178,10 @@ namespace CMS.Presentation
                     .OrderBy(g => g.Key)
                     .Select(g => new HrPositionLevel
                     {
-                        LevelID   = seq++,
+                        LevelID = seq++,
                         LevelCode = g.Key,
                         LevelName = g.Key,
-                        IsActive  = true
+                        IsActive = true
                     })
                     .ToList();
             }
@@ -206,16 +206,16 @@ namespace CMS.Presentation
 
         private void ApplyFilter()
         {
-            string kw     = txtSearch.Text.Trim().ToLower();
-            int    status = cmbStatus.SelectedIndex; // 0=all, 1=active, 2=inactive
+            string kw = txtSearch.Text.Trim().ToLower();
+            int status = cmbStatus.SelectedIndex; // 0=all, 1=active, 2=inactive
 
             IEnumerable<UserAccount> result = _allUsers;
 
             if (!string.IsNullOrEmpty(kw))
                 result = result.Where(u =>
-                    (u.DisplayName   ?? "").ToLower().Contains(kw) ||
-                    (u.ADUserName    ?? "").ToLower().Contains(kw) ||
-                    (u.EmployeeCode  ?? "").ToLower().Contains(kw) ||
+                    (u.DisplayName ?? "").ToLower().Contains(kw) ||
+                    (u.ADUserName ?? "").ToLower().Contains(kw) ||
+                    (u.EmployeeCode ?? "").ToLower().Contains(kw) ||
                     (u.DepartmentName ?? "").ToLower().Contains(kw));
 
             if (status == 1) result = result.Where(u => u.IsActive);
@@ -231,23 +231,23 @@ namespace CMS.Presentation
             foreach (var u in users)
             {
                 var item = new ListViewItem(u.UserID.ToString());
-                item.SubItems.Add(u.ADUserName     ?? "");
-                item.SubItems.Add(u.DisplayName    ?? "");
-                item.SubItems.Add(u.EmployeeCode   ?? "");
+                item.SubItems.Add(u.ADUserName ?? "");
+                item.SubItems.Add(u.DisplayName ?? "");
+                item.SubItems.Add(u.EmployeeCode ?? "");
                 item.SubItems.Add(u.DepartmentName ?? "");
-                item.SubItems.Add(u.DivisionName   ?? "");
-                item.SubItems.Add(u.PositionName   ?? "");
-                item.SubItems.Add(u.LevelCode      ?? "");
+                item.SubItems.Add(u.DivisionName ?? "");
+                item.SubItems.Add(u.PositionName ?? "");
+                item.SubItems.Add(u.LevelCode ?? "");
                 item.SubItems.Add(RoleName(u.AppRole));
                 item.SubItems.Add(u.IsActive ? "ใช้งาน" : "ปิดใช้");
                 item.SubItems.Add(u.LastLoginDate.HasValue
                     ? u.LastLoginDate.Value.ToString("dd/MM/yy HH:mm") : "—");
-                item.Tag       = u;
+                item.Tag = u;
                 item.ForeColor = u.IsActive ? Color.Black : Color.DimGray;
                 lvUsers.Items.Add(item);
             }
             lvUsers.EndUpdate();
-            
+
             // แสดง status พร้อมจำนวนรายการ
             if (users.Count == _allUsers.Count)
                 SetStatus(string.Format("แสดงทั้งหมด {0} รายการ", users.Count), Color.Gray);
@@ -266,14 +266,14 @@ namespace CMS.Presentation
             if (sel)
             {
                 var u = lvUsers.SelectedItems[0].Tag as UserAccount;
-                btnToggle.Text    = (u != null && u.IsActive) ? "🔒 ปิดใช้งาน" : "🔓 เปิดใช้งาน";
+                btnToggle.Text = (u != null && u.IsActive) ? "🔒 ปิดใช้งาน" : "🔓 เปิดใช้งาน";
                 btnToggle.Enabled = u != null;
-                
+
                 // แสดงข้อมูลที่เลือก
                 if (u != null)
                 {
-                    string selectionInfo = string.Format("เลือก: {0} ({1}) - {2}", 
-                        u.DisplayName ?? u.ADUserName, 
+                    string selectionInfo = string.Format("เลือก: {0} ({1}) - {2}",
+                        u.DisplayName ?? u.ADUserName,
                         u.EmployeeCode ?? "ไม่มีรหัส",
                         u.OrgDisplay ?? "ไม่ระบุหน่วยงาน");
                     SetStatus(selectionInfo, Color.FromArgb(25, 55, 105));
@@ -333,17 +333,17 @@ namespace CMS.Presentation
                 }
                 _auditLogController.Log(new AuditEntry
                 {
-                    Module      = "UserManagement",
-                    Action      = wasActive ? "DEACTIVATE_USER" : "ACTIVATE_USER",
-                    UserID      = _currentUser.UserID,
-                    TableName   = "UserAccount",
-                    RecordID    = user.UserID,
-                    NewValue    = string.Format("User:{0} IsActive:{1}", user.ADUserName, !wasActive),
+                    Module = "UserManagement",
+                    Action = wasActive ? "DEACTIVATE_USER" : "ACTIVATE_USER",
+                    UserID = _currentUser.UserID,
+                    TableName = "UserAccount",
+                    RecordID = user.UserID,
+                    NewValue = string.Format("User:{0} IsActive:{1}", user.ADUserName, !wasActive),
                     MachineName = _currentUser.MachineName,
-                    IPAddress   = _currentUser.IPAddress,
-                    SessionID   = _currentUser.SessionID,
-                    Result      = 1,
-                    AuditDate   = DateTime.Now
+                    IPAddress = _currentUser.IPAddress,
+                    SessionID = _currentUser.SessionID,
+                    Result = 1,
+                    AuditDate = DateTime.Now
                 });
                 LoadUsers();
                 SetStatus(string.Format("{0} '{1}' เรียบร้อย",
@@ -365,30 +365,30 @@ namespace CMS.Presentation
             if (isNew) user = new UserAccount { IsActive = true, AppRole = 1 };
 
             // ── Palette ────────────────────────────────────────────────────
-            var navyDark   = Color.FromArgb(25,  55,  105);
-            var navyMid    = Color.FromArgb(50,  90,  150);
-            var navyLight  = Color.FromArgb(215, 228, 248);
-            var bodyBg     = Color.FromArgb(243, 246, 251);
-            var footerBg   = Color.FromArgb(228, 234, 245);
-            var savedBg    = Color.FromArgb(232, 245, 233);   // สีเขียวอ่อน = ข้อมูลที่บันทึกแล้ว
-            var savedBdr   = Color.FromArgb(160, 210, 170);
-            var lblColor   = Color.FromArgb(55,  65,  90);
-            var savedColor = Color.FromArgb(30,  110,  50);
-            var uiFont     = new Font("Segoe UI", 10.5f);
-            var boldFont   = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-            var lblFont    = new Font("Segoe UI", 10f);
-            var smallFont  = new Font("Segoe UI", 9f);
+            var navyDark = Color.FromArgb(25, 55, 105);
+            var navyMid = Color.FromArgb(50, 90, 150);
+            var navyLight = Color.FromArgb(215, 228, 248);
+            var bodyBg = Color.FromArgb(243, 246, 251);
+            var footerBg = Color.FromArgb(228, 234, 245);
+            var savedBg = Color.FromArgb(232, 245, 233);   // สีเขียวอ่อน = ข้อมูลที่บันทึกแล้ว
+            var savedBdr = Color.FromArgb(160, 210, 170);
+            var lblColor = Color.FromArgb(55, 65, 90);
+            var savedColor = Color.FromArgb(30, 110, 50);
+            var uiFont = new Font("Segoe UI", 10.5f);
+            var boldFont = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+            var lblFont = new Font("Segoe UI", 10f);
+            var smallFont = new Font("Segoe UI", 9f);
 
             var dlg = new Form
             {
-                Text            = isNew ? "เพิ่มผู้ใช้ใหม่" : "แก้ไขข้อมูลผู้ใช้",
-                Size            = new Size(600, 760),
-                StartPosition   = FormStartPosition.CenterParent,
+                Text = isNew ? "เพิ่มผู้ใช้ใหม่" : "แก้ไขข้อมูลผู้ใช้",
+                Size = new Size(600, 760),
+                StartPosition = FormStartPosition.CenterParent,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
-                MaximizeBox     = false,
-                MinimizeBox     = false,
-                BackColor       = bodyBg,
-                Font            = uiFont,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                BackColor = bodyBg,
+                Font = uiFont,
             };
             dlg.AutoScaleMode = AutoScaleMode.Font;
 
@@ -405,11 +405,11 @@ namespace CMS.Presentation
             };
             var lblTitle = new Label
             {
-                Text      = isNew ? "เพิ่มผู้ใช้ใหม่" : "แก้ไขข้อมูลผู้ใช้",
-                Font      = new Font("Segoe UI", 13f, FontStyle.Bold),
+                Text = isNew ? "เพิ่มผู้ใช้ใหม่" : "แก้ไขข้อมูลผู้ใช้",
+                Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                 ForeColor = Color.White,
-                AutoSize  = true,
-                Location  = new Point(58, 16),
+                AutoSize = true,
+                Location = new Point(58, 16),
             };
             pnlHeader.Controls.Add(pnlIcon);
             pnlHeader.Controls.Add(lblTitle);
@@ -417,10 +417,10 @@ namespace CMS.Presentation
             // ── Body (scrollable) ────────────────────────────────────────────
             var pnlBody = new Panel
             {
-                Dock        = DockStyle.Fill,   // เติมพื้นที่ระหว่าง Header และ Footer อัตโนมัติ
-                BackColor   = bodyBg,
-                AutoScroll  = true,
-                Padding     = new Padding(0, 12, 0, 0),
+                Dock = DockStyle.Fill,   // เติมพื้นที่ระหว่าง Header และ Footer อัตโนมัติ
+                BackColor = bodyBg,
+                AutoScroll = true,
+                Padding = new Padding(0, 12, 0, 0),
             };
 
             int lw = 136, fw = 360, lx = 14, tx = 158;
@@ -430,11 +430,11 @@ namespace CMS.Presentation
             Action<string, int> addLbl = (text, yy) =>
                 pnlBody.Controls.Add(new Label
                 {
-                    Text      = text,
-                    Left      = lx,
-                    Top       = yy + 5,
-                    Width     = lw,
-                    Font      = lblFont,
+                    Text = text,
+                    Left = lx,
+                    Top = yy + 5,
+                    Width = lw,
+                    Font = lblFont,
                     ForeColor = lblColor,
                     TextAlign = ContentAlignment.MiddleRight,
                 });
@@ -443,14 +443,14 @@ namespace CMS.Presentation
             {
                 var t = new TextBox
                 {
-                    Left        = tx,
-                    Top         = yy,
-                    Width       = fw,
-                    Height      = inputH,
-                    Text        = val,
-                    Font        = uiFont,
+                    Left = tx,
+                    Top = yy,
+                    Width = fw,
+                    Height = inputH,
+                    Text = val,
+                    Font = uiFont,
                     BorderStyle = BorderStyle.FixedSingle,
-                    BackColor   = Color.White,
+                    BackColor = Color.White,
                 };
                 pnlBody.Controls.Add(t);
                 return t;
@@ -460,14 +460,14 @@ namespace CMS.Presentation
             {
                 var c = new ComboBox
                 {
-                    Left          = tx,
-                    Top           = yy,
-                    Width         = fw,
-                    Height        = inputH,
+                    Left = tx,
+                    Top = yy,
+                    Width = fw,
+                    Height = inputH,
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    Font          = uiFont,
-                    FlatStyle     = FlatStyle.Flat,
-                    BackColor     = Color.White,
+                    Font = uiFont,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.White,
                 };
                 pnlBody.Controls.Add(c);
                 return c;
@@ -479,10 +479,10 @@ namespace CMS.Presentation
                 var bar = new Panel { Left = lx, Top = yy, Width = lw + fw + 10, Height = 24, BackColor = navyLight };
                 bar.Controls.Add(new Label
                 {
-                    Text      = "  " + title,
-                    Font      = boldFont,
+                    Text = "  " + title,
+                    Font = boldFont,
                     ForeColor = navyDark,
-                    Dock      = DockStyle.Fill,
+                    Dock = DockStyle.Fill,
                     TextAlign = ContentAlignment.MiddleLeft,
                 });
                 pnlBody.Controls.Add(bar);
@@ -495,15 +495,15 @@ namespace CMS.Presentation
                 bool hasValue = !string.IsNullOrWhiteSpace(val);
                 var lbl = new Label
                 {
-                    Text      = hasValue ? val : "(ยังไม่ได้ระบุ)",
-                    Left      = tx,
-                    Top       = yy,
-                    Width     = fw,
-                    Height    = 22,
-                    Font      = hasValue ? new Font("Segoe UI", 10f, FontStyle.Bold) : smallFont,
+                    Text = hasValue ? val : "(ยังไม่ได้ระบุ)",
+                    Left = tx,
+                    Top = yy,
+                    Width = fw,
+                    Height = 22,
+                    Font = hasValue ? new Font("Segoe UI", 10f, FontStyle.Bold) : smallFont,
                     ForeColor = hasValue ? savedColor : Color.DarkGray,
                     TextAlign = ContentAlignment.MiddleLeft,
-                    Padding   = new Padding(4, 0, 0, 0),
+                    Padding = new Padding(4, 0, 0, 0),
                 };
                 pnlBody.Controls.Add(lbl);
                 return lbl;
@@ -548,53 +548,59 @@ namespace CMS.Presentation
 
                 var pnlSaved = new Panel
                 {
-                    Left      = lx,
-                    Top       = y,
-                    Width     = lw + fw + 10,
-                    Height    = hasOrgData ? 84 : 36,
+                    Left = lx,
+                    Top = y,
+                    Width = lw + fw + 10,
+                    Height = hasOrgData ? 84 : 36,
                     BackColor = savedBg,
                     BorderStyle = BorderStyle.FixedSingle,
                 };
 
                 var lblSavedTitle = new Label
                 {
-                    Text      = hasOrgData
+                    Text = hasOrgData
                         ? "✓ ข้อมูลองค์กรที่บันทึกไว้ในระบบ:"
                         : "ℹ️  ยังไม่มีข้อมูลองค์กรบันทึกไว้ในระบบ",
-                    Left      = 6,
-                    Top       = 4,
-                    Width     = lw + fw - 4,
-                    Height    = 20,
-                    Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    Left = 6,
+                    Top = 4,
+                    Width = lw + fw - 4,
+                    Height = 20,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                     ForeColor = hasOrgData ? savedColor : Color.Gray,
-                    AutoSize  = false,
+                    AutoSize = false,
                 };
                 pnlSaved.Controls.Add(lblSavedTitle);
 
                 if (hasOrgData)
                 {
                     string orgLine1 = string.Format("ฝ่าย: {0}   แผนก: {1}",
-                        string.IsNullOrWhiteSpace(user.DivisionName)    ? "(ไม่ระบุ)" : user.DivisionName,
-                        string.IsNullOrWhiteSpace(user.DepartmentName)  ? "(ไม่ระบุ)" : user.DepartmentName);
+                        string.IsNullOrWhiteSpace(user.DivisionName) ? "(ไม่ระบุ)" : user.DivisionName,
+                        string.IsNullOrWhiteSpace(user.DepartmentName) ? "(ไม่ระบุ)" : user.DepartmentName);
                     string orgLine2 = string.Format("ตำแหน่ง: {0}   Level: {1}",
                         string.IsNullOrWhiteSpace(user.PositionName) ? "(ไม่ระบุ)" : user.PositionName,
-                        string.IsNullOrWhiteSpace(user.LevelCode)    ? "(ไม่ระบุ)" : user.LevelCode);
+                        string.IsNullOrWhiteSpace(user.LevelCode) ? "(ไม่ระบุ)" : user.LevelCode);
 
                     pnlSaved.Controls.Add(new Label
                     {
-                        Text      = orgLine1,
-                        Left      = 8, Top = 26, Width = lw + fw - 10, Height = 20,
-                        Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                        Text = orgLine1,
+                        Left = 8,
+                        Top = 26,
+                        Width = lw + fw - 10,
+                        Height = 20,
+                        Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                         ForeColor = savedColor,
-                        AutoSize  = false,
+                        AutoSize = false,
                     });
                     pnlSaved.Controls.Add(new Label
                     {
-                        Text      = orgLine2,
-                        Left      = 8, Top = 48, Width = lw + fw - 10, Height = 20,
-                        Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                        Text = orgLine2,
+                        Left = 8,
+                        Top = 48,
+                        Width = lw + fw - 10,
+                        Height = 20,
+                        Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                         ForeColor = savedColor,
-                        AutoSize  = false,
+                        AutoSize = false,
                     });
                 }
                 pnlBody.Controls.Add(pnlSaved);
@@ -603,14 +609,14 @@ namespace CMS.Presentation
                 // คำอธิบายสำหรับ HR
                 var lblHint = new Label
                 {
-                    Text      = "หากต้องการอัปเดตข้อมูลองค์กร เลือกค่าใหม่จาก dropdown ด้านล่าง แล้วกด \"บันทึก\"",
-                    Left      = lx,
-                    Top       = y,
-                    Width     = lw + fw + 10,
-                    Height    = 32,
-                    Font      = new Font("Segoe UI", 9f, FontStyle.Italic),
+                    Text = "หากต้องการอัปเดตข้อมูลองค์กร เลือกค่าใหม่จาก dropdown ด้านล่าง แล้วกด \"บันทึก\"",
+                    Left = lx,
+                    Top = y,
+                    Width = lw + fw + 10,
+                    Height = 32,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Italic),
                     ForeColor = Color.FromArgb(80, 80, 120),
-                    AutoSize  = false,
+                    AutoSize = false,
                 };
                 pnlBody.Controls.Add(lblHint);
                 y += 36;
@@ -644,14 +650,43 @@ namespace CMS.Presentation
                 });
 
                 var selDiv = cmbDiv.SelectedItem as HrDivision;
-                var depts  = (selDiv != null && selDiv.DivisionID > 0)
-                    ? _departments.Where(d => d.DivisionID == selDiv.DivisionID)
-                    : _departments;
+                var depts = (selDiv != null && selDiv.DivisionID > 0)
+                    ? _departments.Where(d => d.DivisionID == selDiv.DivisionID).ToList()
+                    : _departments.ToList();
+
+                // บาง environment มีข้อมูล Department ที่ไม่ผูก DivisionID ครบ
+                // ถ้ากรองด้วย DivisionID แล้วไม่เจอรายการ ให้ fallback เป็นรายการทั้งหมด
+                // เพื่อไม่ให้ dropdown แผนกกลายเป็นว่าง
+                if (selDiv != null && selDiv.DivisionID > 0 && depts.Count == 0)
+                    depts = _departments.ToList();
+
                 foreach (var d in depts) cmbDept.Items.Add(d);
                 cmbDept.SelectedIndex = 0;
 
                 if (autoSelect)
+                {
                     SelectDepartment(cmbDept, user);
+
+                    // ถ้า pre-select ไม่เจอใน master list ให้เพิ่มค่าปัจจุบันของผู้ใช้เข้าไปชั่วคราว
+                    // เพื่อให้เห็นข้อมูลเดิมและแก้ไขต่อได้
+                    if (cmbDept.SelectedIndex == 0 &&
+                        (!string.IsNullOrWhiteSpace(user.DepartmentName) ||
+                         !string.IsNullOrWhiteSpace(user.DepartmentCode)))
+                    {
+                        var currentDept = new HrDepartment
+                        {
+                            DepartmentID = user.DepartmentId.GetValueOrDefault(),
+                            DepartmentCode = user.DepartmentCode ?? string.Empty,
+                            DepartmentName = user.DepartmentName ?? string.Empty,
+                            DepartmentNameTh = user.DepartmentName ?? string.Empty,
+                            DivisionID = user.DivisionId.GetValueOrDefault(),
+                            IsActive = true
+                        };
+
+                        cmbDept.Items.Add(currentDept);
+                        cmbDept.SelectedIndex = cmbDept.Items.Count - 1;
+                    }
+                }
             };
 
             populateDept(true);   // initial load — pre-select user's saved dept
@@ -699,35 +734,35 @@ namespace CMS.Presentation
 
             var btnOk = new Button
             {
-                Text         = "บันทึก",
-                Size         = new Size(120, 36),
-                FlatStyle    = FlatStyle.Flat,
-                BackColor    = navyDark,
-                ForeColor    = Color.White,
-                Font         = boldFont,
+                Text = "บันทึก",
+                Size = new Size(120, 36),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = navyDark,
+                ForeColor = Color.White,
+                Font = boldFont,
                 DialogResult = DialogResult.OK,
             };
             btnOk.FlatAppearance.BorderSize = 0;
 
             var btnCan = new Button
             {
-                Text         = "ยกเลิก",
-                Size         = new Size(90, 36),
-                FlatStyle    = FlatStyle.Flat,
-                BackColor    = Color.FromArgb(220, 228, 245),
-                ForeColor    = navyDark,
-                Font         = boldFont,
+                Text = "ยกเลิก",
+                Size = new Size(90, 36),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(220, 228, 245),
+                ForeColor = navyDark,
+                Font = boldFont,
                 DialogResult = DialogResult.Cancel,
             };
             btnCan.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-            btnCan.FlatAppearance.BorderSize  = 1;
+            btnCan.FlatAppearance.BorderSize = 1;
 
             pnlFooter.Resize += (s, e) =>
             {
-                btnOk.Location  = new Point(pnlFooter.Width - btnOk.Width - btnCan.Width - 20, 9);
+                btnOk.Location = new Point(pnlFooter.Width - btnOk.Width - btnCan.Width - 20, 9);
                 btnCan.Location = new Point(pnlFooter.Width - btnCan.Width - 10, 9);
             };
-            btnOk.Location  = new Point(520 - btnOk.Width - btnCan.Width - 20, 9);
+            btnOk.Location = new Point(520 - btnOk.Width - btnCan.Width - 20, 9);
             btnCan.Location = new Point(520 - btnCan.Width - 10, 9);
 
             dlg.AcceptButton = btnOk;
@@ -751,12 +786,12 @@ namespace CMS.Presentation
                     return;
                 }
 
-                user.ADUserName   = txtAD.Text.Trim();
-                user.DisplayName  = txtDisplay.Text.Trim();
+                user.ADUserName = txtAD.Text.Trim();
+                user.DisplayName = txtDisplay.Text.Trim();
                 user.EmployeeCode = txtEmpCode.Text.Trim();
-                user.AppRole      = cmbRole.SelectedIndex + 1;
+                user.AppRole = cmbRole.SelectedIndex + 1;
 
-                var selPos   = cmbPos.SelectedItem   as HrPosition;
+                var selPos = cmbPos.SelectedItem as HrPosition;
                 var selLevel = cmbLevel.SelectedItem as HrPositionLevel;
 
                 // อัปเดต Position/Level เฉพาะเมื่อเลือกค่าจริง (ไม่ใช่ "-- ไม่เปลี่ยน --")
@@ -767,12 +802,12 @@ namespace CMS.Presentation
                 if (selLevel != null && !string.IsNullOrEmpty(selLevel.LevelCode))
                     user.LevelCode = selLevel.LevelCode;
 
-                var selDiv  = cmbDiv.SelectedItem  as HrDivision;
+                var selDiv = cmbDiv.SelectedItem as HrDivision;
                 var selDept = cmbDept.SelectedItem as HrDepartment;
 
                 if (selDiv != null && selDiv.DivisionID > 0)
                 {
-                    user.DivisionId   = selDiv.DivisionID;
+                    user.DivisionId = selDiv.DivisionID;
                     user.DivisionCode = selDiv.DivisionCode;
                     user.DivisionName = selDiv.DivisionName;
                 }
@@ -780,7 +815,7 @@ namespace CMS.Presentation
 
                 if (selDept != null && selDept.DepartmentID > 0)
                 {
-                    user.DepartmentId   = selDept.DepartmentID;
+                    user.DepartmentId = selDept.DepartmentID;
                     user.DepartmentCode = selDept.DepartmentCode;
                     // เก็บทั้ง Name และ NameTh
                     user.DepartmentName = !string.IsNullOrEmpty(selDept.DepartmentNameTh)
@@ -791,24 +826,24 @@ namespace CMS.Presentation
                 try
                 {
                     if (isNew) _userAdminController.CreateUser(user);
-                    else       _userAdminController.UpdateUser(user);
+                    else _userAdminController.UpdateUser(user);
 
                     _auditLogController.Log(new AuditEntry
                     {
-                        Module      = "UserManagement",
-                        Action      = isNew ? "CREATE_USER" : "EDIT_USER",
-                        UserID      = _currentUser.UserID,
-                        TableName   = "UserAccount",
-                        RecordID    = user.UserID,
-                        NewValue    = string.Format("AD:{0} Role:{1} Div:{2} Dept:{3} Pos:{4} Level:{5}",
+                        Module = "UserManagement",
+                        Action = isNew ? "CREATE_USER" : "EDIT_USER",
+                        UserID = _currentUser.UserID,
+                        TableName = "UserAccount",
+                        RecordID = user.UserID,
+                        NewValue = string.Format("AD:{0} Role:{1} Div:{2} Dept:{3} Pos:{4} Level:{5}",
                                          user.ADUserName, user.AppRole,
                                          user.DivisionCode, user.DepartmentCode,
                                          user.PositionName, user.LevelCode),
                         MachineName = _currentUser.MachineName,
-                        IPAddress   = _currentUser.IPAddress,
-                        SessionID   = _currentUser.SessionID,
-                        Result      = 1,
-                        AuditDate   = DateTime.Now
+                        IPAddress = _currentUser.IPAddress,
+                        SessionID = _currentUser.SessionID,
+                        Result = 1,
+                        AuditDate = DateTime.Now
                     });
                 }
                 catch (Exception ex)
@@ -884,9 +919,9 @@ namespace CMS.Presentation
                     var dept = cmb.Items[i] as HrDepartment;
                     if (dept == null) continue;
                     // ตรวจสอบ DisplayName, DepartmentNameTh, DepartmentName ตามลำดับ
-                    if (string.Equals((dept.DisplayName        ?? "").Trim(), target, StringComparison.OrdinalIgnoreCase)
-                     || string.Equals((dept.DepartmentNameTh  ?? "").Trim(), target, StringComparison.OrdinalIgnoreCase)
-                     || string.Equals((dept.DepartmentName    ?? "").Trim(), target, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals((dept.DisplayName ?? "").Trim(), target, StringComparison.OrdinalIgnoreCase)
+                     || string.Equals((dept.DepartmentNameTh ?? "").Trim(), target, StringComparison.OrdinalIgnoreCase)
+                     || string.Equals((dept.DepartmentName ?? "").Trim(), target, StringComparison.OrdinalIgnoreCase))
                     { cmb.SelectedIndex = i; return; }
                 }
             }
@@ -957,17 +992,17 @@ namespace CMS.Presentation
         {
             switch (appRole)
             {
-                case 1:  return "Officer";
-                case 2:  return "SrOfficer";
-                case 3:  return "Manager";
-                case 4:  return "Admin";
+                case 1: return "Officer";
+                case 2: return "SrOfficer";
+                case 3: return "Manager";
+                case 4: return "Admin";
                 default: return appRole.ToString();
             }
         }
 
         private void SetStatus(string text, Color color)
         {
-            lblStatusBar.Text      = text;
+            lblStatusBar.Text = text;
             lblStatusBar.ForeColor = color;
         }
     }

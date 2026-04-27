@@ -193,6 +193,36 @@ namespace CMS.Presentation
                         if (!TryRequestMdiAction(context, "KBCategoryForm"))
                             MessageBox.Show("กรุณาเปิด KB Category Form ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
+
+                    case "WorkflowDashboard":
+                        if (!TryRequestMdiAction(context, "WorkflowDashboard"))
+                            MessageBox.Show("กรุณาเปิด Workflow Dashboard ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowDetail":
+                        if (!TryRequestMdiAction(context, "WorkflowDetail"))
+                            MessageBox.Show("กรุณาเปิด Workflow Detail ผ่าน MDI Container", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowTemplateList":
+                        if (!TryRequestMdiAction(context, "WorkflowTemplateList"))
+                            MessageBox.Show("กรุณาเปิด Workflow Template List ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowDelegation":
+                        if (!TryRequestMdiAction(context, "WorkflowDelegation"))
+                            MessageBox.Show("กรุณาเปิด Workflow Delegation ผ่าน MDI Container", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "SLAReport":
+                        if (!TryRequestMdiAction(context, "SLAReport"))
+                            MessageBox.Show("กรุณาเปิด SLA Report ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowMonitor":
+                        if (!TryRequestMdiAction(context, "WorkflowMonitor"))
+                            MessageBox.Show("กรุณาเปิด Workflow Monitor ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
                 }
             }
             catch (Exception ex)

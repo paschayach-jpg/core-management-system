@@ -487,6 +487,51 @@ namespace CMS.Services
             });
         }
 
+        public void ToggleExternalShare(int externalShareId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var share = _externalShareRepository.GetById(externalShareId);
+            if (share == null)
+                throw new InvalidOperationException("External share not found.");
+
+            if (share.SharerUserID != user.UserID && user.AppRole < 4)
+                throw new UnauthorizedAccessException("Only the original Sharer or an Administrator can toggle this share.");
+
+            if (share.ShareTokenStatus != "Active" && share.ShareTokenStatus != "Disabled")
+                throw new InvalidOperationException(
+                    string.Format("Cannot toggle a share with status '{0}'.", share.ShareTokenStatus));
+
+            bool isDisabling = share.ShareTokenStatus == "Active";
+            share.ShareTokenStatus = isDisabling ? "Disabled" : "Active";
+
+            if (isDisabling)
+            {
+                share.DisabledDate  = DateTime.Now;
+                share.DisabledReason = "Disabled by owner";
+            }
+            else
+            {
+                share.DisabledDate   = null;
+                share.DisabledReason = null;
+            }
+
+            _externalShareRepository.Update(share);
+
+            _auditService.Log(new AuditEntry
+            {
+                Module     = "FileSharing",
+                Action     = isDisabling ? "DisableExternalShare" : "EnableExternalShare",
+                UserID     = user.UserID,
+                UserName   = user.ADUserName ?? string.Empty,
+                TableName  = "storage.ExternalShare",
+                RecordID   = externalShareId,
+                NewValue   = string.Format("Status={0}", share.ShareTokenStatus),
+                Result     = 1,
+                AuditDate  = DateTime.Now
+            });
+        }
+
         public void ModifyExternalShare(ModifyExternalShareRequest request, UserContext user)
         {
             if (request == null) throw new ArgumentNullException("request");
@@ -586,6 +631,24 @@ namespace CMS.Services
                 throw new UnauthorizedAccessException("You can only view your own shares.");
 
             return _externalShareRepository.GetBySharer(userId);
+        }
+
+        public IEnumerable<FilePermission> GetAllInternalShares(UserContext admin)
+        {
+            if (admin == null) throw new ArgumentNullException("admin");
+            if (admin.AppRole < 4)
+                throw new UnauthorizedAccessException("เฉพาะ Admin เท่านั้นที่สามารถดูรายการ share ทั้งหมดได้");
+
+            return _filePermissionRepository.GetAll();
+        }
+
+        public IEnumerable<ExternalShare> GetAllExternalShares(UserContext admin)
+        {
+            if (admin == null) throw new ArgumentNullException("admin");
+            if (admin.AppRole < 4)
+                throw new UnauthorizedAccessException("เฉพาะ Admin เท่านั้นที่สามารถดูรายการ share ทั้งหมดได้");
+
+            return _externalShareRepository.GetAll();
         }
 
         public IEnumerable<ExternalShare> GetExternalSharesByStatus(string status, UserContext user)

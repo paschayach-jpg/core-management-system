@@ -370,7 +370,7 @@ namespace CMS.Presentation
             // btnApplyTemplate
             // 
             this.btnApplyTemplate.Name = "btnApplyTemplate";
-            this.btnApplyTemplate.Size = new System.Drawing.Size(91, 23);
+            this.btnApplyTemplate.Size = new System.Drawing.Size(88, 23);
             this.btnApplyTemplate.Text = "📋 Template";
             this.btnApplyTemplate.ToolTipText = "Apply Template Folder";
             this.btnApplyTemplate.Click += new System.EventHandler(this.btnApplyTemplate_Click);
@@ -383,7 +383,7 @@ namespace CMS.Presentation
             // btnChangeLevel
             // 
             this.btnChangeLevel.Name = "btnChangeLevel";
-            this.btnChangeLevel.Size = new System.Drawing.Size(98, 23);
+            this.btnChangeLevel.Size = new System.Drawing.Size(95, 23);
             this.btnChangeLevel.Text = "🔒 เปลี่ยนระดับ";
             this.btnChangeLevel.ToolTipText = "เปลี่ยน Confidentiality Level (Manager/Admin)";
             this.btnChangeLevel.Visible = false;
@@ -542,6 +542,7 @@ namespace CMS.Presentation
             this.pnlFilterBar.Padding = new System.Windows.Forms.Padding(4, 4, 4, 2);
             this.pnlFilterBar.Size = new System.Drawing.Size(1197, 28);
             this.pnlFilterBar.TabIndex = 4;
+            this.pnlFilterBar.Visible = false;
             // 
             // lblFilterInfo
             // 
@@ -552,6 +553,7 @@ namespace CMS.Presentation
             this.lblFilterInfo.Size = new System.Drawing.Size(69, 17);
             this.lblFilterInfo.TabIndex = 0;
             this.lblFilterInfo.Text = "กรองระดับ:";
+            this.lblFilterInfo.Visible = false;
             // 
             // chk1HC
             // 
@@ -565,6 +567,7 @@ namespace CMS.Presentation
             this.chk1HC.Size = new System.Drawing.Size(68, 21);
             this.chk1HC.TabIndex = 1;
             this.chk1HC.Text = "■ 1HC";
+            this.chk1HC.Visible = false;
             // 
             // chk2SC
             // 
@@ -578,6 +581,7 @@ namespace CMS.Presentation
             this.chk2SC.Size = new System.Drawing.Size(67, 21);
             this.chk2SC.TabIndex = 2;
             this.chk2SC.Text = "■ 2SC";
+            this.chk2SC.Visible = false;
             // 
             // chk3NC
             // 
@@ -591,6 +595,7 @@ namespace CMS.Presentation
             this.chk3NC.Size = new System.Drawing.Size(68, 21);
             this.chk3NC.TabIndex = 3;
             this.chk3NC.Text = "■ 3NC";
+            this.chk3NC.Visible = false;
             // 
             // chk4PC
             // 
@@ -604,6 +609,7 @@ namespace CMS.Presentation
             this.chk4PC.Size = new System.Drawing.Size(67, 21);
             this.chk4PC.TabIndex = 4;
             this.chk4PC.Text = "■ 4PC";
+            this.chk4PC.Visible = false;
             // 
             // splitMain
             // 
@@ -1015,7 +1021,7 @@ namespace CMS.Presentation
             // btnRestore
             // 
             this.btnRestore.Name = "btnRestore";
-            this.btnRestore.Size = new System.Drawing.Size(60, 23);
+            this.btnRestore.Size = new System.Drawing.Size(59, 23);
             this.btnRestore.Text = "♻️ กู้คืน";
             this.btnRestore.ToolTipText = "กู้คืน Folder ไปยัง Parent เดิม";
             // 

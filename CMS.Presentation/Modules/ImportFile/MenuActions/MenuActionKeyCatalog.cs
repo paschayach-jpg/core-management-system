@@ -42,7 +42,13 @@ namespace CMS.Presentation
             "RecycleBin",
             "KnowledgeBaseForm",
             "KBMainForm",
-            "KBCategoryForm"
+            "KBCategoryForm",
+            "WorkflowDashboard",
+            "WorkflowDetail",
+            "WorkflowTemplateList",
+            "WorkflowDelegation",
+            "SLAReport",
+            "WorkflowMonitor"
         };
 
         public static string[] GetAvailableActionKeys()
@@ -67,6 +73,18 @@ namespace CMS.Presentation
             string normalized = NormalizeToken(configuredValue);
             if (string.IsNullOrEmpty(normalized))
                 return null;
+
+            // Support symbol-style configured value such as #sym:WorkflowDashboardFormNew
+            if (string.Equals(normalized, "workflowdashboardformnew", StringComparison.OrdinalIgnoreCase))
+                return "WorkflowDashboard";
+            if (string.Equals(normalized, "workflowdetailformnew", StringComparison.OrdinalIgnoreCase))
+                return "WorkflowDetail";
+            if (string.Equals(normalized, "workflowtemplatelistform", StringComparison.OrdinalIgnoreCase))
+                return "WorkflowTemplateList";
+            if (string.Equals(normalized, "workflowdelegationform", StringComparison.OrdinalIgnoreCase))
+                return "WorkflowDelegation";
+            if (string.Equals(normalized, "slareportform", StringComparison.OrdinalIgnoreCase))
+                return "SLAReport";
 
             foreach (var builtIn in BuiltInActionKeys)
             {
@@ -185,6 +203,16 @@ namespace CMS.Presentation
                 return null;
 
             string token = value.Trim();
+
+            if (token.StartsWith("#sym:", StringComparison.OrdinalIgnoreCase))
+                token = token.Substring(5);
+            else if (token.StartsWith("sym:", StringComparison.OrdinalIgnoreCase))
+                token = token.Substring(4);
+
+            int lastColon = token.LastIndexOf(':');
+            if (lastColon >= 0 && lastColon < token.Length - 1)
+                token = token.Substring(lastColon + 1);
+
             int lastDot = token.LastIndexOf('.');
             if (lastDot >= 0 && lastDot < token.Length - 1)
                 token = token.Substring(lastDot + 1);

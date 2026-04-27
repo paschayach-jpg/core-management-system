@@ -17,22 +17,26 @@ namespace CMS.Presentation
         private readonly IShareManagementController _shareManagementController;
         private readonly UserContext _currentUser;
         private readonly IShareLookupController _shareLookupController;
+        private readonly bool _isAdmin;
 
         private TabControl _tabControl;
         private DataGridView _dgvInternalShares;
         private DataGridView _dgvExternalShares;
         private Dictionary<int, int> _internalShareIdMap; // row → FilePermissionID
         private Dictionary<int, int> _externalShareIdMap; // row → ExternalShareID
+        private Dictionary<int, string> _externalShareStatusMap; // row → ShareTokenStatus
 
         public ShareManagementForm(IShareManagementController shareManagementController, UserContext currentUser,
             IShareLookupController shareLookupController = null)
         {
+            _isAdmin = currentUser != null && currentUser.AppRole == 4;
             InitializeComponent();
             _shareManagementController = shareManagementController;
             _currentUser = currentUser;
             _shareLookupController = shareLookupController;
             _internalShareIdMap = new Dictionary<int, int>();
             _externalShareIdMap = new Dictionary<int, int>();
+            _externalShareStatusMap = new Dictionary<int, string>();
         }
 
         private void InitializeComponent()
@@ -70,9 +74,11 @@ namespace CMS.Presentation
             };
             var lblSub = new Label
             {
-                Text      = "ดูและจัดการ Internal / External share ของคุณ",
+                Text      = _isAdmin
+                    ? "👑 Admin Mode — แสดงรายการ share ทั้งหมดในระบบ"
+                    : "ดูและจัดการ Internal / External share ของคุณ",
                 Font      = new Font("Segoe UI", 8f),
-                ForeColor = Color.FromArgb(170, 200, 240),
+                ForeColor = _isAdmin ? Color.FromArgb(255, 220, 100) : Color.FromArgb(170, 200, 240),
                 AutoSize  = true,
                 Location  = new Point(17, 36),
             };
@@ -205,14 +211,39 @@ namespace CMS.Presentation
             var btnRejectExt  = mkBtn("✕  ปฏิเสธ",    Color.FromArgb(250, 235, 235),     Color.FromArgb(160, 30, 30));
             var btnRevokeExt  = mkBtn("🚫  ยกเลิก",    Color.FromArgb(255, 248, 215),     Color.FromArgb(140, 80, 0));
             var btnModifyExt  = mkBtn("✏  แก้ไข",     Color.FromArgb(220, 228, 245),     navyDark);
+            var btnToggleExt  = mkBtn("⏸  ปิดใช้งาน", Color.FromArgb(232, 248, 240),     Color.FromArgb(0, 100, 50));
             btnApproveExt.Click += (s, e) => ApproveExternalShare();
             btnRejectExt.Click  += (s, e) => RejectExternalShare();
             btnRevokeExt.Click  += (s, e) => RevokeExternalShare();
             btnModifyExt.Click  += (s, e) => ModifyExternalShare();
+            btnToggleExt.Click  += (s, e) => ToggleExternalShare();
+
+            // อัปเดต label ปุ่ม toggle ตาม selection
+            _dgvExternalShares.SelectionChanged += (s, e) =>
+            {
+                if (_dgvExternalShares.SelectedRows.Count == 0) { btnToggleExt.Text = "⏸  เปิด/ปิด"; return; }
+                int row = _dgvExternalShares.SelectedRows[0].Index;
+                if (_externalShareStatusMap.TryGetValue(row, out string st) && st == "Active")
+                {
+                    btnToggleExt.Text      = "⏸  ปิดใช้งาน";
+                    btnToggleExt.BackColor = Color.FromArgb(255, 248, 230);
+                    btnToggleExt.ForeColor = Color.FromArgb(140, 80, 0);
+                }
+                else if (_externalShareStatusMap.TryGetValue(row, out string st2) && st2 == "Disabled")
+                {
+                    btnToggleExt.Text      = "▶  เปิดใช้งาน";
+                    btnToggleExt.BackColor = Color.FromArgb(232, 248, 240);
+                    btnToggleExt.ForeColor = Color.FromArgb(0, 100, 50);
+                }
+                else
+                {
+                    btnToggleExt.Text = "⏸  เปิด/ปิด";
+                }
+            };
 
             var pnlExtBar = new Panel { Dock = DockStyle.Bottom, Height = 46, BackColor = Color.FromArgb(235, 240, 250), Padding = new Padding(8, 7, 8, 7) };
             int bx = 8;
-            foreach (var b in new[] { btnApproveExt, btnRejectExt, btnRevokeExt, btnModifyExt })
+            foreach (var b in new[] { btnApproveExt, btnRejectExt, btnRevokeExt, btnModifyExt, btnToggleExt })
             {
                 b.Location = new Point(bx, 8);
                 pnlExtBar.Controls.Add(b);
@@ -255,20 +286,26 @@ namespace CMS.Presentation
             {
                 _internalShareIdMap.Clear();
                 _externalShareIdMap.Clear();
+                _externalShareStatusMap.Clear();
 
-                // Load internal shares
-                var internalShares = _shareManagementController.GetInternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
+                // Admin เห็นทั้งหมด, user ปกติเห็นแค่ของตัวเอง
+                var internalShares = _isAdmin
+                    ? _shareManagementController.GetAllInternalShares(_currentUser).ToList()
+                    : _shareManagementController.GetInternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
                 var internalData = new List<object>();
                 for (int i = 0; i < internalShares.Count; i++)
                 {
                     var s = internalShares[i];
+                    string sharerLabel = _isAdmin
+                        ? string.Format("UserID:{0}", s.GrantedBy)
+                        : _currentUser.ADUserName ?? "Current User";
                     internalData.Add(new
                     {
-                        SharerName   = _currentUser.ADUserName ?? "Current User",
+                        SharerName   = sharerLabel,
                         TargetName   = ResolvePrincipalName(s.PrincipalType, s.PrincipalID),
                         ResourceName = ResolveFileName(s.FileID),
                         CreatedDate  = s.GrantedDate,
-                        Status       = s.RevokedDate.HasValue ? "ยกเลิกแล้ว" : "ใช้งาน"
+                        Status       = s.RevokedDate.HasValue ? "🚫 ยกเลิกแล้ว" : "✅ ใช้งาน"
                     });
                     _internalShareIdMap[i] = s.FilePermissionID;
                 }
@@ -276,7 +313,9 @@ namespace CMS.Presentation
                 _dgvInternalShares.DataSource = internalData;
 
                 // Load external shares
-                var externalShares = _shareManagementController.GetExternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
+                var externalShares = _isAdmin
+                    ? _shareManagementController.GetAllExternalShares(_currentUser).ToList()
+                    : _shareManagementController.GetExternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
                 var externalData = new List<object>();
                 for (int i = 0; i < externalShares.Count; i++)
                 {
@@ -284,24 +323,60 @@ namespace CMS.Presentation
                     string extResource = s.FileID.HasValue
                         ? ResolveFileName(s.FileID.Value)
                         : ResolveExternalFolderName(s.FolderID);
+                    string statusTh = s.ShareTokenStatus == "Active"   ? "✅ ใช้งาน"
+                                    : s.ShareTokenStatus == "Disabled" ? "⏸ ปิดชั่วคราว"
+                                    : s.ShareTokenStatus == "Pending"  ? "⏳ รออนุมัติ"
+                                    : s.ShareTokenStatus == "Revoked"  ? "🚫 ยกเลิกแล้ว"
+                                    : s.ShareTokenStatus == "Expired"  ? "⌛ หมดอายุ"
+                                    : s.ShareTokenStatus ?? "-";
                     externalData.Add(new
                     {
                         SharerName           = _currentUser.ADUserName ?? "Current User",
                         ResourceName         = extResource,
                         CreatedDate          = s.CreatedDate,
-                        ShareTokenStatus     = s.ShareTokenStatus,
+                        ShareTokenStatus     = statusTh,
                         ExpiryDate           = s.ExpiryDate?.ToString("yyyy-MM-dd") ?? "ไม่มีกำหนด",
                         DownloadLimit        = s.DownloadLimit?.ToString() ?? "ไม่จำกัด",
                         CurrentDownloadCount = s.CurrentDownloadCount
                     });
-                    _externalShareIdMap[i] = s.ExternalShareID;
+                    _externalShareIdMap[i]    = s.ExternalShareID;
+                    _externalShareStatusMap[i] = s.ShareTokenStatus ?? string.Empty;
                 }
                 _dgvExternalShares.DataSource = null;
                 _dgvExternalShares.DataSource = externalData;
+                ColorCodeExternalRows();
             }
             catch (Exception ex)
             {
                 MessageBox.Show(string.Format("Error loading shares: {0}", ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ColorCodeExternalRows()
+        {
+            foreach (DataGridViewRow row in _dgvExternalShares.Rows)
+            {
+                if (!_externalShareStatusMap.TryGetValue(row.Index, out string status)) continue;
+                switch (status)
+                {
+                    case "Active":
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(232, 248, 240);
+                        row.DefaultCellStyle.ForeColor = Color.FromArgb(0, 80, 30);
+                        break;
+                    case "Disabled":
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(255, 248, 220);
+                        row.DefaultCellStyle.ForeColor = Color.FromArgb(130, 80, 0);
+                        break;
+                    case "Pending":
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(232, 240, 254);
+                        row.DefaultCellStyle.ForeColor = Color.FromArgb(0, 51, 102);
+                        break;
+                    case "Revoked":
+                    case "Expired":
+                        row.DefaultCellStyle.BackColor = Color.FromArgb(245, 245, 245);
+                        row.DefaultCellStyle.ForeColor = Color.Gray;
+                        break;
+                }
             }
         }
 
@@ -328,6 +403,45 @@ namespace CMS.Presentation
 
                 _shareManagementController.RevokeInternalShare(filePermissionId, _currentUser);
                 MessageBox.Show("Internal share revoked.", "Success");
+                LoadShares();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(string.Format("Error: {0}", ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ToggleExternalShare()
+        {
+            if (_dgvExternalShares.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("กรุณาเลือกรายการที่ต้องการเปิด/ปิด", "แจ้งเตือน");
+                return;
+            }
+
+            int rowIndex = _dgvExternalShares.SelectedRows[0].Index;
+            if (!_externalShareStatusMap.TryGetValue(rowIndex, out string status) ||
+                (status != "Active" && status != "Disabled"))
+            {
+                MessageBox.Show("สามารถเปิด/ปิดได้เฉพาะรายการที่มีสถานะ 'ใช้งาน' หรือ 'ปิดชั่วคราว' เท่านั้น", "แจ้งเตือน");
+                return;
+            }
+
+            string action = status == "Active" ? "ปิดชั่วคราว" : "เปิดใช้งาน";
+            if (MessageBox.Show(string.Format("ต้องการ{0}การแชร์นี้ใช่หรือไม่?", action), "ยืนยัน",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            try
+            {
+                if (!_externalShareIdMap.TryGetValue(rowIndex, out int externalShareId))
+                {
+                    MessageBox.Show("ไม่พบข้อมูลการแชร์ที่เลือก", "Error");
+                    return;
+                }
+
+                _shareManagementController.ToggleExternalShare(externalShareId, _currentUser);
+                MessageBox.Show(string.Format("{0}เรียบร้อยแล้ว", action), "สำเร็จ");
                 LoadShares();
             }
             catch (Exception ex)

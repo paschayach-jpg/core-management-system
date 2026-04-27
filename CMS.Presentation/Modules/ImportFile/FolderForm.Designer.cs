@@ -542,7 +542,8 @@ namespace CMS.Presentation
             this.pnlFilterBar.Padding = new System.Windows.Forms.Padding(4, 4, 4, 2);
             this.pnlFilterBar.Size = new System.Drawing.Size(1197, 28);
             this.pnlFilterBar.TabIndex = 4;
-            // 
+            this.pnlFilterBar.Visible = false;
+            //
             // lblFilterInfo
             // 
             this.lblFilterInfo.AutoSize = true;

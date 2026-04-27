@@ -10,19 +10,19 @@ using CMS.Domain.Models;
 namespace CMS.Presentation
 {
     /// <summary>
-    /// Recycle Bin form — shows soft-deleted folders with Restore / Permanently Delete.
-    /// Accessible from the Admin ribbon tab.
+    /// Recycle Bin form — shows soft-deleted folders AND files with Restore / Permanently Delete.
     /// </summary>
     public partial class RecycleBinForm : Form
     {
         // ── Services ────────────────────────────────────────────────────────────
         private readonly IRecycleBinController _recycleBinController;
-        private readonly UserContext          _user;
+        private readonly UserContext           _user;
 
         // ── State ───────────────────────────────────────────────────────────────
-        private List<Folder>  _folders       = new List<Folder>();
-        private List<OrgUnit> _orgUnits      = new List<OrgUnit>();
-        private int?          _filterOrgUnit = null;
+        private List<Folder>       _folders       = new List<Folder>();
+        private List<FileDocument> _files         = new List<FileDocument>();
+        private List<OrgUnit>      _orgUnits      = new List<OrgUnit>();
+        private int?               _filterOrgUnit = null;
 
         // ────────────────────────────────────────────────────────────────────────
         public RecycleBinForm(
@@ -66,9 +66,20 @@ namespace CMS.Presentation
             }
             catch (Exception ex)
             {
-                MessageBox.Show("ไม่สามารถโหลดถังขยะได้: " + ex.Message,
+                MessageBox.Show("ไม่สามารถโหลด Folder ในถังขยะได้: " + ex.Message,
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 _folders = new List<Folder>();
+            }
+
+            try
+            {
+                _files = _recycleBinController.GetDeletedFiles(_filterOrgUnit, _user).ToList();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("ไม่สามารถโหลด File ในถังขยะได้: " + ex.Message,
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _files = new List<FileDocument>();
             }
 
             PopulateList();
@@ -79,13 +90,14 @@ namespace CMS.Presentation
             _listView.BeginUpdate();
             _listView.Items.Clear();
 
+            // ── Folders ──────────────────────────────────────────────────────────
             foreach (var folder in _folders.OrderByDescending(f => f.DeletedAt ?? DateTime.MinValue))
             {
                 string orgUnitName = GetOrgUnitName(folder.OrgUnitID);
                 string parentPath  = folder.ParentFolderId.HasValue
                     ? "Folder #" + folder.ParentFolderId.Value
                     : "— (Root)";
-                string deletedAt   = folder.DeletedAt.HasValue
+                string deletedAt = folder.DeletedAt.HasValue
                     ? folder.DeletedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                     : "—";
 
@@ -93,8 +105,7 @@ namespace CMS.Presentation
                     ? Math.Max(0, 30 - (int)(DateTime.Now - folder.DeletedAt.Value).TotalDays)
                     : 30;
                 string remaining = daysRemaining == 0 ? "หมดอายุ" : daysRemaining + " วัน";
-
-                string level = ConfidentialityBadge(folder.ConfidentialityLevel);
+                string level     = ConfidentialityBadge(folder.ConfidentialityLevel);
 
                 var item = new ListViewItem(new[]
                 {
@@ -105,20 +116,56 @@ namespace CMS.Presentation
                     remaining,
                     level
                 });
-                item.Tag = folder;
+                item.Tag = new RecycleBinItem { ItemType = RecycleBinItemType.Folder, Folder = folder };
 
-                // เตือนด้วยสีเมื่อเหลือน้อยกว่า 7 วัน
-                if (daysRemaining <= 7)
-                    item.ForeColor = Color.FromArgb(180, 60, 0);
-                else
-                    item.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
+                item.ForeColor = daysRemaining <= 7
+                    ? Color.FromArgb(180, 60, 0)
+                    : ConfidentialityColor(folder.ConfidentialityLevel);
+
+                _listView.Items.Add(item);
+            }
+
+            // ── Files ─────────────────────────────────────────────────────────────
+            foreach (var file in _files.OrderByDescending(f => f.DeletedDate ?? DateTime.MinValue))
+            {
+                string orgUnitName = string.IsNullOrEmpty(file.OrgUnitName)
+                    ? "—"
+                    : file.OrgUnitName;
+                string folderName = string.IsNullOrEmpty(file.FolderName)
+                    ? "Folder #" + file.FolderID
+                    : file.FolderName;
+                string deletedAt = file.DeletedDate.HasValue
+                    ? file.DeletedDate.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                    : "—";
+
+                int daysRemaining = file.DeletedDate.HasValue
+                    ? Math.Max(0, 30 - (int)(DateTime.Now - file.DeletedDate.Value).TotalDays)
+                    : 30;
+                string remaining = daysRemaining == 0 ? "หมดอายุ" : daysRemaining + " วัน";
+                string level     = ConfidentialityBadge(file.ConfidentialityLevel);
+
+                var item = new ListViewItem(new[]
+                {
+                    "📄  " + file.OriginalFileName,
+                    orgUnitName,
+                    folderName,
+                    deletedAt,
+                    remaining,
+                    level
+                });
+                item.Tag = new RecycleBinItem { ItemType = RecycleBinItemType.File, File = file };
+
+                item.ForeColor = daysRemaining <= 7
+                    ? Color.FromArgb(180, 60, 0)
+                    : ConfidentialityColor(file.ConfidentialityLevel);
 
                 _listView.Items.Add(item);
             }
 
             _listView.EndUpdate();
 
-            bool isEmpty = _listView.Items.Count == 0;
+            int totalCount  = _listView.Items.Count;
+            bool isEmpty    = totalCount == 0;
             _listView.Visible   = !isEmpty;
             _emptyPanel.Visible = isEmpty;
 
@@ -127,7 +174,7 @@ namespace CMS.Presentation
 
             _lblStatus.Text = isEmpty
                 ? "ถังขยะว่างเปล่า"
-                : string.Format("📁 {0} Folder ในถังขยะ", _listView.Items.Count);
+                : string.Format("📁 {0} Folder  📄 {1} File ในถังขยะ", _folders.Count, _files.Count);
         }
 
         private string GetOrgUnitName(int orgUnitId)
@@ -161,7 +208,7 @@ namespace CMS.Presentation
         private void ListView_DoubleClick(object sender, EventArgs e)
         {
             if (_listView.SelectedItems.Count == 1)
-                ConfirmRestore(new[] { _listView.SelectedItems[0].Tag as Folder });
+                ConfirmRestore(new[] { _listView.SelectedItems[0].Tag as RecycleBinItem });
         }
 
         private void ListView_ColumnClick(object sender, ColumnClickEventArgs e)
@@ -186,40 +233,45 @@ namespace CMS.Presentation
 
         private void BtnRestore_Click(object sender, EventArgs e)
         {
-            var selected = GetSelectedFolders();
+            var selected = GetSelectedItems();
             if (selected.Count == 0) return;
             ConfirmRestore(selected);
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
         {
-            var selected = GetSelectedFolders();
+            var selected = GetSelectedItems();
             if (selected.Count == 0) return;
             ConfirmPermanentDelete(selected);
         }
 
         private void BtnEmptyBin_Click(object sender, EventArgs e)
         {
-            if (_folders.Count == 0) return;
+            int total = _folders.Count + _files.Count;
+            if (total == 0) return;
 
             var result = MessageBox.Show(
-                string.Format("ต้องการล้างถังขยะทั้งหมด ({0} Folder) หรือไม่?\n\n⚠️ การลบถาวรไม่สามารถกู้คืนได้", _folders.Count),
+                string.Format("ต้องการล้างถังขยะทั้งหมด ({0} Folder, {1} File) หรือไม่?\n\n⚠️ การลบถาวรไม่สามารถกู้คืนได้",
+                    _folders.Count, _files.Count),
                 "ล้างถังขยะ", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
 
             if (result != DialogResult.Yes) return;
 
             int success = 0, failed = 0;
+
             foreach (var folder in _folders.ToList())
             {
-                try
-                {
-                    _recycleBinController.PermanentlyDeleteFolder(folder.FolderId, _user);
-                    success++;
-                }
+                try { _recycleBinController.PermanentlyDeleteFolder(folder.FolderId, _user); success++; }
                 catch { failed++; }
             }
 
-            string msg = string.Format("ล้างถังขยะเรียบร้อย — ลบ {0} Folder", success);
+            foreach (var file in _files.ToList())
+            {
+                try { _recycleBinController.PermanentlyDeleteFile(file.FileID, _user); success++; }
+                catch { failed++; }
+            }
+
+            string msg = string.Format("ล้างถังขยะเรียบร้อย — ลบ {0} รายการ", success);
             if (failed > 0) msg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
             MessageBox.Show(msg, "เสร็จสิ้น", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
@@ -228,37 +280,40 @@ namespace CMS.Presentation
 
         // ── Actions ──────────────────────────────────────────────────────────────
 
-        private void ConfirmRestore(IList<Folder> targets)
+        private void ConfirmRestore(IList<RecycleBinItem> targets)
         {
             if (targets == null || targets.Count == 0) return;
 
             string names = targets.Count == 1
-                ? string.Format("'{0}'", targets[0].FolderName)
-                : string.Format("{0} Folder ที่เลือก", targets.Count);
+                ? string.Format("'{0}'", targets[0].DisplayName)
+                : string.Format("{0} รายการที่เลือก", targets.Count);
 
             var result = MessageBox.Show(
                 string.Format("คืนค่า {0} กลับไปยังตำแหน่งเดิมหรือไม่?", names),
-                "คืนค่า Folder", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                "คืนค่า", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (result != DialogResult.Yes) return;
 
             int success = 0, failed = 0;
-            foreach (var folder in targets)
+            foreach (var item in targets)
             {
                 try
                 {
-                    _recycleBinController.RestoreFolder(folder.FolderId, null, _user);
+                    if (item.ItemType == RecycleBinItemType.Folder)
+                        _recycleBinController.RestoreFolder(item.Folder.FolderId, null, _user);
+                    else
+                        _recycleBinController.RestoreFile(item.File.FileID, _user);
                     success++;
                 }
-                catch (InvalidOperationException ex)
+                catch (InvalidOperationException ex) when (item.ItemType == RecycleBinItemType.Folder)
                 {
                     var choice = MessageBox.Show(
                         string.Format("ไม่พบตำแหน่งเดิมของ '{0}'\n\n{1}\n\nต้องการคืนค่าเป็น Root Folder แทนหรือไม่?",
-                            folder.FolderName, ex.Message),
+                            item.Folder.FolderName, ex.Message),
                         "ไม่พบตำแหน่งเดิม", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     if (choice == DialogResult.Yes)
                     {
-                        try { _recycleBinController.RestoreFolder(folder.FolderId, 0, _user); success++; }
+                        try { _recycleBinController.RestoreFolder(item.Folder.FolderId, 0, _user); success++; }
                         catch { failed++; }
                     }
                     else failed++;
@@ -266,20 +321,20 @@ namespace CMS.Presentation
                 catch { failed++; }
             }
 
-            string msg = string.Format("คืนค่า {0} Folder เรียบร้อย", success);
+            string msg = string.Format("คืนค่า {0} รายการเรียบร้อย", success);
             if (failed > 0) msg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
             MessageBox.Show(msg, "เสร็จสิ้น", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             LoadData();
         }
 
-        private void ConfirmPermanentDelete(IList<Folder> targets)
+        private void ConfirmPermanentDelete(IList<RecycleBinItem> targets)
         {
             if (targets == null || targets.Count == 0) return;
 
             string names = targets.Count == 1
-                ? string.Format("'{0}'", targets[0].FolderName)
-                : string.Format("{0} Folder ที่เลือก", targets.Count);
+                ? string.Format("'{0}'", targets[0].DisplayName)
+                : string.Format("{0} รายการที่เลือก", targets.Count);
 
             var result = MessageBox.Show(
                 string.Format("⚠️ ลบ {0} ออกจากระบบถาวรหรือไม่?\n\nการลบถาวรไม่สามารถกู้คืนได้", names),
@@ -288,17 +343,20 @@ namespace CMS.Presentation
             if (result != DialogResult.Yes) return;
 
             int success = 0, failed = 0;
-            foreach (var folder in targets)
+            foreach (var item in targets)
             {
                 try
                 {
-                    _recycleBinController.PermanentlyDeleteFolder(folder.FolderId, _user);
+                    if (item.ItemType == RecycleBinItemType.Folder)
+                        _recycleBinController.PermanentlyDeleteFolder(item.Folder.FolderId, _user);
+                    else
+                        _recycleBinController.PermanentlyDeleteFile(item.File.FileID, _user);
                     success++;
                 }
                 catch { failed++; }
             }
 
-            string msg = string.Format("ลบถาวร {0} Folder เรียบร้อย", success);
+            string msg = string.Format("ลบถาวร {0} รายการเรียบร้อย", success);
             if (failed > 0) msg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
             MessageBox.Show(msg, "เสร็จสิ้น", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
@@ -311,25 +369,26 @@ namespace CMS.Presentation
         {
             bool canManage = _user.Role == UserRole.Manager || _user.Role == UserRole.Admin;
             int  selCount  = _listView.SelectedItems.Count;
+            int  total     = _folders.Count + _files.Count;
 
             _btnRestore.Enabled  = selCount > 0;
             _btnDelete.Enabled   = selCount > 0 && canManage;
-            _btnEmptyBin.Enabled = _folders.Count > 0 && canManage;
+            _btnEmptyBin.Enabled = total > 0 && canManage;
 
             if (selCount > 0)
-                _lblStatus.Text = string.Format("เลือก {0} รายการ  |  รวม {1} Folder ในถังขยะ",
-                    selCount, _folders.Count);
+                _lblStatus.Text = string.Format("เลือก {0} รายการ  |  📁 {1} Folder  📄 {2} File ในถังขยะ",
+                    selCount, _folders.Count, _files.Count);
             else
-                _lblStatus.Text = _folders.Count == 0
+                _lblStatus.Text = total == 0
                     ? "ถังขยะว่างเปล่า"
-                    : string.Format("📁 {0} Folder ในถังขยะ", _folders.Count);
+                    : string.Format("📁 {0} Folder  📄 {1} File ในถังขยะ", _folders.Count, _files.Count);
         }
 
-        private List<Folder> GetSelectedFolders()
+        private List<RecycleBinItem> GetSelectedItems()
         {
             return _listView.SelectedItems.Cast<ListViewItem>()
-                .Select(i => i.Tag as Folder)
-                .Where(f => f != null)
+                .Select(i => i.Tag as RecycleBinItem)
+                .Where(r => r != null)
                 .ToList();
         }
 
@@ -381,6 +440,25 @@ namespace CMS.Presentation
         }
 
         // ── Inner classes ────────────────────────────────────────────────────────
+
+        private enum RecycleBinItemType { Folder, File }
+
+        private class RecycleBinItem
+        {
+            public RecycleBinItemType ItemType { get; set; }
+            public Folder             Folder   { get; set; }
+            public FileDocument       File     { get; set; }
+
+            public string DisplayName
+            {
+                get
+                {
+                    return ItemType == RecycleBinItemType.Folder
+                        ? (Folder != null ? Folder.FolderName : "")
+                        : (File   != null ? File.OriginalFileName : "");
+                }
+            }
+        }
 
         private class OrgUnitItem
         {

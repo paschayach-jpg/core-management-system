@@ -12,6 +12,8 @@ namespace CMS.Services.Interfaces
         OrgUnit MoveOrgUnit(UpdateOrgUnitRequest request, UserContext user);
         void DeactivateOrgUnit(int orgUnitId, UserContext user);
         void DeleteOrgUnit(int orgUnitId, UserContext user);
+        void ForceDeleteOrgUnit(int orgUnitId, UserContext user);
+        bool HasActiveDependents(int orgUnitId);
         IEnumerable<OrgUnit> GetHierarchy();
         IEnumerable<OrgUnit> GetVisibleHierarchy(UserContext user);
         IEnumerable<OrgUnit> GetByConfidentialityLevel(ConfidentialityLevel level);

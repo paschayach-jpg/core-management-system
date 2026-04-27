@@ -1420,7 +1420,8 @@ namespace CMS.Presentation
                 case "trash":
                     return "RecycleBin";
                 default:
-                    return null;
+                    // Catalog already resolved the key — trust it for any action not in this switch
+                    return resolvedAction;
             }
         }
 
@@ -1564,7 +1565,8 @@ namespace CMS.Presentation
                 case "trash":
                     return "RecycleBin";
                 default:
-                    return null;
+                    // Fall through to Catalog for any key not explicitly mapped here
+                    return MenuActionKeyCatalog.ResolveConfiguredActionKey(menuKey);
             }
         }
 

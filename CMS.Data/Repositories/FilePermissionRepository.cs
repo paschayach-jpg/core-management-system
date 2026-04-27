@@ -125,6 +125,28 @@ namespace CMS.Data.Repositories
             return results;
         }
 
+        public IEnumerable<FilePermission> GetAll()
+        {
+            var results = new List<FilePermission>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    @"SELECT FilePermissionID, FileID, PrincipalType, PrincipalID, CanRead, CanWrite, CanDelete,
+                             CanModify, CanFullControl, IsDeny, ExpiryDate, GrantedBy, GrantedDate, RevokedBy, RevokedDate, RevokeReason
+                      FROM security.FilePermission
+                      ORDER BY GrantedDate DESC", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read()) results.Add(MapPermission(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
         public IEnumerable<FilePermission> GetByPrincipal(int principalType, int principalId)
         {
             var results = new List<FilePermission>();

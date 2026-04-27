@@ -157,5 +157,15 @@ namespace CMS.Controllers.DMS.Document
 
             return string.Format("File #{0}", fileId);
         }
+
+        public void RevokeFolderPermission(int permissionId, int revokedBy)
+        {
+            _permissionRepository?.Revoke(permissionId, revokedBy, "ยกเลิกโดย Admin");
+        }
+
+        public void RevokeFilePermission(int filePermissionId, int revokedBy)
+        {
+            _filePermissionRepository?.Revoke(filePermissionId, revokedBy, "ยกเลิกโดย Admin");
+        }
     }
 }

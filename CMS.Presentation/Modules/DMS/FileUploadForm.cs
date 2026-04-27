@@ -219,15 +219,13 @@ namespace CMS.Presentation
 
         private void UploadWorker_Completed(object sender, RunWorkerCompletedEventArgs e)
         {
-            if (e.Error != null) 
+            if (e.Error != null)
             {
                 ShowError("Unexpected upload error: " + e.Error.Message);
-                btnPause.Enabled = false;
                 UpdateSummary();
                 return;
             }
-            
-            btnPause.Enabled = false;
+
             UpdateSummary();
             
             // ตรวจสอบว่าอัปโหลดสำเร็จทั้งหมดหรือไม่
@@ -408,7 +406,6 @@ namespace CMS.Presentation
 
             _uploadedIds.Clear();
             _currentUploadRow = -1;
-            btnPause.Enabled  = true;
 
             if (!_uploadWorker.IsBusy)
                 _uploadWorker.RunWorkerAsync(new List<FileUploadRequest>(_pendingFiles));
@@ -434,11 +431,24 @@ namespace CMS.Presentation
             });
         }
 
-        // ── Cancel all ────────────────────────────────────────────────────────
+        // ── Clear error rows ──────────────────────────────────────────────────
 
-        private void btnCancelAll_Click(object sender, EventArgs e)
+        private void btnClearErrors_Click(object sender, EventArgs e)
         {
-            this.Close();
+            if (_uploadWorker != null && _uploadWorker.IsBusy)
+            {
+                ShowInfo("ไม่สามารถ Clear ขณะกำลังอัพโหลด กรุณารอให้เสร็จก่อน");
+                return;
+            }
+
+            var errorRows = _fileRows
+                .Where(r => r.LblStatus.Text == "Error")
+                .ToList();
+
+            foreach (var rc in errorRows)
+                RemoveFileRow(rc);
+
+            UpdateSummary();
         }
 
         // ── IFileUploadView ───────────────────────────────────────────────────
@@ -862,12 +872,19 @@ namespace CMS.Presentation
 
         private void UpdateSummary()
         {
-            if (_fileRows.Count == 0) { lblSummary.Text = ""; return; }
+            if (_fileRows.Count == 0)
+            {
+                lblSummary.Text = "";
+                btnClearErrors.Visible = false;
+                return;
+            }
             int success = _fileRows.Count(r => r.LblStatus.Text == "สำเร็จ");
             int errors  = _fileRows.Count(r => r.LblStatus.Text == "Error");
             string text = string.Format("รวม: {0}/{1} ไฟล์ สำเร็จ", success, _fileRows.Count);
             if (errors > 0) text += string.Format(" | {0} Error", errors);
             lblSummary.Text = text;
+
+            btnClearErrors.Visible = errors > 0;
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────

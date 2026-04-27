@@ -83,6 +83,14 @@
     <Compile Include="Models\KBDashboardStats.cs" />
     <Compile Include="Models\KBMonthlyArticle.cs" />
     <Compile Include="Models\KBTopArticle.cs" />
+    <Compile Include="Models\WorkflowDefinition.cs" />
+    <Compile Include="Models\WorkflowStep.cs" />
+    <Compile Include="Models\WorkflowConnection.cs" />
+    <Compile Include="Models\WorkflowInstance.cs" />
+    <Compile Include="Models\WorkflowStepInstance.cs" />
+    <Compile Include="Models\WFDelegation.cs" />
+    <Compile Include="Models\WFSLARule.cs" />
+    <Compile Include="Enums\WorkflowEnums.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

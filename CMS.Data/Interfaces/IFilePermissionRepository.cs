@@ -10,6 +10,7 @@ namespace CMS.Data.Interfaces
         IEnumerable<FilePermission> GetByFile(int fileId);
         IEnumerable<FilePermission> GetAllByFile(int fileId); // includes revoked
         IEnumerable<FilePermission> GetByGrantedBy(int userId);
+        IEnumerable<FilePermission> GetAll();
 
         /// <summary>ดึง FilePermission ที่ share ให้ principal นี้ (ใช้สำหรับ Shared With Me)</summary>
         IEnumerable<FilePermission> GetByPrincipal(int principalType, int principalId);

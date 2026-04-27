@@ -23,15 +23,15 @@ namespace CMS.Presentation
         private readonly IAuditLogController _auditLogController;
 
         private List<UserAccount> _allUsers = new List<UserAccount>();
-        private List<OrgUnit>     _allOrgs  = new List<OrgUnit>();
+        private List<OrgUnit> _allOrgs = new List<OrgUnit>();
 
         // Tab 3 controls (created programmatically)
-        private TabPage  _tabVisibility;
+        private TabPage _tabVisibility;
         private ListView _lvVisibility;
-        private Button   _btnGrantVisibility;
-        private Button   _btnRevokeVisibility;
-        private Label    _lblVisibilityStatus;
-        private Label    _lblVisibilityUser;
+        private Button _btnGrantVisibility;
+        private Button _btnRevokeVisibility;
+        private Label _lblVisibilityStatus;
+        private Label _lblVisibilityUser;
 
         public UserAccessForm(
             IUserAdminController userAdminController,
@@ -67,27 +67,27 @@ namespace CMS.Presentation
             // Header label showing which user's grants are being viewed
             _lblVisibilityUser = new Label
             {
-                Dock      = DockStyle.Top,
-                Height    = 28,
-                Font      = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                Height = 28,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(31, 56, 100),
                 TextAlign = ContentAlignment.MiddleLeft,
-                Text      = "เลือกผู้ใช้จากแท็บ 'สิทธิ์ผู้ใช้' เพื่อดูสิทธิ์"
+                Text = "เลือกผู้ใช้จากแท็บ 'สิทธิ์ผู้ใช้' เพื่อดูสิทธิ์"
             };
 
             // ListView showing granted OrgUnits
             _lvVisibility = new ListView
             {
-                Dock          = DockStyle.Fill,
-                View          = View.Details,
+                Dock = DockStyle.Fill,
+                View = View.Details,
                 FullRowSelect = true,
-                GridLines     = true,
+                GridLines = true,
                 HideSelection = false,
-                MultiSelect   = false
+                MultiSelect = false
             };
-            _lvVisibility.Columns.Add("หน่วยงาน",       280);
-            _lvVisibility.Columns.Add("รหัสหน่วยงาน",   120);
-            _lvVisibility.Columns.Add("ให้สิทธิ์โดย",   160);
+            _lvVisibility.Columns.Add("หน่วยงาน", 280);
+            _lvVisibility.Columns.Add("รหัสหน่วยงาน", 120);
+            _lvVisibility.Columns.Add("ให้สิทธิ์โดย", 160);
             _lvVisibility.Columns.Add("วันที่ให้สิทธิ์", 140);
 
             // Bottom button panel
@@ -96,24 +96,24 @@ namespace CMS.Presentation
 
             _btnGrantVisibility = new Button
             {
-                Text     = "➕ เพิ่มสิทธิ์",
+                Text = "➕ เพิ่มสิทธิ์",
                 Location = new Point(0, 8),
-                Size     = new Size(110, 28),
-                Enabled  = false
+                Size = new Size(110, 28),
+                Enabled = false
             };
 
             _btnRevokeVisibility = new Button
             {
-                Text     = "➖ ลบสิทธิ์",
+                Text = "➖ ลบสิทธิ์",
                 Location = new Point(118, 8),
-                Size     = new Size(110, 28),
-                Enabled  = false
+                Size = new Size(110, 28),
+                Enabled = false
             };
 
             _lblVisibilityStatus = new Label
             {
-                Location  = new Point(240, 14),
-                Size      = new Size(500, 23),
+                Location = new Point(240, 14),
+                Size = new Size(500, 23),
                 ForeColor = Color.Gray
             };
 
@@ -139,25 +139,40 @@ namespace CMS.Presentation
         private void WireEvents()
         {
             // Tab 1
-            _txtSearch.KeyDown                    += (s, e) => { if (e.KeyCode == Keys.Enter) FilterUsers(); };
-            _cmbRoleFilter.SelectedIndexChanged   += (s, e) => FilterUsers();
-            btnFind.Click                         += (s, e) => FilterUsers();
-            _lvUsers.SelectedIndexChanged         += LvUsers_SelectionChanged;
-            _lvUsers.DoubleClick                  += BtnChangeRole_Click;
-            _btnChangeRole.Click                  += BtnChangeRole_Click;
-            _btnDeactivate.Click                  += BtnDeactivate_Click;
-            _btnAssignOrg.Click                   += BtnAssignOrg_Click;
-            _btnRefresh.Click                     += (s, e) => LoadData();
+            _txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) FilterUsers(); };
+            _cmbRoleFilter.SelectedIndexChanged += (s, e) => FilterUsers();
+            btnFind.Click += (s, e) => FilterUsers();
+            _lvUsers.SelectedIndexChanged += LvUsers_SelectionChanged;
+            _lvUsers.DoubleClick += BtnChangeRole_Click;
+            _btnChangeRole.Click += BtnChangeRole_Click;
+            _btnDeactivate.Click += BtnDeactivate_Click;
+            _btnAssignOrg.Click += BtnAssignOrg_Click;
+            _btnRefresh.Click += (s, e) => LoadData();
             // Tab 2
-            _orgTree.AfterSelect                  += OrgTree_AfterSelect;
-            _lvOrgUsers.SelectedIndexChanged      += (s, e) =>
+            _orgTree.AfterSelect += OrgTree_AfterSelect;
+            _orgTree.AfterSelect += (s, e) =>
+                _btnAddUserToOrg.Enabled = e.Node != null && e.Node.Tag is OrgUnit;
+            _lvOrgUsers.SelectedIndexChanged += (s, e) =>
                 _btnChangeOrg.Enabled = _lvOrgUsers.SelectedItems.Count > 0;
-            _btnChangeOrg.Click                   += BtnChangeOrg_Click;
+            _btnChangeOrg.Click += BtnChangeOrg_Click;
+            _btnAddUserToOrg.Click += BtnAddUserToOrg_Click;
             // Tab 3
-            _lvVisibility.SelectedIndexChanged    += (s, e) =>
-                _btnRevokeVisibility.Enabled = _lvVisibility.SelectedItems.Count > 0;
-            _btnGrantVisibility.Click             += BtnGrantVisibility_Click;
-            _btnRevokeVisibility.Click            += BtnRevokeVisibility_Click;
+            _lvVisibility.SelectedIndexChanged += (s, e) =>
+            {
+                bool hasSel = _lvVisibility.SelectedItems.Count > 0;
+                _btnRevokeVisibility.Enabled = hasSel
+                    && _lvVisibility.SelectedItems[0].Name != "own_org";
+            };
+            _btnGrantVisibility.Click += BtnGrantVisibility_Click;
+            _btnRevokeVisibility.Click += BtnRevokeVisibility_Click;
+
+            tabControl.SelectedIndexChanged += (s, e) =>
+            {
+                if (_tabVisibility == null || tabControl.SelectedTab != _tabVisibility) return;
+                var selectedUser = GetSelectedUser();
+                if (selectedUser != null)
+                    LoadVisibilityList(selectedUser);
+            };
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -189,15 +204,15 @@ namespace CMS.Presentation
 
         private void FilterUsers()
         {
-            string search  = _txtSearch.Text.Trim().ToLower();
-            int    roleIdx = _cmbRoleFilter.SelectedIndex;
+            string search = _txtSearch.Text.Trim().ToLower();
+            int roleIdx = _cmbRoleFilter.SelectedIndex;
 
             IEnumerable<UserAccount> result = _allUsers;
 
             if (!string.IsNullOrEmpty(search))
                 result = result.Where(u =>
-                    (u.DisplayName  ?? "").ToLower().Contains(search) ||
-                    (u.ADUserName   ?? "").ToLower().Contains(search) ||
+                    (u.DisplayName ?? "").ToLower().Contains(search) ||
+                    (u.ADUserName ?? "").ToLower().Contains(search) ||
                     (u.EmployeeCode ?? "").ToLower().Contains(search));
 
             if (roleIdx > 0)
@@ -213,12 +228,12 @@ namespace CMS.Presentation
             foreach (var u in users)
             {
                 var item = new ListViewItem(u.DisplayName ?? u.ADUserName);
-                item.SubItems.Add(u.ADUserName     ?? "");
+                item.SubItems.Add(u.ADUserName ?? "");
                 item.SubItems.Add(u.DepartmentName ?? "");
-                item.SubItems.Add(u.DivisionName   ?? "");
+                item.SubItems.Add(u.DivisionName ?? "");
                 item.SubItems.Add(RoleName(u.AppRole));
                 item.SubItems.Add(u.IsActive ? "ใช้งาน" : "ปิดใช้");
-                item.Tag       = u;
+                item.Tag = u;
                 item.ForeColor = u.IsActive ? Color.Black : Color.DimGray;
                 _lvUsers.Items.Add(item);
             }
@@ -317,7 +332,7 @@ namespace CMS.Presentation
         {
             bool sel = _lvUsers.SelectedItems.Count > 0;
             _btnChangeRole.Enabled = sel;
-            _btnAssignOrg.Enabled  = sel;
+            _btnAssignOrg.Enabled = sel;
             if (sel)
             {
                 var u = _lvUsers.SelectedItems[0].Tag as UserAccount;
@@ -336,7 +351,25 @@ namespace CMS.Presentation
             var org = e.Node != null ? e.Node.Tag as OrgUnit : null;
             if (org == null) return;
 
-            var users = _allUsers.Where(u => u.OrgUnitID == org.OrgUnitID).ToList();
+            LoadUsersForOrgNode(org);
+        }
+
+        private void LoadUsersForOrgNode(OrgUnit org)
+        {
+            if (org == null) return;
+
+            bool includeDescendants = org.OrgUnitType <= 0;
+            HashSet<int> orgIds;
+            if (includeDescendants)
+            {
+                orgIds = GetOrgAndDescendantIds(org.OrgUnitID);
+            }
+            else
+            {
+                orgIds = new HashSet<int> { org.OrgUnitID };
+            }
+
+            var users = _allUsers.Where(u => orgIds.Contains(u.OrgUnitID)).ToList();
             _lvOrgUsers.BeginUpdate();
             _lvOrgUsers.Items.Clear();
             foreach (var u in users)
@@ -345,14 +378,38 @@ namespace CMS.Presentation
                 item.SubItems.Add(u.ADUserName ?? "");
                 item.SubItems.Add(RoleName(u.AppRole));
                 item.SubItems.Add(u.IsActive ? "ใช้งาน" : "ปิดใช้");
-                item.Tag       = u;
+                item.Tag = u;
                 item.ForeColor = u.IsActive ? Color.Black : Color.DimGray;
                 _lvOrgUsers.Items.Add(item);
             }
             _lvOrgUsers.EndUpdate();
+
             SetStatus(_lblOrgStatus,
-                string.Format("{0}: {1} ผู้ใช้", org.OrgUnitNameTH ?? org.OrgUnitCode, users.Count),
+                string.Format("{0}: {1} ผู้ใช้{2}",
+                    org.OrgUnitNameTH ?? org.OrgUnitCode,
+                    users.Count,
+                    includeDescendants ? " (รวมหน่วยงานย่อย)" : ""),
                 Color.Gray);
+        }
+
+        private HashSet<int> GetOrgAndDescendantIds(int rootOrgId)
+        {
+            var result = new HashSet<int>();
+            if (rootOrgId <= 0) return result;
+
+            var queue = new Queue<int>();
+            queue.Enqueue(rootOrgId);
+            while (queue.Count > 0)
+            {
+                int currentId = queue.Dequeue();
+                if (!result.Add(currentId))
+                    continue;
+
+                foreach (var child in _allOrgs.Where(o => o.ParentOrgUnitID == currentId))
+                    queue.Enqueue(child.OrgUnitID);
+            }
+
+            return result;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -365,6 +422,16 @@ namespace CMS.Presentation
             return _lvUsers.SelectedItems[0].Tag as UserAccount;
         }
 
+        private void RefreshVisibilityForUserIfSelected(int userId)
+        {
+            if (userId <= 0) return;
+            var selected = GetSelectedUser();
+            if (selected == null || selected.UserID != userId) return;
+
+            var latest = _allUsers.FirstOrDefault(u => u.UserID == userId) ?? selected;
+            LoadVisibilityList(latest);
+        }
+
         private void LoadVisibilityList(UserAccount user)
         {
             if (_tabVisibility == null || _lvVisibility == null) return;
@@ -372,11 +439,29 @@ namespace CMS.Presentation
 
             _lblVisibilityUser.Text = string.Format("สิทธิ์มองเห็นหน่วยงานของ: {0}",
                 user.DisplayName ?? user.ADUserName);
-            _btnGrantVisibility.Enabled  = _visibilityController != null;
+            _btnGrantVisibility.Enabled = _visibilityController != null;
             _btnRevokeVisibility.Enabled = false;
 
             _lvVisibility.BeginUpdate();
             _lvVisibility.Items.Clear();
+
+            // Own OrgUnit — always visible, cannot be revoked
+            if (user.OrgUnitID > 0)
+            {
+                var ownOrg = _allOrgs.FirstOrDefault(o => o.OrgUnitID == user.OrgUnitID);
+                if (ownOrg != null)
+                {
+                    var baseItem = new ListViewItem(ownOrg.OrgUnitNameTH ?? ownOrg.OrgUnitCode);
+                    baseItem.SubItems.Add(ownOrg.OrgUnitCode ?? "");
+                    baseItem.SubItems.Add("(สิทธิ์พื้นฐาน)");
+                    baseItem.SubItems.Add("—");
+                    baseItem.Name = "own_org";
+                    baseItem.Tag = null;
+                    baseItem.ForeColor = Color.FromArgb(0, 100, 0);
+                    baseItem.BackColor = Color.FromArgb(240, 255, 240);
+                    _lvVisibility.Items.Add(baseItem);
+                }
+            }
 
             if (_visibilityController != null)
             {
@@ -384,25 +469,25 @@ namespace CMS.Presentation
                 {
                     // Get explicit grants with GrantedBy and GrantedDate information
                     var grants = _visibilityController.GetExplicitGrantsForUser(user.UserID, _currentUser).ToList();
-                    
+
                     // Build lookup for OrgUnit names
                     var orgLookup = _allOrgs.ToDictionary(o => o.OrgUnitID, o => o);
-                    
+
                     // Build lookup for user names (GrantedBy)
                     var grantedByIds = grants.Select(g => g.GrantedBy).Distinct().ToList();
                     var userLookup = _allUsers
                         .Where(u => grantedByIds.Contains(u.UserID))
                         .ToDictionary(u => u.UserID, u => u.DisplayName ?? u.ADUserName);
-                    
+
                     foreach (var grant in grants)
                     {
                         // Get OrgUnit info
                         OrgUnit org = null;
                         orgLookup.TryGetValue(grant.OrgUnitID, out org);
-                        
+
                         string orgName = org != null ? (org.OrgUnitNameTH ?? org.OrgUnitCode) : grant.OrgUnitName ?? string.Format("ID:{0}", grant.OrgUnitID);
                         string orgCode = org != null ? (org.OrgUnitCode ?? "") : "";
-                        
+
                         // Get GrantedBy user name
                         string grantedByName = "";
                         if (userLookup.TryGetValue(grant.GrantedBy, out grantedByName))
@@ -417,7 +502,7 @@ namespace CMS.Presentation
                         {
                             grantedByName = string.Format("UserID:{0}", grant.GrantedBy);
                         }
-                        
+
                         var item = new ListViewItem(orgName);
                         item.SubItems.Add(orgCode);
                         item.SubItems.Add(grantedByName);
@@ -425,7 +510,7 @@ namespace CMS.Presentation
                         item.Tag = org ?? (object)grant; // Store OrgUnit if available, otherwise grant
                         _lvVisibility.Items.Add(item);
                     }
-                    
+
                     // If no explicit grants, show role-based fallback info
                     if (grants.Count == 0)
                     {
@@ -441,7 +526,7 @@ namespace CMS.Presentation
                             _lvVisibility.Items.Add(item);
                         }
                     }
-                    
+
                     SetStatus(_lblVisibilityStatus,
                         string.Format("{0} หน่วยงาน", _lvVisibility.Items.Count), Color.Gray);
                 }
@@ -460,7 +545,7 @@ namespace CMS.Presentation
             _lvVisibility.Items.Clear();
             if (_lblVisibilityUser != null)
                 _lblVisibilityUser.Text = "เลือกผู้ใช้จากแท็บ 'สิทธิ์ผู้ใช้' เพื่อดูสิทธิ์";
-            if (_btnGrantVisibility  != null) _btnGrantVisibility.Enabled  = false;
+            if (_btnGrantVisibility != null) _btnGrantVisibility.Enabled = false;
             if (_btnRevokeVisibility != null) _btnRevokeVisibility.Enabled = false;
         }
 
@@ -482,18 +567,18 @@ namespace CMS.Presentation
                     if (_auditLogController != null)
                         _auditLogController.Log(new AuditEntry
                         {
-                            Module      = "UserAccess",
-                            Action      = "GRANT_VISIBILITY",
-                            UserID      = _currentUser.UserID,
-                            TableName   = "UserOrgVisibility",
-                            RecordID    = user.UserID,
-                            NewValue    = string.Format("TargetUser:{0} OrgUnitID:{1} OrgName:{2}",
+                            Module = "UserAccess",
+                            Action = "GRANT_VISIBILITY",
+                            UserID = _currentUser.UserID,
+                            TableName = "UserOrgVisibility",
+                            RecordID = user.UserID,
+                            NewValue = string.Format("TargetUser:{0} OrgUnitID:{1} OrgName:{2}",
                                              user.ADUserName, org.OrgUnitID, org.OrgUnitNameTH ?? org.OrgUnitCode),
                             MachineName = _currentUser.MachineName,
-                            IPAddress   = _currentUser.IPAddress,
-                            SessionID   = _currentUser.SessionID,
-                            Result      = 1,
-                            AuditDate   = DateTime.Now
+                            IPAddress = _currentUser.IPAddress,
+                            SessionID = _currentUser.SessionID,
+                            Result = 1,
+                            AuditDate = DateTime.Now
                         });
                 }
                 catch (Exception ex) { errors.Add(string.Format("{0}: {1}", org.OrgUnitNameTH ?? org.OrgUnitCode, ex.Message)); }
@@ -529,18 +614,18 @@ namespace CMS.Presentation
                 if (_auditLogController != null)
                     _auditLogController.Log(new AuditEntry
                     {
-                        Module      = "UserAccess",
-                        Action      = "REVOKE_VISIBILITY",
-                        UserID      = _currentUser.UserID,
-                        TableName   = "UserOrgVisibility",
-                        RecordID    = user.UserID,
-                        OldValue    = string.Format("TargetUser:{0} OrgUnitID:{1} OrgName:{2}",
+                        Module = "UserAccess",
+                        Action = "REVOKE_VISIBILITY",
+                        UserID = _currentUser.UserID,
+                        TableName = "UserOrgVisibility",
+                        RecordID = user.UserID,
+                        OldValue = string.Format("TargetUser:{0} OrgUnitID:{1} OrgName:{2}",
                                          user.ADUserName, org.OrgUnitID, org.OrgUnitNameTH ?? org.OrgUnitCode),
                         MachineName = _currentUser.MachineName,
-                        IPAddress   = _currentUser.IPAddress,
-                        SessionID   = _currentUser.SessionID,
-                        Result      = 1,
-                        AuditDate   = DateTime.Now
+                        IPAddress = _currentUser.IPAddress,
+                        SessionID = _currentUser.SessionID,
+                        Result = 1,
+                        AuditDate = DateTime.Now
                     });
                 LoadVisibilityList(user);
                 MessageBox.Show(
@@ -590,29 +675,29 @@ namespace CMS.Presentation
 
             using (var dlg = new Form())
             {
-                dlg.Text            = "เลือกหน่วยงานที่จะให้สิทธิ์";
-                dlg.Size            = new Size(440, 580);
-                dlg.StartPosition   = FormStartPosition.CenterParent;
+                dlg.Text = "เลือกหน่วยงานที่จะให้สิทธิ์";
+                dlg.Size = new Size(440, 580);
+                dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.MaximizeBox     = false;
-                dlg.MinimizeBox     = false;
-                dlg.Font            = new Font("Segoe UI", 9.5F);
-                dlg.BackColor       = Color.FromArgb(243, 246, 251);
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.Font = new Font("Segoe UI", 9.5F);
+                dlg.BackColor = Color.FromArgb(243, 246, 251);
 
                 // ── Header ─────────────────────────────────────────────────────
                 var pnlHeader = new Panel
                 {
-                    Dock      = DockStyle.Top,
-                    Height    = 52,
+                    Dock = DockStyle.Top,
+                    Height = 52,
                     BackColor = Color.FromArgb(25, 55, 105),
-                    Padding   = new Padding(14, 0, 14, 0),
+                    Padding = new Padding(14, 0, 14, 0),
                 };
                 var lblTitle = new Label
                 {
-                    Dock      = DockStyle.Fill,
-                    Text      = "เลือกหน่วยงานที่จะให้สิทธิ์",
+                    Dock = DockStyle.Fill,
+                    Text = "เลือกหน่วยงานที่จะให้สิทธิ์",
                     ForeColor = Color.White,
-                    Font      = new Font("Segoe UI", 11.5F, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
                     TextAlign = ContentAlignment.MiddleLeft,
                 };
                 pnlHeader.Controls.Add(lblTitle);
@@ -620,23 +705,23 @@ namespace CMS.Presentation
                 // ── TreeView (inside a white card panel) ──────────────────────
                 var pnlCard = new Panel
                 {
-                    Dock        = DockStyle.Fill,
-                    BackColor   = Color.White,
-                    Margin      = new Padding(12),
-                    Padding     = new Padding(2),
+                    Dock = DockStyle.Fill,
+                    BackColor = Color.White,
+                    Margin = new Padding(12),
+                    Padding = new Padding(2),
                 };
 
                 var tree = new TreeView
                 {
-                    Dock          = DockStyle.Fill,
-                    CheckBoxes    = true,
-                    ShowLines     = true,
+                    Dock = DockStyle.Fill,
+                    CheckBoxes = true,
+                    ShowLines = true,
                     ShowPlusMinus = true,
-                    BorderStyle   = BorderStyle.None,
-                    BackColor     = Color.White,
-                    Font          = new Font("Segoe UI", 9.5F),
-                    HotTracking   = true,
-                    ItemHeight    = 22,
+                    BorderStyle = BorderStyle.None,
+                    BackColor = Color.White,
+                    Font = new Font("Segoe UI", 9.5F),
+                    HotTracking = true,
+                    ItemHeight = 22,
                 };
                 pnlCard.Controls.Add(tree);
 
@@ -649,7 +734,7 @@ namespace CMS.Presentation
                                   : "📋 ";
                     var node = new TreeNode(prefix + (org.OrgUnitNameTH ?? org.OrgUnitCode))
                     {
-                        Tag     = org,
+                        Tag = org,
                         Checked = alreadyGrantedIds.Contains(org.OrgUnitID)
                     };
                     // Gray out already-granted nodes via ForeColor
@@ -718,33 +803,35 @@ namespace CMS.Presentation
                 // ── Footer ────────────────────────────────────────────────────
                 var pnlBtns = new Panel
                 {
-                    Dock      = DockStyle.Bottom,
-                    Height    = 56,
+                    Dock = DockStyle.Bottom,
+                    Height = 56,
                     BackColor = Color.FromArgb(235, 239, 246),
-                    Padding   = new Padding(10),
+                    Padding = new Padding(10),
                 };
                 var btnOk = new Button
                 {
-                    Text      = "เลือก",
-                    Width     = 100, Height = 34,
+                    Text = "เลือก",
+                    Width = 100,
+                    Height = 34,
                     BackColor = Color.FromArgb(25, 55, 105),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
-                    Font      = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                    Anchor    = AnchorStyles.Right | AnchorStyles.Top,
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    Anchor = AnchorStyles.Right | AnchorStyles.Top,
                 };
                 btnOk.FlatAppearance.BorderSize = 0;
 
                 var btnCan = new Button
                 {
-                    Text         = "ยกเลิก",
-                    Width        = 90, Height = 34,
-                    BackColor    = Color.White,
-                    ForeColor    = Color.FromArgb(80, 80, 80),
-                    FlatStyle    = FlatStyle.Flat,
-                    Font         = new Font("Segoe UI", 9.5F),
+                    Text = "ยกเลิก",
+                    Width = 90,
+                    Height = 34,
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(80, 80, 80),
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9.5F),
                     DialogResult = DialogResult.Cancel,
-                    Anchor       = AnchorStyles.Right | AnchorStyles.Top,
+                    Anchor = AnchorStyles.Right | AnchorStyles.Top,
                 };
                 btnCan.FlatAppearance.BorderColor = Color.FromArgb(180, 180, 180);
 
@@ -752,9 +839,9 @@ namespace CMS.Presentation
                 pnlBtns.Controls.AddRange(new Control[] { btnOk, btnCan });
                 pnlBtns.Layout += (ls, le) =>
                 {
-                    int y   = (pnlBtns.ClientSize.Height - btnOk.Height) / 2;
+                    int y = (pnlBtns.ClientSize.Height - btnOk.Height) / 2;
                     btnCan.Location = new Point(pnlBtns.ClientSize.Width - btnCan.Width - 8, y);
-                    btnOk.Location  = new Point(btnCan.Left - btnOk.Width - 8, y);
+                    btnOk.Location = new Point(btnCan.Left - btnOk.Width - 8, y);
                 };
 
                 btnOk.Click += (bs, be) =>
@@ -796,8 +883,8 @@ namespace CMS.Presentation
         /// <summary>Helper wrapper for ListBox display.</summary>
         private class OrgUnitListItem
         {
-            public OrgUnit OrgUnit     { get; set; }
-            public string  DisplayText { get; set; }
+            public OrgUnit OrgUnit { get; set; }
+            public string DisplayText { get; set; }
             public override string ToString() { return DisplayText; }
         }
 
@@ -810,28 +897,28 @@ namespace CMS.Presentation
             using (var dlg = new Form())
             {
                 // ── Palette ────────────────────────────────────────────────────
-                var navyDark  = Color.FromArgb(25,  55,  105);
-                var navyMid   = Color.FromArgb(50,  90,  150);
+                var navyDark = Color.FromArgb(25, 55, 105);
+                var navyMid = Color.FromArgb(50, 90, 150);
                 var navyLight = Color.FromArgb(215, 228, 248);
-                var bodyBg    = Color.FromArgb(243, 246, 251);
-                var footerBg  = Color.FromArgb(228, 234, 245);
-                var lblColor  = Color.FromArgb(55,  65,  90);
-                var boldFont  = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-                var uiFont    = new Font("Segoe UI", 10.5f);
-                var lblFont   = new Font("Segoe UI", 10f);
+                var bodyBg = Color.FromArgb(243, 246, 251);
+                var footerBg = Color.FromArgb(228, 234, 245);
+                var lblColor = Color.FromArgb(55, 65, 90);
+                var boldFont = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+                var uiFont = new Font("Segoe UI", 10.5f);
+                var lblFont = new Font("Segoe UI", 10f);
 
-                dlg.Text            = "เปลี่ยนบทบาทผู้ใช้";
-                dlg.Size            = new Size(420, 310);
-                dlg.StartPosition   = FormStartPosition.CenterParent;
+                dlg.Text = "เปลี่ยนบทบาทผู้ใช้";
+                dlg.Size = new Size(420, 310);
+                dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.MaximizeBox     = false;
-                dlg.MinimizeBox     = false;
-                dlg.BackColor       = bodyBg;
-                dlg.Font            = uiFont;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.BackColor = bodyBg;
+                dlg.Font = uiFont;
 
                 // ── Header ──────────────────────────────────────────────────────
                 var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = navyDark };
-                var pnlIcon   = new Panel { Size = new Size(36, 36), Location = new Point(14, 11), BackColor = Color.Transparent };
+                var pnlIcon = new Panel { Size = new Size(36, 36), Location = new Point(14, 11), BackColor = Color.Transparent };
                 pnlIcon.Paint += (s, pe) =>
                 {
                     pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -843,11 +930,11 @@ namespace CMS.Presentation
                 pnlHeader.Controls.Add(pnlIcon);
                 pnlHeader.Controls.Add(new Label
                 {
-                    Text      = "เปลี่ยนบทบาทผู้ใช้",
-                    Font      = new Font("Segoe UI", 13f, FontStyle.Bold),
+                    Text = "เปลี่ยนบทบาทผู้ใช้",
+                    Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                     ForeColor = Color.White,
-                    AutoSize  = true,
-                    Location  = new Point(58, 16),
+                    AutoSize = true,
+                    Location = new Point(58, 16),
                 });
 
                 // ── Body ────────────────────────────────────────────────────────
@@ -861,18 +948,24 @@ namespace CMS.Presentation
                 pnlBody.Controls.Add(new Label { Text = "ผู้ใช้:", Left = 0, Top = 34, Width = 90, Height = 24, Font = lblFont, ForeColor = lblColor, TextAlign = ContentAlignment.MiddleRight });
                 pnlBody.Controls.Add(new Label
                 {
-                    Text      = user.DisplayName ?? user.ADUserName,
-                    Left      = 96, Top = 34, Width = 270, Height = 24,
-                    Font      = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                    Text = user.DisplayName ?? user.ADUserName,
+                    Left = 96,
+                    Top = 34,
+                    Width = 270,
+                    Height = 24,
+                    Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                     ForeColor = navyDark,
                     TextAlign = ContentAlignment.MiddleLeft,
                 });
                 pnlBody.Controls.Add(new Label { Text = "บทบาทปัจจุบัน:", Left = 0, Top = 62, Width = 90, Height = 24, Font = lblFont, ForeColor = lblColor, TextAlign = ContentAlignment.MiddleRight });
                 pnlBody.Controls.Add(new Label
                 {
-                    Text      = RoleName(user.AppRole),
-                    Left      = 96, Top = 62, Width = 200, Height = 24,
-                    Font      = lblFont,
+                    Text = RoleName(user.AppRole),
+                    Left = 96,
+                    Top = 62,
+                    Width = 200,
+                    Height = 24,
+                    Font = lblFont,
                     ForeColor = Color.FromArgb(60, 120, 60),
                     TextAlign = ContentAlignment.MiddleLeft,
                 });
@@ -885,9 +978,13 @@ namespace CMS.Presentation
                 pnlBody.Controls.Add(new Label { Text = "บทบาท:", Left = 0, Top = 132, Width = 90, Height = 28, Font = lblFont, ForeColor = lblColor, TextAlign = ContentAlignment.MiddleRight });
                 var cmb = new ComboBox
                 {
-                    Left = 96, Top = 130, Width = 270,
+                    Left = 96,
+                    Top = 130,
+                    Width = 270,
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    Font = uiFont, FlatStyle = FlatStyle.Flat, BackColor = Color.White,
+                    Font = uiFont,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.White,
                 };
                 cmb.Items.AddRange(new object[] { "Officer (1)", "SrOfficer (2)", "Manager (3)", "Admin (4)" });
                 cmb.SelectedIndex = Math.Max(0, Math.Min(3, user.AppRole - 1));
@@ -897,25 +994,33 @@ namespace CMS.Presentation
                 var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = footerBg };
                 var btnOk = new Button
                 {
-                    Text = "บันทึก", Size = new Size(110, 36),
-                    FlatStyle = FlatStyle.Flat, BackColor = navyDark,
-                    ForeColor = Color.White, Font = boldFont, DialogResult = DialogResult.OK,
+                    Text = "บันทึก",
+                    Size = new Size(110, 36),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = navyDark,
+                    ForeColor = Color.White,
+                    Font = boldFont,
+                    DialogResult = DialogResult.OK,
                 };
                 btnOk.FlatAppearance.BorderSize = 0;
                 var btnCan = new Button
                 {
-                    Text = "ยกเลิก", Size = new Size(90, 36),
-                    FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(220, 228, 245),
-                    ForeColor = navyDark, Font = boldFont, DialogResult = DialogResult.Cancel,
+                    Text = "ยกเลิก",
+                    Size = new Size(90, 36),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(220, 228, 245),
+                    ForeColor = navyDark,
+                    Font = boldFont,
+                    DialogResult = DialogResult.Cancel,
                 };
                 btnCan.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-                btnCan.FlatAppearance.BorderSize  = 1;
+                btnCan.FlatAppearance.BorderSize = 1;
                 pnlFooter.Resize += (s, ev) =>
                 {
-                    btnOk.Location  = new Point(pnlFooter.Width - btnOk.Width - btnCan.Width - 20, 9);
+                    btnOk.Location = new Point(pnlFooter.Width - btnOk.Width - btnCan.Width - 20, 9);
                     btnCan.Location = new Point(pnlFooter.Width - btnCan.Width - 10, 9);
                 };
-                btnOk.Location  = new Point(420 - btnOk.Width - btnCan.Width - 20, 9);
+                btnOk.Location = new Point(420 - btnOk.Width - btnCan.Width - 20, 9);
                 btnCan.Location = new Point(420 - btnCan.Width - 10, 9);
                 pnlFooter.Controls.Add(btnOk);
                 pnlFooter.Controls.Add(btnCan);
@@ -931,7 +1036,7 @@ namespace CMS.Presentation
                 int newRole = cmb.SelectedIndex + 1;
                 if (newRole == user.AppRole) return;
 
-                int oldRole  = user.AppRole;
+                int oldRole = user.AppRole;
                 user.AppRole = newRole;
                 try
                 {
@@ -939,18 +1044,18 @@ namespace CMS.Presentation
                     if (_auditLogController != null)
                         _auditLogController.Log(new AuditEntry
                         {
-                            Module      = "UserAccess",
-                            Action      = "CHANGE_ROLE",
-                            UserID      = _currentUser.UserID,
-                            TableName   = "UserAccount",
-                            RecordID    = user.UserID,
-                            OldValue    = string.Format("Role:{0}", RoleName(oldRole)),
-                            NewValue    = string.Format("Role:{0}", RoleName(newRole)),
+                            Module = "UserAccess",
+                            Action = "CHANGE_ROLE",
+                            UserID = _currentUser.UserID,
+                            TableName = "UserAccount",
+                            RecordID = user.UserID,
+                            OldValue = string.Format("Role:{0}", RoleName(oldRole)),
+                            NewValue = string.Format("Role:{0}", RoleName(newRole)),
                             MachineName = _currentUser.MachineName,
-                            IPAddress   = _currentUser.IPAddress,
-                            SessionID   = _currentUser.SessionID,
-                            Result      = 1,
-                            AuditDate   = DateTime.Now
+                            IPAddress = _currentUser.IPAddress,
+                            SessionID = _currentUser.SessionID,
+                            Result = 1,
+                            AuditDate = DateTime.Now
                         });
                     _lvUsers.SelectedItems[0].SubItems[4].Text = RoleName(newRole);
                     SetStatus(_lblStatus,
@@ -986,21 +1091,21 @@ namespace CMS.Presentation
                 if (_auditLogController != null)
                     _auditLogController.Log(new AuditEntry
                     {
-                        Module      = "UserAccess",
-                        Action      = "DEACTIVATE_USER",
-                        UserID      = _currentUser.UserID,
-                        TableName   = "UserAccount",
-                        RecordID    = user.UserID,
-                        NewValue    = string.Format("User:{0} IsActive:false", user.ADUserName),
+                        Module = "UserAccess",
+                        Action = "DEACTIVATE_USER",
+                        UserID = _currentUser.UserID,
+                        TableName = "UserAccount",
+                        RecordID = user.UserID,
+                        NewValue = string.Format("User:{0} IsActive:false", user.ADUserName),
                         MachineName = _currentUser.MachineName,
-                        IPAddress   = _currentUser.IPAddress,
-                        SessionID   = _currentUser.SessionID,
-                        Result      = 1,
-                        AuditDate   = DateTime.Now
+                        IPAddress = _currentUser.IPAddress,
+                        SessionID = _currentUser.SessionID,
+                        Result = 1,
+                        AuditDate = DateTime.Now
                     });
                 var sel = _lvUsers.SelectedItems[0];
-                sel.SubItems[5].Text   = "ปิดใช้";
-                sel.ForeColor          = Color.DimGray;
+                sel.SubItems[5].Text = "ปิดใช้";
+                sel.ForeColor = Color.DimGray;
                 _btnDeactivate.Enabled = false;
                 SetStatus(_lblStatus,
                     string.Format("ปิดใช้งาน '{0}' เรียบร้อย", user.DisplayName ?? user.ADUserName),
@@ -1026,26 +1131,26 @@ namespace CMS.Presentation
             using (var dlg = new Form())
             {
                 // ── Palette ────────────────────────────────────────────────────
-                var navyDark  = Color.FromArgb(25,  55,  105);
-                var navyMid   = Color.FromArgb(50,  90,  150);
+                var navyDark = Color.FromArgb(25, 55, 105);
+                var navyMid = Color.FromArgb(50, 90, 150);
                 var navyLight = Color.FromArgb(215, 228, 248);
-                var bodyBg    = Color.FromArgb(243, 246, 251);
-                var footerBg  = Color.FromArgb(228, 234, 245);
-                var savedBg   = Color.FromArgb(232, 245, 233);
+                var bodyBg = Color.FromArgb(243, 246, 251);
+                var footerBg = Color.FromArgb(228, 234, 245);
+                var savedBg = Color.FromArgb(232, 245, 233);
                 var savedColor = Color.FromArgb(30, 110, 50);
-                var lblColor  = Color.FromArgb(55,  65,  90);
-                var boldFont  = new Font("Segoe UI", 10.5f, FontStyle.Bold);
-                var uiFont    = new Font("Segoe UI", 10.5f);
-                var lblFont   = new Font("Segoe UI", 10f);
+                var lblColor = Color.FromArgb(55, 65, 90);
+                var boldFont = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+                var uiFont = new Font("Segoe UI", 10.5f);
+                var lblFont = new Font("Segoe UI", 10f);
 
-                dlg.Text            = string.Format("กำหนดหน่วยงาน — {0}", user.DisplayName ?? user.ADUserName);
-                dlg.Size            = new Size(500, 520);
-                dlg.StartPosition   = FormStartPosition.CenterParent;
+                dlg.Text = string.Format("กำหนดหน่วยงาน — {0}", user.DisplayName ?? user.ADUserName);
+                dlg.Size = new Size(500, 520);
+                dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.MaximizeBox     = false;
-                dlg.MinimizeBox     = false;
-                dlg.BackColor       = bodyBg;
-                dlg.Font            = uiFont;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.BackColor = bodyBg;
+                dlg.Font = uiFont;
 
                 // ── Header ────────────────────────────────────────────────────
                 var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = navyDark };
@@ -1061,19 +1166,19 @@ namespace CMS.Presentation
                 pnlHdr.Controls.Add(pnlIcon);
                 pnlHdr.Controls.Add(new Label
                 {
-                    Text      = "กำหนดหน่วยงาน",
-                    Font      = new Font("Segoe UI", 13f, FontStyle.Bold),
+                    Text = "กำหนดหน่วยงาน",
+                    Font = new Font("Segoe UI", 13f, FontStyle.Bold),
                     ForeColor = Color.White,
-                    AutoSize  = true,
-                    Location  = new Point(58, 10),
+                    AutoSize = true,
+                    Location = new Point(58, 10),
                 });
                 pnlHdr.Controls.Add(new Label
                 {
-                    Text      = user.DisplayName ?? user.ADUserName,
-                    Font      = new Font("Segoe UI", 9.5f),
+                    Text = user.DisplayName ?? user.ADUserName,
+                    Font = new Font("Segoe UI", 9.5f),
                     ForeColor = Color.FromArgb(190, 210, 245),
-                    AutoSize  = true,
-                    Location  = new Point(58, 34),
+                    AutoSize = true,
+                    Location = new Point(58, 34),
                 });
 
                 // ── Body ─────────────────────────────────────────────────────
@@ -1105,27 +1210,28 @@ namespace CMS.Presentation
 
                 var pnlCurrent = new Panel
                 {
-                    Left        = lx,
-                    Top         = y,
-                    Width       = lw + fw + 8,
-                    Height      = 42,
-                    BackColor   = hasCurrentOrg ? savedBg : Color.FromArgb(245, 245, 250),
+                    Left = lx,
+                    Top = y,
+                    Width = lw + fw + 8,
+                    Height = 42,
+                    BackColor = hasCurrentOrg ? savedBg : Color.FromArgb(245, 245, 250),
                     BorderStyle = BorderStyle.FixedSingle,
-                    Padding     = new Padding(10, 8, 10, 8),
+                    Padding = new Padding(10, 8, 10, 8),
                 };
 
                 int currentLabelW = lw + fw - 18;
                 var lblCurrentOrg = new Label
                 {
-                    Text      = hasCurrentOrg
+                    Text = hasCurrentOrg
                         ? string.Format("✓  {0}  [{1}]", currentOrg0.OrgUnitNameTH ?? currentOrg0.Name, currentOrg0.OrgUnitCode)
                         : "ℹ  ยังไม่ได้กำหนดหน่วยงาน",
-                    Left      = 10, Top = 20,
-                    Width     = currentLabelW,
-                    Height    = 24,
-                    Font      = new Font("Segoe UI", 9.5f, hasCurrentOrg ? FontStyle.Bold : FontStyle.Regular),
+                    Left = 10,
+                    Top = 20,
+                    Width = currentLabelW,
+                    Height = 24,
+                    Font = new Font("Segoe UI", 9.5f, hasCurrentOrg ? FontStyle.Bold : FontStyle.Regular),
                     ForeColor = hasCurrentOrg ? savedColor : Color.Gray,
-                    AutoSize  = false,
+                    AutoSize = false,
                 };
 
                 // ใช้ preferred size จริงของ control เพื่อให้รองรับ DPI/ภาษาไทยได้แม่นยำ
@@ -1137,13 +1243,13 @@ namespace CMS.Presentation
                 {
                     var lblPath = new Label
                     {
-                        Text      = pathText,
-                        Left      = 10,
-                        Top       = lblCurrentOrg.Bottom + 10,
-                        Width     = currentLabelW,
-                        Font      = new Font("Segoe UI", 8.5f, FontStyle.Italic),
+                        Text = pathText,
+                        Left = 10,
+                        Top = lblCurrentOrg.Bottom + 10,
+                        Width = currentLabelW,
+                        Font = new Font("Segoe UI", 8.5f, FontStyle.Italic),
                         ForeColor = savedColor,
-                        AutoSize  = false,
+                        AutoSize = false,
                     };
 
                     var pathPreferred = lblPath.GetPreferredSize(new Size(currentLabelW, 0));
@@ -1165,7 +1271,7 @@ namespace CMS.Presentation
                 addBar("เลือกหน่วยงานใหม่  (SubCommittee → Division → Department)", y); y += 28;
 
                 addLbl("SubCommittee:", y);
-                var cmbSC  = addCmb(y); y += rowH;
+                var cmbSC = addCmb(y); y += rowH;
 
                 addLbl("Division (ฝ่าย):", y);
                 var cmbDiv = addCmb(y); cmbDiv.Enabled = false; y += rowH;
@@ -1176,10 +1282,13 @@ namespace CMS.Presentation
                 // ── Summary breadcrumb ──────────────────────────────────────
                 var lblSummary = new Label
                 {
-                    Left = tx, Top = y, Width = fw, Height = 36,
+                    Left = tx,
+                    Top = y,
+                    Width = fw,
+                    Height = 36,
                     ForeColor = navyMid,
                     Font = new Font("Segoe UI", 9f, FontStyle.Italic),
-                    AutoSize  = false,
+                    AutoSize = false,
                 };
 
                 // โหลด SubCommittee
@@ -1197,7 +1306,7 @@ namespace CMS.Presentation
                 {
                     cmbDiv.Items.Clear();
                     cmbDept.Items.Clear();
-                    cmbDiv.Enabled  = false;
+                    cmbDiv.Enabled = false;
                     cmbDept.Enabled = false;
                     lblSummary.Text = "";
 
@@ -1253,12 +1362,12 @@ namespace CMS.Presentation
                     int deptIdx = cmbDept.SelectedIndex - 1;
                     if (depts == null || deptIdx < 0) return;
 
-                    int scIdx  = cmbSC.SelectedIndex - 1;
-                    var divs   = cmbDiv.Tag as List<OrgUnit>;
+                    int scIdx = cmbSC.SelectedIndex - 1;
+                    var divs = cmbDiv.Tag as List<OrgUnit>;
                     int divIdx = cmbDiv.SelectedIndex - 1;
 
-                    string scName   = scIdx  >= 0 ? subCommittees[scIdx].Name : "";
-                    string divName  = (divs != null && divIdx >= 0) ? divs[divIdx].Name : "";
+                    string scName = scIdx >= 0 ? subCommittees[scIdx].Name : "";
+                    string divName = (divs != null && divIdx >= 0) ? divs[divIdx].Name : "";
                     string deptName = depts[deptIdx].Name;
                     lblSummary.Text = string.Format("{0}  ›  {1}  ›  {2}", scName, divName, deptName);
                 };
@@ -1323,25 +1432,32 @@ namespace CMS.Presentation
                 var pnlFoot = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = footerBg };
                 var btnOk = new Button
                 {
-                    Text = "บันทึก", Size = new Size(110, 36),
-                    FlatStyle = FlatStyle.Flat, BackColor = navyDark,
-                    ForeColor = Color.White, Font = boldFont,
+                    Text = "บันทึก",
+                    Size = new Size(110, 36),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = navyDark,
+                    ForeColor = Color.White,
+                    Font = boldFont,
                 };
                 btnOk.FlatAppearance.BorderSize = 0;
                 var btnCan = new Button
                 {
-                    Text = "ยกเลิก", Size = new Size(90, 36),
-                    FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(220, 228, 245),
-                    ForeColor = navyDark, Font = boldFont, DialogResult = DialogResult.Cancel,
+                    Text = "ยกเลิก",
+                    Size = new Size(90, 36),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(220, 228, 245),
+                    ForeColor = navyDark,
+                    Font = boldFont,
+                    DialogResult = DialogResult.Cancel,
                 };
                 btnCan.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-                btnCan.FlatAppearance.BorderSize  = 1;
+                btnCan.FlatAppearance.BorderSize = 1;
                 pnlFoot.Resize += (s, ev) =>
                 {
-                    btnOk.Location  = new Point(pnlFoot.Width - btnOk.Width - btnCan.Width - 20, 9);
+                    btnOk.Location = new Point(pnlFoot.Width - btnOk.Width - btnCan.Width - 20, 9);
                     btnCan.Location = new Point(pnlFoot.Width - btnCan.Width - 10, 9);
                 };
-                btnOk.Location  = new Point(500 - btnOk.Width - btnCan.Width - 20, 9);
+                btnOk.Location = new Point(500 - btnOk.Width - btnCan.Width - 20, 9);
                 btnCan.Location = new Point(500 - btnCan.Width - 10, 9);
                 pnlFoot.Controls.Add(btnOk);
                 pnlFoot.Controls.Add(btnCan);
@@ -1351,14 +1467,14 @@ namespace CMS.Presentation
                     // หา OrgUnit ที่เลือก — ใช้ Dept ถ้ามี, ไม่งั้นใช้ Div, ไม่งั้นใช้ SC
                     OrgUnit selected = null;
 
-                    var depts  = cmbDept.Tag as List<OrgUnit>;
+                    var depts = cmbDept.Tag as List<OrgUnit>;
                     int deptIdx = cmbDept.SelectedIndex - 1;
                     if (depts != null && deptIdx >= 0)
                         selected = depts[deptIdx];
 
                     if (selected == null)
                     {
-                        var divs   = cmbDiv.Tag as List<OrgUnit>;
+                        var divs = cmbDiv.Tag as List<OrgUnit>;
                         int divIdx = cmbDiv.SelectedIndex - 1;
                         if (divs != null && divIdx >= 0)
                             selected = divs[divIdx];
@@ -1378,28 +1494,29 @@ namespace CMS.Presentation
 
                     try
                     {
-                        int oldOrgId   = user.OrgUnitID;
+                        int oldOrgId = user.OrgUnitID;
                         user.OrgUnitID = selected.OrgUnitID;
                         _userAdminController.UpdateUser(user);
                         if (_auditLogController != null)
                             _auditLogController.Log(new AuditEntry
                             {
-                                Module      = "UserAccess",
-                                Action      = "ASSIGN_ORG",
-                                UserID      = _currentUser.UserID,
-                                TableName   = "UserAccount",
-                                RecordID    = user.UserID,
-                                OldValue    = string.Format("OrgUnitID:{0}", oldOrgId),
-                                NewValue    = string.Format("OrgUnitID:{0} Name:{1}", selected.OrgUnitID, selected.Name),
+                                Module = "UserAccess",
+                                Action = "ASSIGN_ORG",
+                                UserID = _currentUser.UserID,
+                                TableName = "UserAccount",
+                                RecordID = user.UserID,
+                                OldValue = string.Format("OrgUnitID:{0}", oldOrgId),
+                                NewValue = string.Format("OrgUnitID:{0} Name:{1}", selected.OrgUnitID, selected.Name),
                                 MachineName = _currentUser.MachineName,
-                                IPAddress   = _currentUser.IPAddress,
-                                SessionID   = _currentUser.SessionID,
-                                Result      = 1,
-                                AuditDate   = DateTime.Now
+                                IPAddress = _currentUser.IPAddress,
+                                SessionID = _currentUser.SessionID,
+                                Result = 1,
+                                AuditDate = DateTime.Now
                             });
 
                         var cached = _allUsers.FirstOrDefault(u => u.UserID == user.UserID);
                         if (cached != null) cached.OrgUnitID = selected.OrgUnitID;
+                        RefreshVisibilityForUserIfSelected(user.UserID);
 
                         var sel = _lvUsers.SelectedItems[0];
                         sel.SubItems[2].Text = selected.OrgUnitType == 3 ? selected.Name : "";
@@ -1431,6 +1548,195 @@ namespace CMS.Presentation
             }
         }
 
+        private void BtnAddUserToOrg_Click(object sender, EventArgs e)
+        {
+            var orgNode = _orgTree.SelectedNode;
+            if (orgNode == null)
+            {
+                MessageBox.Show("กรุณาเลือกหน่วยงานจากต้นไม้ด้านซ้ายก่อน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            var org = orgNode.Tag as OrgUnit;
+            if (org == null) return;
+
+            var alreadyInOrg = new HashSet<int>(
+                _allUsers.Where(u => u.OrgUnitID == org.OrgUnitID).Select(u => u.UserID));
+            var candidates = _allUsers.Where(u => u.IsActive && !alreadyInOrg.Contains(u.UserID)).ToList();
+
+            if (candidates.Count == 0)
+            {
+                MessageBox.Show("ไม่มีผู้ใช้ที่พร้อมเพิ่มเข้าหน่วยงานนี้", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var chosen = PickUserFromList(candidates,
+                string.Format("เพิ่มผู้ใช้ใน: {0}", org.OrgUnitNameTH ?? org.OrgUnitCode));
+            if (chosen == null) return;
+
+            int oldOrgId = chosen.OrgUnitID;
+            chosen.OrgUnitID = org.OrgUnitID;
+            try
+            {
+                _userAdminController.UpdateUser(chosen);
+                if (_auditLogController != null)
+                    _auditLogController.Log(new AuditEntry
+                    {
+                        Module = "UserAccess",
+                        Action = "ADD_USER_TO_ORG",
+                        UserID = _currentUser.UserID,
+                        TableName = "UserAccount",
+                        RecordID = chosen.UserID,
+                        OldValue = string.Format("OrgUnitID:{0}", oldOrgId),
+                        NewValue = string.Format("OrgUnitID:{0} Name:{1}",
+                                         org.OrgUnitID, org.OrgUnitNameTH ?? org.OrgUnitCode),
+                        MachineName = _currentUser.MachineName,
+                        IPAddress = _currentUser.IPAddress,
+                        SessionID = _currentUser.SessionID,
+                        Result = 1,
+                        AuditDate = DateTime.Now
+                    });
+
+                var cached = _allUsers.FirstOrDefault(u => u.UserID == chosen.UserID);
+                if (cached != null) cached.OrgUnitID = org.OrgUnitID;
+
+                if (_userAdminController != null)
+                    _allUsers = (_userAdminController.GetAllUsers() ?? Enumerable.Empty<UserAccount>()).ToList();
+                LoadUsersForOrgNode(org);
+                RefreshVisibilityForUserIfSelected(chosen.UserID);
+
+                SetStatus(_lblOrgStatus,
+                    string.Format("เพิ่ม '{0}' เข้า '{1}' เรียบร้อย",
+                        chosen.DisplayName ?? chosen.ADUserName,
+                        org.OrgUnitNameTH ?? org.OrgUnitCode),
+                    Color.DarkGreen);
+            }
+            catch (Exception ex)
+            {
+                chosen.OrgUnitID = oldOrgId;
+                SetStatus(_lblOrgStatus, "บันทึกไม่สำเร็จ: " + ex.Message, Color.Red);
+            }
+        }
+
+        private UserAccount PickUserFromList(List<UserAccount> candidates, string title)
+        {
+            UserAccount result = null;
+            var navyDark = Color.FromArgb(25, 55, 105);
+            var bodyBg = Color.FromArgb(243, 246, 251);
+
+            using (var dlg = new Form())
+            {
+                dlg.Text = title;
+                dlg.Size = new Size(500, 480);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.Font = new Font("Segoe UI", 10F);
+                dlg.BackColor = bodyBg;
+
+                var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = navyDark, Padding = new Padding(14, 0, 0, 0) };
+                pnlHdr.Controls.Add(new Label
+                {
+                    Dock = DockStyle.Fill,
+                    Text = title,
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                });
+
+                var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 38, BackColor = Color.White, Padding = new Padding(8, 6, 8, 0) };
+                var lblSearch = new Label { Text = "ค้นหา:", Location = new Point(8, 8), Size = new Size(54, 24), TextAlign = ContentAlignment.MiddleRight };
+                var txtFilter = new TextBox { Location = new Point(66, 6), Size = new Size(410, 24), Font = new Font("Segoe UI", 10F) };
+                pnlSearch.Controls.Add(lblSearch);
+                pnlSearch.Controls.Add(txtFilter);
+
+                var lv = new ListView
+                {
+                    Dock = DockStyle.Fill,
+                    View = View.Details,
+                    FullRowSelect = true,
+                    GridLines = true,
+                    HideSelection = false,
+                    MultiSelect = false
+                };
+                lv.Columns.Add("ชื่อ-นามสกุล", 170);
+                lv.Columns.Add("Username", 130);
+                lv.Columns.Add("แผนก/ฝ่าย", 160);
+
+                Action populate = () =>
+                {
+                    string q = txtFilter.Text.Trim().ToLower();
+                    lv.BeginUpdate();
+                    lv.Items.Clear();
+                    foreach (var u in candidates)
+                    {
+                        if (!string.IsNullOrEmpty(q) &&
+                            !(u.DisplayName ?? "").ToLower().Contains(q) &&
+                            !(u.ADUserName ?? "").ToLower().Contains(q) &&
+                            !(u.DepartmentName ?? "").ToLower().Contains(q) &&
+                            !(u.DivisionName ?? "").ToLower().Contains(q))
+                            continue;
+                        var li = new ListViewItem(u.DisplayName ?? u.ADUserName);
+                        li.SubItems.Add(u.ADUserName ?? "");
+                        li.SubItems.Add(u.DepartmentName ?? u.DivisionName ?? "");
+                        li.Tag = u;
+                        lv.Items.Add(li);
+                    }
+                    lv.EndUpdate();
+                };
+                populate();
+                txtFilter.TextChanged += (s, e2) => populate();
+
+                var pnlFoot = new Panel { Dock = DockStyle.Bottom, Height = 44, BackColor = Color.FromArgb(228, 234, 245), Padding = new Padding(8, 8, 8, 0) };
+                var lblCount = new Label { Location = new Point(8, 14), Size = new Size(200, 20), ForeColor = Color.Gray };
+                var btnOk = new Button
+                {
+                    Text = "✔ เพิ่ม",
+                    Location = new Point(306, 6),
+                    Size = new Size(90, 28),
+                    Enabled = false,
+                    BackColor = navyDark,
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+                var btnCan = new Button
+                {
+                    Text = "ยกเลิก",
+                    Location = new Point(404, 6),
+                    Size = new Size(80, 28),
+                    DialogResult = DialogResult.Cancel,
+                    FlatStyle = FlatStyle.Flat,
+                };
+                pnlFoot.Controls.AddRange(new Control[] { lblCount, btnOk, btnCan });
+
+                lv.SelectedIndexChanged += (s, e2) =>
+                {
+                    bool sel = lv.SelectedItems.Count > 0;
+                    btnOk.Enabled = sel;
+                    lblCount.Text = sel ? string.Format("เลือก: {0}", (lv.SelectedItems[0].Tag as UserAccount)?.ADUserName) : "";
+                };
+                Action confirm = () =>
+                {
+                    if (lv.SelectedItems.Count == 0) return;
+                    result = lv.SelectedItems[0].Tag as UserAccount;
+                    dlg.DialogResult = DialogResult.OK;
+                };
+                btnOk.Click += (s, e2) => confirm();
+                lv.DoubleClick += (s, e2) => confirm();
+
+                dlg.CancelButton = btnCan;
+                dlg.Controls.Add(lv);
+                dlg.Controls.Add(pnlFoot);
+                dlg.Controls.Add(pnlSearch);
+                dlg.Controls.Add(pnlHdr);
+                dlg.ShowDialog(this);
+            }
+            return result;
+        }
+
         private void BtnChangeOrg_Click(object sender, EventArgs e)
         {
             if (_lvOrgUsers.SelectedItems.Count == 0) return;
@@ -1440,7 +1746,7 @@ namespace CMS.Presentation
             OrgUnit chosen = PickOrgUnit();
             if (chosen == null || chosen.OrgUnitID == user.OrgUnitID) return;
 
-            int oldOrgId   = user.OrgUnitID;
+            int oldOrgId = user.OrgUnitID;
             user.OrgUnitID = chosen.OrgUnitID;
             try
             {
@@ -1448,23 +1754,24 @@ namespace CMS.Presentation
                 if (_auditLogController != null)
                     _auditLogController.Log(new AuditEntry
                     {
-                        Module      = "UserAccess",
-                        Action      = "CHANGE_ORG",
-                        UserID      = _currentUser.UserID,
-                        TableName   = "UserAccount",
-                        RecordID    = user.UserID,
-                        OldValue    = string.Format("OrgUnitID:{0}", oldOrgId),
-                        NewValue    = string.Format("OrgUnitID:{0} Name:{1}",
+                        Module = "UserAccess",
+                        Action = "CHANGE_ORG",
+                        UserID = _currentUser.UserID,
+                        TableName = "UserAccount",
+                        RecordID = user.UserID,
+                        OldValue = string.Format("OrgUnitID:{0}", oldOrgId),
+                        NewValue = string.Format("OrgUnitID:{0} Name:{1}",
                                          chosen.OrgUnitID, chosen.OrgUnitNameTH ?? chosen.OrgUnitCode),
                         MachineName = _currentUser.MachineName,
-                        IPAddress   = _currentUser.IPAddress,
-                        SessionID   = _currentUser.SessionID,
-                        Result      = 1,
-                        AuditDate   = DateTime.Now
+                        IPAddress = _currentUser.IPAddress,
+                        SessionID = _currentUser.SessionID,
+                        Result = 1,
+                        AuditDate = DateTime.Now
                     });
                 _lvOrgUsers.Items.Remove(_lvOrgUsers.SelectedItems[0]);
                 var cached = _allUsers.FirstOrDefault(u => u.UserID == user.UserID);
                 if (cached != null) cached.OrgUnitID = chosen.OrgUnitID;
+                RefreshVisibilityForUserIfSelected(user.UserID);
                 SetStatus(_lblOrgStatus,
                     string.Format("ย้าย '{0}' ไปยัง '{1}' เรียบร้อย",
                         user.DisplayName ?? user.ADUserName,
@@ -1487,15 +1794,15 @@ namespace CMS.Presentation
             OrgUnit result = null;
             using (var dlg = new Form())
             {
-                dlg.Text            = "เลือกหน่วยงาน";
-                dlg.Size            = new Size(380, 510);
-                dlg.StartPosition   = FormStartPosition.CenterParent;
+                dlg.Text = "เลือกหน่วยงาน";
+                dlg.Size = new Size(380, 510);
+                dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.MaximizeBox     = false;
-                dlg.MinimizeBox     = false;
-                dlg.Font            = new Font("Segoe UI", 10F);
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.Font = new Font("Segoe UI", 10F);
 
-                var lbl  = new Label { Text = "เลือกหน่วยงานใหม่:", Left = 12, Top = 12, Width = 340 };
+                var lbl = new Label { Text = "เลือกหน่วยงานใหม่:", Left = 12, Top = 12, Width = 340 };
                 var tree = new TreeView { Left = 12, Top = 36, Width = 340, Height = 380, ShowLines = true };
 
                 tree.BeginUpdate();
@@ -1504,7 +1811,7 @@ namespace CMS.Presentation
                 tree.ExpandAll();
                 tree.EndUpdate();
 
-                var btnOk  = new Button { Text = "บันทึก",  Left = 12,  Top = 428, Width = 90, Height = 28 };
+                var btnOk = new Button { Text = "บันทึก", Left = 12, Top = 428, Width = 90, Height = 28 };
                 var btnCan = new Button { Text = "ยกเลิก", Left = 112, Top = 428, Width = 90, Height = 28, DialogResult = DialogResult.Cancel };
                 btnOk.Click += (bs, be) =>
                 {
@@ -1549,10 +1856,10 @@ namespace CMS.Presentation
         {
             switch (appRole)
             {
-                case 1:  return "Officer";
-                case 2:  return "SrOfficer";
-                case 3:  return "Manager";
-                case 4:  return "Admin";
+                case 1: return "Officer";
+                case 2: return "SrOfficer";
+                case 3: return "Manager";
+                case 4: return "Admin";
                 default: return appRole.ToString();
             }
         }
@@ -1560,7 +1867,7 @@ namespace CMS.Presentation
         private static void SetStatus(Label lbl, string text, Color color)
         {
             if (lbl == null) return;
-            lbl.Text      = text;
+            lbl.Text = text;
             lbl.ForeColor = color;
         }
 

@@ -35,6 +35,7 @@
     <!-- Services -->
     <Compile Include="..\CMS.Services\Interfaces\*.cs" />
     <Compile Include="..\CMS.Services\DTOs\*.cs" />
+    <Compile Include="..\CMS.Services\Validators\*.cs" />
     <Compile Include="..\CMS.Services\AuditService.cs" />
     <Compile Include="..\CMS.Services\FileService.cs" />
     <Compile Include="..\CMS.Services\FolderService.cs" />
@@ -42,6 +43,19 @@
     <Compile Include="..\CMS.Services\PermissionService.cs" />
     <Compile Include="..\CMS.Services\UploadCheckpointService.cs" />
     <Compile Include="..\CMS.Services\VirusScanService.cs" />
+    <Compile Include="..\CMS.Services\WorkflowService.cs" />
+    <Compile Include="..\CMS.Services\WorkflowTemplateService.cs" />
+    <Compile Include="..\CMS.Services\WorkflowDelegationService.cs" />
+    <Compile Include="..\CMS.Services\SLACalculator.cs" />
+    <Compile Include="..\CMS.Services\StepResolverService.cs" />
+    <Compile Include="..\CMS.Services\ConditionEvaluatorService.cs" />
+    <Compile Include="..\CMS.Services\WorkflowNotificationService.cs" />
+    <Compile Include="..\CMS.Services\WorkflowIntegrationService.cs" />
+    <Compile Include="..\CMS.Services\ApprovalService.cs" />
+    <Compile Include="..\CMS.Services\NotificationService.cs" />
+
+    <!-- Data Repositories -->
+    <Compile Include="..\CMS.Data\Repositories\*.cs" />
   </ItemGroup>
 
 </Project>

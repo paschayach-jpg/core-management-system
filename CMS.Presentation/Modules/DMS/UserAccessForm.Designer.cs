@@ -49,6 +49,7 @@ namespace CMS.Presentation
             this.colOrgStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.pnlOrgBtns = new System.Windows.Forms.Panel();
             this._btnChangeOrg = new System.Windows.Forms.Button();
+            this._btnAddUserToOrg = new System.Windows.Forms.Button();
             this._lblOrgStatus = new System.Windows.Forms.Label();
             this.lblOrgUsers = new System.Windows.Forms.Label();
             this.pnlHeader.SuspendLayout();
@@ -395,6 +396,7 @@ namespace CMS.Presentation
             // pnlOrgBtns
             // 
             this.pnlOrgBtns.Controls.Add(this._btnChangeOrg);
+            this.pnlOrgBtns.Controls.Add(this._btnAddUserToOrg);
             this.pnlOrgBtns.Controls.Add(this._lblOrgStatus);
             this.pnlOrgBtns.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlOrgBtns.Location = new System.Drawing.Point(0, 546);
@@ -404,21 +406,30 @@ namespace CMS.Presentation
             this.pnlOrgBtns.TabIndex = 1;
             // 
             // _btnChangeOrg
-            // 
+            //
             this._btnChangeOrg.Enabled = false;
             this._btnChangeOrg.Location = new System.Drawing.Point(0, 8);
             this._btnChangeOrg.Name = "_btnChangeOrg";
             this._btnChangeOrg.Size = new System.Drawing.Size(145, 28);
             this._btnChangeOrg.TabIndex = 0;
             this._btnChangeOrg.Text = "เปลี่ยนหน่วยงาน";
-            // 
+            //
+            // _btnAddUserToOrg
+            //
+            this._btnAddUserToOrg.Enabled = false;
+            this._btnAddUserToOrg.Location = new System.Drawing.Point(153, 8);
+            this._btnAddUserToOrg.Name = "_btnAddUserToOrg";
+            this._btnAddUserToOrg.Size = new System.Drawing.Size(168, 28);
+            this._btnAddUserToOrg.TabIndex = 1;
+            this._btnAddUserToOrg.Text = "➕ เพิ่มผู้ใช้ในหน่วยงานนี้";
+            //
             // _lblOrgStatus
-            // 
+            //
             this._lblOrgStatus.ForeColor = System.Drawing.Color.Gray;
-            this._lblOrgStatus.Location = new System.Drawing.Point(155, 14);
+            this._lblOrgStatus.Location = new System.Drawing.Point(329, 14);
             this._lblOrgStatus.Name = "_lblOrgStatus";
-            this._lblOrgStatus.Size = new System.Drawing.Size(360, 23);
-            this._lblOrgStatus.TabIndex = 1;
+            this._lblOrgStatus.Size = new System.Drawing.Size(330, 23);
+            this._lblOrgStatus.TabIndex = 2;
             // 
             // lblOrgUsers
             // 
@@ -502,6 +513,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ColumnHeader   colOrgStatus;
         private System.Windows.Forms.Panel          pnlOrgBtns;
         private System.Windows.Forms.Button         _btnChangeOrg;
+        private System.Windows.Forms.Button         _btnAddUserToOrg;
         private System.Windows.Forms.Label          _lblOrgStatus;
     }
 }

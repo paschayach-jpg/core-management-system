@@ -21,7 +21,10 @@ namespace CMS.Presentation
         // เก็บ DivisionID ที่เลือกไว้ เพื่อ filter แผนก
         private int _selectedDivisionID = 0;
 
-        public CreateOrgUnitRequest Result { get; private set; }
+        public CreateOrgUnitRequest       Result       { get; private set; }
+        public List<CreateOrgUnitRequest> BatchResults { get; private set; }
+
+        private List<OrgUnitData> _batchSelections;
 
         public CreateOrgUnitDialog(IEnumerable<OrgUnit> allUnits,
             IEmployeeDirectoryController employeeDirectoryController = null,
@@ -264,6 +267,18 @@ namespace CMS.Presentation
                 };
                 btnCnl.FlatAppearance.BorderColor = Color.FromArgb(190, 190, 190);
 
+                var lblSelCount = new Label {
+                    Text      = "เลือกแล้ว: 0 รายการ",
+                    AutoSize  = false,
+                    Width     = 160,
+                    Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(0, 51, 102),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Dock      = DockStyle.Left,
+                    Padding   = new Padding(8, 0, 0, 0)
+                };
+
+                pnlFooter.Controls.Add(lblSelCount);
                 pnlFooter.Controls.Add(btnOk);
                 pnlFooter.Controls.Add(btnCnl);
                 pnlFooter.Resize += (s, e2) => {
@@ -298,10 +313,23 @@ namespace CMS.Presentation
                 var lv = new ListView {
                     Dock = DockStyle.Fill, View = View.Details,
                     FullRowSelect = true, GridLines = true,
-                    MultiSelect = false, Font = new Font("Segoe UI", 9.5f)
+                    MultiSelect = true, CheckBoxes = true,
+                    Font = new Font("Segoe UI", 9.5f)
                 };
                 lv.Columns.Add("รหัส",     70);
-                lv.Columns.Add("ชื่อ (TH)", 320);
+                lv.Columns.Add("ชื่อ (TH)", 295);
+
+                lv.ItemChecked += (s, e2) => {
+                    int cnt = lv.CheckedItems.Count;
+                    lblSelCount.Text = cnt > 0
+                        ? string.Format("เลือกแล้ว: {0} รายการ", cnt)
+                        : "เลือกแล้ว: 0 รายการ";
+                    lblSelCount.ForeColor = cnt > 0 ? Color.FromArgb(0, 120, 0) : Color.FromArgb(0, 51, 102);
+                    btnOk.Text = cnt > 1
+                        ? string.Format("✔ เลือก ({0})", cnt)
+                        : "✔ เลือก";
+                };
+
 
                 // Keep all items for filtering
                 var allItems = new List<ListViewItem>();
@@ -402,11 +430,52 @@ namespace CMS.Presentation
 
                 // ── Confirm ───────────────────────────────────────────────────
                 Action confirm = () => {
-                    if (lv.SelectedItems.Count == 0) return;
-                    var data = lv.SelectedItems[0].Tag as OrgUnitData;
-                    if (data == null) return;
-                    txtName.Text = data.NameTh ?? string.Empty;
-                    txtCode.Text = data.Code   ?? string.Empty;
+                    var checkedItems = lv.CheckedItems.Cast<ListViewItem>().ToList();
+                    if (checkedItems.Count == 0 && lv.SelectedItems.Count > 0)
+                        checkedItems = new List<ListViewItem> { lv.SelectedItems[0] };
+                    if (checkedItems.Count == 0) return;
+
+                    var dupeItems = checkedItems
+                        .Where(r => {
+                            var d = r.Tag as OrgUnitData;
+                            return d != null && _allUnits.Any(u =>
+                                string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase)
+                                && u.IsActive && !u.IsDeleted);
+                        }).ToList();
+                    var newItems = checkedItems.Except(dupeItems).ToList();
+
+                    if (dupeItems.Count > 0)
+                    {
+                        string dupeCodes = string.Join("\n  • ",
+                            dupeItems.Select(r => (r.Tag as OrgUnitData)?.Code));
+                        string msg = string.Format("รหัสต่อไปนี้มีอยู่ในระบบแล้ว และจะถูกข้าม:\n  • {0}", dupeCodes);
+                        if (newItems.Count == 0)
+                        {
+                            MessageBox.Show(msg + "\n\nไม่มีรายการใหม่ที่จะเพิ่ม",
+                                "ซ้ำทั้งหมด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+                        MessageBox.Show(msg, "พบรายการซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+
+                    if (newItems.Count == 1)
+                    {
+                        var data = newItems[0].Tag as OrgUnitData;
+                        if (data == null) return;
+                        txtName.Text = data.NameTh ?? string.Empty;
+                        txtCode.Text = data.Code   ?? string.Empty;
+                        _batchSelections = null;
+                    }
+                    else
+                    {
+                        _batchSelections = newItems
+                            .Select(r => r.Tag as OrgUnitData)
+                            .Where(d => d != null)
+                            .ToList();
+                        txtCode.Text = string.Format("({0} รายการ)", _batchSelections.Count);
+                        txtName.Text = string.Join(", ",
+                            _batchSelections.Take(3).Select(d => d.Code));
+                    }
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                 };
@@ -432,6 +501,23 @@ namespace CMS.Presentation
 
         private void OnOkClick(object sender, EventArgs e)
         {
+            if (_batchSelections != null && _batchSelections.Count > 0)
+            {
+                var batchTier = cboTier.SelectedItem is OrgUnitTier bt ? bt : OrgUnitTier.Division;
+                int? batchParentId = null;
+                if (cboParent.SelectedItem is OrgUnitItem batchSel && batchSel.OrgUnit != null)
+                    batchParentId = batchSel.OrgUnit.OrgUnitId;
+
+                BatchResults = _batchSelections.Select(d => new CreateOrgUnitRequest {
+                    OrgUnitNameTH   = d.NameTh,
+                    OrgUnitNameEN   = d.NameTh,
+                    OrgUnitCode     = d.Code,
+                    OrgUnitType     = (int)batchTier,
+                    ParentOrgUnitID = batchParentId
+                }).ToList();
+                return;
+            }
+
             string nameTH = txtName.Text.Trim();
             string nameEN = txtNameEN.Text.Trim();
             string code   = txtCode.Text.Trim();

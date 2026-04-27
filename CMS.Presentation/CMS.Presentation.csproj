@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project ToolsVersion="14.0" DefaultTargets="Build"
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+    Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -33,11 +35,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
+    <Reference
+      Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
       <HintPath>..\packages\BouncyCastle.1.8.9\lib\BouncyCastle.Crypto.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="itextsharp, Version=5.5.13.3, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+    <Reference
+      Include="itextsharp, Version=5.5.13.3, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
       <HintPath>..\packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
@@ -56,6 +60,18 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Root: Shell -->
+    <Compile Include="Modules\WFE\WorkflowDashboardFormNew.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDashboardFormNew.Designer.cs">
+      <DependentUpon>WorkflowDashboardFormNew.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDetailFormNew.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDetailFormNew.Designer.cs">
+      <DependentUpon>WorkflowDetailFormNew.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Modules\DMS\LoginForm.cs">
       <SubType>Form</SubType>
@@ -312,6 +328,97 @@
       <DependentUpon>MenuManagementForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MenuTreeViewManager.cs" />
+    <!-- Module: Workflow — Forms -->
+    <Compile Include="Modules\WFE\WorkflowDashboardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDashboardForm.Designer.cs">
+      <DependentUpon>WorkflowDashboardForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowMonitorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowMonitorForm.Designer.cs">
+      <DependentUpon>WorkflowMonitorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowInstanceDetailForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowInstanceDetailForm.Designer.cs">
+      <DependentUpon>WorkflowInstanceDetailForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDesignerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDesignerForm.Designer.cs">
+      <DependentUpon>WorkflowDesignerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowTemplateListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowTemplateListForm.Designer.cs">
+      <DependentUpon>WorkflowTemplateListForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDelegationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDelegationForm.Designer.cs">
+      <DependentUpon>WorkflowDelegationForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowNavigationBuilder.cs" />
+    <Compile Include="Modules\WFE\SLAReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\SLAReportForm.Designer.cs">
+      <DependentUpon>SLAReportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\HistorySearchForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\HistorySearchForm.Designer.cs">
+      <DependentUpon>HistorySearchForm.cs</DependentUpon>
+    </Compile>
+    <!-- Module: Workflow — Dialog Forms -->
+    <Compile Include="Modules\WFE\Dialogs\WorkflowStartDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\WorkflowStartDialog.Designer.cs">
+      <DependentUpon>WorkflowStartDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\WorkflowStepActionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\WorkflowStepActionForm.Designer.cs">
+      <DependentUpon>WorkflowStepActionForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\ApprovalReviewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\ApprovalReviewForm.Designer.cs">
+      <DependentUpon>ApprovalReviewForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\DelegationDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\DelegationDialog.Designer.cs">
+      <DependentUpon>DelegationDialog.cs</DependentUpon>
+    </Compile>
+    <!-- Module: Workflow — Presenters -->
+    <Compile Include="Modules\WFE\Presenters\WorkflowDashboardPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\WorkflowMonitorPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\WorkflowInstanceDetailPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\WorkflowDesignerPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\WorkflowTemplateListPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\SLAReportPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\HistorySearchPresenter.cs" />
+    <!-- Module: Workflow — View Interfaces -->
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowDashboardView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowMonitorView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowInstanceDetailView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowDesignerView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowTemplateListView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\ISLAReportView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IHistorySearchView.cs" />
     <!-- Properties -->
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -425,6 +532,15 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\DMS\UserAccessForm.resx">
       <DependentUpon>UserAccessForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDetailFormNew.resx">
+      <DependentUpon>WorkflowDetailFormNew.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowInstanceDetailForm.resx">
+      <DependentUpon>WorkflowInstanceDetailForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowTemplateListForm.resx">
+      <DependentUpon>WorkflowTemplateListForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
