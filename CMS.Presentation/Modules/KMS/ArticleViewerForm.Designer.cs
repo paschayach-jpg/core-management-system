@@ -16,6 +16,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblViewerTitle = new System.Windows.Forms.Label();
             this.pnlToolbar = new System.Windows.Forms.Panel();
+            this.panel1 = new System.Windows.Forms.Panel();
             this.pnlToolbarSep = new System.Windows.Forms.Panel();
             this.btnPin = new System.Windows.Forms.Button();
             this.btnExportPdf = new System.Windows.Forms.Button();
@@ -40,18 +41,54 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatusBadge = new System.Windows.Forms.Label();
             this.pnlSidebar = new System.Windows.Forms.Panel();
             this.pnlMappingSection = new System.Windows.Forms.Panel();
-            this.pnlTabContent = new System.Windows.Forms.Panel();
-            this.pnlTabHeaders = new System.Windows.Forms.Panel();
-            this.btnTabDoc = new System.Windows.Forms.Button();
-            this.btnTabProgram = new System.Windows.Forms.Button();
-            this.btnTabWorkflow = new System.Windows.Forms.Button();
-            this.btnTabRelated = new System.Windows.Forms.Button();
-            this.btnTabAttach = new System.Windows.Forms.Button();
+            this.tabMapping = new System.Windows.Forms.TabControl();
+            this.tabAttach = new System.Windows.Forms.TabPage();
+            this.dgvAttachLinked = new System.Windows.Forms.DataGridView();
+            this.colAttachNum = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colAttachName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colAttachSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colAttachDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.lblAttachLinked = new System.Windows.Forms.Label();
+            this.tabRelated = new System.Windows.Forms.TabPage();
+            this.dgvRelatedLinked = new System.Windows.Forms.DataGridView();
+            this.colRelatedNum = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedTitle = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedType = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.lblRelatedLinked = new System.Windows.Forms.Label();
+            this.tabWorkflow = new System.Windows.Forms.TabPage();
+            this.dgvWorkflowLinked = new System.Windows.Forms.DataGridView();
+            this.colWfNum = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colWfCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colWfName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colWfStatus = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.btnStartWorkflow = new System.Windows.Forms.Button();
+            this.lblWorkflowLinked = new System.Windows.Forms.Label();
+            this.tabPrograms = new System.Windows.Forms.TabPage();
+            this.dgvProgramsLinked = new System.Windows.Forms.DataGridView();
+            this.colProgNum = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colProgCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colProgName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colProgDept = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.lblProgramsLinked = new System.Windows.Forms.Label();
+            this.tabDocs = new System.Windows.Forms.TabPage();
+            this.dgvDocsLinked = new System.Windows.Forms.DataGridView();
+            this.colDocNum = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colDocName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colDocRev = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colDocCraf = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.lblDocsLinked = new System.Windows.Forms.Label();
+            this.tabDepartments = new System.Windows.Forms.TabPage();
+            this.dgvDepartmentsLinked = new System.Windows.Forms.DataGridView();
+            this.colDeptNum = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colDeptCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colDeptName = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colDeptType = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.lblDepartmentsLinked = new System.Windows.Forms.Label();
             this.pnlMappingHeader = new System.Windows.Forms.Panel();
             this.lblMappingTitle = new System.Windows.Forms.Label();
             this.lblOfficialBadge = new System.Windows.Forms.Label();
             this.pnlVersionList = new System.Windows.Forms.Panel();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             this.pnlToolbarSep.SuspendLayout();
@@ -65,7 +102,19 @@ namespace CMS.Presentation.Modules.KMS
             this.flpBadges.SuspendLayout();
             this.pnlSidebar.SuspendLayout();
             this.pnlMappingSection.SuspendLayout();
-            this.pnlTabHeaders.SuspendLayout();
+            this.tabMapping.SuspendLayout();
+            this.tabAttach.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvAttachLinked)).BeginInit();
+            this.tabRelated.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvRelatedLinked)).BeginInit();
+            this.tabWorkflow.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvWorkflowLinked)).BeginInit();
+            this.tabPrograms.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvProgramsLinked)).BeginInit();
+            this.tabDocs.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvDocsLinked)).BeginInit();
+            this.tabDepartments.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvDepartmentsLinked)).BeginInit();
             this.pnlMappingHeader.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -103,6 +152,14 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlToolbar.Padding = new System.Windows.Forms.Padding(6, 4, 6, 4);
             this.pnlToolbar.Size = new System.Drawing.Size(1100, 53);
             this.pnlToolbar.TabIndex = 1;
+            // 
+            // panel1
+            // 
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(88, 4);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(484, 45);
+            this.panel1.TabIndex = 100;
             // 
             // pnlToolbarSep
             // 
@@ -442,8 +499,7 @@ namespace CMS.Presentation.Modules.KMS
             // pnlMappingSection
             // 
             this.pnlMappingSection.BackColor = System.Drawing.Color.White;
-            this.pnlMappingSection.Controls.Add(this.pnlTabContent);
-            this.pnlMappingSection.Controls.Add(this.pnlTabHeaders);
+            this.pnlMappingSection.Controls.Add(this.tabMapping);
             this.pnlMappingSection.Controls.Add(this.pnlMappingHeader);
             this.pnlMappingSection.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlMappingSection.Location = new System.Drawing.Point(0, 0);
@@ -451,125 +507,537 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingSection.Size = new System.Drawing.Size(696, 591);
             this.pnlMappingSection.TabIndex = 0;
             // 
-            // pnlTabContent
+            // tabMapping
             // 
-            this.pnlTabContent.AutoScroll = true;
-            this.pnlTabContent.BackColor = System.Drawing.Color.White;
-            this.pnlTabContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlTabContent.Location = new System.Drawing.Point(0, 72);
-            this.pnlTabContent.Name = "pnlTabContent";
-            this.pnlTabContent.Padding = new System.Windows.Forms.Padding(8, 8, 8, 8);
-            this.pnlTabContent.Size = new System.Drawing.Size(696, 519);
-            this.pnlTabContent.TabIndex = 2;
+            this.tabMapping.Controls.Add(this.tabAttach);
+            this.tabMapping.Controls.Add(this.tabRelated);
+            this.tabMapping.Controls.Add(this.tabWorkflow);
+            this.tabMapping.Controls.Add(this.tabPrograms);
+            this.tabMapping.Controls.Add(this.tabDocs);
+            this.tabMapping.Controls.Add(this.tabDepartments);
+            this.tabMapping.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabMapping.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.tabMapping.Location = new System.Drawing.Point(0, 36);
+            this.tabMapping.Name = "tabMapping";
+            this.tabMapping.SelectedIndex = 0;
+            this.tabMapping.Size = new System.Drawing.Size(696, 555);
+            this.tabMapping.TabIndex = 1;
+            this.tabMapping.SelectedIndexChanged += new System.EventHandler(this.TabMapping_SelectedIndexChanged);
             // 
-            // pnlTabHeaders
+            // tabAttach
             // 
-            this.pnlTabHeaders.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
-            this.pnlTabHeaders.Controls.Add(this.btnTabDoc);
-            this.pnlTabHeaders.Controls.Add(this.btnTabProgram);
-            this.pnlTabHeaders.Controls.Add(this.btnTabWorkflow);
-            this.pnlTabHeaders.Controls.Add(this.btnTabRelated);
-            this.pnlTabHeaders.Controls.Add(this.btnTabAttach);
-            this.pnlTabHeaders.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlTabHeaders.Location = new System.Drawing.Point(0, 36);
-            this.pnlTabHeaders.Name = "pnlTabHeaders";
-            this.pnlTabHeaders.Padding = new System.Windows.Forms.Padding(6, 0, 6, 0);
-            this.pnlTabHeaders.Size = new System.Drawing.Size(696, 36);
-            this.pnlTabHeaders.TabIndex = 1;
+            this.tabAttach.AutoScroll = true;
+            this.tabAttach.BackColor = System.Drawing.Color.White;
+            this.tabAttach.Controls.Add(this.dgvAttachLinked);
+            this.tabAttach.Controls.Add(this.lblAttachLinked);
+            this.tabAttach.Location = new System.Drawing.Point(4, 29);
+            this.tabAttach.Name = "tabAttach";
+            this.tabAttach.Padding = new System.Windows.Forms.Padding(4);
+            this.tabAttach.Size = new System.Drawing.Size(688, 522);
+            this.tabAttach.TabIndex = 0;
+            this.tabAttach.Text = "📎 ไฟล์แนบ";
             // 
-            // btnTabDoc
+            // dgvAttachLinked
             // 
-            this.btnTabDoc.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
-            this.btnTabDoc.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnTabDoc.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnTabDoc.FlatAppearance.BorderSize = 0;
-            this.btnTabDoc.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnTabDoc.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.btnTabDoc.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(85)))), ((int)(((byte)(85)))));
-            this.btnTabDoc.Location = new System.Drawing.Point(446, 0);
-            this.btnTabDoc.Name = "btnTabDoc";
-            this.btnTabDoc.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
-            this.btnTabDoc.Size = new System.Drawing.Size(110, 36);
-            this.btnTabDoc.TabIndex = 4;
-            this.btnTabDoc.Text = "📋 เอกสาร (1)";
-            this.btnTabDoc.UseVisualStyleBackColor = false;
-            this.btnTabDoc.Click += new System.EventHandler(this.BtnTab_Click);
+            this.dgvAttachLinked.AllowUserToAddRows = false;
+            this.dgvAttachLinked.AllowUserToDeleteRows = false;
+            this.dgvAttachLinked.AllowUserToResizeRows = false;
+            this.dgvAttachLinked.BackgroundColor = System.Drawing.Color.White;
+            this.dgvAttachLinked.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvAttachLinked.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvAttachLinked.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colAttachNum,
+            this.colAttachName,
+            this.colAttachSize,
+            this.colAttachDate});
+            this.dgvAttachLinked.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvAttachLinked.Location = new System.Drawing.Point(4, 28);
+            this.dgvAttachLinked.Name = "dgvAttachLinked";
+            this.dgvAttachLinked.ReadOnly = true;
+            this.dgvAttachLinked.RowHeadersVisible = false;
+            this.dgvAttachLinked.RowHeadersWidth = 51;
+            this.dgvAttachLinked.RowTemplate.Height = 28;
+            this.dgvAttachLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvAttachLinked.Size = new System.Drawing.Size(680, 490);
+            this.dgvAttachLinked.TabIndex = 1;
             // 
-            // btnTabProgram
+            // colAttachNum
             // 
-            this.btnTabProgram.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
-            this.btnTabProgram.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnTabProgram.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnTabProgram.FlatAppearance.BorderSize = 0;
-            this.btnTabProgram.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnTabProgram.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.btnTabProgram.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(85)))), ((int)(((byte)(85)))));
-            this.btnTabProgram.Location = new System.Drawing.Point(326, 0);
-            this.btnTabProgram.Name = "btnTabProgram";
-            this.btnTabProgram.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
-            this.btnTabProgram.Size = new System.Drawing.Size(120, 36);
-            this.btnTabProgram.TabIndex = 3;
-            this.btnTabProgram.Text = "💻 โปรแกรม (5)";
-            this.btnTabProgram.UseVisualStyleBackColor = false;
-            this.btnTabProgram.Click += new System.EventHandler(this.BtnTab_Click);
+            this.colAttachNum.HeaderText = "#";
+            this.colAttachNum.MinimumWidth = 6;
+            this.colAttachNum.Name = "colAttachNum";
+            this.colAttachNum.ReadOnly = true;
+            this.colAttachNum.Width = 40;
             // 
-            // btnTabWorkflow
+            // colAttachName
             // 
-            this.btnTabWorkflow.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
-            this.btnTabWorkflow.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnTabWorkflow.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnTabWorkflow.FlatAppearance.BorderSize = 0;
-            this.btnTabWorkflow.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnTabWorkflow.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.btnTabWorkflow.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(85)))), ((int)(((byte)(85)))));
-            this.btnTabWorkflow.Location = new System.Drawing.Point(216, 0);
-            this.btnTabWorkflow.Name = "btnTabWorkflow";
-            this.btnTabWorkflow.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
-            this.btnTabWorkflow.Size = new System.Drawing.Size(110, 36);
-            this.btnTabWorkflow.TabIndex = 2;
-            this.btnTabWorkflow.Text = "⚖️ เส้นงาน (2)";
-            this.btnTabWorkflow.UseVisualStyleBackColor = false;
-            this.btnTabWorkflow.Click += new System.EventHandler(this.BtnTab_Click);
+            this.colAttachName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colAttachName.HeaderText = "ชื่อไฟล์";
+            this.colAttachName.MinimumWidth = 6;
+            this.colAttachName.Name = "colAttachName";
+            this.colAttachName.ReadOnly = true;
             // 
-            // btnTabRelated
+            // colAttachSize
             // 
-            this.btnTabRelated.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
-            this.btnTabRelated.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnTabRelated.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnTabRelated.FlatAppearance.BorderSize = 0;
-            this.btnTabRelated.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnTabRelated.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.btnTabRelated.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(85)))), ((int)(((byte)(85)))));
-            this.btnTabRelated.Location = new System.Drawing.Point(106, 0);
-            this.btnTabRelated.Name = "btnTabRelated";
-            this.btnTabRelated.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
-            this.btnTabRelated.Size = new System.Drawing.Size(110, 36);
-            this.btnTabRelated.TabIndex = 1;
-            this.btnTabRelated.Text = "🔗 ความรู้ (3)";
-            this.btnTabRelated.UseVisualStyleBackColor = false;
-            this.btnTabRelated.Click += new System.EventHandler(this.BtnTab_Click);
+            this.colAttachSize.HeaderText = "ขนาด";
+            this.colAttachSize.MinimumWidth = 6;
+            this.colAttachSize.Name = "colAttachSize";
+            this.colAttachSize.ReadOnly = true;
+            this.colAttachSize.Width = 80;
             // 
-            // btnTabAttach
+            // colAttachDate
             // 
-            this.btnTabAttach.BackColor = System.Drawing.Color.White;
-            this.btnTabAttach.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnTabAttach.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnTabAttach.FlatAppearance.BorderSize = 0;
-            this.btnTabAttach.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnTabAttach.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.btnTabAttach.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnTabAttach.Location = new System.Drawing.Point(6, 0);
-            this.btnTabAttach.Name = "btnTabAttach";
-            this.btnTabAttach.Padding = new System.Windows.Forms.Padding(4, 0, 4, 2);
-            this.btnTabAttach.Size = new System.Drawing.Size(100, 36);
-            this.btnTabAttach.TabIndex = 0;
-            this.btnTabAttach.Text = "📎 ไฟล์แนบ (2)";
-            this.btnTabAttach.UseVisualStyleBackColor = false;
-            this.btnTabAttach.Click += new System.EventHandler(this.BtnTab_Click);
+            this.colAttachDate.HeaderText = "วันที่แนบ";
+            this.colAttachDate.MinimumWidth = 6;
+            this.colAttachDate.Name = "colAttachDate";
+            this.colAttachDate.ReadOnly = true;
+            this.colAttachDate.Width = 110;
+            // 
+            // lblAttachLinked
+            // 
+            this.lblAttachLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblAttachLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblAttachLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblAttachLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblAttachLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblAttachLinked.Name = "lblAttachLinked";
+            this.lblAttachLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblAttachLinked.Size = new System.Drawing.Size(680, 24);
+            this.lblAttachLinked.TabIndex = 0;
+            this.lblAttachLinked.Text = "ไฟล์ที่แนบ (0 ไฟล์)";
+            // 
+            // tabRelated
+            // 
+            this.tabRelated.AutoScroll = true;
+            this.tabRelated.BackColor = System.Drawing.Color.White;
+            this.tabRelated.Controls.Add(this.dgvRelatedLinked);
+            this.tabRelated.Controls.Add(this.lblRelatedLinked);
+            this.tabRelated.Location = new System.Drawing.Point(4, 29);
+            this.tabRelated.Name = "tabRelated";
+            this.tabRelated.Padding = new System.Windows.Forms.Padding(4);
+            this.tabRelated.Size = new System.Drawing.Size(688, 522);
+            this.tabRelated.TabIndex = 1;
+            this.tabRelated.Text = "🔗 ความรู้ที่เกี่ยวข้อง";
+            // 
+            // dgvRelatedLinked
+            // 
+            this.dgvRelatedLinked.AllowUserToAddRows = false;
+            this.dgvRelatedLinked.AllowUserToDeleteRows = false;
+            this.dgvRelatedLinked.AllowUserToResizeRows = false;
+            this.dgvRelatedLinked.BackgroundColor = System.Drawing.Color.White;
+            this.dgvRelatedLinked.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvRelatedLinked.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvRelatedLinked.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colRelatedNum,
+            this.colRelatedCode,
+            this.colRelatedTitle,
+            this.colRelatedType});
+            this.dgvRelatedLinked.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvRelatedLinked.Location = new System.Drawing.Point(4, 28);
+            this.dgvRelatedLinked.Name = "dgvRelatedLinked";
+            this.dgvRelatedLinked.ReadOnly = true;
+            this.dgvRelatedLinked.RowHeadersVisible = false;
+            this.dgvRelatedLinked.RowHeadersWidth = 51;
+            this.dgvRelatedLinked.RowTemplate.Height = 28;
+            this.dgvRelatedLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvRelatedLinked.Size = new System.Drawing.Size(680, 490);
+            this.dgvRelatedLinked.TabIndex = 1;
+            this.dgvRelatedLinked.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvRelatedLinked_CellClick);
+            // 
+            // colRelatedNum
+            // 
+            this.colRelatedNum.HeaderText = "#";
+            this.colRelatedNum.MinimumWidth = 6;
+            this.colRelatedNum.Name = "colRelatedNum";
+            this.colRelatedNum.ReadOnly = true;
+            this.colRelatedNum.Width = 40;
+            // 
+            // colRelatedCode
+            // 
+            this.colRelatedCode.HeaderText = "รหัส";
+            this.colRelatedCode.MinimumWidth = 6;
+            this.colRelatedCode.Name = "colRelatedCode";
+            this.colRelatedCode.ReadOnly = true;
+            this.colRelatedCode.Width = 110;
+            // 
+            // colRelatedTitle
+            // 
+            this.colRelatedTitle.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colRelatedTitle.HeaderText = "ชื่อบทความ";
+            this.colRelatedTitle.MinimumWidth = 6;
+            this.colRelatedTitle.Name = "colRelatedTitle";
+            this.colRelatedTitle.ReadOnly = true;
+            // 
+            // colRelatedType
+            // 
+            this.colRelatedType.HeaderText = "ประเภท";
+            this.colRelatedType.MinimumWidth = 6;
+            this.colRelatedType.Name = "colRelatedType";
+            this.colRelatedType.ReadOnly = true;
+            this.colRelatedType.Width = 90;
+            // 
+            // lblRelatedLinked
+            // 
+            this.lblRelatedLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblRelatedLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblRelatedLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblRelatedLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblRelatedLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblRelatedLinked.Name = "lblRelatedLinked";
+            this.lblRelatedLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblRelatedLinked.Size = new System.Drawing.Size(680, 24);
+            this.lblRelatedLinked.TabIndex = 0;
+            this.lblRelatedLinked.Text = "บทความที่เกี่ยวข้อง (0 รายการ)";
+            // 
+            // tabWorkflow
+            // 
+            this.tabWorkflow.AutoScroll = true;
+            this.tabWorkflow.BackColor = System.Drawing.Color.White;
+            this.tabWorkflow.Controls.Add(this.dgvWorkflowLinked);
+            this.tabWorkflow.Controls.Add(this.btnStartWorkflow);
+            this.tabWorkflow.Controls.Add(this.lblWorkflowLinked);
+            this.tabWorkflow.Location = new System.Drawing.Point(4, 29);
+            this.tabWorkflow.Name = "tabWorkflow";
+            this.tabWorkflow.Padding = new System.Windows.Forms.Padding(4);
+            this.tabWorkflow.Size = new System.Drawing.Size(688, 522);
+            this.tabWorkflow.TabIndex = 2;
+            this.tabWorkflow.Text = "⚖️ เส้นงาน";
+            // 
+            // dgvWorkflowLinked
+            // 
+            this.dgvWorkflowLinked.AllowUserToAddRows = false;
+            this.dgvWorkflowLinked.AllowUserToDeleteRows = false;
+            this.dgvWorkflowLinked.AllowUserToResizeRows = false;
+            this.dgvWorkflowLinked.BackgroundColor = System.Drawing.Color.White;
+            this.dgvWorkflowLinked.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvWorkflowLinked.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvWorkflowLinked.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colWfNum,
+            this.colWfCode,
+            this.colWfName,
+            this.colWfStatus});
+            this.dgvWorkflowLinked.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvWorkflowLinked.Location = new System.Drawing.Point(4, 28);
+            this.dgvWorkflowLinked.Name = "dgvWorkflowLinked";
+            this.dgvWorkflowLinked.ReadOnly = true;
+            this.dgvWorkflowLinked.RowHeadersVisible = false;
+            this.dgvWorkflowLinked.RowHeadersWidth = 51;
+            this.dgvWorkflowLinked.RowTemplate.Height = 28;
+            this.dgvWorkflowLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvWorkflowLinked.Size = new System.Drawing.Size(680, 454);
+            this.dgvWorkflowLinked.TabIndex = 1;
+            // 
+            // colWfNum
+            // 
+            this.colWfNum.HeaderText = "#";
+            this.colWfNum.MinimumWidth = 6;
+            this.colWfNum.Name = "colWfNum";
+            this.colWfNum.ReadOnly = true;
+            this.colWfNum.Width = 40;
+            // 
+            // colWfCode
+            // 
+            this.colWfCode.HeaderText = "รหัส";
+            this.colWfCode.MinimumWidth = 6;
+            this.colWfCode.Name = "colWfCode";
+            this.colWfCode.ReadOnly = true;
+            this.colWfCode.Width = 110;
+            // 
+            // colWfName
+            // 
+            this.colWfName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colWfName.HeaderText = "ชื่อ Workflow";
+            this.colWfName.MinimumWidth = 6;
+            this.colWfName.Name = "colWfName";
+            this.colWfName.ReadOnly = true;
+            // 
+            // colWfStatus
+            // 
+            this.colWfStatus.HeaderText = "สถานะ";
+            this.colWfStatus.MinimumWidth = 6;
+            this.colWfStatus.Name = "colWfStatus";
+            this.colWfStatus.ReadOnly = true;
+            this.colWfStatus.Width = 80;
+            // 
+            // btnStartWorkflow
+            // 
+            this.btnStartWorkflow.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnStartWorkflow.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnStartWorkflow.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.btnStartWorkflow.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.btnStartWorkflow.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnStartWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnStartWorkflow.ForeColor = System.Drawing.Color.White;
+            this.btnStartWorkflow.Location = new System.Drawing.Point(4, 482);
+            this.btnStartWorkflow.Name = "btnStartWorkflow";
+            this.btnStartWorkflow.Size = new System.Drawing.Size(680, 36);
+            this.btnStartWorkflow.TabIndex = 2;
+            this.btnStartWorkflow.Text = "▶️ เริ่ม Workflow";
+            this.btnStartWorkflow.UseVisualStyleBackColor = false;
+            this.btnStartWorkflow.Click += new System.EventHandler(this.BtnStartWorkflow_Click);
+            // 
+            // lblWorkflowLinked
+            // 
+            this.lblWorkflowLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblWorkflowLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblWorkflowLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblWorkflowLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblWorkflowLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblWorkflowLinked.Name = "lblWorkflowLinked";
+            this.lblWorkflowLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblWorkflowLinked.Size = new System.Drawing.Size(680, 24);
+            this.lblWorkflowLinked.TabIndex = 0;
+            this.lblWorkflowLinked.Text = "เส้นงานที่เกี่ยวข้อง (0 รายการ)";
+            // 
+            // tabPrograms
+            // 
+            this.tabPrograms.AutoScroll = true;
+            this.tabPrograms.BackColor = System.Drawing.Color.White;
+            this.tabPrograms.Controls.Add(this.dgvProgramsLinked);
+            this.tabPrograms.Controls.Add(this.lblProgramsLinked);
+            this.tabPrograms.Location = new System.Drawing.Point(4, 29);
+            this.tabPrograms.Name = "tabPrograms";
+            this.tabPrograms.Padding = new System.Windows.Forms.Padding(4);
+            this.tabPrograms.Size = new System.Drawing.Size(688, 522);
+            this.tabPrograms.TabIndex = 3;
+            this.tabPrograms.Text = "💻 โปรแกรม";
+            // 
+            // dgvProgramsLinked
+            // 
+            this.dgvProgramsLinked.AllowUserToAddRows = false;
+            this.dgvProgramsLinked.AllowUserToDeleteRows = false;
+            this.dgvProgramsLinked.AllowUserToResizeRows = false;
+            this.dgvProgramsLinked.BackgroundColor = System.Drawing.Color.White;
+            this.dgvProgramsLinked.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvProgramsLinked.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvProgramsLinked.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colProgNum,
+            this.colProgCode,
+            this.colProgName,
+            this.colProgDept});
+            this.dgvProgramsLinked.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvProgramsLinked.Location = new System.Drawing.Point(4, 28);
+            this.dgvProgramsLinked.Name = "dgvProgramsLinked";
+            this.dgvProgramsLinked.ReadOnly = true;
+            this.dgvProgramsLinked.RowHeadersVisible = false;
+            this.dgvProgramsLinked.RowHeadersWidth = 51;
+            this.dgvProgramsLinked.RowTemplate.Height = 28;
+            this.dgvProgramsLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvProgramsLinked.Size = new System.Drawing.Size(680, 490);
+            this.dgvProgramsLinked.TabIndex = 1;
+            // 
+            // colProgNum
+            // 
+            this.colProgNum.HeaderText = "#";
+            this.colProgNum.MinimumWidth = 6;
+            this.colProgNum.Name = "colProgNum";
+            this.colProgNum.ReadOnly = true;
+            this.colProgNum.Width = 40;
+            // 
+            // colProgCode
+            // 
+            this.colProgCode.HeaderText = "รหัส";
+            this.colProgCode.MinimumWidth = 6;
+            this.colProgCode.Name = "colProgCode";
+            this.colProgCode.ReadOnly = true;
+            this.colProgCode.Width = 110;
+            // 
+            // colProgName
+            // 
+            this.colProgName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colProgName.HeaderText = "ชื่อโปรแกรม";
+            this.colProgName.MinimumWidth = 6;
+            this.colProgName.Name = "colProgName";
+            this.colProgName.ReadOnly = true;
+            // 
+            // colProgDept
+            // 
+            this.colProgDept.HeaderText = "ฝ่าย/แผนก";
+            this.colProgDept.MinimumWidth = 6;
+            this.colProgDept.Name = "colProgDept";
+            this.colProgDept.ReadOnly = true;
+            this.colProgDept.Width = 160;
+            // 
+            // lblProgramsLinked
+            // 
+            this.lblProgramsLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblProgramsLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblProgramsLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblProgramsLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblProgramsLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblProgramsLinked.Name = "lblProgramsLinked";
+            this.lblProgramsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblProgramsLinked.Size = new System.Drawing.Size(680, 24);
+            this.lblProgramsLinked.TabIndex = 0;
+            this.lblProgramsLinked.Text = "โปรแกรมที่เกี่ยวข้อง (0 รายการ)";
+            // 
+            // tabDocs
+            // 
+            this.tabDocs.AutoScroll = true;
+            this.tabDocs.BackColor = System.Drawing.Color.White;
+            this.tabDocs.Controls.Add(this.dgvDocsLinked);
+            this.tabDocs.Controls.Add(this.lblDocsLinked);
+            this.tabDocs.Location = new System.Drawing.Point(4, 29);
+            this.tabDocs.Name = "tabDocs";
+            this.tabDocs.Padding = new System.Windows.Forms.Padding(4);
+            this.tabDocs.Size = new System.Drawing.Size(688, 522);
+            this.tabDocs.TabIndex = 4;
+            this.tabDocs.Text = "📋 เอกสาร";
+            // 
+            // dgvDocsLinked
+            // 
+            this.dgvDocsLinked.AllowUserToAddRows = false;
+            this.dgvDocsLinked.AllowUserToDeleteRows = false;
+            this.dgvDocsLinked.AllowUserToResizeRows = false;
+            this.dgvDocsLinked.BackgroundColor = System.Drawing.Color.White;
+            this.dgvDocsLinked.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvDocsLinked.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvDocsLinked.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colDocNum,
+            this.colDocName,
+            this.colDocRev,
+            this.colDocCraf});
+            this.dgvDocsLinked.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvDocsLinked.Location = new System.Drawing.Point(4, 28);
+            this.dgvDocsLinked.Name = "dgvDocsLinked";
+            this.dgvDocsLinked.ReadOnly = true;
+            this.dgvDocsLinked.RowHeadersVisible = false;
+            this.dgvDocsLinked.RowHeadersWidth = 51;
+            this.dgvDocsLinked.RowTemplate.Height = 28;
+            this.dgvDocsLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvDocsLinked.Size = new System.Drawing.Size(680, 490);
+            this.dgvDocsLinked.TabIndex = 1;
+            // 
+            // colDocNum
+            // 
+            this.colDocNum.HeaderText = "#";
+            this.colDocNum.MinimumWidth = 6;
+            this.colDocNum.Name = "colDocNum";
+            this.colDocNum.ReadOnly = true;
+            this.colDocNum.Width = 40;
+            // 
+            // colDocName
+            // 
+            this.colDocName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colDocName.HeaderText = "ชื่อเอกสาร";
+            this.colDocName.MinimumWidth = 6;
+            this.colDocName.Name = "colDocName";
+            this.colDocName.ReadOnly = true;
+            // 
+            // colDocRev
+            // 
+            this.colDocRev.HeaderText = "Rev";
+            this.colDocRev.MinimumWidth = 6;
+            this.colDocRev.Name = "colDocRev";
+            this.colDocRev.ReadOnly = true;
+            this.colDocRev.Width = 55;
+            // 
+            // colDocCraf
+            // 
+            this.colDocCraf.HeaderText = "CRAF";
+            this.colDocCraf.MinimumWidth = 6;
+            this.colDocCraf.Name = "colDocCraf";
+            this.colDocCraf.ReadOnly = true;
+            this.colDocCraf.Width = 55;
+            // 
+            // lblDocsLinked
+            // 
+            this.lblDocsLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblDocsLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblDocsLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblDocsLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblDocsLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblDocsLinked.Name = "lblDocsLinked";
+            this.lblDocsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblDocsLinked.Size = new System.Drawing.Size(680, 24);
+            this.lblDocsLinked.TabIndex = 0;
+            this.lblDocsLinked.Text = "เอกสารที่เกี่ยวข้อง (0 รายการ)";
+            // 
+            // tabDepartments
+            // 
+            this.tabDepartments.AutoScroll = true;
+            this.tabDepartments.BackColor = System.Drawing.Color.White;
+            this.tabDepartments.Controls.Add(this.dgvDepartmentsLinked);
+            this.tabDepartments.Controls.Add(this.lblDepartmentsLinked);
+            this.tabDepartments.Location = new System.Drawing.Point(4, 29);
+            this.tabDepartments.Name = "tabDepartments";
+            this.tabDepartments.Padding = new System.Windows.Forms.Padding(4);
+            this.tabDepartments.Size = new System.Drawing.Size(688, 522);
+            this.tabDepartments.TabIndex = 5;
+            this.tabDepartments.Text = "🏢 ฝ่าย/แผนก ที่เกี่ยวข้อง";
+            // 
+            // dgvDepartmentsLinked
+            // 
+            this.dgvDepartmentsLinked.AllowUserToAddRows = false;
+            this.dgvDepartmentsLinked.AllowUserToDeleteRows = false;
+            this.dgvDepartmentsLinked.AllowUserToResizeRows = false;
+            this.dgvDepartmentsLinked.BackgroundColor = System.Drawing.Color.White;
+            this.dgvDepartmentsLinked.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvDepartmentsLinked.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvDepartmentsLinked.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colDeptNum,
+            this.colDeptCode,
+            this.colDeptName,
+            this.colDeptType});
+            this.dgvDepartmentsLinked.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvDepartmentsLinked.Location = new System.Drawing.Point(4, 28);
+            this.dgvDepartmentsLinked.Name = "dgvDepartmentsLinked";
+            this.dgvDepartmentsLinked.ReadOnly = true;
+            this.dgvDepartmentsLinked.RowHeadersVisible = false;
+            this.dgvDepartmentsLinked.RowHeadersWidth = 51;
+            this.dgvDepartmentsLinked.RowTemplate.Height = 28;
+            this.dgvDepartmentsLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvDepartmentsLinked.Size = new System.Drawing.Size(680, 490);
+            this.dgvDepartmentsLinked.TabIndex = 1;
+            // 
+            // colDeptNum
+            // 
+            this.colDeptNum.HeaderText = "#";
+            this.colDeptNum.MinimumWidth = 6;
+            this.colDeptNum.Name = "colDeptNum";
+            this.colDeptNum.ReadOnly = true;
+            this.colDeptNum.Width = 40;
+            // 
+            // colDeptCode
+            // 
+            this.colDeptCode.HeaderText = "รหัส";
+            this.colDeptCode.MinimumWidth = 6;
+            this.colDeptCode.Name = "colDeptCode";
+            this.colDeptCode.ReadOnly = true;
+            this.colDeptCode.Width = 125;
+            // 
+            // colDeptName
+            // 
+            this.colDeptName.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colDeptName.HeaderText = "ชื่อฝ่าย/แผนก";
+            this.colDeptName.MinimumWidth = 6;
+            this.colDeptName.Name = "colDeptName";
+            this.colDeptName.ReadOnly = true;
+            // 
+            // colDeptType
+            // 
+            this.colDeptType.HeaderText = "ประเภท";
+            this.colDeptType.MinimumWidth = 6;
+            this.colDeptType.Name = "colDeptType";
+            this.colDeptType.ReadOnly = true;
+            this.colDeptType.Width = 120;
+            // 
+            // lblDepartmentsLinked
+            // 
+            this.lblDepartmentsLinked.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.lblDepartmentsLinked.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblDepartmentsLinked.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblDepartmentsLinked.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblDepartmentsLinked.Location = new System.Drawing.Point(4, 4);
+            this.lblDepartmentsLinked.Name = "lblDepartmentsLinked";
+            this.lblDepartmentsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.lblDepartmentsLinked.Size = new System.Drawing.Size(680, 24);
+            this.lblDepartmentsLinked.TabIndex = 0;
+            this.lblDepartmentsLinked.Text = "ฝ่าย/แผนก ที่เกี่ยวข้อง (0 รายการ)";
             // 
             // pnlMappingHeader
             // 
-            this.pnlMappingHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.pnlMappingHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
             this.pnlMappingHeader.Controls.Add(this.lblMappingTitle);
             this.pnlMappingHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlMappingHeader.Location = new System.Drawing.Point(0, 0);
@@ -580,9 +1048,10 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // lblMappingTitle
             // 
+            this.lblMappingTitle.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
             this.lblMappingTitle.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblMappingTitle.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.lblMappingTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblMappingTitle.ForeColor = System.Drawing.Color.White;
             this.lblMappingTitle.Location = new System.Drawing.Point(10, 8);
             this.lblMappingTitle.Name = "lblMappingTitle";
             this.lblMappingTitle.Size = new System.Drawing.Size(676, 22);
@@ -613,14 +1082,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlVersionList.Size = new System.Drawing.Size(200, 100);
             this.pnlVersionList.TabIndex = 0;
             // 
-            // panel1
-            // 
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(88, 4);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(484, 45);
-            this.panel1.TabIndex = 100;
-            // 
             // ArticleViewerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -649,7 +1110,19 @@ namespace CMS.Presentation.Modules.KMS
             this.flpBadges.PerformLayout();
             this.pnlSidebar.ResumeLayout(false);
             this.pnlMappingSection.ResumeLayout(false);
-            this.pnlTabHeaders.ResumeLayout(false);
+            this.tabMapping.ResumeLayout(false);
+            this.tabAttach.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvAttachLinked)).EndInit();
+            this.tabRelated.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvRelatedLinked)).EndInit();
+            this.tabWorkflow.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvWorkflowLinked)).EndInit();
+            this.tabPrograms.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvProgramsLinked)).EndInit();
+            this.tabDocs.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvDocsLinked)).EndInit();
+            this.tabDepartments.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvDepartmentsLinked)).EndInit();
             this.pnlMappingHeader.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -687,12 +1160,56 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel            pnlMappingSection;
         private System.Windows.Forms.Panel            pnlMappingHeader;
         private System.Windows.Forms.Label            lblMappingTitle;
-        private System.Windows.Forms.Panel            pnlTabHeaders;
-        private System.Windows.Forms.Button           btnTabAttach;
-        private System.Windows.Forms.Button           btnTabRelated;
-        private System.Windows.Forms.Button           btnTabWorkflow;
-        private System.Windows.Forms.Button           btnTabProgram;
-        private System.Windows.Forms.Button           btnTabDoc;
-        private System.Windows.Forms.Panel            pnlTabContent;
+        // ── TabControl ────────────────────────────────────────────────────────
+        private System.Windows.Forms.TabControl       tabMapping;
+        private System.Windows.Forms.TabPage          tabAttach;
+        private System.Windows.Forms.TabPage          tabRelated;
+        private System.Windows.Forms.TabPage          tabWorkflow;
+        private System.Windows.Forms.TabPage          tabPrograms;
+        private System.Windows.Forms.TabPage          tabDocs;
+        private System.Windows.Forms.TabPage          tabDepartments;
+        // Attachments tab
+        private System.Windows.Forms.DataGridView     dgvAttachLinked;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colAttachNum;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colAttachName;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colAttachSize;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colAttachDate;
+        private System.Windows.Forms.Label            lblAttachLinked;
+        // Related tab
+        private System.Windows.Forms.DataGridView     dgvRelatedLinked;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedNum;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedCode;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedTitle;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedType;
+        private System.Windows.Forms.Label            lblRelatedLinked;
+        // Workflow tab
+        private System.Windows.Forms.DataGridView     dgvWorkflowLinked;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colWfNum;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colWfCode;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colWfName;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colWfStatus;
+        private System.Windows.Forms.Label            lblWorkflowLinked;
+        private System.Windows.Forms.Button           btnStartWorkflow;
+        // Programs tab
+        private System.Windows.Forms.DataGridView     dgvProgramsLinked;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colProgNum;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colProgCode;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colProgName;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colProgDept;
+        private System.Windows.Forms.Label            lblProgramsLinked;
+        // Docs tab
+        private System.Windows.Forms.DataGridView     dgvDocsLinked;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDocNum;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDocName;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDocRev;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDocCraf;
+        private System.Windows.Forms.Label            lblDocsLinked;
+        // Departments tab
+        private System.Windows.Forms.DataGridView     dgvDepartmentsLinked;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDeptNum;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDeptCode;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDeptName;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colDeptType;
+        private System.Windows.Forms.Label            lblDepartmentsLinked;
     }
 }

@@ -1985,7 +1985,7 @@ namespace CMS.Presentation.Modules.KMS
             cboRelatedStatus.SelectedIndex = 0;
             
             // Placeholder text for search textbox
-            txtSearchRelated.Text = "🔍 ค้นหาชื่อบทความ / รหัส...";
+            txtSearchRelated.Text = "";
             txtSearchRelated.ForeColor = Color.Gray;
         }
 
@@ -2308,10 +2308,13 @@ namespace CMS.Presentation.Modules.KMS
             if (e.RowIndex < 0) return; // Header clicked
             
             // Check if Delete button clicked
-            if (e.ColumnIndex == dgvRelatedLinked.Columns["colDelete"].Index)
+            if (e.ColumnIndex == dgvRelatedLinked.Columns["colRelatedLinkedDelete"].Index)
             {
-                int articleId = (int)dgvRelatedLinked.Rows[e.RowIndex].Tag;
-                string title = dgvRelatedLinked.Rows[e.RowIndex].Cells["colTitle"].Value?.ToString();
+                var row = dgvRelatedLinked.Rows[e.RowIndex];
+                if (row.Tag == null) return;
+
+                int articleId = (int)row.Tag;
+                string title = row.Cells["colTitle"].Value?.ToString();
                 
                 var confirm = MessageBox.Show(
                     string.Format("ต้องการลบความเชื่อมโยงกับบทความ '{0}' ใช่หรือไม่?", title),
@@ -2323,13 +2326,15 @@ namespace CMS.Presentation.Modules.KMS
                 {
                     try
                     {
-                        _presenter.RemoveRelatedArticleLink(articleId);
+                        if (_presenter != null && _presenter.EditingArticle != null)
+                            _presenter.RemoveRelatedArticleLink(articleId);
+
                         dgvRelatedLinked.Rows.RemoveAt(e.RowIndex);
                         
                         // Renumber
                         for (int i = 0; i < dgvRelatedLinked.Rows.Count; i++)
                         {
-                            dgvRelatedLinked.Rows[i].Cells["colNum"].Value = (i + 1).ToString();
+                            dgvRelatedLinked.Rows[i].Cells["colRelatedLinkedNum"].Value = (i + 1).ToString();
                             dgvRelatedLinked.Rows[i].DefaultCellStyle.BackColor = 
                                 (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
                         }

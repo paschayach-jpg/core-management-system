@@ -415,8 +415,8 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                // Get article-to-article links (EntityType = 6)
-                var links = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Article);
+                // Get article-to-article links (EntityType = Law, matching ArticleViewerController)
+                var links = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Law);
                 var linkedIds = links.Select(l => l.EntityID).ToList();
                 
                 if (!linkedIds.Any())
@@ -449,11 +449,11 @@ namespace CMS.Controllers.KMS.KB
 
             try
             {
-                // Insert article-to-article link (EntityType = 6)
+                // Insert article-to-article link (EntityType = Law, matching ArticleViewerController)
                 _articleLinkRepository.Insert(new KBArticleLink
                 {
                     ArticleID = _editingArticle.ArticleID,
-                    EntityType = (byte)KBEntityType.Article,
+                    EntityType = (byte)KBEntityType.Law,
                     EntityID = relatedArticleId,
                     CreatedBy = _user.AdIdentity,
                     CreatedDate = DateTime.Now
@@ -475,8 +475,8 @@ namespace CMS.Controllers.KMS.KB
 
             try
             {
-                // Find and delete the article-to-article link (EntityType = 6)
-                var link = _articleLinkRepository.GetLinksForArticle(_editingArticle.ArticleID, (byte)KBEntityType.Article)
+                // Find and delete the article-to-article link (EntityType = Law, matching ArticleViewerController)
+                var link = _articleLinkRepository.GetLinksForArticle(_editingArticle.ArticleID, (byte)KBEntityType.Law)
                     .FirstOrDefault(l => l.EntityID == relatedArticleId);
                 
                 if (link != null)
@@ -500,7 +500,7 @@ namespace CMS.Controllers.KMS.KB
                 // Delete all existing links for this article
                 _articleLinkRepository.DeleteAllForArticle(articleId);
 
-                // Insert links for Related Articles (EntityType = Article)
+                // Insert links for Related Articles (EntityType = Law, matching ArticleViewerController)
                 var dgvRelated = _view.GetRelatedDataGridView();
                 foreach (System.Windows.Forms.DataGridViewRow row in dgvRelated.Rows)
                 {
@@ -510,7 +510,7 @@ namespace CMS.Controllers.KMS.KB
                         _articleLinkRepository.Insert(new KBArticleLink
                         {
                             ArticleID = articleId,
-                            EntityType = (byte)KBEntityType.Article,
+                            EntityType = (byte)KBEntityType.Law,
                             EntityID = entityId,
                             CreatedBy = _user.AdIdentity,
                             CreatedDate = DateTime.Now
@@ -585,8 +585,8 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                // Load Related Articles (EntityType = Article) - Article-to-Article links
-                var articleLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Article);
+                // Load Related Articles (EntityType = Law, matching ArticleViewerController)
+                var articleLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Law);
                 var dgvRelated = _view.GetRelatedDataGridView();
                 dgvRelated.Rows.Clear();
 

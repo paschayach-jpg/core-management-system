@@ -44,7 +44,6 @@ namespace CMS.Presentation.Modules.KMS
             lblCategory.Text      = a.CategoryName ?? "-";
             lblSummary.Text       = a.Summary ?? string.Empty;
             lblViewCount.Text     = a.ViewCount.ToString();
-            lblLikeCount.Text     = a.LikeCount.ToString();
             lblTags.Text          = string.IsNullOrEmpty(a.Tags) ? "-" : a.Tags;
             btnSendReview.Visible = (a.Status == 1);
         }
