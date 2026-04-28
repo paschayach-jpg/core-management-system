@@ -254,12 +254,12 @@ namespace CMS.Presentation.Modules.KMS
                         flpTags.Controls.RemoveAt(i);
                 }
                 
-                // Add chips from comma-separated string
+                // Add chips from comma-separated string (skip validation for existing data)
                 if (!string.IsNullOrEmpty(value))
                 {
                     foreach (var tag in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     {
-                        AddTagChip(tag.Trim());
+                        AddTagChip(tag.Trim(), skipValidation: true);
                     }
                 }
             }
@@ -717,7 +717,7 @@ namespace CMS.Presentation.Modules.KMS
             return chip;
         }
 
-        private void AddTagChip(string tag)
+        private void AddTagChip(string tag, bool skipValidation = false)
         {
             if (string.IsNullOrWhiteSpace(tag)) return;
             
@@ -725,20 +725,24 @@ namespace CMS.Presentation.Modules.KMS
             tag = tag.TrimEnd(',');
             if (string.IsNullOrWhiteSpace(tag)) return;
             
-            // Validate tag input - allow only alphanumeric, spaces, hyphens, and underscores
-            if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9\s\-_]+$"))
+            // Validate tag input only when not loading existing data
+            if (!skipValidation)
             {
-                MessageBox.Show("Tag can only contain letters, numbers, spaces, hyphens, and underscores.", 
-                    "Invalid Tag", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            
-            // Limit tag length
-            if (tag.Length > 50)
-            {
-                MessageBox.Show("Tag cannot exceed 50 characters.", 
-                    "Tag Too Long", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                // Validate tag input - allow only alphanumeric, spaces, hyphens, and underscores
+                if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9\s\-_]+$"))
+                {
+                    MessageBox.Show("Tag can only contain letters, numbers, spaces, hyphens, and underscores.", 
+                        "Invalid Tag", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                
+                // Limit tag length
+                if (tag.Length > 50)
+                {
+                    MessageBox.Show("Tag cannot exceed 50 characters.", 
+                        "Tag Too Long", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
             }
             
             // Check for duplicate tags (case-insensitive)
@@ -752,8 +756,11 @@ namespace CMS.Presentation.Modules.KMS
                         {
                             if (string.Equals(label.Text, tag, StringComparison.OrdinalIgnoreCase))
                             {
-                                MessageBox.Show($"Tag '{tag}' already exists.", 
-                                    "Duplicate Tag", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                if (!skipValidation)
+                                {
+                                    MessageBox.Show($"Tag '{tag}' already exists.", 
+                                        "Duplicate Tag", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                }
                                 return;
                             }
                         }

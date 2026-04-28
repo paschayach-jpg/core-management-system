@@ -212,6 +212,12 @@
     <Compile Include="Modules\KMS\KBDashboardForm.Designer.cs">
       <DependentUpon>KBDashboardForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\KMS\ArticleCardControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\ArticleCardControl.Designer.cs">
+      <DependentUpon>ArticleCardControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\ImportFile\OrgStructureForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -408,6 +414,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBImportWizardForm.resx">
       <DependentUpon>KBImportWizardForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\KMS\ArticleCardControl.resx">
+      <DependentUpon>ArticleCardControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBMainForm.resx">
       <DependentUpon>KBMainForm.cs</DependentUpon>

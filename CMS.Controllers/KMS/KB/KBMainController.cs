@@ -105,6 +105,22 @@ namespace CMS.Controllers.KMS.KB
             try { _articleService.IncrementViewCount(articleId); } catch { }
         }
 
+        /// <summary>
+        /// Send article for review - Change status from Draft (1) to Review (2)
+        /// </summary>
+        public void SendArticleForReview(int articleId)
+        {
+            try
+            {
+                _articleService.ChangeStatus(articleId, 2, _user.AdIdentity);
+                // Success - no need to show message, the UI will refresh
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("ส่งขอ Review ไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
         public void ShowReport()
         {
             try
