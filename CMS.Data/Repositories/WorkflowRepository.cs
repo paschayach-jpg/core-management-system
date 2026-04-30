@@ -32,15 +32,15 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("dbo.sp_WF_CreateWorkflowInstance", conn))
+                using (var cmd = new SqlCommand("WFE.sp_CreateWFInstance", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", instance.WorkflowDefinitionId);
+                    cmd.Parameters.AddWithValue("@WFDefinitionId", instance.WFDefinitionId);
                     cmd.Parameters.AddWithValue("@TemplateVersion",      instance.TemplateVersion);
                     cmd.Parameters.AddWithValue("@InitiatedBy",          instance.InitiatedBy);
                     cmd.Parameters.AddWithValue("@InputParameters",      (object)instance.InputParameters ?? DBNull.Value);
 
-                    var outParam = new SqlParameter("@NewWorkflowInstanceId", SqlDbType.Int)
+                    var outParam = new SqlParameter("@NewWFInstanceId", SqlDbType.Int)
                     {
                         Direction = ParameterDirection.Output
                     };
@@ -61,15 +61,15 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowInstanceId, WorkflowDefinitionId, TemplateVersion, " +
+                    "SELECT WFInstanceId, WFDefinitionId, TemplateVersion, " +
                     "       InitiatedBy, InitiatedDate, CurrentStepId, Status, " +
                     "       CompletedDate, InputParameters, IsDeleted, DeletedDate " +
-                    "FROM   dbo.WorkflowInstance " +
-                    "WHERE  WorkflowInstanceId = @WorkflowInstanceId " +
+                    "FROM   WFE.t_WFInstance " +
+                    "WHERE  WFInstanceId = @WFInstanceId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WorkflowInstanceId", workflowInstanceId);
+                    cmd.Parameters.AddWithValue("@WFInstanceId", workflowInstanceId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         return reader.Read() ? MapInstance(reader) : null;
@@ -89,8 +89,8 @@ namespace CMS.Data.Repositories
 
                 // Build dynamic WHERE clause
                 var where = new System.Text.StringBuilder("WHERE IsDeleted = 0");
-                if (filter.WorkflowDefinitionId.HasValue)
-                    where.Append(" AND WorkflowDefinitionId = @WorkflowDefinitionId");
+                if (filter.WFDefinitionId.HasValue)
+                    where.Append(" AND WFDefinitionId = @WFDefinitionId");
                 if (!string.IsNullOrEmpty(filter.InitiatedBy))
                     where.Append(" AND InitiatedBy = @InitiatedBy");
                 if (filter.Status.HasValue)
@@ -104,10 +104,10 @@ namespace CMS.Data.Repositories
 
                 string sql =
                     "SELECT COUNT(*) OVER () AS TotalCount, " +
-                    "       WorkflowInstanceId, WorkflowDefinitionId, TemplateVersion, " +
+                    "       WFInstanceId, WFDefinitionId, TemplateVersion, " +
                     "       InitiatedBy, InitiatedDate, CurrentStepId, Status, " +
                     "       CompletedDate, InputParameters, IsDeleted, DeletedDate " +
-                    "FROM   dbo.WorkflowInstance " +
+                    "FROM   WFE.t_WFInstance " +
                     where +
                     " ORDER BY InitiatedDate DESC " +
                     " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
@@ -115,8 +115,8 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    if (filter.WorkflowDefinitionId.HasValue)
-                        cmd.Parameters.AddWithValue("@WorkflowDefinitionId", filter.WorkflowDefinitionId.Value);
+                    if (filter.WFDefinitionId.HasValue)
+                        cmd.Parameters.AddWithValue("@WFDefinitionId", filter.WFDefinitionId.Value);
                     if (!string.IsNullOrEmpty(filter.InitiatedBy))
                         cmd.Parameters.AddWithValue("@InitiatedBy", filter.InitiatedBy);
                     if (filter.Status.HasValue)
@@ -156,10 +156,10 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowInstanceId, WorkflowDefinitionId, TemplateVersion, " +
+                    "SELECT WFInstanceId, WFDefinitionId, TemplateVersion, " +
                     "       InitiatedBy, InitiatedDate, CurrentStepId, Status, " +
                     "       CompletedDate, InputParameters, IsDeleted, DeletedDate " +
-                    "FROM   dbo.WorkflowInstance " +
+                    "FROM   WFE.t_WFInstance " +
                     "WHERE  IsDeleted = 0 " +
                     "  AND  Status NOT IN (3, 4) " +   // exclude Completed and Rejected
                     "ORDER BY InitiatedDate ASC", conn))
@@ -184,10 +184,10 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("dbo.sp_WF_UpdateWorkflowInstanceStatus", conn))
+                using (var cmd = new SqlCommand("WFE.sp_UpdateWFInstanceStatus", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@WorkflowInstanceId", instance.WorkflowInstanceId);
+                    cmd.Parameters.AddWithValue("@WFInstanceId", instance.WFInstanceId);
                     cmd.Parameters.AddWithValue("@Status",             (byte)instance.Status);
                     cmd.Parameters.AddWithValue("@CurrentStepId",      (object)instance.CurrentStepId ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@CompletedDate",      (object)instance.CompletedDate ?? DBNull.Value);
@@ -206,14 +206,14 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "UPDATE dbo.WorkflowInstance " +
+                    "UPDATE WFE.t_WFInstance " +
                     "SET    IsDeleted = 1, DeletedDate = GETUTCDATE() " +
-                    "WHERE  WorkflowInstanceId = @WorkflowInstanceId " +
+                    "WHERE  WFInstanceId = @WFInstanceId " +
                     "  AND  Status IN (3, 4) " +   // only terminal instances
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WorkflowInstanceId", workflowInstanceId);
+                    cmd.Parameters.AddWithValue("@WFInstanceId", workflowInstanceId);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -227,8 +227,8 @@ namespace CMS.Data.Repositories
         {
             return new WorkflowInstance
             {
-                WorkflowInstanceId   = (int)reader["WorkflowInstanceId"],
-                WorkflowDefinitionId = (int)reader["WorkflowDefinitionId"],
+                WFInstanceId   = (int)reader["WFInstanceId"],
+                WFDefinitionId = (int)reader["WFDefinitionId"],
                 TemplateVersion      = (int)reader["TemplateVersion"],
                 InitiatedBy          = (string)reader["InitiatedBy"],
                 InitiatedDate        = (DateTime)reader["InitiatedDate"],

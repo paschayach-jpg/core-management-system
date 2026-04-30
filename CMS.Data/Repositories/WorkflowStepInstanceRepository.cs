@@ -31,15 +31,15 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("dbo.sp_WF_CreateStepInstance", conn))
+                using (var cmd = new SqlCommand("WFE.sp_CreateWFStepInstance", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@WorkflowInstanceId", instance.WorkflowInstanceId);
-                    cmd.Parameters.AddWithValue("@WorkflowStepId",     instance.WorkflowStepId);
+                    cmd.Parameters.AddWithValue("@WFInstanceId", instance.WFInstanceId);
+                    cmd.Parameters.AddWithValue("@WFStepId",     instance.WFStepId);
                     cmd.Parameters.AddWithValue("@AssignedTo",         instance.AssignedTo);
                     cmd.Parameters.AddWithValue("@SLADeadline",        instance.SLADeadline);
 
-                    var outParam = new SqlParameter("@NewWorkflowStepInstanceId", SqlDbType.Int)
+                    var outParam = new SqlParameter("@NewWFStepInstanceId", SqlDbType.Int)
                     {
                         Direction = ParameterDirection.Output
                     };
@@ -60,15 +60,15 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowStepInstanceId, WorkflowInstanceId, WorkflowStepId, " +
+                    "SELECT WFStepInstanceId, WFInstanceId, WFStepId, " +
                     "       AssignedTo, AssignedDate, Status, CompletedDate, CompletedBy, " +
                     "       OutputData, SLADeadline, SLAStatus, IsDeleted " +
-                    "FROM   dbo.WorkflowStepInstance " +
-                    "WHERE  WorkflowStepInstanceId = @WorkflowStepInstanceId " +
+                    "FROM   WFE.t_WFStepInstance " +
+                    "WHERE  WFStepInstanceId = @WFStepInstanceId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WorkflowStepInstanceId", workflowStepInstanceId);
+                    cmd.Parameters.AddWithValue("@WFStepInstanceId", workflowStepInstanceId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         return reader.Read() ? MapStepInstance(reader) : null;
@@ -84,17 +84,17 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT wsi.WorkflowStepInstanceId, wsi.WorkflowInstanceId, wsi.WorkflowStepId, " +
+                    "SELECT wsi.WFStepInstanceId, wsi.WFInstanceId, wsi.WFStepId, " +
                     "       wsi.AssignedTo, wsi.AssignedDate, wsi.Status, wsi.CompletedDate, wsi.CompletedBy, " +
                     "       wsi.OutputData, wsi.SLADeadline, wsi.SLAStatus, wsi.IsDeleted " +
-                    "FROM   dbo.WorkflowStepInstance wsi " +
-                    "INNER JOIN dbo.WorkflowStep ws ON ws.WorkflowStepId = wsi.WorkflowStepId " +
-                    "WHERE  wsi.WorkflowInstanceId = @WorkflowInstanceId " +
+                    "FROM   WFE.t_WFStepInstance wsi " +
+                    "INNER JOIN dbo.WorkflowStep ws ON ws.WFStepId = wsi.WFStepId " +
+                    "WHERE  wsi.WFInstanceId = @WFInstanceId " +
                     "  AND  wsi.IsDeleted = 0 " +
                     "ORDER BY ws.SequenceNumber ASC, wsi.AssignedDate ASC", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WorkflowInstanceId", workflowInstanceId);
+                    cmd.Parameters.AddWithValue("@WFInstanceId", workflowInstanceId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -125,9 +125,9 @@ namespace CMS.Data.Repositories
                             // map only the WorkflowStepInstance fields here.
                             results.Add(new WorkflowStepInstance
                             {
-                                WorkflowStepInstanceId = (int)reader["WorkflowStepInstanceId"],
-                                WorkflowInstanceId     = (int)reader["WorkflowInstanceId"],
-                                WorkflowStepId         = (int)reader["WorkflowStepId"],
+                                WFStepInstanceId = (int)reader["WFStepInstanceId"],
+                                WFInstanceId     = (int)reader["WFInstanceId"],
+                                WFStepId         = (int)reader["WFStepId"],
                                 AssignedTo             = (string)reader["AssignedTo"],
                                 AssignedDate           = (DateTime)reader["AssignedDate"],
                                 Status                 = (WorkflowStepInstanceStatus)(byte)reader["Status"],
@@ -148,10 +148,10 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowStepInstanceId, WorkflowInstanceId, WorkflowStepId, " +
+                    "SELECT WFStepInstanceId, WFInstanceId, WFStepId, " +
                     "       AssignedTo, AssignedDate, Status, CompletedDate, CompletedBy, " +
                     "       OutputData, SLADeadline, SLAStatus, IsDeleted " +
-                    "FROM   dbo.WorkflowStepInstance " +
+                    "FROM   WFE.t_WFStepInstance " +
                     "WHERE  AssignedTo = @AssignedTo " +
                     "  AND  Status IN (1, 2) " +   // Pending or InProgress
                     "  AND  IsDeleted = 0 " +
@@ -180,10 +180,10 @@ namespace CMS.Data.Repositories
                 // For now, scan OutputData for the reference (acceptable for low-volume callbacks).
                 using (var cmd = new SqlCommand(
                     "SELECT TOP 1 " +
-                    "       WorkflowStepInstanceId, WorkflowInstanceId, WorkflowStepId, " +
+                    "       WFStepInstanceId, WFInstanceId, WFStepId, " +
                     "       AssignedTo, AssignedDate, Status, CompletedDate, CompletedBy, " +
                     "       OutputData, SLADeadline, SLAStatus, IsDeleted " +
-                    "FROM   dbo.WorkflowStepInstance " +
+                    "FROM   WFE.t_WFStepInstance " +
                     "WHERE  IsDeleted = 0 " +
                     "  AND  OutputData LIKE @RefPattern", conn))
                 {
@@ -210,7 +210,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "UPDATE dbo.WorkflowStepInstance " +
+                    "UPDATE WFE.t_WFStepInstance " +
                     "SET    AssignedTo    = @AssignedTo, " +
                     "       Status        = @Status, " +
                     "       CompletedDate = @CompletedDate, " +
@@ -218,11 +218,11 @@ namespace CMS.Data.Repositories
                     "       OutputData    = @OutputData, " +
                     "       SLADeadline   = @SLADeadline, " +
                     "       SLAStatus     = @SLAStatus " +
-                    "WHERE  WorkflowStepInstanceId = @WorkflowStepInstanceId " +
+                    "WHERE  WFStepInstanceId = @WFStepInstanceId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WorkflowStepInstanceId", instance.WorkflowStepInstanceId);
+                    cmd.Parameters.AddWithValue("@WFStepInstanceId", instance.WFStepInstanceId);
                     cmd.Parameters.AddWithValue("@AssignedTo",    instance.AssignedTo);
                     cmd.Parameters.AddWithValue("@Status",        (byte)instance.Status);
                     cmd.Parameters.AddWithValue("@CompletedDate", (object)instance.CompletedDate ?? DBNull.Value);
@@ -245,13 +245,13 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "UPDATE dbo.WorkflowStepInstance " +
+                    "UPDATE WFE.t_WFStepInstance " +
                     "SET    IsDeleted = 1 " +
-                    "WHERE  WorkflowStepInstanceId = @WorkflowStepInstanceId " +
+                    "WHERE  WFStepInstanceId = @WFStepInstanceId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WorkflowStepInstanceId", workflowStepInstanceId);
+                    cmd.Parameters.AddWithValue("@WFStepInstanceId", workflowStepInstanceId);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -265,9 +265,9 @@ namespace CMS.Data.Repositories
         {
             return new WorkflowStepInstance
             {
-                WorkflowStepInstanceId = (int)reader["WorkflowStepInstanceId"],
-                WorkflowInstanceId     = (int)reader["WorkflowInstanceId"],
-                WorkflowStepId         = (int)reader["WorkflowStepId"],
+                WFStepInstanceId = (int)reader["WFStepInstanceId"],
+                WFInstanceId     = (int)reader["WFInstanceId"],
+                WFStepId         = (int)reader["WFStepId"],
                 AssignedTo             = (string)reader["AssignedTo"],
                 AssignedDate           = (DateTime)reader["AssignedDate"],
                 Status                 = (WorkflowStepInstanceStatus)(byte)reader["Status"],

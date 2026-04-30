@@ -201,5 +201,23 @@ GO
 PRINT 'Created stored procedure: WFE.sp_UpdateWFInstanceStatus'
 GO
 
+-- Create stored procedure for creating step instances
+CREATE PROCEDURE WFE.sp_CreateWFStepInstance
+    @WFInstanceId INT,
+    @WFStepId INT,
+    @AssignedTo NVARCHAR(255) = NULL,
+    @NewWFStepInstanceId INT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON
+    INSERT INTO WFE.t_WFStepInstance (WFInstanceId, WFStepId, Status, AssignedTo, IsDeleted)
+    VALUES (@WFInstanceId, @WFStepId, 0, @AssignedTo, 0)
+
+    SET @NewWFStepInstanceId = SCOPE_IDENTITY()
+END
+GO
+PRINT 'Created stored procedure: WFE.sp_CreateWFStepInstance'
+GO
+
 PRINT 'All Workflow Engine (WFE) tables and stored procedures created successfully'
 GO
