@@ -61,11 +61,11 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowInstanceId, WorkflowDefinitionId, TemplateVersion, " +
+                    "SELECT WFInstanceId as WorkflowInstanceId, WFDefinitionId as WorkflowDefinitionId, TemplateVersion, " +
                     "       InitiatedBy, InitiatedDate, CurrentStepId, Status, " +
                     "       CompletedDate, InputParameters, IsDeleted, DeletedDate " +
                     "FROM   WFE.t_WFInstance " +
-                    "WHERE  WorkflowInstanceId = @WorkflowInstanceId " +
+                    "WHERE  WFInstanceId = @WorkflowInstanceId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
@@ -156,7 +156,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowInstanceId, WorkflowDefinitionId, TemplateVersion, " +
+                    "SELECT WFInstanceId as WorkflowInstanceId, WFDefinitionId as WorkflowDefinitionId, TemplateVersion, " +
                     "       InitiatedBy, InitiatedDate, CurrentStepId, Status, " +
                     "       CompletedDate, InputParameters, IsDeleted, DeletedDate " +
                     "FROM   WFE.t_WFInstance " +
@@ -208,7 +208,7 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "UPDATE WFE.t_WFInstance " +
                     "SET    IsDeleted = 1, DeletedDate = GETUTCDATE() " +
-                    "WHERE  WorkflowInstanceId = @WorkflowInstanceId " +
+                    "WHERE  WFInstanceId = @WorkflowInstanceId " +
                     "  AND  Status IN (3, 4) " +   // only terminal instances
                     "  AND  IsDeleted = 0", conn))
                 {

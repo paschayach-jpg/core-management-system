@@ -64,7 +64,7 @@ namespace CMS.Data.Repositories
                     "       AssignedTo, AssignedDate, Status, CompletedDate, CompletedBy, " +
                     "       OutputData, SLADeadline, SLAStatus, IsDeleted " +
                     "FROM   WFE.t_WFStepInstance " +
-                    "WHERE  WorkflowStepInstanceId = @WorkflowStepInstanceId " +
+                    "WHERE  WFStepInstanceId = @WorkflowStepInstanceId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
@@ -218,7 +218,7 @@ namespace CMS.Data.Repositories
                     "       OutputData    = @OutputData, " +
                     "       SLADeadline   = @SLADeadline, " +
                     "       SLAStatus     = @SLAStatus " +
-                    "WHERE  WorkflowStepInstanceId = @WorkflowStepInstanceId " +
+                    "WHERE  WFStepInstanceId = @WorkflowStepInstanceId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
@@ -247,7 +247,7 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "UPDATE WFE.t_WFStepInstance " +
                     "SET    IsDeleted = 1 " +
-                    "WHERE  WorkflowStepInstanceId = @WorkflowStepInstanceId " +
+                    "WHERE  WFStepInstanceId = @WorkflowStepInstanceId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;

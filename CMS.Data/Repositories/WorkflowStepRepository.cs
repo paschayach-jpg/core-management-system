@@ -32,7 +32,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowStepId, WorkflowDefinitionId, StepName, StepType, Description, " +
+                    "SELECT WFStepId as WorkflowStepId, WFDefinitionId as WorkflowDefinitionId, StepName, StepType, Description, " +
                     "       AssignedRole, AssignedUser, AssignedOrgUnit, SLAHours, SLADays, " +
                     "       AllowDelegation, MaxDelegationDepth, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFStep " +
@@ -56,7 +56,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowStepId, WorkflowDefinitionId, StepName, StepType, Description, " +
+                    "SELECT WFStepId as WorkflowStepId, WFDefinitionId as WorkflowDefinitionId, StepName, StepType, Description, " +
                     "       AssignedRole, AssignedUser, AssignedOrgUnit, SLAHours, SLADays, " +
                     "       AllowDelegation, MaxDelegationDepth, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFStep " +
@@ -87,11 +87,11 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "INSERT INTO WFE.s_WFStep " +
-                    "    (WorkflowDefinitionId, StepName, StepType, Description, " +
+                    "    (WFDefinitionId, StepName, StepType, Description, " +
                     "     AssignedRole, AssignedUser, AssignedOrgUnit, " +
                     "     SLAHours, SLADays, AllowDelegation, MaxDelegationDepth, " +
                     "     SequenceNumber, IsDeleted) " +
-                    "OUTPUT INSERTED.WorkflowStepId " +
+                    "OUTPUT INSERTED.WFStepId " +
                     "VALUES (@WorkflowDefinitionId, @StepName, @StepType, @Description, " +
                     "        @AssignedRole, @AssignedUser, @AssignedOrgUnit, " +
                     "        @SLAHours, @SLADays, @AllowDelegation, @MaxDelegationDepth, " +
@@ -162,7 +162,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowConnectionId, WorkflowDefinitionId, FromStepId, ToStepId, " +
+                    "SELECT WFConnectionId as WorkflowConnectionId, WFDefinitionId as WorkflowDefinitionId, FromStepId, ToStepId, " +
                     "       ConditionExpression, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFConnection " +
                     "WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
@@ -188,7 +188,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowConnectionId, WorkflowDefinitionId, FromStepId, ToStepId, " +
+                    "SELECT WFConnectionId as WorkflowConnectionId, WFDefinitionId as WorkflowDefinitionId, FromStepId, ToStepId, " +
                     "       ConditionExpression, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFConnection " +
                     "WHERE  FromStepId = @FromStepId " +
@@ -218,9 +218,9 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "INSERT INTO WFE.s_WFConnection " +
-                    "    (WorkflowDefinitionId, FromStepId, ToStepId, " +
+                    "    (WFDefinitionId, FromStepId, ToStepId, " +
                     "     ConditionExpression, SequenceNumber, IsDeleted) " +
-                    "OUTPUT INSERTED.WorkflowConnectionId " +
+                    "OUTPUT INSERTED.WFConnectionId " +
                     "VALUES (@WorkflowDefinitionId, @FromStepId, @ToStepId, " +
                     "        @ConditionExpression, @SequenceNumber, 0)", conn))
                 {
