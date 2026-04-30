@@ -34,7 +34,7 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "INSERT INTO WFE.s_WFDefinition " +
                     "    (Name, Description, Version, IsActive, CreatedBy, CreatedDate, IsDeleted) " +
-                    "OUTPUT INSERTED.WFDefinitionId " +
+                    "OUTPUT INSERTED.WorkflowDefinitionId " +
                     "VALUES (@Name, @Description, @Version, @IsActive, @CreatedBy, GETUTCDATE(), 0)", conn))
                 {
                     cmd.CommandType = CommandType.Text;
@@ -59,15 +59,15 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "SELECT TOP 1 " +
-                    "    WFDefinitionId, Name, Description, Version, IsActive, " +
+                    "    WorkflowDefinitionId, Name, Description, Version, IsActive, " +
                     "    CreatedBy, CreatedDate, ModifiedBy, ModifiedDate, IsDeleted, DeletedDate " +
                     "FROM WFE.s_WFDefinition " +
-                    "WHERE WFDefinitionId = @WFDefinitionId " +
+                    "WHERE WorkflowDefinitionId = @WorkflowDefinitionId " +
                     "  AND IsDeleted = 0 " +
                     "ORDER BY Version DESC", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFDefinitionId", workflowDefinitionId);
+                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", workflowDefinitionId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         return reader.Read() ? MapTemplate(reader) : null;
@@ -82,15 +82,15 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WFDefinitionId, Name, Description, Version, IsActive, " +
+                    "SELECT WorkflowDefinitionId, Name, Description, Version, IsActive, " +
                     "       CreatedBy, CreatedDate, ModifiedBy, ModifiedDate, IsDeleted, DeletedDate " +
                     "FROM   WFE.s_WFDefinition " +
-                    "WHERE  WFDefinitionId = @WFDefinitionId " +
+                    "WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
                     "  AND  Version = @Version " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFDefinitionId", workflowDefinitionId);
+                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", workflowDefinitionId);
                     cmd.Parameters.AddWithValue("@Version",              version);
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -107,15 +107,15 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WFDefinitionId, Name, Description, Version, IsActive, " +
+                    "SELECT WorkflowDefinitionId, Name, Description, Version, IsActive, " +
                     "       CreatedBy, CreatedDate, ModifiedBy, ModifiedDate, IsDeleted, DeletedDate " +
                     "FROM   WFE.s_WFDefinition " +
-                    "WHERE  WFDefinitionId = @WFDefinitionId " +
+                    "WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
                     "  AND  IsDeleted = 0 " +
                     "ORDER BY Version DESC", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFDefinitionId", workflowDefinitionId);
+                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", workflowDefinitionId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -145,7 +145,7 @@ namespace CMS.Data.Repositories
 
                 string sql =
                     "SELECT COUNT(*) OVER () AS TotalCount, " +
-                    "       WFDefinitionId, Name, Description, Version, IsActive, " +
+                    "       WorkflowDefinitionId, Name, Description, Version, IsActive, " +
                     "       CreatedBy, CreatedDate, ModifiedBy, ModifiedDate, IsDeleted, DeletedDate " +
                     "FROM   WFE.s_WFDefinition " +
                     where +
@@ -191,13 +191,13 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "SELECT CASE WHEN EXISTS (" +
                     "    SELECT 1 FROM dbo.WorkflowInstance " +
-                    "    WHERE  WFDefinitionId = @WFDefinitionId " +
+                    "    WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
                     "      AND  Status NOT IN (3, 4) " +   // not Completed or Rejected
                     "      AND  IsDeleted = 0" +
                     ") THEN 1 ELSE 0 END", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFDefinitionId", workflowDefinitionId);
+                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", workflowDefinitionId);
                     return Convert.ToInt32(cmd.ExecuteScalar()) == 1;
                 }
             }
@@ -220,11 +220,11 @@ namespace CMS.Data.Repositories
                     "       IsActive     = @IsActive, " +
                     "       ModifiedBy   = @ModifiedBy, " +
                     "       ModifiedDate = GETUTCDATE() " +
-                    "WHERE  WFDefinitionId = @WFDefinitionId " +
+                    "WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFDefinitionId", template.WFDefinitionId);
+                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", template.WorkflowDefinitionId);
                     cmd.Parameters.AddWithValue("@Name",        template.Name);
                     cmd.Parameters.AddWithValue("@Description", (object)template.Description ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Version",     template.Version);
@@ -248,11 +248,11 @@ namespace CMS.Data.Repositories
                     "UPDATE WFE.s_WFDefinition " +
                     "SET    IsDeleted = 1, DeletedDate = GETUTCDATE(), " +
                     "       ModifiedBy = @DeletedBy, ModifiedDate = GETUTCDATE() " +
-                    "WHERE  WFDefinitionId = @WFDefinitionId " +
+                    "WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFDefinitionId", workflowDefinitionId);
+                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", workflowDefinitionId);
                     cmd.Parameters.AddWithValue("@DeletedBy",            deletedBy);
                     cmd.ExecuteNonQuery();
                 }
@@ -267,7 +267,7 @@ namespace CMS.Data.Repositories
         {
             return new WorkflowDefinition
             {
-                WFDefinitionId = (int)reader["WFDefinitionId"],
+                WorkflowDefinitionId = (int)reader["WorkflowDefinitionId"],
                 Name                 = (string)reader["Name"],
                 Description          = reader["Description"] == DBNull.Value ? null : (string)reader["Description"],
                 Version              = (int)reader["Version"],

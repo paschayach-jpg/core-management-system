@@ -32,15 +32,15 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WFStepId, WFDefinitionId, StepName, StepType, Description, " +
+                    "SELECT WorkflowStepId, WorkflowDefinitionId, StepName, StepType, Description, " +
                     "       AssignedRole, AssignedUser, AssignedOrgUnit, SLAHours, SLADays, " +
                     "       AllowDelegation, MaxDelegationDepth, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFStep " +
-                    "WHERE  WFStepId = @WFStepId " +
+                    "WHERE  WorkflowStepId = @WorkflowStepId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFStepId", workflowStepId);
+                    cmd.Parameters.AddWithValue("@WorkflowStepId", workflowStepId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         return reader.Read() ? MapStep(reader) : null;
@@ -56,16 +56,16 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WFStepId, WFDefinitionId, StepName, StepType, Description, " +
+                    "SELECT WorkflowStepId, WorkflowDefinitionId, StepName, StepType, Description, " +
                     "       AssignedRole, AssignedUser, AssignedOrgUnit, SLAHours, SLADays, " +
                     "       AllowDelegation, MaxDelegationDepth, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFStep " +
-                    "WHERE  WFDefinitionId = @WFDefinitionId " +
+                    "WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
                     "  AND  IsDeleted = 0 " +
                     "ORDER BY SequenceNumber ASC", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFDefinitionId", workflowDefinitionId);
+                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", workflowDefinitionId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -87,12 +87,12 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "INSERT INTO WFE.s_WFStep " +
-                    "    (WFDefinitionId, StepName, StepType, Description, " +
+                    "    (WorkflowDefinitionId, StepName, StepType, Description, " +
                     "     AssignedRole, AssignedUser, AssignedOrgUnit, " +
                     "     SLAHours, SLADays, AllowDelegation, MaxDelegationDepth, " +
                     "     SequenceNumber, IsDeleted) " +
-                    "OUTPUT INSERTED.WFStepId " +
-                    "VALUES (@WFDefinitionId, @StepName, @StepType, @Description, " +
+                    "OUTPUT INSERTED.WorkflowStepId " +
+                    "VALUES (@WorkflowDefinitionId, @StepName, @StepType, @Description, " +
                     "        @AssignedRole, @AssignedUser, @AssignedOrgUnit, " +
                     "        @SLAHours, @SLADays, @AllowDelegation, @MaxDelegationDepth, " +
                     "        @SequenceNumber, 0)", conn))
@@ -122,11 +122,11 @@ namespace CMS.Data.Repositories
                     "       AllowDelegation    = @AllowDelegation, " +
                     "       MaxDelegationDepth = @MaxDelegationDepth, " +
                     "       SequenceNumber     = @SequenceNumber " +
-                    "WHERE  WFStepId = @WFStepId " +
+                    "WHERE  WorkflowStepId = @WorkflowStepId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFStepId", step.WFStepId);
+                    cmd.Parameters.AddWithValue("@WorkflowStepId", step.WorkflowStepId);
                     AddStepParameters(cmd, step);
                     cmd.ExecuteNonQuery();
                 }
@@ -141,11 +141,11 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "UPDATE WFE.s_WFStep " +
                     "SET    IsDeleted = 1 " +
-                    "WHERE  WFStepId = @WFStepId " +
+                    "WHERE  WorkflowStepId = @WorkflowStepId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFStepId", workflowStepId);
+                    cmd.Parameters.AddWithValue("@WorkflowStepId", workflowStepId);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -162,15 +162,15 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WFConnectionId, WFDefinitionId, FromStepId, ToStepId, " +
+                    "SELECT WorkflowConnectionId, WorkflowDefinitionId, FromStepId, ToStepId, " +
                     "       ConditionExpression, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFConnection " +
-                    "WHERE  WFDefinitionId = @WFDefinitionId " +
+                    "WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
                     "  AND  IsDeleted = 0 " +
                     "ORDER BY SequenceNumber ASC", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFDefinitionId", workflowDefinitionId);
+                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", workflowDefinitionId);
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
@@ -188,7 +188,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WFConnectionId, WFDefinitionId, FromStepId, ToStepId, " +
+                    "SELECT WorkflowConnectionId, WorkflowDefinitionId, FromStepId, ToStepId, " +
                     "       ConditionExpression, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFConnection " +
                     "WHERE  FromStepId = @FromStepId " +
@@ -218,14 +218,14 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "INSERT INTO WFE.s_WFConnection " +
-                    "    (WFDefinitionId, FromStepId, ToStepId, " +
+                    "    (WorkflowDefinitionId, FromStepId, ToStepId, " +
                     "     ConditionExpression, SequenceNumber, IsDeleted) " +
-                    "OUTPUT INSERTED.WFConnectionId " +
-                    "VALUES (@WFDefinitionId, @FromStepId, @ToStepId, " +
+                    "OUTPUT INSERTED.WorkflowConnectionId " +
+                    "VALUES (@WorkflowDefinitionId, @FromStepId, @ToStepId, " +
                     "        @ConditionExpression, @SequenceNumber, 0)", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFDefinitionId", connection.WFDefinitionId);
+                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", connection.WorkflowDefinitionId);
                     cmd.Parameters.AddWithValue("@FromStepId",           connection.FromStepId);
                     cmd.Parameters.AddWithValue("@ToStepId",             connection.ToStepId);
                     cmd.Parameters.AddWithValue("@ConditionExpression",  (object)connection.ConditionExpression ?? DBNull.Value);
@@ -246,11 +246,11 @@ namespace CMS.Data.Repositories
                     "       ToStepId            = @ToStepId, " +
                     "       ConditionExpression = @ConditionExpression, " +
                     "       SequenceNumber      = @SequenceNumber " +
-                    "WHERE  WFConnectionId = @WFConnectionId " +
+                    "WHERE  WorkflowConnectionId = @WorkflowConnectionId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFConnectionId", connection.WFConnectionId);
+                    cmd.Parameters.AddWithValue("@WorkflowConnectionId", connection.WorkflowConnectionId);
                     cmd.Parameters.AddWithValue("@FromStepId",           connection.FromStepId);
                     cmd.Parameters.AddWithValue("@ToStepId",             connection.ToStepId);
                     cmd.Parameters.AddWithValue("@ConditionExpression",  (object)connection.ConditionExpression ?? DBNull.Value);
@@ -268,11 +268,11 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "UPDATE WFE.s_WFConnection " +
                     "SET    IsDeleted = 1 " +
-                    "WHERE  WFConnectionId = @WFConnectionId " +
+                    "WHERE  WorkflowConnectionId = @WorkflowConnectionId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WFConnectionId", workflowConnectionId);
+                    cmd.Parameters.AddWithValue("@WorkflowConnectionId", workflowConnectionId);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -284,7 +284,7 @@ namespace CMS.Data.Repositories
 
         private static void AddStepParameters(SqlCommand cmd, WorkflowStep step)
         {
-            cmd.Parameters.AddWithValue("@WFDefinitionId", step.WFDefinitionId);
+            cmd.Parameters.AddWithValue("@WorkflowDefinitionId", step.WorkflowDefinitionId);
             cmd.Parameters.AddWithValue("@StepName",             step.StepName);
             cmd.Parameters.AddWithValue("@StepType",             (byte)step.StepType);
             cmd.Parameters.AddWithValue("@Description",          (object)step.Description     ?? DBNull.Value);
@@ -302,8 +302,8 @@ namespace CMS.Data.Repositories
         {
             return new WorkflowStep
             {
-                WFStepId       = (int)reader["WFStepId"],
-                WFDefinitionId = (int)reader["WFDefinitionId"],
+                WorkflowStepId       = (int)reader["WorkflowStepId"],
+                WorkflowDefinitionId = (int)reader["WorkflowDefinitionId"],
                 StepName             = (string)reader["StepName"],
                 StepType             = (WorkflowStepType)(byte)reader["StepType"],
                 Description          = reader["Description"] == DBNull.Value ? null : (string)reader["Description"],
@@ -323,8 +323,8 @@ namespace CMS.Data.Repositories
         {
             return new WorkflowConnection
             {
-                WFConnectionId = (int)reader["WFConnectionId"],
-                WFDefinitionId = (int)reader["WFDefinitionId"],
+                WorkflowConnectionId = (int)reader["WorkflowConnectionId"],
+                WorkflowDefinitionId = (int)reader["WorkflowDefinitionId"],
                 FromStepId           = (int)reader["FromStepId"],
                 ToStepId             = (int)reader["ToStepId"],
                 ConditionExpression  = reader["ConditionExpression"] == DBNull.Value ? null : (string)reader["ConditionExpression"],
