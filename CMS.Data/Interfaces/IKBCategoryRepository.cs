@@ -13,6 +13,13 @@ namespace CMS.Data.Interfaces
 
         KBCategory GetById(int categoryId);
 
+        /// <summary>
+        /// Returns the KBCategory whose CategoryCode matches <paramref name="categoryCode"/>,
+        /// or null if no such record exists.
+        /// Used by KBImportProcessor to detect duplicate categories before insert.
+        /// </summary>
+        KBCategory GetByCode(string categoryCode);
+
         /// <summary>เพิ่ม Category ใหม่ คืน CategoryID ที่สร้าง</summary>
         int Insert(KBCategory category);
 

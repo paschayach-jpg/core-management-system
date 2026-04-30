@@ -73,6 +73,8 @@ namespace CMS.Presentation
         private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;
         private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
+        private readonly CMS.Data.Interfaces.IKBCategoryRepository _kbCategoryRepository;
+        private readonly CMS.Data.Interfaces.IKBArticleRepository  _kbArticleRepository;
 
         // Notification inbox controls (built programmatically)
         private Panel    _notificationPanel;
@@ -183,7 +185,9 @@ namespace CMS.Presentation
             CMS.Services.Interfaces.IKBArticleService  kbArticleService  = null,
             CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null,
             CMS.Data.Interfaces.IKBVersionRepository kbVersionRepository = null,
-            CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null)
+            CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null,
+            CMS.Data.Interfaces.IKBCategoryRepository kbCategoryRepository = null,
+            CMS.Data.Interfaces.IKBArticleRepository  kbArticleRepository  = null)
         {
             if (logger              == null) throw new ArgumentNullException("logger");
             if (auditService        == null) throw new ArgumentNullException("auditService");
@@ -239,6 +243,8 @@ namespace CMS.Presentation
             _kbArticleLinkRepository = kbArticleLinkRepository;
             _kbVersionRepository = kbVersionRepository;
             _kbDashboardService = kbDashboardService;
+            _kbCategoryRepository = kbCategoryRepository;
+            _kbArticleRepository  = kbArticleRepository;
 
             InitializeComponent();
             BuildFileDetailPanel();
@@ -1324,8 +1330,11 @@ namespace CMS.Presentation
             form.AttachImportWizardFactory(() =>
             {
                 var wizard          = new KBImportWizardForm(_currentUser);
+                var excelReader     = new CMS.Services.KBExcelReader();
+                var processor       = new CMS.Services.KBImportProcessor(
+                    _kbCategoryRepository, _kbArticleRepository, _kbVersionRepository);
                 var wizardPresenter = new KBImportWizardController(
-                    wizard, _kbArticleService, _kbCategoryService, _currentUser);
+                    wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
                 wizard.AttachPresenter(wizardPresenter);
                 return wizard.ShowDialog(this);
             });

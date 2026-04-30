@@ -93,6 +93,31 @@ namespace CMS.Data.Repositories
             return null;
         }
 
+        public KBCategory GetByCode(string categoryCode)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
+                           c.CategoryName, c.Icon, c.Description,
+                           c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
+                           p.CategoryName AS ParentCategoryName
+                    FROM   KMS.m_KBCategory c
+                    LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
+                    WHERE  c.CategoryCode = @CategoryCode";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@CategoryCode", categoryCode ?? string.Empty);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read()) return Map(reader);
+                    }
+                }
+            }
+            return null;
+        }
+
         // ── Write ─────────────────────────────────────────────────────────────
 
         public int Insert(KBCategory category)

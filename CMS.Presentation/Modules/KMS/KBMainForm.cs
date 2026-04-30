@@ -174,6 +174,7 @@ namespace CMS.Presentation.Modules.KMS
                 card.EditClicked      += (s, ev) => OnEditClick(ev);
                 card.ShareClicked     += (s, ev) => OnShareClick(ev);
                 card.SendReviewClicked += (s, ev) => OnSendReviewClick(ev);
+                card.LikeClicked      += (s, ev) => _presenter.LikeArticle(ev.ArticleID);
                 flpArticles.Controls.Add(card);
             }
             flpArticles.ResumeLayout();

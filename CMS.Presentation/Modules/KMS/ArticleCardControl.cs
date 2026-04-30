@@ -20,6 +20,7 @@ namespace CMS.Presentation.Modules.KMS
         public event EventHandler<KBArticle> EditClicked;
         public event EventHandler<KBArticle> ShareClicked;
         public event EventHandler<KBArticle> SendReviewClicked;
+        public event EventHandler<KBArticle> LikeClicked;
 
         public ArticleCardControl()
         {
@@ -44,6 +45,7 @@ namespace CMS.Presentation.Modules.KMS
             lblCategory.Text      = a.CategoryName ?? "-";
             lblSummary.Text       = a.Summary ?? string.Empty;
             lblViewCount.Text     = a.ViewCount.ToString();
+            lblLikeCount.Text     = a.LikeCount.ToString();
             lblTags.Text          = string.IsNullOrEmpty(a.Tags) ? "-" : a.Tags;
             btnSendReview.Visible = (a.Status == 1);
         }
@@ -102,6 +104,18 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_article == null) return;
             if (SendReviewClicked != null) SendReviewClicked(this, _article);
+        }
+
+        private void btnLike_Click(object sender, EventArgs e)
+        {
+            if (_article == null) return;
+            
+            // Optimistic UI update — increment immediately for responsiveness
+            _article.LikeCount++;
+            lblLikeCount.Text = _article.LikeCount.ToString();
+            
+            // Fire event so parent can persist to DB
+            if (LikeClicked != null) LikeClicked(this, _article);
         }
     }
 }

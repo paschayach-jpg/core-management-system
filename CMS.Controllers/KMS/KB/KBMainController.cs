@@ -105,6 +105,11 @@ namespace CMS.Controllers.KMS.KB
             try { _articleService.IncrementViewCount(articleId); } catch { }
         }
 
+        public void LikeArticle(int articleId)
+        {
+            try { _articleService.IncrementLikeCount(articleId); } catch { }
+        }
+
         /// <summary>
         /// Send article for review - Change status from Draft (1) to Review (2)
         /// </summary>

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace CMS.Domain.Models
@@ -44,5 +45,34 @@ namespace CMS.Domain.Models
         public string Status      { get; set; }
         /// <summary>Optional human-readable note explaining a Warn or Error status.</summary>
         public string StatusNote  { get; set; }
+
+        // ── Raw parsed values from Excel ───────────────────────────────
+        public string ColA  { get; set; }   // ParentCategory code segment
+        public string ColB  { get; set; }   // SubCategory code segment
+        public string ColC  { get; set; }   // CategoryName
+        public string ColD  { get; set; }   // code segment 3
+        public string ColE  { get; set; }   // title / summary segment 1
+        public string ColF  { get; set; }   // code segment 4
+        public string ColG  { get; set; }   // summary segment 2
+        public string ColH  { get; set; }   // code segment 5
+        public string ColI  { get; set; }   // summary segment 3
+        public string ColJ  { get; set; }   // code segment 6
+        public string ColK  { get; set; }   // summary segment 4
+        public string ColL  { get; set; }   // code segment 7
+        public string ColM  { get; set; }   // summary segment 5
+        public string ColN  { get; set; }   // code segment 8
+        public string ColO  { get; set; }   // summary segment 6
+        public string ColP  { get; set; }   // code segment 9
+        public string ColQ  { get; set; }   // summary segment 7
+        public string ColR  { get; set; }   // PublishedDate raw text
+        public string ColS  { get; set; }   // ExpiryDate raw text
+        public string ColT  { get; set; }   // ContentHTML
+
+        // ── Computed / resolved fields (set by processor) ───────────────────
+        public string    ArticleCode         { get; set; }
+        public string    Summary             { get; set; }
+        public DateTime? PublishedDateParsed { get; set; }
+        public DateTime? ExpiryDateParsed    { get; set; }
+        public int       ResolvedCategoryID  { get; set; }   // sub-category CategoryID
     }
 }
