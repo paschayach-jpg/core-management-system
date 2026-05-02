@@ -474,6 +474,8 @@
             this.pnlSidebar.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlSidebar.Width = 215;
             this.pnlSidebar.Name = "pnlSidebar";
+            this.pnlSidebar.Padding = new System.Windows.Forms.Padding(0, 8, 0, 8);
+            this.pnlSidebar.AutoScroll = true;
             // Sidebar controls will be populated dynamically by WorkflowNavigationBuilder
 
             // Sidebar controls initialization removed — use WorkflowNavigationBuilder instead

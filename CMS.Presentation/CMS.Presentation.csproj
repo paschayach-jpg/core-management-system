@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build"
-  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
-    Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -35,13 +33,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference
-      Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
       <HintPath>..\packages\BouncyCastle.1.8.9\lib\BouncyCastle.Crypto.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference
-      Include="itextsharp, Version=5.5.13.3, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+    <Reference Include="itextsharp, Version=5.5.13.3, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
       <HintPath>..\packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
@@ -71,6 +67,12 @@
     </Compile>
     <Compile Include="Modules\WFE\WorkflowDetailFormNew.Designer.cs">
       <DependentUpon>WorkflowDetailFormNew.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.Designer.cs">
+      <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Modules\DMS\LoginForm.cs">
@@ -353,12 +355,46 @@
     <Compile Include="Modules\WFE\WorkflowDesignerForm.Designer.cs">
       <DependentUpon>WorkflowDesignerForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateWizard.cs" />
+    <Compile Include="Modules\WFE\WorkflowWizardState.cs" />
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateForm.Designer.cs">
+      <DependentUpon>WorkflowCreateTemplateForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep2Form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep2Form.Designer.cs">
+      <DependentUpon>WorkflowCreateTemplateStep2Form.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep3Form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep3Form.Designer.cs">
+      <DependentUpon>WorkflowCreateTemplateStep3Form.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep4Form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep4Form.Designer.cs">
+      <DependentUpon>WorkflowCreateTemplateStep4Form.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\WFE\WorkflowTemplateListForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Modules\WFE\WorkflowTemplateListForm.Designer.cs">
       <DependentUpon>WorkflowTemplateListForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\WFE\TemplateApprovalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\TemplateApprovalForm.Designer.cs">
+      <DependentUpon>TemplateApprovalForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Presenters\TemplateApprovalPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\ITemplateApprovalView.cs" />
     <Compile Include="Modules\WFE\WorkflowDelegationForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -366,6 +402,7 @@
       <DependentUpon>WorkflowDelegationForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\WFE\WorkflowNavigationBuilder.cs" />
+    <Compile Include="Modules\WFE\WorkflowNavigationHandler.cs" />
     <Compile Include="Modules\WFE\SLAReportForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -384,6 +421,18 @@
     </Compile>
     <Compile Include="Modules\WFE\Dialogs\WorkflowStartDialog.Designer.cs">
       <DependentUpon>WorkflowStartDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\ReassignDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\ReassignDialog.Designer.cs">
+      <DependentUpon>ReassignDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.Designer.cs">
+      <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\WFE\Dialogs\WorkflowStepActionForm.cs">
       <SubType>Form</SubType>
@@ -533,8 +582,59 @@
     <EmbeddedResource Include="Modules\DMS\UserAccessForm.resx">
       <DependentUpon>UserAccessForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowCreateTemplateForm.resx">
+      <DependentUpon>WorkflowCreateTemplateForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowCreateTemplateStep2Form.resx">
+      <DependentUpon>WorkflowCreateTemplateStep2Form.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowCreateTemplateStep3Form.resx">
+      <DependentUpon>WorkflowCreateTemplateStep3Form.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDesignerForm.resx">
+      <DependentUpon>WorkflowDesignerForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Modules\WFE\WorkflowDetailFormNew.resx">
       <DependentUpon>WorkflowDetailFormNew.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDashboardFormNew.resx">
+      <DependentUpon>WorkflowDashboardFormNew.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDashboardForm.resx">
+      <DependentUpon>WorkflowDashboardForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowMonitorForm.resx">
+      <DependentUpon>WorkflowMonitorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDelegationForm.resx">
+      <DependentUpon>WorkflowDelegationForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\SLAReportForm.resx">
+      <DependentUpon>SLAReportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\HistorySearchForm.resx">
+      <DependentUpon>HistorySearchForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\TemplateApprovalForm.resx">
+      <DependentUpon>TemplateApprovalForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowVisualFlowForm.resx">
+      <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\WorkflowStartDialog.resx">
+      <DependentUpon>WorkflowStartDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\WorkflowStepActionForm.resx">
+      <DependentUpon>WorkflowStepActionForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\ReassignDialog.resx">
+      <DependentUpon>ReassignDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\ApprovalReviewForm.resx">
+      <DependentUpon>ApprovalReviewForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\DelegationDialog.resx">
+      <DependentUpon>DelegationDialog.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\WFE\WorkflowInstanceDetailForm.resx">
       <DependentUpon>WorkflowInstanceDetailForm.cs</DependentUpon>

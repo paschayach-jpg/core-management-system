@@ -230,7 +230,7 @@
             this.pnlAppBody.Controls.Add(this.pnlSidebarContainer);
 
             // ── pnlSidebarContainer ─────────────────────────────────────────────
-            this.pnlSidebarContainer.BackColor = System.Drawing.Color.White;
+            this.pnlSidebarContainer.BackColor = System.Drawing.Color.FromArgb(26, 35, 67);
             this.pnlSidebarContainer.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlSidebarContainer.Width = 202;
             this.pnlSidebarContainer.Name = "pnlSidebarContainer";

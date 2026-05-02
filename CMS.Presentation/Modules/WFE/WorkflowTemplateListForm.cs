@@ -68,12 +68,16 @@ namespace CMS.Presentation.Modules.Workflow
             UserContext userContext)
         {
             InitializeComponent();
-            _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
-            _templateService = templateService ?? throw new ArgumentNullException(nameof(templateService));
-            _loggingService = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
+            _userContext = userContext;
+            _templateService = templateService;
+            _loggingService = loggingService;
 
-            _presenter = new WorkflowTemplateListPresenter(
-                this, templateService, auditService, loggingService, userContext);
+            // Only create presenter if services are available
+            if (templateService != null && loggingService != null && userContext != null)
+            {
+                _presenter = new WorkflowTemplateListPresenter(
+                    this, templateService, auditService, loggingService, userContext);
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -82,7 +86,12 @@ namespace CMS.Presentation.Modules.Workflow
         private void WorkflowTemplateListForm_Load(object sender, EventArgs e)
         {
             InitializeControls();
-            _presenter.LoadTemplates();
+            
+            // Only load data if presenter is available
+            if (_presenter != null)
+            {
+                _presenter.LoadTemplates();
+            }
         }
 
         private void InitializeControls()
@@ -172,7 +181,18 @@ namespace CMS.Presentation.Modules.Workflow
         {
             try
             {
-                int? templateId = template != null ? (int?)template.WorkflowDefinitionId : null;
+                // Create new template: show wizard
+                if (template == null)
+                {
+                    var wizard = new WorkflowCreateTemplateWizard(
+                        _templateService, _loggingService, _userContext, this);
+                    wizard.ShowWizard();
+                    _presenter.LoadTemplates();
+                    return;
+                }
+
+                // Edit existing template: open designer directly
+                int? templateId = (int?)template.WorkflowDefinitionId;
                 using (var designerForm = new WorkflowDesignerForm(
                     templateId, _templateService, _loggingService, _userContext))
                 {
@@ -182,7 +202,7 @@ namespace CMS.Presentation.Modules.Workflow
             }
             catch (Exception ex)
             {
-                ShowError("ไม่สามารถเปิดหน้าจอ Workflow Designer ได้: " + ex.Message);
+                ShowError("ไม่สามารถเปิดหน้าจอ Workflow Template ได้: " + ex.Message);
             }
         }
 
@@ -264,15 +284,20 @@ namespace CMS.Presentation.Modules.Workflow
         // Button events
         // ════════════════════════════════════════════════════════════════════
         private void btnCreate_Click(object sender, EventArgs e)
-            => _presenter.CreateTemplate();
+        {
+            if (_presenter != null) _presenter.CreateTemplate();
+        }
 
         private void btnEdit_Click(object sender, EventArgs e)
-            => _presenter.EditTemplate(GetSelectedTemplate());
+        {
+            if (_presenter != null) _presenter.EditTemplate(GetSelectedTemplate());
+        }
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
             var selected = GetSelectedTemplate();
             if (selected == null) { ShowError("กรุณาเลือกรายการที่ต้องการลบ"); return; }
+            if (_presenter == null) return;
 
             if (MessageBox.Show(
                     string.Format("ยืนยันลบ Template '{0}' ?", selected.Name),
@@ -284,23 +309,28 @@ namespace CMS.Presentation.Modules.Workflow
         }
 
         private void btnDuplicate_Click(object sender, EventArgs e)
-            => _presenter.DuplicateTemplate(GetSelectedTemplate());
+        {
+            if (_presenter != null) _presenter.DuplicateTemplate(GetSelectedTemplate());
+        }
 
         private void btnVersions_Click(object sender, EventArgs e)
-            => _presenter.ViewVersions(GetSelectedTemplate());
+        {
+            if (_presenter != null) _presenter.ViewVersions(GetSelectedTemplate());
+        }
 
         private void btnPublish_Click(object sender, EventArgs e)
         {
             var selected = GetSelectedTemplate();
             if (selected == null) { ShowError("กรุณาเลือก Template ที่ต้องการ Publish"); return; }
             ShowInfo(string.Format("Publish Template '{0}' v{1} เรียบร้อย", selected.Name, selected.Version));
-            _presenter.LoadTemplates();
+            if (_presenter != null) _presenter.LoadTemplates();
         }
 
         private void btnDeactivate_Click(object sender, EventArgs e)
         {
             var selected = GetSelectedTemplate();
             if (selected == null) { ShowError("กรุณาเลือก Template ที่ต้องการ Deactivate"); return; }
+            if (_presenter == null) return;
             if (MessageBox.Show(
                     string.Format("ยืนยัน Deactivate Template '{0}' ?", selected.Name),
                     "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
@@ -339,7 +369,9 @@ namespace CMS.Presentation.Modules.Workflow
         // Filter events
         // ════════════════════════════════════════════════════════════════════
         private void cmbFilter_Changed(object sender, EventArgs e)
-            => _presenter.SearchTemplates();
+        {
+            if (_presenter != null) _presenter.SearchTemplates();
+        }
 
         private void txtSearch_Enter(object sender, EventArgs e)
         {
@@ -363,7 +395,7 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void txtSearch_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter)
+            if (e.KeyCode == Keys.Enter && _presenter != null)
                 _presenter.SearchTemplates();
         }
 
@@ -377,7 +409,7 @@ namespace CMS.Presentation.Modules.Workflow
                 txtSearch.ForeColor = Color.FromArgb(107, 114, 128);
                 _searchPlaceholderActive = true;
             }
-            _presenter.LoadTemplates();
+            if (_presenter != null) _presenter.LoadTemplates();
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -385,21 +417,22 @@ namespace CMS.Presentation.Modules.Workflow
         // ════════════════════════════════════════════════════════════════════
         private void OnNavItemClick(string tag)
         {
-            switch (tag)
+            // Handle local navigation first
+            if (tag == "template")
             {
-                case "template":
-                    // Already on this page
-                    break;
-                case "delegation":
-                    using (var frm = new WorkflowDelegationForm())
-                    {
-                        frm.ShowDialog(this);
-                    }
-                    break;
-                default:
-                    ShowInfo(string.Format("หน้า '{0}' อยู่ระหว่างพัฒนา", tag));
-                    break;
+                // Already on this page
+                return;
             }
+
+            // Delegate to navigation handler for other forms
+            WorkflowNavigationHandler.HandleNavigation(
+                tag,
+                this,
+                null, // workflowService
+                _templateService,
+                null, // slaCalculator
+                _loggingService,
+                _userContext);
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -421,7 +454,8 @@ namespace CMS.Presentation.Modules.Workflow
             if (e.RowIndex < 0) return;
 
             // ── Category badge ──────────────────────────────────────────────
-            if (e.ColumnIndex == dgvTemplates.Columns["colCategory"].Index)
+            if (TryGetColumnIndex("colCategory", out int colCategoryIdx) &&
+                e.ColumnIndex == colCategoryIdx)
             {
                 e.PaintBackground(e.ClipBounds, true);
                 string cat = e.Value as string ?? string.Empty;
@@ -434,7 +468,8 @@ namespace CMS.Presentation.Modules.Workflow
             }
 
             // ── Status badge ────────────────────────────────────────────────
-            if (e.ColumnIndex == dgvTemplates.Columns["colStatus"].Index)
+            if (TryGetColumnIndex("colStatus", out int colStatusIdx) &&
+                e.ColumnIndex == colStatusIdx)
             {
                 e.PaintBackground(e.ClipBounds, true);
                 string status = e.Value as string ?? "Inactive";
@@ -444,7 +479,8 @@ namespace CMS.Presentation.Modules.Workflow
             }
 
             // ── Owner with avatar circle ────────────────────────────────────
-            if (e.ColumnIndex == dgvTemplates.Columns["colOwner"].Index)
+            if (TryGetColumnIndex("colOwner", out int colOwnerIdx) &&
+                e.ColumnIndex == colOwnerIdx)
             {
                 e.PaintBackground(e.ClipBounds, true);
                 string dept = e.Value as string ?? string.Empty;
@@ -455,7 +491,8 @@ namespace CMS.Presentation.Modules.Workflow
             }
 
             // ── Usage bar ───────────────────────────────────────────────────
-            if (e.ColumnIndex == dgvTemplates.Columns["colUsage"].Index)
+            if (TryGetColumnIndex("colUsage", out int colUsageIdx) &&
+                e.ColumnIndex == colUsageIdx)
             {
                 e.PaintBackground(e.ClipBounds, true);
                 int count = e.Value is int v ? v : 0;
@@ -463,6 +500,22 @@ namespace CMS.Presentation.Modules.Workflow
                 e.Handled = true;
                 return;
             }
+        }
+
+        private bool TryGetColumnIndex(string columnName, out int index)
+        {
+            try
+            {
+                var col = dgvTemplates.Columns[columnName];
+                if (col != null)
+                {
+                    index = col.Index;
+                    return true;
+                }
+            }
+            catch { }
+            index = -1;
+            return false;
         }
 
         // ════════════════════════════════════════════════════════════════════

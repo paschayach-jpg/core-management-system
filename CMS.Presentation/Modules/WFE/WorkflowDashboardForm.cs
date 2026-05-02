@@ -279,7 +279,7 @@ namespace CMS.Presentation.Modules.Workflow
         {
             try
             {
-                var dialog = new WorkflowStartDialog();
+                var dialog = new WorkflowStartDialog(null, null, null);
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
                     _presenter.RefreshDashboard();

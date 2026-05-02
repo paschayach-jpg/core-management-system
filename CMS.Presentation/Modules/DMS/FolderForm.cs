@@ -1454,6 +1454,9 @@ namespace CMS.Presentation
                 case "workflowtemplatelist":
                 case "workflowtemplatelistform":
                     return "WorkflowTemplateList";
+                case "workflowdesigner":
+                case "workflowdesignerform":
+                    return "WorkflowDesigner";
                 case "workflowdelegation":
                 case "workflowdelegationform":
                     return "WorkflowDelegation";
@@ -1622,6 +1625,9 @@ namespace CMS.Presentation
                 case "workflow_template_list":
                 case "workflowtemplatelist":
                     return "WorkflowTemplateList";
+                case "workflow_designer":
+                case "workflowdesigner":
+                    return "WorkflowDesigner";
                 case "workflow_delegation":
                 case "workflowdelegation":
                 case "delegation":

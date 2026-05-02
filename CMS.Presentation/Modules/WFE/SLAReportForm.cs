@@ -67,9 +67,14 @@ namespace CMS.Presentation.Modules.Workflow
             UserContext userContext)
         {
             InitializeComponent();
-            _userContext = userContext ?? throw new ArgumentNullException("userContext");
-            _presenter = new SLAReportPresenter(
-                this, workflowService, slaCalculator, loggingService, userContext);
+            _userContext = userContext;
+
+            // Only create presenter if services are available
+            if (workflowService != null && slaCalculator != null && loggingService != null && userContext != null)
+            {
+                _presenter = new SLAReportPresenter(
+                    this, workflowService, slaCalculator, loggingService, userContext);
+            }
         }
 
         private void SLAReportForm_Load(object sender, EventArgs e)
@@ -86,7 +91,11 @@ namespace CMS.Presentation.Modules.Workflow
             BuildOverduePanel();
             BuildCycleChartPanel();
 
-            _presenter.GenerateReport();
+            // Only load data if presenter is available
+            if (_presenter != null)
+            {
+                _presenter.GenerateReport();
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -263,10 +272,13 @@ namespace CMS.Presentation.Modules.Workflow
         {
             switch (tag)
             {
-                case "refresh": _presenter.GenerateReport(); break;
+                case "refresh":
+                    if (_presenter != null) _presenter.GenerateReport();
+                    break;
                 case "excel":
                     var dlg = new SaveFileDialog { Filter = "Excel (*.xlsx)|*.xlsx", DefaultExt = "xlsx" };
-                    if (dlg.ShowDialog() == DialogResult.OK) _presenter.ExportToExcel(dlg.FileName);
+                    if (dlg.ShowDialog() == DialogResult.OK && _presenter != null)
+                        _presenter.ExportToExcel(dlg.FileName);
                     break;
                 default:
                     MessageBox.Show(string.Format("ฟังก์ชัน '{0}' อยู่ระหว่างพัฒนา", tag),
@@ -281,9 +293,24 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void OnNavItemClick(string tag)
         {
-            if (tag != "sla")
-                MessageBox.Show(string.Format("หน้า '{0}' อยู่ระหว่างพัฒนา", tag),
-                    "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // Handle local navigation first
+            if (tag == "sla")
+            {
+                // Already on this page
+                return;
+            }
+
+            // Delegate to navigation handler for other forms
+            // Note: SLAReportForm doesn't store service references directly
+            WorkflowNavigationHandler.HandleNavigation(
+                tag,
+                this,
+                null, // workflowService - managed by presenter
+                null, // templateService
+                null, // slaCalculator - managed by presenter
+                null, // loggingService - managed by presenter
+                _userContext,
+                null); // auditService
         }
 
         // ════════════════════════════════════════════════════════════════════════

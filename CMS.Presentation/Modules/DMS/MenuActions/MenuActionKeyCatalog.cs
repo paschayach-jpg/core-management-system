@@ -46,8 +46,10 @@ namespace CMS.Presentation
             "WorkflowDashboard",
             "WorkflowDetail",
             "WorkflowTemplateList",
+            "WorkflowDesigner",
             "WorkflowDelegation",
-            "SLAReport"
+            "SLAReport",
+            "WorkflowVisualFlow"
         };
 
         public static string[] GetAvailableActionKeys()
@@ -80,10 +82,14 @@ namespace CMS.Presentation
                 return "WorkflowDetail";
             if (string.Equals(normalized, "workflowtemplatelistform", StringComparison.OrdinalIgnoreCase))
                 return "WorkflowTemplateList";
+            if (string.Equals(normalized, "workflowdesignerform", StringComparison.OrdinalIgnoreCase))
+                return "WorkflowDesigner";
             if (string.Equals(normalized, "workflowdelegationform", StringComparison.OrdinalIgnoreCase))
                 return "WorkflowDelegation";
             if (string.Equals(normalized, "slareportform", StringComparison.OrdinalIgnoreCase))
                 return "SLAReport";
+            if (string.Equals(normalized, "workflowvisualflowform", StringComparison.OrdinalIgnoreCase))
+                return "WorkflowVisualFlow";
 
             foreach (var builtIn in BuiltInActionKeys)
             {

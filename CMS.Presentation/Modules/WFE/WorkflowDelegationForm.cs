@@ -244,13 +244,22 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void OnNavItemClick(string tag)
         {
+            // Handle local navigation first
             if (tag == "delegation")
             {
+                // Already on this page
                 return;
             }
 
-            MessageBox.Show(string.Format("หน้า '{0}' อยู่ระหว่างพัฒนา", tag),
-                "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // Delegate to navigation handler for other forms
+            WorkflowNavigationHandler.HandleNavigation(
+                tag,
+                this,
+                null, // workflowService
+                null, // templateService
+                null, // slaCalculator
+                null, // loggingService
+                null); // userContext
         }
 
         private void btnSave_Click(object sender, EventArgs e)

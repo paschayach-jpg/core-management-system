@@ -1,0 +1,191 @@
+═══════════════════════════════════════════════════════════════════════════════
+  WORKFLOW TEMPLATE CREATION - COMPLETE FLOW DIAGRAM
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          USER INTERACTION LAYER                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────────┐
+                    │   WorkflowTemplateListForm (UI)     │
+                    │  - Grid showing all templates       │
+                    │  - "+ สร้าง Template" button        │
+                    └────────────┬────────────────────────┘
+                                 │
+                    User clicks "+ สร้าง Template"
+                                 │
+                                 ▼
+                    ┌─────────────────────────────────────┐
+                    │ WorkflowCreateTemplateWizard        │
+                    │ ├─ Manages wizard state             │
+                    │ ├─ Navigation between steps         │
+                    │ └─ Calls CreateTemplate service     │
+                    └────────────┬────────────────────────┘
+                                 │
+                    ┌────────────┴────────────┬────────────┬────────────┐
+                    │                        │            │            │
+                    ▼                        ▼            ▼            ▼
+        ┌──────────────────┐   ┌──────────────────┐  ...  ┌──────────────────┐
+        │  STEP 1          │   │  STEP 2          │        │  STEP 4          │
+        │  Basic Info      │─→ │  Flow Design     │─→─→─→ │  Review &        │
+        │  ────────────    │   │  ──────────────  │        │  Publish         │
+        │ [Template Name]  │   │ [DataGridView]   │        │ ──────────────── │
+        │ [Description ]   │   │ [Workflow Steps] │        │ [Summary]        │
+        │ [Next] button    │   │ [Next] button    │        │ [Draft/Publish]  │
+        │                  │   │                  │        │ [Complete] btn   │
+        └──────────────────┘   └──────────────────┘        └──────┬───────────┘
+                                                                   │
+                                                    User clicks "เสร็จสิ้น"
+                                                                   │
+                                                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          SERVICE LAYER                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────────┐
+                    │ WorkflowCreateTemplateWizard        │
+                    │ OnWizardComplete()                  │
+                    │ ├─ Serialize WizardState            │
+                    │ ├─ Create CreateTemplateRequest     │
+                    │ └─ Call service.CreateTemplate()    │
+                    └────────────┬────────────────────────┘
+                                 │
+                                 ▼
+                    ┌─────────────────────────────────────┐
+                    │ WorkflowTemplateService             │
+                    │ CreateTemplate()                    │
+                    │ ├─ Validate request                 │
+                    │ ├─ Create WorkflowDefinition obj    │
+                    │ ├─ Call repository.CreateTemplate() │
+                    │ ├─ Log audit entry                  │
+                    │ └─ Return WorkflowTemplateResult    │
+                    └────────────┬────────────────────────┘
+                                 │
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      DATA ACCESS LAYER                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────────┐
+                    │ WorkflowTemplateRepository          │
+                    │ CreateTemplate()                    │
+                    │ ├─ Open SQL Connection              │
+                    │ ├─ Insert into dbo.WorkflowDef...   │
+                    │ ├─ Parameters: Name, Desc, etc.     │
+                    │ └─ Return WorkflowDefinitionId      │
+                    └────────────┬────────────────────────┘
+                                 │
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      DATABASE LAYER (SQL Server)                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────────┐
+                    │ dbo.WorkflowDefinition Table        │
+                    │ ├─ WorkflowDefinitionId (PK)        │
+                    │ ├─ Name                             │
+                    │ ├─ Description                      │
+                    │ ├─ TemplateDefinition               │
+                    │ ├─ Version                          │
+                    │ ├─ IsActive                         │
+                    │ ├─ CreatedBy                        │
+                    │ └─ CreatedDate                      │
+                    └────────────┬────────────────────────┘
+                                 │
+                        ✅ Template Saved
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       RETURN TO LIST & REFRESH                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────────────────────────────┐
+                    │ Wizard completes successfully       │
+                    │ Call: LoadTemplates()               │
+                    └────────────┬────────────────────────┘
+                                 │
+                                 ▼
+                    ┌─────────────────────────────────────┐
+                    │ WorkflowTemplateListPresenter       │
+                    │ LoadTemplates()                     │
+                    │ ├─ Query service.GetTemplates()     │
+                    │ ├─ Populate _currentTemplates       │
+                    │ └─ Call view.DisplayTemplates()     │
+                    └────────────┬────────────────────────┘
+                                 │
+                                 ▼
+                    ┌─────────────────────────────────────┐
+                    │ WorkflowTemplateListForm            │
+                    │ DisplayTemplates()                  │
+                    │ ├─ Bind data to grid                │
+                    │ ├─ Show newly created template      │
+                    │ └─ Refresh display                  │
+                    └────────────┬────────────────────────┘
+                                 │
+                                 ▼
+                    ┌─────────────────────────────────────┐
+                    │ ✅ TEMPLATE VISIBLE IN LIST         │
+                    │ Template name appears in grid       │
+                    │ with all metadata displayed         │
+                    └─────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                         DATA FLOW SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 1 - Basic Info
+─────────────────────
+Input:   Template Name, Description
+Flow:    Form → WizardState (TemplateName, Description)
+Output:  Proceed to Step 2
+
+
+STEP 2 - Workflow Flow Design
+──────────────────────────────
+Input:   DataGridView rows (Step Name, Action, Next Step)
+Flow:    Form → Validate → Convert to WorkflowStepData list → WizardState.Steps
+Output:  Proceed to Step 3
+
+
+STEP 3 - Approval Configuration
+────────────────────────────────
+Input:   DataGridView rows (Step Name, Approver Group, Level)
+Flow:    Form → Load from WizardState.Steps → Allow edit → Convert to
+         WorkflowApproverData list → WizardState.Approvers
+Output:  Proceed to Step 4
+
+
+STEP 4 - Review & Publish
+─────────────────────────
+Input:   RadioButton selection (Draft/Publish)
+Flow:    Form → Display summary from all previous steps →
+         Call CreateTemplate service → Save to database →
+         Return to list
+Output:  ✅ Template saved & visible in grid
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                    CRITICAL DEPENDENCIES
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ SQL Tables MUST exist:
+   ├─ dbo.WorkflowDefinition
+   ├─ dbo.WorkflowStep
+   └─ dbo.WorkflowApprover
+
+✅ Service layer MUST:
+   ├─ Have CreateTemplate method
+   ├─ Validate input
+   └─ Call repository
+
+✅ Repository MUST:
+   ├─ Have CreateTemplate method
+   ├─ Use parameterized SQL
+   └─ Return new ID
+
+✅ UI layer MUST:
+   ├─ Have all 4 step forms
+   ├─ Pass WizardState correctly
+   └─ Call LoadTemplates() on completion
+
+
+═══════════════════════════════════════════════════════════════════════════════

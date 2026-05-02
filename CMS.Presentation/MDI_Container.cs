@@ -1590,11 +1590,17 @@ namespace CMS.Presentation
                 case "WorkflowTemplateList":
                     OpenWorkflowTemplateList();
                     return true;
+                case "WorkflowDesigner":
+                    OpenWorkflowDesigner();
+                    return true;
                 case "WorkflowDelegation":
                     OpenWorkflowDelegation();
                     return true;
                 case "SLAReport":
                     OpenSLAReport();
+                    return true;
+                case "WorkflowVisualFlow":
+                    OpenWorkflowVisualFlow();
                     return true;
                 case "PermissionAdmin":
                 case "FolderSettings":
@@ -1648,6 +1654,22 @@ namespace CMS.Presentation
                 _currentUser));
         }
 
+        public void OpenWorkflowDesigner(int? templateId = null)
+        {
+            if (_workflowTemplateService == null)
+            {
+                MessageBox.Show("Workflow Template service is not available.", "Workflow Designer",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowDesignerForm(
+                templateId,
+                _workflowTemplateService,
+                _logger,
+                _currentUser));
+        }
+
         public void OpenWorkflowDelegation()
         {
             OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowDelegationForm());
@@ -1665,6 +1687,21 @@ namespace CMS.Presentation
             OpenChildForm(new CMS.Presentation.Modules.Workflow.SLAReportForm(
                 _workflowService,
                 _slaCalculator,
+                _logger,
+                _currentUser));
+        }
+
+        public void OpenWorkflowVisualFlow()
+        {
+            if (_workflowService == null)
+            {
+                MessageBox.Show("Workflow service is not available.", "Workflow Visual Flow",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowVisualFlowForm(
+                _workflowService,
                 _logger,
                 _currentUser));
         }

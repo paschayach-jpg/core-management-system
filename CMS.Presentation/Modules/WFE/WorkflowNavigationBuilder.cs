@@ -81,9 +81,10 @@ namespace CMS.Presentation.Modules.Workflow
                     Header = "ตั้งค่า",
                     Items = new[]
                     {
-                        new WfeNavItem { Icon="👥", Text="Delegation",  Badge=0, BadgeColor=SidebarBg, Tag="delegation", IsDefault=false },
-                        new WfeNavItem { Icon="📊", Text="รายงาน SLA", Badge=0, BadgeColor=SidebarBg, Tag="sla",        IsDefault=false },
-                        new WfeNavItem { Icon="⚙",  Text="ตั้งค่า",   Badge=0, BadgeColor=SidebarBg, Tag="settings",   IsDefault=false },
+                        new WfeNavItem { Icon="👥", Text="Delegation",       Badge=0, BadgeColor=SidebarBg, Tag="delegation",  IsDefault=false },
+                        new WfeNavItem { Icon="📊", Text="รายงาน SLA",      Badge=0, BadgeColor=SidebarBg, Tag="sla",         IsDefault=false },
+                        new WfeNavItem { Icon="🎨", Text="Visual Flow",     Badge=0, BadgeColor=SidebarBg, Tag="visualflow",  IsDefault=false },
+                        new WfeNavItem { Icon="⚙",  Text="ตั้งค่า",        Badge=0, BadgeColor=SidebarBg, Tag="settings",    IsDefault=false },
                     }
                 }
             };

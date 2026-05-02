@@ -209,6 +209,11 @@ namespace CMS.Presentation
                             MessageBox.Show("กรุณาเปิด Workflow Template List ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
 
+                    case "WorkflowDesigner":
+                        if (!TryRequestMdiAction(context, "WorkflowDesigner"))
+                            MessageBox.Show("กรุณาเปิด Workflow Designer ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
                     case "WorkflowDelegation":
                         if (!TryRequestMdiAction(context, "WorkflowDelegation"))
                             MessageBox.Show("กรุณาเปิด Workflow Delegation ผ่าน MDI Container", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -222,6 +227,11 @@ namespace CMS.Presentation
                     case "WorkflowMonitor":
                         if (!TryRequestMdiAction(context, "WorkflowMonitor"))
                             MessageBox.Show("กรุณาเปิด Workflow Monitor ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowVisualFlow":
+                        if (!TryRequestMdiAction(context, "WorkflowVisualFlow"))
+                            MessageBox.Show("กรุณาเปิด Workflow Visual Flow ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
                 }
             }

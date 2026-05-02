@@ -41,6 +41,7 @@
     <Compile Include="Enums\OrgUnitTier.cs" />
     <Compile Include="Enums\ApprovalStatus.cs" />
     <Compile Include="Enums\PrincipalType.cs" />
+    <Compile Include="Enums\FormFieldType.cs" />
     <Compile Include="Models\UserContext.cs" />
     <Compile Include="Models\EffectivePermission.cs" />
     <Compile Include="Models\UploadResult.cs" />

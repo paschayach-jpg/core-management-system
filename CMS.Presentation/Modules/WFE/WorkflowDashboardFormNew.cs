@@ -5,8 +5,10 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using CMS.Domain.Models;
+using CMS.Domain.Enums;
 using CMS.Infrastructure.Interfaces;
 using CMS.Services.Interfaces;
+using CMS.Services.DTOs;
 
 namespace CMS.Presentation.Modules.Workflow
 {
@@ -56,7 +58,7 @@ namespace CMS.Presentation.Modules.Workflow
                 pnlSidebarContainer, "mytasks", OnNavItemClick, out initialNav);
             _activeNavItem = initialNav;
             SetupListView();
-            LoadMockData();
+            LoadRealData();
             StartAutoRefresh();
         }
 
@@ -256,7 +258,7 @@ namespace CMS.Presentation.Modules.Workflow
         {
             switch (tag)
             {
-                case "refresh": _currentPage = 1; LoadMockData(); break;
+                case "refresh": _currentPage = 1; LoadRealData(); break;
                 case "filter": txtSearch.Focus(); break;
                 case "execute":
                 case "detail":
@@ -276,29 +278,26 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void OnNavItemClick(string tag)
         {
+            // Handle local navigation first
             switch (tag)
             {
                 case "mytasks":
                     lblTitle.Text = "งาน Workflow ของฉัน";
                     lblBreadcrumb.Text = "Core Management System  ›  Workflow Engine  ›  งานของฉัน";
                     _currentPage = 1;
-                    LoadMockData();
-                    break;
-                case "monitor":
-                    lblTitle.Text = "งาน Workflow ของฉัน";
-                    lblBreadcrumb.Text = "Core Management System  ›  Workflow Engine  ›  งานของฉัน";
-                    break;
-                case "delegation":
-                    using (var frm = new WorkflowDelegationForm())
-                    {
-                        frm.ShowDialog(this);
-                    }
-                    break;
-                default:
-                    MessageBox.Show(string.Format("หน้า '{0}' อยู่ระหว่างพัฒนา", tag),
-                        "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    break;
+                    LoadRealData();
+                    return;
             }
+
+            // Delegate to navigation handler for other forms
+            WorkflowNavigationHandler.HandleNavigation(
+                tag,
+                this,
+                _workflowService,
+                null, // templateService
+                _slaCalculator,
+                _loggingService,
+                _userContext);
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -553,6 +552,76 @@ namespace CMS.Presentation.Modules.Workflow
         // ════════════════════════════════════════════════════════════════════════
         // DATA
         // ════════════════════════════════════════════════════════════════════════
+
+        private void LoadRealData()
+        {
+            try
+            {
+                if (_workflowService == null || _userContext == null)
+                {
+                    LoadMockData();
+                    return;
+                }
+
+                var tasks = _workflowService.GetMyTasks(_userContext);
+                if (tasks == null || tasks.Count == 0)
+                {
+                    _allTasks.Clear();
+                    ApplyFilter();
+                    return;
+                }
+
+                _allTasks = tasks.Select(MapToTaskItem).ToList();
+                ApplyFilter();
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error("Cannot load workflow tasks", ex);
+                MessageBox.Show("ไม่สามารถโหลดรายการงานได้: " + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                LoadMockData();
+            }
+        }
+
+        private WorkflowTaskItem MapToTaskItem(WorkflowTaskResult result)
+        {
+            var dueDate = result.SLADeadline;
+            var now = DateTime.Now;
+            var daysLeft = (int)(dueDate - now).TotalDays;
+
+            var slaPercent = 0;
+            if (result.TimeRemainingMinutes.HasValue)
+            {
+                var totalMinutes = (dueDate - result.AssignedDate).TotalMinutes;
+                var elapsedPercent = (totalMinutes - result.TimeRemainingMinutes.Value) / totalMinutes * 100;
+                slaPercent = Math.Min(100, (int)elapsedPercent);
+            }
+
+            var statusText = result.SLAStatus == SLAStatus.Overdue ? "เกิน SLA"
+                           : result.Status == WorkflowStepInstanceStatus.Pending ? "รอดำเนินการ"
+                           : result.Status == WorkflowStepInstanceStatus.Completed ? "เสร็จ"
+                           : "รอ";
+
+            return new WorkflowTaskItem
+            {
+                WorkflowId = $"WFI-{result.WorkflowInstanceId:D5}",
+                WorkflowTitle = result.WorkflowName ?? "ไม่มีชื่อ",
+                WorkflowStep = result.StepName ?? "ไม่ระบุ",
+                AssigneeName = ExtractDisplayName(result.InitiatedBy) ?? "ไม่ระบุ",
+                AssigneeRole = "Officer",
+                DueDate = dueDate.ToString("dd/MM/yy"),
+                DaysLeft = daysLeft,
+                SlaPercent = slaPercent,
+                Status = statusText
+            };
+        }
+
+        private string ExtractDisplayName(string adUser)
+        {
+            if (string.IsNullOrWhiteSpace(adUser)) return null;
+            var parts = adUser.Split('\\');
+            return parts.Length > 1 ? parts[1] : adUser;
+        }
 
         private void LoadMockData()
         {

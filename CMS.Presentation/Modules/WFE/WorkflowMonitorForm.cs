@@ -22,7 +22,6 @@ namespace CMS.Presentation.Modules.Workflow
         // ── Nav state ────────────────────────────────────────────────────────────
         private Panel _activeNavItem;
         private readonly Color _navyDark  = Color.FromArgb(31,  56, 100);
-        private readonly Color _navActive = Color.FromArgb(232, 240, 255);
         private readonly Color _navHover  = Color.FromArgb(245, 249, 255);
 
         // ── Display data ─────────────────────────────────────────────────────────
@@ -37,8 +36,13 @@ namespace CMS.Presentation.Modules.Workflow
             UserContext userContext)
         {
             InitializeComponent();
-            _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
-            _presenter   = new WorkflowMonitorPresenter(this, workflowService, loggingService, userContext);
+            _userContext = userContext;
+            
+            // Only create presenter if services are available
+            if (workflowService != null && loggingService != null && userContext != null)
+            {
+                _presenter = new WorkflowMonitorPresenter(this, workflowService, loggingService, userContext);
+            }
         }
 
         private void WorkflowMonitorForm_Load(object sender, EventArgs e)
@@ -47,14 +51,22 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 BuildRibbonTabs();
                 BuildToolbar();
-                BuildSidebar();
+
+                // ใช้ WorkflowNavigationBuilder แทน BuildSidebar() เพื่อให้เมนูเหมือนกันทุก Form
+                WorkflowNavigationBuilder.BuildSidebar(
+                    pnlSidebarContainer, "monitor", OnNavClick, out _activeNavItem);
+
                 SetupListView();
 
-                _presenter.RefreshMonitor();
+                // Only load data if presenter is available
+                if (_presenter != null)
+                {
+                    _presenter.RefreshMonitor();
 
-                _autoRefreshTimer          = new Timer { Interval = 60000 };
-                _autoRefreshTimer.Tick    += (s, a) => _presenter.RefreshMonitor();
-                _autoRefreshTimer.Start();
+                    _autoRefreshTimer          = new Timer { Interval = 60000 };
+                    _autoRefreshTimer.Tick    += (s, a) => _presenter.RefreshMonitor();
+                    _autoRefreshTimer.Start();
+                }
             }
             catch (Exception ex)
             {
@@ -188,127 +200,32 @@ namespace CMS.Presentation.Modules.Workflow
         }
 
         // ════════════════════════════════════════════════════════════════════════
-        // SIDEBAR NAVIGATION
+        // SIDEBAR NAVIGATION — ใช้ WorkflowNavigationBuilder (shared)
         // ════════════════════════════════════════════════════════════════════════
-
-        private struct NavSection { public string Header; public NavItem[] Items; }
-        private struct NavItem    { public string Icon; public string Text; public int Badge; public Color BadgeColor; public string Tag; public bool IsDefault; }
-
-        private void BuildSidebar()
-        {
-            var orange = Color.FromArgb(230, 115, 0);
-            var navy   = Color.FromArgb(31, 56, 100);
-            var sections = new[]
-            {
-                new NavSection { Header = "การทำงาน", Items = new[]
-                {
-                    new NavItem { Icon="🏠", Text="งานของฉัน",        Badge=8,  BadgeColor=orange, Tag="mytasks", IsDefault=false },
-                    new NavItem { Icon="✓",  Text="ตรวจสอบ Workflow", Badge=24, BadgeColor=orange, Tag="monitor", IsDefault=true  },
-                    new NavItem { Icon="+",  Text="เริ่ม Workflow",   Badge=0,  BadgeColor=navy,   Tag="create",  IsDefault=false },
-                    new NavItem { Icon="📋", Text="ประวัติ Workflow", Badge=0,  BadgeColor=navy,   Tag="history", IsDefault=false },
-                }},
-                new NavSection { Header = "จัดการ", Items = new[]
-                {
-                    new NavItem { Icon="📄", Text="จัดการ Template",  Badge=0, BadgeColor=navy,   Tag="template", IsDefault=false },
-                    new NavItem { Icon="🎨", Text="Workflow Designer", Badge=0, BadgeColor=navy,   Tag="designer", IsDefault=false },
-                    new NavItem { Icon="☑",  Text="อนุมัติ Template", Badge=3, BadgeColor=orange, Tag="approval", IsDefault=false },
-                }},
-                new NavSection { Header = "ตั้งค่า", Items = new[]
-                {
-                    new NavItem { Icon="👥", Text="Delegation",  Badge=0, BadgeColor=navy, Tag="delegation", IsDefault=false },
-                    new NavItem { Icon="📊", Text="รายงาน SLA", Badge=0, BadgeColor=navy, Tag="sla",        IsDefault=false },
-                    new NavItem { Icon="⚙",  Text="ตั้งค่า",   Badge=0, BadgeColor=navy, Tag="settings",   IsDefault=false },
-                }},
-            };
-
-            int y = 4;
-            foreach (var sec in sections)
-            {
-                pnlSidebarContainer.Controls.Add(new Label { Text = sec.Header, Font = new Font("Segoe UI", 8F, FontStyle.Bold), ForeColor = Color.FromArgb(130, 140, 160), Location = new Point(16, y + 4), Size = new Size(180, 20) });
-                y += 26;
-                foreach (var item in sec.Items)
-                {
-                    var nav = BuildNavRow(item);
-                    nav.Location = new Point(0, y);
-                    pnlSidebarContainer.Controls.Add(nav);
-                    if (item.IsDefault) SetActiveNav(nav);
-                    y += 34;
-                }
-                y += 4;
-            }
-        }
-
-        private Panel BuildNavRow(NavItem item)
-        {
-            var pnl = new Panel { Size = new Size(202, 34), BackColor = Color.White, Cursor = Cursors.Hand, Tag = item.Tag };
-            var accent = new Panel { Location = new Point(0, 4), Size = new Size(3, 26), BackColor = Color.Transparent, Name = "accent" };
-            var icon   = new Label { Text = item.Icon, Font = new Font("Segoe UI", 11F), Location = new Point(14, 7), Size = new Size(22, 22), TextAlign = ContentAlignment.MiddleCenter };
-            var text   = new Label { Text = item.Text, Font = new Font("Segoe UI", 9.5F), ForeColor = Color.FromArgb(44, 52, 70), Location = new Point(40, 8), Size = new Size(120, 20), TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true };
-            pnl.Controls.Add(accent); pnl.Controls.Add(icon); pnl.Controls.Add(text);
-
-            if (item.Badge > 0)
-            {
-                var bc  = item.BadgeColor;
-                var lbl = new Label { Text = item.Badge.ToString(), Font = new Font("Segoe UI", 8F, FontStyle.Bold), ForeColor = Color.White, BackColor = bc, Location = new Point(164, 10), Size = new Size(item.Badge >= 10 ? 26 : 20, 16), TextAlign = ContentAlignment.MiddleCenter };
-                lbl.Paint += (s, pe) =>
-                {
-                    pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    var r = new Rectangle(0, 0, lbl.Width - 1, lbl.Height - 1);
-                    using (var b2 = new SolidBrush(bc)) using (var p2 = RoundedRect(r, 8)) pe.Graphics.FillPath(b2, p2);
-                    pe.Graphics.DrawString(lbl.Text, lbl.Font, Brushes.White, new RectangleF(0, 0, lbl.Width, lbl.Height), new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
-                };
-                pnl.Controls.Add(lbl);
-            }
-
-            var tag = item.Tag;
-            EventHandler enterH = (s, e) => { if (pnl != _activeNavItem) ApplyNavState(pnl, _navHover, Color.FromArgb(44, 52, 70), false); };
-            EventHandler leaveH = (s, e) => { if (pnl != _activeNavItem) ApplyNavState(pnl, Color.White, Color.FromArgb(44, 52, 70), false); };
-            EventHandler clickH = (s, e) => { SetActiveNav(pnl); OnNavClick(tag); };
-            foreach (Control c in pnl.Controls) { c.MouseEnter += enterH; c.MouseLeave += leaveH; c.Click += clickH; }
-            pnl.MouseEnter += enterH; pnl.MouseLeave += leaveH; pnl.Click += clickH;
-            return pnl;
-        }
-
-        private void ApplyNavState(Panel pnl, Color bg, Color fg, bool active)
-        {
-            pnl.BackColor = bg;
-            foreach (Control c in pnl.Controls)
-            {
-                if (c.Name == "accent") { c.BackColor = active ? _navyDark : Color.Transparent; continue; }
-                c.BackColor = bg;
-                if (c is Label lbl) lbl.ForeColor = active ? _navyDark : fg;
-            }
-        }
-
-        private void SetActiveNav(Panel pnl)
-        {
-            if (_activeNavItem != null && _activeNavItem != pnl)
-            {
-                ApplyNavState(_activeNavItem, Color.White, Color.FromArgb(44, 52, 70), false);
-                foreach (Control c in _activeNavItem.Controls)
-                    if (c is Label lbl && c.Name != "accent" && lbl.Text.Length > 2)
-                        lbl.Font = new Font("Segoe UI", 9.5F);
-            }
-            _activeNavItem = pnl;
-            ApplyNavState(pnl, _navActive, _navyDark, true);
-            foreach (Control c in pnl.Controls)
-                if (c is Label lbl && c.Name != "accent" && lbl.Text.Length > 2)
-                    lbl.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
-        }
 
         private void OnNavClick(string tag)
         {
+            // Handle local navigation first
             switch (tag)
             {
                 case "monitor":
                     lblTitle.Text      = "ตรวจสอบ Workflow ทั้งระบบ";
                     lblBreadcrumb.Text = "CMS  ›  Workflow Engine  ›  Monitor";
-                    _presenter.RefreshMonitor();
-                    break;
-                default:
-                    MessageBox.Show(string.Format("หน้า '{0}' อยู่ระหว่างพัฒนา", tag), "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    break;
+                    if (_presenter != null)
+                        _presenter.RefreshMonitor();
+                    return;
             }
+
+            // Delegate to navigation handler for other forms
+            WorkflowNavigationHandler.HandleNavigation(
+                tag,
+                this,
+                null, // workflowService - managed by presenter
+                null, // templateService
+                null, // slaCalculator
+                null, // loggingService - managed by presenter
+                _userContext,
+                null); // auditService
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -645,7 +562,8 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void btnRefresh_Click(object sender, EventArgs e)
         {
-            _presenter.RefreshMonitor();
+            if (_presenter != null)
+                _presenter.RefreshMonitor();
         }
 
         private void WorkflowMonitorForm_FormClosing(object sender, FormClosingEventArgs e)

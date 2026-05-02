@@ -19,7 +19,6 @@ namespace CMS.Presentation.Modules.Workflow
 
         private Panel _activeNavItem;
         private readonly Color _navyDark = Color.FromArgb(31, 56, 100);
-        private readonly Color _navActive = Color.FromArgb(232, 240, 255);
         private readonly Color _navHover = Color.FromArgb(245, 249, 255);
         private int _activeTabIndex = 0;
 
@@ -47,7 +46,8 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 BuildRibbonTabs();
                 BuildToolbar();
-                BuildSidebar();
+                WorkflowNavigationBuilder.BuildSidebar(
+                    pnlSidebarContainer, "monitor", OnNavItemClick, out _activeNavItem);
                 BuildTimelineTabs();
                 BuildPaintHandlers();
                 if (_workflowService != null)
@@ -298,114 +298,19 @@ namespace CMS.Presentation.Modules.Workflow
         }
 
         // ════════════════════════════════════════════════════════════════════════
-        // SIDEBAR
+        // SIDEBAR — handled by WorkflowNavigationBuilder
         // ════════════════════════════════════════════════════════════════════════
-
-        private struct NavSection { public string Header; public NavItem[] Items; }
-        private struct NavItem { public string Icon; public string Text; public int Badge; public Color BadgeColor; public string Tag; public bool IsDefault; }
-
-        private void BuildSidebar()
-        {
-            var orange = Color.FromArgb(230, 115, 0);
-            var navy = Color.FromArgb(31, 56, 100);
-            var sections = new[]
-            {
-                new NavSection { Header = "การทำงาน", Items = new[]
-                {
-                    new NavItem { Icon="🏠", Text="งานของฉัน",        Badge=8,  BadgeColor=orange, Tag="mytasks", IsDefault=false },
-                    new NavItem { Icon="✓",  Text="ตรวจสอบ Workflow", Badge=24, BadgeColor=orange, Tag="monitor", IsDefault=true  },
-                    new NavItem { Icon="+",  Text="เริ่ม Workflow",   Badge=0,  BadgeColor=navy,   Tag="create",  IsDefault=false },
-                    new NavItem { Icon="📋", Text="ประวัติ Workflow", Badge=0,  BadgeColor=navy,   Tag="history", IsDefault=false },
-                }},
-                new NavSection { Header = "จัดการ", Items = new[]
-                {
-                    new NavItem { Icon="📄", Text="จัดการ Template",  Badge=0, BadgeColor=navy,   Tag="template", IsDefault=false },
-                    new NavItem { Icon="🎨", Text="Workflow Designer", Badge=0, BadgeColor=navy,   Tag="designer", IsDefault=false },
-                    new NavItem { Icon="☑",  Text="อนุมัติ Template", Badge=3, BadgeColor=orange, Tag="approval", IsDefault=false },
-                }},
-                new NavSection { Header = "ตั้งค่า", Items = new[]
-                {
-                    new NavItem { Icon="👥", Text="Delegation",  Badge=0, BadgeColor=navy, Tag="delegation", IsDefault=false },
-                    new NavItem { Icon="📊", Text="รายงาน SLA", Badge=0, BadgeColor=navy, Tag="sla",        IsDefault=false },
-                    new NavItem { Icon="⚙",  Text="ตั้งค่า",   Badge=0, BadgeColor=navy, Tag="settings",   IsDefault=false },
-                }},
-            };
-            int y = 4;
-            foreach (var section in sections)
-            {
-                pnlSidebarContainer.Controls.Add(new Label { Text = section.Header, Font = new Font("Segoe UI", 8F, FontStyle.Bold), ForeColor = Color.FromArgb(130, 140, 160), Location = new Point(16, y + 4), Size = new Size(180, 20) });
-                y += 26;
-                foreach (var item in section.Items)
-                {
-                    var nav = BuildNavItem(item);
-                    nav.Location = new Point(0, y);
-                    pnlSidebarContainer.Controls.Add(nav);
-                    if (item.IsDefault) SetActiveNav(nav);
-                    y += 34;
-                }
-                y += 4;
-            }
-        }
-
-        private Panel BuildNavItem(NavItem item)
-        {
-            var pnl = new Panel { Size = new Size(202, 34), BackColor = Color.White, Cursor = Cursors.Hand, Tag = item.Tag };
-            var pnlAccent = new Panel { Location = new Point(0, 4), Size = new Size(3, 26), BackColor = Color.Transparent, Name = "accent" };
-            var lblIcon = new Label { Text = item.Icon, Font = new Font("Segoe UI", 11F), Location = new Point(14, 7), Size = new Size(22, 22), TextAlign = ContentAlignment.MiddleCenter };
-            var lblText = new Label { Text = item.Text, Font = new Font("Segoe UI", 9.5F), ForeColor = Color.FromArgb(44, 52, 70), Location = new Point(40, 8), Size = new Size(120, 20), TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true };
-            pnl.Controls.Add(pnlAccent); pnl.Controls.Add(lblIcon); pnl.Controls.Add(lblText);
-
-            if (item.Badge > 0)
-            {
-                var bc = item.BadgeColor;
-                var lb = new Label { Text = item.Badge.ToString(), Font = new Font("Segoe UI", 8F, FontStyle.Bold), ForeColor = Color.White, BackColor = bc, Location = new Point(164, 10), Size = new Size(item.Badge >= 10 ? 26 : 20, 16), TextAlign = ContentAlignment.MiddleCenter };
-                lb.Paint += (s, pe) =>
-                {
-                    pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    using (var b = new SolidBrush(bc))
-                    using (var path = RoundedRect(new Rectangle(0, 0, lb.Width - 1, lb.Height - 1), 8))
-                        pe.Graphics.FillPath(b, path);
-                    pe.Graphics.DrawString(lb.Text, lb.Font, Brushes.White,
-                        new RectangleF(0, 0, lb.Width, lb.Height),
-                        new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
-                };
-                pnl.Controls.Add(lb);
-            }
-
-            var tag = item.Tag;
-            EventHandler enterH = (s, ev) => { if (pnl != _activeNavItem) { pnl.BackColor = _navHover; foreach (Control c in pnl.Controls) { if (c.Name != "accent") c.BackColor = _navHover; } } };
-            EventHandler leaveH = (s, ev) => { if (pnl != _activeNavItem) { pnl.BackColor = Color.White; foreach (Control c in pnl.Controls) { if (c.Name != "accent") c.BackColor = Color.White; } } };
-            EventHandler clickH = (s, ev) => { SetActiveNav(pnl); OnNavItemClick(tag); };
-            foreach (Control c in pnl.Controls) { c.MouseEnter += enterH; c.MouseLeave += leaveH; c.Click += clickH; }
-            pnl.MouseEnter += enterH; pnl.MouseLeave += leaveH; pnl.Click += clickH;
-            return pnl;
-        }
-
-        private void SetActiveNav(Panel pnl)
-        {
-            if (_activeNavItem != null && _activeNavItem != pnl)
-            {
-                _activeNavItem.BackColor = Color.White;
-                foreach (Control c in _activeNavItem.Controls)
-                {
-                    if (c.Name != "accent") c.BackColor = Color.White;
-                    if (c is Label lbl) lbl.ForeColor = Color.FromArgb(44, 52, 70);
-                    if (c.Name == "accent") c.BackColor = Color.Transparent;
-                }
-            }
-            _activeNavItem = pnl;
-            pnl.BackColor = _navActive;
-            foreach (Control c in pnl.Controls)
-            {
-                if (c.Name == "accent") { c.BackColor = _navyDark; continue; }
-                c.BackColor = _navActive;
-                if (c is Label lbl) { lbl.ForeColor = _navyDark; if (lbl.Text.Length > 2) lbl.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold); }
-            }
-        }
 
         private void OnNavItemClick(string tag)
         {
-            MessageBox.Show(string.Format("หน้า '{0}' อยู่ระหว่างพัฒนา", tag), "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            WorkflowNavigationHandler.HandleNavigation(
+                tag,
+                this,
+                null, // workflowService
+                null, // templateService
+                null, // slaCalculator
+                null, // loggingService
+                null); // userContext
         }
 
         // ════════════════════════════════════════════════════════════════════════
