@@ -29,6 +29,7 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@TemplateName", template.TemplateName);
                     cmd.Parameters.AddWithValue("@TargetType",   template.TargetType);
                     cmd.Parameters.AddWithValue("@Description",  (object)template.Description ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@OrgUnitID",    (object)template.OrgUnitID ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@CreatedBy",    template.CreatedBy);
                     return Convert.ToInt32(cmd.ExecuteScalar());
                 }
@@ -104,6 +105,7 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@TemplateName", template.TemplateName);
                     cmd.Parameters.AddWithValue("@TargetType",   template.TargetType);
                     cmd.Parameters.AddWithValue("@Description",  (object)template.Description ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@OrgUnitID",    (object)template.OrgUnitID ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@IsActive",     template.IsActive);
                     cmd.ExecuteNonQuery();
                 }
@@ -196,6 +198,8 @@ namespace CMS.Data.Repositories
                 TemplateName = (string)reader["TemplateName"],
                 TargetType   = (string)reader["TargetType"],
                 Description  = reader["Description"] == DBNull.Value ? null : (string)reader["Description"],
+                OrgUnitID    = reader["OrgUnitID"] == DBNull.Value ? (int?)null : (int)reader["OrgUnitID"],
+                OrgUnitName  = reader["OrgUnitName"] == DBNull.Value ? null : (string)reader["OrgUnitName"],
                 IsActive     = (bool)reader["IsActive"],
                 CreatedBy    = (int)reader["CreatedBy"],
                 CreatedDate  = (DateTime)reader["CreatedDate"]

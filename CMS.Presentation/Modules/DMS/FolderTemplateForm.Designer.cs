@@ -41,6 +41,8 @@ namespace CMS.Presentation
             this._txtName           = new System.Windows.Forms.TextBox();
             this.lblType            = new System.Windows.Forms.Label();
             this._cboType           = new System.Windows.Forms.ComboBox();
+            this.lblOrgUnit         = new System.Windows.Forms.Label();
+            this._cboOrgUnit        = new System.Windows.Forms.ComboBox();
             this.pnlInfoLine        = new System.Windows.Forms.Panel();
             this.pnlSubHeader       = new System.Windows.Forms.Panel();
             this.lblSubFolder       = new System.Windows.Forms.Label();
@@ -214,16 +216,18 @@ namespace CMS.Presentation
             this.pnlRight.Controls.Add(this.pnlInfoLine);
             this.pnlRight.Controls.Add(this.pnlInfo);
 
-            // pnlInfo (Dock.Top, H=92)
+            // pnlInfo (Dock.Top, H=132)
             this.pnlInfo.BackColor = System.Drawing.Color.FromArgb(250, 251, 253);
             this.pnlInfo.Dock      = System.Windows.Forms.DockStyle.Top;
-            this.pnlInfo.Height    = 92;
+            this.pnlInfo.Height    = 132;
             this.pnlInfo.Name      = "pnlInfo";
             this.pnlInfo.Padding   = new System.Windows.Forms.Padding(16, 12, 16, 8);
             this.pnlInfo.Controls.Add(this.lblName);
             this.pnlInfo.Controls.Add(this._txtName);
             this.pnlInfo.Controls.Add(this.lblType);
             this.pnlInfo.Controls.Add(this._cboType);
+            this.pnlInfo.Controls.Add(this.lblOrgUnit);
+            this.pnlInfo.Controls.Add(this._cboOrgUnit);
 
             // ชื่อ Template row
             this.lblName.AutoSize  = true;
@@ -260,6 +264,22 @@ namespace CMS.Presentation
             this._cboType.TabIndex      = 1;
             this._cboType.SelectedIndex = 0;
             this._cboType.FlatStyle     = System.Windows.Forms.FlatStyle.Flat;
+
+            // หน่วยงาน row
+            this.lblOrgUnit.AutoSize  = true;
+            this.lblOrgUnit.Font      = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblOrgUnit.ForeColor = System.Drawing.Color.FromArgb(50, 50, 50);
+            this.lblOrgUnit.Location  = new System.Drawing.Point(16, 90);
+            this.lblOrgUnit.Name      = "lblOrgUnit";
+            this.lblOrgUnit.Text      = "หน่วยงาน:";
+
+            this._cboOrgUnit.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this._cboOrgUnit.Font          = new System.Drawing.Font("Segoe UI", 9.5F);
+            this._cboOrgUnit.Location      = new System.Drawing.Point(120, 86);
+            this._cboOrgUnit.Name          = "_cboOrgUnit";
+            this._cboOrgUnit.Size          = new System.Drawing.Size(340, 26);
+            this._cboOrgUnit.TabIndex      = 2;
+            this._cboOrgUnit.FlatStyle     = System.Windows.Forms.FlatStyle.Flat;
 
             // pnlInfoLine (Dock.Top, H=1) — separator
             this.pnlInfoLine.BackColor = System.Drawing.Color.FromArgb(220, 225, 235);
@@ -414,6 +434,8 @@ namespace CMS.Presentation
         private System.Windows.Forms.TextBox      _txtName;
         private System.Windows.Forms.Label        lblType;
         private System.Windows.Forms.ComboBox     _cboType;
+        private System.Windows.Forms.Label        lblOrgUnit;
+        private System.Windows.Forms.ComboBox     _cboOrgUnit;
         private System.Windows.Forms.Panel        pnlInfoLine;
         private System.Windows.Forms.Panel        pnlSubHeader;
         private System.Windows.Forms.Label        lblSubFolder;

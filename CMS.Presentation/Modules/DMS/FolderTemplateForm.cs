@@ -14,19 +14,23 @@ namespace CMS.Presentation
     /// </summary>
     public partial class FolderTemplateForm : Form
     {
-        private readonly IFolderTemplateController _repo;
-        private readonly UserContext               _user;
+        private readonly IFolderTemplateController       _repo;
+        private readonly IUserAccessOrgLookupController  _orgLookup;
+        private readonly UserContext                     _user;
 
         private List<FolderTemplate>     _templates = new List<FolderTemplate>();
         private List<FolderTemplateItem> _items     = new List<FolderTemplateItem>();
+        private List<OrgUnit>            _orgUnits  = new List<OrgUnit>();
         private FolderTemplate           _selected;
 
-        public FolderTemplateForm(IFolderTemplateController repo, UserContext user)
+        public FolderTemplateForm(IFolderTemplateController repo, IUserAccessOrgLookupController orgLookup, UserContext user)
         {
-            if (repo == null) throw new ArgumentNullException("repo");
-            if (user == null) throw new ArgumentNullException("user");
-            _repo = repo;
-            _user = user;
+            if (repo      == null) throw new ArgumentNullException("repo");
+            if (orgLookup == null) throw new ArgumentNullException("orgLookup");
+            if (user      == null) throw new ArgumentNullException("user");
+            _repo      = repo;
+            _orgLookup = orgLookup;
+            _user      = user;
             InitializeComponent();
         }
 
@@ -39,6 +43,7 @@ namespace CMS.Presentation
             pnlBottom.Resize += (s, ev) =>
                 _btnCancel.Left = pnlBottom.ClientSize.Width - _btnCancel.Width - 16;
 
+            LoadOrgUnits();
             LoadTemplates();
         }
 
@@ -67,8 +72,13 @@ namespace CMS.Presentation
                 selected ? Brushes.White : new SolidBrush(Color.FromArgb(20, 20, 20)),
                 new PointF(textX, e.Bounds.Y + 5));
 
+            // แสดงชื่อหน่วยงาน หรือ TargetType ถ้าเป็น Generic
+            string subLine = !string.IsNullOrEmpty(tmpl.OrgUnitName)
+                ? "🏢 " + tmpl.OrgUnitName
+                : tmpl.TargetType;
+
             e.Graphics.DrawString(
-                tmpl.TargetType,
+                subLine,
                 new Font("Segoe UI", 8f),
                 selected ? new SolidBrush(Color.FromArgb(160, 210, 255)) : new SolidBrush(Color.FromArgb(110, 110, 110)),
                 new PointF(textX + 2, e.Bounds.Y + 21));
@@ -80,6 +90,29 @@ namespace CMS.Presentation
         }
 
         // ── Data loading ──────────────────────────────────────────────────────
+
+        private void LoadOrgUnits()
+        {
+            try
+            {
+                _orgUnits = _orgLookup.GetHierarchy()
+                    .Where(u => u.IsActive && !u.IsDeleted)
+                    .OrderBy(u => u.Name)
+                    .ToList();
+
+                _cboOrgUnit.Items.Clear();
+                // รายการแรก = Generic (ไม่ผูกกับหน่วยงานใด)
+                _cboOrgUnit.Items.Add("— ทุกหน่วยงาน (Generic) —");
+                foreach (var org in _orgUnits)
+                    _cboOrgUnit.Items.Add(org.Name);
+                _cboOrgUnit.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("ไม่สามารถโหลดข้อมูลหน่วยงานได้\n\n" + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
 
         private void LoadTemplates()
         {
@@ -111,6 +144,17 @@ namespace CMS.Presentation
             _txtName.Text     = _selected.TemplateName;
             int typeIdx       = _cboType.Items.IndexOf(_selected.TargetType);
             _cboType.SelectedIndex = typeIdx >= 0 ? typeIdx : 0;
+
+            // bind OrgUnit: index 0 = Generic, index N+1 = _orgUnits[N]
+            if (_selected.OrgUnitID.HasValue)
+            {
+                int orgIdx = _orgUnits.FindIndex(o => o.OrgUnitID == _selected.OrgUnitID.Value);
+                _cboOrgUnit.SelectedIndex = orgIdx >= 0 ? orgIdx + 1 : 0;
+            }
+            else
+            {
+                _cboOrgUnit.SelectedIndex = 0; // Generic
+            }
 
             LoadItems(_selected.TemplateID);
         }
@@ -154,6 +198,7 @@ namespace CMS.Presentation
             _selected              = null;
             _txtName.Text          = "";
             _cboType.SelectedIndex = 0;
+            _cboOrgUnit.SelectedIndex = 0;
             _lstItems.Items.Clear();
             _items.Clear();
         }
@@ -203,6 +248,10 @@ namespace CMS.Presentation
             {
                 _selected.TemplateName = _txtName.Text.Trim();
                 _selected.TargetType   = _cboType.SelectedItem.ToString();
+                // OrgUnit: SelectedIndex 0 = Generic (null), 1+ = _orgUnits[idx-1]
+                int orgIdx = _cboOrgUnit.SelectedIndex;
+                _selected.OrgUnitID    = orgIdx > 0 ? (int?)_orgUnits[orgIdx - 1].OrgUnitID : null;
+                _selected.OrgUnitName  = orgIdx > 0 ? _orgUnits[orgIdx - 1].Name : null;
                 _selected.IsActive     = true;
                 _repo.Update(_selected);
                 LoadTemplates();

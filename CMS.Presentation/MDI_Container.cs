@@ -1083,7 +1083,7 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            using (var dlg = new FolderTemplateForm(_folderTemplateController, _currentUser))
+            using (var dlg = new FolderTemplateForm(_folderTemplateController, _userAccessOrgLookupController, _currentUser))
                 dlg.ShowDialog(this);
         }
 

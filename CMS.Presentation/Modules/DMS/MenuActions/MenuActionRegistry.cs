@@ -153,7 +153,7 @@ namespace CMS.Presentation
                         return true;
 
                     case "FolderTemplate":
-                        return ShowTargetForm(context, new FolderTemplateForm(context.FolderTemplateController, context.User));
+                        return ShowTargetForm(context, new FolderTemplateForm(context.FolderTemplateController, context.OrgLookupController, context.User));
 
                     case "ArchiveFolder":
                         if (context.TriggerArchive != null)
