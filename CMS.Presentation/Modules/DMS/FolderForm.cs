@@ -384,6 +384,7 @@ namespace CMS.Presentation
             var mnuCopy = new ToolStripMenuItem("📋  คัดลอก", null, CtxCopy_Click) { Enabled = false };
             var mnuPaste = new ToolStripMenuItem("📄  วาง", null, CtxPaste_Click) { Enabled = false };
             var mnuRename = new ToolStripMenuItem("✏️  เปลี่ยนชื่อ", null, (s, e) => btnRename_Click(s, e));
+            var mnuMove = new ToolStripMenuItem("📦  ย้าย", null, BtnMove_Click);
             var mnuDelete = new ToolStripMenuItem("🗑️  ลบ Folder", null, (s, e) => btnDelete_Click(s, e));
             var mnuArchive = new ToolStripMenuItem("📦  Archive", null, (s, e) => btnArchive_Click(s, e));
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
@@ -402,6 +403,7 @@ namespace CMS.Presentation
             //ctx.Items.Add(mnuPaste);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuRename);
+            ctx.Items.Add(mnuMove);
             ctx.Items.Add(mnuDelete);
             //ctx.Items.Add(mnuArchive);
             ctx.Items.Add(mnuPermission);
@@ -427,6 +429,7 @@ namespace CMS.Presentation
                 mnuOpen.Enabled = hasFolder && canView;
                 mnuDownload.Enabled = hasFolder && canView;
                 mnuRename.Enabled = hasFolder && canEdit;
+                mnuMove.Enabled = hasFolder && canEdit && _folderCommandController != null;
                 mnuDelete.Enabled = canDeleteFolder;
                 mnuArchive.Enabled = hasFolder && canEdit;
                 mnuPermission.Enabled = hasFolder && isPrivileged;
@@ -463,6 +466,7 @@ namespace CMS.Presentation
             var mnuCopy = new ToolStripMenuItem("คัดลอก", null, CtxFileCopy_Click) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C, ShowShortcutKeys = true };
             var mnuPaste = new ToolStripMenuItem("วาง", null, CtxFilePaste_Click) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V, ShowShortcutKeys = true };
             var mnuRename = new ToolStripMenuItem("เปลี่ยนชื่อ", null, (s, e) => btnRename_Click(s, e)) { ShortcutKeys = System.Windows.Forms.Keys.F2, ShowShortcutKeys = true };
+            var mnuMove = new ToolStripMenuItem("ย้าย", null, BtnMove_Click);
             var mnuDelete = new ToolStripMenuItem("ลบ", null, (s, e) => btnDelete_Click(s, e)) { ShortcutKeys = System.Windows.Forms.Keys.Delete, ShowShortcutKeys = true };
             var mnuClearFolder = new ToolStripMenuItem("🗑️  ล้างไฟล์ทั้งหมดใน Folder...", null, (s, e) => ClearFolderContents());
             var mnuArchive = new ToolStripMenuItem("Archive", null, (s, e) => btnArchive_Click(s, e));
@@ -480,6 +484,7 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuPaste);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuRename);
+            ctx.Items.Add(mnuMove);
             ctx.Items.Add(mnuDelete);
             ctx.Items.Add(mnuClearFolder);
             ctx.Items.Add(new ToolStripSeparator());
@@ -519,6 +524,10 @@ namespace CMS.Presentation
                                    (hasFileSelection || contentFolder != null);
 
                 bool canUseFileClipboard = hasFileSelection && !hasFolderSelection;
+                bool canMove = hasSelection
+                               && canEdit
+                               && ((hasFileSelection && !hasFolderSelection && _fileCommandController != null)
+                                   || (contentFolder != null && _folderCommandController != null));
 
                 bool hasPendingPaste = _clipboardMode != ClipboardMode.None
                                      && _clipboardFileIds.Count > 0
@@ -532,6 +541,7 @@ namespace CMS.Presentation
                 mnuCopy.Enabled = canUseFileClipboard && canView && _fileCommandController != null;
                 mnuPaste.Enabled = hasPendingPaste && canAdd && _fileCommandController != null;
                 mnuRename.Enabled = hasSelection && canEdit;
+                mnuMove.Enabled = canMove;
                 mnuDelete.Enabled = canDeleteContent;
                 mnuClearFolder.Enabled = _fileBrowseController != null && _fileCommandController != null && _currentNavFolderId.HasValue && canEdit;
                 mnuArchive.Enabled = singleFileSelected && canEdit;
@@ -1111,7 +1121,6 @@ namespace CMS.Presentation
             try
             {
                 TryLoadMainMenuFromManagement();
-                _treeMainMenu.ExpandAll();
             }
             finally
             {
@@ -1686,7 +1695,24 @@ namespace CMS.Presentation
                 tag = ResolveMenuActionTag(menuItem);
 
             if (string.IsNullOrWhiteSpace(tag))
+            {
+                // Group node — expand/collapse only when clicking the label text,
+                // NOT the +/- icon (TreeView already handles that natively to avoid double-toggle)
+                var hit = _treeMainMenu.HitTest(e.Location);
+                if (hit.Location == TreeViewHitTestLocations.Label ||
+                    hit.Location == TreeViewHitTestLocations.Image ||
+                    hit.Location == TreeViewHitTestLocations.StateImage)
+                {
+                    if (e.Node.IsExpanded)
+                        e.Node.Collapse();
+                    else
+                        e.Node.Expand();
+                }
                 return;
+            }
+
+            // Show selected menu label as feedback in the status bar
+            lblOrgUnitStatus.Text = "☰ " + e.Node.Text;
 
             string errorMessage;
             if (MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(e.Node.Text), out errorMessage))
@@ -1722,6 +1748,7 @@ namespace CMS.Presentation
                 UserAccountLookupController = _userAccountLookupController,
                 UserAdminController = _userAdminController,
                 UserOrgVisibilityController = _userOrgVisibilityController,
+                FolderReadLookupController = _folderReadLookupController,
                 MenuManagementController = _menuManagementController,
                 ApprovalInboxController = _approvalInboxController,
                 RecycleBinController = _recycleBinController,
@@ -1732,7 +1759,7 @@ namespace CMS.Presentation
                 TriggerArchive = TriggerArchive,
                 TriggerChangeLevel = TriggerChangeLevel,
                 TriggerCopyStructure = TriggerCopyStructure,
-                ClearContentPanel = ClearContentPanel,
+                ClearContentPanel = () => ClearContentPanel(),
                 SetContentInfo = text => lblContentInfo.Text = "กำลังเปิด: " + text,
                 RequestMdiAction = OnMenuActionRequested
             };
@@ -1830,9 +1857,8 @@ namespace CMS.Presentation
             SetFolderExplorerControlsVisibility(false);
             SetMainMenuTreeFullHeight(true);
 
-            // Refresh from MenuManagement and expand all nodes so submenus are visible immediately.
+            // Load menu tree — stays collapsed at Level 0; user expands as needed.
             LoadMainMenuTree();
-            _treeMainMenu.ExpandAll();
 
             treeOrgUnit.Visible = false;
             _treeConfidentiality.Visible = false;
@@ -1868,30 +1894,111 @@ namespace CMS.Presentation
             lblOrgUnitStatus.Text = "⏳ กำลังโหลด ตามความลับ...";
             this.Cursor = Cursors.WaitCursor;
 
+            // Admin/Manager (privileged) เห็นทุก Folder ในทุก OrgUnit — ไม่ต้อง filter scope
+            bool isPrivilegedUser = _user != null && _user.AppRole >= 3;
+
+            // Capture OrgUnit selection on UI thread to avoid cross-thread access in Task.Run
+            int? selectedOrgUnitId = isPrivilegedUser ? (int?)null : _selectedOrgUnitId;
+            if (!isPrivilegedUser && !selectedOrgUnitId.HasValue && treeOrgUnit != null)
+            {
+                var selectedNode = treeOrgUnit.SelectedNode;
+                var selectedUnit = selectedNode != null ? selectedNode.Tag as OrgUnit : null;
+                if (selectedUnit != null)
+                    selectedOrgUnitId = selectedUnit.OrgUnitID;
+
+                // First entry fallback: if user hasn't selected org yet, pick first OrgUnit node.
+                if (!selectedOrgUnitId.HasValue)
+                {
+                    var firstOrgNode = FindFirstOrgUnitNode(treeOrgUnit.Nodes);
+                    var firstOrg = firstOrgNode != null ? firstOrgNode.Tag as OrgUnit : null;
+                    if (firstOrg != null)
+                        selectedOrgUnitId = firstOrg.OrgUnitID;
+                }
+            }
+
             try
             {
                 // ดึงข้อมูลทั้งหมดแบบ async เพื่อไม่ block UI
                 var result = await System.Threading.Tasks.Task.Run(() =>
                 {
-                    var allFolders = (_folderReadLookupController != null
-                        ? _folderReadLookupController.GetAllFolders(null, _user)
-                        : Enumerable.Empty<Folder>())
-                        .ToList();
-
-                    var childrenByParent = allFolders
-                        .Where(f => f.ParentFolderID.HasValue)
-                        .GroupBy(f => f.ParentFolderID.Value)
-                        .ToDictionary(g => g.Key, g => g.ToList());
-
-                    var allRootFolders = allFolders
-                        .Where(f => !f.ParentFolderID.HasValue)
-                        .ToList();
-
                     var allOrgUnits = new List<OrgUnit>();
                     if (_orgLookupController != null)
                         allOrgUnits = _orgLookupController.GetHierarchy()
                             .Where(u => u.IsActive && !u.IsDeleted)
                             .ToList();
+
+                    // Process 1: load raw folders
+                    var rawAllFolders = (_folderReadLookupController != null
+                        ? _folderReadLookupController.GetAllFolders(null, _user)
+                        : Enumerable.Empty<Folder>())
+                        .Where(f => !f.IsDeleted && !f.IsArchived)
+                        .ToList();
+
+                    var allFolders = rawAllFolders;
+
+                    // Process 2: apply OrgUnit scope (selected + descendants + ancestors when available)
+                    if (selectedOrgUnitId.HasValue)
+                    {
+                        Func<int, IEnumerable<int>> getSubtreeIds = null;
+                        getSubtreeIds = (parentId) =>
+                        {
+                            var ids = new List<int> { parentId };
+                            foreach (var child in allOrgUnits.Where(u => u.ParentOrgUnitID == parentId))
+                                ids.AddRange(getSubtreeIds(child.OrgUnitID));
+                            return ids;
+                        };
+
+                        var allowedOrgIds = new HashSet<int>(getSubtreeIds(selectedOrgUnitId.Value));
+                        var byId = allOrgUnits.ToDictionary(u => u.OrgUnitID);
+                        int currentId = selectedOrgUnitId.Value;
+                        var guard = new HashSet<int>();
+                        while (currentId > 0 && guard.Add(currentId) && byId.ContainsKey(currentId))
+                        {
+                            allowedOrgIds.Add(currentId);
+                            var parentId = byId[currentId].ParentOrgUnitID;
+                            currentId = parentId.HasValue ? parentId.Value : 0;
+                        }
+
+                        allFolders = rawAllFolders.Where(f => allowedOrgIds.Contains(f.OrgUnitID)).ToList();
+
+                        // Fallback: if hierarchy data is incomplete, at least keep directly selected OrgUnit folders
+                        if (allFolders.Count == 0)
+                            allFolders = rawAllFolders.Where(f => f.OrgUnitID == selectedOrgUnitId.Value).ToList();
+
+                        // Process 3: add folder ancestors so visible descendants are not orphaned
+                        var folderById = rawAllFolders.ToDictionary(f => f.FolderId);
+                        var includeFolderIds = new HashSet<int>(allFolders.Select(f => f.FolderId));
+                        var pending = new Queue<int>(includeFolderIds);
+                        while (pending.Count > 0)
+                        {
+                            int id = pending.Dequeue();
+                            Folder node;
+                            if (!folderById.TryGetValue(id, out node))
+                                continue;
+
+                            if (node.ParentFolderID.HasValue && node.ParentFolderID.Value > 0)
+                            {
+                                int parentId = node.ParentFolderID.Value;
+                                if (includeFolderIds.Add(parentId))
+                                    pending.Enqueue(parentId);
+                            }
+                        }
+
+                        allFolders = rawAllFolders.Where(f => includeFolderIds.Contains(f.FolderId)).ToList();
+
+                        // Keep only org units that appear in composed folder set
+                        var usedOrgIds = new HashSet<int>(allFolders.Select(f => f.OrgUnitID));
+                        allOrgUnits = allOrgUnits.Where(u => usedOrgIds.Contains(u.OrgUnitID)).ToList();
+                    }
+
+                    var childrenByParent = allFolders
+                        .Where(f => f.ParentFolderID.HasValue && f.ParentFolderID.Value > 0)
+                        .GroupBy(f => f.ParentFolderID.Value)
+                        .ToDictionary(g => g.Key, g => g.ToList());
+
+                    var allRootFolders = allFolders
+                        .Where(f => !f.ParentFolderID.HasValue || f.ParentFolderID.Value <= 0)
+                        .ToList();
 
                     return new
                     {
@@ -1912,7 +2019,9 @@ namespace CMS.Presentation
                 if (selectedFolderId > 0)
                     RestoreConfSelectedFolder(_treeConfidentiality.Nodes, selectedFolderId);
 
-                lblOrgUnitStatus.Text = "✓ โหลดเสร็จ";
+                lblOrgUnitStatus.Text = _treeConfidentiality.Nodes.Count > 0
+                    ? "✓ โหลดเสร็จ"
+                    : "ℹ ไม่พบรายการที่มีสิทธิ์";
             }
             catch (Exception ex)
             {
@@ -2139,21 +2248,28 @@ namespace CMS.Presentation
                                 string rlabel = fc > 0
                                     ? string.Format("{0}  [{1}]", rootFolder.FolderName, fc)
                                     : rootFolder.FolderName;
+
+                                bool rootHasAccess = HasFolderViewAccessConfTree(rootFolder);
                                 var rootNode = new TreeNode(rlabel)
                                 {
-                                    Tag = rootFolder,
+                                    Tag = rootHasAccess ? (object)rootFolder : null,
                                     ForeColor = group.Color,
                                     ImageKey = "folder",
                                     SelectedImageKey = "open_folder"
                                 };
-                                AddConfChildNodes(rootNode, rootFolder.FolderId, group.Color, childrenByParent);
-                                ouNode.Nodes.Add(rootNode);
+
+                                bool hasVisibleChildren = AddConfChildNodes(rootNode, rootFolder.FolderId, group.Color, childrenByParent);
+                                if (rootHasAccess || hasVisibleChildren)
+                                    ouNode.Nodes.Add(rootNode);
                             }
-                            groupNode.Nodes.Add(ouNode);
+
+                            if (ouNode.Nodes.Count > 0)
+                                groupNode.Nodes.Add(ouNode);
                         }
                     }
 
-                    _treeConfidentiality.Nodes.Add(groupNode);
+                    if (groupNode.Nodes.Count > 0)
+                        _treeConfidentiality.Nodes.Add(groupNode);
                 }
 
                 // ไม่ CollapseAll — ให้ BuildConfidentialityTreeFromAllFoldersAsync restore expanded state เองหลัง build
@@ -2175,23 +2291,26 @@ namespace CMS.Presentation
             if (!foldersByOrgUnit.TryGetValue(orgUnitId, out folders)) return;
             foreach (var f in folders.Where(f => f.ConfidentialityLevel == confLevel).OrderBy(f => f.FolderName))
             {
-                bool hasViewAccess = HasFolderViewAccess(f);
-                string lbl = hasViewAccess ? f.FolderName : string.Format("{0} [ไม่มีสิทธิ์]", f.FolderName);
+                bool hasViewAccess = HasFolderViewAccessConfTree(f);
+                string lbl = f.FolderName;
                 var fNode = new TreeNode(lbl)
                 {
-                    Tag = f,
-                    ForeColor = hasViewAccess ? color : Color.FromArgb(140, 140, 140),
+                    Tag = hasViewAccess ? (object)f : null,
+                    ForeColor = color,
                     ImageKey = "folder",
                     SelectedImageKey = "open_folder"
                 };
-                AddConfChildNodes(fNode, f.FolderId, color, childrenByParent);
-                parentNode.Nodes.Add(fNode);
+
+                bool hasVisibleChildren = AddConfChildNodes(fNode, f.FolderId, color, childrenByParent);
+                if (hasViewAccess || hasVisibleChildren)
+                    parentNode.Nodes.Add(fNode);
             }
         }
 
-        private void AddConfChildNodes(TreeNode parentNode, int folderId, Color color,
+        private bool AddConfChildNodes(TreeNode parentNode, int folderId, Color color,
             Dictionary<int, List<Folder>> childrenByParent = null)
         {
+            bool addedAny = false;
             try
             {
                 List<Folder> children;
@@ -2200,11 +2319,11 @@ namespace CMS.Presentation
                 {
                     // Fast path: ใช้ in-memory lookup แทน DB query
                     if (!childrenByParent.TryGetValue(folderId, out children))
-                        return;
+                        return false;
                 }
                 else
                 {
-                    if (_folderReadLookupController == null) return;
+                    if (_folderReadLookupController == null) return false;
                     children = _folderReadLookupController.GetChildren(folderId)
                         .Where(f => !f.IsDeleted && !f.IsArchived)
                         .ToList();
@@ -2212,22 +2331,28 @@ namespace CMS.Presentation
 
                 foreach (var child in children)
                 {
-                    bool hasViewAccess = HasFolderViewAccess(child);
-                    string label = hasViewAccess ? child.FolderName : string.Format("{0} [ไม่มีสิทธิ์]", child.FolderName);
+                    bool hasViewAccess = HasFolderViewAccessConfTree(child);
+                    string label = child.FolderName;
                     var childNode = new TreeNode(label)
                     {
-                        Tag = child,
-                        ForeColor = hasViewAccess ? color : Color.FromArgb(140, 140, 140)
+                        Tag = hasViewAccess ? (object)child : null,
+                        ForeColor = color
                     };
 
-                    AddConfChildNodes(childNode, child.FolderId, color, childrenByParent);
+                    bool hasVisibleChildren = AddConfChildNodes(childNode, child.FolderId, color, childrenByParent);
+                    if (!hasViewAccess && !hasVisibleChildren)
+                        continue;
+
                     parentNode.Nodes.Add(childNode);
+                    addedAny = true;
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("AddConfChildNodes error: " + ex.Message);
             }
+
+            return addedAny;
         }
 
         private string GetConfidentialityGroupLabel(Folder f)
@@ -2651,6 +2776,21 @@ namespace CMS.Presentation
                 var found = FindOrgUnitNode(node.Nodes, orgUnitId);
                 if (found != null) return found;
             }
+            return null;
+        }
+
+        private System.Windows.Forms.TreeNode FindFirstOrgUnitNode(System.Windows.Forms.TreeNodeCollection nodes)
+        {
+            foreach (System.Windows.Forms.TreeNode node in nodes)
+            {
+                if (node.Tag is OrgUnit)
+                    return node;
+
+                var found = FindFirstOrgUnitNode(node.Nodes);
+                if (found != null)
+                    return found;
+            }
+
             return null;
         }
 
@@ -3951,7 +4091,7 @@ namespace CMS.Presentation
             }
         }
 
-        private void ClearContentPanel()
+        private void ClearContentPanel(bool showPanel = true)
         {
             contentsListView.Items.Clear();
             _currentFiles.Clear();
@@ -3963,8 +4103,8 @@ namespace CMS.Presentation
             lblFilterStatus.Visible = false;
             cmbExtension.Items.Clear();
 
-            // Hide detail panel when clearing content
-            splitContent.Panel2Collapsed = true;
+            // ซ่อน Section 3 เสมอเมื่ออยู่ใน "แบบหมวดหมู่" (Main Menu view)
+            splitContent.Panel2Collapsed = _showingMainMenuView || !showPanel;
         }
 
         private void FolderTreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -3991,7 +4131,12 @@ namespace CMS.Presentation
             _currentNavFolderId = folder.FolderId;
             UpdateNavButtons();
 
-            _presenter.GetFolderContents(folder.FolderId);
+            ClearContentPanel();
+            // แสดงรายการไฟล์เฉพาะใน "ตามองค์กร" และ "ตามความสำคัญ" เท่านั้น
+            if (!_showingMainMenuView)
+            {
+                _presenter.GetFolderContents(folder.FolderId);
+            }
 
             // Build breadcrumb จาก tree hierarchy พร้อม OrgUnit prefix (ไม่ใช้ string-append)
             string breadcrumbPath = _selectedOrgUnit != null
@@ -4037,7 +4182,7 @@ namespace CMS.Presentation
         private void ConfidentialityTree_BeforeSelect(object sender, TreeViewCancelEventArgs e)
         {
             var folder = e.Node != null ? e.Node.Tag as Folder : null;
-            if (folder != null && !HasFolderViewAccess(folder))
+            if (folder != null && !HasFolderViewAccessConfTree(folder))
             {
                 e.Cancel = true;
                 ShowNoAccessFolderHint(folder.FolderName);
@@ -5111,6 +5256,28 @@ namespace CMS.Presentation
             catch { return Enumerable.Empty<CMS.Domain.Models.OrgUnit>(); }
         }
 
+        /// <summary>
+        /// Refresh tree + current content view to keep folder/file counts in sync after move.
+        /// </summary>
+        private void RefreshCurrentViewAfterMove()
+        {
+            _presenter.LoadFolderTree(_selectedOrgUnitId);
+
+            if (_currentNavFolderId.HasValue)
+            {
+                _presenter.GetFolderContents(_currentNavFolderId.Value);
+                return;
+            }
+
+            if (SelectedFolder != null)
+            {
+                _presenter.GetFolderContents(SelectedFolder.FolderID);
+                return;
+            }
+
+            _presenter.ShowOrgUnitRootFolders(_selectedOrgUnitId);
+        }
+
         private void BtnMove_Click(object sender, EventArgs e)
         {
             // Case 1: ถ้ามีไฟล์ถูกเลือกใน contentsListView ให้ move file
@@ -5130,7 +5297,7 @@ namespace CMS.Presentation
 
                 using (var picker = new FolderPickerDialog())
                 {
-                    picker.LoadFolders(_folderReadLookupController.GetAllFolders(null, _user), new HashSet<int>(), GetOrgUnits());
+                    picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), new HashSet<int>(), GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
@@ -5144,11 +5311,7 @@ namespace CMS.Presentation
                                 string.Format("ย้าย {0} ไฟล์ สำเร็จ", selectedFileIds.Count), "สำเร็จ",
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
                             contentsListView.SelectedItems.Clear();
-                            var currentFolder = SelectedFolder;
-                            if (currentFolder != null)
-                                _presenter.GetFolderContents(currentFolder.FolderId);
-                            else
-                                _presenter.LoadFolderTree(_selectedOrgUnitId);
+                            RefreshCurrentViewAfterMove();
                         }
                         catch (UnauthorizedAccessException ex)
                         {
@@ -5180,7 +5343,7 @@ namespace CMS.Presentation
                 using (var picker = new FolderPickerDialog())
                 {
                     picker.SourceFolderId = selectedFolderFromList.FolderID;
-                    picker.LoadFolders(_folderReadLookupController.GetAllFolders(null, _user), excluded, GetOrgUnits());
+                    picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), excluded, GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
@@ -5195,16 +5358,9 @@ namespace CMS.Presentation
 
                             // Reload tree ของ OrgUnit ปลายทาง (อาจต่างจาก OrgUnit ต้นทาง)
                             // ใช้ null เพื่อ reload ทั้งหมดให้ครอบคลุมทั้ง 2 OrgUnit
-                            _presenter.LoadFolderTree(null);
                             _selectedOrgUnitId = null;
                             _selectedOrgUnitName = "— ทั้งหมด —";
-
-                            // Reload content panel ของ parent folder ต้นทาง
-                            var currentFolder = SelectedFolder;
-                            if (currentFolder != null && currentFolder.FolderID != selectedFolderFromList.FolderID)
-                                _presenter.GetFolderContents(currentFolder.FolderID);
-                            else
-                                _presenter.ShowOrgUnitRootFolders(null);
+                            RefreshCurrentViewAfterMove();
                         }
                         catch (UnauthorizedAccessException ex) { ShowError("ไม่มีสิทธิ์: " + ex.Message); }
                         catch (InvalidOperationException ex) { ShowError(ex.Message); }
@@ -5227,7 +5383,7 @@ namespace CMS.Presentation
                 using (var picker = new FolderPickerDialog())
                 {
                     picker.SourceFolderId = selectedFolder.FolderID;
-                    picker.LoadFolders(_folderReadLookupController.GetAllFolders(null, _user), excluded, GetOrgUnits());
+                    picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), excluded, GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
@@ -5241,10 +5397,9 @@ namespace CMS.Presentation
                                             MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                             // Reload ทั้งหมดเพื่อให้เห็น folder ในทั้ง OrgUnit ต้นทางและปลายทาง
-                            _presenter.LoadFolderTree(null);
                             _selectedOrgUnitId = null;
                             _selectedOrgUnitName = "— ทั้งหมด —";
-                            _presenter.ShowOrgUnitRootFolders(null);
+                            RefreshCurrentViewAfterMove();
                         }
                         catch (UnauthorizedAccessException ex)
                         {
@@ -6964,6 +7119,15 @@ namespace CMS.Presentation
             }
 
             return canView;
+        }
+
+        /// <summary>
+        /// สิทธิ์สำหรับแท็บ "ความลับ": ตรวจสอบทั้ง authority-level (FolderAuthorityConfig)
+        /// และ ACL (FolderPermission) เหมือน HasFolderViewAccess เพื่อให้แสดงรายการที่ user มีสิทธิ์จริง
+        /// </summary>
+        private bool HasFolderViewAccessConfTree(Folder folder)
+        {
+            return HasFolderViewAccess(folder);
         }
 
         /// <summary>Gets permission text for a folder based on user's access rights.</summary>

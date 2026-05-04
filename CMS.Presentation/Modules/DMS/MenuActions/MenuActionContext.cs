@@ -28,6 +28,7 @@ namespace CMS.Presentation
         public IUserAccountLookupController UserAccountLookupController { get; set; }
         public IUserAdminController UserAdminController { get; set; }
         public IUserOrgVisibilityController UserOrgVisibilityController { get; set; }
+            public IFolderReadLookupController FolderReadLookupController { get; set; }
         public IMenuManagementController MenuManagementController { get; set; }
         public IApprovalInboxController ApprovalInboxController { get; set; }
         public IRecycleBinController RecycleBinController { get; set; }

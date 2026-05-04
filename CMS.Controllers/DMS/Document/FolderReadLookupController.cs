@@ -99,5 +99,17 @@ namespace CMS.Controllers.DMS.Document
 
             return _folderService.GetDescendants(folderId).ToList();
         }
+
+        /// <summary>
+        /// ค้นหา Folder ทั้งหมดที่ user มีสิทธิ์เข้าถึง
+        /// ใช้สำหรับ FolderPickerDialog และ ShareDialog เพื่อแสดงเฉพาะ folder ที่มีสิทธิ์
+        /// </summary>
+        public IList<Folder> GetAccessibleFolders(int? orgUnitId, UserContext user)
+        {
+            if (_folderService == null || user == null)
+                return new List<Folder>();
+
+            return _folderService.GetAccessibleFolders(orgUnitId, user).ToList();
+        }
     }
 }

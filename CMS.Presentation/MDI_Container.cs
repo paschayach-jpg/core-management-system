@@ -1435,7 +1435,8 @@ namespace CMS.Presentation
                     // Internal share
                     using (var shareDialog = new ShareDialogInternal(
                         _shareCommandController,
-                        _userAccountLookupController, _userAccessOrgLookupController, _currentUser,
+                            _userAccountLookupController, _userAccessOrgLookupController, _currentUser,
+                            _folderReadLookupController,
                         selectedFile, selectedFolder))
                     {
                         shareDialog.ShowDialog(this);

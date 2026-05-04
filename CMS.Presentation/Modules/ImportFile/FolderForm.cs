@@ -364,6 +364,7 @@ namespace CMS.Presentation
             var mnuCopy       = new ToolStripMenuItem("📋  คัดลอก",              null, CtxCopy_Click) { Enabled = false };
             var mnuPaste      = new ToolStripMenuItem("📄  วาง",                 null, CtxPaste_Click){ Enabled = false };
             var mnuRename     = new ToolStripMenuItem("✏️  เปลี่ยนชื่อ",         null, (s, e) => btnRename_Click(s, e));
+            var mnuMove       = new ToolStripMenuItem("📦  ย้าย",                null, BtnMove_Click);
             var mnuDelete     = new ToolStripMenuItem("🗑️  ลบ",                  null, (s, e) => btnDelete_Click(s, e));
             var mnuArchive    = new ToolStripMenuItem("📦  Archive",              null, (s, e) => btnArchive_Click(s, e));
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...",    null, CtxPermission_Click);
@@ -382,6 +383,7 @@ namespace CMS.Presentation
             //ctx.Items.Add(mnuPaste);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuRename);
+            ctx.Items.Add(mnuMove);
             ctx.Items.Add(mnuDelete);
             //ctx.Items.Add(mnuArchive);
             ctx.Items.Add(mnuPermission);
@@ -407,6 +409,7 @@ namespace CMS.Presentation
                 mnuOpen.Enabled           = hasFolder && canView;
                 mnuDownload.Enabled       = hasFolder && canView;
                 mnuRename.Enabled         = hasFolder && canEdit;
+                mnuMove.Enabled           = hasFolder && canEdit && _folderCommandController != null;
                 mnuDelete.Enabled         = canDeleteFolder;
                 mnuArchive.Enabled        = hasFolder && canEdit;
                 mnuPermission.Enabled     = hasFolder && isPrivileged;
@@ -443,6 +446,7 @@ namespace CMS.Presentation
             var mnuCopy       = new ToolStripMenuItem("คัดลอก",  null, CtxFileCopy_Click)  { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C, ShowShortcutKeys = true };
             var mnuPaste      = new ToolStripMenuItem("วาง",     null, CtxFilePaste_Click) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V, ShowShortcutKeys = true };
             var mnuRename     = new ToolStripMenuItem("เปลี่ยนชื่อ",         null, (s, e) => btnRename_Click(s, e))                                      { ShortcutKeys = System.Windows.Forms.Keys.F2, ShowShortcutKeys = true };
+            var mnuMove       = new ToolStripMenuItem("ย้าย",                null, BtnMove_Click);
             var mnuDelete     = new ToolStripMenuItem("ลบ",                  null, (s, e) => btnDelete_Click(s, e))                                       { ShortcutKeys = System.Windows.Forms.Keys.Delete, ShowShortcutKeys = true };
             var mnuClearFolder = new ToolStripMenuItem("🗑️  ล้างไฟล์ทั้งหมดใน Folder...", null, (s, e) => ClearFolderContents());
             var mnuArchive    = new ToolStripMenuItem("Archive",             null, (s, e) => btnArchive_Click(s, e));
@@ -460,6 +464,7 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuPaste);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuRename);
+            ctx.Items.Add(mnuMove);
             ctx.Items.Add(mnuDelete);
             ctx.Items.Add(mnuClearFolder);
             ctx.Items.Add(new ToolStripSeparator());
@@ -499,6 +504,10 @@ namespace CMS.Presentation
                                    (hasFileSelection || contentFolder != null);
 
                 bool canUseFileClipboard = hasFileSelection && !hasFolderSelection;
+                bool canMove = hasSelection
+                               && canEdit
+                               && ((hasFileSelection && !hasFolderSelection && _fileCommandController != null)
+                                   || (contentFolder != null && _folderCommandController != null));
 
                 bool hasPendingPaste = _clipboardMode != ClipboardMode.None
                                      && _clipboardFileIds.Count > 0
@@ -512,6 +521,7 @@ namespace CMS.Presentation
                 mnuCopy.Enabled        = canUseFileClipboard && canView && _fileCommandController != null;
                 mnuPaste.Enabled       = hasPendingPaste && canAdd && _fileCommandController != null;
                 mnuRename.Enabled      = hasSelection && canEdit;
+                mnuMove.Enabled        = canMove;
                 mnuDelete.Enabled      = canDeleteContent;
                 mnuClearFolder.Enabled = _fileBrowseController != null && _fileCommandController != null && _currentNavFolderId.HasValue && canEdit;
                 mnuArchive.Enabled     = singleFileSelected && canEdit;
@@ -1647,6 +1657,7 @@ namespace CMS.Presentation
                 ShareManagementController = _shareManagementController,
                 UserAccountLookupController = _userAccountLookupController,
                 UserAdminController = _userAdminController,
+                FolderReadLookupController = _folderReadLookupController,
                 MenuManagementController = _menuManagementController,
                 ApprovalInboxController = _approvalInboxController,
                 RecycleBinController = _recycleBinController,
@@ -4865,6 +4876,28 @@ namespace CMS.Presentation
             catch { return Enumerable.Empty<CMS.Domain.Models.OrgUnit>(); }
         }
 
+        /// <summary>
+        /// Refresh tree + current content view to keep folder/file counts in sync after move.
+        /// </summary>
+        private void RefreshCurrentViewAfterMove()
+        {
+            _presenter.LoadFolderTree(_selectedOrgUnitId);
+
+            if (_currentNavFolderId.HasValue)
+            {
+                _presenter.GetFolderContents(_currentNavFolderId.Value);
+                return;
+            }
+
+            if (SelectedFolder != null)
+            {
+                _presenter.GetFolderContents(SelectedFolder.FolderID);
+                return;
+            }
+
+            _presenter.ShowOrgUnitRootFolders(_selectedOrgUnitId);
+        }
+
         private void BtnMove_Click(object sender, EventArgs e)
         {
             // Case 1: ถ้ามีไฟล์ถูกเลือกใน contentsListView ให้ move file
@@ -4884,7 +4917,7 @@ namespace CMS.Presentation
                 
                 using (var picker = new FolderPickerDialog())
                 {
-                    picker.LoadFolders(_folderReadLookupController.GetAllFolders(null, _user), new HashSet<int>(), GetOrgUnits());
+                    picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), new HashSet<int>(), GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
@@ -4898,11 +4931,7 @@ namespace CMS.Presentation
                                 string.Format("ย้าย {0} ไฟล์ สำเร็จ", selectedFileIds.Count), "สำเร็จ",
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
                             contentsListView.SelectedItems.Clear();
-                            var currentFolder = SelectedFolder;
-                            if (currentFolder != null)
-                                _presenter.GetFolderContents(currentFolder.FolderId);
-                            else
-                                _presenter.LoadFolderTree(_selectedOrgUnitId);
+                            RefreshCurrentViewAfterMove();
                         }
                         catch (UnauthorizedAccessException ex)
                         {
@@ -4934,7 +4963,7 @@ namespace CMS.Presentation
                 using (var picker = new FolderPickerDialog())
                 {
                     picker.SourceFolderId = selectedFolderFromList.FolderID;
-                    picker.LoadFolders(_folderReadLookupController.GetAllFolders(null, _user), excluded, GetOrgUnits());
+                    picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), excluded, GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
@@ -4949,16 +4978,9 @@ namespace CMS.Presentation
 
                             // Reload tree ของ OrgUnit ปลายทาง (อาจต่างจาก OrgUnit ต้นทาง)
                             // ใช้ null เพื่อ reload ทั้งหมดให้ครอบคลุมทั้ง 2 OrgUnit
-                            _presenter.LoadFolderTree(null);
                             _selectedOrgUnitId = null;
                             _selectedOrgUnitName = "— ทั้งหมด —";
-
-                            // Reload content panel ของ parent folder ต้นทาง
-                            var currentFolder = SelectedFolder;
-                            if (currentFolder != null && currentFolder.FolderID != selectedFolderFromList.FolderID)
-                                _presenter.GetFolderContents(currentFolder.FolderID);
-                            else
-                                _presenter.ShowOrgUnitRootFolders(null);
+                            RefreshCurrentViewAfterMove();
                         }
                         catch (UnauthorizedAccessException ex) { ShowError("ไม่มีสิทธิ์: " + ex.Message); }
                         catch (InvalidOperationException ex)   { ShowError(ex.Message); }
@@ -4981,7 +5003,7 @@ namespace CMS.Presentation
                 using (var picker = new FolderPickerDialog())
                 {
                     picker.SourceFolderId = selectedFolder.FolderID;
-                    picker.LoadFolders(_folderReadLookupController.GetAllFolders(null, _user), excluded, GetOrgUnits());
+                    picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), excluded, GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
@@ -4995,10 +5017,9 @@ namespace CMS.Presentation
                                             MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                             // Reload ทั้งหมดเพื่อให้เห็น folder ในทั้ง OrgUnit ต้นทางและปลายทาง
-                            _presenter.LoadFolderTree(null);
                             _selectedOrgUnitId = null;
                             _selectedOrgUnitName = "— ทั้งหมด —";
-                            _presenter.ShowOrgUnitRootFolders(null);
+                            RefreshCurrentViewAfterMove();
                         }
                         catch (UnauthorizedAccessException ex)
                         {

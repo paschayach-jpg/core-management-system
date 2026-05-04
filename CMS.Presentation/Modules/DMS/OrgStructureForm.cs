@@ -20,7 +20,7 @@ namespace CMS.Presentation
     {
         private readonly OrgStructurePresenter  _presenter;
         private readonly UserContext            _currentUser;
-        private List<OrgUnit> _allUnits = new List<OrgUnit>();
+        private List<OrgUnit>                  _allUnits         = new List<OrgUnit>();
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
 
         // ตัวเลือกมุมมองปัจจุบัน: false = ตามองค์กร, true = ตามความลับ
@@ -144,82 +144,58 @@ namespace CMS.Presentation
         {
             _allUnits = units == null ? new List<OrgUnit>() : units.ToList();
 
-            // Debug logging
-            System.Diagnostics.Debug.WriteLine($"ShowOrganizationView: Processing {_allUnits.Count} units");
-            var activeUnits = _allUnits.Where(u => u.IsActive).ToList();
-            System.Diagnostics.Debug.WriteLine($"Active units: {activeUnits.Count}");
-            
-            foreach (var unit in activeUnits.OrderBy(u => u.OrgUnitType).ThenBy(u => u.Name))
-            {
-                System.Diagnostics.Debug.WriteLine($"  {unit.OrgUnitCode}: {unit.Name} (Type: {unit.OrgUnitType}, Parent: {unit.ParentId})");
-            }
-
             treeView.BeginUpdate();
             treeView.Nodes.Clear();
 
-            // Build SubCommittee → Division → Department hierarchy
             var subCommittees = _allUnits
                 .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive)
                 .OrderBy(u => u.Name);
-
-            System.Diagnostics.Debug.WriteLine($"Found {subCommittees.Count()} active SubCommittees");
 
             foreach (var sc in subCommittees)
             {
                 var scNode = CreateNode(sc);
 
-                // Get ALL divisions that belong to this SubCommittee (both with and without parent relationship)
+                // ฝ่ายที่มี ParentId = SC นี้ (FK)
                 var directDivisions = _allUnits
                     .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == sc.OrgUnitId)
-                    .OrderBy(u => u.Name);
-
-                System.Diagnostics.Debug.WriteLine($"SubCommittee {sc.Name} has {directDivisions.Count()} direct divisions");
+                    .OrderBy(u => u.Name)
+                    .ToList();
 
                 foreach (var div in directDivisions)
                 {
-                    var divNode = CreateNode(div);
-
-                    var departments = _allUnits
-                        .Where(u => u.Tier == OrgUnitTier.Department && u.IsActive && u.ParentId == div.OrgUnitId)
-                        .OrderBy(u => u.Name);
-
-                    foreach (var dept in departments)
-                        divNode.Nodes.Add(CreateNode(dept));
-
-                    scNode.Nodes.Add(divNode);
+                    scNode.Nodes.Add(BuildDivisionNode(div));
                 }
 
                 treeView.Nodes.Add(scNode);
             }
 
-            // Show standalone Divisions (without any parent) as a separate group
+            // ฝ่ายที่ไม่มี parent ใดๆ (standalone)
             var standaloneDivisions = _allUnits
                 .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == null)
                 .OrderBy(u => u.Name);
 
-            System.Diagnostics.Debug.WriteLine($"Found {standaloneDivisions.Count()} standalone divisions");
-
             foreach (var div in standaloneDivisions)
             {
-                var divNode = CreateNode(div);
-                divNode.Text = "🔗 " + divNode.Text; // Add link icon to show it's flexible
-                divNode.ForeColor = Color.FromArgb(0, 100, 0); // Dark green
-                divNode.NodeFont = new Font(SystemFonts.DefaultFont, FontStyle.Bold);
-
-                var departments = _allUnits
-                    .Where(u => u.Tier == OrgUnitTier.Department && u.IsActive && u.ParentId == div.OrgUnitId)
-                    .OrderBy(u => u.Name);
-
-                foreach (var dept in departments)
-                    divNode.Nodes.Add(CreateNode(dept));
-
-                treeView.Nodes.Add(divNode); // Add directly to root, not under a group
+                var divNode = BuildDivisionNode(div);
+                divNode.Text      = "🔗 " + divNode.Text;
+                divNode.ForeColor = Color.FromArgb(0, 100, 0);
+                divNode.NodeFont  = new Font(SystemFonts.DefaultFont, FontStyle.Bold);
+                treeView.Nodes.Add(divNode);
             }
 
             treeView.ExpandAll();
             treeView.EndUpdate();
-            
-            System.Diagnostics.Debug.WriteLine($"Tree updated with {treeView.Nodes.Count} root nodes");
+        }
+
+        private TreeNode BuildDivisionNode(OrgUnit div)
+        {
+            var divNode = CreateNode(div);
+            var departments = _allUnits
+                .Where(u => u.Tier == OrgUnitTier.Department && u.IsActive && u.ParentId == div.OrgUnitId)
+                .OrderBy(u => u.Name);
+            foreach (var dept in departments)
+                divNode.Nodes.Add(CreateNode(dept));
+            return divNode;
         }
 
         // -----------------------------------------------------------------------
@@ -378,19 +354,16 @@ namespace CMS.Presentation
 
             // Step 4: เปิด dialog สร้างหน่วยงาน — SubCommittee ไม่มี parent ให้ nullify context
             OrgUnit parentForDialog = selectedTier.Value == OrgUnitTier.SubCommittee ? null : selectedOrgUnit;
-            using (var dlg = new CreateOrgUnitDialog(_allUnits, null, selectedTier, selectedParent: parentForDialog, authorityOrgLookupController: _authorityOrgLookupController))
+            using (var dlg = new CreateOrgUnitDialog(_allUnits, null, selectedTier,
+                selectedParent: parentForDialog,
+                authorityOrgLookupController: _authorityOrgLookupController))
             {
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
                 if (dlg.BatchResults != null && dlg.BatchResults.Count > 0)
-                {
-                    foreach (var req in dlg.BatchResults)
-                        _presenter.CreateOrgUnit(req);
-                }
+                    _presenter.CreateOrgUnitBatch(dlg.BatchResults);
                 else if (dlg.Result != null)
-                {
-                    _presenter.CreateOrgUnit(dlg.Result);
-                }
+                    _presenter.CreateOrgUnitBatch(new[] { dlg.Result });
             }
         }
 

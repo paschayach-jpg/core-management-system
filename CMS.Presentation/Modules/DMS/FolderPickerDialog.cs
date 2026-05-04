@@ -86,7 +86,13 @@ namespace CMS.Presentation
         {
             if (allFolders == null) allFolders = Enumerable.Empty<Folder>();
 
-            _orgUnits = orgUnits != null ? orgUnits.ToList() : new List<OrgUnit>();
+            _orgUnits = orgUnits != null
+                ? orgUnits
+                    .Where(u => u != null && u.OrgUnitID > 0 && u.IsActive && !u.IsDeleted)
+                    .GroupBy(u => u.OrgUnitID)
+                    .Select(g => g.OrderBy(u => u.SortOrder).First())
+                    .ToList()
+                : new List<OrgUnit>();
 
             ExcludedFolderIds = excludedIds != null
                 ? new HashSet<int>(excludedIds)
@@ -131,6 +137,23 @@ namespace CMS.Presentation
                 // ใช้ OrgUnitType: 1=SubCommittee, 2=Division, 3=Department
                 var ouById = _orgUnits.ToDictionary(u => u.OrgUnitID);
 
+                // แสดงเฉพาะ OrgUnit ที่มีโฟลเดอร์ใช้งานจริง (รวม ancestor ที่จำเป็นต่อโครงสร้าง)
+                var usedOrgUnitIds = new HashSet<int>(visible
+                    .Where(f => f.OrgUnitID > 0)
+                    .Select(f => f.OrgUnitID));
+                var includedOrgUnitIds = new HashSet<int>();
+                foreach (var orgUnitId in usedOrgUnitIds)
+                {
+                    var guard = new HashSet<int>();
+                    var currentId = orgUnitId;
+                    while (currentId > 0 && ouById.ContainsKey(currentId) && guard.Add(currentId))
+                    {
+                        includedOrgUnitIds.Add(currentId);
+                        var parentId = ouById[currentId].ParentOrgUnitID;
+                        currentId = parentId.HasValue ? parentId.Value : 0;
+                    }
+                }
+
                 // Build OrgUnit tree nodes recursively
                 Func<OrgUnit, TreeNode> buildOuNode = null;
                 buildOuNode = (ou) =>
@@ -153,7 +176,8 @@ namespace CMS.Presentation
 
                     // Add child OrgUnits
                     var children = _orgUnits
-                        .Where(c => c.ParentOrgUnitID == ou.OrgUnitID)
+                        .Where(c => c.ParentOrgUnitID == ou.OrgUnitID
+                                 && includedOrgUnitIds.Contains(c.OrgUnitID))
                         .OrderBy(c => c.Name);
                     foreach (var child in children)
                         ouNode.Nodes.Add(buildOuNode(child));
@@ -174,9 +198,10 @@ namespace CMS.Presentation
                 };
 
                 // Start from SubCommittee roots (no parent or parent not in list)
-                var ouIds = new HashSet<int>(_orgUnits.Select(u => u.OrgUnitID));
+                var ouIds = new HashSet<int>(includedOrgUnitIds);
                 var roots = _orgUnits
-                    .Where(u => !u.ParentOrgUnitID.HasValue || !ouIds.Contains(u.ParentOrgUnitID.Value))
+                    .Where(u => includedOrgUnitIds.Contains(u.OrgUnitID)
+                             && (!u.ParentOrgUnitID.HasValue || !ouIds.Contains(u.ParentOrgUnitID.Value)))
                     .OrderBy(u => u.Name);
 
                 foreach (var sc in roots)

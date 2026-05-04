@@ -6,6 +6,18 @@ namespace CMS.Data.Interfaces
 {
     public interface IOrgUnitRepository
     {
+        // ── Many-to-Many: SubCommittee ↔ Division ─────────────────────────────
+
+        /// <summary>เพิ่ม/เปิดใช้งาน relationship ระหว่าง Division กับ SubCommittee</summary>
+        void LinkDivisionToSubCommittee(int divisionId, int subCommitteeId, int createdBy);
+
+        /// <summary>ตรวจสอบว่า Division นี้เชื่อมกับ SubCommittee นี้แล้วหรือยัง (FK หรือ Relationship)</summary>
+        bool IsDivisionLinkedToSubCommittee(int divisionId, int subCommitteeId);
+
+        /// <summary>ดึง relationship ที่ active ทั้งหมด (สำหรับ build tree)</summary>
+        IEnumerable<OrgUnitRelationship> GetAllActiveRelationships();
+
+
         int Insert(OrgUnit orgUnit);
         void Update(OrgUnit orgUnit);
         OrgUnit GetById(int orgUnitId);

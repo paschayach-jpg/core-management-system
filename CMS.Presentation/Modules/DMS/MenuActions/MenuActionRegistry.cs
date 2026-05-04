@@ -298,8 +298,17 @@ namespace CMS.Presentation
                             MessageBox.Show("Org structure service is not available for internal sharing in this context.", "Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return true;
                         }
-                        using (var dlg = new ShareDialogInternal(context.ShareCommandController, context.UserAccountLookupController, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), context.User, context.SelectedFile, context.SelectedFolder))
+                        using (var dlg = new ShareDialogInternal(
+                            context.ShareCommandController,
+                            context.UserAccountLookupController,
+                            context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService),
+                            context.User,
+                            context.FolderReadLookupController,
+                            context.SelectedFile,
+                            context.SelectedFolder))
+                        {
                             dlg.ShowDialog(context.Owner);
+                        }
                     }
                     else
                     {

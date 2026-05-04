@@ -47,6 +47,7 @@
     <Compile Include="Models\UploadResult.cs" />
     <Compile Include="Models\ScanResult.cs" />
     <Compile Include="Models\OrgUnit.cs" />
+    <Compile Include="Models\OrgUnitRelationship.cs" />
     <Compile Include="Models\Folder.cs" />
     <Compile Include="Models\FileDocument.cs" />
     <Compile Include="Models\FolderPermission.cs" />

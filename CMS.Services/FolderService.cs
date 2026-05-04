@@ -1287,5 +1287,35 @@ namespace CMS.Services
                 AuditDate   = DateTime.Now
             });
         }
+
+        /// <summary>
+        /// ค้นหา Folder ทั้งหมดที่ user มีสิทธิ์เข้าถึง (filter ตาม permission)
+        /// ใช้สำหรับ FolderPickerDialog และ ShareDialog เพื่อแสดงเฉพาะ folder ที่มีสิทธิ์
+        /// 
+        /// Filtering logic:
+        /// - Admin/Manager: pass ผ่าน CheckPermission (default Allow + Explicit Deny check)
+        /// - Officer/SrOfficer: อนุญาตเมื่อผ่าน Authority model หรือ ACL
+        /// </summary>
+        public IEnumerable<Folder> GetAccessibleFolders(int? orgUnitId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            // Get all folders (with cache)
+            var allFolders = GetAllFolders(orgUnitId, user);
+
+            // Filter by visibility + permission
+            return allFolders
+                .Where(f => !f.IsDeleted && !f.IsArchived)
+                .Where(f =>
+                {
+                    bool isPrivileged = user.AppRole >= 3;
+                    if (isPrivileged)
+                        return _permissionService.CheckPermission(user.UserID, f.FolderID, "Read");
+
+                    bool hasAuthority = user.CanViewFolder(f.ConfidentialityLevel);
+                    bool hasAclRead = _permissionService.CheckPermission(user.UserID, f.FolderID, "Read");
+                    return hasAuthority || hasAclRead;
+                });
+        }
     }
 }

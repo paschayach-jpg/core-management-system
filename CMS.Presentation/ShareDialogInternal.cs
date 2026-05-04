@@ -20,7 +20,8 @@ namespace CMS.Presentation
         private readonly IShareCommandController _shareCommandController;
         private readonly IUserAccountLookupController _userAccountLookupController;
         private readonly IUserAccessOrgLookupController _orgLookupController;
-        private readonly UserContext _currentUser;
+            private readonly IFolderReadLookupController _folderReadLookupController;
+            private readonly UserContext _currentUser;
 
         private FileDocument _selectedFile;
         private Folder _selectedFolder;
@@ -31,6 +32,7 @@ namespace CMS.Presentation
             IUserAccountLookupController userAccountLookupController,
             IUserAccessOrgLookupController orgLookupController,
             UserContext currentUser,
+                IFolderReadLookupController folderReadLookupController = null,
             FileDocument file = null,
             Folder folder = null)
         {
@@ -38,6 +40,7 @@ namespace CMS.Presentation
             _shareCommandController = shareCommandController;
             _userAccountLookupController = userAccountLookupController;
             _orgLookupController = orgLookupController;
+                _folderReadLookupController = folderReadLookupController;
             _currentUser = currentUser;
             _selectedFile = file;
             _selectedFolder = folder;
@@ -426,8 +429,42 @@ namespace CMS.Presentation
 
         private void SelectFileOrFolder()
         {
-            // Simplified: In a real implementation, show a file/folder browser dialog
-            MessageBox.Show("File/Folder selection would be implemented here.", "Info");
+                // Show folder picker with accessible folders only
+                if (_folderReadLookupController == null)
+                {
+                    MessageBox.Show("Folder service ไม่พร้อมใช้งาน", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                using (var picker = new FolderPickerDialog())
+                {
+                    // Load only folders that user has permission to access
+                    var accessibleFolders = _folderReadLookupController.GetAccessibleFolders(null, _currentUser);
+                    picker.LoadFolders(accessibleFolders, new HashSet<int>());
+
+                    if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
+                    {
+                        try
+                        {
+                            var folder = _folderReadLookupController.GetFolder(picker.SelectedFolderId.Value, _currentUser);
+                            if (folder != null)
+                            {
+                                _selectedFolder = folder;
+                                _selectedFile = null;
+                                var lblSelectedFile = (Label)_controls["lblSelectedFile"];
+                                lblSelectedFile.Text = string.Format("Folder: {0}", folder.FolderName);
+                            }
+                        }
+                        catch (UnauthorizedAccessException ex)
+                        {
+                            MessageBox.Show("ไม่มีสิทธิ์เข้าถึง Folder นี้: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
         }
 
         private void LoadPrincipals()

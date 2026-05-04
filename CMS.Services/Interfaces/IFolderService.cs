@@ -23,6 +23,11 @@ namespace CMS.Services.Interfaces
         IEnumerable<Folder> GetDeletedFolders(int? orgUnitId, UserContext user);
         IEnumerable<Folder> GetAllFolders(int? orgUnitId, UserContext user);
         IEnumerable<Folder> GetFoldersByOrgUnit(int orgUnitId, UserContext user);
+        /// <summary>
+        /// ค้นหา Folder ทั้งหมดที่ user มีสิทธิ์เข้าถึง
+        /// ใช้สำหรับ FolderPickerDialog และ ShareDialog เพื่อแสดงเฉพาะ folder ที่มีสิทธิ์
+        /// </summary>
+        IEnumerable<Folder> GetAccessibleFolders(int? orgUnitId, UserContext user);
         void CopyFolderStructure(int sourceFolderId, int destinationParentFolderId, UserContext user);
         void MoveFolder(MoveFolderRequest request, UserContext user);
         IEnumerable<Folder> GetDescendants(int folderId);

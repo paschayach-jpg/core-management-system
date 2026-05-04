@@ -33,10 +33,10 @@ namespace CMS.Presentation
             IAuthorityOrgLookupController authorityOrgLookupController = null)
         {
             // Include ALL units (active, inactive, deleted) to avoid code conflicts
-            _allUnits           = allUnits?.ToList() ?? new List<OrgUnit>();
+            _allUnits              = allUnits?.ToList() ?? new List<OrgUnit>();
             _employeeDirectoryController = employeeDirectoryController;
-            _fixedTier          = fixedTier ?? OrgUnitTier.SubCommittee;
-            _selectedParent     = selectedParent;
+            _fixedTier             = fixedTier ?? OrgUnitTier.SubCommittee;
+            _selectedParent        = selectedParent;
             _authorityOrgLookupController = authorityOrgLookupController;
 
             // Debug: Show total units received
@@ -330,6 +330,19 @@ namespace CMS.Presentation
                         : "✔ เลือก";
                 };
 
+                lv.ItemCheck += (s, e2) => {
+                    if (e2.NewValue != CheckState.Checked) return;
+                    var item = lv.Items[e2.Index];
+                    var d = item.Tag as OrgUnitData;
+                    if (d == null || !d.AlreadyExistsInParent) return;
+
+                    // บล็อกรายการที่มีอยู่แล้วในสังกัดเดียวกัน
+                    e2.NewValue = CheckState.Unchecked;
+                    MessageBox.Show(
+                        string.Format("รหัส {0} มีอยู่แล้วในสังกัดนี้\nหากต้องการเลือกใหม่ กรุณาลบข้อมูลเดิมก่อน", d.Code),
+                        "พบข้อมูลซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                };
+
                 // Keep all items for filtering
                 var allItems = new List<ListViewItem>();
 
@@ -361,33 +374,78 @@ namespace CMS.Presentation
                     }
                     else
                     {
-                        // หา DivisionID จาก cboParent ที่เลือกไว้
+                        // หา DivisionID จาก Division ที่เลือกในช่องสังกัด
                         int divisionId = 0;
+                        int selectedParentDivisionId = 0;
+                        if (cboParent.SelectedItem is OrgUnitItem selParent && selParent.OrgUnit != null)
+                            selectedParentDivisionId = selParent.OrgUnit.OrgUnitId;
+
                         if (_authorityOrgLookupController != null)
                         {
-                            // ดึง DivisionCode จาก cboParent แล้ว map ไปหา DivisionID ใน HR_Division
+                            // ดึง Division จาก cboParent แล้ว map ไปหา DivisionID ใน HR_Division
                             string selectedDivCode = null;
+                            string selectedDivName = null;
                             if (cboParent.SelectedItem is OrgUnitItem parentItem && parentItem.OrgUnit != null)
+                            {
                                 selectedDivCode = parentItem.OrgUnit.OrgUnitCode;
+                                selectedDivName = parentItem.OrgUnit.OrgUnitNameTH;
+                            }
+
+                            var hrDivisions = _authorityOrgLookupController.GetDivisions();
 
                             if (!string.IsNullOrEmpty(selectedDivCode))
                             {
-                                var div = _authorityOrgLookupController.GetDivisions()
+                                var div = hrDivisions
                                     .FirstOrDefault(d => string.Equals(d.DivisionCode, selectedDivCode,
                                         StringComparison.OrdinalIgnoreCase));
                                 if (div != null) divisionId = div.DivisionID;
                             }
 
+                            // fallback: ถ้า code ไม่ match (เช่น code ถูก normalize ใน OrgUnit)
+                            if (divisionId == 0 && !string.IsNullOrEmpty(selectedDivName))
+                            {
+                                var divByName = hrDivisions.FirstOrDefault(d =>
+                                    string.Equals((d.DivisionName ?? string.Empty).Trim(),
+                                                  selectedDivName.Trim(),
+                                                  StringComparison.OrdinalIgnoreCase));
+                                if (divByName != null) divisionId = divByName.DivisionID;
+                            }
+
+                            if (divisionId == 0)
+                            {
+                                MessageBox.Show(
+                                    "กรุณาเลือกฝ่าย (Division) ที่ผูกกับข้อมูล HR ก่อนค้นหาแผนก",
+                                    "ไม่พบฝ่ายที่เลือก", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                            }
+
                             var allDepartments = _authorityOrgLookupController.GetDepartments();
-                            var depts = divisionId > 0
-                                ? allDepartments.Where(d => d.DivisionID == divisionId)
-                                : allDepartments;
+                            var depts = allDepartments.Where(d => d.DivisionID == divisionId);
 
                             foreach (var d in depts.OrderBy(x => x.DepartmentCode))
                             {
+                                bool alreadyExistsInParent = selectedParentDivisionId > 0 && _allUnits.Any(u =>
+                                    u.IsActive && !u.IsDeleted &&
+                                    u.Tier == OrgUnitTier.Department &&
+                                    u.ParentId == selectedParentDivisionId &&
+                                    string.Equals(u.OrgUnitCode, d.DepartmentCode, StringComparison.OrdinalIgnoreCase));
+
                                 var row = new ListViewItem(d.DepartmentCode ?? "");
-                                row.SubItems.Add(d.DepartmentName ?? "");
-                                row.Tag = new OrgUnitData { Type = "แผนก", Code = d.DepartmentCode, NameTh = d.DepartmentName };
+                                var depName = !string.IsNullOrEmpty(d.DepartmentNameTh)
+                                    ? d.DepartmentNameTh
+                                    : d.DepartmentName;
+                                row.SubItems.Add(alreadyExistsInParent
+                                    ? string.Format("{0} (มีแล้วในสังกัดนี้)", depName ?? "")
+                                    : depName ?? "");
+                                row.Tag = new OrgUnitData
+                                {
+                                    Type = "แผนก",
+                                    Code = d.DepartmentCode,
+                                    NameTh = depName,
+                                    AlreadyExistsInParent = alreadyExistsInParent
+                                };
+                                if (alreadyExistsInParent)
+                                    row.ForeColor = Color.DarkGray;
                                 allItems.Add(row);
                             }
                         }
@@ -429,55 +487,72 @@ namespace CMS.Presentation
 
                 // ── Confirm ───────────────────────────────────────────────────
                 Action confirm = () => {
-                    // Collect checked items; fall back to selected row when nothing checked
+                    // Collect checked items; fall back to all selected rows when nothing checked
                     var checkedItems = lv.CheckedItems.Cast<ListViewItem>().ToList();
                     if (checkedItems.Count == 0 && lv.SelectedItems.Count > 0)
-                        checkedItems = new List<ListViewItem> { lv.SelectedItems[0] };
+                        checkedItems = lv.SelectedItems.Cast<ListViewItem>().ToList();
                     if (checkedItems.Count == 0) return;
 
-                    // Duplicate check against existing active org units
-                    var dupeItems = checkedItems
-                        .Where(r => {
-                            var d = r.Tag as OrgUnitData;
-                            return d != null && _allUnits.Any(u =>
-                                string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase)
-                                && u.IsActive && !u.IsDeleted);
-                        }).ToList();
-                    var newItems = checkedItems.Except(dupeItems).ToList();
+                    // สร้างหน่วยงานใหม่แยกกันเสมอ (ไม่ link ข้าม SubCommittee)
+                    var existingCodes = new List<string>();
+                    var actionItems   = new List<OrgUnitData>();
 
-                    if (dupeItems.Count > 0)
+                    foreach (var row in checkedItems)
                     {
-                        string dupeCodes = string.Join("\n  • ",
-                            dupeItems.Select(r => (r.Tag as OrgUnitData)?.Code));
-                        string msg = string.Format("รหัสต่อไปนี้มีอยู่ในระบบแล้ว และจะถูกข้าม:\n  • {0}", dupeCodes);
-                        if (newItems.Count == 0)
+                        var d = row.Tag as OrgUnitData;
+                        if (d == null) continue;
+
+                        var existing = _allUnits.FirstOrDefault(u =>
+                            string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase)
+                            && u.IsActive && !u.IsDeleted);
+
+                        var selectedTierForCheck = cboTier.SelectedItem is OrgUnitTier t ? t : OrgUnitTier.Division;
+                        int? parentId = null;
+                        if (cboParent.SelectedItem is OrgUnitItem cpi && cpi.OrgUnit != null)
+                            parentId = cpi.OrgUnit.OrgUnitId;
+
+                        bool duplicateInParent = parentId.HasValue && _allUnits.Any(u =>
+                            u.IsActive && !u.IsDeleted &&
+                            u.Tier == selectedTierForCheck &&
+                            u.ParentId == parentId.Value &&
+                            string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase));
+
+                        if (existing == null && !duplicateInParent)
                         {
-                            MessageBox.Show(msg + "\n\nไม่มีรายการใหม่ที่จะเพิ่ม",
-                                "ซ้ำทั้งหมด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            return;
+                            // ยังไม่มีในระบบ — สร้างใหม่
+                            actionItems.Add(d);
                         }
-                        MessageBox.Show(msg, "พบรายการซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        else
+                        {
+                            existingCodes.Add(d.Code);
+                        }
                     }
 
-                    if (newItems.Count == 1)
+                    if (existingCodes.Count > 0)
                     {
-                        // Single item — existing behavior
-                        var data = newItems[0].Tag as OrgUnitData;
-                        if (data == null) return;
+                        MessageBox.Show(
+                            string.Format("พบรหัสที่มีอยู่แล้วในสังกัด/ระบบ:\n  • {0}\n\nรายการซ้ำจะไม่ถูกเลือก\nหากต้องการเลือกใหม่ กรุณาลบข้อมูลเดิมก่อน", 
+                                string.Join("\n  • ", existingCodes.Distinct())),
+                            "พบข้อมูลซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+
+                    if (actionItems.Count == 0)
+                    {
+                        return;
+                    }
+
+                    if (actionItems.Count == 1)
+                    {
+                        var data = actionItems[0];
                         txtName.Text = data.NameTh ?? string.Empty;
                         txtCode.Text = data.Code   ?? string.Empty;
                         _batchSelections = null;
                     }
                     else
                     {
-                        // Multiple items — store for batch creation
-                        _batchSelections = newItems
-                            .Select(r => r.Tag as OrgUnitData)
-                            .Where(d => d != null)
-                            .ToList();
+                        _batchSelections = actionItems;
                         txtCode.Text = string.Format("({0} รายการ)", _batchSelections.Count);
-                        txtName.Text = string.Join(", ",
-                            _batchSelections.Take(3).Select(d => d.Code));
+                        txtName.Text = string.Join(", ", _batchSelections.Take(3).Select(d => d.Code));
                     }
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
@@ -500,6 +575,7 @@ namespace CMS.Presentation
             public string Type   { get; set; }
             public string Code   { get; set; }
             public string NameTh { get; set; }
+            public bool   AlreadyExistsInParent { get; set; }
         }
 
         private void OnOkClick(object sender, EventArgs e)
@@ -513,11 +589,11 @@ namespace CMS.Presentation
                     batchParentId = batchSel.OrgUnit.OrgUnitId;
 
                 BatchResults = _batchSelections.Select(d => new CreateOrgUnitRequest {
-                    OrgUnitNameTH   = d.NameTh,
-                    OrgUnitNameEN   = d.NameTh,
-                    OrgUnitCode     = d.Code,
-                    OrgUnitType     = (int)batchTier,
-                    ParentOrgUnitID = batchParentId
+                    OrgUnitNameTH        = d.NameTh,
+                    OrgUnitNameEN        = d.NameTh,
+                    OrgUnitCode          = d.Code,
+                    OrgUnitType          = (int)batchTier,
+                    ParentOrgUnitID      = batchParentId
                 }).ToList();
                 return;
             }
@@ -615,11 +691,11 @@ namespace CMS.Presentation
 
             Result = new CreateOrgUnitRequest
             {
-                OrgUnitNameTH   = nameTH,
-                OrgUnitNameEN   = nameEN,
-                OrgUnitCode     = code,
-                OrgUnitType     = (int)tier,
-                ParentOrgUnitID = parentId
+                OrgUnitNameTH        = nameTH,
+                OrgUnitNameEN        = nameEN,
+                OrgUnitCode          = code,
+                OrgUnitType          = (int)tier,
+                ParentOrgUnitID      = parentId
             };
         }
 
@@ -645,33 +721,11 @@ namespace CMS.Presentation
                 cboParent.Enabled = true;
                 cboParent.Items.Add(new OrgUnitItem(null) { DisplayText = "🔗 เป็นอิสระ (ไม่สังกัด SubCommittee ใดโดยเฉพาะ)" });
                 
-                List<OrgUnit> availableSubCommittees;
-                
-                if (_selectedParent != null && _selectedParent.Tier == OrgUnitTier.Division)
-                {
-                    // ถ้าเลือก Division ใน TreeView ให้หา SubCommittee ที่เป็น parent ของ Division นั้น
-                    var parentSubCommittee = _allUnits.FirstOrDefault(u => 
-                        u.OrgUnitId == _selectedParent.ParentOrgUnitID && 
-                        u.Tier == OrgUnitTier.SubCommittee && 
-                        u.IsActive);
-                    
-                    if (parentSubCommittee != null)
-                    {
-                        availableSubCommittees = new List<OrgUnit> { parentSubCommittee };
-                        System.Diagnostics.Debug.WriteLine($"Found parent SubCommittee: {parentSubCommittee.Name} for Division: {_selectedParent.Name}");
-                    }
-                    else
-                    {
-                        // ถ้า Division ไม่มี parent SubCommittee (เป็นอิสระ) ให้แสดงทั้งหมด
-                        availableSubCommittees = _allUnits.Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive).ToList();
-                        System.Diagnostics.Debug.WriteLine($"Division {_selectedParent.Name} is independent, showing all SubCommittees");
-                    }
-                }
-                else
-                {
-                    // ถ้าไม่ได้เลือก Division ให้แสดงทั้งหมด
-                    availableSubCommittees = _allUnits.Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive).ToList();
-                }
+                // แสดง SubCommittee ทั้งหมดเสมอ
+                // เพื่อรองรับกรณี 1 Division เชื่อมได้หลาย SubCommittee
+                List<OrgUnit> availableSubCommittees = _allUnits
+                    .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive)
+                    .ToList();
 
                 System.Diagnostics.Debug.WriteLine($"Found {availableSubCommittees.Count} available SubCommittees:");
                 foreach (var sc in availableSubCommittees)
@@ -680,8 +734,23 @@ namespace CMS.Presentation
                     cboParent.Items.Add(new OrgUnitItem(sc));
                 }
 
-                cboParent.SelectedIndex = 0; // Select "independent" by default
-                
+                // Default to "เป็นอิสระ"
+                cboParent.SelectedIndex = 0;
+
+                // ถ้า selected node ใน tree เป็น SubCommittee ให้ pre-select ตัวนั้นเป็นค่าเริ่มต้น
+                if (_selectedParent != null && _selectedParent.Tier == OrgUnitTier.SubCommittee)
+                {
+                    for (int i = 1; i < cboParent.Items.Count; i++)
+                    {
+                        var item = cboParent.Items[i] as OrgUnitItem;
+                        if (item?.OrgUnit?.OrgUnitId == _selectedParent.OrgUnitId)
+                        {
+                            cboParent.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
                 // Debug: แสดงจำนวน items ใน combobox
                 System.Diagnostics.Debug.WriteLine($"Parent ComboBox has {cboParent.Items.Count} items");
                 
@@ -701,6 +770,14 @@ namespace CMS.Presentation
                     // ถ้าเลือก Division ใน TreeView ให้แสดงเฉพาะ Division นั้น
                     availableDivisions = new List<OrgUnit> { _selectedParent };
                     System.Diagnostics.Debug.WriteLine($"Selected Division context: {_selectedParent.Name}");
+                }
+                else if (_selectedParent != null && _selectedParent.Tier == OrgUnitTier.SubCommittee)
+                {
+                    // ถ้าเลือก SubCommittee ใน TreeView ให้แสดงเฉพาะ Division ใต้ SubCommittee นั้น
+                    availableDivisions = _allUnits
+                        .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == _selectedParent.OrgUnitId)
+                        .ToList();
+                    System.Diagnostics.Debug.WriteLine($"Selected SubCommittee context: {_selectedParent.Name}, Divisions: {availableDivisions.Count}");
                 }
                 else
                 {

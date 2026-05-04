@@ -359,6 +359,36 @@ namespace CMS.Services
             });
         }
 
+        public void LinkDivisionToSubCommittee(int divisionId, int subCommitteeId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (user.AppRole != 4)
+                throw new UnauthorizedAccessException("Linking OrgUnits requires Admin role.");
+
+            var division = _orgUnitRepository.GetById(divisionId);
+            if (division == null || division.IsDeleted)
+                throw new InvalidOperationException(string.Format("Division ID {0} ไม่พบในระบบ", divisionId));
+            if (division.OrgUnitType != 2)
+                throw new ArgumentException("OrgUnit ที่ระบุต้องเป็น Division");
+
+            var subCommittee = _orgUnitRepository.GetById(subCommitteeId);
+            if (subCommittee == null || subCommittee.IsDeleted)
+                throw new InvalidOperationException(string.Format("SubCommittee ID {0} ไม่พบในระบบ", subCommitteeId));
+            if (subCommittee.OrgUnitType != 1)
+                throw new ArgumentException("Parent ที่ระบุต้องเป็น SubCommittee");
+
+            _orgUnitRepository.LinkDivisionToSubCommittee(divisionId, subCommitteeId, user.UserID);
+
+            Log(user, "OrgStructure", "LINK", "core.OrgUnitRelationship", divisionId, 1,
+                string.Format("Linked Division '{0}' to SubCommittee '{1}'.",
+                    division.OrgUnitNameTH, subCommittee.OrgUnitNameTH));
+        }
+
+        public IEnumerable<OrgUnitRelationship> GetAllActiveRelationships()
+        {
+            return _orgUnitRepository.GetAllActiveRelationships();
+        }
+
         /// <summary>Server-side code generation with database-level uniqueness guarantee</summary>
         private string GenerateUniqueCode(int orgUnitType)
         {

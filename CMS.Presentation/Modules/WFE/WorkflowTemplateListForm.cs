@@ -30,6 +30,14 @@ namespace CMS.Presentation.Modules.Workflow
         private int _totalCount = 0;
         private Label _activeTabLabel;
 
+        // ── Ribbon toolbar panel references (for enable/disable) ─────────────
+        private Panel _pnlRibbonBtnDuplicate;
+        private Panel _pnlRibbonBtnEdit;
+        private Panel _pnlRibbonBtnDelete;
+        private Panel _pnlRibbonBtnPublish;
+        private Panel _pnlRibbonBtnDeactivate;
+        private Panel _pnlRibbonBtnVersions;
+
         // ── Category colors map ──────────────────────────────────────────────
         private static readonly Dictionary<string, Color[]> _categoryColors =
             new Dictionary<string, Color[]>(StringComparer.OrdinalIgnoreCase)
@@ -122,16 +130,7 @@ namespace CMS.Presentation.Modules.Workflow
             _activeTabLabel = lblTabTools;
             _activeTabLabel.ForeColor = Color.FromArgb(37, 99, 235);
 
-            // Ribbon button icons via Segoe MDL2 Assets bitmaps
-            var btnIconColor = Color.FromArgb(55, 65, 81);
-            ApplyButtonIcon(btnDuplicate, "", btnIconColor); // Copy
-            ApplyButtonIcon(btnEdit, "", btnIconColor); // Edit/Pencil
-            ApplyButtonIcon(btnDelete, "", btnIconColor); // Delete/Trash
-            ApplyButtonIcon(btnPublish, "", btnIconColor); // Send/Publish
-            ApplyButtonIcon(btnDeactivate, "", btnIconColor); // Pause/Deactivate
-            ApplyButtonIcon(btnVersions, "", btnIconColor); // History
-            ApplyButtonIcon(btnImport, "", btnIconColor); // Import
-            ApplyButtonIcon(btnExport, "", btnIconColor); // Export
+            BuildRibbonToolbar();
 
             dgvTemplates.AutoGenerateColumns = false;
             dgvTemplates.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
@@ -243,12 +242,12 @@ namespace CMS.Presentation.Modules.Workflow
 
         public void SetActionButtonsEnabled(bool canEdit, bool canDelete, bool canDuplicate)
         {
-            btnEdit.Enabled = canEdit;
-            btnDelete.Enabled = canDelete;
-            btnDuplicate.Enabled = canDuplicate;
-            btnVersions.Enabled = canEdit;
-            btnPublish.Enabled = canEdit;
-            btnDeactivate.Enabled = canEdit;
+            SetRibbonPanelEnabled(_pnlRibbonBtnEdit,       canEdit);
+            SetRibbonPanelEnabled(_pnlRibbonBtnDelete,     canDelete);
+            SetRibbonPanelEnabled(_pnlRibbonBtnDuplicate,  canDuplicate);
+            SetRibbonPanelEnabled(_pnlRibbonBtnVersions,   canEdit);
+            SetRibbonPanelEnabled(_pnlRibbonBtnPublish,    canEdit);
+            SetRibbonPanelEnabled(_pnlRibbonBtnDeactivate, canEdit);
         }
 
         public void ShowError(string message)
@@ -669,6 +668,160 @@ namespace CMS.Presentation.Modules.Workflow
             path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90);
             path.CloseFigure();
             return path;
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // Ribbon toolbar (dynamic Panel+Label buttons, same pattern as Dashboard)
+        // ════════════════════════════════════════════════════════════════════
+        private void BuildRibbonToolbar()
+        {
+            var iconColor  = Color.FromArgb(55, 65, 81);
+            var hoverColor = Color.FromArgb(243, 244, 246);
+            var iconFont   = new Font("Segoe MDL2 Assets", 13F);
+            var textFont   = new Font("Segoe UI", 7.5F);
+            var primaryBg  = Color.FromArgb(37, 99, 235);
+
+            var groups = new[]
+            {
+                new { Header = "Template", Items = new[]
+                {
+                    new { Icon = "", Text = "สร้างใหม่", Tag = "create",    Primary = true  },
+                    new { Icon = "", Text = "Duplicate", Tag = "duplicate", Primary = false },
+                    new { Icon = "", Text = "แก้ไข",    Tag = "edit",      Primary = false },
+                    new { Icon = "", Text = "ลบ",       Tag = "delete",    Primary = false },
+                }},
+                new { Header = "Publish", Items = new[]
+                {
+                    new { Icon = "", Text = "Publish",    Tag = "publish",    Primary = false },
+                    new { Icon = "", Text = "Deactivate", Tag = "deactivate", Primary = false },
+                    new { Icon = "", Text = "ประวัติ",   Tag = "versions",   Primary = false },
+                }},
+                new { Header = "นำเข้า/ส่งออก", Items = new[]
+                {
+                    new { Icon = "", Text = "Import", Tag = "import", Primary = false },
+                    new { Icon = "", Text = "Export", Tag = "export", Primary = false },
+                }},
+            };
+
+            int x = 8;
+            foreach (var group in groups)
+            {
+                int groupStartX = x;
+                foreach (var item in group.Items)
+                {
+                    bool   primary = item.Primary;
+                    string tag     = item.Tag;
+                    var    back    = primary ? primaryBg : Color.White;
+                    var    fg      = primary ? Color.White : iconColor;
+
+                    var pnlBtn = new Panel
+                    {
+                        Location  = new Point(x, 4),
+                        Size      = new Size(60, 66),
+                        BackColor = back,
+                        Cursor    = Cursors.Hand,
+                        Tag       = tag,
+                    };
+
+                    var lblIcon = new Label
+                    {
+                        Text      = item.Icon,
+                        Font      = iconFont,
+                        ForeColor = fg,
+                        BackColor = back,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Location  = new Point(0, 4),
+                        Size      = new Size(60, 30),
+                    };
+                    var lblText = new Label
+                    {
+                        Text      = item.Text,
+                        Font      = textFont,
+                        ForeColor = fg,
+                        BackColor = back,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Location  = new Point(0, 36),
+                        Size      = new Size(60, 22),
+                    };
+
+                    pnlBtn.Controls.Add(lblIcon);
+                    pnlBtn.Controls.Add(lblText);
+
+                    if (!primary)
+                    {
+                        EventHandler enter = (s, ev) => { pnlBtn.BackColor = hoverColor; lblIcon.BackColor = hoverColor; lblText.BackColor = hoverColor; };
+                        EventHandler leave = (s, ev) => { pnlBtn.BackColor = Color.White; lblIcon.BackColor = Color.White; lblText.BackColor = Color.White; };
+                        pnlBtn.MouseEnter  += enter; lblIcon.MouseEnter  += enter; lblText.MouseEnter  += enter;
+                        pnlBtn.MouseLeave  += leave; lblIcon.MouseLeave  += leave; lblText.MouseLeave  += leave;
+                    }
+
+                    EventHandler click = (s, ev) => OnRibbonToolbarClick(tag);
+                    pnlBtn.Click  += click; lblIcon.Click  += click; lblText.Click  += click;
+
+                    switch (tag)
+                    {
+                        case "duplicate":  _pnlRibbonBtnDuplicate   = pnlBtn; break;
+                        case "edit":       _pnlRibbonBtnEdit         = pnlBtn; break;
+                        case "delete":     _pnlRibbonBtnDelete       = pnlBtn; break;
+                        case "publish":    _pnlRibbonBtnPublish      = pnlBtn; break;
+                        case "deactivate": _pnlRibbonBtnDeactivate   = pnlBtn; break;
+                        case "versions":   _pnlRibbonBtnVersions     = pnlBtn; break;
+                    }
+
+                    pnlRibbonContent.Controls.Add(pnlBtn);
+                    x += 62;
+                }
+
+                var lblGrp = new Label
+                {
+                    Text      = group.Header,
+                    Font      = new Font("Segoe UI", 7.5F),
+                    ForeColor = Color.FromArgb(107, 114, 128),
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Location  = new Point(groupStartX, 72),
+                    Size      = new Size(x - groupStartX, 14),
+                };
+                pnlRibbonContent.Controls.Add(lblGrp);
+
+                if (group != groups[groups.Length - 1])
+                {
+                    pnlRibbonContent.Controls.Add(new Panel
+                    {
+                        BackColor = Color.FromArgb(229, 231, 235),
+                        Location  = new Point(x + 2, 8),
+                        Size      = new Size(1, 58),
+                    });
+                    x += 10;
+                }
+            }
+        }
+
+        private void OnRibbonToolbarClick(string tag)
+        {
+            switch (tag)
+            {
+                case "create":     btnCreate_Click(null, EventArgs.Empty);     break;
+                case "duplicate":  btnDuplicate_Click(null, EventArgs.Empty);  break;
+                case "edit":       btnEdit_Click(null, EventArgs.Empty);       break;
+                case "delete":     btnDelete_Click(null, EventArgs.Empty);     break;
+                case "publish":    btnPublish_Click(null, EventArgs.Empty);    break;
+                case "deactivate": btnDeactivate_Click(null, EventArgs.Empty); break;
+                case "versions":   btnVersions_Click(null, EventArgs.Empty);   break;
+                case "import":     btnImport_Click(null, EventArgs.Empty);     break;
+                case "export":     btnExport_Click(null, EventArgs.Empty);     break;
+            }
+        }
+
+        private static void SetRibbonPanelEnabled(Panel panel, bool enabled)
+        {
+            if (panel == null) return;
+            panel.Enabled = enabled;
+            var fg = enabled ? Color.FromArgb(55, 65, 81) : Color.FromArgb(190, 195, 200);
+            foreach (Control c in panel.Controls)
+            {
+                var lbl = c as Label;
+                if (lbl != null) lbl.ForeColor = fg;
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════

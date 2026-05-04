@@ -129,6 +129,54 @@ namespace CMS.Controllers.DMS.Document
             catch (Exception ex)         { _view.ShowError("Failed to create OrgUnit: " + ex.Message); }
         }
 
+        public void CreateOrgUnitBatch(IEnumerable<CreateOrgUnitRequest> requests)
+        {
+            if (requests == null) return;
+            var list = requests.Where(r => r != null).ToList();
+            if (list.Count == 0) return;
+
+            var saved  = new List<string>();
+            var failed = new List<string>();
+
+            foreach (var req in list)
+            {
+                try
+                {
+                    _service.CreateOrgUnit(req, _user);
+
+                    saved.Add(req.OrgUnitNameTH ?? req.OrgUnitCode);
+                }
+                catch (Exception ex)
+                {
+                    failed.Add(string.Format("{0}: {1}", req.OrgUnitCode ?? req.OrgUnitNameTH, ex.Message));
+                }
+            }
+
+            var sb = new System.Text.StringBuilder();
+            if (saved.Count > 0)
+                sb.AppendFormat("บันทึกสำเร็จ {0} รายการ:\n  • {1}\n",
+                    saved.Count, string.Join("\n  • ", saved));
+            if (failed.Count > 0)
+            {
+                if (sb.Length > 0) sb.AppendLine();
+                sb.AppendFormat("ล้มเหลว {0} รายการ:\n  • {1}",
+                    failed.Count, string.Join("\n  • ", failed));
+            }
+
+            if (saved.Count > 0)
+                _view.ShowInfo(sb.ToString());
+            else if (failed.Count > 0)
+                _view.ShowError(sb.ToString());
+
+            RefreshCurrentView();
+        }
+
+        public IEnumerable<CMS.Domain.Models.OrgUnitRelationship> LoadRelationships()
+        {
+            try   { return _service.GetAllActiveRelationships(); }
+            catch { return new List<CMS.Domain.Models.OrgUnitRelationship>(); }
+        }
+
         public void UpdateOrgUnit(int orgUnitId, string newName)
         {
             try

@@ -445,11 +445,15 @@ namespace CMS.Presentation
             _lvVisibility.BeginUpdate();
             _lvVisibility.Items.Clear();
 
+            var activeOrgLookup = _allOrgs
+                .Where(o => o.IsActive && !o.IsDeleted)
+                .ToDictionary(o => o.OrgUnitID, o => o);
+
             // Own OrgUnit — always visible, cannot be revoked
             if (user.OrgUnitID > 0)
             {
-                var ownOrg = _allOrgs.FirstOrDefault(o => o.OrgUnitID == user.OrgUnitID);
-                if (ownOrg != null)
+                OrgUnit ownOrg;
+                if (activeOrgLookup.TryGetValue(user.OrgUnitID, out ownOrg))
                 {
                     var baseItem = new ListViewItem(ownOrg.OrgUnitNameTH ?? ownOrg.OrgUnitCode);
                     baseItem.SubItems.Add(ownOrg.OrgUnitCode ?? "");
@@ -470,9 +474,6 @@ namespace CMS.Presentation
                     // Get explicit grants with GrantedBy and GrantedDate information
                     var grants = _visibilityController.GetExplicitGrantsForUser(user.UserID, _currentUser).ToList();
 
-                    // Build lookup for OrgUnit names
-                    var orgLookup = _allOrgs.ToDictionary(o => o.OrgUnitID, o => o);
-
                     // Build lookup for user names (GrantedBy)
                     var grantedByIds = grants.Select(g => g.GrantedBy).Distinct().ToList();
                     var userLookup = _allUsers
@@ -483,10 +484,11 @@ namespace CMS.Presentation
                     {
                         // Get OrgUnit info
                         OrgUnit org = null;
-                        orgLookup.TryGetValue(grant.OrgUnitID, out org);
+                        if (!activeOrgLookup.TryGetValue(grant.OrgUnitID, out org))
+                            continue;
 
-                        string orgName = org != null ? (org.OrgUnitNameTH ?? org.OrgUnitCode) : grant.OrgUnitName ?? string.Format("ID:{0}", grant.OrgUnitID);
-                        string orgCode = org != null ? (org.OrgUnitCode ?? "") : "";
+                        string orgName = org.OrgUnitNameTH ?? org.OrgUnitCode;
+                        string orgCode = org.OrgUnitCode ?? "";
 
                         // Get GrantedBy user name
                         string grantedByName = "";
@@ -507,7 +509,7 @@ namespace CMS.Presentation
                         item.SubItems.Add(orgCode);
                         item.SubItems.Add(grantedByName);
                         item.SubItems.Add(grant.GrantedDate.ToString("dd/MM/yyyy HH:mm"));
-                        item.Tag = org ?? (object)grant; // Store OrgUnit if available, otherwise grant
+                        item.Tag = org;
                         _lvVisibility.Items.Add(item);
                     }
 
@@ -515,7 +517,7 @@ namespace CMS.Presentation
                     if (grants.Count == 0)
                     {
                         var visibleOrgs = _visibilityController.GetVisibleOrgUnits(user.UserID, _currentUser).ToList();
-                        foreach (var org in visibleOrgs)
+                        foreach (var org in visibleOrgs.Where(o => o.IsActive && !o.IsDeleted))
                         {
                             var item = new ListViewItem(org.OrgUnitNameTH ?? org.OrgUnitCode);
                             item.SubItems.Add(org.OrgUnitCode ?? "");
@@ -655,7 +657,10 @@ namespace CMS.Presentation
             var results = new List<OrgUnit>();
             var allOrgs = (_orgLookupController != null
                 ? _orgLookupController.GetHierarchy() ?? Enumerable.Empty<OrgUnit>()
-                : _allOrgs).ToList();
+                : _allOrgs)
+                .Where(o => o.IsActive && !o.IsDeleted)
+                .ToList();
+            var activeOrgIds = new HashSet<int>(allOrgs.Select(o => o.OrgUnitID));
 
             // Collect already-granted IDs — use explicit grants only (no role-based fallback)
             var alreadyGrantedIds = new HashSet<int>();
@@ -752,7 +757,9 @@ namespace CMS.Presentation
 
                 tree.BeginUpdate();
                 foreach (var root in allOrgs
-                    .Where(o => !o.ParentOrgUnitID.HasValue || o.ParentOrgUnitID == 0)
+                    .Where(o => !o.ParentOrgUnitID.HasValue
+                        || o.ParentOrgUnitID == 0
+                        || !activeOrgIds.Contains(o.ParentOrgUnitID.Value))
                     .OrderBy(o => o.SortOrder).ThenBy(o => o.Name))
                 {
                     tree.Nodes.Add(buildNode(root));

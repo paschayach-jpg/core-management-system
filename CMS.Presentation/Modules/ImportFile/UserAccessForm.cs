@@ -570,7 +570,10 @@ namespace CMS.Presentation
             var results = new List<OrgUnit>();
             var allOrgs = (_orgLookupController != null
                 ? _orgLookupController.GetHierarchy() ?? Enumerable.Empty<OrgUnit>()
-                : _allOrgs).ToList();
+                : _allOrgs)
+                .Where(o => o.IsActive && !o.IsDeleted)
+                .ToList();
+            var activeOrgIds = new HashSet<int>(allOrgs.Select(o => o.OrgUnitID));
 
             // Collect already-granted IDs — use explicit grants only (no role-based fallback)
             var alreadyGrantedIds = new HashSet<int>();
@@ -667,7 +670,9 @@ namespace CMS.Presentation
 
                 tree.BeginUpdate();
                 foreach (var root in allOrgs
-                    .Where(o => !o.ParentOrgUnitID.HasValue || o.ParentOrgUnitID == 0)
+                    .Where(o => !o.ParentOrgUnitID.HasValue
+                        || o.ParentOrgUnitID == 0
+                        || !activeOrgIds.Contains(o.ParentOrgUnitID.Value))
                     .OrderBy(o => o.SortOrder).ThenBy(o => o.Name))
                 {
                     tree.Nodes.Add(buildNode(root));

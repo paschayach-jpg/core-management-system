@@ -90,7 +90,7 @@ namespace CMS.Data.Repositories
                 // Build dynamic WHERE clause
                 var where = new System.Text.StringBuilder("WHERE IsDeleted = 0");
                 if (filter.WorkflowDefinitionId.HasValue)
-                    where.Append(" AND WorkflowDefinitionId = @WorkflowDefinitionId");
+                    where.Append(" AND WFDefinitionId = @WorkflowDefinitionId");
                 if (!string.IsNullOrEmpty(filter.InitiatedBy))
                     where.Append(" AND InitiatedBy = @InitiatedBy");
                 if (filter.Status.HasValue)
@@ -104,7 +104,7 @@ namespace CMS.Data.Repositories
 
                 string sql =
                     "SELECT COUNT(*) OVER () AS TotalCount, " +
-                    "       WorkflowInstanceId, WorkflowDefinitionId, TemplateVersion, " +
+                    "       WFInstanceId as WorkflowInstanceId, WFDefinitionId as WorkflowDefinitionId, TemplateVersion, " +
                     "       InitiatedBy, InitiatedDate, CurrentStepId, Status, " +
                     "       CompletedDate, InputParameters, IsDeleted, DeletedDate " +
                     "FROM   WFE.t_WFInstance " +

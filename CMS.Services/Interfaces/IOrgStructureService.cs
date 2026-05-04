@@ -17,5 +17,11 @@ namespace CMS.Services.Interfaces
         IEnumerable<OrgUnit> GetHierarchy();
         IEnumerable<OrgUnit> GetVisibleHierarchy(UserContext user);
         IEnumerable<OrgUnit> GetByConfidentialityLevel(ConfidentialityLevel level);
+
+        /// <summary>เชื่อม Division ที่มีอยู่แล้วกับ SubCommittee ผ่าน OrgUnitRelationship table</summary>
+        void LinkDivisionToSubCommittee(int divisionId, int subCommitteeId, UserContext user);
+
+        /// <summary>ดึง relationship ที่ active ทั้งหมด (ใช้ build tree)</summary>
+        IEnumerable<OrgUnitRelationship> GetAllActiveRelationships();
     }
 }
