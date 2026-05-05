@@ -927,7 +927,7 @@ namespace CMS.Presentation
             ribbonStrip.Items.Add(btnTemplate);
 
             // ── ปุ่ม "สิทธิ์ของฉัน" ──
-            var sepMyPerm = new ToolStripSeparator();
+            var sepMyPerm = new ToolStripSeparator { Visible = false };
             var btnMyPerm = new ToolStripButton
             {
                 Name = "btnMyPermission",
@@ -936,18 +936,17 @@ namespace CMS.Presentation
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(25, 55, 105),
+                Visible = false,
             };
             btnMyPerm.Click += (s, e) =>
             {
-                RefreshCurrentUserAuthority();
-                using (var frm = new UserPermissionSummaryForm(_currentUser, _shareLookupController))
-                    frm.ShowDialog(this);
+                OpenMyPermissionSummary();
             };
             ribbonStrip.Items.Add(sepMyPerm);
             ribbonStrip.Items.Add(btnMyPerm);
 
             // ── ปุ่ม "📥 แบ่งปันให้ฉัน" ──
-            var sepShared = new ToolStripSeparator();
+            var sepShared = new ToolStripSeparator { Visible = false };
             var btnShared = new ToolStripButton
             {
                 Name = "btnSharedWithMe",
@@ -956,6 +955,7 @@ namespace CMS.Presentation
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(25, 55, 105),
+                Visible = false,
             };
             btnShared.Click += (s, e) => OpenSharedWithMe();
 
@@ -973,8 +973,8 @@ namespace CMS.Presentation
             ribbonStrip.Items.Add(btnShared);
             ribbonStrip.Items.Add(_lblSharedBadge);
 
-            // โหลด badge count ตอนเริ่มต้น
-            RefreshSharedWithMeBadge();
+            // ปุ่มบน ribbon ถูกซ่อน จึงไม่ต้องแสดง badge บน ribbon
+            UpdateSharedWithMeBadge(0);
         }
 
         private void RefreshCurrentUserAuthority()
@@ -997,6 +997,13 @@ namespace CMS.Presentation
             {
                 _logger.Warn("RefreshCurrentUserAuthority failed. Using cached authority. " + ex.Message);
             }
+        }
+
+        private void OpenMyPermissionSummary()
+        {
+            RefreshCurrentUserAuthority();
+            using (var frm = new UserPermissionSummaryForm(_currentUser, _shareLookupController))
+                frm.ShowDialog(this);
         }
 
         private void OpenSharedWithMe()
@@ -1064,6 +1071,14 @@ namespace CMS.Presentation
         private void UpdateSharedWithMeBadge(int count)
         {
             if (_lblSharedBadge == null) return;
+
+            var sharedButton = ribbonStrip != null ? ribbonStrip.Items["btnSharedWithMe"] : null;
+            if (sharedButton != null && !sharedButton.Visible)
+            {
+                _lblSharedBadge.Visible = false;
+                return;
+            }
+
             if (count > 0)
             {
                 _lblSharedBadge.Text = count.ToString();
@@ -1606,6 +1621,12 @@ namespace CMS.Presentation
                 case "PermissionAdmin":
                 case "FolderSettings":
                     OpenFolderSettings();
+                    return true;
+                case "UserPermissionSummary":
+                    OpenMyPermissionSummary();
+                    return true;
+                case "SharedWithMe":
+                    OpenSharedWithMe();
                     return true;
                 default:
                     return false;

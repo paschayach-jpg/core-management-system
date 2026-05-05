@@ -45,7 +45,7 @@ namespace CMS.Presentation
         private readonly IQuickAccessController _quickAccessController;
         private readonly IPermissionCheckController _permissionCheckController;
         private readonly IFolderReadLookupController _folderReadLookupController;
-        private readonly IAuditLogController   _auditLogController;
+        private readonly IAuditLogController _auditLogController;
         private readonly IShareCommandController _shareCommandController;
         private readonly IMenuManagementController _menuManagementController;
         private readonly IApprovalInboxController _approvalInboxController;
@@ -57,11 +57,11 @@ namespace CMS.Presentation
         private readonly IFolderPermissionLookupController _folderPermissionLookupController;
         private readonly IUserAccountLookupController _userAccountLookupController;
         private readonly IUserAdminController _userAdminController;
-        private readonly UserContext          _user;
+        private readonly UserContext _user;
 
         // Quick Access panel (Req 7)
-        private Panel    _pnlQuickAccess;
-        private ListBox  _lstQuickAccess;
+        private Panel _pnlQuickAccess;
+        private ListBox _lstQuickAccess;
         private List<QuickAccessFolder> _quickAccessItems = new List<QuickAccessFolder>();
 
         // Cache subfolders of currently selected folder for bottom-left sync panel
@@ -82,7 +82,7 @@ namespace CMS.Presentation
         private List<FileDocument> _currentFiles = new List<FileDocument>();
 
         // Inline rename (เหมือน Windows Explorer)
-        private TextBox      _inlineRenameBox;
+        private TextBox _inlineRenameBox;
         private ListViewItem _renamingItem;
 
         // Track active confidentiality level filter (0 = no filter, 1-4 = filtered level)
@@ -91,27 +91,27 @@ namespace CMS.Presentation
         // View mode toggle (Details / Large Icons / Tile)
         private View _currentView = View.Details;
         // OrgFilter view switcher (ตามองค์กร / ตามความลับ)
-        private Panel    _pnlViewButtons;
-        private Button   _btnOrgView;
-        private Button   _btnConfView;
-        private Button   _btnMainMenu;
+        private Panel _pnlViewButtons;
+        private Button _btnOrgView;
+        private Button _btnConfView;
+        private Button _btnMainMenu;
         private TreeView _treeConfidentiality;
         private TreeView _treeMainMenu;
-        private bool     _showingConfView = false;
-        private bool     _showingMainMenuView = false;
-        private bool     _folderExplorerControlsVisible = true;
-        private int      _orgFilterDefaultHeight = 0;
-        private bool     _orgTreeLoaded = false;
+        private bool _showingConfView = false;
+        private bool _showingMainMenuView = false;
+        private bool _folderExplorerControlsVisible = true;
+        private int _orgFilterDefaultHeight = 0;
+        private bool _orgTreeLoaded = false;
 
         // ป้องกัน PromptToCreateFirstFolder ยิงซ้ำระหว่างสร้าง Auto 4 Folders
-        private bool     _suppressCreatePrompt = false;
+        private bool _suppressCreatePrompt = false;
         // ตรวจจับว่ามี HC folder pending approval อยู่ → reload เมื่อ form กลับมา focus
-        private bool     _pendingHCApproval = false;
+        private bool _pendingHCApproval = false;
 
         // Clipboard state for Cut / Copy / Paste
         private enum ClipboardMode { None, Cut, Copy }
-        private ClipboardMode    _clipboardMode    = ClipboardMode.None;
-        private List<int>        _clipboardFileIds = new List<int>();
+        private ClipboardMode _clipboardMode = ClipboardMode.None;
+        private List<int> _clipboardFileIds = new List<int>();
         private readonly Dictionary<ListViewItem, Color> _cutHighlightedItems = new Dictionary<ListViewItem, Color>();
 
         // -----------------------------------------------------------------------
@@ -142,35 +142,35 @@ namespace CMS.Presentation
                           IUserAdminController userAdminController = null,
                           IFolderReadLookupController folderReadLookupController = null)
         {
-            if (user    == null) throw new ArgumentNullException("user");
+            if (user == null) throw new ArgumentNullException("user");
             if (folderCommandController == null) throw new ArgumentNullException("folderCommandController");
             if (folderReadLookupController == null) throw new ArgumentNullException("folderReadLookupController");
 
-            _orgUnitId                = orgUnitId;
-            _selectedOrgUnitId        = orgUnitId;
-            _folderCommandController  = folderCommandController;
-            _fileBrowseController     = fileBrowseController ?? new FileBrowseController(null);
-            _fileCommandController    = fileCommandController ?? new FileCommandController(null);
-            _orgLookupController      = orgLookupController;
+            _orgUnitId = orgUnitId;
+            _selectedOrgUnitId = orgUnitId;
+            _folderCommandController = folderCommandController;
+            _fileBrowseController = fileBrowseController ?? new FileBrowseController(null);
+            _fileCommandController = fileCommandController ?? new FileCommandController(null);
+            _orgLookupController = orgLookupController;
             _folderTemplateController = folderTemplateController;
             _uploadCheckpointController = uploadCheckpointController ?? new UploadCheckpointController(null);
-            _quickAccessController    = quickAccessController;
+            _quickAccessController = quickAccessController;
             _approvalFolderController = approvalFolderController;
             _permissionCheckController = permissionCheckController;
-            _auditLogController       = auditLogController;
-            _shareCommandController   = shareCommandController;
+            _auditLogController = auditLogController;
+            _shareCommandController = shareCommandController;
             _menuManagementController = menuManagementController;
-            _approvalInboxController  = approvalInboxController;
-            _recycleBinController     = recycleBinController;
-            _fileUploadController     = fileUploadController;
+            _approvalInboxController = approvalInboxController;
+            _recycleBinController = recycleBinController;
+            _fileUploadController = fileUploadController;
             _shareManagementController = shareManagementController;
-            _shareLookupController    = shareLookupController ?? new ShareLookupController(null, null, null, null, null);
+            _shareLookupController = shareLookupController ?? new ShareLookupController(null, null, null, null, null);
             _folderSettingsController = folderSettingsController ?? new FolderSettingsController(null);
             _folderPermissionLookupController = folderPermissionLookupController ?? new FolderPermissionLookupController();
             _userAccountLookupController = userAccountLookupController ?? new UserAccountLookupController();
             _userAdminController = userAdminController ?? new UserAdminController();
             _folderReadLookupController = folderReadLookupController ?? new FolderReadLookupController(null);
-            _user                     = user;
+            _user = user;
 
             InitializeComponent();
 
@@ -190,21 +190,21 @@ namespace CMS.Presentation
 
             // Archive — ผู้ดูแลเท่านั้น
             btnArchive.Visible = canManage;
-            sep1.Visible       = canManage;   // separator หน้า Archive
+            sep1.Visible = canManage;   // separator หน้า Archive
 
             // เปลี่ยนระดับ / ตัดลอกโครงสร้าง — ผู้ดูแลเท่านั้น
-            btnChangeLevel.Visible    = canManage;
-            btnCopyStructure.Visible  = canManage;
-            sep3.Visible              = canManage;   // separator หน้า ChangeLevel
+            btnChangeLevel.Visible = canManage;
+            btnCopyStructure.Visible = canManage;
+            sep3.Visible = canManage;   // separator หน้า ChangeLevel
 
             // Wire content list selection for detail panel
             contentsListView.SelectedIndexChanged += ContentsListView_SelectedIndexChanged;
-            
+
             // Configure ListView for better selection behavior
             contentsListView.FullRowSelect = true;
             contentsListView.HideSelection = false;
             contentsListView.MultiSelect = true;
-            
+
             // Wire mouse events for better interaction
             contentsListView.MouseDown += ContentsListView_MouseDown;
             contentsListView.MouseDoubleClick += ContentsListView_MouseDoubleClick;
@@ -241,7 +241,7 @@ namespace CMS.Presentation
                         var selectedItem = contentsListView.SelectedItems[0];
                         var file = selectedItem.Tag as FileDocument;
                         var folder = selectedItem.Tag as Folder;
-                        
+
                         if (file != null)
                         {
                             CtxFileOpen_Click(s, EventArgs.Empty);
@@ -257,8 +257,8 @@ namespace CMS.Presentation
             // Alternating row colors for readability
             contentsListView.OwnerDraw = true;
             contentsListView.DrawColumnHeader += (s, e) => e.DrawDefault = true;
-            contentsListView.DrawSubItem      += ContentsListView_DrawSubItem;
-            contentsListView.DrawItem         += (s, e) => { /* handled in DrawSubItem */ };
+            contentsListView.DrawSubItem += ContentsListView_DrawSubItem;
+            contentsListView.DrawItem += (s, e) => { /* handled in DrawSubItem */ };
 
             // ปรับ colName ให้เต็มพื้นที่เมื่อขนาดเปลี่ยน
             contentsListView.Resize += (s, e) => AdjustNameColumnWidth();
@@ -289,7 +289,7 @@ namespace CMS.Presentation
 
             // Wire btnMove (Req 9.1, 9.2, 9.4) — event already wired in Designer.cs, do NOT add again here
             folderTreeView.AfterSelect += (s, e2) => { UpdateMoveButtonState(); OnSelectionChanged(); };
-            
+
             // Handle คลิก node ที่ selected อยู่แล้ว (AfterSelect จะไม่ fire ในกรณีนี้)
             folderTreeView.NodeMouseClick += FolderTreeView_NodeMouseClick;
 
@@ -307,12 +307,12 @@ namespace CMS.Presentation
             InitializeOrgFilterSwitcher();
 
             // Wire navigation buttons
-            btnNavBack.Click    += BtnNavBack_Click;
+            btnNavBack.Click += BtnNavBack_Click;
             btnNavForward.Click += BtnNavForward_Click;
-            btnNavUp.Click      += BtnNavUp_Click;
-            btnNavBack.Enabled    = false;
+            btnNavUp.Click += BtnNavUp_Click;
+            btnNavBack.Enabled = false;
             btnNavForward.Enabled = false;
-            btnNavUp.Enabled      = false;
+            btnNavUp.Enabled = false;
 
             // Detail panel ขนาด 160px — พอดีกับปุ่มและข้อมูล
             splitContent.Panel2MinSize = 160;
@@ -332,22 +332,22 @@ namespace CMS.Presentation
         // Navigation history (Back / Forward / Up — เหมือน Windows Explorer)
         // -----------------------------------------------------------------------
 
-        private readonly Stack<int?>             _backStack           = new Stack<int?>();
-        private readonly Stack<int?>             _forwardStack        = new Stack<int?>();
-        private readonly Stack<string>           _backBreadcrumbs     = new Stack<string>();
-        private readonly Stack<string>           _forwardBreadcrumbs  = new Stack<string>();
-        private int?                             _currentNavFolderId  = null;   // null = OrgUnit root view
-        private string                           _currentBreadcrumb   = "";
-        private bool                             _isNavigating        = false;  // ป้องกัน push ซ้ำขณะ navigate
-        
+        private readonly Stack<int?> _backStack = new Stack<int?>();
+        private readonly Stack<int?> _forwardStack = new Stack<int?>();
+        private readonly Stack<string> _backBreadcrumbs = new Stack<string>();
+        private readonly Stack<string> _forwardBreadcrumbs = new Stack<string>();
+        private int? _currentNavFolderId = null;   // null = OrgUnit root view
+        private string _currentBreadcrumb = "";
+        private bool _isNavigating = false;  // ป้องกัน push ซ้ำขณะ navigate
+
         // Breadcrumb navigation data - เก็บ folder ID สำหรับแต่ละส่วนใน breadcrumb
-        private readonly List<int?>              _breadcrumbFolderIds = new List<int?>();
+        private readonly List<int?> _breadcrumbFolderIds = new List<int?>();
 
         // -----------------------------------------------------------------------
         // Sort state (Req 4.1–4.5)
         // -----------------------------------------------------------------------
 
-        private int  _sortColumn    = -1;   // -1 = no active sort
+        private int _sortColumn = -1;   // -1 = no active sort
         private bool _sortAscending = true;
 
 
@@ -356,19 +356,19 @@ namespace CMS.Presentation
         {
             var ctx = new ContextMenuStrip();
 
-            var mnuReload     = new ToolStripMenuItem("🔄  รีโหลด",            null, CtxReload_Click);
-            var mnuNewFolder  = new ToolStripMenuItem("📁  Folder ใหม่...",     null, (s, e) => btnNewFolder_Click(s, e));
-            var mnuOpen       = new ToolStripMenuItem("📂  เปิด",               null, CtxOpen_Click);
-            var mnuDownload   = new ToolStripMenuItem("⬇️  ดาวน์โหลด",          null, (s, e) => OpenUploadForSelectedFolder());
-            var mnuCut        = new ToolStripMenuItem("✂️  ตัด",                 null, CtxCut_Click)  { Enabled = false };
-            var mnuCopy       = new ToolStripMenuItem("📋  คัดลอก",              null, CtxCopy_Click) { Enabled = false };
-            var mnuPaste      = new ToolStripMenuItem("📄  วาง",                 null, CtxPaste_Click){ Enabled = false };
-            var mnuRename     = new ToolStripMenuItem("✏️  เปลี่ยนชื่อ",         null, (s, e) => btnRename_Click(s, e));
-            var mnuMove       = new ToolStripMenuItem("📦  ย้าย",                null, BtnMove_Click);
-            var mnuDelete     = new ToolStripMenuItem("🗑️  ลบ",                  null, (s, e) => btnDelete_Click(s, e));
-            var mnuArchive    = new ToolStripMenuItem("📦  Archive",              null, (s, e) => btnArchive_Click(s, e));
-            var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...",    null, CtxPermission_Click);
-            var mnuProperties = new ToolStripMenuItem("ℹ️  คุณสมบัติ",           null, CtxProperties_Click);
+            var mnuReload = new ToolStripMenuItem("🔄  รีโหลด", null, CtxReload_Click);
+            var mnuNewFolder = new ToolStripMenuItem("📁  Folder ใหม่...", null, (s, e) => btnNewFolder_Click(s, e));
+            var mnuOpen = new ToolStripMenuItem("📂  เปิด", null, CtxOpen_Click);
+            var mnuDownload = new ToolStripMenuItem("⬇️  ดาวน์โหลด", null, (s, e) => OpenUploadForSelectedFolder());
+            var mnuCut = new ToolStripMenuItem("✂️  ตัด", null, CtxCut_Click) { Enabled = false };
+            var mnuCopy = new ToolStripMenuItem("📋  คัดลอก", null, CtxCopy_Click) { Enabled = false };
+            var mnuPaste = new ToolStripMenuItem("📄  วาง", null, CtxPaste_Click) { Enabled = false };
+            var mnuRename = new ToolStripMenuItem("✏️  เปลี่ยนชื่อ", null, (s, e) => btnRename_Click(s, e));
+            var mnuMove = new ToolStripMenuItem("📦  ย้าย", null, BtnMove_Click);
+            var mnuDelete = new ToolStripMenuItem("🗑️  ลบ", null, (s, e) => btnDelete_Click(s, e));
+            var mnuArchive = new ToolStripMenuItem("📦  Archive", null, (s, e) => btnArchive_Click(s, e));
+            var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
+            var mnuProperties = new ToolStripMenuItem("ℹ️  คุณสมบัติ", null, CtxProperties_Click);
             var mnuAddQuickAccess = new ToolStripMenuItem("⭐  เพิ่มใน Quick Access", null, CtxAddQuickAccess_Click);
 
             ctx.Items.Add(mnuReload);
@@ -395,25 +395,25 @@ namespace CMS.Presentation
             // enable/disable ตาม selection + FolderAuthorityConfig
             ctx.Opening += (s, e) =>
             {
-                bool hasFolder       = (SelectedFolder != null);
-                int  level           = hasFolder ? SelectedFolder.ConfidentialityLevel : 0;
-                bool isPrivileged    = _user.AppRole >= 3;
+                bool hasFolder = (SelectedFolder != null);
+                int level = hasFolder ? SelectedFolder.ConfidentialityLevel : 0;
+                bool isPrivileged = _user.AppRole >= 3;
 
                 bool canView = isPrivileged || (hasFolder && _user.CanViewFolder(level));
-                bool canAdd  = isPrivileged || (hasFolder && _user.CanAddToFolder(level));
+                bool canAdd = isPrivileged || (hasFolder && _user.CanAddToFolder(level));
                 bool canEdit = isPrivileged || (hasFolder && _user.CanEditFolder(level));
 
                 bool canDeleteFolder = hasFolder && canEdit && CanDeleteFolder(SelectedFolder);
 
-                mnuNewFolder.Enabled      = hasFolder && canAdd;
-                mnuOpen.Enabled           = hasFolder && canView;
-                mnuDownload.Enabled       = hasFolder && canView;
-                mnuRename.Enabled         = hasFolder && canEdit;
-                mnuMove.Enabled           = hasFolder && canEdit && _folderCommandController != null;
-                mnuDelete.Enabled         = canDeleteFolder;
-                mnuArchive.Enabled        = hasFolder && canEdit;
-                mnuPermission.Enabled     = hasFolder && isPrivileged;
-                mnuProperties.Enabled     = hasFolder && canView;
+                mnuNewFolder.Enabled = hasFolder && canAdd;
+                mnuOpen.Enabled = hasFolder && canView;
+                mnuDownload.Enabled = hasFolder && canView;
+                mnuRename.Enabled = hasFolder && canEdit;
+                mnuMove.Enabled = hasFolder && canEdit && _folderCommandController != null;
+                mnuDelete.Enabled = canDeleteFolder;
+                mnuArchive.Enabled = hasFolder && canEdit;
+                mnuPermission.Enabled = hasFolder && isPrivileged;
+                mnuProperties.Enabled = hasFolder && canView;
                 mnuAddQuickAccess.Enabled = hasFolder && canView && _quickAccessController != null;
                 // mnuReload ใช้ได้เสมอ
             };
@@ -438,20 +438,20 @@ namespace CMS.Presentation
         {
             var ctx = new ContextMenuStrip();
 
-            var mnuUpload     = new ToolStripMenuItem("⬆️  อัพโหลดไฟล์...",   null, (s, e) => OpenUploadForSelectedFolder());
-            var mnuNewFolder  = new ToolStripMenuItem("📁  Folder ใหม่...",    null, (s, e) => btnNewFolder_Click(s, e));
-            var mnuOpen       = new ToolStripMenuItem("เปิดดู",              null, CtxFileOpen_Click);
-            var mnuDownload   = new ToolStripMenuItem("ดาวน์โหลด",           null, CtxFileDownload_Click);
-            var mnuCut        = new ToolStripMenuItem("ตัด",     null, CtxFileCut_Click)   { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.X, ShowShortcutKeys = true };
-            var mnuCopy       = new ToolStripMenuItem("คัดลอก",  null, CtxFileCopy_Click)  { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C, ShowShortcutKeys = true };
-            var mnuPaste      = new ToolStripMenuItem("วาง",     null, CtxFilePaste_Click) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V, ShowShortcutKeys = true };
-            var mnuRename     = new ToolStripMenuItem("เปลี่ยนชื่อ",         null, (s, e) => btnRename_Click(s, e))                                      { ShortcutKeys = System.Windows.Forms.Keys.F2, ShowShortcutKeys = true };
-            var mnuMove       = new ToolStripMenuItem("ย้าย",                null, BtnMove_Click);
-            var mnuDelete     = new ToolStripMenuItem("ลบ",                  null, (s, e) => btnDelete_Click(s, e))                                       { ShortcutKeys = System.Windows.Forms.Keys.Delete, ShowShortcutKeys = true };
+            var mnuUpload = new ToolStripMenuItem("⬆️  อัพโหลดไฟล์...", null, (s, e) => OpenUploadForSelectedFolder());
+            var mnuNewFolder = new ToolStripMenuItem("📁  Folder ใหม่...", null, (s, e) => btnNewFolder_Click(s, e));
+            var mnuOpen = new ToolStripMenuItem("เปิดดู", null, CtxFileOpen_Click);
+            var mnuDownload = new ToolStripMenuItem("ดาวน์โหลด", null, CtxFileDownload_Click);
+            var mnuCut = new ToolStripMenuItem("ตัด", null, CtxFileCut_Click) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.X, ShowShortcutKeys = true };
+            var mnuCopy = new ToolStripMenuItem("คัดลอก", null, CtxFileCopy_Click) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.C, ShowShortcutKeys = true };
+            var mnuPaste = new ToolStripMenuItem("วาง", null, CtxFilePaste_Click) { ShortcutKeys = System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.V, ShowShortcutKeys = true };
+            var mnuRename = new ToolStripMenuItem("เปลี่ยนชื่อ", null, (s, e) => btnRename_Click(s, e)) { ShortcutKeys = System.Windows.Forms.Keys.F2, ShowShortcutKeys = true };
+            var mnuMove = new ToolStripMenuItem("ย้าย", null, BtnMove_Click);
+            var mnuDelete = new ToolStripMenuItem("ลบ", null, (s, e) => btnDelete_Click(s, e)) { ShortcutKeys = System.Windows.Forms.Keys.Delete, ShowShortcutKeys = true };
             var mnuClearFolder = new ToolStripMenuItem("🗑️  ล้างไฟล์ทั้งหมดใน Folder...", null, (s, e) => ClearFolderContents());
-            var mnuArchive    = new ToolStripMenuItem("Archive",             null, (s, e) => btnArchive_Click(s, e));
-            var mnuPermission = new ToolStripMenuItem("ตั้งค่าสิทธิ์...",   null, CtxPermission_Click);
-            var mnuProperties = new ToolStripMenuItem("คุณสมบัติ",           null, CtxFileProperties_Click)                                               { ShortcutKeys = System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.Enter, ShowShortcutKeys = true };
+            var mnuArchive = new ToolStripMenuItem("Archive", null, (s, e) => btnArchive_Click(s, e));
+            var mnuPermission = new ToolStripMenuItem("ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
+            var mnuProperties = new ToolStripMenuItem("คุณสมบัติ", null, CtxFileProperties_Click) { ShortcutKeys = System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.Enter, ShowShortcutKeys = true };
 
             ctx.Items.Add(mnuUpload);
             ctx.Items.Add(mnuNewFolder);
@@ -482,15 +482,15 @@ namespace CMS.Presentation
                     .Cast<ListViewItem>()
                     .Any(item => item.Tag is Folder);
                 bool singleFileSelected = hasFileSelection && !hasFolderSelection && selectedFiles.Count == 1;
-                bool isAtRoot  = !_currentNavFolderId.HasValue;
+                bool isAtRoot = !_currentNavFolderId.HasValue;
                 bool hasFolder = !isAtRoot && (_currentNavFolderId.HasValue || SelectedFolder != null);
 
                 // level ของ folder ที่กำลังดูอยู่
-                int  level        = _lastSelectedFolder != null ? _lastSelectedFolder.ConfidentialityLevel : 0;
+                int level = _lastSelectedFolder != null ? _lastSelectedFolder.ConfidentialityLevel : 0;
                 bool isPrivileged = _user.AppRole >= 3;
 
                 bool canView = isPrivileged || _user.CanViewFolder(level);
-                bool canAdd  = isPrivileged || _user.CanAddToFolder(level);
+                bool canAdd = isPrivileged || _user.CanAddToFolder(level);
                 bool canEdit = isPrivileged || _user.CanEditFolder(level);
 
                 // folder ที่เลือกใน content list (กรณี tag เป็น Folder)
@@ -500,7 +500,7 @@ namespace CMS.Presentation
                 bool canDeleteContent = canEdit && (hasFileSelection || (contentFolder != null && CanDeleteFolder(contentFolder)));
 
                 // Check if any item (file or folder) is selected in content list
-                bool hasSelection = contentsListView.SelectedItems.Count > 0 && 
+                bool hasSelection = contentsListView.SelectedItems.Count > 0 &&
                                    (hasFileSelection || contentFolder != null);
 
                 bool canUseFileClipboard = hasFileSelection && !hasFolderSelection;
@@ -513,20 +513,20 @@ namespace CMS.Presentation
                                      && _clipboardFileIds.Count > 0
                                      && hasFolder;
 
-                mnuUpload.Enabled      = hasFolder && canAdd  && _fileUploadController != null;
-                mnuNewFolder.Enabled   = hasFolder && canAdd;
-                mnuOpen.Enabled        = singleFileSelected && canView;
-                mnuDownload.Enabled    = singleFileSelected && canView && _fileBrowseController != null;
-                mnuCut.Enabled         = canUseFileClipboard && canEdit && _fileCommandController != null;
-                mnuCopy.Enabled        = canUseFileClipboard && canView && _fileCommandController != null;
-                mnuPaste.Enabled       = hasPendingPaste && canAdd && _fileCommandController != null;
-                mnuRename.Enabled      = hasSelection && canEdit;
-                mnuMove.Enabled        = canMove;
-                mnuDelete.Enabled      = canDeleteContent;
+                mnuUpload.Enabled = hasFolder && canAdd && _fileUploadController != null;
+                mnuNewFolder.Enabled = hasFolder && canAdd;
+                mnuOpen.Enabled = singleFileSelected && canView;
+                mnuDownload.Enabled = singleFileSelected && canView && _fileBrowseController != null;
+                mnuCut.Enabled = canUseFileClipboard && canEdit && _fileCommandController != null;
+                mnuCopy.Enabled = canUseFileClipboard && canView && _fileCommandController != null;
+                mnuPaste.Enabled = hasPendingPaste && canAdd && _fileCommandController != null;
+                mnuRename.Enabled = hasSelection && canEdit;
+                mnuMove.Enabled = canMove;
+                mnuDelete.Enabled = canDeleteContent;
                 mnuClearFolder.Enabled = _fileBrowseController != null && _fileCommandController != null && _currentNavFolderId.HasValue && canEdit;
-                mnuArchive.Enabled     = singleFileSelected && canEdit;
-                mnuPermission.Enabled  = isPrivileged;
-                mnuProperties.Enabled  = singleFileSelected && canView;
+                mnuArchive.Enabled = singleFileSelected && canEdit;
+                mnuPermission.Enabled = isPrivileged;
+                mnuProperties.Enabled = singleFileSelected && canView;
             };
 
             contentsListView.ContextMenuStrip = ctx;
@@ -565,15 +565,15 @@ namespace CMS.Presentation
                     {
                         var eff = _permissionCheckController.GetEffectivePermission(_user.UserID, file.FolderID);
                         bool isManager = _user != null && _user.AppRole >= 3;
-                        bool hasWrite  = eff != null && (eff.HasFullControl || eff.CanModify || eff.CanWrite);
+                        bool hasWrite = eff != null && (eff.HasFullControl || eff.CanModify || eff.CanWrite);
                         canCopy = isManager || hasWrite;
                     }
 
                     var options = new PdfViewOptions
                     {
                         CanPrint = false,   // always blocked
-                        CanSave  = false,   // always blocked
-                        CanCopy  = false    // always blocked
+                        CanSave = false,   // always blocked
+                        CanCopy = false    // always blocked
                     };
 
                     await PdfSecurityHelper.OpenSecurePdfAsync(filePath, this, options);
@@ -582,7 +582,7 @@ namespace CMS.Presentation
                 {
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                     {
-                        FileName        = filePath,
+                        FileName = filePath,
                         UseShellExecute = true
                     });
                 }
@@ -688,7 +688,7 @@ namespace CMS.Presentation
             // ให้ user เลือก folder ปลายทาง
             using (var sfd = new SaveFileDialog())
             {
-                sfd.Title    = "บันทึกไฟล์";
+                sfd.Title = "บันทึกไฟล์";
                 sfd.FileName = file.OriginalFileName;
 
                 // กำหนด filter ตาม extension
@@ -801,7 +801,7 @@ namespace CMS.Presentation
 
             ClearCutHighlight();
 
-            _clipboardMode    = ClipboardMode.Cut;
+            _clipboardMode = ClipboardMode.Cut;
             _clipboardFileIds = files.Select(f => f.FileID).Distinct().ToList();
 
             ApplyCutHighlightToSelectedFiles();
@@ -814,7 +814,7 @@ namespace CMS.Presentation
 
             ClearCutHighlight();
 
-            _clipboardMode    = ClipboardMode.Copy;
+            _clipboardMode = ClipboardMode.Copy;
             _clipboardFileIds = files.Select(f => f.FileID).Distinct().ToList();
         }
 
@@ -832,7 +832,7 @@ namespace CMS.Presentation
                 {
                     var req = new CMS.Services.DTOs.MoveFileRequest
                     {
-                        FileIds             = new List<int>(_clipboardFileIds),
+                        FileIds = new List<int>(_clipboardFileIds),
                         DestinationFolderId = destFolderId
                     };
                     _fileCommandController.MoveFiles(req, _user);
@@ -846,7 +846,7 @@ namespace CMS.Presentation
                 ClearCutHighlight();
 
                 // Clear clipboard state
-                _clipboardMode    = ClipboardMode.None;
+                _clipboardMode = ClipboardMode.None;
                 _clipboardFileIds.Clear();
 
                 // Refresh current folder view
@@ -978,59 +978,59 @@ namespace CMS.Presentation
 
         private void InitializeOrgFilterSwitcher()
         {
-            var accent    = Color.FromArgb(31, 56, 100);
-            var inactive  = Color.FromArgb(240, 244, 250);
+            var accent = Color.FromArgb(31, 56, 100);
+            var inactive = Color.FromArgb(240, 244, 250);
 
             // Button bar
             _pnlViewButtons = new Panel
             {
-                Dock      = DockStyle.Top,
-                Height    = 40,
+                Dock = DockStyle.Top,
+                Height = 40,
                 BackColor = Color.FromArgb(220, 230, 245),
-                Padding   = new Padding(2, 5, 2, 0)
+                Padding = new Padding(2, 5, 2, 0)
             };
 
             int btnWidth = 90;
 
             _btnMainMenu = new Button
             {
-                Text      = "☰ เมนูหลัก",
-                Width     = btnWidth,
-                Height    = 28,
-                Location  = new Point(5, 5),
+                Text = "☰ เมนูหลัก",
+                Width = btnWidth,
+                Height = 28,
+                Location = new Point(5, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = inactive,
                 ForeColor = accent,
-                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Cursor    = Cursors.Hand
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
             };
             _btnMainMenu.FlatAppearance.BorderSize = 0;
 
             _btnOrgView = new Button
             {
-                Text      = "ตามองค์กร",
-                Width     = btnWidth,
-                Height    = 28,
-                Location  = new Point(5 + btnWidth + 2, 5),
+                Text = "ตามองค์กร",
+                Width = btnWidth,
+                Height = 28,
+                Location = new Point(5 + btnWidth + 2, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = accent,
                 ForeColor = Color.White,
-                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Cursor    = Cursors.Hand
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
             };
             _btnOrgView.FlatAppearance.BorderSize = 0;
 
             _btnConfView = new Button
             {
-                Text      = "🔒 ความลับ",
-                Width     = btnWidth,
-                Height    = 28,
-                Location  = new Point(5 + (btnWidth * 2) + 4, 5),
+                Text = "🔒 ความลับ",
+                Width = btnWidth,
+                Height = 28,
+                Location = new Point(5 + (btnWidth * 2) + 4, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = inactive,
                 ForeColor = accent,
-                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Cursor    = Cursors.Hand
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
             };
             _btnConfView.FlatAppearance.BorderSize = 0;
 
@@ -1041,35 +1041,35 @@ namespace CMS.Presentation
             // Confidentiality tree (initially hidden)
             _treeConfidentiality = new TreeView
             {
-                Dock          = DockStyle.Fill,
-                BackColor     = Color.White,
-                BorderStyle   = BorderStyle.None,
-                Font          = new Font("Segoe UI", 10f),
-                HotTracking   = true,
-                Visible       = false,
-                Indent        = 16,
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.None,
+                Font = new Font("Segoe UI", 10f),
+                HotTracking = true,
+                Visible = false,
+                Indent = 16,
                 HideSelection = false  // คง highlight node ที่เลือกไว้แม้ focus อยู่ที่ control อื่น
             };
 
             // Main Menu tree (initially hidden)
             _treeMainMenu = new TreeView
             {
-                Dock          = DockStyle.Fill,
-                BackColor     = Color.White,
-                BorderStyle   = BorderStyle.None,
-                Font          = new Font("Segoe UI", 10.5f),
-                HotTracking   = true,
-                Visible       = false,
-                Indent        = 16,
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.None,
+                Font = new Font("Segoe UI", 10.5f),
+                HotTracking = true,
+                Visible = false,
+                Indent = 16,
                 HideSelection = false,
-                ShowLines     = true
-              
+                ShowLines = true
+
             };
 
             // Re-parent treeOrgUnit into pnlOrgFilter alongside the conf tree
             // Both use DockStyle.Fill and overlap — only one is visible at a time
             pnlOrgFilter.Controls.Remove(treeOrgUnit);
-            treeOrgUnit.Dock          = DockStyle.Fill;
+            treeOrgUnit.Dock = DockStyle.Fill;
             treeOrgUnit.HideSelection = false;  // คง highlight node ที่เลือกไว้แม้ focus อยู่ที่ control อื่น
 
             pnlOrgFilter.Controls.Add(treeOrgUnit);            // index 0 (front)
@@ -1078,7 +1078,7 @@ namespace CMS.Presentation
             pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 3 (back) → docked Top first
 
             // Wire events
-            _btnOrgView.Click  += (s, e) => SwitchToOrgView();
+            _btnOrgView.Click += (s, e) => SwitchToOrgView();
             _btnConfView.Click += (s, e) => SwitchToConfView();
             _btnMainMenu.Click += (s, e) => SwitchToMainMenuView();
             _treeConfidentiality.NodeMouseClick += ConfTree_NodeMouseClick;
@@ -1273,26 +1273,54 @@ namespace CMS.Presentation
             if (menu == null)
                 return "folder";
 
-            if (hasChildren)
-            {
-                string groupName = (menu.MenuName ?? string.Empty).Trim().ToLowerInvariant();
-                if (groupName.Contains("องค์กร") || groupName.Contains("org"))
-                    return "organization";
-
-                return "folder";
-            }
-
             string action = MapConfiguredActionToTag(menu.FormClassName)
                 ?? MapMenuKeyToActionTag(menu.MenuKey)
                 ?? MapMenuNameToActionTag(menu.MenuName);
 
+            if (hasChildren)
+                return ResolveMainMenuGroupIconKey(action, menu.MenuName);
+
             return ResolveMainMenuLeafIconKey(action, menu.MenuName);
+        }
+
+        private static string ResolveMainMenuGroupIconKey(string action, string menuName)
+        {
+            switch ((action ?? string.Empty).Trim())
+            {
+                case "OrgGroup":
+                case "PermissionGroup":
+                    return "organization";
+                case "ReportGroup":
+                case "DocumentGroup":
+                    return "file_docs";
+                case "SystemGroup":
+                    return "book_green";
+                default:
+                    break;
+            }
+
+            string lowerName = (menuName ?? string.Empty).ToLowerInvariant();
+            if (lowerName.Contains("องค์กร") || lowerName.Contains("สิทธิ") || lowerName.Contains("ผู้ใช้") || lowerName.Contains("org") || lowerName.Contains("user") || lowerName.Contains("permission"))
+                return "organization";
+            if (lowerName.Contains("รายงาน") || lowerName.Contains("report") || lowerName.Contains("log") || lowerName.Contains("เอกสาร"))
+                return "file_docs";
+            if (lowerName.Contains("ระบบ") || lowerName.Contains("config") || lowerName.Contains("setting") || lowerName.Contains("ตั้งค่า"))
+                return "book_green";
+
+            return "folder";
         }
 
         private static string ResolveMainMenuLeafIconKey(string action, string menuName)
         {
             switch ((action ?? string.Empty).Trim())
             {
+                case "Home":
+                    return "folder";
+                case "ShareDialog":
+                case "SharedWithMe":
+                case "ShareManagement":
+                case "UserPermissionSummary":
+                    return "book_orange";
                 case "KnowledgeBaseForm":
                 case "KBMainForm":
                 case "KBCategoryForm":
@@ -1300,18 +1328,48 @@ namespace CMS.Presentation
                 case "AuditLog":
                 case "AccessLog":
                 case "ApprovalInbox":
+                case "PdpaReport":
+                case "SLAReport":
+                case "WorkflowDetail":
+                case "WorkflowTemplateList":
+                case "WorkflowDashboard":
+                case "WorkflowVisualFlow":
                     return "file_docs";
                 case "OrgStructure":
+                    return "folder";
                 case "UserManagement":
                 case "UserAccess":
+                case "PermissionAdmin":
+                case "FolderSettings":
+                case "AuthorityConfig":
                     return "organization";
+                case "MenuManagement":
+                case "ConfigAdmin":
+                    return "book_green";
+                case "FolderTemplate":
+                    return "folder";
                 case "SyncEmployee":
+                case "WorkflowDesigner":
+                case "WorkflowDelegation":
                     return "lightning_bolt";
+                case "RecycleBin":
+                case "ArchiveFolder":
+                    return "book_red";
                 default:
                     break;
             }
 
             string lowerName = (menuName ?? string.Empty).ToLowerInvariant();
+            if (lowerName.Contains("แชร์") || lowerName.Contains("share"))
+                return "book_orange";
+            if (lowerName.Contains("template") || lowerName.Contains("เทมเพลต") || lowerName.Contains("แม่แบบ"))
+                return "folder";
+            if (lowerName.Contains("ตั้งค่า") || lowerName.Contains("config") || lowerName.Contains("menu"))
+                return "book_green";
+            if (lowerName.Contains("workflow") || lowerName.Contains("sync") || lowerName.Contains("มอบหมาย"))
+                return "lightning_bolt";
+            if (lowerName.Contains("ถังขยะ") || lowerName.Contains("archive") || lowerName.Contains("recycle") || lowerName.Contains("trash"))
+                return "book_red";
             if (lowerName.Contains("รายงาน") || lowerName.Contains("report") || lowerName.Contains("log"))
                 return "file_docs";
             if (lowerName.Contains("องค์กร") || lowerName.Contains("ผู้ใช้") || lowerName.Contains("org") || lowerName.Contains("user"))
@@ -1418,7 +1476,7 @@ namespace CMS.Presentation
                     return "SyncEmployee";
                 case "knowledgebaseform":
                 case "kbmainform":
-                      return "KBMainForm";
+                    return "KBMainForm";
                 case "knowledgebase":
                 case "kms":
                     return "KBMainForm";
@@ -1587,17 +1645,17 @@ namespace CMS.Presentation
             var docNode = new TreeNode("📂 จัดการเอกสาร");
             docNode.Nodes.Add(new TreeNode("🏠 หน้าหลัก/โฟลเดอร์") { Tag = "Home" });
             docNode.Nodes.Add(new TreeNode("📄 ไฟล์ที่แชร์กับฉัน") { Tag = "SharedWithMe" });
-            docNode.Nodes.Add(new TreeNode("🔗 จัดการลิงก์แชร์")   { Tag = "ShareManagement" });
-            docNode.Nodes.Add(new TreeNode("🗑️ ถังขยะ")           { Tag = "RecycleBin" });
+            docNode.Nodes.Add(new TreeNode("🔗 จัดการลิงก์แชร์") { Tag = "ShareManagement" });
+            docNode.Nodes.Add(new TreeNode("🗑️ ถังขยะ") { Tag = "RecycleBin" });
             _treeMainMenu.Nodes.Add(docNode);
 
             // 2. บริหารองค์กร
             var orgNode = new TreeNode("🏢 บริหารองค์กร");
-            orgNode.Nodes.Add(new TreeNode("🌳 ผังโครงสร้างองค์กร")    { Tag = "OrgStructure" });
-            orgNode.Nodes.Add(new TreeNode("👥 จัดการผู้ใช้งาน")      { Tag = "UserManagement" });
-            orgNode.Nodes.Add(new TreeNode("🔄 Sync ข้อมูลพนักงาน")  { Tag = "SyncEmployee" }); // เมนูใหม่
+            orgNode.Nodes.Add(new TreeNode("🌳 ผังโครงสร้างองค์กร") { Tag = "OrgStructure" });
+            orgNode.Nodes.Add(new TreeNode("👥 จัดการผู้ใช้งาน") { Tag = "UserManagement" });
+            orgNode.Nodes.Add(new TreeNode("🔄 Sync ข้อมูลพนักงาน") { Tag = "SyncEmployee" }); // เมนูใหม่
             orgNode.Nodes.Add(new TreeNode("🛡️ จัดการสิทธิ์การใช้งาน") { Tag = "PermissionAdmin" });
-            orgNode.Nodes.Add(new TreeNode("👤 สรุปสิทธิ์รายบุคคล")    { Tag = "UserPermissionSummary" });
+            orgNode.Nodes.Add(new TreeNode("👤 สรุปสิทธิ์รายบุคคล") { Tag = "UserPermissionSummary" });
             _treeMainMenu.Nodes.Add(orgNode);
 
             // 3. ตรวจสอบระบบ
@@ -1608,7 +1666,7 @@ namespace CMS.Presentation
 
             // 4. ตั้งค่า
             var settingNode = new TreeNode("⚙️ ตั้งค่า");
-            settingNode.Nodes.Add(new TreeNode("🛠️ ตั้งค่าระบบ")           { Tag = "ConfigAdmin" });
+            settingNode.Nodes.Add(new TreeNode("🛠️ ตั้งค่าระบบ") { Tag = "ConfigAdmin" });
             settingNode.Nodes.Add(new TreeNode("📋 ตั้งค่าแม่แบบโฟลเดอร์") { Tag = "FolderTemplate" });
             _treeMainMenu.Nodes.Add(settingNode);
         }
@@ -1706,20 +1764,20 @@ namespace CMS.Presentation
             _showingMainMenuView = false;
             SetFolderExplorerControlsVisibility(true);
             SetMainMenuTreeFullHeight(false);
-            
-            treeOrgUnit.Visible          = true;
+
+            treeOrgUnit.Visible = true;
             _treeConfidentiality.Visible = false;
-            _treeMainMenu.Visible        = false;
-            
-            _btnOrgView.BackColor  = Color.FromArgb(31, 56, 100);
-            _btnOrgView.ForeColor  = Color.White;
+            _treeMainMenu.Visible = false;
+
+            _btnOrgView.BackColor = Color.FromArgb(31, 56, 100);
+            _btnOrgView.ForeColor = Color.White;
             _btnConfView.BackColor = Color.FromArgb(240, 244, 250);
             _btnConfView.ForeColor = Color.FromArgb(31, 56, 100);
             _btnMainMenu.BackColor = Color.FromArgb(240, 244, 250);
             _btnMainMenu.ForeColor = Color.FromArgb(31, 56, 100);
-            
+
             contentsListView.ShowGroups = false;
-            
+
             // Re-load folder tree if org unit is selected
             if (treeOrgUnit.SelectedNode != null && treeOrgUnit.SelectedNode.Tag is OrgUnit ou)
             {
@@ -1736,18 +1794,18 @@ namespace CMS.Presentation
             _showingMainMenuView = false;
             SetFolderExplorerControlsVisibility(true);
             SetMainMenuTreeFullHeight(false);
-            
-            treeOrgUnit.Visible          = false;
+
+            treeOrgUnit.Visible = false;
             _treeConfidentiality.Visible = true;
-            _treeMainMenu.Visible        = false;
-            
-            _btnOrgView.BackColor  = Color.FromArgb(240, 244, 250);
-            _btnOrgView.ForeColor  = Color.FromArgb(31, 56, 100);
+            _treeMainMenu.Visible = false;
+
+            _btnOrgView.BackColor = Color.FromArgb(240, 244, 250);
+            _btnOrgView.ForeColor = Color.FromArgb(31, 56, 100);
             _btnConfView.BackColor = Color.FromArgb(31, 56, 100);
             _btnConfView.ForeColor = Color.White;
             _btnMainMenu.BackColor = Color.FromArgb(240, 244, 250);
             _btnMainMenu.ForeColor = Color.FromArgb(31, 56, 100);
-            
+
             BuildConfidentialityTreeFromAllFoldersAsync();
         }
 
@@ -1768,18 +1826,18 @@ namespace CMS.Presentation
             // Refresh from MenuManagement and expand all nodes so submenus are visible immediately.
             LoadMainMenuTree();
             _treeMainMenu.ExpandAll();
-            
-            treeOrgUnit.Visible          = false;
+
+            treeOrgUnit.Visible = false;
             _treeConfidentiality.Visible = false;
-            _treeMainMenu.Visible        = true;
-            
-            _btnOrgView.BackColor  = Color.FromArgb(240, 244, 250);
-            _btnOrgView.ForeColor  = Color.FromArgb(31, 56, 100);
+            _treeMainMenu.Visible = true;
+
+            _btnOrgView.BackColor = Color.FromArgb(240, 244, 250);
+            _btnOrgView.ForeColor = Color.FromArgb(31, 56, 100);
             _btnConfView.BackColor = Color.FromArgb(240, 244, 250);
             _btnConfView.ForeColor = Color.FromArgb(31, 56, 100);
             _btnMainMenu.BackColor = Color.FromArgb(31, 56, 100);
             _btnMainMenu.ForeColor = Color.White;
-            
+
             ClearContentPanel();
             lblOrgUnitStatus.Text = "☰ เมนูหลัก";
             ApplyBreadcrumb("หน้าแรก", new List<int?>());
@@ -1788,7 +1846,7 @@ namespace CMS.Presentation
         private async void BuildConfidentialityTreeFromAllFoldersAsync()
         {
             // บันทึก expanded state และ selected folder ก่อน rebuild
-            var expandedTexts    = new HashSet<string>();
+            var expandedTexts = new HashSet<string>();
             var selectedFolderId = -1;
             CollectConfExpandedTexts(_treeConfidentiality.Nodes, expandedTexts);
             var selNode = _treeConfidentiality.SelectedNode;
@@ -1952,17 +2010,17 @@ namespace CMS.Presentation
                     if (!foldersInGroup.Any()) continue;
 
                     int totalFiles = foldersInGroup.Sum(f => f.FileCount);
-                    string header  = totalFiles > 0
+                    string header = totalFiles > 0
                         ? string.Format("{0}   {1} ไฟล์", group.Label, totalFiles)
                         : group.Label;
 
                     var groupNode = new TreeNode(header)
                     {
-                        ForeColor        = group.Color,
-                        NodeFont         = new Font(_treeConfidentiality.Font, FontStyle.Bold),
-                        ImageKey         = group.BookKey,
+                        ForeColor = group.Color,
+                        NodeFont = new Font(_treeConfidentiality.Font, FontStyle.Bold),
+                        ImageKey = group.BookKey,
                         SelectedImageKey = group.BookKey,
-                        Tag              = null // group header — no Tag
+                        Tag = null // group header — no Tag
                     };
 
                     // ── SubCommittee nodes ────────────────────────────────────────
@@ -1976,14 +2034,14 @@ namespace CMS.Presentation
                     {
                         foreach (var sc in subCommittees)
                         {
-                            string scCode  = string.IsNullOrEmpty(sc.OrgUnitCode) ? string.Empty
+                            string scCode = string.IsNullOrEmpty(sc.OrgUnitCode) ? string.Empty
                                            : string.Format(" ({0})", sc.OrgUnitCode);
                             var scNode = new TreeNode(string.Format("♦ {0}{1}", sc.Name, scCode))
                             {
-                                Tag              = sc.OrgUnitID,
-                                ForeColor        = group.Color,
-                                NodeFont         = new Font(_treeConfidentiality.Font, FontStyle.Regular),
-                                ImageKey         = "folder",
+                                Tag = sc.OrgUnitID,
+                                ForeColor = group.Color,
+                                NodeFont = new Font(_treeConfidentiality.Font, FontStyle.Regular),
+                                ImageKey = "folder",
                                 SelectedImageKey = "open_folder"
                             };
 
@@ -2001,9 +2059,9 @@ namespace CMS.Presentation
                                                : string.Format(" ({0})", div.OrgUnitCode);
                                 var divNode = new TreeNode(string.Format("◇ {0}{1}", div.Name, divCode))
                                 {
-                                    Tag              = div.OrgUnitID,
-                                    ForeColor        = Color.FromArgb(0, 80, 160),
-                                    ImageKey         = "folder",
+                                    Tag = div.OrgUnitID,
+                                    ForeColor = Color.FromArgb(0, 80, 160),
+                                    ImageKey = "folder",
                                     SelectedImageKey = "open_folder"
                                 };
 
@@ -2021,9 +2079,9 @@ namespace CMS.Presentation
                                                     : string.Format(" ({0})", dept.OrgUnitCode);
                                     var deptNode = new TreeNode(dept.Name + deptCode)
                                     {
-                                        Tag              = dept.OrgUnitID,
-                                        ForeColor        = Color.FromArgb(60, 60, 60),
-                                        ImageKey         = "folder",
+                                        Tag = dept.OrgUnitID,
+                                        ForeColor = Color.FromArgb(60, 60, 60),
+                                        ImageKey = "folder",
                                         SelectedImageKey = "open_folder"
                                     };
                                     BuildConfFolderNodes(deptNode, dept.OrgUnitID, group.Level, group.Color, foldersByOrgUnit, childrenByParent);
@@ -2062,10 +2120,10 @@ namespace CMS.Presentation
 
                             var ouNode = new TreeNode(ouLabel)
                             {
-                                Tag              = orgGroup.Key,
-                                ForeColor        = group.Color,
-                                NodeFont         = new Font(_treeConfidentiality.Font, FontStyle.Regular),
-                                ImageKey         = "folder",
+                                Tag = orgGroup.Key,
+                                ForeColor = group.Color,
+                                NodeFont = new Font(_treeConfidentiality.Font, FontStyle.Regular),
+                                ImageKey = "folder",
                                 SelectedImageKey = "open_folder"
                             };
                             foreach (var rootFolder in orgGroup)
@@ -2076,9 +2134,9 @@ namespace CMS.Presentation
                                     : rootFolder.FolderName;
                                 var rootNode = new TreeNode(rlabel)
                                 {
-                                    Tag              = rootFolder,
-                                    ForeColor        = group.Color,
-                                    ImageKey         = "folder",
+                                    Tag = rootFolder,
+                                    ForeColor = group.Color,
+                                    ImageKey = "folder",
                                     SelectedImageKey = "open_folder"
                                 };
                                 AddConfChildNodes(rootNode, rootFolder.FolderId, group.Color, childrenByParent);
@@ -2113,9 +2171,9 @@ namespace CMS.Presentation
                 string lbl = f.FolderName;
                 var fNode = new TreeNode(lbl)
                 {
-                    Tag              = f,
-                    ForeColor        = color,
-                    ImageKey         = "folder",
+                    Tag = f,
+                    ForeColor = color,
+                    ImageKey = "folder",
                     SelectedImageKey = "open_folder"
                 };
                 AddConfChildNodes(fNode, f.FolderId, color, childrenByParent);
@@ -2149,7 +2207,7 @@ namespace CMS.Presentation
                     string label = child.FolderName;
                     var childNode = new TreeNode(label)
                     {
-                        Tag       = child,
+                        Tag = child,
                         ForeColor = color
                     };
 
@@ -2199,7 +2257,7 @@ namespace CMS.Presentation
 
                 var dn = new TreeNode(text)
                 {
-                    Tag       = sn.Tag,
+                    Tag = sn.Tag,
                     ForeColor = sn.ForeColor
                 };
                 CloneTreeNodesForConf(sn.Nodes, dn.Nodes);
@@ -2225,10 +2283,13 @@ namespace CMS.Presentation
 
                 _presenter.GetFolderContents(folder.FolderId);
 
-                ApplyBreadcrumb("🏠 PC  ›  " + folder.Name, new List<int?> { folder.FolderId });
-                lblConfidentialityBadge.Text      = ConfidentialityLabel(folder.ConfidentialityLevel);
+                string confBreadcrumb = BuildBreadcrumbFromConfNode(e.Node);
+                var confBreadcrumbIds = BuildFolderIdPathFromConfNode(e.Node);
+                _breadcrumbFolderIds.Clear();
+                _breadcrumbFolderIds.AddRange(confBreadcrumbIds);
+                ApplyBreadcrumb(confBreadcrumb, confBreadcrumbIds);
+                lblConfidentialityBadge.Text = ConfidentialityLabel(folder.ConfidentialityLevel);
                 lblConfidentialityBadge.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
-                lblContentInfo.Text   = string.Format("กำลังดู: {0}", folder.Name);
                 lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", folder.Name);
             }
             else if (e.Node.Tag is int)
@@ -2247,21 +2308,21 @@ namespace CMS.Presentation
                 if (spaceIdx > 0) nodeName = nodeName.Substring(0, spaceIdx).Trim();
 
                 // โหลด Folder จาก DB → ซ้ายขวา sync กัน (เหมือนคลิก OrgUnit ใน org view)
-                _selectedOrgUnitId   = orgUnitId;
+                _selectedOrgUnitId = orgUnitId;
                 _selectedOrgUnitName = nodeName;
-                _selectedOrgUnit     = null;
+                _selectedOrgUnit = null;
                 contentsListView.ShowGroups = false;
 
                 ApplyBreadcrumb("🏠 PC  ›  " + nodeName, new List<int?>());
                 lblOrgUnitStatus.Text = string.Format("⏳ กำลังโหลด: {0}...", nodeName);
-                
+
                 // แจ้งว่ากำลังนำทาง เพื่อไม่ให้ ShowFolderTree ไป Rebuild Conf Tree อีกรอบ (ล้าง focus/selection)
                 _isNavigating = true;
                 try { _presenter.LoadFolderTree(orgUnitId); }
                 finally { _isNavigating = false; }
 
                 lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", nodeName);
-                lblContentInfo.Text   = "";
+                lblContentInfo.Text = "";
             }
             else
             {
@@ -2312,10 +2373,10 @@ namespace CMS.Presentation
                         item.SubItems.Add("—");
                         item.SubItems.Add("—");
                         item.SubItems.Add(ouName);
-                        item.Tag       = f;
+                        item.Tag = f;
                         item.ForeColor = ConfidentialityColor(f.ConfidentialityLevel);
                         item.UseItemStyleForSubItems = false;
-                        item.SubItems[2].ForeColor   = ConfidentialityColor(f.ConfidentialityLevel);
+                        item.SubItems[2].ForeColor = ConfidentialityColor(f.ConfidentialityLevel);
                         contentsListView.Items.Add(item);
                         totalFolders++;
                     }
@@ -2325,8 +2386,8 @@ namespace CMS.Presentation
 
                 ApplyBreadcrumb("🏠 PC  ›  " + nodeName, new List<int?>());
                 lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", nodeName);
-                lblContentInfo.Text   = string.Format("{0} Folder", totalFolders);
-                
+                lblContentInfo.Text = string.Format("{0} Folder", totalFolders);
+
                 // Adjust column widths to fit content
                 AdjustNameColumnWidth();
             }
@@ -2376,10 +2437,10 @@ namespace CMS.Presentation
                 // "ทั้งหมด" root node — Admin เห็นทั้งหมด, role อื่นเห็นเฉพาะของตัวเอง
                 var allNode = new System.Windows.Forms.TreeNode("— ทั้งหมด —")
                 {
-                    Tag              = null,
-                    NodeFont         = new System.Drawing.Font(treeOrgUnit.Font, System.Drawing.FontStyle.Bold),
-                    ForeColor        = System.Drawing.Color.FromArgb(31, 56, 100),
-                    ImageKey         = "folder",
+                    Tag = null,
+                    NodeFont = new System.Drawing.Font(treeOrgUnit.Font, System.Drawing.FontStyle.Bold),
+                    ForeColor = System.Drawing.Color.FromArgb(31, 56, 100),
+                    ImageKey = "folder",
                     SelectedImageKey = "open_folder"
                 };
                 treeOrgUnit.Nodes.Add(allNode);
@@ -2388,9 +2449,9 @@ namespace CMS.Presentation
                 {
                     var scNode = new System.Windows.Forms.TreeNode(sc.Name)
                     {
-                        Tag              = sc,
-                        ForeColor        = System.Drawing.Color.FromArgb(31, 56, 100),
-                        ImageKey         = "organization",
+                        Tag = sc,
+                        ForeColor = System.Drawing.Color.FromArgb(31, 56, 100),
+                        ImageKey = "organization",
                         SelectedImageKey = "organization"
                     };
 
@@ -2398,9 +2459,9 @@ namespace CMS.Presentation
                     {
                         var divNode = new System.Windows.Forms.TreeNode(div.Name)
                         {
-                            Tag              = div,
-                            ForeColor        = System.Drawing.Color.FromArgb(0, 80, 160),
-                            ImageKey         = "folder",
+                            Tag = div,
+                            ForeColor = System.Drawing.Color.FromArgb(0, 80, 160),
+                            ImageKey = "folder",
                             SelectedImageKey = "open_folder"
                         };
 
@@ -2408,9 +2469,9 @@ namespace CMS.Presentation
                         {
                             var deptNode = new System.Windows.Forms.TreeNode(dept.Name)
                             {
-                                Tag              = dept,
-                                ForeColor        = System.Drawing.Color.FromArgb(60, 60, 60),
-                                ImageKey         = "folder",
+                                Tag = dept,
+                                ForeColor = System.Drawing.Color.FromArgb(60, 60, 60),
+                                ImageKey = "folder",
                                 SelectedImageKey = "open_folder"
                             };
                             divNode.Nodes.Add(deptNode);
@@ -2495,10 +2556,10 @@ namespace CMS.Presentation
             // "— ทั้งหมด —" node (tag=null) — ไม่ load รายการ ให้ user เลือก OrgUnit ก่อน
             if (unit == null) return;
 
-            _selectedOrgUnitId   = (int?)unit.OrgUnitId;
+            _selectedOrgUnitId = (int?)unit.OrgUnitId;
             _selectedOrgUnitName = unit.Name;
-            _selectedOrgUnit     = unit;
-            _pendingHCApproval   = false; // reset ทุกครั้งที่เลือก OrgUnit ใหม่
+            _selectedOrgUnit = unit;
+            _pendingHCApproval = false; // reset ทุกครั้งที่เลือก OrgUnit ใหม่
 
             // Show loading feedback immediately (visible because we yield to UI via await)
             lblOrgUnitStatus.Text = string.Format("⏳ กำลังโหลด: {0}...", _selectedOrgUnitName);
@@ -2594,10 +2655,10 @@ namespace CMS.Presentation
 
             // Set up folder open/closed icons from Resources (shared ImageList)
             var folderImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
-            folderImageList.Images.Add("folder",         Properties.Resources.folder);
-            folderImageList.Images.Add("open_folder",    Properties.Resources.open_folder);
-            folderImageList.Images.Add("organization",   Properties.Resources.organization);
-            
+            folderImageList.Images.Add("folder", Properties.Resources.folder);
+            folderImageList.Images.Add("open_folder", Properties.Resources.open_folder);
+            folderImageList.Images.Add("organization", Properties.Resources.organization);
+
             // Try to load lightning_bolt1, fallback to book_red if not available
             try
             {
@@ -2614,17 +2675,17 @@ namespace CMS.Presentation
             {
                 folderImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
             }
-            
-            folderImageList.Images.Add("book_red",       Properties.Resources.lightning_bolt1);
-            folderImageList.Images.Add("book_orange",    Properties.Resources.book_orange);
-            folderImageList.Images.Add("book_bule",      Properties.Resources.book_bule);
-            folderImageList.Images.Add("book_green",     Properties.Resources.book_green);
+
+            folderImageList.Images.Add("book_red", Properties.Resources.lightning_bolt1);
+            folderImageList.Images.Add("book_orange", Properties.Resources.book_orange);
+            folderImageList.Images.Add("book_bule", Properties.Resources.book_bule);
+            folderImageList.Images.Add("book_green", Properties.Resources.book_green);
 
             // TreeView — closed/open on expand/collapse
-            folderTreeView.ImageList        = folderImageList;
-            folderTreeView.ImageKey         = "folder";
+            folderTreeView.ImageList = folderImageList;
+            folderTreeView.ImageKey = "folder";
             folderTreeView.SelectedImageKey = "open_folder";
-            folderTreeView.BeforeExpand  += (s, ev) =>
+            folderTreeView.BeforeExpand += (s, ev) =>
             {
                 // Root folder ใช้ book icon คงที่ ไม่เปลี่ยนตาม expand/collapse
                 var f = ev.Node.Tag as Folder;
@@ -2639,18 +2700,18 @@ namespace CMS.Presentation
             };
 
             // OrgUnit TreeView — same icons
-            treeOrgUnit.ImageList        = folderImageList;
-            treeOrgUnit.ImageKey         = "folder";
+            treeOrgUnit.ImageList = folderImageList;
+            treeOrgUnit.ImageKey = "folder";
             treeOrgUnit.SelectedImageKey = "open_folder";
-            treeOrgUnit.BeforeExpand  += (s, ev) => { if (ev.Node.ImageKey != "organization") ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder"; };
+            treeOrgUnit.BeforeExpand += (s, ev) => { if (ev.Node.ImageKey != "organization") ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder"; };
             treeOrgUnit.BeforeCollapse += (s, ev) => { if (ev.Node.ImageKey != "organization") ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder"; };
 
             // Confidentiality TreeView — same image list (WinForms requires a SEPARATE ImageList instance per TreeView)
             var confImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
-            confImageList.Images.Add("folder",         Properties.Resources.folder);
-            confImageList.Images.Add("open_folder",    Properties.Resources.open_folder);
-            confImageList.Images.Add("organization",   Properties.Resources.organization);
-            
+            confImageList.Images.Add("folder", Properties.Resources.folder);
+            confImageList.Images.Add("open_folder", Properties.Resources.open_folder);
+            confImageList.Images.Add("organization", Properties.Resources.organization);
+
             // Try to load lightning_bolt1, fallback to book_red if not available
             try
             {
@@ -2667,15 +2728,15 @@ namespace CMS.Presentation
             {
                 confImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
             }
-            
-            confImageList.Images.Add("book_red",       Properties.Resources.lightning_bolt);
-            confImageList.Images.Add("book_orange",    Properties.Resources.book_orange);
-            confImageList.Images.Add("book_bule",      Properties.Resources.book_bule);
-            confImageList.Images.Add("book_green",     Properties.Resources.book_green1);
-            _treeConfidentiality.ImageList        = confImageList;
-            _treeConfidentiality.ImageKey         = "folder";
+
+            confImageList.Images.Add("book_red", Properties.Resources.lightning_bolt);
+            confImageList.Images.Add("book_orange", Properties.Resources.book_orange);
+            confImageList.Images.Add("book_bule", Properties.Resources.book_bule);
+            confImageList.Images.Add("book_green", Properties.Resources.book_green1);
+            _treeConfidentiality.ImageList = confImageList;
+            _treeConfidentiality.ImageKey = "folder";
             _treeConfidentiality.SelectedImageKey = "open_folder";
-            _treeConfidentiality.BeforeExpand  += (s, ev) =>
+            _treeConfidentiality.BeforeExpand += (s, ev) =>
             {
                 // Level-header nodes (group) and OrgUnit nodes keep their icon; only folder nodes change
                 if (ev.Node.Tag is Folder)
@@ -2693,6 +2754,10 @@ namespace CMS.Presentation
             mainMenuImageList.Images.Add("open_folder", Properties.Resources.open_folder);
             mainMenuImageList.Images.Add("organization", Properties.Resources.organization);
             mainMenuImageList.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
+            mainMenuImageList.Images.Add("book_red", Properties.Resources.book_red);
+            mainMenuImageList.Images.Add("book_orange", Properties.Resources.book_orange);
+            mainMenuImageList.Images.Add("book_blue", Properties.Resources.book_bule);
+            mainMenuImageList.Images.Add("book_green", Properties.Resources.book_green);
             try
             {
                 mainMenuImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1);
@@ -2707,95 +2772,95 @@ namespace CMS.Presentation
 
             // ListView needs its own separate ImageList (WinForms does not allow sharing with TreeView)
             var listImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
-            listImageList.Images.Add("folder",      Properties.Resources.folder);
+            listImageList.Images.Add("folder", Properties.Resources.folder);
             try { listImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1); }
             catch { listImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap()); }
-            listImageList.Images.Add("book_red",    Properties.Resources.book_red1.ToBitmap());
+            listImageList.Images.Add("book_red", Properties.Resources.book_red1.ToBitmap());
             listImageList.Images.Add("book_orange", Properties.Resources.book_orange);
-            listImageList.Images.Add("book_bule",   Properties.Resources.book_bule);
-            listImageList.Images.Add("book_green",  Properties.Resources.book_green);
-            listImageList.Images.Add("file_docs",   Properties.Resources.File_docs.ToBitmap());
+            listImageList.Images.Add("book_bule", Properties.Resources.book_bule);
+            listImageList.Images.Add("book_green", Properties.Resources.book_green);
+            listImageList.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
             contentsListView.SmallImageList = listImageList;
 
             // ── LargeImageList (32×32) for Large Icon view ────────────────────
             var largeImageList = new ImageList { ImageSize = new Size(32, 32), ColorDepth = ColorDepth.Depth32Bit };
-            largeImageList.Images.Add("folder",      new Bitmap(Properties.Resources.folder,      32, 32));
+            largeImageList.Images.Add("folder", new Bitmap(Properties.Resources.folder, 32, 32));
             try { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.lightning_bolt1, 32, 32)); }
             catch { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.book_red1.ToBitmap(), 32, 32)); }
-            largeImageList.Images.Add("book_red",    new Bitmap(Properties.Resources.lightning_bolt1,    32, 32));
+            largeImageList.Images.Add("book_red", new Bitmap(Properties.Resources.lightning_bolt1, 32, 32));
             largeImageList.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange, 32, 32));
-            largeImageList.Images.Add("book_bule",   new Bitmap(Properties.Resources.book_bule,   32, 32));
-            largeImageList.Images.Add("book_green",  new Bitmap(Properties.Resources.book_green,  32, 32));
-            largeImageList.Images.Add("file_docs",   new Bitmap(Properties.Resources.File_docs.ToBitmap(),    32, 32));
+            largeImageList.Images.Add("book_bule", new Bitmap(Properties.Resources.book_bule, 32, 32));
+            largeImageList.Images.Add("book_green", new Bitmap(Properties.Resources.book_green, 32, 32));
+            largeImageList.Images.Add("file_docs", new Bitmap(Properties.Resources.File_docs.ToBitmap(), 32, 32));
             contentsListView.LargeImageList = largeImageList;
 
             // ── View toggle buttons (Details / Tile / Large Icons) ───────────
-            Color activeColor   = Color.FromArgb(31, 56, 100);
+            Color activeColor = Color.FromArgb(31, 56, 100);
             Color inactiveColor = Color.FromArgb(220, 220, 220);
-            Color activeFg      = Color.White;
-            Color inactiveFg    = Color.FromArgb(60, 60, 60);
+            Color activeFg = Color.White;
+            Color inactiveFg = Color.FromArgb(60, 60, 60);
 
             var btnViewDetails = new Button
             {
-                Text      = "☰",
-                Size      = new Size(28, 22),
+                Text = "☰",
+                Size = new Size(28, 22),
                 FlatStyle = FlatStyle.Flat,
-                Font      = new Font("Segoe UI", 10f),
-                Cursor    = Cursors.Hand,
-                Dock      = DockStyle.Right,
+                Font = new Font("Segoe UI", 10f),
+                Cursor = Cursors.Hand,
+                Dock = DockStyle.Right,
                 BackColor = activeColor,
                 ForeColor = activeFg,
-                TabStop   = false
+                TabStop = false
             };
             btnViewDetails.FlatAppearance.BorderSize = 0;
 
             var btnViewTile = new Button
             {
-                Text      = "▤",
-                Size      = new Size(28, 22),
+                Text = "▤",
+                Size = new Size(28, 22),
                 FlatStyle = FlatStyle.Flat,
-                Font      = new Font("Segoe UI", 10f),
-                Cursor    = Cursors.Hand,
-                Dock      = DockStyle.Right,
+                Font = new Font("Segoe UI", 10f),
+                Cursor = Cursors.Hand,
+                Dock = DockStyle.Right,
                 BackColor = inactiveColor,
                 ForeColor = inactiveFg,
-                TabStop   = false
+                TabStop = false
             };
             btnViewTile.FlatAppearance.BorderSize = 0;
 
             var btnViewLarge = new Button
             {
-                Text      = "⊞",
-                Size      = new Size(28, 22),
+                Text = "⊞",
+                Size = new Size(28, 22),
                 FlatStyle = FlatStyle.Flat,
-                Font      = new Font("Segoe UI", 10f),
-                Cursor    = Cursors.Hand,
-                Dock      = DockStyle.Right,
+                Font = new Font("Segoe UI", 10f),
+                Cursor = Cursors.Hand,
+                Dock = DockStyle.Right,
                 BackColor = inactiveColor,
                 ForeColor = inactiveFg,
-                TabStop   = false
+                TabStop = false
             };
             btnViewLarge.FlatAppearance.BorderSize = 0;
 
             var viewTip = new ToolTip();
             viewTip.SetToolTip(btnViewDetails, "รายการ (Details)");
-            viewTip.SetToolTip(btnViewTile,    "Tile");
-            viewTip.SetToolTip(btnViewLarge,   "ไอคอนใหญ่");
+            viewTip.SetToolTip(btnViewTile, "Tile");
+            viewTip.SetToolTip(btnViewLarge, "ไอคอนใหญ่");
 
             // helper: reset all buttons then highlight active one
             Action<Button> setActive = (active) =>
             {
                 foreach (var b in new[] { btnViewDetails, btnViewTile, btnViewLarge })
                 {
-                    b.BackColor = (b == active) ? activeColor   : inactiveColor;
-                    b.ForeColor = (b == active) ? activeFg      : inactiveFg;
+                    b.BackColor = (b == active) ? activeColor : inactiveColor;
+                    b.ForeColor = (b == active) ? activeFg : inactiveFg;
                 }
             };
 
             btnViewDetails.Click += (s, ev) =>
             {
                 _currentView = View.Details;
-                contentsListView.View      = View.Details;
+                contentsListView.View = View.Details;
                 contentsListView.OwnerDraw = true;
                 setActive(btnViewDetails);
             };
@@ -2804,9 +2869,9 @@ namespace CMS.Presentation
             {
                 _currentView = View.Tile;
                 contentsListView.OwnerDraw = false;
-                contentsListView.View      = View.Tile;
+                contentsListView.View = View.Tile;
                 // Tile size: icon(32) + padding + text area
-                contentsListView.TileSize  = new Size(260, 42);
+                contentsListView.TileSize = new Size(260, 42);
                 setActive(btnViewTile);
             };
 
@@ -2814,7 +2879,7 @@ namespace CMS.Presentation
             {
                 _currentView = View.LargeIcon;
                 contentsListView.OwnerDraw = false;
-                contentsListView.View      = View.LargeIcon;
+                contentsListView.View = View.LargeIcon;
                 setActive(btnViewLarge);
             };
 
@@ -2828,28 +2893,28 @@ namespace CMS.Presentation
             chk2SC.CheckedChanged += new EventHandler(this.OnConfidentialityLevelChanged);
             chk3NC.CheckedChanged += new EventHandler(this.OnConfidentialityLevelChanged);
             chk4PC.CheckedChanged += new EventHandler(this.OnConfidentialityLevelChanged);
-            
+
             // Force detail panel to be very narrow - prioritize list view
             splitContent.Panel2MinSize = 100;
             splitContent.SplitterDistance = this.Width - 110;
-            
+
             // ไม่ load folder tree ทันที ให้รอ user เลือก OrgUnit ก่อน
             // _presenter.LoadFolderTree(_selectedOrgUnitId);
-            
+
             // แสดงข้อความให้ user เลือก OrgUnit และ clear ทุกอย่าง
             folderTreeView.Nodes.Clear();
             ClearContentPanel();
-            
+
             // เพิ่มข้อความแนะนำ
             var instructionNode = new TreeNode("กรุณาเลือกหน่วยงานจากด้านซ้าย")
             {
                 ForeColor = Color.Gray
             };
             folderTreeView.Nodes.Add(instructionNode);
-            
+
             // แสดงสถานะว่ายังไม่ได้เลือกหน่วยงาน
             lblOrgUnitStatus.Text = "📂 กรุณาเลือกหน่วยงาน";
-            
+
             // _presenter.LoadRecycleBin(_selectedOrgUnitId); // Hidden - recycle bin disabled
         }
 
@@ -2987,13 +3052,13 @@ namespace CMS.Presentation
         {
             // clear เฉพาะเมื่อไม่มี folder tree เลือก และไม่มีอะไรส่งมาแสดง
             bool hasContent = (subFolders != null && subFolders.Any())
-                           || (files      != null && files.Any());
+                           || (files != null && files.Any());
             if (folderTreeView.SelectedNode == null && !hasContent)
             {
                 ClearContentPanel();
                 return;
             }
-            
+
             contentsListView.SuspendLayout();
             contentsListView.BeginUpdate();
             contentsListView.Items.Clear();
@@ -3001,7 +3066,7 @@ namespace CMS.Presentation
 
             // Filter out deleted items
             var folderList = subFolders == null ? new List<Folder>() : subFolders.Where(f => !f.IsDeleted).ToList();
-            var fileList   = files      == null ? new List<FileDocument>() : files.Where(f => !f.IsDeleted).ToList();
+            var fileList = files == null ? new List<FileDocument>() : files.Where(f => !f.IsDeleted).ToList();
 
             // Use cached OrgUnit lookup (populated by LoadOrgUnitTree) — no DB call here
             Dictionary<int, string> orgUnitNames = _orgUnitNameCache ?? new Dictionary<int, string>();
@@ -3017,7 +3082,7 @@ namespace CMS.Presentation
                 string nameText = folder.Name;
                 // 4 Folder หลัก (root) ใช้ book icon ตามระดับความลับ; folder ลูกใช้ folder icon ทั่วไป
                 bool isFolderRoot = !folder.ParentFolderID.HasValue || folder.ParentFolderID == 0;
-                string iconKey  = isFolderRoot
+                string iconKey = isFolderRoot
                     ? ConfidentialityBookIcon(folder.ConfidentialityLevel)
                     : "folder";
                 var item = new ListViewItem(nameText) { ImageKey = iconKey };
@@ -3030,13 +3095,13 @@ namespace CMS.Presentation
                 item.SubItems.Add(folder.CreatedByName ?? "—");                      // โดย
                 item.SubItems.Add("—");                                              // Ver
                 item.SubItems.Add(folder.OrgUnitName ?? "—");                        // หน่วยงาน
-                
+
                 // Check permissions for this folder
                 string permissionText = GetFolderPermissionText(folder);
                 var permSubItem = item.SubItems.Add(permissionText);                 // สิทธิ์
                 permSubItem.ForeColor = GetPermissionColor(permissionText);
-                
-                item.Tag       = folder;
+
+                item.Tag = folder;
                 item.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
                 item.UseItemStyleForSubItems = false;
                 // Confidentiality badge sub-item colored
@@ -3113,15 +3178,24 @@ namespace CMS.Presentation
             cmbExtension.Text = string.Empty;
 
             // Clear filter status when folder changes (Req 6.3)
-            lblFilterStatus.Text    = string.Empty;
+            lblFilterStatus.Text = string.Empty;
             lblFilterStatus.Visible = false;
 
             // Update content header info
             lblContentInfo.ForeColor = SystemColors.ControlText;
-            lblContentInfo.Text = string.Format(
-                "{0} Folder, {1} ไฟล์  |  ขนาดรวม {2}  |  ไม่มีรายการที่เลือก",
-                folderList.Count, fileList.Count,
-                FormatBytes(fileList.Sum(f => f.FileSizeBytes)));
+            int total = folderList.Count + fileList.Count;
+            long totalBytes = fileList.Sum(f => f.FileSizeBytes);
+            string sizeStr = totalBytes == 0 ? "–" : FormatBytes(totalBytes);
+            int confLevel = _lastSelectedFolder != null ? _lastSelectedFolder.ConfidentialityLevel : 0;
+            lblContentInfo.Text = confLevel > 0
+                ? string.Format(
+                    "{0} รายการ ({1} Folder, {2} ไฟล์ ขนาด {3}) | {4} | {5}",
+                    total, folderList.Count, fileList.Count, sizeStr,
+                    ConfidentialityLabel(confLevel),
+                    ConfidentialityParenLabel(confLevel))
+                : string.Format(
+                    "{0} รายการ ({1} Folder, {2} ไฟล์ ขนาด {3})",
+                    total, folderList.Count, fileList.Count, sizeStr);
 
             // Adjust column widths to fit content
             AdjustNameColumnWidth();
@@ -3139,7 +3213,7 @@ namespace CMS.Presentation
             _lstQuickAccess.Items.Clear();
 
             bool hasFolders = folders != null && folders.Count > 0;
-            bool hasFiles   = files   != null && files.Count   > 0;
+            bool hasFiles = files != null && files.Count > 0;
 
             if (!hasFolders && !hasFiles)
             {
@@ -3192,7 +3266,7 @@ namespace CMS.Presentation
             // Access denied messages go to the content header label — no popup
             if (message != null && message.StartsWith("🔒"))
             {
-                lblContentInfo.Text      = message;
+                lblContentInfo.Text = message;
                 lblContentInfo.ForeColor = Color.DarkRed;
                 return;
             }
@@ -3204,7 +3278,7 @@ namespace CMS.Presentation
 
         public void ShowAccessDenied()
         {
-            lblContentInfo.Text      = "🔒 ไม่มีสิทธิ์เข้าถึง Folder นี้";
+            lblContentInfo.Text = "🔒 ไม่มีสิทธิ์เข้าถึง Folder นี้";
             lblContentInfo.ForeColor = Color.DarkRed;
         }
 
@@ -3391,9 +3465,7 @@ namespace CMS.Presentation
                 ApplyBreadcrumb(newBreadcrumb, newIds);
                 UpdateNavButtons();
 
-                lblContentInfo.Text = string.Format("{0} รายการ | {1} | {2}",
-                    folder.FileCount, ConfidentialityLabel(folder.ConfidentialityLevel), folder.FolderName);
-                lblConfidentialityBadge.Text      = ConfidentialityLabel(folder.ConfidentialityLevel);
+                lblConfidentialityBadge.Text = ConfidentialityLabel(folder.ConfidentialityLevel);
                 lblConfidentialityBadge.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
                 lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", folder.FolderName);
             }
@@ -3423,9 +3495,9 @@ namespace CMS.Presentation
             {
                 splitContent.Panel2Collapsed = true;
 
-                lblDetailHeader.Text  = "📋 ตัวอย่าง";
+                lblDetailHeader.Text = "📋 ตัวอย่าง";
                 lblDetailContent.Text = "เลือกรายการเพื่อดูรายละเอียด";
-                lblContentInfo.Text   = lblContentInfo.Text.Contains("|")
+                lblContentInfo.Text = lblContentInfo.Text.Contains("|")
                     ? lblContentInfo.Text.Substring(0, lblContentInfo.Text.LastIndexOf('|') + 1)
                       + " ไม่มีรายการที่เลือก"
                     : lblContentInfo.Text;
@@ -3434,8 +3506,8 @@ namespace CMS.Presentation
 
             splitContent.Panel2Collapsed = false;
 
-            var tag    = contentsListView.SelectedItems[0].Tag;
-            var file   = tag as FileDocument;
+            var tag = contentsListView.SelectedItems[0].Tag;
+            var file = tag as FileDocument;
             var folder = tag as Folder;
 
             if (file != null)
@@ -3454,19 +3526,28 @@ namespace CMS.Presentation
             // ── Header (Top) ─────────────────────────────────────────
             var headerPanel = new Panel
             {
-                Location = new Point(0, 0), Size = new Size(pw, 42),
-                BackColor = Color.FromArgb(31, 56, 100), Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                Location = new Point(0, 0),
+                Size = new Size(pw, 42),
+                BackColor = Color.FromArgb(31, 56, 100),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             headerPanel.Controls.Add(new Label
             {
-                Text = "📄", Font = new Font("Segoe UI", 13f),
-                ForeColor = Color.White, Location = new Point(4, 6), Size = new Size(26, 30)
+                Text = "📄",
+                Font = new Font("Segoe UI", 13f),
+                ForeColor = Color.White,
+                Location = new Point(4, 6),
+                Size = new Size(26, 30)
             });
             headerPanel.Controls.Add(new Label
             {
-                Text = file.OriginalFileName, Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                ForeColor = Color.White, Location = new Point(32, 4), Size = new Size(pw - 36, 34),
-                TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true
+                Text = file.OriginalFileName,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(32, 4),
+                Size = new Size(pw - 36, 34),
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true
             });
 
             // ── Details rows ─────────────────────────────────────────
@@ -3478,21 +3559,27 @@ namespace CMS.Presentation
                 new { Label = "วันที่", Value = file.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy") }
             };
 
-            int rowH  = 22;
+            int rowH = 22;
             int startY = 48;
             foreach (var d in details)
             {
                 pnlDetail.Controls.Add(new Label
                 {
-                    Text = d.Label + ":", Font = new Font("Segoe UI", 8f),
-                    Location = new Point(6, startY), Size = new Size(38, rowH),
-                    TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.Gray
+                    Text = d.Label + ":",
+                    Font = new Font("Segoe UI", 8f),
+                    Location = new Point(6, startY),
+                    Size = new Size(38, rowH),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    ForeColor = Color.Gray
                 });
                 pnlDetail.Controls.Add(new Label
                 {
-                    Text = d.Value, Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                    Location = new Point(46, startY), Size = new Size(pw - 50, rowH),
-                    TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true
+                    Text = d.Value,
+                    Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                    Location = new Point(46, startY),
+                    Size = new Size(pw - 50, rowH),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    AutoEllipsis = true
                 });
                 startY += rowH;
             }
@@ -3501,9 +3588,13 @@ namespace CMS.Presentation
             var btnOpen = new Button
             {
                 Text = "🔍  เปิดดู",
-                Location = new Point(6, startY + 8), Size = new Size(pw - 12, 30),
-                BackColor = Color.FromArgb(43, 87, 154), ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f), Cursor = Cursors.Hand,
+                Location = new Point(6, startY + 8),
+                Size = new Size(pw - 12, 30),
+                BackColor = Color.FromArgb(43, 87, 154),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f),
+                Cursor = Cursors.Hand,
                 Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
             };
             btnOpen.FlatAppearance.BorderSize = 0;
@@ -3512,9 +3603,13 @@ namespace CMS.Presentation
             var btnDownload = new Button
             {
                 Text = "⬇  ดาวน์โหลด",
-                Location = new Point(6, startY + 46), Size = new Size(pw - 12, 30),
-                BackColor = Color.FromArgb(56, 142, 60), ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f), Cursor = Cursors.Hand,
+                Location = new Point(6, startY + 46),
+                Size = new Size(pw - 12, 30),
+                BackColor = Color.FromArgb(56, 142, 60),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9f),
+                Cursor = Cursors.Hand,
                 Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top
             };
             btnDownload.FlatAppearance.BorderSize = 0;
@@ -3535,19 +3630,28 @@ namespace CMS.Presentation
             // ── Header ───────────────────────────────────────────────
             var headerPanel = new Panel
             {
-                Location = new Point(0, 0), Size = new Size(pw, 42),
-                BackColor = Color.FromArgb(31, 56, 100), Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                Location = new Point(0, 0),
+                Size = new Size(pw, 42),
+                BackColor = Color.FromArgb(31, 56, 100),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             headerPanel.Controls.Add(new Label
             {
-                Text = "📁", Font = new Font("Segoe UI", 13f),
-                ForeColor = Color.White, Location = new Point(4, 6), Size = new Size(26, 30)
+                Text = "📁",
+                Font = new Font("Segoe UI", 13f),
+                ForeColor = Color.White,
+                Location = new Point(4, 6),
+                Size = new Size(26, 30)
             });
             var lblFolderName = new Label
             {
-                Text = folder.FolderName, Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                ForeColor = Color.White, Location = new Point(32, 4), Size = new Size(pw - 36, 34),
-                TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true,
+                Text = folder.FolderName,
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.White,
+                Location = new Point(32, 4),
+                Size = new Size(pw - 36, 34),
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true,
                 Cursor = Cursors.Hand
             };
             var _clickFolder = folder; // capture for closure
@@ -3570,9 +3674,12 @@ namespace CMS.Presentation
             lblFolderName.Click += folderClickHandler;
             var lblHint = new Label
             {
-                Text = "คลิกเพื่อเปิด", Font = new Font("Segoe UI", 6f, FontStyle.Italic),
-                ForeColor = Color.FromArgb(180, 220, 255), Location = new Point(32, 28),
-                Size = new Size(pw - 36, 12), TextAlign = ContentAlignment.MiddleLeft,
+                Text = "คลิกเพื่อเปิด",
+                Font = new Font("Segoe UI", 6f, FontStyle.Italic),
+                ForeColor = Color.FromArgb(180, 220, 255),
+                Location = new Point(32, 28),
+                Size = new Size(pw - 36, 12),
+                TextAlign = ContentAlignment.MiddleLeft,
                 Cursor = Cursors.Hand
             };
             lblHint.Click += folderClickHandler;
@@ -3588,21 +3695,27 @@ namespace CMS.Presentation
                 new { Label = "สร้าง",  Value = folder.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy") }
             };
 
-            int rowH  = 22;
+            int rowH = 22;
             int startY = 48;
             foreach (var d in details)
             {
                 pnlDetail.Controls.Add(new Label
                 {
-                    Text = d.Label + ":", Font = new Font("Segoe UI", 8f),
-                    Location = new Point(6, startY), Size = new Size(38, rowH),
-                    TextAlign = ContentAlignment.MiddleLeft, ForeColor = Color.Gray
+                    Text = d.Label + ":",
+                    Font = new Font("Segoe UI", 8f),
+                    Location = new Point(6, startY),
+                    Size = new Size(38, rowH),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    ForeColor = Color.Gray
                 });
                 pnlDetail.Controls.Add(new Label
                 {
-                    Text = d.Value, Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                    Location = new Point(46, startY), Size = new Size(pw - 50, rowH),
-                    TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true
+                    Text = d.Value,
+                    Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                    Location = new Point(46, startY),
+                    Size = new Size(pw - 50, rowH),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    AutoEllipsis = true
                 });
                 startY += rowH;
             }
@@ -3620,7 +3733,7 @@ namespace CMS.Presentation
             }
             // Alternating row background
             bool isSelected = e.Item.Selected;
-            bool isEven     = e.ItemIndex % 2 == 0;
+            bool isEven = e.ItemIndex % 2 == 0;
 
             Color backColor = isSelected
                 ? Color.FromArgb(204, 228, 247)
@@ -3691,7 +3804,7 @@ namespace CMS.Presentation
             else
             {
                 // New column — start ascending (Req 4.1)
-                _sortColumn    = e.Column;
+                _sortColumn = e.Column;
                 _sortAscending = true;
             }
 
@@ -3733,7 +3846,7 @@ namespace CMS.Presentation
         // -----------------------------------------------------------------------
 
         private bool _isAdjustingColumns = false;
-        
+
         private void AdjustNameColumnWidth()
         {
             if (contentsListView == null || contentsListView.Columns.Count == 0) return;
@@ -3778,11 +3891,11 @@ namespace CMS.Presentation
             contentsListView.Items.Clear();
             _currentFiles.Clear();
             _currentSubFolders.Clear();
-            txtBreadcrumb.Text            = "";
-            lblContentInfo.Text           = "";
-            lblConfidentialityBadge.Text  = "";
-            lblFilterStatus.Text          = string.Empty;
-            lblFilterStatus.Visible       = false;
+            txtBreadcrumb.Text = "";
+            lblContentInfo.Text = "";
+            lblConfidentialityBadge.Text = "";
+            lblFilterStatus.Text = string.Empty;
+            lblFilterStatus.Visible = false;
             cmbExtension.Items.Clear();
 
             // Hide detail panel when clearing content
@@ -3792,10 +3905,10 @@ namespace CMS.Presentation
         private void FolderTreeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
             if (e.Button != MouseButtons.Left) return;
-            
+
             var folder = e.Node?.Tag as Folder;
             if (folder == null) return;
-            
+
             // PushNavigation ก่อน — ต้อง push _currentNavFolderId เก่าเข้า stack ก่อนที่จะ update
             if (!_isNavigating)
                 PushNavigation(folder.FolderId);
@@ -3803,7 +3916,7 @@ namespace CMS.Presentation
             _lastSelectedFolder = folder;
             _currentNavFolderId = folder.FolderId;
             UpdateNavButtons();
-            
+
             _presenter.GetFolderContents(folder.FolderId);
 
             // Build breadcrumb จาก tree hierarchy พร้อม OrgUnit prefix (ไม่ใช้ string-append)
@@ -3816,9 +3929,8 @@ namespace CMS.Presentation
             _breadcrumbFolderIds.AddRange(folderIdPath);
             ApplyBreadcrumb(breadcrumbPath, folderIdPath);
 
-            lblConfidentialityBadge.Text      = ConfidentialityLabel(folder.ConfidentialityLevel);
+            lblConfidentialityBadge.Text = ConfidentialityLabel(folder.ConfidentialityLevel);
             lblConfidentialityBadge.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
-            lblContentInfo.Text   = string.Format("กำลังดู: {0}", folder.Name);
             lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", folder.Name);
 
             // Auto-expand node ที่เลือก เพื่อให้ tree แสดง subfolder ที่อยู่ด้านใน
@@ -3831,10 +3943,10 @@ namespace CMS.Presentation
             // NodeMouseClick จัดการ navigation แล้ว
             // AfterSelect ใช้สำหรับ sync state เท่านั้น
             if (e.Node == null) { ClearContentPanel(); return; }
-            
+
             var folder = e.Node.Tag as Folder;
             if (folder == null) { ClearContentPanel(); return; }
-            
+
             // อัพเดท state เท่านั้น ไม่ reload content (NodeMouseClick ทำแล้ว)
             _lastSelectedFolder = folder;
             _currentNavFolderId = folder.FolderId;
@@ -3847,14 +3959,14 @@ namespace CMS.Presentation
 
         private void btnNavRefresh_Click(object sender, EventArgs e)
         {
-            btnNavRefresh.Text    = "↻";
+            btnNavRefresh.Text = "↻";
             btnNavRefresh.Enabled = false;
 
             _presenter.LoadFolderTree(_selectedOrgUnitId);
             // _presenter.LoadRecycleBin(_selectedOrgUnitId); // Hidden - recycle bin disabled
 
             btnNavRefresh.Enabled = true;
-            btnNavRefresh.Text    = "↺";
+            btnNavRefresh.Text = "↺";
         }
 
         private void BtnNavBack_Click(object sender, EventArgs e)
@@ -3866,14 +3978,14 @@ namespace CMS.Presentation
             _forwardBreadcrumbs.Push(_currentBreadcrumb);
 
             // pop previous state
-            var prevFolderId   = _backStack.Pop();
+            var prevFolderId = _backStack.Pop();
             var prevBreadcrumb = _backBreadcrumbs.Count > 0 ? _backBreadcrumbs.Pop() : "";
 
             _isNavigating = true;
             try
             {
                 _currentNavFolderId = prevFolderId;
-                _currentBreadcrumb  = prevBreadcrumb;
+                _currentBreadcrumb = prevBreadcrumb;
                 ExecuteNavigation(_currentNavFolderId, _currentBreadcrumb);
             }
             finally { _isNavigating = false; UpdateNavButtons(); }
@@ -3888,14 +4000,14 @@ namespace CMS.Presentation
             _backBreadcrumbs.Push(_currentBreadcrumb);
 
             // pop next state
-            var nextFolderId   = _forwardStack.Pop();
+            var nextFolderId = _forwardStack.Pop();
             var nextBreadcrumb = _forwardBreadcrumbs.Count > 0 ? _forwardBreadcrumbs.Pop() : "";
 
             _isNavigating = true;
             try
             {
                 _currentNavFolderId = nextFolderId;
-                _currentBreadcrumb  = nextBreadcrumb;
+                _currentBreadcrumb = nextBreadcrumb;
                 ExecuteNavigation(_currentNavFolderId, _currentBreadcrumb);
             }
             finally { _isNavigating = false; UpdateNavButtons(); }
@@ -3923,9 +4035,9 @@ namespace CMS.Presentation
             _currentNavFolderId = parentFolderId;
             // Build parent breadcrumb by trimming last segment
             string parentBreadcrumb = TrimLastBreadcrumbSegment(_currentBreadcrumb);
-            _currentBreadcrumb  = parentBreadcrumb;
+            _currentBreadcrumb = parentBreadcrumb;
             _isNavigating = true;
-            try   { ExecuteNavigation(parentFolderId, parentBreadcrumb); }
+            try { ExecuteNavigation(parentFolderId, parentBreadcrumb); }
             finally { _isNavigating = false; UpdateNavButtons(); }
         }
 
@@ -3935,20 +4047,20 @@ namespace CMS.Presentation
             if (folderId.HasValue)
             {
                 _currentNavFolderId = folderId.Value;
-                
+
                 // Sync tree selection (ไม่ trigger content reload เพราะ AfterSelect แค่ sync state)
                 RestoreSelectedNode(folderTreeView.Nodes, folderId.Value);
-                
+
                 // โหลดทั้ง sub-folders และ files เหมือน Windows Explorer (Back/Forward ต้องแสดงไฟล์ด้วย)
                 _presenter.GetFolderContents(folderId.Value);
                 ApplyBreadcrumb(breadcrumbOverride ?? _currentBreadcrumb, null);
-                
+
                 // Update UI
                 var node = FindNodeByFolderId(folderTreeView.Nodes, folderId.Value);
                 var folder = node?.Tag as Folder;
                 if (folder != null)
                 {
-                    lblConfidentialityBadge.Text      = ConfidentialityLabel(folder.ConfidentialityLevel);
+                    lblConfidentialityBadge.Text = ConfidentialityLabel(folder.ConfidentialityLevel);
                     lblConfidentialityBadge.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
                     lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", folder.Name);
                 }
@@ -3978,24 +4090,24 @@ namespace CMS.Presentation
         private void ApplyBreadcrumb(string path, List<int?> folderIds = null)
         {
             _currentBreadcrumb = path ?? "";
-            
+
             // อัพเดท _breadcrumbFolderIds เฉพาะเมื่อมีการส่ง folderIds มา
             if (folderIds != null)
             {
                 _breadcrumbFolderIds.Clear();
                 _breadcrumbFolderIds.AddRange(folderIds);
             }
-            
+
             txtBreadcrumb.Visible = false;
-            
+
             if (pnlNavBar.Controls["pnlClickableBreadcrumb"] == null)
                 CreateClickableBreadcrumb();
-            
+
             var pnlClickable = pnlNavBar.Controls["pnlClickableBreadcrumb"] as Panel;
             if (pnlClickable != null)
                 UpdateClickableBreadcrumb(pnlClickable, _currentBreadcrumb, _breadcrumbFolderIds);
         }
-        
+
         private void CreateClickableBreadcrumb()
         {
             var pnlClickable = new Panel
@@ -4005,9 +4117,9 @@ namespace CMS.Presentation
                 Size = txtBreadcrumb.Size,
                 Anchor = txtBreadcrumb.Anchor,
                 BackColor = Color.White,
-                BorderStyle = BorderStyle.None,                
+                BorderStyle = BorderStyle.None,
             };
-            
+
             // Add click handler to switch to text mode when clicking on empty area
             pnlClickable.Click += (s, e) =>
             {
@@ -4017,10 +4129,10 @@ namespace CMS.Presentation
                 txtBreadcrumb.Focus();
                 txtBreadcrumb.SelectAll();
             };
-            
+
             pnlNavBar.Controls.Add(pnlClickable);
             pnlClickable.BringToFront();
-            
+
             // Add handler to switch back to clickable when text breadcrumb loses focus
             txtBreadcrumb.Leave += (s, e) =>
             {
@@ -4028,43 +4140,43 @@ namespace CMS.Presentation
                 pnlClickable.Visible = true;
             };
         }
-        
+
         private void UpdateClickableBreadcrumb(Panel panel, string breadcrumbPath, List<int?> folderIds = null)
         {
             panel.Controls.Clear();
-            
+
             if (string.IsNullOrEmpty(breadcrumbPath))
                 return;
-            
+
             var parts = breadcrumbPath.Split(new string[] { "  ›  " }, StringSplitOptions.RemoveEmptyEntries);
             int x = 5;
             int y = (panel.Height - 20) / 2;
-            
+
             for (int i = 0; i < parts.Length; i++)
             {
                 var part = parts[i].Trim();
                 bool isLast = (i == parts.Length - 1);
-                
+
                 // เก็บ folder ID ตรงๆ ใน Tag ของ label
                 int? folderId = (folderIds != null && i < folderIds.Count) ? folderIds[i] : null;
-                
+
                 var lblPart = new Label
                 {
-                    Text     = part,
+                    Text = part,
                     AutoSize = true,
                     Location = new Point(x, y),
-                    Font     = new Font("Segoe UI", 10f, isLast ? FontStyle.Bold : FontStyle.Regular),
+                    Font = new Font("Segoe UI", 10f, isLast ? FontStyle.Bold : FontStyle.Regular),
                     ForeColor = isLast ? Color.Black : Color.FromArgb(0, 102, 204),
-                    Cursor   = isLast ? Cursors.Default : Cursors.Hand,
-                    Tag      = folderId  // เก็บ folder ID โดยตรง
+                    Cursor = isLast ? Cursors.Default : Cursors.Hand,
+                    Tag = folderId  // เก็บ folder ID โดยตรง
                 };
-                
+
                 if (!isLast)
                 {
                     int capturedIndex = i;
                     int? capturedFolderId = folderId;
                     string capturedText = part;
-                    
+
                     lblPart.Click += (s, e) => OnBreadcrumbPartClick(capturedIndex, capturedFolderId, capturedText);
                     lblPart.MouseEnter += (s, e) =>
                     {
@@ -4077,15 +4189,16 @@ namespace CMS.Presentation
                         ((Label)s).Font = new Font("Segoe UI", 10f, FontStyle.Regular);
                     };
                 }
-                
+
                 panel.Controls.Add(lblPart);
                 x += lblPart.PreferredWidth + 4;
-                
+
                 if (!isLast)
                 {
                     var lblSep = new Label
                     {
-                        Text = "›", AutoSize = true,
+                        Text = "›",
+                        AutoSize = true,
                         Location = new Point(x, y),
                         Font = new Font("Segoe UI", 10f),
                         ForeColor = Color.Gray
@@ -4104,21 +4217,21 @@ namespace CMS.Presentation
                 System.Diagnostics.Debug.WriteLine($"  _breadcrumbFolderIds count: {_breadcrumbFolderIds.Count}");
                 for (int i = 0; i < _breadcrumbFolderIds.Count; i++)
                     System.Diagnostics.Debug.WriteLine($"  [{i}] = {_breadcrumbFolderIds[i]}");
-                
+
                 // index 0 = 🏠 PC → root
                 if (index == 0)
                 {
                     NavigateToOrgUnitRoot();
                     return;
                 }
-                
+
                 // มี folder ID → navigate ตรงๆ
                 if (folderId.HasValue)
                 {
                     NavigateToFolderById(folderId.Value);
                     return;
                 }
-                
+
                 // ไม่มี folder ID → ลองหาจาก OrgUnit tree
                 var orgNode = FindOrgUnitNodeByName(treeOrgUnit.Nodes, partText);
                 if (orgNode != null)
@@ -4153,7 +4266,7 @@ namespace CMS.Presentation
                     }
                     return;
                 }
-                
+
                 // fallback → root
                 NavigateToOrgUnitRoot();
             }
@@ -4162,28 +4275,28 @@ namespace CMS.Presentation
                 System.Diagnostics.Debug.WriteLine($"OnBreadcrumbPartClick error: {ex.Message}");
             }
         }
-        
+
         private void BreadcrumbPart_Click(object sender, EventArgs e, string[] allParts, int clickedIndex)
         {
             try
             {
                 string clickedText = allParts[clickedIndex].Trim();
                 System.Diagnostics.Debug.WriteLine($"Breadcrumb clicked: '{clickedText}' (index {clickedIndex})");
-                
+
                 // Index 0 = 🏠 PC → go to root
                 if (clickedIndex == 0)
                 {
                     NavigateToOrgUnitRoot();
                     return;
                 }
-                
+
                 // Try folder ID first (most accurate)
                 if (clickedIndex < _breadcrumbFolderIds.Count && _breadcrumbFolderIds[clickedIndex].HasValue)
                 {
                     NavigateToFolderById(_breadcrumbFolderIds[clickedIndex].Value);
                     return;
                 }
-                
+
                 // Fallback: try to find folder node in tree by name
                 var folderNode = FindNodeByName(folderTreeView.Nodes, clickedText);
                 if (folderNode != null)
@@ -4192,7 +4305,7 @@ namespace CMS.Presentation
                     folderNode.EnsureVisible();
                     return;
                 }
-                
+
                 // Fallback: try to find OrgUnit node in treeOrgUnit by name
                 var orgNode = FindOrgUnitNodeByName(treeOrgUnit.Nodes, clickedText);
                 if (orgNode != null)
@@ -4201,7 +4314,7 @@ namespace CMS.Presentation
                     orgNode.EnsureVisible();
                     return;
                 }
-                
+
                 // Nothing found — just reload root folders silently
                 _presenter.ShowOrgUnitRootFolders(_selectedOrgUnitId);
             }
@@ -4210,7 +4323,7 @@ namespace CMS.Presentation
                 System.Diagnostics.Debug.WriteLine($"BreadcrumbPart_Click error: {ex.Message}");
             }
         }
-        
+
         private TreeNode FindOrgUnitNodeByName(TreeNodeCollection nodes, string name)
         {
             foreach (TreeNode node in nodes)
@@ -4219,13 +4332,13 @@ namespace CMS.Presentation
                 string nodeText = CleanNodeText(node.Text);
                 if (string.Equals(nodeText, name, StringComparison.OrdinalIgnoreCase))
                     return node;
-                
+
                 var found = FindOrgUnitNodeByName(node.Nodes, name);
                 if (found != null) return found;
             }
             return null;
         }
-        
+
         /// <summary>Public entry point — เปิด folder โดยตรงจาก FolderID ใช้โดย SharedWithMeForm</summary>
         public void NavigateToFolderById(int folderId)
         {
@@ -4250,14 +4363,14 @@ namespace CMS.Presentation
             if (node != null) folder = node.Tag as Folder;
 
             if (folder == null) return;
-            
+
             _lastSelectedFolder = folder;
             PushNavigation(folderId);
             _currentNavFolderId = folderId;
             UpdateNavButtons();
-            
+
             _presenter.GetFolderContents(folderId);
-            
+
             // Trim breadcrumb และ IDs ให้เหลือแค่ถึง folder นี้
             var parts = _currentBreadcrumb.Split(new string[] { "  ›  " }, StringSplitOptions.RemoveEmptyEntries);
             int idx = -1;
@@ -4269,7 +4382,7 @@ namespace CMS.Presentation
                     break;
                 }
             }
-            
+
             if (idx >= 0 && idx < parts.Length)
             {
                 string newBreadcrumb = string.Join("  ›  ", parts.Take(idx + 1));
@@ -4278,13 +4391,12 @@ namespace CMS.Presentation
                 _breadcrumbFolderIds.AddRange(newIds);
                 ApplyBreadcrumb(newBreadcrumb, newIds);
             }
-            
-            lblConfidentialityBadge.Text      = ConfidentialityLabel(folder.ConfidentialityLevel);
+
+            lblConfidentialityBadge.Text = ConfidentialityLabel(folder.ConfidentialityLevel);
             lblConfidentialityBadge.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
-            lblContentInfo.Text   = string.Format("กำลังดู: {0}", folder.FolderName);
             lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", folder.FolderName);
         }
-        
+
         private TreeNode FindNodeByFolderId(TreeNodeCollection nodes, int folderId)
         {
             foreach (TreeNode node in nodes)
@@ -4294,14 +4406,14 @@ namespace CMS.Presentation
                 {
                     return node;
                 }
-                
+
                 // Search in child nodes
                 var found = FindNodeByFolderId(node.Nodes, folderId);
                 if (found != null) return found;
             }
             return null;
         }
-        
+
         private Folder GetFolderById(int folderId)
         {
             // Try to get folder from current tree first
@@ -4310,47 +4422,47 @@ namespace CMS.Presentation
             {
                 return folder;
             }
-            
+
             // If not found, could query from service (but this might be expensive)
             // For now, return null
             return null;
         }
-        
+
         private void NavigateToOrgUnitRoot()
         {
             // Clear folder tree selection and show OrgUnit root folders
             folderTreeView.AfterSelect -= folderTreeView_AfterSelect;
             folderTreeView.SelectedNode = null;
             folderTreeView.AfterSelect += folderTreeView_AfterSelect;
-            
+
             _presenter.ShowOrgUnitRootFolders(_selectedOrgUnitId);
-            
+
             // Update breadcrumb to OrgUnit only
             string orgUnitPath = "🏠 PC";
             if (!string.IsNullOrEmpty(_selectedOrgUnitName) && _selectedOrgUnitName != "— ทั้งหมด —")
             {
                 orgUnitPath += "  ›  " + _selectedOrgUnitName;
             }
-            
+
             PushNavigation(null); // null = OrgUnit root
             _currentNavFolderId = null;
             ApplyBreadcrumb(orgUnitPath, new List<int?>());
             UpdateNavButtons();
             lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", _selectedOrgUnitName);
         }
-        
+
         private TreeNode FindNodeByName(TreeNodeCollection nodes, string folderName)
         {
             foreach (TreeNode node in nodes)
             {
                 var folder = node.Tag as Folder;
-                if (folder != null && 
+                if (folder != null &&
                     (folder.FolderName == folderName || folder.Name == folderName ||
                      node.Text.Contains(folderName)))
                 {
                     return node;
                 }
-                
+
                 // Search in child nodes
                 var found = FindNodeByName(node.Nodes, folderName);
                 if (found != null) return found;
@@ -4386,9 +4498,9 @@ namespace CMS.Presentation
 
         private void UpdateNavButtons()
         {
-            btnNavBack.Enabled    = _backStack.Count > 0;
+            btnNavBack.Enabled = _backStack.Count > 0;
             btnNavForward.Enabled = _forwardStack.Count > 0;
-            btnNavUp.Enabled      = _currentNavFolderId.HasValue;
+            btnNavUp.Enabled = _currentNavFolderId.HasValue;
         }
 
         /// <summary>
@@ -4586,8 +4698,8 @@ namespace CMS.Presentation
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
                     _presenter.LoadFolderTree(_selectedOrgUnitId);
+                    _lastSelectedFolder = parent;
                     _presenter.GetFolderContents(parent.FolderId);
-                    lblContentInfo.Text   = string.Format("กำลังดู: {0}", parent.FolderName);
                     lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", parent.FolderName);
                     ShowInfo("✅ สร้าง Folder จาก Template เรียบร้อยแล้ว");
                 }
@@ -4605,7 +4717,7 @@ namespace CMS.Presentation
             }
 
             string folderName;
-            int    level;
+            int level;
             if (!PromptForNameAndLevel("สร้าง Root Folder", out folderName, out level)) return;
 
             _presenter.CreateRootFolder(folderName, _selectedOrgUnitId.Value, level);
@@ -4616,7 +4728,7 @@ namespace CMS.Presentation
             try
             {
                 var selected = SelectedFolder;
-                
+
                 // Debug information
                 if (folderTreeView.SelectedNode == null)
                 {
@@ -4626,21 +4738,21 @@ namespace CMS.Presentation
                         ShowError("กรุณาเลือกหน่วยงานก่อนสร้าง Auto 4 Folders");
                         return;
                     }
-                    
+
                     string baseName = "";
                     CreateAuto4FoldersQuiet(baseName, null, _selectedOrgUnitId.Value);
                     return;
                 }
-                
+
                 if (selected == null)
                 {
                     ShowError("ไม่สามารถดึงข้อมูล folder ที่เลือกได้ กรุณาลองใหม่");
                     return;
                 }
-                
+
                 // ตรวจสอบว่า folder ที่เลือกเป็น Auto 4 Folder หรือไม่
                 bool isAuto4Folder = IsAuto4Folder(selected);
-                
+
                 if (isAuto4Folder)
                 {
                     // ถ้าเป็น Auto 4 Folder ให้สร้างที่ระดับเดียวกัน (sibling) แทนที่จะเป็น child
@@ -4679,18 +4791,18 @@ namespace CMS.Presentation
                 lblOrgUnitStatus.Text = "⏳ กำลังรอ Admin อนุมัติ 1HC Folder — จะแสดงหลังจากอนุมัติแล้ว";
                 return;
             }
-                // ตรวจสอบ DB โดยตรง (ป้องกัน stale tree จาก async OrgUnit AfterSelect)
-                // ถ้า DB มี folder ใดๆ สำหรับ OrgUnit นี้ → ไม่ต้องถาม
-                if (_folderReadLookupController != null)
+            // ตรวจสอบ DB โดยตรง (ป้องกัน stale tree จาก async OrgUnit AfterSelect)
+            // ถ้า DB มี folder ใดๆ สำหรับ OrgUnit นี้ → ไม่ต้องถาม
+            if (_folderReadLookupController != null)
+            {
+                try
                 {
-                    try
-                    {
-                        var dbFolders = _folderReadLookupController.GetAllFolders(_selectedOrgUnitId, _user);
-                        if (dbFolders != null && dbFolders.Any(f => !f.IsDeleted && !f.IsArchived))
-                            return; // มีอยู่แล้วใน DB
-                    }
-                    catch { /* ถ้าเช็ค DB ไม่ได้ ให้ผ่านไป */ }
+                    var dbFolders = _folderReadLookupController.GetAllFolders(_selectedOrgUnitId, _user);
+                    if (dbFolders != null && dbFolders.Any(f => !f.IsDeleted && !f.IsArchived))
+                        return; // มีอยู่แล้วใน DB
                 }
+                catch { /* ถ้าเช็ค DB ไม่ได้ ให้ผ่านไป */ }
+            }
 
             string orgName = _selectedOrgUnitName ?? "หน่วยงานนี้";
             var result = MessageBox.Show(
@@ -4727,21 +4839,21 @@ namespace CMS.Presentation
 
             // หา folder ที่กำลังดูอยู่จริงๆ จาก _currentNavFolderId ก่อน
             Folder folder = null;
-            
+
             if (_currentNavFolderId.HasValue)
             {
                 var node = FindNodeByFolderId(folderTreeView.Nodes, _currentNavFolderId.Value);
                 if (node != null)
                     folder = node.Tag as Folder;
-                
-                if (folder == null && _lastSelectedFolder != null 
+
+                if (folder == null && _lastSelectedFolder != null
                     && _lastSelectedFolder.FolderId == _currentNavFolderId.Value)
                     folder = _lastSelectedFolder;
             }
-            
+
             if (folder == null)
                 folder = SelectedFolder;
-            
+
             if (folder == null)
             {
                 ShowError("กรุณาเลือก Folder ปลายทางก่อนอัพโหลด");
@@ -4759,7 +4871,7 @@ namespace CMS.Presentation
 
             var uploadForm = new FileUploadForm(_fileUploadController, _user, folder, _uploadCheckpointController, _auditLogController);
             var result = uploadForm.ShowDialog(this.MdiParent ?? this);
-            
+
             if (result == DialogResult.OK)
             {
                 // Reload folder tree ก่อน (file count update)
@@ -4773,11 +4885,11 @@ namespace CMS.Presentation
                 {
                     _isNavigating = false;
                 }
-                
+
                 // อัพเดท state
                 _currentNavFolderId = uploadFolderId;
                 _lastSelectedFolder = folder;
-                
+
                 // Reload เนื้อหาของ folder ที่ upload ไป (ทำหลังสุดเพื่อไม่ให้ถูก override)
                 _presenter.GetFolderContents(uploadFolderId);
             }
@@ -4800,7 +4912,7 @@ namespace CMS.Presentation
         {
             bool folderSelected = folderTreeView.SelectedNode != null
                                   && folderTreeView.SelectedNode.Tag is Folder;
-            bool fileSelected   = contentsListView.SelectedItems.Count > 0
+            bool fileSelected = contentsListView.SelectedItems.Count > 0
                                   && contentsListView.SelectedItems.Cast<ListViewItem>()
                                      .Any(i => i.Tag is FileDocument);
             btnMove.Enabled = folderSelected || fileSelected;
@@ -4816,7 +4928,7 @@ namespace CMS.Presentation
             {
                 bool folderSelected = folderTreeView.SelectedNode != null
                                       && folderTreeView.SelectedNode.Tag is Folder;
-                bool fileSelected   = contentsListView.SelectedItems.Count > 0
+                bool fileSelected = contentsListView.SelectedItems.Count > 0
                                       && contentsListView.SelectedItems.Cast<ListViewItem>()
                                          .Any(i => i.Tag is FileDocument);
                 return folderSelected || fileSelected;
@@ -4914,7 +5026,7 @@ namespace CMS.Presentation
                     ShowError("File command controller ไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
                     return;
                 }
-                
+
                 using (var picker = new FolderPickerDialog())
                 {
                     picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), new HashSet<int>(), GetOrgUnits());
@@ -4924,7 +5036,7 @@ namespace CMS.Presentation
                         {
                             _fileCommandController.MoveFiles(new MoveFileRequest
                             {
-                                FileIds             = selectedFileIds,
+                                FileIds = selectedFileIds,
                                 DestinationFolderId = picker.SelectedFolderId.Value
                             }, _user);
                             MessageBox.Show(
@@ -4957,7 +5069,7 @@ namespace CMS.Presentation
             if (selectedFolderFromList != null)
             {
                 var descendants = _folderCommandController.GetDescendants(selectedFolderFromList.FolderID);
-                var excluded    = new HashSet<int>(descendants.Select(d => d.FolderID));
+                var excluded = new HashSet<int>(descendants.Select(d => d.FolderID));
                 excluded.Add(selectedFolderFromList.FolderID);
 
                 using (var picker = new FolderPickerDialog())
@@ -4970,7 +5082,7 @@ namespace CMS.Presentation
                         {
                             _folderCommandController.MoveFolder(new MoveFolderRequest
                             {
-                                SourceFolderId            = selectedFolderFromList.FolderID,
+                                SourceFolderId = selectedFolderFromList.FolderID,
                                 DestinationParentFolderId = picker.SelectedFolderId.Value
                             }, _user);
                             MessageBox.Show("ย้าย Folder สำเร็จ", "สำเร็จ",
@@ -4983,8 +5095,8 @@ namespace CMS.Presentation
                             RefreshCurrentViewAfterMove();
                         }
                         catch (UnauthorizedAccessException ex) { ShowError("ไม่มีสิทธิ์: " + ex.Message); }
-                        catch (InvalidOperationException ex)   { ShowError(ex.Message); }
-                        catch (Exception ex)                   { ShowUnexpectedError(ex); }
+                        catch (InvalidOperationException ex) { ShowError(ex.Message); }
+                        catch (Exception ex) { ShowUnexpectedError(ex); }
                     }
                 }
                 return;
@@ -4997,7 +5109,7 @@ namespace CMS.Presentation
             if (selectedFolder != null)
             {
                 var descendants = _folderCommandController.GetDescendants(selectedFolder.FolderID);
-                var excluded    = new HashSet<int>(descendants.Select(d => d.FolderID));
+                var excluded = new HashSet<int>(descendants.Select(d => d.FolderID));
                 excluded.Add(selectedFolder.FolderID);
 
                 using (var picker = new FolderPickerDialog())
@@ -5010,7 +5122,7 @@ namespace CMS.Presentation
                         {
                             _folderCommandController.MoveFolder(new MoveFolderRequest
                             {
-                                SourceFolderId            = selectedFolder.FolderID,
+                                SourceFolderId = selectedFolder.FolderID,
                                 DestinationParentFolderId = picker.SelectedFolderId.Value
                             }, _user);
                             MessageBox.Show("ย้าย Folder สำเร็จ", "สำเร็จ",
@@ -5055,7 +5167,7 @@ namespace CMS.Presentation
             {
                 var selectedItem = contentsListView.SelectedItems[0];
                 string currentName;
-                var fileTag   = selectedItem.Tag as FileDocument;
+                var fileTag = selectedItem.Tag as FileDocument;
                 var folderTag = selectedItem.Tag as Folder;
 
                 if (fileTag != null)
@@ -5092,9 +5204,9 @@ namespace CMS.Presentation
                 _inlineRenameBox = new TextBox
                 {
                     BorderStyle = BorderStyle.FixedSingle,
-                    Font        = contentsListView.Font,
+                    Font = contentsListView.Font,
                 };
-                _inlineRenameBox.KeyDown   += InlineRenameBox_KeyDown;
+                _inlineRenameBox.KeyDown += InlineRenameBox_KeyDown;
                 _inlineRenameBox.LostFocus += (s, ev) => CommitInlineRename();
                 contentsListView.Controls.Add(_inlineRenameBox);
             }
@@ -5140,7 +5252,7 @@ namespace CMS.Presentation
 
             if (string.IsNullOrWhiteSpace(newName) || _renamingItem == null) return;
 
-            var fileTag   = _renamingItem.Tag as FileDocument;
+            var fileTag = _renamingItem.Tag as FileDocument;
             var folderTag = _renamingItem.Tag as Folder;
             _renamingItem = null;
 
@@ -5508,100 +5620,100 @@ namespace CMS.Presentation
         /// <summary>Shows a navy-styled dialog to collect a reason string. Returns null if user cancels.</summary>
         private string PromptForReason(string prompt)
         {
-            Color navyDark  = Color.FromArgb(25,  55,  105);
+            Color navyDark = Color.FromArgb(25, 55, 105);
             Color navyLight = Color.FromArgb(215, 228, 248);
-            Color bodyBg    = Color.FromArgb(243, 246, 251);
-            Color footerBg  = Color.FromArgb(228, 234, 245);
+            Color bodyBg = Color.FromArgb(243, 246, 251);
+            Color footerBg = Color.FromArgb(228, 234, 245);
 
             using (var dlg = new Form())
             {
-                dlg.Text            = "ระบุเหตุผล";
-                dlg.ClientSize      = new Size(420, 220);
-                dlg.StartPosition   = FormStartPosition.CenterParent;
+                dlg.Text = "ระบุเหตุผล";
+                dlg.ClientSize = new Size(420, 220);
+                dlg.StartPosition = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.MaximizeBox     = false;
-                dlg.MinimizeBox     = false;
-                dlg.BackColor       = bodyBg;
-                dlg.Font            = new System.Drawing.Font("Segoe UI", 9f);
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.BackColor = bodyBg;
+                dlg.Font = new System.Drawing.Font("Segoe UI", 9f);
 
                 // ── Header bar ────────────────────────────────────────────────
                 var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = navyDark };
                 var lblHeader = new Label
                 {
-                    Text      = "🗑  ระบุเหตุผล",
-                    Font      = new System.Drawing.Font("Segoe UI", 11f, FontStyle.Bold),
+                    Text = "🗑  ระบุเหตุผล",
+                    Font = new System.Drawing.Font("Segoe UI", 11f, FontStyle.Bold),
                     ForeColor = Color.White,
-                    AutoSize  = true,
-                    Location  = new Point(14, 14),
+                    AutoSize = true,
+                    Location = new Point(14, 14),
                 };
                 pnlHeader.Controls.Add(lblHeader);
 
                 // ── Sub-header hint bar ───────────────────────────────────────
                 var lblHint = new Label
                 {
-                    Text      = "  คำขออนุมัติจะถูกส่งให้ Admin พิจารณา",
-                    Font      = new System.Drawing.Font("Segoe UI", 8.5f),
+                    Text = "  คำขออนุมัติจะถูกส่งให้ Admin พิจารณา",
+                    Font = new System.Drawing.Font("Segoe UI", 8.5f),
                     ForeColor = Color.FromArgb(50, 70, 110),
                     BackColor = navyLight,
-                    Size      = new Size(420, 24),
-                    Location  = new Point(0, 52),
+                    Size = new Size(420, 24),
+                    Location = new Point(0, 52),
                     TextAlign = ContentAlignment.MiddleLeft,
                 };
 
                 // ── Body ──────────────────────────────────────────────────────
                 var lblPrompt = new Label
                 {
-                    Text      = prompt,
-                    Font      = new System.Drawing.Font("Segoe UI", 9f),
+                    Text = prompt,
+                    Font = new System.Drawing.Font("Segoe UI", 9f),
                     ForeColor = Color.FromArgb(30, 40, 65),
-                    Size      = new Size(392, 36),
-                    Location  = new Point(14, 88),
-                    AutoSize  = false,
+                    Size = new Size(392, 36),
+                    Location = new Point(14, 88),
+                    AutoSize = false,
                 };
 
                 var txt = new TextBox
                 {
-                    Location    = new Point(14, 128),
-                    Size        = new Size(392, 24),
-                    Font        = new System.Drawing.Font("Segoe UI", 9.5f),
+                    Location = new Point(14, 128),
+                    Size = new Size(392, 24),
+                    Font = new System.Drawing.Font("Segoe UI", 9.5f),
                     BorderStyle = BorderStyle.FixedSingle,
-                    BackColor   = Color.White,
+                    BackColor = Color.White,
                 };
 
                 // ── Footer bar ────────────────────────────────────────────────
                 var pnlFooter = new Panel
                 {
-                    Dock      = DockStyle.Bottom,
-                    Height    = 46,
+                    Dock = DockStyle.Bottom,
+                    Height = 46,
                     BackColor = footerBg,
                 };
 
                 var btnOk = new Button
                 {
-                    Text         = "ตกลง",
-                    Size         = new Size(88, 30),
-                    Location     = new Point(228, 8),
-                    FlatStyle    = FlatStyle.Flat,
-                    BackColor    = navyDark,
-                    ForeColor    = Color.White,
-                    Font         = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    Text = "ตกลง",
+                    Size = new Size(88, 30),
+                    Location = new Point(228, 8),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = navyDark,
+                    ForeColor = Color.White,
+                    Font = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
                     DialogResult = DialogResult.OK,
                 };
                 btnOk.FlatAppearance.BorderSize = 0;
 
                 var btnCancel = new Button
                 {
-                    Text         = "ยกเลิก",
-                    Size         = new Size(88, 30),
-                    Location     = new Point(322, 8),
-                    FlatStyle    = FlatStyle.Flat,
-                    BackColor    = Color.FromArgb(220, 228, 245),
-                    ForeColor    = navyDark,
-                    Font         = new System.Drawing.Font("Segoe UI", 9f),
+                    Text = "ยกเลิก",
+                    Size = new Size(88, 30),
+                    Location = new Point(322, 8),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(220, 228, 245),
+                    ForeColor = navyDark,
+                    Font = new System.Drawing.Font("Segoe UI", 9f),
                     DialogResult = DialogResult.Cancel,
                 };
                 btnCancel.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-                btnCancel.FlatAppearance.BorderSize  = 1;
+                btnCancel.FlatAppearance.BorderSize = 1;
 
                 pnlFooter.Controls.AddRange(new Control[] { btnOk, btnCancel });
 
@@ -5666,10 +5778,10 @@ namespace CMS.Presentation
                         try { _presenter.LoadFolderTree(_selectedOrgUnitId); }
                         finally { _isNavigating = false; }
 
+                        _lastSelectedFolder = selectedFolder;
                         _presenter.GetFolderContents(selectedFolder.FolderId);
 
                         // Update UI
-                        lblContentInfo.Text = string.Format("กำลังดู: {0}", selectedFolder.FolderName);
                         lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", selectedFolder.FolderName);
                     }
 
@@ -5786,26 +5898,26 @@ namespace CMS.Presentation
         {
             using (var dlg = new Form())
             {
-                dlg.Text            = "เลือก Folder ปลายทาง";
-                dlg.ClientSize      = new Size(400, 480);
+                dlg.Text = "เลือก Folder ปลายทาง";
+                dlg.ClientSize = new Size(400, 480);
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.StartPosition   = FormStartPosition.CenterParent;
-                dlg.MaximizeBox     = false;
-                dlg.MinimizeBox     = false;
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
 
                 var lblInstruction = new Label
                 {
-                    Text    = "เลือก Folder ปลายทางที่จะวางโครงสร้างที่คัดลอก:",
-                    Dock    = DockStyle.Top,
-                    Height  = 30,
+                    Text = "เลือก Folder ปลายทางที่จะวางโครงสร้างที่คัดลอก:",
+                    Dock = DockStyle.Top,
+                    Height = 30,
                     Padding = new Padding(4, 6, 4, 0),
-                    Font    = new Font("Microsoft Sans Serif", 9f)
+                    Font = new Font("Microsoft Sans Serif", 9f)
                 };
 
                 var tree = new TreeView
                 {
-                    Dock        = DockStyle.Fill,
-                    Font        = new Font("Microsoft Sans Serif", 10f),
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Microsoft Sans Serif", 10f),
                     HotTracking = true
                 };
 
@@ -5814,9 +5926,9 @@ namespace CMS.Presentation
                 tree.ExpandAll();
 
                 var pnlButtons = new Panel { Dock = DockStyle.Bottom, Height = 36 };
-                var btnOk      = new Button { Text = "ตกลง",   DialogResult = DialogResult.OK,     Width = 80, Height = 26 };
-                var btnCancel  = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Width = 80, Height = 26 };
-                btnOk.Location     = new Point(236, 5);
+                var btnOk = new Button { Text = "ตกลง", DialogResult = DialogResult.OK, Width = 80, Height = 26 };
+                var btnCancel = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Width = 80, Height = 26 };
+                btnOk.Location = new Point(236, 5);
                 btnCancel.Location = new Point(320, 5);
                 pnlButtons.Controls.Add(btnOk);
                 pnlButtons.Controls.Add(btnCancel);
@@ -5872,10 +5984,10 @@ namespace CMS.Presentation
         /// </summary>
         private static int? PromptForConfidentialityLevel(int current)
         {
-            Color navyDark  = Color.FromArgb(25,  55,  105);
+            Color navyDark = Color.FromArgb(25, 55, 105);
             Color navyLight = Color.FromArgb(215, 228, 248);
-            Color bodyBg    = Color.FromArgb(243, 246, 251);
-            Color footerBg  = Color.FromArgb(228, 234, 245);
+            Color bodyBg = Color.FromArgb(243, 246, 251);
+            Color footerBg = Color.FromArgb(228, 234, 245);
 
             var levelColors = new[]
             {
@@ -5887,57 +5999,57 @@ namespace CMS.Presentation
 
             using (var dlg = new Form())
             {
-                dlg.Text            = "เปลี่ยนระดับความลับ";
-                dlg.ClientSize      = new Size(400, 218);
+                dlg.Text = "เปลี่ยนระดับความลับ";
+                dlg.ClientSize = new Size(400, 218);
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.StartPosition   = FormStartPosition.CenterParent;
-                dlg.MaximizeBox     = false;
-                dlg.MinimizeBox     = false;
-                dlg.BackColor       = bodyBg;
-                dlg.Font            = new System.Drawing.Font("Segoe UI", 9f);
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.BackColor = bodyBg;
+                dlg.Font = new System.Drawing.Font("Segoe UI", 9f);
 
                 // ── Header ────────────────────────────────────────────────────
                 var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = navyDark };
                 var lblHeader = new Label
                 {
-                    Text      = "🔒  เปลี่ยนระดับความลับ",
-                    Font      = new System.Drawing.Font("Segoe UI", 11f, FontStyle.Bold),
+                    Text = "🔒  เปลี่ยนระดับความลับ",
+                    Font = new System.Drawing.Font("Segoe UI", 11f, FontStyle.Bold),
                     ForeColor = Color.White,
-                    AutoSize  = true,
-                    Location  = new Point(14, 14),
+                    AutoSize = true,
+                    Location = new Point(14, 14),
                 };
                 pnlHeader.Controls.Add(lblHeader);
 
                 // ── Hint bar ──────────────────────────────────────────────────
                 var lblHint = new Label
                 {
-                    Text      = "  การเปลี่ยนระดับจะมีผลกับ Folder และไฟล์ภายใน",
-                    Font      = new System.Drawing.Font("Segoe UI", 8.5f),
+                    Text = "  การเปลี่ยนระดับจะมีผลกับ Folder และไฟล์ภายใน",
+                    Font = new System.Drawing.Font("Segoe UI", 8.5f),
                     ForeColor = Color.FromArgb(50, 70, 110),
                     BackColor = navyLight,
-                    Size      = new Size(400, 24),
-                    Location  = new Point(0, 52),
+                    Size = new Size(400, 24),
+                    Location = new Point(0, 52),
                     TextAlign = ContentAlignment.MiddleLeft,
                 };
 
                 // ── Body ──────────────────────────────────────────────────────
                 var lblLevel = new Label
                 {
-                    Text      = "ระดับใหม่:",
-                    Font      = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    Text = "ระดับใหม่:",
+                    Font = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(30, 40, 65),
-                    Location  = new Point(14, 92),
-                    AutoSize  = true,
+                    Location = new Point(14, 92),
+                    AutoSize = true,
                 };
 
                 var cboLevel = new ComboBox
                 {
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    DrawMode      = DrawMode.OwnerDrawFixed,
-                    ItemHeight    = 22,
-                    Location      = new Point(14, 114),
-                    Size          = new Size(372, 22),
-                    Font          = new System.Drawing.Font("Segoe UI", 9f),
+                    DrawMode = DrawMode.OwnerDrawFixed,
+                    ItemHeight = 22,
+                    Location = new Point(14, 114),
+                    Size = new Size(372, 22),
+                    Font = new System.Drawing.Font("Segoe UI", 9f),
                 };
                 cboLevel.Items.AddRange(new object[]
                 {
@@ -5968,37 +6080,37 @@ namespace CMS.Presentation
                 // ── Footer ────────────────────────────────────────────────────
                 var pnlFooter = new Panel
                 {
-                    Dock      = DockStyle.Bottom,
-                    Height    = 46,
+                    Dock = DockStyle.Bottom,
+                    Height = 46,
                     BackColor = footerBg,
                 };
 
                 var btnOk = new Button
                 {
-                    Text         = "ตกลง",
-                    Size         = new Size(88, 30),
-                    Location     = new Point(210, 8),
-                    FlatStyle    = FlatStyle.Flat,
-                    BackColor    = navyDark,
-                    ForeColor    = Color.White,
-                    Font         = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    Text = "ตกลง",
+                    Size = new Size(88, 30),
+                    Location = new Point(210, 8),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = navyDark,
+                    ForeColor = Color.White,
+                    Font = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
                     DialogResult = DialogResult.OK,
                 };
                 btnOk.FlatAppearance.BorderSize = 0;
 
                 var btnCancel = new Button
                 {
-                    Text         = "ยกเลิก",
-                    Size         = new Size(88, 30),
-                    Location     = new Point(304, 8),
-                    FlatStyle    = FlatStyle.Flat,
-                    BackColor    = Color.FromArgb(220, 228, 245),
-                    ForeColor    = navyDark,
-                    Font         = new System.Drawing.Font("Segoe UI", 9f),
+                    Text = "ยกเลิก",
+                    Size = new Size(88, 30),
+                    Location = new Point(304, 8),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(220, 228, 245),
+                    ForeColor = navyDark,
+                    Font = new System.Drawing.Font("Segoe UI", 9f),
                     DialogResult = DialogResult.Cancel,
                 };
                 btnCancel.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-                btnCancel.FlatAppearance.BorderSize  = 1;
+                btnCancel.FlatAppearance.BorderSize = 1;
 
                 pnlFooter.Controls.AddRange(new Control[] { btnOk, btnCancel });
 
@@ -6133,9 +6245,9 @@ namespace CMS.Presentation
         private bool IsAuto4Folder(Folder folder)
         {
             if (folder == null) return false;
-            
+
             string folderName = folder.FolderName ?? folder.Name ?? "";
-            
+
             // ตรวจสอบว่าเป็น Auto 4 Folders format หรือไม่
             var auto4Patterns = new[]
             {
@@ -6152,13 +6264,13 @@ namespace CMS.Presentation
 
             foreach (var pattern in auto4Patterns)
             {
-                if (System.Text.RegularExpressions.Regex.IsMatch(folderName, pattern, 
+                if (System.Text.RegularExpressions.Regex.IsMatch(folderName, pattern,
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase))
                 {
                     return true;
                 }
             }
-            
+
             return false;
         }
 
@@ -6209,7 +6321,7 @@ namespace CMS.Presentation
         private string GetCleanBaseName(Folder folder)
         {
             string folderName = folder.FolderName ?? folder.Name ?? "เอกสาร";
-            
+
             // ตรวจสอบว่าเป็น Auto 4 Folders format หรือไม่
             // Format ใหม่: "1HC - ชื่อ [1HC]"  |  Format เก่า: "1HC - ชื่อ (High Confidential)"
             var auto4Patterns = new[]
@@ -6226,13 +6338,13 @@ namespace CMS.Presentation
 
             foreach (var pattern in auto4Patterns)
             {
-                var match = System.Text.RegularExpressions.Regex.Match(folderName, pattern, 
+                var match = System.Text.RegularExpressions.Regex.Match(folderName, pattern,
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 if (match.Success)
                 {
                     // ดึงชื่อพื้นฐานออกมา
                     string baseName = match.Groups[1].Value.Trim();
-                    
+
                     // ตรวจสอบว่าชื่อพื้นฐานไม่ใช่ Auto 4 format ซ้อนอีกชั้น
                     foreach (var innerPattern in auto4Patterns)
                     {
@@ -6244,7 +6356,7 @@ namespace CMS.Presentation
                             break;
                         }
                     }
-                    
+
                     return string.IsNullOrWhiteSpace(baseName) ? "" : baseName;
                 }
             }
@@ -6262,20 +6374,20 @@ namespace CMS.Presentation
 
                 // ใช้ service เพื่อตรวจสอบความถูกต้อง
                 var allFolders = _folderReadLookupController.GetAllFolders(null, _user);
-                
+
                 if (parentFolderId.HasValue)
                 {
                     // ตรวจสอบ sub-folders
-                    return allFolders.Any(f => 
-                        !f.IsDeleted && 
+                    return allFolders.Any(f =>
+                        !f.IsDeleted &&
                         f.ParentFolderID == parentFolderId.Value &&
                         string.Equals(f.Name, folderName, StringComparison.OrdinalIgnoreCase));
                 }
                 else
                 {
                     // ตรวจสอบ root folders
-                    return allFolders.Any(f => 
-                        !f.IsDeleted && 
+                    return allFolders.Any(f =>
+                        !f.IsDeleted &&
                         f.ParentFolderID == null &&
                         f.OrgUnitID == orgUnitId &&
                         string.Equals(f.Name, folderName, StringComparison.OrdinalIgnoreCase));
@@ -6294,8 +6406,8 @@ namespace CMS.Presentation
             _suppressCreatePrompt = true;
             int createdCount = 0;
             bool hcSentForApproval = false;
-            var skippedFolders  = new List<string>();
-            var errorFolders    = new List<string>();
+            var skippedFolders = new List<string>();
+            var errorFolders = new List<string>();
 
             try
             {
@@ -6385,9 +6497,9 @@ namespace CMS.Presentation
         private static List<int?> BuildFolderIdPath(TreeNode folderNode)
         {
             var folderIds = new List<int?>();
-            
+
             if (folderNode == null) return folderIds;
-            
+
             var pathNodes = new List<TreeNode>();
             var current = folderNode;
             while (current != null)
@@ -6395,14 +6507,14 @@ namespace CMS.Presentation
                 pathNodes.Insert(0, current);
                 current = current.Parent;
             }
-            
+
             foreach (var node in pathNodes)
             {
                 var folder = node.Tag as Folder;
                 if (folder != null)
                     folderIds.Add(folder.FolderId);
             }
-            
+
             return folderIds;
         }
 
@@ -6414,7 +6526,7 @@ namespace CMS.Presentation
         {
             var parts = breadcrumbPath.Split(new string[] { "  ›  " }, StringSplitOptions.RemoveEmptyEntries);
             var result = new List<int?>();
-            
+
             // สร้าง folder path จาก tree node
             var folderPath = new List<Folder>();
             var current = folderNode;
@@ -6424,7 +6536,7 @@ namespace CMS.Presentation
                 if (f != null) folderPath.Insert(0, f);
                 current = current.Parent;
             }
-            
+
             // map parts → folder IDs
             // parts แรกๆ เป็น PC/OrgUnit → null
             // parts ท้ายๆ เป็น folder names → ใช้ folderPath
@@ -6437,7 +6549,7 @@ namespace CMS.Presentation
                 else
                     result.Add(null);
             }
-            
+
             return result;
         }
 
@@ -6519,6 +6631,44 @@ namespace CMS.Presentation
             return "🏠 PC  ›  " + string.Join("  ›  ", parts);
         }
 
+        private string BuildBreadcrumbFromConfNode(TreeNode node)
+        {
+            var parts = new List<string>();
+            var cur = node;
+            while (cur != null)
+            {
+                if (cur.Tag is Folder)
+                    parts.Insert(0, ((Folder)cur.Tag).Name);
+                else if (cur.Tag is int)
+                {
+                    string name = cur.Text;
+                    if (name.StartsWith("♦ ") || name.StartsWith("◇ "))
+                        name = name.Substring(2).Trim();
+                    else if (name.Length > 2 && char.IsHighSurrogate(name[0]))
+                        name = name.Substring(2).TrimStart();
+                    int paren = name.IndexOf(" (");
+                    if (paren > 0) name = name.Substring(0, paren).Trim();
+                    parts.Insert(0, name.Trim());
+                }
+                // Tag == null (group header 1HC/2SC/3NC/4PC) → skip
+                cur = cur.Parent;
+            }
+            return parts.Count == 0 ? "🏠 PC" : "🏠 PC  ›  " + string.Join("  ›  ", parts);
+        }
+
+        private static List<int?> BuildFolderIdPathFromConfNode(TreeNode node)
+        {
+            var ids = new List<int?>();
+            var cur = node;
+            while (cur != null)
+            {
+                if (cur.Tag is Folder)
+                    ids.Insert(0, (int?)((Folder)cur.Tag).FolderId);
+                cur = cur.Parent;
+            }
+            return ids;
+        }
+
         /// <summary>Strips badge/count decorations from a tree node label.</summary>
         private static string CleanNodeText(string text)
         {
@@ -6554,9 +6704,9 @@ namespace CMS.Presentation
 
             return new TreeNode(label)
             {
-                Tag              = folder,
-                ForeColor        = ConfidentialityColor(folder.ConfidentialityLevel),
-                ImageKey         = imageKey,
+                Tag = folder,
+                ForeColor = ConfidentialityColor(folder.ConfidentialityLevel),
+                ImageKey = imageKey,
                 SelectedImageKey = imageKey
             };
         }
@@ -6568,7 +6718,7 @@ namespace CMS.Presentation
         private string GetFilePhysicalPath(FileDocument file)
         {
             if (file == null) return null;
-            
+
             try
             {
                 var candidates = new List<string>();
@@ -6684,6 +6834,18 @@ namespace CMS.Presentation
             }
         }
 
+        private static string ConfidentialityParenLabel(int level)
+        {
+            switch (level)
+            {
+                case 1: return "1HC - (High Confidential)";
+                case 2: return "2SC - (Semi Confidential)";
+                case 3: return "3NC - (Normal Confidential)";
+                case 4: return "4PC - (Public Confidential)";
+                default: return "—";
+            }
+        }
+
         private static Color ConfidentialityColor(int level)
         {
             switch (level)
@@ -6700,14 +6862,14 @@ namespace CMS.Presentation
         private string GetFolderPermissionText(Folder folder)
         {
             if (folder == null) return "—";
-            
+
             bool isPrivileged = _user.AppRole >= 3; // Manager or Admin
-            
+
             // Check authority-based permissions (FolderAuthorityConfig)
             bool canView = isPrivileged || _user.CanViewFolder(folder.ConfidentialityLevel);
             bool canAdd = isPrivileged || _user.CanAddToFolder(folder.ConfidentialityLevel);
             bool canEdit = isPrivileged || _user.CanEditFolder(folder.ConfidentialityLevel);
-            
+
             // Check ACL permissions if permission service is available
             if (_permissionCheckController != null && !isPrivileged)
             {
@@ -6716,7 +6878,7 @@ namespace CMS.Presentation
                     bool hasRead = _permissionCheckController.CheckPermission(_user.UserID, folder.FolderId, "Read");
                     bool hasWrite = _permissionCheckController.CheckPermission(_user.UserID, folder.FolderId, "Write");
                     bool hasModify = _permissionCheckController.CheckPermission(_user.UserID, folder.FolderId, "Modify");
-                    
+
                     // ACL overrides authority
                     if (hasRead || hasWrite || hasModify)
                     {
@@ -6730,20 +6892,20 @@ namespace CMS.Presentation
                     // If permission check fails, use authority-based permissions
                 }
             }
-            
+
             // Build permission text
             if (!canView)
                 return "🔒 ไม่มีสิทธิ์";
-            
+
             if (isPrivileged)
                 return "👑 เต็ม";
-            
+
             if (canEdit)
                 return "✏️ แก้ไข";
-            
+
             if (canAdd)
                 return "➕ เพิ่ม";
-            
+
             return "👁️ อ่าน";
         }
 
@@ -6752,16 +6914,16 @@ namespace CMS.Presentation
         {
             if (permissionText.Contains("ไม่มีสิทธิ์"))
                 return Color.FromArgb(180, 0, 0); // Red
-            
+
             if (permissionText.Contains("เต็ม"))
                 return Color.FromArgb(0, 120, 0); // Dark green
-            
+
             if (permissionText.Contains("แก้ไข"))
                 return Color.FromArgb(0, 100, 200); // Blue
-            
+
             if (permissionText.Contains("เพิ่ม"))
                 return Color.FromArgb(200, 100, 0); // Orange
-            
+
             return Color.FromArgb(100, 100, 100); // Gray for read-only
         }
 
@@ -6785,8 +6947,8 @@ namespace CMS.Presentation
             var il = new ImageList { ImageSize = new Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
 
             // ── Folder icons from embedded PNG resources ──────────────────────
-            il.Images.Add("folder",         LoadPng("folder"));
-            
+            il.Images.Add("folder", LoadPng("folder"));
+
             // Load lightning bolt - try embedded resource first, then file, then fallback
             Image lightningIcon = null;
             try
@@ -6798,7 +6960,7 @@ namespace CMS.Presentation
                 }
             }
             catch { }
-            
+
             if (lightningIcon == null)
             {
                 try
@@ -6812,18 +6974,18 @@ namespace CMS.Presentation
                 }
                 catch { }
             }
-            
+
             if (lightningIcon == null)
             {
                 // Final fallback: load from file
                 lightningIcon = LoadPng("lightning-bolt");
             }
-            
+
             il.Images.Add("lightning_bolt", lightningIcon);
-            il.Images.Add("book_red",       LoadPng("book-red"));
-            il.Images.Add("book_orange",    LoadPng("book-orange"));
-            il.Images.Add("book_bule",      LoadPng("book-bule"));
-            il.Images.Add("book_green",     LoadPng("book-green"));
+            il.Images.Add("book_red", LoadPng("book-red"));
+            il.Images.Add("book_orange", LoadPng("book-orange"));
+            il.Images.Add("book_bule", LoadPng("book-bule"));
+            il.Images.Add("book_green", LoadPng("book-green"));
 
             // ── File icon from File-docs.ico resource ─────────────────────────
             il.Images.Add("file_docs", LoadIco("File-docs"));
@@ -6913,7 +7075,7 @@ namespace CMS.Presentation
                     {
                         var sf = new StringFormat
                         {
-                            Alignment     = StringAlignment.Center,
+                            Alignment = StringAlignment.Center,
                             LineAlignment = StringAlignment.Center
                         };
                         g.DrawString(label, font, textBrush, new RectangleF(1, 10, 12, 5), sf);
@@ -6949,13 +7111,13 @@ namespace CMS.Presentation
         /// <summary>Dialog ที่รับชื่อ Folder พร้อมเลือกระดับ — navy palette style</summary>
         private bool PromptForNameAndLevel(string title, out string name, out int confidentialityLevel, int? lockedLevel = null)
         {
-            name                 = null;
+            name = null;
             confidentialityLevel = lockedLevel ?? 1;
 
-            Color navyDark  = Color.FromArgb(25,  55,  105);
+            Color navyDark = Color.FromArgb(25, 55, 105);
             Color navyLight = Color.FromArgb(215, 228, 248);
-            Color bodyBg    = Color.FromArgb(243, 246, 251);
-            Color footerBg  = Color.FromArgb(228, 234, 245);
+            Color bodyBg = Color.FromArgb(243, 246, 251);
+            Color footerBg = Color.FromArgb(228, 234, 245);
 
             var levelColors = new[]
             {
@@ -6967,79 +7129,79 @@ namespace CMS.Presentation
 
             using (var form = new Form())
             {
-                form.Text            = title;
-                form.ClientSize      = new Size(400, 262);
+                form.Text = title;
+                form.ClientSize = new Size(400, 262);
                 form.FormBorderStyle = FormBorderStyle.FixedDialog;
-                form.StartPosition   = FormStartPosition.CenterParent;
-                form.MaximizeBox     = false;
-                form.MinimizeBox     = false;
-                form.BackColor       = bodyBg;
-                form.Font            = new System.Drawing.Font("Segoe UI", 9f);
+                form.StartPosition = FormStartPosition.CenterParent;
+                form.MaximizeBox = false;
+                form.MinimizeBox = false;
+                form.BackColor = bodyBg;
+                form.Font = new System.Drawing.Font("Segoe UI", 9f);
 
                 // ── Header ────────────────────────────────────────────────────
                 var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = navyDark };
                 var lblHeader = new Label
                 {
-                    Text      = "📁  สร้าง Folder ใหม่",
-                    Font      = new System.Drawing.Font("Segoe UI", 11f, FontStyle.Bold),
+                    Text = "📁  สร้าง Folder ใหม่",
+                    Font = new System.Drawing.Font("Segoe UI", 11f, FontStyle.Bold),
                     ForeColor = Color.White,
-                    AutoSize  = true,
-                    Location  = new Point(14, 14),
+                    AutoSize = true,
+                    Location = new Point(14, 14),
                 };
                 pnlHeader.Controls.Add(lblHeader);
 
                 // ── Sub-header hint bar ───────────────────────────────────────
                 var lblHint = new Label
                 {
-                    Text      = "  " + title,
-                    Font      = new System.Drawing.Font("Segoe UI", 8.5f),
+                    Text = "  " + title,
+                    Font = new System.Drawing.Font("Segoe UI", 8.5f),
                     ForeColor = Color.FromArgb(50, 70, 110),
                     BackColor = navyLight,
-                    Size      = new Size(400, 24),
-                    Location  = new Point(0, 52),
+                    Size = new Size(400, 24),
+                    Location = new Point(0, 52),
                     TextAlign = ContentAlignment.MiddleLeft,
                 };
 
                 // ── Body ──────────────────────────────────────────────────────
                 var lblName = new Label
                 {
-                    Text      = "ชื่อ Folder:",
-                    Font      = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    Text = "ชื่อ Folder:",
+                    Font = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(30, 40, 65),
-                    Location  = new Point(14, 90),
-                    AutoSize  = true,
+                    Location = new Point(14, 90),
+                    AutoSize = true,
                 };
 
                 var input = new TextBox
                 {
-                    Location    = new Point(14, 110),
-                    Size        = new Size(372, 24),
-                    Font        = new System.Drawing.Font("Segoe UI", 9.5f),
+                    Location = new Point(14, 110),
+                    Size = new Size(372, 24),
+                    Font = new System.Drawing.Font("Segoe UI", 9.5f),
                     BorderStyle = BorderStyle.FixedSingle,
-                    BackColor   = Color.White,
+                    BackColor = Color.White,
                 };
 
                 // ── Level label ───────────────────────────────────────────────
                 var lblLv = new Label
                 {
-                    Text      = lockedLevel.HasValue
+                    Text = lockedLevel.HasValue
                                     ? "ระดับ: (กำหนดโดย Folder แม่ — ไม่สามารถเปลี่ยนได้)"
                                     : "ระดับความลับ:",
-                    Font      = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    Font = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(30, 40, 65),
-                    Location  = new Point(14, 146),
-                    AutoSize  = true,
+                    Location = new Point(14, 146),
+                    AutoSize = true,
                 };
 
                 // ── Color-coded combo ─────────────────────────────────────────
                 var combo = new ComboBox
                 {
                     DropDownStyle = ComboBoxStyle.DropDownList,
-                    DrawMode      = DrawMode.OwnerDrawFixed,
-                    ItemHeight    = 22,
-                    Location      = new Point(14, 166),
-                    Size          = new Size(372, 22),
-                    Font          = new System.Drawing.Font("Segoe UI", 9f),
+                    DrawMode = DrawMode.OwnerDrawFixed,
+                    ItemHeight = 22,
+                    Location = new Point(14, 166),
+                    Size = new Size(372, 22),
+                    Font = new System.Drawing.Font("Segoe UI", 9f),
                 };
                 combo.Items.AddRange(new object[]
                 {
@@ -7069,44 +7231,44 @@ namespace CMS.Presentation
 
                 if (lockedLevel.HasValue)
                 {
-                    combo.Enabled   = false;
+                    combo.Enabled = false;
                     combo.BackColor = Color.FromArgb(235, 238, 245);
                 }
 
                 // ── Footer ────────────────────────────────────────────────────
                 var pnlFooter = new Panel
                 {
-                    Dock      = DockStyle.Bottom,
-                    Height    = 46,
+                    Dock = DockStyle.Bottom,
+                    Height = 46,
                     BackColor = footerBg,
                 };
 
                 var btnOk = new Button
                 {
-                    Text         = "ตกลง",
-                    Size         = new Size(88, 30),
-                    Location     = new Point(210, 8),
-                    FlatStyle    = FlatStyle.Flat,
-                    BackColor    = navyDark,
-                    ForeColor    = Color.White,
-                    Font         = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
+                    Text = "ตกลง",
+                    Size = new Size(88, 30),
+                    Location = new Point(210, 8),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = navyDark,
+                    ForeColor = Color.White,
+                    Font = new System.Drawing.Font("Segoe UI", 9f, FontStyle.Bold),
                     DialogResult = DialogResult.OK,
                 };
                 btnOk.FlatAppearance.BorderSize = 0;
 
                 var btnCancel = new Button
                 {
-                    Text         = "ยกเลิก",
-                    Size         = new Size(88, 30),
-                    Location     = new Point(304, 8),
-                    FlatStyle    = FlatStyle.Flat,
-                    BackColor    = Color.FromArgb(220, 228, 245),
-                    ForeColor    = navyDark,
-                    Font         = new System.Drawing.Font("Segoe UI", 9f),
+                    Text = "ยกเลิก",
+                    Size = new Size(88, 30),
+                    Location = new Point(304, 8),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(220, 228, 245),
+                    ForeColor = navyDark,
+                    Font = new System.Drawing.Font("Segoe UI", 9f),
                     DialogResult = DialogResult.Cancel,
                 };
                 btnCancel.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-                btnCancel.FlatAppearance.BorderSize  = 1;
+                btnCancel.FlatAppearance.BorderSize = 1;
 
                 pnlFooter.Controls.AddRange(new Control[] { btnOk, btnCancel });
 
@@ -7120,7 +7282,7 @@ namespace CMS.Presentation
                 string value = input.Text.Trim();
                 if (string.IsNullOrEmpty(value)) return false;
 
-                name                 = value;
+                name = value;
                 confidentialityLevel = lockedLevel.HasValue ? lockedLevel.Value : combo.SelectedIndex + 1;
                 return true;
             }
@@ -7292,7 +7454,7 @@ namespace CMS.Presentation
             try
             {
                 // จำ folderId ที่เลือกอยู่ก่อน rebuild tree
-                var previousFolder   = SelectedFolder;
+                var previousFolder = SelectedFolder;
                 int? previousFolderId = previousFolder != null ? (int?)previousFolder.FolderId : null;
 
                 folderTreeView.BeginUpdate();
@@ -7378,11 +7540,11 @@ namespace CMS.Presentation
         internal void ApplyFileFilter()
         {
             // Collect filter criteria
-            string extFilter      = cmbExtension.Text.Trim();
-            bool   filterFrom     = dtpFrom.Checked;
-            bool   filterTo       = dtpTo.Checked;
-            DateTime fromDate     = filterFrom ? dtpFrom.Value.Date : DateTime.MinValue;
-            DateTime toDate       = filterTo   ? dtpTo.Value.Date.AddDays(1).AddTicks(-1) : DateTime.MaxValue;
+            string extFilter = cmbExtension.Text.Trim();
+            bool filterFrom = dtpFrom.Checked;
+            bool filterTo = dtpTo.Checked;
+            DateTime fromDate = filterFrom ? dtpFrom.Value.Date : DateTime.MinValue;
+            DateTime toDate = filterTo ? dtpTo.Value.Date.AddDays(1).AddTicks(-1) : DateTime.MaxValue;
             string uploaderFilter = txtUploadedBy.Text.Trim();
 
             // Apply AND logic to _currentFiles
@@ -7411,7 +7573,7 @@ namespace CMS.Presentation
             RefreshFileItemsInListView(filteredList);
 
             // Show filter status indicator (Req 6.4)
-            lblFilterStatus.Text    = string.Format("🔍 กรองแล้ว: {0} รายการ", filteredList.Count);
+            lblFilterStatus.Text = string.Format("🔍 กรองแล้ว: {0} รายการ", filteredList.Count);
             lblFilterStatus.Visible = true;
         }
 
@@ -7423,14 +7585,14 @@ namespace CMS.Presentation
         internal void ClearFileFilter()
         {
             // Clear filter controls
-            cmbExtension.Text   = string.Empty;
-            dtpFrom.Checked     = false;
-            dtpTo.Checked       = false;
-            txtUploadedBy.Text  = string.Empty;
+            cmbExtension.Text = string.Empty;
+            dtpFrom.Checked = false;
+            dtpTo.Checked = false;
+            txtUploadedBy.Text = string.Empty;
 
             RefreshFileItemsInListView(_currentFiles);
 
-            lblFilterStatus.Text    = string.Empty;
+            lblFilterStatus.Text = string.Empty;
             lblFilterStatus.Visible = false;
         }
 
@@ -7472,7 +7634,7 @@ namespace CMS.Presentation
             foreach (var file in filesToShow)
             {
                 string icon = FileIcon(file.FileExtension);
-                var item    = new ListViewItem(file.OriginalFileName) { ImageKey = icon };
+                var item = new ListViewItem(file.OriginalFileName) { ImageKey = icon };
                 item.SubItems.Add(file.FileExtension.TrimStart('.').ToUpper());
                 item.SubItems.Add(ConfidentialityShort(file.ConfidentialityLevel));
                 item.SubItems.Add(FormatBytes(file.FileSizeBytes));
@@ -7495,7 +7657,7 @@ namespace CMS.Presentation
             }
 
             contentsListView.EndUpdate();
-            
+
             // Adjust column widths to fit content
             AdjustNameColumnWidth();
         }
@@ -7608,7 +7770,7 @@ namespace CMS.Presentation
             {
                 var clone = new TreeNode(original.Text)
                 {
-                    Tag       = original.Tag,
+                    Tag = original.Tag,
                     ForeColor = original.ForeColor
                 };
                 targetCollection.Add(clone);
@@ -7629,24 +7791,24 @@ namespace CMS.Presentation
             // Header label
             var lblHeader = new Label
             {
-                Text      = "⭐ Quick Access",
-                Dock      = DockStyle.Top,
-                Height    = 22,
-                Font      = new Font("Microsoft Sans Serif", 10f, FontStyle.Bold),
+                Text = "⭐ Quick Access",
+                Dock = DockStyle.Top,
+                Height = 22,
+                Font = new Font("Microsoft Sans Serif", 10f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(31, 56, 100),
-                Padding   = new Padding(4, 3, 0, 0)
+                Padding = new Padding(4, 3, 0, 0)
             };
 
             // ListBox แสดงรายการ Quick Access
             _lstQuickAccess = new ListBox
             {
-                Dock           = DockStyle.Fill,
-                Font           = new Font("Microsoft Sans Serif", 10f),
-                BorderStyle    = BorderStyle.None,
+                Dock = DockStyle.Fill,
+                Font = new Font("Microsoft Sans Serif", 10f),
+                BorderStyle = BorderStyle.None,
                 IntegralHeight = false
             };
-            _lstQuickAccess.Click        += LstQuickAccess_Click;
-            _lstQuickAccess.MouseDown    += LstQuickAccess_MouseDown;
+            _lstQuickAccess.Click += LstQuickAccess_Click;
+            _lstQuickAccess.MouseDown += LstQuickAccess_MouseDown;
 
             // Context menu สำหรับ Quick Access panel
             var ctxQA = new ContextMenuStrip();
@@ -7661,10 +7823,10 @@ namespace CMS.Presentation
             // Panel container
             _pnlQuickAccess = new Panel
             {
-                Dock        = DockStyle.Bottom,
-                Height      = 140,
-                BackColor   = Color.FromArgb(245, 248, 255),
-                Padding     = new Padding(0)
+                Dock = DockStyle.Bottom,
+                Height = 140,
+                BackColor = Color.FromArgb(245, 248, 255),
+                Padding = new Padding(0)
             };
             _pnlQuickAccess.Controls.Add(_lstQuickAccess);
             _pnlQuickAccess.Controls.Add(lblHeader);
@@ -7702,13 +7864,13 @@ namespace CMS.Presentation
                 {
                     string displayText;
                     string orgUnitInfo = "";
-                    
+
                     // เพิ่มข้อมูล OrgUnit ถ้ามี
                     if (qa.Folder != null && orgUnitNames.ContainsKey(qa.Folder.OrgUnitID))
                     {
                         orgUnitInfo = $" [{orgUnitNames[qa.Folder.OrgUnitID]}]";
                     }
-                    
+
                     if (qa.Folder == null)
                     {
                         // Folder ถูกลบออกจาก DB แล้ว (cascade delete)
@@ -7796,9 +7958,8 @@ namespace CMS.Presentation
             _currentNavFolderId = folder.FolderID;
             UpdateNavButtons();
             _presenter.GetFolderContents(folder.FolderID);
-            lblConfidentialityBadge.Text      = ConfidentialityLabel(folder.ConfidentialityLevel);
+            lblConfidentialityBadge.Text = ConfidentialityLabel(folder.ConfidentialityLevel);
             lblConfidentialityBadge.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
-            lblContentInfo.Text   = string.Format("กำลังดู: {0}", folder.FolderName);
             lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", folder.FolderName);
         }
 
@@ -7814,7 +7975,7 @@ namespace CMS.Presentation
             if (qa.Folder == null || qa.Folder.IsDeleted || qa.Folder.IsArchived)
             {
                 string status = qa.Folder == null ? "ไม่พบ Folder นี้ในระบบ"
-                    : qa.Folder.IsDeleted   ? "Folder นี้ถูกลบแล้ว"
+                    : qa.Folder.IsDeleted ? "Folder นี้ถูกลบแล้ว"
                     : "Folder นี้ถูก Archive แล้ว";
                 ShowInfo(string.Format("⚠️ {0} ไม่สามารถนำทางไปได้", status));
                 return;
@@ -7841,7 +8002,7 @@ namespace CMS.Presentation
                 _isNavigating = true;
                 try { _presenter.LoadFolderTree(_selectedOrgUnitId); }
                 finally { _isNavigating = false; }
-                
+
                 var t = new System.Windows.Forms.Timer { Interval = 100 };
                 t.Tick += (s, args) =>
                 {
@@ -7864,7 +8025,7 @@ namespace CMS.Presentation
                     _isNavigating = true;
                     try { _presenter.LoadFolderTree(_selectedOrgUnitId); }
                     finally { _isNavigating = false; }
-                    
+
                     var t = new System.Windows.Forms.Timer { Interval = 100 };
                     t.Tick += (s, args) =>
                     {
@@ -7903,9 +8064,9 @@ namespace CMS.Presentation
             pnlRecycleBinNode.Visible = false;
 
             // Fully collapse the bottom panel — set min size to 0 first so it collapses completely
-            splitMain.Panel2MinSize    = 0;
-            splitMain.Panel2Collapsed  = true;
-            splitMain.IsSplitterFixed  = true;
+            splitMain.Panel2MinSize = 0;
+            splitMain.Panel2Collapsed = true;
+            splitMain.IsSplitterFixed = true;
         }
 
         // -----------------------------------------------------------------------
@@ -7922,12 +8083,12 @@ namespace CMS.Presentation
         /// </summary>
         private sealed class ListViewItemComparer : System.Collections.IComparer
         {
-            private readonly int  _column;
+            private readonly int _column;
             private readonly bool _ascending;
 
             public ListViewItemComparer(int column, bool ascending)
             {
-                _column    = column;
+                _column = column;
                 _ascending = ascending;
             }
 
@@ -7941,7 +8102,7 @@ namespace CMS.Presentation
 
                 // Folders always before files (Req 4.4)
                 if (xIsFolder && !yIsFolder) return -1;
-                if (!xIsFolder && yIsFolder) return  1;
+                if (!xIsFolder && yIsFolder) return 1;
 
                 // Same type — compare by column
                 int result = CompareByColumn(itemX, itemY);

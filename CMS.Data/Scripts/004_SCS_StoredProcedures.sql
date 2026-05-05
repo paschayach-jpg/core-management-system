@@ -507,12 +507,14 @@ CREATE PROCEDURE storage.sp_GetFolderByID
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT [FolderID], [FolderGUID], [FolderName], [ParentFolderID], [OrgUnitID], [TemplateID],
-           [ConfidentialityLevel], [FolderDepth], [PhysicalPath], [FolderSizeBytes], [FileCount],
-           [IsArchived], [ArchivedBy], [ArchivedDate], [IsDeleted], [DeletedBy], [DeletedDate],
-           [RecycleBinExpiry], [InheritPermission], [CreatedBy], [CreatedDate], [UpdatedBy], [UpdatedDate]
-    FROM   [storage].[Folder]
-    WHERE  [FolderID] = @FolderID;
+    SELECT f.[FolderID], f.[FolderGUID], f.[FolderName], f.[ParentFolderID], f.[OrgUnitID], f.[TemplateID],
+           f.[ConfidentialityLevel], f.[FolderDepth], f.[PhysicalPath], f.[FolderSizeBytes],
+           (SELECT COUNT(*) FROM storage.FileDocument fd
+            WHERE fd.FolderID = f.FolderID AND fd.FileStatus != 3 AND fd.DeletedDate IS NULL) AS FileCount,
+           f.[IsArchived], f.[ArchivedBy], f.[ArchivedDate], f.[IsDeleted], f.[DeletedBy], f.[DeletedDate],
+           f.[RecycleBinExpiry], f.[InheritPermission], f.[CreatedBy], f.[CreatedDate], f.[UpdatedBy], f.[UpdatedDate]
+    FROM   [storage].[Folder] f
+    WHERE  f.[FolderID] = @FolderID;
 END
 GO
 
@@ -521,12 +523,14 @@ CREATE PROCEDURE storage.sp_GetFolderChildren
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT [FolderID], [FolderGUID], [FolderName], [ParentFolderID], [OrgUnitID], [TemplateID],
-           [ConfidentialityLevel], [FolderDepth], [PhysicalPath], [FolderSizeBytes], [FileCount],
-           [IsArchived], [ArchivedBy], [ArchivedDate], [IsDeleted], [DeletedBy], [DeletedDate],
-           [RecycleBinExpiry], [InheritPermission], [CreatedBy], [CreatedDate], [UpdatedBy], [UpdatedDate]
-    FROM   [storage].[Folder]
-    WHERE  [ParentFolderID] = @ParentFolderID AND [IsDeleted] = 0;
+    SELECT f.[FolderID], f.[FolderGUID], f.[FolderName], f.[ParentFolderID], f.[OrgUnitID], f.[TemplateID],
+           f.[ConfidentialityLevel], f.[FolderDepth], f.[PhysicalPath], f.[FolderSizeBytes],
+           (SELECT COUNT(*) FROM storage.FileDocument fd
+            WHERE fd.FolderID = f.FolderID AND fd.FileStatus != 3 AND fd.DeletedDate IS NULL) AS FileCount,
+           f.[IsArchived], f.[ArchivedBy], f.[ArchivedDate], f.[IsDeleted], f.[DeletedBy], f.[DeletedDate],
+           f.[RecycleBinExpiry], f.[InheritPermission], f.[CreatedBy], f.[CreatedDate], f.[UpdatedBy], f.[UpdatedDate]
+    FROM   [storage].[Folder] f
+    WHERE  f.[ParentFolderID] = @ParentFolderID AND f.[IsDeleted] = 0;
 END
 GO
 
@@ -535,12 +539,14 @@ CREATE PROCEDURE storage.sp_GetRootFoldersByOrgUnit
 AS
 BEGIN
     SET NOCOUNT ON;
-    SELECT [FolderID], [FolderGUID], [FolderName], [ParentFolderID], [OrgUnitID], [TemplateID],
-           [ConfidentialityLevel], [FolderDepth], [PhysicalPath], [FolderSizeBytes], [FileCount],
-           [IsArchived], [ArchivedBy], [ArchivedDate], [IsDeleted], [DeletedBy], [DeletedDate],
-           [RecycleBinExpiry], [InheritPermission], [CreatedBy], [CreatedDate], [UpdatedBy], [UpdatedDate]
-    FROM   [storage].[Folder]
-    WHERE  [OrgUnitID] = @OrgUnitID AND [ParentFolderID] IS NULL AND [IsDeleted] = 0;
+    SELECT f.[FolderID], f.[FolderGUID], f.[FolderName], f.[ParentFolderID], f.[OrgUnitID], f.[TemplateID],
+           f.[ConfidentialityLevel], f.[FolderDepth], f.[PhysicalPath], f.[FolderSizeBytes],
+           (SELECT COUNT(*) FROM storage.FileDocument fd
+            WHERE fd.FolderID = f.FolderID AND fd.FileStatus != 3 AND fd.DeletedDate IS NULL) AS FileCount,
+           f.[IsArchived], f.[ArchivedBy], f.[ArchivedDate], f.[IsDeleted], f.[DeletedBy], f.[DeletedDate],
+           f.[RecycleBinExpiry], f.[InheritPermission], f.[CreatedBy], f.[CreatedDate], f.[UpdatedBy], f.[UpdatedDate]
+    FROM   [storage].[Folder] f
+    WHERE  f.[OrgUnitID] = @OrgUnitID AND f.[ParentFolderID] IS NULL AND f.[IsDeleted] = 0;
 END
 GO
 
@@ -847,27 +853,29 @@ CREATE PROCEDURE audit.sp_InsertAuditLog
     @MachineName NVARCHAR(100),
     @SessionID NVARCHAR(100),
     @Result    TINYINT,
-    @ErrorMessage NVARCHAR(500)
+    @ErrorMessage NVARCHAR(500),
+    @AuditDate DATETIME = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     INSERT INTO audit.AuditLog
-        (UserID, UserName, UserRole, Module, Action, TableName, RecordID,
+        (AuditDate, UserID, UserName, UserRole, Module, Action, TableName, RecordID,
          OldValue, NewValue, IPAddress, MachineName, SessionID, Result, ErrorMessage)
     VALUES
-        (@UserID, @UserName, @UserRole, @Module, @Action, @TableName, @RecordID,
+        (ISNULL(@AuditDate, GETDATE()), @UserID, @UserName, @UserRole, @Module, @Action, @TableName, @RecordID,
          @OldValue, @NewValue, @IPAddress, @MachineName, @SessionID, @Result, @ErrorMessage);
     SELECT SCOPE_IDENTITY() AS NewAuditID;
 END
 GO
 
 CREATE PROCEDURE audit.sp_QueryAuditLog
-    @FromDate  DATETIME,
-    @ToDate    DATETIME,
-    @UserID    INT,
-    @Module    VARCHAR(50),
-    @Action    VARCHAR(50),
-    @Result    TINYINT,
+    @FromDate   DATETIME,
+    @ToDate     DATETIME,
+    @UserID     INT,
+    @UserName   NVARCHAR(200),
+    @Module     NVARCHAR(100),
+    @Action     NVARCHAR(100),
+    @Result     TINYINT,
     @PageNumber INT,
     @PageSize   INT
 AS
@@ -880,10 +888,11 @@ BEGIN
            SessionID, Result, ErrorMessage
     FROM   audit.AuditLog
     WHERE  AuditDate >= @FromDate AND AuditDate <= @ToDate
-      AND  (@UserID  IS NULL OR UserID  = @UserID)
-      AND  (@Module  IS NULL OR Module  = @Module)
-      AND  (@Action  IS NULL OR Action  = @Action)
-      AND  (@Result  IS NULL OR Result  = @Result)
+      AND  (@UserID   IS NULL OR UserID   = @UserID)
+      AND  (@UserName IS NULL OR UserName LIKE '%' + @UserName + '%')
+      AND  (@Module   IS NULL OR Module   = @Module)
+      AND  (@Action   IS NULL OR Action   = @Action)
+      AND  (@Result   IS NULL OR Result   = @Result)
     ORDER  BY AuditDate DESC
     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
 END

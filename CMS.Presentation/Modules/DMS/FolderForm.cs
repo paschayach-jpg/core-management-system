@@ -388,6 +388,8 @@ namespace CMS.Presentation
             var mnuDelete = new ToolStripMenuItem("🗑️  ลบ Folder", null, (s, e) => btnDelete_Click(s, e));
             var mnuArchive = new ToolStripMenuItem("📦  Archive", null, (s, e) => btnArchive_Click(s, e));
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
+            var mnuMyPermission = new ToolStripMenuItem("🔐  สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
+            var mnuSharedWithMe = new ToolStripMenuItem("📥  แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
             var mnuProperties = new ToolStripMenuItem("ℹ️  คุณสมบัติ", null, CtxProperties_Click);
             var mnuAddQuickAccess = new ToolStripMenuItem("⭐  เพิ่มใน Quick Access", null, CtxAddQuickAccess_Click);
 
@@ -407,6 +409,8 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuDelete);
             //ctx.Items.Add(mnuArchive);
             ctx.Items.Add(mnuPermission);
+            ctx.Items.Add(mnuMyPermission);
+            ctx.Items.Add(mnuSharedWithMe);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuAddQuickAccess);
             ctx.Items.Add(new ToolStripSeparator());
@@ -433,6 +437,8 @@ namespace CMS.Presentation
                 mnuDelete.Enabled = canDeleteFolder;
                 mnuArchive.Enabled = hasFolder && canEdit;
                 mnuPermission.Enabled = hasFolder && isPrivileged;
+                mnuMyPermission.Enabled = true;
+                mnuSharedWithMe.Enabled = true;
                 mnuProperties.Enabled = hasFolder && canView;
                 mnuAddQuickAccess.Enabled = hasFolder && canView && _quickAccessController != null;
                 // mnuReload ใช้ได้เสมอ
@@ -471,6 +477,8 @@ namespace CMS.Presentation
             var mnuClearFolder = new ToolStripMenuItem("🗑️  ล้างไฟล์ทั้งหมดใน Folder...", null, (s, e) => ClearFolderContents());
             var mnuArchive = new ToolStripMenuItem("Archive", null, (s, e) => btnArchive_Click(s, e));
             var mnuPermission = new ToolStripMenuItem("ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
+            var mnuMyPermission = new ToolStripMenuItem("สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
+            var mnuSharedWithMe = new ToolStripMenuItem("แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
             var mnuProperties = new ToolStripMenuItem("คุณสมบัติ", null, CtxFileProperties_Click) { ShortcutKeys = System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.Enter, ShowShortcutKeys = true };
 
             ctx.Items.Add(mnuUpload);
@@ -490,6 +498,8 @@ namespace CMS.Presentation
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuArchive);
             ctx.Items.Add(mnuPermission);
+            ctx.Items.Add(mnuMyPermission);
+            ctx.Items.Add(mnuSharedWithMe);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuProperties);
 
@@ -513,15 +523,21 @@ namespace CMS.Presentation
                 bool canAdd = isPrivileged || _user.CanAddToFolder(level);
                 bool canEdit = isPrivileged || _user.CanEditFolder(level);
 
-                // folder ที่เลือกใน content list (กรณี tag เป็น Folder)
-                Folder contentFolder = null;
-                if (contentsListView.SelectedItems.Count > 0)
-                    contentFolder = contentsListView.SelectedItems[0].Tag as Folder;
-                bool canDeleteContent = canEdit && (hasFileSelection || (contentFolder != null && CanDeleteFolder(contentFolder)));
+                // folders ที่เลือกใน content list (รองรับหลาย folder)
+                var selectedFoldersInContent = contentsListView.SelectedItems
+                    .Cast<ListViewItem>()
+                    .Select(item => item.Tag as Folder)
+                    .Where(f => f != null)
+                    .ToList();
+                Folder contentFolder = selectedFoldersInContent.Count > 0 ? selectedFoldersInContent[0] : null;
+
+                // ลบได้ถ้า canEdit และมีไฟล์หรือ folder ที่ลบได้อยู่อย่างน้อย 1 รายการ
+                bool canDeleteContent = canEdit && (hasFileSelection ||
+                    selectedFoldersInContent.Any(f => CanDeleteFolder(f)));
 
                 // Check if any item (file or folder) is selected in content list
                 bool hasSelection = contentsListView.SelectedItems.Count > 0 &&
-                                   (hasFileSelection || contentFolder != null);
+                                   (hasFileSelection || selectedFoldersInContent.Count > 0);
 
                 bool canUseFileClipboard = hasFileSelection && !hasFolderSelection;
                 bool canMove = hasSelection
@@ -546,10 +562,28 @@ namespace CMS.Presentation
                 mnuClearFolder.Enabled = _fileBrowseController != null && _fileCommandController != null && _currentNavFolderId.HasValue && canEdit;
                 mnuArchive.Enabled = singleFileSelected && canEdit;
                 mnuPermission.Enabled = isPrivileged;
+                mnuMyPermission.Enabled = true;
+                mnuSharedWithMe.Enabled = true;
                 mnuProperties.Enabled = singleFileSelected && canView;
             };
 
             contentsListView.ContextMenuStrip = ctx;
+        }
+
+        private void CtxMyPermissionSummary_Click(object sender, EventArgs e)
+        {
+            if (OnMenuActionRequested("UserPermissionSummary"))
+                return;
+
+            ShowInfo("ไม่สามารถเปิดเมนู สิทธิ์ของฉัน ได้ในขณะนี้");
+        }
+
+        private void CtxSharedWithMe_Click(object sender, EventArgs e)
+        {
+            if (OnMenuActionRequested("SharedWithMe"))
+                return;
+
+            ShowInfo("ไม่สามารถเปิดเมนู แบ่งปันให้ฉัน ได้ในขณะนี้");
         }
 
         private async void CtxFileOpen_Click(object sender, EventArgs e)
@@ -1298,26 +1332,54 @@ namespace CMS.Presentation
             if (menu == null)
                 return "folder";
 
-            if (hasChildren)
-            {
-                string groupName = (menu.MenuName ?? string.Empty).Trim().ToLowerInvariant();
-                if (groupName.Contains("องค์กร") || groupName.Contains("org"))
-                    return "organization";
-
-                return "folder";
-            }
-
             string action = MapConfiguredActionToTag(menu.FormClassName)
                 ?? MapMenuKeyToActionTag(menu.MenuKey)
                 ?? MapMenuNameToActionTag(menu.MenuName);
 
+            if (hasChildren)
+                return ResolveMainMenuGroupIconKey(action, menu.MenuName);
+
             return ResolveMainMenuLeafIconKey(action, menu.MenuName);
+        }
+
+        private static string ResolveMainMenuGroupIconKey(string action, string menuName)
+        {
+            switch ((action ?? string.Empty).Trim())
+            {
+                case "OrgGroup":
+                case "PermissionGroup":
+                    return "organization";
+                case "ReportGroup":
+                case "DocumentGroup":
+                    return "file_docs";
+                case "SystemGroup":
+                    return "book_green";
+                default:
+                    break;
+            }
+
+            string lowerName = (menuName ?? string.Empty).ToLowerInvariant();
+            if (lowerName.Contains("องค์กร") || lowerName.Contains("สิทธิ") || lowerName.Contains("ผู้ใช้") || lowerName.Contains("org") || lowerName.Contains("user") || lowerName.Contains("permission"))
+                return "organization";
+            if (lowerName.Contains("รายงาน") || lowerName.Contains("report") || lowerName.Contains("log") || lowerName.Contains("เอกสาร"))
+                return "file_docs";
+            if (lowerName.Contains("ระบบ") || lowerName.Contains("config") || lowerName.Contains("setting") || lowerName.Contains("ตั้งค่า"))
+                return "book_green";
+
+            return "folder";
         }
 
         private static string ResolveMainMenuLeafIconKey(string action, string menuName)
         {
             switch ((action ?? string.Empty).Trim())
             {
+                case "Home":
+                    return "folder";
+                case "ShareDialog":
+                case "SharedWithMe":
+                case "ShareManagement":
+                case "UserPermissionSummary":
+                    return "book_orange";
                 case "KnowledgeBaseForm":
                 case "KBMainForm":
                 case "KBCategoryForm":
@@ -1325,18 +1387,48 @@ namespace CMS.Presentation
                 case "AuditLog":
                 case "AccessLog":
                 case "ApprovalInbox":
+                case "PdpaReport":
+                case "SLAReport":
+                case "WorkflowDetail":
+                case "WorkflowTemplateList":
+                case "WorkflowDashboard":
+                case "WorkflowVisualFlow":
                     return "file_docs";
                 case "OrgStructure":
+                    return "folder";
                 case "UserManagement":
                 case "UserAccess":
+                case "PermissionAdmin":
+                case "FolderSettings":
+                case "AuthorityConfig":
                     return "organization";
+                case "MenuManagement":
+                case "ConfigAdmin":
+                    return "book_green";
+                case "FolderTemplate":
+                    return "folder";
                 case "SyncEmployee":
+                case "WorkflowDesigner":
+                case "WorkflowDelegation":
                     return "lightning_bolt";
+                case "RecycleBin":
+                case "ArchiveFolder":
+                    return "book_red";
                 default:
                     break;
             }
 
             string lowerName = (menuName ?? string.Empty).ToLowerInvariant();
+            if (lowerName.Contains("แชร์") || lowerName.Contains("share"))
+                return "book_orange";
+            if (lowerName.Contains("template") || lowerName.Contains("เทมเพลต") || lowerName.Contains("แม่แบบ"))
+                return "folder";
+            if (lowerName.Contains("ตั้งค่า") || lowerName.Contains("config") || lowerName.Contains("menu"))
+                return "book_green";
+            if (lowerName.Contains("workflow") || lowerName.Contains("sync") || lowerName.Contains("มอบหมาย"))
+                return "lightning_bolt";
+            if (lowerName.Contains("ถังขยะ") || lowerName.Contains("archive") || lowerName.Contains("recycle") || lowerName.Contains("trash"))
+                return "book_red";
             if (lowerName.Contains("รายงาน") || lowerName.Contains("report") || lowerName.Contains("log"))
                 return "file_docs";
             if (lowerName.Contains("องค์กร") || lowerName.Contains("ผู้ใช้") || lowerName.Contains("org") || lowerName.Contains("user"))
@@ -2803,6 +2895,9 @@ namespace CMS.Presentation
             ApplyPerformanceTweaks();
             this.WindowState = FormWindowState.Maximized;
 
+            pnlContentHeader.Visible = true;
+            pnlContentHeader.Height = 26;
+
             // Set up folder open/closed icons from Resources (shared ImageList)
             var folderImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
             folderImageList.Images.Add("folder", Properties.Resources.folder);
@@ -2904,6 +2999,10 @@ namespace CMS.Presentation
             mainMenuImageList.Images.Add("open_folder", Properties.Resources.open_folder);
             mainMenuImageList.Images.Add("organization", Properties.Resources.organization);
             mainMenuImageList.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
+            mainMenuImageList.Images.Add("book_red", Properties.Resources.book_red);
+            mainMenuImageList.Images.Add("book_orange", Properties.Resources.book_orange);
+            mainMenuImageList.Images.Add("book_blue", Properties.Resources.book_bule);
+            mainMenuImageList.Images.Add("book_green", Properties.Resources.book_green);
             try
             {
                 mainMenuImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1);
@@ -3374,12 +3473,21 @@ namespace CMS.Presentation
             lblFilterStatus.Text = string.Empty;
             lblFilterStatus.Visible = false;
 
-            // Update content header info
+            // Update content header info using actual loaded rows (prevents stale Folder.FileCount)
+            int totalItems = folderList.Count + fileList.Count;
+            long totalFileSize = fileList.Sum(f => f.FileSizeBytes);
+            var currentFolder = SelectedFolder ?? _lastSelectedFolder;
+            string currentLevel = currentFolder != null
+                ? ConfidentialityLabel(currentFolder.ConfidentialityLevel)
+                : "ทุกระดับ";
+            string currentName = currentFolder != null
+                ? currentFolder.FolderName
+                : (_selectedOrgUnitName ?? "รายการทั้งหมด");
+
             lblContentInfo.ForeColor = SystemColors.ControlText;
             lblContentInfo.Text = string.Format(
-                "{0} Folder, {1} ไฟล์  |  ขนาดรวม {2}  |  ไม่มีรายการที่เลือก",
-                folderList.Count, fileList.Count,
-                FormatBytes(fileList.Sum(f => f.FileSizeBytes)));
+                "{0} รายการ ({1} Folder, {2} ไฟล์ ขนาด {3}) | {4} | {5}",
+                totalItems, folderList.Count, fileList.Count, FormatBytes(totalFileSize), currentLevel, currentName);
 
             // Adjust column widths to fit content
             AdjustNameColumnWidth();
@@ -3636,6 +3744,7 @@ namespace CMS.Presentation
                 _lastSelectedFolder = folder;
                 _currentNavFolderId = folder.FolderId;
 
+                lblContentInfo.Text = string.Format("📁 {0} | กำลังโหลด...", folder.FolderName);
                 _presenter.GetFolderContents(folder.FolderId);
 
                 // Build breadcrumb จาก tree hierarchy แทน string-append
@@ -3668,8 +3777,6 @@ namespace CMS.Presentation
                 ApplyBreadcrumb(newBreadcrumb, newIds);
                 UpdateNavButtons();
 
-                lblContentInfo.Text = string.Format("{0} รายการ | {1} | {2}",
-                    folder.FileCount, ConfidentialityLabel(folder.ConfidentialityLevel), folder.FolderName);
                 lblConfidentialityBadge.Text = ConfidentialityLabel(folder.ConfidentialityLevel);
                 lblConfidentialityBadge.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);
                 lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", folder.FolderName);
@@ -5142,24 +5249,8 @@ namespace CMS.Presentation
 
             if (result == DialogResult.OK)
             {
-                // Reload folder tree ก่อน (file count update)
-                // แต่ต้องป้องกันไม่ให้ AfterSelect override content ที่จะแสดง
-                _isNavigating = true;
-                try
-                {
-                    _presenter.LoadFolderTree(_selectedOrgUnitId);
-                }
-                finally
-                {
-                    _isNavigating = false;
-                }
-
-                // อัพเดท state
-                _currentNavFolderId = uploadFolderId;
                 _lastSelectedFolder = folder;
-
-                // Reload เนื้อหาของ folder ที่ upload ไป (ทำหลังสุดเพื่อไม่ให้ถูก override)
-                _presenter.GetFolderContents(uploadFolderId);
+                RefreshCurrentViewAfterFileMutation(uploadFolderId);
             }
         }
 
@@ -5276,6 +5367,25 @@ namespace CMS.Presentation
             }
 
             _presenter.ShowOrgUnitRootFolders(_selectedOrgUnitId);
+        }
+
+        /// <summary>
+        /// Refresh tree + current content view to keep folder file counts in sync after add/delete.
+        /// </summary>
+        private void RefreshCurrentViewAfterFileMutation(int folderId)
+        {
+            _isNavigating = true;
+            try
+            {
+                _presenter.LoadFolderTree(_selectedOrgUnitId);
+            }
+            finally
+            {
+                _isNavigating = false;
+            }
+
+            _currentNavFolderId = folderId;
+            _presenter.GetFolderContents(folderId);
         }
 
         private void BtnMove_Click(object sender, EventArgs e)
@@ -5593,27 +5703,16 @@ namespace CMS.Presentation
                     .Select(group => group.First())
                     .ToList();
 
-                if (selectedFiles.Count > 0)
-                {
-                    DeleteSelectedFiles(selectedFiles);
-                    return;
-                }
+                var selectedFolders = contentsListView.SelectedItems.Cast<ListViewItem>()
+                    .Select(item => item.Tag as Folder)
+                    .Where(f => f != null)
+                    .GroupBy(f => f.FolderId)
+                    .Select(group => group.First())
+                    .ToList();
 
-                var tag = contentsListView.SelectedItems[0].Tag;
-
-                // ── กรณี File ──────────────────────────────────────────────────
-                var file = tag as FileDocument;
-                if (file != null)
+                if (selectedFiles.Count > 0 || selectedFolders.Count > 0)
                 {
-                    DeleteSelectedFiles(new List<FileDocument> { file });
-                    return;
-                }
-
-                // ── กรณี Folder ในรายการ (content list) ───────────────────────
-                var folderInContent = tag as Folder;
-                if (folderInContent != null)
-                {
-                    DeleteSelectedFolder(folderInContent);
+                    DeleteSelectedItems(selectedFiles, selectedFolders);
                     return;
                 }
             }
@@ -5627,6 +5726,136 @@ namespace CMS.Presentation
             }
 
             ShowError("กรุณาเลือกไฟล์หรือโฟลเดอร์ที่ต้องการลบ");
+        }
+
+        /// <summary>
+        /// ลบหลาย items พร้อมกัน (files, folders หรือ mixed selection)
+        /// </summary>
+        private void DeleteSelectedItems(IList<FileDocument> files, IList<Folder> folders)
+        {
+            // ── กรณีมีแค่ไฟล์ → ใช้ logic เดิม ──────────────────────────────
+            if (folders.Count == 0)
+            {
+                DeleteSelectedFiles(files);
+                return;
+            }
+
+            // ── กรณีมี folder เดียว ไม่มีไฟล์ → ใช้ logic เดิม ───────────────
+            if (files.Count == 0 && folders.Count == 1)
+            {
+                DeleteSelectedFolder(folders[0]);
+                return;
+            }
+
+            // ── หลาย items ────────────────────────────────────────────────────
+            // ตรวจสอบ folder ที่ห้ามลบ (root confidentiality folders)
+            var undeletable = folders.Where(f => !CanDeleteFolder(f)).ToList();
+            if (undeletable.Count > 0)
+            {
+                MessageBox.Show(
+                    string.Format(
+                        "Folder '{0}' เป็น Folder หลักของระบบ ไม่สามารถรวมในชุดลบนี้ได้\n\nกรุณาตรวจสอบการเลือกอีกครั้ง",
+                        undeletable[0].Name),
+                    "ไม่สามารถลบได้",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Stop);
+                return;
+            }
+
+            var foldersWithFiles = folders.Where(f => f.FileCount > 0).ToList();
+            var emptyFolders = folders.Where(f => f.FileCount == 0).ToList();
+
+            // สร้างข้อความยืนยันรวม
+            var sb = new System.Text.StringBuilder();
+            if (files.Count > 0)
+                sb.AppendLine(string.Format("• ไฟล์  {0} รายการ  → ย้ายไปถังขยะ", files.Count));
+            if (emptyFolders.Count > 0)
+                sb.AppendLine(string.Format("• Folder ว่าง  {0} รายการ  → ย้ายไปถังขยะ", emptyFolders.Count));
+            if (foldersWithFiles.Count > 0)
+                sb.AppendLine(string.Format("• Folder ที่มีไฟล์  {0} รายการ  → ยื่นคำขออนุมัติ", foldersWithFiles.Count));
+
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการดำเนินการกับรายการที่เลือกต่อไปนี้หรือไม่?\n\n{0}", sb.ToString().TrimEnd()),
+                "ยืนยันการลบหลายรายการ",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes) return;
+
+            // 1. ลบไฟล์ (ไม่ต้อง refresh ระหว่างกลาง — จะ refresh รวมตอนท้าย)
+            if (files.Count > 0 && _fileCommandController != null)
+            {
+                int deletedFiles = 0, failedFiles = 0;
+                string firstFileError = null;
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        _fileCommandController.DeleteFile(file.FileDocumentId, _user);
+                        deletedFiles++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failedFiles++;
+                        if (firstFileError == null)
+                            firstFileError = ex.Message;
+                    }
+                }
+                if (failedFiles > 0)
+                    ShowError(string.Format("ลบไฟล์ไม่สำเร็จ {0} รายการ: {1}", failedFiles, firstFileError));
+            }
+
+            // 2. ลบ empty folders
+            foreach (var folder in emptyFolders)
+            {
+                try { _presenter.DeleteFolder(folder.FolderId); }
+                catch (Exception ex)
+                {
+                    ShowError(string.Format("ลบ Folder '{0}' ไม่สำเร็จ: {1}", folder.Name, ex.Message));
+                }
+            }
+
+            // 3. Folder ที่มีไฟล์ → ยื่นคำขออนุมัติ
+            if (foldersWithFiles.Count > 0)
+            {
+                if (_approvalFolderController == null)
+                {
+                    MessageBox.Show(
+                        string.Format("Folder ที่มีไฟล์ {0} รายการ ต้องผ่านการอนุมัติจาก Admin", foldersWithFiles.Count),
+                        "ต้องขออนุมัติก่อนลบ",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    string reason = PromptForReason(
+                        string.Format("กรุณาระบุเหตุผลในการลบ Folder ที่มีไฟล์ {0} รายการ:", foldersWithFiles.Count));
+                    if (reason != null)
+                    {
+                        int approvalSent = 0;
+                        foreach (var folder in foldersWithFiles)
+                        {
+                            try
+                            {
+                                _approvalFolderController.RequestFolderDelete(folder.FolderId, reason, _user);
+                                approvalSent++;
+                            }
+                            catch (Exception ex)
+                            {
+                                ShowError(string.Format("ส่งคำขออนุมัติ Folder '{0}' ไม่สำเร็จ: {1}", folder.Name, ex.Message));
+                            }
+                        }
+                        if (approvalSent > 0)
+                            ShowInfo(string.Format("ส่งคำขออนุมัติลบ Folder {0} รายการเรียบร้อยแล้ว", approvalSent));
+                    }
+                }
+            }
+
+            // Refresh view
+            if (_currentNavFolderId.HasValue)
+                RefreshCurrentViewAfterFileMutation(_currentNavFolderId.Value);
+            else if (files.Count > 0)
+                RefreshCurrentViewAfterFileMutation(files[0].FolderID);
         }
 
         private void DeleteSelectedFile(FileDocument file)
@@ -5685,9 +5914,15 @@ namespace CMS.Presentation
                 }
             }
 
+            int? refreshFolderId = null;
             var currentFolder = SelectedFolder;
             if (currentFolder != null)
-                _presenter.GetFolderContents(currentFolder.FolderId);
+                refreshFolderId = currentFolder.FolderId;
+            else if (files.Count > 0)
+                refreshFolderId = files[0].FolderID;
+
+            if (refreshFolderId.HasValue)
+                RefreshCurrentViewAfterFileMutation(refreshFolderId.Value);
 
             if (failed == 0)
             {
@@ -5861,8 +6096,8 @@ namespace CMS.Presentation
                 }
             }
 
-            // Reload content
-            _presenter.GetFolderContents(rootFolderId);
+            // Reload tree + content to keep counts in sync immediately
+            RefreshCurrentViewAfterFileMutation(rootFolderId);
 
             string msg = failed == 0
                 ? string.Format("ล้าง Folder สำเร็จ — ลบ {0} ไฟล์", deleted)

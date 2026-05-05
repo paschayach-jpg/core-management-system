@@ -675,16 +675,19 @@ CREATE PROCEDURE audit.sp_InsertAuditLog
     @MachineName  NVARCHAR(200),
     @SessionID    NVARCHAR(100),
     @Result       TINYINT,
-    @ErrorMessage NVARCHAR(MAX)
+    @ErrorMessage NVARCHAR(MAX),
+    @AuditDate    DATETIME2 = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     INSERT INTO AuditLog (
+        AuditDate,
         UserID, UserName, UserRole, Module, Action,
         TableName, RecordID, OldValue, NewValue,
         IPAddress, MachineName, SessionID, Result, ErrorMessage
     )
     VALUES (
+        ISNULL(@AuditDate, GETDATE()),
         @UserID, @UserName, @UserRole, @Module, @Action,
         @TableName, @RecordID, @OldValue, @NewValue,
         @IPAddress, @MachineName, @SessionID, @Result, @ErrorMessage
@@ -697,6 +700,7 @@ CREATE PROCEDURE audit.sp_QueryAuditLog
     @FromDate   DATETIME2,
     @ToDate     DATETIME2,
     @UserID     INT,
+    @UserName   NVARCHAR(200),
     @Module     NVARCHAR(100),
     @Action     NVARCHAR(100),
     @Result     TINYINT,
@@ -713,13 +717,14 @@ BEGIN
            Module, Action, TableName, RecordID,
            OldValue, NewValue, IPAddress, MachineName,
            SessionID, Result, ErrorMessage
-    FROM   AuditLog
+    FROM   audit.AuditLog
     WHERE  AuditDate >= @FromDate
       AND  AuditDate <= @ToDate
-      AND  (@UserID  IS NULL OR UserID  = @UserID)
-      AND  (@Module  IS NULL OR Module  = @Module)
-      AND  (@Action  IS NULL OR Action  = @Action)
-      AND  (@Result  IS NULL OR Result  = @Result)
+      AND  (@UserID   IS NULL OR UserID   = @UserID)
+      AND  (@UserName IS NULL OR UserName LIKE '%' + @UserName + '%')
+      AND  (@Module   IS NULL OR Module   = @Module)
+      AND  (@Action   IS NULL OR Action   = @Action)
+      AND  (@Result   IS NULL OR Result   = @Result)
     ORDER  BY AuditDate DESC
     OFFSET @Offset ROWS
     FETCH  NEXT @PageSize ROWS ONLY;

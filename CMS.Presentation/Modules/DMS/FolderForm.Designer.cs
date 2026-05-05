@@ -783,6 +783,7 @@ namespace CMS.Presentation
             // splitContent.Panel1
             // 
             this.splitContent.Panel1.Controls.Add(this.pnlContent);
+            this.splitContent.Panel1.Controls.Add(this.pnlContentHeader);
             // 
             // splitContent.Panel2
             // 
@@ -794,10 +795,9 @@ namespace CMS.Presentation
             this.splitContent.TabIndex = 0;
             // 
             // pnlContent
-            // 
+            //
             this.pnlContent.Controls.Add(this.contentsListView);
             this.pnlContent.Controls.Add(this.pnlFilter);
-            this.pnlContent.Controls.Add(this.pnlContentHeader);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(0, 0);
             this.pnlContent.Name = "pnlContent";
