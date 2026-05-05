@@ -1059,21 +1059,6 @@ namespace CMS.Services
             int sourceFolderId = request.SourceFolderId;
             int destinationParentFolderId = request.DestinationParentFolderId;
 
-            // 3.1 — Permission check: role gate
-            if (user.AppRole < 2)
-                throw new UnauthorizedAccessException("ต้องมีสิทธิ์ระดับ SrOfficer ขึ้นไป");
-
-            // 3.1 — Permission check: Write on source and destination (skip for Admin)
-            if (user.AppRole < 4)
-            {
-                if (!_permissionService.CheckPermission(user.UserID, sourceFolderId, "Write"))
-                    throw new UnauthorizedAccessException(
-                        string.Format("ไม่มีสิทธิ์เขียนใน Folder ต้นทาง (ID: {0})", sourceFolderId));
-
-                if (!_permissionService.CheckPermission(user.UserID, destinationParentFolderId, "Write"))
-                    throw new UnauthorizedAccessException("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง");
-            }
-
             // 3.2 — Load source and destination
             var source = _folderRepository.GetById(sourceFolderId);
             var destination = _folderRepository.GetById(destinationParentFolderId);
@@ -1084,6 +1069,29 @@ namespace CMS.Services
             if (destination == null)
                 throw new InvalidOperationException(
                     string.Format("ไม่พบ Folder ปลายทาง ID {0}", destinationParentFolderId));
+
+            // 3.1 — Permission check: role gate
+            if (user.AppRole < 2)
+                throw new UnauthorizedAccessException("ต้องมีสิทธิ์ระดับ SrOfficer ขึ้นไป");
+
+            // 3.1 — Permission check on source and destination (skip for Admin)
+            if (user.AppRole < 4)
+            {
+                bool hasSourceAuthority = user.CanAddToFolder(source.ConfidentialityLevel)
+                                       || user.CanEditFolder(source.ConfidentialityLevel);
+                bool hasSourceAcl = _permissionService.CheckPermission(user.UserID, sourceFolderId, "Write")
+                                 || _permissionService.CheckPermission(user.UserID, sourceFolderId, "Modify");
+                if (!hasSourceAuthority && !hasSourceAcl)
+                    throw new UnauthorizedAccessException(
+                        string.Format("ไม่มีสิทธิ์ย้ายจาก Folder ต้นทาง (ID: {0})", sourceFolderId));
+
+                bool hasDestinationAuthority = user.CanAddToFolder(destination.ConfidentialityLevel)
+                                            || user.CanEditFolder(destination.ConfidentialityLevel);
+                bool hasDestinationAcl = _permissionService.CheckPermission(user.UserID, destinationParentFolderId, "Write")
+                                      || _permissionService.CheckPermission(user.UserID, destinationParentFolderId, "Modify");
+                if (!hasDestinationAuthority && !hasDestinationAcl)
+                    throw new UnauthorizedAccessException("ไม่มีสิทธิ์ย้ายไปยัง Folder ปลายทาง");
+            }
 
             // 3.2 — Circular reference: self-move
             if (sourceFolderId == destinationParentFolderId)

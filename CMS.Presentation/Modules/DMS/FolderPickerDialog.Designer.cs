@@ -20,6 +20,10 @@ namespace CMS.Presentation
             this._split          = new System.Windows.Forms.SplitContainer();
             this._lblTreeHeader  = new System.Windows.Forms.Label();
             this._txtSearch      = new System.Windows.Forms.TextBox();
+            this._pnlTreeTools   = new System.Windows.Forms.Panel();
+            this._btnExpandAll   = new System.Windows.Forms.Button();
+            this._btnCollapseAll = new System.Windows.Forms.Button();
+            this._btnExpandLevel1 = new System.Windows.Forms.Button();
             this._treeView       = new System.Windows.Forms.TreeView();
             this._lblListHeader  = new System.Windows.Forms.Label();
             this._listView       = new System.Windows.Forms.ListView();
@@ -42,6 +46,7 @@ namespace CMS.Presentation
             this._split.Panel1.SuspendLayout();
             this._split.Panel2.SuspendLayout();
             this._split.SuspendLayout();
+            this._pnlTreeTools.SuspendLayout();
             this._pnlSummary.SuspendLayout();
             this._pnlFooter.SuspendLayout();
             this.SuspendLayout();
@@ -89,8 +94,9 @@ namespace CMS.Presentation
             this._split.Panel2Collapsed = true;
             this._split.TabIndex        = 2;
 
-            // Panel1: TreeHeader + Search + TreeView
+            // Panel1: TreeHeader + Search + Toolbar + TreeView
             this._split.Panel1.Controls.Add(this._treeView);
+            this._split.Panel1.Controls.Add(this._pnlTreeTools);
             this._split.Panel1.Controls.Add(this._txtSearch);
             this._split.Panel1.Controls.Add(this._lblTreeHeader);
 
@@ -119,6 +125,59 @@ namespace CMS.Presentation
             this._txtSearch.Text        = "🔍 พิมพ์ค้นหา folder...";
             this._txtSearch.TabIndex    = 1;
             this._txtSearch.TextChanged += new System.EventHandler(this.TxtSearch_TextChanged);
+
+            // ── _pnlTreeTools ────────────────────────────────────────────────
+            this._pnlTreeTools.BackColor = System.Drawing.Color.FromArgb(235, 240, 250);
+            this._pnlTreeTools.Controls.Add(this._btnExpandLevel1);
+            this._pnlTreeTools.Controls.Add(this._btnCollapseAll);
+            this._pnlTreeTools.Controls.Add(this._btnExpandAll);
+            this._pnlTreeTools.Dock      = System.Windows.Forms.DockStyle.Top;
+            this._pnlTreeTools.Height    = 30;
+            this._pnlTreeTools.Name      = "_pnlTreeTools";
+            this._pnlTreeTools.Padding   = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this._pnlTreeTools.TabIndex  = 10;
+
+            // ── _btnExpandAll ────────────────────────────────────────────────
+            this._btnExpandAll.BackColor = System.Drawing.Color.FromArgb(255, 255, 255);
+            this._btnExpandAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this._btnExpandAll.Font      = new System.Drawing.Font("Segoe UI", 8f);
+            this._btnExpandAll.ForeColor = System.Drawing.Color.FromArgb(31, 56, 100);
+            this._btnExpandAll.Location  = new System.Drawing.Point(4, 3);
+            this._btnExpandAll.Name      = "_btnExpandAll";
+            this._btnExpandAll.Size      = new System.Drawing.Size(90, 24);
+            this._btnExpandAll.TabIndex  = 0;
+            this._btnExpandAll.Text      = "+ ขยายทั้งหมด";
+            this._btnExpandAll.UseVisualStyleBackColor = false;
+            this._btnExpandAll.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(180, 195, 220);
+            this._btnExpandAll.Click += new System.EventHandler(this.BtnExpandAll_Click);
+
+            // ── _btnCollapseAll ──────────────────────────────────────────────
+            this._btnCollapseAll.BackColor = System.Drawing.Color.FromArgb(255, 255, 255);
+            this._btnCollapseAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this._btnCollapseAll.Font      = new System.Drawing.Font("Segoe UI", 8f);
+            this._btnCollapseAll.ForeColor = System.Drawing.Color.FromArgb(31, 56, 100);
+            this._btnCollapseAll.Location  = new System.Drawing.Point(98, 3);
+            this._btnCollapseAll.Name      = "_btnCollapseAll";
+            this._btnCollapseAll.Size      = new System.Drawing.Size(90, 24);
+            this._btnCollapseAll.TabIndex  = 1;
+            this._btnCollapseAll.Text      = "− ย่อทั้งหมด";
+            this._btnCollapseAll.UseVisualStyleBackColor = false;
+            this._btnCollapseAll.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(180, 195, 220);
+            this._btnCollapseAll.Click += new System.EventHandler(this.BtnCollapseAll_Click);
+
+            // ── _btnExpandLevel1 ─────────────────────────────────────────────
+            this._btnExpandLevel1.BackColor = System.Drawing.Color.FromArgb(255, 255, 255);
+            this._btnExpandLevel1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this._btnExpandLevel1.Font      = new System.Drawing.Font("Segoe UI", 8f);
+            this._btnExpandLevel1.ForeColor = System.Drawing.Color.FromArgb(31, 56, 100);
+            this._btnExpandLevel1.Location  = new System.Drawing.Point(192, 3);
+            this._btnExpandLevel1.Name      = "_btnExpandLevel1";
+            this._btnExpandLevel1.Size      = new System.Drawing.Size(90, 24);
+            this._btnExpandLevel1.TabIndex  = 2;
+            this._btnExpandLevel1.Text      = "⊕ ระดับ 1";
+            this._btnExpandLevel1.UseVisualStyleBackColor = false;
+            this._btnExpandLevel1.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(180, 195, 220);
+            this._btnExpandLevel1.Click += new System.EventHandler(this.BtnExpandLevel1_Click);
 
             // ── _treeView ────────────────────────────────────────────────────
             this._treeView.BorderStyle   = System.Windows.Forms.BorderStyle.None;
@@ -283,6 +342,7 @@ namespace CMS.Presentation
             this._split.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._split)).EndInit();
             this._split.ResumeLayout(false);
+            this._pnlTreeTools.ResumeLayout(false);
             this._pnlSummary.ResumeLayout(false);
             this._pnlFooter.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -308,6 +368,10 @@ namespace CMS.Presentation
         private System.Windows.Forms.Label          _lblSummaryDept;
         private System.Windows.Forms.Label          _lblSummaryLevel;
         private System.Windows.Forms.Label          _lblSummaryPath;
+        private System.Windows.Forms.Panel          _pnlTreeTools;
+        private System.Windows.Forms.Button         _btnExpandAll;
+        private System.Windows.Forms.Button         _btnCollapseAll;
+        private System.Windows.Forms.Button         _btnExpandLevel1;
         private System.Windows.Forms.Panel          _pnlFooter;
         private System.Windows.Forms.Button         _btnOk;
         private System.Windows.Forms.Button         _btnCancel;

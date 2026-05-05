@@ -309,7 +309,26 @@ namespace CMS.Services
                         Remark        = string.Format("ExternalShareID:{0}", shareId),
                         ExpiryDate    = DateTime.Now.AddDays(PendingApprovalExpiryDays)
                     };
-                    int approvalId = _approvalRepository.InsertRequest(approvalRequest);
+                    int approvalId;
+                    try
+                    {
+                        approvalId = _approvalRepository.InsertRequest(approvalRequest);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Backward compatibility: old DB constraint may not include EXTERNAL_SHARE.
+                        bool isRequestTypeConstraint = ex.Message != null &&
+                            ex.Message.IndexOf("CK_wf_ApprovalRequest_Type", StringComparison.OrdinalIgnoreCase) >= 0;
+                        if (!isRequestTypeConstraint)
+                            throw;
+
+                        _loggingService.Warn(
+                            "ShareService.CreateExternalShare: Falling back to RequestType=CHANGE_PERMISSION " +
+                            "because CK_wf_ApprovalRequest_Type does not allow EXTERNAL_SHARE.");
+
+                        approvalRequest.RequestType = "CHANGE_PERMISSION";
+                        approvalId = _approvalRepository.InsertRequest(approvalRequest);
+                    }
 
                     int stepOrder = 1;
                     foreach (var approver in approvers)

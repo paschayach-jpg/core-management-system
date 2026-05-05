@@ -117,6 +117,7 @@ namespace CMS.Presentation
         private ClipboardMode _clipboardMode = ClipboardMode.None;
         private List<int> _clipboardFileIds = new List<int>();
         private readonly Dictionary<ListViewItem, Color> _cutHighlightedItems = new Dictionary<ListViewItem, Color>();
+        private ToolTip _navToolTip;
 
         // -----------------------------------------------------------------------
         // Constructor
@@ -334,6 +335,19 @@ namespace CMS.Presentation
             btnNavForward.Enabled = false;
             btnNavUp.Enabled = false;
 
+            _navToolTip = new ToolTip();
+            _navToolTip.SetToolTip(btnNavRefresh, "รีโหลดข้อมูลล่าสุด (นับจำนวนไฟล์จากข้อมูลจริง)");
+
+            this.KeyPreview = true;
+            this.KeyDown += (s, e2) =>
+            {
+                if (e2.KeyCode == Keys.F5)
+                {
+                    btnNavRefresh_Click(s, EventArgs.Empty);
+                    e2.Handled = true;
+                }
+            };
+
             // Detail panel ขนาด 160px — พอดีกับปุ่มและข้อมูล
             splitContent.Panel2MinSize = 160;
             splitContent.SplitterDistance = Math.Max(this.Width - 165, 500);
@@ -387,6 +401,7 @@ namespace CMS.Presentation
             var mnuMove = new ToolStripMenuItem("📦  ย้าย", null, BtnMove_Click);
             var mnuDelete = new ToolStripMenuItem("🗑️  ลบ Folder", null, (s, e) => btnDelete_Click(s, e));
             var mnuArchive = new ToolStripMenuItem("📦  Archive", null, (s, e) => btnArchive_Click(s, e));
+            var mnuShare = new ToolStripMenuItem("🔗  แชร์...", null, CtxShare_Click);
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
             var mnuMyPermission = new ToolStripMenuItem("🔐  สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
             var mnuSharedWithMe = new ToolStripMenuItem("📥  แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
@@ -408,6 +423,7 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuMove);
             ctx.Items.Add(mnuDelete);
             //ctx.Items.Add(mnuArchive);
+            ctx.Items.Add(mnuShare);
             ctx.Items.Add(mnuPermission);
             ctx.Items.Add(mnuMyPermission);
             ctx.Items.Add(mnuSharedWithMe);
@@ -436,6 +452,7 @@ namespace CMS.Presentation
                 mnuMove.Enabled = hasFolder && canEdit && _folderCommandController != null;
                 mnuDelete.Enabled = canDeleteFolder;
                 mnuArchive.Enabled = hasFolder && canEdit;
+                mnuShare.Enabled = hasFolder && canView && _shareCommandController != null;
                 mnuPermission.Enabled = hasFolder && isPrivileged;
                 mnuMyPermission.Enabled = true;
                 mnuSharedWithMe.Enabled = true;
@@ -456,8 +473,7 @@ namespace CMS.Presentation
 
         private void CtxReload_Click(object sender, EventArgs e)
         {
-            _presenter.LoadFolderTree(_selectedOrgUnitId);
-            // _presenter.LoadRecycleBin(_selectedOrgUnitId); // Hidden - recycle bin disabled
+            RefreshCurrentViewAfterMove();
         }
 
         private void BuildContentsListViewContextMenu()
@@ -476,6 +492,7 @@ namespace CMS.Presentation
             var mnuDelete = new ToolStripMenuItem("ลบ", null, (s, e) => btnDelete_Click(s, e)) { ShortcutKeys = System.Windows.Forms.Keys.Delete, ShowShortcutKeys = true };
             var mnuClearFolder = new ToolStripMenuItem("🗑️  ล้างไฟล์ทั้งหมดใน Folder...", null, (s, e) => ClearFolderContents());
             var mnuArchive = new ToolStripMenuItem("Archive", null, (s, e) => btnArchive_Click(s, e));
+            var mnuShare = new ToolStripMenuItem("แชร์...", null, CtxShare_Click);
             var mnuPermission = new ToolStripMenuItem("ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
             var mnuMyPermission = new ToolStripMenuItem("สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
             var mnuSharedWithMe = new ToolStripMenuItem("แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
@@ -497,6 +514,7 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuClearFolder);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuArchive);
+            ctx.Items.Add(mnuShare);
             ctx.Items.Add(mnuPermission);
             ctx.Items.Add(mnuMyPermission);
             ctx.Items.Add(mnuSharedWithMe);
@@ -561,6 +579,7 @@ namespace CMS.Presentation
                 mnuDelete.Enabled = canDeleteContent;
                 mnuClearFolder.Enabled = _fileBrowseController != null && _fileCommandController != null && _currentNavFolderId.HasValue && canEdit;
                 mnuArchive.Enabled = singleFileSelected && canEdit;
+                mnuShare.Enabled = singleFileSelected && canView && _shareCommandController != null;
                 mnuPermission.Enabled = isPrivileged;
                 mnuMyPermission.Enabled = true;
                 mnuSharedWithMe.Enabled = true;
@@ -584,6 +603,14 @@ namespace CMS.Presentation
                 return;
 
             ShowInfo("ไม่สามารถเปิดเมนู แบ่งปันให้ฉัน ได้ในขณะนี้");
+        }
+
+        private void CtxShare_Click(object sender, EventArgs e)
+        {
+            if (OnMenuActionRequested("ShareDialog"))
+                return;
+
+            ShowInfo("ไม่สามารถเปิดเมนู แชร์ ได้ในขณะนี้");
         }
 
         private async void CtxFileOpen_Click(object sender, EventArgs e)
@@ -1131,10 +1158,56 @@ namespace CMS.Presentation
             treeOrgUnit.Dock = DockStyle.Fill;
             treeOrgUnit.HideSelection = false;  // คง highlight node ที่เลือกไว้แม้ focus อยู่ที่ control อื่น
 
+            // Expand / Collapse all — row below tab buttons
+            var pnlExpandCollapse = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 26,
+                BackColor = Color.FromArgb(225, 233, 245),
+                Padding = new Padding(4, 2, 4, 2)
+            };
+
+            var btnExpandAll = new Button
+            {
+                Text = "▷ ขยายทั้งหมด",
+                Width = 104,
+                Height = 22,
+                Location = new Point(4, 2),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(240, 244, 250),
+                ForeColor = Color.FromArgb(31, 56, 100),
+                Font = new Font("Segoe UI", 8f, FontStyle.Regular),
+                Cursor = Cursors.Hand
+            };
+            btnExpandAll.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 230);
+            btnExpandAll.FlatAppearance.BorderSize = 1;
+
+            var btnCollapseAll = new Button
+            {
+                Text = "◁ ย่อทั้งหมด",
+                Width = 100,
+                Height = 22,
+                Location = new Point(112, 2),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(240, 244, 250),
+                ForeColor = Color.FromArgb(31, 56, 100),
+                Font = new Font("Segoe UI", 8f, FontStyle.Regular),
+                Cursor = Cursors.Hand
+            };
+            btnCollapseAll.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 230);
+            btnCollapseAll.FlatAppearance.BorderSize = 1;
+
+            btnExpandAll.Click  += (s, e) => GetActiveOrgTree()?.ExpandAll();
+            btnCollapseAll.Click += (s, e) => GetActiveOrgTree()?.CollapseAll();
+
+            pnlExpandCollapse.Controls.Add(btnExpandAll);
+            pnlExpandCollapse.Controls.Add(btnCollapseAll);
+
             pnlOrgFilter.Controls.Add(treeOrgUnit);            // index 0 (front)
             pnlOrgFilter.Controls.Add(_treeConfidentiality);   // index 1
             pnlOrgFilter.Controls.Add(_treeMainMenu);          // index 2
-            pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 3 (back) → docked Top first
+            pnlOrgFilter.Controls.Add(pnlExpandCollapse);      // index 3 → row ใต้ tab buttons
+            pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 4 (back) → docked Top first
 
             // Wire events
             _btnOrgView.Click += (s, e) => SwitchToOrgView();
@@ -1145,6 +1218,14 @@ namespace CMS.Presentation
             _treeMainMenu.NodeMouseClick += MainMenuTree_NodeMouseClick;
             _treeMainMenu.CollapseAll();
             LoadMainMenuTree();
+        }
+
+        private TreeView GetActiveOrgTree()
+        {
+            if (treeOrgUnit.Visible)        return treeOrgUnit;
+            if (_treeConfidentiality.Visible) return _treeConfidentiality;
+            if (_treeMainMenu.Visible)      return _treeMainMenu;
+            return null;
         }
 
         private void LoadMainMenuTree()
@@ -3357,10 +3438,14 @@ namespace CMS.Presentation
 
             // Use cached OrgUnit lookup (populated by LoadOrgUnitTree) — no DB call here
             Dictionary<int, string> orgUnitNames = _orgUnitNameCache ?? new Dictionary<int, string>();
+            var actualFileCountByFolderId = new Dictionary<int, int>();
 
             // ── Sub-folders first ──────────────────────────────────────────
             foreach (var folder in folderList)
             {
+                int actualFileCount = GetActualFileCount(folder, actualFileCountByFolderId);
+                folder.FileCount = actualFileCount;
+
                 // Populate OrgUnitName
                 string ouName;
                 folder.OrgUnitName = orgUnitNames.TryGetValue(folder.OrgUnitID, out ouName) ? ouName : "—";
@@ -3373,8 +3458,8 @@ namespace CMS.Presentation
                     ? ConfidentialityBookIcon(folder.ConfidentialityLevel)
                     : "folder";
                 var item = new ListViewItem(nameText) { ImageKey = iconKey };
-                item.SubItems.Add(folder.FileCount > 0
-                    ? string.Format("Folder  {0} ไฟล์", folder.FileCount)
+                item.SubItems.Add(actualFileCount > 0
+                    ? string.Format("Folder  {0} ไฟล์", actualFileCount)
                     : "Folder");                                          // ประเภท
                 item.SubItems.Add(ConfidentialityShort(folder.ConfidentialityLevel)); // ระดับ
                 item.SubItems.Add(FormatBytes(folder.FolderSizeBytes));              // ขนาด
@@ -3493,6 +3578,39 @@ namespace CMS.Presentation
             AdjustNameColumnWidth();
 
             _currentSubFolders = folderList;
+        }
+
+        private int GetActualFileCount(Folder folder, Dictionary<int, int> cache)
+        {
+            if (folder == null)
+                return 0;
+
+            int cached;
+            if (cache != null && cache.TryGetValue(folder.FolderID, out cached))
+                return cached;
+
+            int count = Math.Max(0, folder.FileCount);
+
+            if (_fileBrowseController != null)
+            {
+                try
+                {
+                    var liveFiles = _fileBrowseController.GetFilesInFolder(folder.FolderID, _user);
+                    count = liveFiles == null
+                        ? 0
+                        : liveFiles.Count(f => f != null && !f.IsDeleted);
+                }
+                catch
+                {
+                    // Fallback to Folder.FileCount when live query fails.
+                    count = Math.Max(0, folder.FileCount);
+                }
+            }
+
+            if (cache != null)
+                cache[folder.FolderID] = count;
+
+            return count;
         }
 
         /// <summary>
@@ -4312,11 +4430,17 @@ namespace CMS.Presentation
             btnNavRefresh.Text = "↻";
             btnNavRefresh.Enabled = false;
 
-            _presenter.LoadFolderTree(_selectedOrgUnitId);
-            // _presenter.LoadRecycleBin(_selectedOrgUnitId); // Hidden - recycle bin disabled
-
-            btnNavRefresh.Enabled = true;
-            btnNavRefresh.Text = "↺";
+            try
+            {
+                lblContentInfo.ForeColor = SystemColors.ControlDarkDark;
+                lblContentInfo.Text = "กำลังรีโหลดข้อมูลล่าสุด...";
+                RefreshCurrentViewAfterMove();
+            }
+            finally
+            {
+                btnNavRefresh.Enabled = true;
+                btnNavRefresh.Text = "↺";
+            }
         }
 
         private void BtnNavBack_Click(object sender, EventArgs e)

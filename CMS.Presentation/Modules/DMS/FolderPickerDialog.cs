@@ -378,6 +378,32 @@ namespace CMS.Presentation
             Close();
         }
 
+        private void BtnExpandAll_Click(object sender, EventArgs e)
+        {
+            _treeView.BeginUpdate();
+            _treeView.ExpandAll();
+            _treeView.EndUpdate();
+            if (_treeView.Nodes.Count > 0)
+                _treeView.Nodes[0].EnsureVisible();
+        }
+
+        private void BtnCollapseAll_Click(object sender, EventArgs e)
+        {
+            _treeView.BeginUpdate();
+            _treeView.CollapseAll();
+            _treeView.EndUpdate();
+        }
+
+        private void BtnExpandLevel1_Click(object sender, EventArgs e)
+        {
+            _treeView.BeginUpdate();
+            _treeView.CollapseAll();
+            ExpandToLevel(_treeView.Nodes, 0, 2);
+            _treeView.EndUpdate();
+            if (_treeView.Nodes.Count > 0)
+                _treeView.Nodes[0].EnsureVisible();
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
         private Dictionary<int, string> BuildPathMap(Dictionary<int, Folder> map)
         {

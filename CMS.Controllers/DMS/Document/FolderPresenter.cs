@@ -311,6 +311,7 @@ namespace CMS.Controllers.DMS.Document
                 };
                 Folder created = _folderCommandController.CreateFolder(request, _user);
 
+                _currentOrgUnitId = orgUnitId;
                 LoadFolderTree(_currentOrgUnitId);
                 RefreshContentPanel();
 

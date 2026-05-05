@@ -424,9 +424,14 @@ namespace CMS.Services
 
             if (user.AppRole < 4)
             {
-                if (!_permissionService.CheckPermission(user.UserID, request.DestinationFolderId, "Write"))
+                bool hasDestinationAuthority = user.CanAddToFolder(destination.ConfidentialityLevel)
+                                            || user.CanEditFolder(destination.ConfidentialityLevel);
+                bool hasDestinationAcl = _permissionService.CheckPermission(user.UserID, request.DestinationFolderId, "Write")
+                                      || _permissionService.CheckPermission(user.UserID, request.DestinationFolderId, "Modify");
+
+                if (!hasDestinationAuthority && !hasDestinationAcl)
                     throw new UnauthorizedAccessException(
-                        string.Format("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง '{0}'", destination.FolderName));
+                        string.Format("ไม่มีสิทธิ์ย้ายไปยัง Folder ปลายทาง '{0}'", destination.FolderName));
             }
 
             foreach (int fileId in request.FileIds)
@@ -442,9 +447,16 @@ namespace CMS.Services
 
                 if (user.AppRole < 4)
                 {
-                    if (!_permissionService.CheckPermission(user.UserID, file.FolderID, "Write"))
+                    var sourceFolder = _folderRepository.GetById(file.FolderID);
+                    bool hasSourceAuthority = sourceFolder != null
+                                           && (user.CanAddToFolder(sourceFolder.ConfidentialityLevel)
+                                            || user.CanEditFolder(sourceFolder.ConfidentialityLevel));
+                    bool hasSourceAcl = _permissionService.CheckPermission(user.UserID, file.FolderID, "Write")
+                                   || _permissionService.CheckPermission(user.UserID, file.FolderID, "Modify");
+
+                    if (!hasSourceAuthority && !hasSourceAcl)
                         throw new UnauthorizedAccessException(
-                            string.Format("ไม่มีสิทธิ์เขียนใน Folder ต้นทาง (ID: {0})", file.FolderID));
+                            string.Format("ไม่มีสิทธิ์ย้ายจาก Folder ต้นทาง (ID: {0})", file.FolderID));
                 }
 
                 int oldFolderId = file.FolderID;

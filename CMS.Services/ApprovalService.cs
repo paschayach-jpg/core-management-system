@@ -224,7 +224,14 @@ namespace CMS.Services
                     "All steps approved. Permissions applied.");
 
                 // Apply the permission change that was requested
-                if (approvalRequest.RequestType == "CHANGE_PERMISSION" && approvalRequest.FolderID.HasValue)
+                int externalShareIdFromRemark = ParseExternalShareId(approvalRequest.Remark);
+                bool isExternalShareRequest =
+                    string.Equals(approvalRequest.RequestType, "EXTERNAL_SHARE", StringComparison.OrdinalIgnoreCase)
+                    || externalShareIdFromRemark > 0;
+
+                if (approvalRequest.RequestType == "CHANGE_PERMISSION" &&
+                    approvalRequest.FolderID.HasValue &&
+                    !isExternalShareRequest)
                 {
                     try
                     {
@@ -278,11 +285,11 @@ namespace CMS.Services
                             approvalRequest.FolderID.Value, step.RequestID, ex.Message), ex);
                     }
                 }
-                else if (approvalRequest.RequestType == "EXTERNAL_SHARE" && _externalShareRepository != null)
+                else if (isExternalShareRequest && _externalShareRepository != null)
                 {
                     try
                     {
-                        int externalShareId = ParseExternalShareId(approvalRequest.Remark);
+                        int externalShareId = externalShareIdFromRemark;
                         if (externalShareId > 0)
                         {
                             var share = _externalShareRepository.GetById(externalShareId);
@@ -320,7 +327,9 @@ namespace CMS.Services
 
                 string approvedMessage = isCreateHc
                     ? string.Format("คำขอสร้าง 1HC Folder (ID {0}) ได้รับการอนุมัติและสร้างโฟลเดอร์เรียบร้อยแล้ว", step.RequestID)
-                    : string.Format("คำขอเปลี่ยนสิทธิ์ (ID {0}) ได้รับการอนุมัติและมีผลแล้ว", step.RequestID);
+                    : isExternalShareRequest
+                        ? string.Format("คำขอแชร์ภายนอก (ID {0}) ได้รับการอนุมัติและเปิดใช้งานลิงก์แล้ว", step.RequestID)
+                        : string.Format("คำขอเปลี่ยนสิทธิ์ (ID {0}) ได้รับการอนุมัติและมีผลแล้ว", step.RequestID);
 
                 NotifyUser(approvalRequest.RequestedBy, "ApprovalRequestApproved",
                     step.RequestID.ToString(), approvedMessage);

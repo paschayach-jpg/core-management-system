@@ -1625,8 +1625,14 @@ namespace CMS.Presentation
                 case "UserPermissionSummary":
                     OpenMyPermissionSummary();
                     return true;
+                case "ShareDialog":
+                    OpenShareDialog();
+                    return true;
                 case "SharedWithMe":
                     OpenSharedWithMe();
+                    return true;
+                case "ShareManagement":
+                    OpenShareManagement();
                     return true;
                 default:
                     return false;

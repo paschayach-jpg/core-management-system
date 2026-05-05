@@ -5010,8 +5010,56 @@ namespace CMS.Presentation
             _presenter.ShowOrgUnitRootFolders(_selectedOrgUnitId);
         }
 
+        /// <summary>
+        /// Returns folders that can be used as move destinations for the current user.
+        /// Non-admin users must have effective move permission (Write/Modify or Add/Edit authority).
+        /// </summary>
+        private IList<Folder> GetMoveDestinationFolders()
+        {
+            var accessibleFolders = _folderReadLookupController.GetAccessibleFolders(null, _user)
+                ?? new List<Folder>();
+
+            if (_user.AppRole >= 3)
+                return accessibleFolders.ToList();
+
+            if (_permissionCheckController == null)
+            {
+                // Fallback when permission controller is not wired.
+                return accessibleFolders
+                    .Where(f => _user.CanAddToFolder(f.ConfidentialityLevel)
+                             || _user.CanEditFolder(f.ConfidentialityLevel))
+                    .ToList();
+            }
+
+            return accessibleFolders
+                .Where(f =>
+                {
+                    bool hasAuthorityMove = _user.CanAddToFolder(f.ConfidentialityLevel)
+                                         || _user.CanEditFolder(f.ConfidentialityLevel);
+
+                    try
+                    {
+                        bool hasAclMove = _permissionCheckController.CheckPermission(_user.UserID, f.FolderID, "Write")
+                                       || _permissionCheckController.CheckPermission(_user.UserID, f.FolderID, "Modify");
+                        return hasAuthorityMove || hasAclMove;
+                    }
+                    catch
+                    {
+                        return hasAuthorityMove;
+                    }
+                })
+                .ToList();
+        }
+
         private void BtnMove_Click(object sender, EventArgs e)
         {
+            var moveDestinations = GetMoveDestinationFolders();
+            if (!moveDestinations.Any())
+            {
+                ShowError("ไม่พบ Folder ปลายทางที่คุณมีสิทธิ์ย้ายไปได้");
+                return;
+            }
+
             // Case 1: ถ้ามีไฟล์ถูกเลือกใน contentsListView ให้ move file
             var selectedFileIds = contentsListView.SelectedItems.Cast<ListViewItem>()
                 .Select(i => i.Tag as FileDocument)
@@ -5029,7 +5077,7 @@ namespace CMS.Presentation
 
                 using (var picker = new FolderPickerDialog())
                 {
-                    picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), new HashSet<int>(), GetOrgUnits());
+                    picker.LoadFolders(moveDestinations, new HashSet<int>(), GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
@@ -5075,7 +5123,7 @@ namespace CMS.Presentation
                 using (var picker = new FolderPickerDialog())
                 {
                     picker.SourceFolderId = selectedFolderFromList.FolderID;
-                    picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), excluded, GetOrgUnits());
+                    picker.LoadFolders(moveDestinations, excluded, GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try
@@ -5115,7 +5163,7 @@ namespace CMS.Presentation
                 using (var picker = new FolderPickerDialog())
                 {
                     picker.SourceFolderId = selectedFolder.FolderID;
-                    picker.LoadFolders(_folderReadLookupController.GetAccessibleFolders(null, _user), excluded, GetOrgUnits());
+                    picker.LoadFolders(moveDestinations, excluded, GetOrgUnits());
                     if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
                     {
                         try

@@ -171,6 +171,7 @@ namespace CMS.Presentation
                 new DataGridViewTextBoxColumn { Name = "colNew",     HeaderText = "",                Width = 28,  MinimumWidth = 28,  AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colType",    HeaderText = "ประเภท",           Width = 70,  MinimumWidth = 60,  AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colFolder",  HeaderText = "รายการที่แบ่งปัน", MinimumWidth = 180, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill },
+                new DataGridViewTextBoxColumn { Name = "colFileName",HeaderText = "ชื่อไฟล์",          Width = 180, MinimumWidth = 140, AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colLevel",   HeaderText = "ระดับ",             Width = 60,  AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colPerms",   HeaderText = "สิทธิ์ที่ได้รับ",  Width = 120, AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colGrantBy", HeaderText = "แบ่งปันโดย",      Width = 130, AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
@@ -193,6 +194,7 @@ namespace CMS.Presentation
                 if (e.RowIndex < 0) return;
                 var row = _grid.Rows[e.RowIndex].Tag as SharedRow;
                 if (row == null) return;
+                if (!CanOpenSharedRow(row)) return;
                 if (row.FileID > 0)
                     OpenFileRequested?.Invoke(row.FolderID, row.FileID);
                 else if (row.FolderID > 0)
@@ -204,6 +206,11 @@ namespace CMS.Presentation
                 if (e.KeyCode != Keys.Enter || _grid.CurrentRow == null) return;
                 var row = _grid.CurrentRow.Tag as SharedRow;
                 if (row == null) return;
+                if (!CanOpenSharedRow(row))
+                {
+                    e.Handled = true;
+                    return;
+                }
                 if (row.FileID > 0)
                     OpenFileRequested?.Invoke(row.FolderID, row.FileID);
                 else if (row.FolderID > 0)
@@ -342,6 +349,7 @@ namespace CMS.Presentation
                             PermissionID = p.PermissionID,
                             IsFolderPerm = true,
                             ItemType     = "📁 Folder",
+                            FileName     = string.Empty,
                             IsNew        = isNew,
                             IsExpired    = isExpired,
                             IsDeny       = isDeny,
@@ -391,6 +399,7 @@ namespace CMS.Presentation
                             PermissionID = p.FilePermissionID,
                             IsFolderPerm = false,
                             ItemType     = "📄 ไฟล์",
+                            FileName     = fileName,
                             IsNew        = isNew,
                             IsExpired    = isExpired,
                             IsDeny       = isDeny,
@@ -439,6 +448,7 @@ namespace CMS.Presentation
                     r.IsNew ? "🔴" : "",
                     r.ItemType,
                     r.DisplayName,
+                    r.FileName,
                     r.LevelCode,
                     r.Perms,
                     r.GrantedBy,
@@ -543,9 +553,68 @@ namespace CMS.Presentation
 
         private void AddInfoRow(string msg)
         {
-            int idx = _grid.Rows.Add("", "", msg, "", "", "", "", "", "");
+            int idx = _grid.Rows.Add("", "", msg, "", "", "", "", "", "", "");
             _grid.Rows[idx].DefaultCellStyle.ForeColor = Color.FromArgb(130, 130, 140);
             _grid.Rows[idx].DefaultCellStyle.Font      = new Font("Segoe UI", 8.5f, FontStyle.Italic);
+        }
+
+        private bool CanOpenSharedRow(SharedRow row)
+        {
+            if (row == null)
+                return false;
+
+            if (row.IsDeny)
+            {
+                MessageBox.Show("รายการนี้ถูกปฏิเสธสิทธิ์ จึงไม่สามารถเปิดใช้งานได้", "แบ่งปันให้ฉัน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+
+            if (row.IsExpired)
+            {
+                MessageBox.Show("รายการนี้หมดอายุแล้ว จึงไม่สามารถเปิดใช้งานได้", "แบ่งปันให้ฉัน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+
+            if (row.FileID > 0)
+            {
+                var activeFileShare = _shareLookupController
+                    .GetFilePermissionsForUser(_user.UserID)
+                    .Any(p => p.FileID == row.FileID
+                           && !p.IsDeny
+                           && p.CanRead
+                           && !p.RevokedDate.HasValue
+                           && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
+
+                if (!activeFileShare)
+                {
+                    MessageBox.Show("สิทธิ์แชร์ไฟล์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แบ่งปันให้ฉัน",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    return false;
+                }
+            }
+            else if (row.FolderID > 0)
+            {
+                var activeFolderShare = _shareLookupController
+                    .GetFolderPermissionsForUser(_user.UserID)
+                    .Any(p => p.FolderID == row.FolderID
+                           && !p.IsDeny
+                           && p.CanRead
+                           && !p.RevokedDate.HasValue
+                           && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
+
+                if (!activeFolderShare)
+                {
+                    MessageBox.Show("สิทธิ์แชร์โฟลเดอร์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แบ่งปันให้ฉัน",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private string ResolveGranterName(int userId)
@@ -602,6 +671,7 @@ namespace CMS.Presentation
             public bool     IsExpired;
             public bool     IsDeny;
             public string   DisplayName;    // ชื่อ folder หรือชื่อไฟล์
+            public string   FileName;       // แสดงเฉพาะเมื่อเป็นรายการไฟล์
             public string   LevelCode;
             public string   Perms;
             public string   GrantedBy;
