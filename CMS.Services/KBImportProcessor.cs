@@ -1,9 +1,10 @@
+using CMS.Data.Interfaces;
+using CMS.Domain.Enums;
+using CMS.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using CMS.Data.Interfaces;
-using CMS.Domain.Models;
 
 namespace CMS.Services
 {
@@ -66,11 +67,14 @@ namespace CMS.Services
             // Cache: CategoryCode → CategoryID (avoids repeated DB round-trips for
             // the same code appearing in multiple rows of the same batch).
             var cache = new Dictionary<string, int>(StringComparer.Ordinal);
-
+            KBCategoryCodeName result;
             foreach (var row in rows)
             {
                 if (row.Status == "Error")
-                    continue;
+                    continue;                
+
+                bool success = Enum.TryParse(row.ColA, out result);
+                if (!success) throw new Exception($"Not found category in a row : {row.RowNumber}.Please check category code.");
 
                 // ── Parent category (Column A) ───────────────────────────────
                 int parentCategoryId = ResolveOrInsertCategory(
@@ -81,14 +85,14 @@ namespace CMS.Services
                     cache:      cache);
 
                 // ── Sub-category (Column B) ──────────────────────────────────
-                int subCategoryId = ResolveOrInsertCategory(
-                    code:       row.ColB,
-                    name:       row.ColC,
-                    parentId:   parentCategoryId,
-                    createdBy:  createdBy,
-                    cache:      cache);
+                //int subCategoryId = ResolveOrInsertCategory(
+                //    code:       row.ColB,
+                //    name:       row.ColC,
+                //    parentId:   parentCategoryId,
+                //    createdBy:  createdBy,
+                //    cache:      cache);
 
-                row.ResolvedCategoryID = subCategoryId;
+                row.ResolvedCategoryID = parentCategoryId;
             }
         }
 
@@ -176,7 +180,8 @@ namespace CMS.Services
 
         /// <summary>
         /// Builds the <c>ArticleCode</c> by joining non-null, non-empty, non-sentinel
-        /// values from columns A, B, D, F, H, J, L, N, P with a single space.
+        /// values from columns A, B, D, F, H, J, L, N, P with NO separator (concatenated
+        /// directly without spaces).
         /// </summary>
         internal static string BuildArticleCode(KBImportRow row)
         {
@@ -188,13 +193,15 @@ namespace CMS.Services
                 row.ColH, row.ColJ, row.ColL, row.ColN, row.ColP
             };
 
-            return string.Join(" ", segments
+            return string.Concat(segments
                 .Where(v => !string.IsNullOrEmpty(v) && !IsSentinel(v)));
         }
 
         /// <summary>
         /// Builds the <c>Summary</c> by joining non-null, non-empty, non-sentinel
         /// values from columns E, G, I, K, M, O, Q with a single space.
+        /// Each segment is trimmed before evaluation; empty strings (after trim),
+        /// <c>"-"</c>, and <c>"ไม่มีค่า"</c> are excluded from the concatenation.
         /// </summary>
         internal static string BuildSummary(KBImportRow row)
         {
@@ -207,7 +214,8 @@ namespace CMS.Services
             };
 
             return string.Join(" ", segments
-                .Where(v => !string.IsNullOrEmpty(v) && !IsSentinel(v)));
+                .Select(v => v == null ? string.Empty : v.Trim())
+                .Where(v => v.Length > 0 && !IsSentinel(v)));
         }
 
         /// <summary>
@@ -264,8 +272,9 @@ namespace CMS.Services
             }
 
             // ── Code columns — numeric-only (excluding sentinels) ─────────────
-            // Columns: A, B, D, F, H, J, L, N, P
-            CheckNumericCode(row.ColA, "A", errors);
+            // Columns: B, D, F, H, J, L, N, P
+            // Column A is intentionally excluded — it holds a text-based category
+            // code (e.g. "LW") and must NOT be validated as numeric.
             CheckNumericCode(row.ColB, "B", errors);
             CheckNumericCode(row.ColD, "D", errors);
             CheckNumericCode(row.ColF, "F", errors);

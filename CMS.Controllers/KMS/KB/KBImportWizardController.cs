@@ -128,14 +128,17 @@ namespace CMS.Controllers.KMS.KB
                 int errorCount;
                 _processor.InsertArticles(rowsToImport, createdBy, out successCount, out errorCount);
 
+                int totalErrors = preFilterErrors + errorCount;
                 var summary = new KBImportValidationResult
                 {
                     TotalRecords   = _lastValidation.TotalRecords,
                     ValidRecords   = successCount,
                     WarningRecords = _lastValidation.WarningRecords,
-                    ErrorRecords   = preFilterErrors + errorCount,
+                    ErrorRecords   = totalErrors,
                     IsSuccess      = true,
-                    Message        = string.Format("นำเข้าสำเร็จ {0} รายการ", successCount),
+                    Message        = totalErrors == 0
+                        ? string.Format("นำเข้าสำเร็จ {0} รายการ", successCount)
+                        : string.Format("นำเข้าสำเร็จ {0} รายการ, ล้มเหลว {1} รายการ", successCount, totalErrors),
                     Rows           = _lastValidation.Rows,
                 };
 

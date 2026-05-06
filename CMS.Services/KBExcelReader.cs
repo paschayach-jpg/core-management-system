@@ -25,6 +25,25 @@ namespace CMS.Services
             "yyyy/MM/dd"
         };
 
+        // ── Thai month name → month number map ───────────────────────────────
+        // Covers both full names and common abbreviations used in Thai Excel files.
+        private static readonly System.Collections.Generic.Dictionary<string, int> ThaiMonths =
+            new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "มกราคม",   1 }, { "ม.ค.",  1 },
+            { "กุมภาพันธ์", 2 }, { "ก.พ.", 2 },
+            { "มีนาคม",   3 }, { "มี.ค.", 3 },
+            { "เมษายน",   4 }, { "เม.ย.", 4 },
+            { "พฤษภาคม",  5 }, { "พ.ค.",  5 },
+            { "มิถุนายน", 6 }, { "มิ.ย.", 6 },
+            { "กรกฎาคม",  7 }, { "ก.ค.",  7 },
+            { "สิงหาคม",  8 }, { "ส.ค.",  8 },
+            { "กันยายน",  9 }, { "ก.ย.",  9 },
+            { "ตุลาคม",  10 }, { "ต.ค.", 10 },
+            { "พฤศจิกายน",11 }, { "พ.ย.", 11 },
+            { "ธันวาคม", 12 }, { "ธ.ค.", 12 },
+        };
+
         // ── Public API ───────────────────────────────────────────────────────
 
         /// <summary>
@@ -243,6 +262,7 @@ namespace CMS.Services
             if (string.IsNullOrEmpty(raw))
                 return null;
 
+            // Try standard numeric formats first (dd/MM/yyyy, yyyy-MM-dd, etc.)
             DateTime parsed;
             if (DateTime.TryParseExact(
                     raw,
@@ -254,9 +274,63 @@ namespace CMS.Services
                 return ApplyAdYearCorrection(parsed);
             }
 
+            // Try Thai long-form: "9 เมษายน 2535" or "09 เม.ย. 2535"
+            DateTime? thaiParsed = TryParseThaiLongDate(raw);
+            if (thaiParsed.HasValue)
+                return thaiParsed.Value;   // ApplyAdYearCorrection already applied inside
+
             // Could not parse with any supported format.
             errorMessage = string.Format("รูปแบบวันที่ไม่ถูกต้อง: '{0}'", raw);
             return null;
+        }
+
+        /// <summary>
+        /// Parses Thai long-form date strings such as <c>"9 เมษายน 2535"</c> or
+        /// <c>"09 เม.ย. 2535"</c>.  The year is treated as Thai Buddhist Era (B.E.)
+        /// when it is greater than 2400, and <see cref="ApplyAdYearCorrection"/> is
+        /// applied so the returned value is always A.D.
+        /// Returns <c>null</c> when the string does not match the expected pattern.
+        /// </summary>
+        private static DateTime? TryParseThaiLongDate(string raw)
+        {
+            if (string.IsNullOrEmpty(raw))
+                return null;
+
+            // Expected pattern: {day} {thaiMonthName} {year}
+            // e.g. "9 เมษายน 2535"  or  "09 เม.ย. 2535"
+            var parts = raw.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 3)
+                return null;
+
+            int day, year;
+            if (!int.TryParse(parts[0], out day))
+                return null;
+
+            // Year is always the last token
+            if (!int.TryParse(parts[parts.Length - 1], out year))
+                return null;
+
+            // Month name is everything between day and year (handles multi-word names)
+            string monthToken = string.Join(" ", parts, 1, parts.Length - 2).Trim();
+
+            int month;
+            if (!ThaiMonths.TryGetValue(monthToken, out month))
+                return null;
+
+            if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1)
+                return null;
+
+            try
+            {
+                // Construct using Gregorian calendar explicitly to avoid any
+                // ThaiBuddhistCalendar influence from the current thread culture.
+                var dt = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Unspecified);
+                return ApplyAdYearCorrection(dt);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>
