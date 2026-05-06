@@ -22,17 +22,23 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("workflow.sp_InsertApprovalRequest", conn))
+                using (var cmd = new SqlCommand(
+                    "INSERT INTO workflow.ApprovalRequest " +
+                    "  (RequestType, FolderID, FileID, PermissionID, RequestedBy, " +
+                    "   RequestedDate, RequestStatus, Subject, Remark, ExpiryDate) " +
+                    "OUTPUT INSERTED.RequestID " +
+                    "VALUES (@RequestType, @FolderID, @FileID, @PermissionID, @RequestedBy, " +
+                    "        GETDATE(), 1, @Subject, @Remark, @ExpiryDate)", conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandType = CommandType.Text;
                     cmd.Parameters.AddWithValue("@RequestType",  request.RequestType);
-                    cmd.Parameters.AddWithValue("@FolderID",     (object)request.FolderID ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@FileID",       (object)request.FileID ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@FolderID",     (object)request.FolderID     ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@FileID",       (object)request.FileID       ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@PermissionID", (object)request.PermissionID ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@RequestedBy",  request.RequestedBy);
-                    cmd.Parameters.AddWithValue("@Subject",      (object)request.Subject ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Remark",       (object)request.Remark ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@ExpiryDate",   (object)request.ExpiryDate ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Subject",      (object)request.Subject      ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Remark",       (object)request.Remark       ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ExpiryDate",   (object)request.ExpiryDate   ?? DBNull.Value);
                     return Convert.ToInt32(cmd.ExecuteScalar());
                 }
             }
@@ -43,12 +49,16 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("workflow.sp_InsertApprovalStep", conn))
+                using (var cmd = new SqlCommand(
+                    "INSERT INTO workflow.ApprovalStep (RequestID, StepOrder, ApproverID, StepStatus) " +
+                    "OUTPUT INSERTED.StepID " +
+                    "VALUES (@RequestID, @StepOrder, @ApproverID, @StepStatus)", conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandType = CommandType.Text;
                     cmd.Parameters.AddWithValue("@RequestID",  step.RequestID);
                     cmd.Parameters.AddWithValue("@StepOrder",  step.StepOrder);
                     cmd.Parameters.AddWithValue("@ApproverID", step.ApproverID);
+                    cmd.Parameters.AddWithValue("@StepStatus", (byte)step.StepStatus);
                     return Convert.ToInt32(cmd.ExecuteScalar());
                 }
             }
@@ -78,9 +88,13 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("workflow.sp_GetPendingApprovalSteps", conn))
+                using (var cmd = new SqlCommand(
+                    "SELECT StepID, RequestID, StepOrder, ApproverID, StepStatus, " +
+                    "       ActionDate, ActionRemark, DelegatedTo, NotifiedDate, EscalatedDate " +
+                    "FROM workflow.ApprovalStep " +
+                    "WHERE RequestID = @RequestID AND StepStatus IN (1, 4)", conn))  // 1=Pending 4=Delegated
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.CommandType = CommandType.Text;
                     cmd.Parameters.AddWithValue("@RequestID", requestId);
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -230,6 +244,34 @@ namespace CMS.Data.Repositories
                 {
                     cmd.CommandType = CommandType.Text;
                     cmd.Parameters.AddWithValue("@FolderID", folderId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void DeletePendingHCRequestsForOrgUnit(int orgUnitId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                // ลบ steps ก่อน (child) แล้วค่อยลบ requests (parent)
+                using (var cmd = new SqlCommand(
+                    "DELETE s FROM workflow.ApprovalStep s " +
+                    "INNER JOIN workflow.ApprovalRequest r ON s.RequestID = r.RequestID " +
+                       "WHERE r.RequestType = 'CREATE_HC' AND r.RequestStatus = 1 " +
+                       "AND r.Remark LIKE @OrgUnitPattern", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@OrgUnitPattern", "%OrgUnitId=" + orgUnitId + "%");
+                    cmd.ExecuteNonQuery();
+                }
+                using (var cmd = new SqlCommand(
+                    "DELETE FROM workflow.ApprovalRequest " +
+                    "WHERE RequestType = 'CREATE_HC' AND RequestStatus = 1 " +
+                           "AND Remark LIKE @OrgUnitPattern", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@OrgUnitPattern", "%OrgUnitId=" + orgUnitId + "%");
                     cmd.ExecuteNonQuery();
                 }
             }

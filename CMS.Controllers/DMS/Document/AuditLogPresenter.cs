@@ -79,6 +79,11 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
+                var defaultName = string.Format("AuditLog_{0}.csv", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+                var path = _view.PromptSaveFilePath(defaultName);
+                if (string.IsNullOrEmpty(path))
+                    return; // user cancelled
+
                 var query = BuildQuery();
                 query.PageNumber = 1;
                 query.PageSize   = 10000;
@@ -104,12 +109,9 @@ namespace CMS.Controllers.DMS.Document
                         CsvEscape(log.ErrorMessage)));
                 }
 
-                var path = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                    string.Format("AuditLog_{0}.csv", DateTime.Now.ToString("yyyyMMdd_HHmmss")));
-
-                File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
-                _view.ShowStatus("ส่งออกสำเร็จ: " + path, false);
+                // UTF-8 with BOM so Excel opens Thai text correctly
+                File.WriteAllText(path, sb.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+                _view.ShowStatus(string.Format("ส่งออกสำเร็จ ({0} รายการ): {1}", result.TotalCount, path), false);
             }
             catch (Exception ex)
             {
@@ -127,11 +129,26 @@ namespace CMS.Controllers.DMS.Document
             {
                 FromDate   = _view.FromDate.Date,
                 ToDate     = _view.ToDate.Date.AddDays(1).AddSeconds(-1),
-                Module     = string.IsNullOrWhiteSpace(_view.FilterModule) ? null : _view.FilterModule.Trim(),
-                Action     = string.IsNullOrWhiteSpace(_view.FilterAction) ? null : _view.FilterAction.Trim(),
+                UserName   = string.IsNullOrWhiteSpace(_view.FilterUserName) ? null : _view.FilterUserName.Trim(),
+                Module     = string.IsNullOrWhiteSpace(_view.FilterModule)   ? null : _view.FilterModule.Trim(),
+                Action     = string.IsNullOrWhiteSpace(_view.FilterAction)   ? null : _view.FilterAction.Trim(),
+                Result     = MapResultFilter(_view.FilterResult),
                 PageNumber = _view.CurrentPage,
                 PageSize   = _view.PageSize
             };
+        }
+
+        /// <summary>Maps Thai result label → int (1=Success, 2=Failure, 3=Denied).</summary>
+        private static int? MapResultFilter(string filterResult)
+        {
+            if (string.IsNullOrWhiteSpace(filterResult)) return null;
+            switch (filterResult.Trim())
+            {
+                case "สำเร็จ":      return 1;
+                case "ล้มเหลว":    return 2;
+                case "ถูกปฏิเสธ": return 3;
+                default:            return null;
+            }
         }
 
         private static string CsvEscape(string value)

@@ -11,6 +11,9 @@
     <AssemblyName>CMS.Presentation</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -44,6 +47,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
@@ -59,11 +63,29 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Root: Shell -->
-    <Compile Include="Program.cs" />
-    <Compile Include="Modules\ImportFile\LoginForm.cs">
+    <Compile Include="Modules\WFE\WorkflowDashboardFormNew.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\LoginForm.Designer.cs">
+    <Compile Include="Modules\WFE\WorkflowDashboardFormNew.Designer.cs">
+      <DependentUpon>WorkflowDashboardFormNew.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDetailFormNew.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDetailFormNew.Designer.cs">
+      <DependentUpon>WorkflowDetailFormNew.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.Designer.cs">
+      <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Modules\DMS\LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\LoginForm.Designer.cs">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MDI_Container.cs">
@@ -73,106 +95,112 @@
       <DependentUpon>MDI_Container.cs</DependentUpon>
     </Compile>
     <!-- Module: ImportFile — Forms -->
-    <Compile Include="Modules\ImportFile\ApplyTemplateDialog.cs">
+    <Compile Include="Modules\DMS\ApplyTemplateDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\ApplyTemplateDialog.Designer.cs">
+    <Compile Include="Modules\DMS\ApplyTemplateDialog.Designer.cs">
       <DependentUpon>ApplyTemplateDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\ApprovalInboxForm.cs">
+    <Compile Include="Modules\DMS\ApprovalInboxForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\ApprovalInboxForm.Designer.cs">
+    <Compile Include="Modules\DMS\ApprovalInboxForm.Designer.cs">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuditLogForm.cs">
+    <Compile Include="Modules\DMS\AuditLogForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuditLogForm.Designer.cs">
+    <Compile Include="Modules\DMS\AuditLogForm.Designer.cs">
       <DependentUpon>AuditLogForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuthorityConfigForm.cs">
+    <Compile Include="Modules\DMS\AuthorityConfigForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuthorityConfigForm.Designer.cs">
+    <Compile Include="Modules\DMS\AuthorityConfigForm.Designer.cs">
       <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\AuthorityConfigEditDialog.cs">
+    <Compile Include="Modules\DMS\AuthorityConfigEditDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\ConfigAdminForm.cs">
+    <Compile Include="Modules\DMS\ConfigAdminForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\ConfigAdminForm.Designer.cs">
+    <Compile Include="Modules\DMS\ConfigAdminForm.Designer.cs">
       <DependentUpon>ConfigAdminForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\CreateOrgUnitDialog.cs">
+    <Compile Include="Modules\DMS\CreateOrgUnitDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\CreateOrgUnitDialog.Designer.cs">
+    <Compile Include="Modules\DMS\CreateOrgUnitDialog.Designer.cs">
       <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\EmployeeOrgSelectionDialog.cs">
+    <Compile Include="Modules\DMS\DuplicateFileChoiceDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\EmployeeOrgSelectionDialog.Designer.cs">
+    <Compile Include="Modules\DMS\DuplicateFileChoiceDialog.Designer.cs">
+      <DependentUpon>DuplicateFileChoiceDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\EmployeeOrgSelectionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\EmployeeOrgSelectionDialog.Designer.cs">
       <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\EmployeeSearchDialog.cs">
+    <Compile Include="Modules\DMS\EmployeeSearchDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\EmployeeSearchDialog.Designer.cs">
+    <Compile Include="Modules\DMS\EmployeeSearchDialog.Designer.cs">
       <DependentUpon>EmployeeSearchDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePermissionAddDialog.cs">
+    <Compile Include="Modules\DMS\FilePermissionAddDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePermissionAddDialog.Designer.cs">
+    <Compile Include="Modules\DMS\FilePermissionAddDialog.Designer.cs">
       <DependentUpon>FilePermissionAddDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePermissionForm.cs">
+    <Compile Include="Modules\DMS\FilePermissionForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePermissionForm.Designer.cs">
+    <Compile Include="Modules\DMS\FilePermissionForm.Designer.cs">
       <DependentUpon>FilePermissionForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilePreviewPanel.cs">
+    <Compile Include="Modules\DMS\FilePreviewPanel.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FileUploadForm.cs">
+    <Compile Include="Modules\DMS\FileUploadForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FileUploadForm.Designer.cs">
+    <Compile Include="Modules\DMS\FileUploadForm.Designer.cs">
       <DependentUpon>FileUploadForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilesByFolderForm.cs">
+    <Compile Include="Modules\DMS\FilesByFolderForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FilesByFolderForm.Designer.cs">
+    <Compile Include="Modules\DMS\FilesByFolderForm.Designer.cs">
       <DependentUpon>FilesByFolderForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderForm.cs">
+    <Compile Include="Modules\DMS\FolderForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderForm.Designer.cs">
+    <Compile Include="Modules\DMS\FolderForm.Designer.cs">
       <DependentUpon>FolderForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderCreationChoiceDialog.cs">
+    <Compile Include="Modules\DMS\FolderCreationChoiceDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderCreationChoiceDialog.Designer.cs">
+    <Compile Include="Modules\DMS\FolderCreationChoiceDialog.Designer.cs">
       <DependentUpon>FolderCreationChoiceDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderPickerDialog.cs">
+    <Compile Include="Modules\DMS\FolderPickerDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderPickerDialog.Designer.cs">
+    <Compile Include="Modules\DMS\FolderPickerDialog.Designer.cs">
       <DependentUpon>FolderPickerDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderTemplateForm.cs">
+    <Compile Include="Modules\DMS\FolderTemplateForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\FolderTemplateForm.Designer.cs">
+    <Compile Include="Modules\DMS\FolderTemplateForm.Designer.cs">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </Compile>
     <!-- Module: KMS — Forms -->
@@ -212,68 +240,68 @@
     <Compile Include="Modules\KMS\KBDashboardForm.Designer.cs">
       <DependentUpon>KBDashboardForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgStructureForm.cs">
+    <Compile Include="Modules\DMS\OrgStructureForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgStructureForm.Designer.cs">
+    <Compile Include="Modules\DMS\OrgStructureForm.Designer.cs">
       <DependentUpon>OrgStructureForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgStructureSelectionDialog.cs">
+    <Compile Include="Modules\DMS\OrgStructureSelectionDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgStructureSelectionDialog.Designer.cs">
+    <Compile Include="Modules\DMS\OrgStructureSelectionDialog.Designer.cs">
       <DependentUpon>OrgStructureSelectionDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgUnitPickerDialog.cs">
+    <Compile Include="Modules\DMS\OrgUnitPickerDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgUnitPickerDialog.Designer.cs">
+    <Compile Include="Modules\DMS\OrgUnitPickerDialog.Designer.cs">
       <DependentUpon>OrgUnitPickerDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgUnitSelectorDialog.cs">
+    <Compile Include="Modules\DMS\OrgUnitSelectorDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\OrgUnitSelectorDialog.Designer.cs">
+    <Compile Include="Modules\DMS\OrgUnitSelectorDialog.Designer.cs">
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\PdfSecurityHelper.cs" />
-    <Compile Include="Modules\ImportFile\PdpaConsentDialog.cs">
+    <Compile Include="Modules\DMS\PdfSecurityHelper.cs" />
+    <Compile Include="Modules\DMS\PdpaConsentDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\PdpaConsentDialog.Designer.cs">
+    <Compile Include="Modules\DMS\PdpaConsentDialog.Designer.cs">
       <DependentUpon>PdpaConsentDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\PdpaReportForm.cs">
+    <Compile Include="Modules\DMS\PdpaReportForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\PdpaReportForm.Designer.cs">
+    <Compile Include="Modules\DMS\PdpaReportForm.Designer.cs">
       <DependentUpon>PdpaReportForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\PermissionForm.cs">
+    <Compile Include="Modules\DMS\PermissionForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\PermissionForm.Designer.cs">
+    <Compile Include="Modules\DMS\PermissionForm.Designer.cs">
       <DependentUpon>PermissionForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserPermissionSummaryForm.cs">
+    <Compile Include="Modules\DMS\UserPermissionSummaryForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\RecycleBinForm.cs">
+    <Compile Include="Modules\DMS\RecycleBinForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\RecycleBinForm.Designer.cs">
+    <Compile Include="Modules\DMS\RecycleBinForm.Designer.cs">
       <DependentUpon>RecycleBinForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserAccessForm.cs">
+    <Compile Include="Modules\DMS\UserAccessForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserAccessForm.Designer.cs">
+    <Compile Include="Modules\DMS\UserAccessForm.Designer.cs">
       <DependentUpon>UserAccessForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserManagementForm.cs">
+    <Compile Include="Modules\DMS\UserManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\UserManagementForm.Designer.cs">
+    <Compile Include="Modules\DMS\UserManagementForm.Designer.cs">
       <DependentUpon>UserManagementForm.cs</DependentUpon>
     </Compile>
     <!-- Module: ImportFile — Presenters (ย้ายไปไว้ใน CMS.Controllers แล้ว) -->
@@ -299,16 +327,154 @@
     <Compile Include="AccessShareForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\MenuActions\MenuActionContext.cs" />
-    <Compile Include="Modules\ImportFile\MenuActions\MenuActionKeyCatalog.cs" />
-    <Compile Include="Modules\ImportFile\MenuActions\MenuActionRegistry.cs" />
-    <Compile Include="Modules\ImportFile\MenuManagementForm.cs">
+    <Compile Include="Modules\DMS\MenuActions\MenuActionContext.cs" />
+    <Compile Include="Modules\DMS\MenuActions\MenuActionKeyCatalog.cs" />
+    <Compile Include="Modules\DMS\MenuActions\MenuActionRegistry.cs" />
+    <Compile Include="Modules\DMS\MenuManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\ImportFile\MenuManagementForm.Designer.cs">
+    <Compile Include="Modules\DMS\MenuManagementForm.Designer.cs">
       <DependentUpon>MenuManagementForm.cs</DependentUpon>
     </Compile>
     <Compile Include="MenuTreeViewManager.cs" />
+    <!-- Module: Workflow — Forms -->
+    <Compile Include="Modules\WFE\WorkflowDashboardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDashboardForm.Designer.cs">
+      <DependentUpon>WorkflowDashboardForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowMonitorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowMonitorForm.Designer.cs">
+      <DependentUpon>WorkflowMonitorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowInstanceDetailForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowInstanceDetailForm.Designer.cs">
+      <DependentUpon>WorkflowInstanceDetailForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDesignerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDesignerForm.Designer.cs">
+      <DependentUpon>WorkflowDesignerForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateWizard.cs" />
+    <Compile Include="Modules\WFE\WorkflowWizardState.cs" />
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateForm.Designer.cs">
+      <DependentUpon>WorkflowCreateTemplateForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep2Form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep2Form.Designer.cs">
+      <DependentUpon>WorkflowCreateTemplateStep2Form.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep3Form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep3Form.Designer.cs">
+      <DependentUpon>WorkflowCreateTemplateStep3Form.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep4Form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowCreateTemplateStep4Form.Designer.cs">
+      <DependentUpon>WorkflowCreateTemplateStep4Form.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowTemplateListForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowTemplateListForm.Designer.cs">
+      <DependentUpon>WorkflowTemplateListForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\TemplateApprovalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\TemplateApprovalForm.Designer.cs">
+      <DependentUpon>TemplateApprovalForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Presenters\TemplateApprovalPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\ITemplateApprovalView.cs" />
+    <Compile Include="Modules\WFE\WorkflowDelegationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDelegationForm.Designer.cs">
+      <DependentUpon>WorkflowDelegationForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowNavigationBuilder.cs" />
+    <Compile Include="Modules\WFE\WorkflowNavigationHandler.cs" />
+    <Compile Include="Modules\WFE\SLAReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\SLAReportForm.Designer.cs">
+      <DependentUpon>SLAReportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\HistorySearchForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\HistorySearchForm.Designer.cs">
+      <DependentUpon>HistorySearchForm.cs</DependentUpon>
+    </Compile>
+    <!-- Module: Workflow — Dialog Forms -->
+    <Compile Include="Modules\WFE\Dialogs\WorkflowStartDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\WorkflowStartDialog.Designer.cs">
+      <DependentUpon>WorkflowStartDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\ReassignDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\ReassignDialog.Designer.cs">
+      <DependentUpon>ReassignDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.Designer.cs">
+      <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\WorkflowStepActionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\WorkflowStepActionForm.Designer.cs">
+      <DependentUpon>WorkflowStepActionForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\ApprovalReviewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\ApprovalReviewForm.Designer.cs">
+      <DependentUpon>ApprovalReviewForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\DelegationDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\Dialogs\DelegationDialog.Designer.cs">
+      <DependentUpon>DelegationDialog.cs</DependentUpon>
+    </Compile>
+    <!-- Module: Workflow — Presenters -->
+    <Compile Include="Modules\WFE\Presenters\WorkflowDashboardPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\WorkflowMonitorPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\WorkflowInstanceDetailPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\WorkflowDesignerPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\WorkflowTemplateListPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\SLAReportPresenter.cs" />
+    <Compile Include="Modules\WFE\Presenters\HistorySearchPresenter.cs" />
+    <!-- Module: Workflow — View Interfaces -->
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowDashboardView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowMonitorView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowInstanceDetailView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowDesignerView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowTemplateListView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\ISLAReportView.cs" />
+    <Compile Include="Modules\WFE\Presenters\Interfaces\IHistorySearchView.cs" />
     <!-- Notification System -->
     <Compile Include="UserControls\NotificationItemControl.cs">
       <SubType>UserControl</SubType>
@@ -329,39 +495,17 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CMS.Controllers\CMS.Controllers.csproj">
-      <Project>{2e4f8b3d-1a7c-4d96-b052-6c8e3f0a1d75}</Project>
-      <Name>CMS.Controllers</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">
-      <Project>{C1CC34BC-573E-4C98-AA9E-37CB98534DEA}</Project>
-      <Name>CMS.Domain</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CMS.Infrastructure\CMS.Infrastructure.csproj">
-      <Project>{F52CF319-4754-4882-A243-DD367C39C156}</Project>
-      <Name>CMS.Infrastructure</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CMS.Data\CMS.Data.csproj">
-      <Project>{A63FD418-CCA6-4FE1-834F-A09136EE92D6}</Project>
-      <Name>CMS.Data</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CMS.Services\CMS.Services.csproj">
-      <Project>{50513916-e8f1-4308-94c0-174114009d4f}</Project>
-      <Name>CMS.Services</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="MDI_Container.resx">
       <DependentUpon>MDI_Container.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\MenuManagementForm.resx">
+    <EmbeddedResource Include="Modules\DMS\MenuManagementForm.resx">
       <DependentUpon>MenuManagementForm.cs</DependentUpon>
     </EmbeddedResource>
     <!-- Module: ImportFile — EmbeddedResources -->
-    <EmbeddedResource Include="Modules\ImportFile\ApplyTemplateDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\ApplyTemplateDialog.resx">
       <DependentUpon>ApplyTemplateDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\ApprovalInboxForm.resx">
+    <EmbeddedResource Include="Modules\DMS\ApprovalInboxForm.resx">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBCategoryForm.resx">
@@ -370,37 +514,40 @@
     <EmbeddedResource Include="Modules\KMS\KBEditorDialog.resx">
       <DependentUpon>KBEditorDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\AuthorityConfigForm.resx">
+    <EmbeddedResource Include="Modules\DMS\AuthorityConfigForm.resx">
       <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\ConfigAdminForm.resx">
+    <EmbeddedResource Include="Modules\DMS\ConfigAdminForm.resx">
       <DependentUpon>ConfigAdminForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\CreateOrgUnitDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\CreateOrgUnitDialog.resx">
       <DependentUpon>CreateOrgUnitDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\EmployeeOrgSelectionDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\EmployeeOrgSelectionDialog.resx">
       <DependentUpon>EmployeeOrgSelectionDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\EmployeeSearchDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\EmployeeSearchDialog.resx">
       <DependentUpon>EmployeeSearchDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FilePermissionAddDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\FilePermissionAddDialog.resx">
       <DependentUpon>FilePermissionAddDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FileUploadForm.resx">
+    <EmbeddedResource Include="Modules\DMS\FileUploadForm.resx">
       <DependentUpon>FileUploadForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FolderForm.resx">
+    <EmbeddedResource Include="Modules\DMS\DuplicateFileChoiceDialog.resx">
+      <DependentUpon>DuplicateFileChoiceDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\DMS\FolderForm.resx">
       <DependentUpon>FolderForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FolderCreationChoiceDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\FolderCreationChoiceDialog.resx">
       <DependentUpon>FolderCreationChoiceDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FolderPickerDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\FolderPickerDialog.resx">
       <DependentUpon>FolderPickerDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\FolderTemplateForm.resx">
+    <EmbeddedResource Include="Modules\DMS\FolderTemplateForm.resx">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\ArticleViewerForm.resx">
@@ -413,26 +560,86 @@
       <DependentUpon>KBMainForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\LoginForm.resx">
+    <EmbeddedResource Include="Modules\DMS\LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\OrgStructureForm.resx">
+    <EmbeddedResource Include="Modules\DMS\OrgStructureForm.resx">
       <DependentUpon>OrgStructureForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\OrgUnitPickerDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\OrgUnitPickerDialog.resx">
       <DependentUpon>OrgUnitPickerDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\OrgUnitSelectorDialog.resx">
+    <EmbeddedResource Include="Modules\DMS\OrgUnitSelectorDialog.resx">
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\PermissionForm.resx">
+    <EmbeddedResource Include="Modules\DMS\PermissionForm.resx">
       <DependentUpon>PermissionForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\RecycleBinForm.resx">
+    <EmbeddedResource Include="Modules\DMS\RecycleBinForm.resx">
       <DependentUpon>RecycleBinForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Modules\ImportFile\UserAccessForm.resx">
+    <EmbeddedResource Include="Modules\DMS\UserAccessForm.resx">
       <DependentUpon>UserAccessForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowCreateTemplateForm.resx">
+      <DependentUpon>WorkflowCreateTemplateForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowCreateTemplateStep2Form.resx">
+      <DependentUpon>WorkflowCreateTemplateStep2Form.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowCreateTemplateStep3Form.resx">
+      <DependentUpon>WorkflowCreateTemplateStep3Form.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDesignerForm.resx">
+      <DependentUpon>WorkflowDesignerForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDetailFormNew.resx">
+      <DependentUpon>WorkflowDetailFormNew.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDashboardFormNew.resx">
+      <DependentUpon>WorkflowDashboardFormNew.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDashboardForm.resx">
+      <DependentUpon>WorkflowDashboardForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowMonitorForm.resx">
+      <DependentUpon>WorkflowMonitorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowDelegationForm.resx">
+      <DependentUpon>WorkflowDelegationForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\SLAReportForm.resx">
+      <DependentUpon>SLAReportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\HistorySearchForm.resx">
+      <DependentUpon>HistorySearchForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\TemplateApprovalForm.resx">
+      <DependentUpon>TemplateApprovalForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowVisualFlowForm.resx">
+      <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\WorkflowStartDialog.resx">
+      <DependentUpon>WorkflowStartDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\WorkflowStepActionForm.resx">
+      <DependentUpon>WorkflowStepActionForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\ReassignDialog.resx">
+      <DependentUpon>ReassignDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\ApprovalReviewForm.resx">
+      <DependentUpon>ApprovalReviewForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\Dialogs\DelegationDialog.resx">
+      <DependentUpon>DelegationDialog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowInstanceDetailForm.resx">
+      <DependentUpon>WorkflowInstanceDetailForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\WFE\WorkflowTemplateListForm.resx">
+      <DependentUpon>WorkflowTemplateListForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -498,6 +705,28 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\organization.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CMS.Controllers\CMS.Controllers.csproj">
+      <Project>{2e4f8b3d-1a7c-4d96-b052-6c8e3f0a1d75}</Project>
+      <Name>CMS.Controllers</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CMS.Data\CMS.Data.csproj">
+      <Project>{a63fd418-cca6-4fe1-834f-a09136ee92d6}</Project>
+      <Name>CMS.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">
+      <Project>{c1cc34bc-573e-4c98-aa9e-37cb98534dea}</Project>
+      <Name>CMS.Domain</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CMS.Infrastructure\CMS.Infrastructure.csproj">
+      <Project>{f52cf319-4754-4882-a243-dd367c39c156}</Project>
+      <Name>CMS.Infrastructure</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CMS.Services\CMS.Services.csproj">
+      <Project>{50513916-e8f1-4308-94c0-174114009d4f}</Project>
+      <Name>CMS.Services</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

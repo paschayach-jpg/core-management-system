@@ -59,9 +59,10 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@FromDate",   query.FromDate);
                     cmd.Parameters.AddWithValue("@ToDate",     query.ToDate);
                     cmd.Parameters.AddWithValue("@UserID",     (object)query.UserID ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@UserName",   (object)query.UserName ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Module",     (object)query.Module ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@Action",     (object)query.Action ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Result",     DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Result",     (object)query.Result ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@PageNumber", query.PageNumber);
                     cmd.Parameters.AddWithValue("@PageSize",   query.PageSize);
 

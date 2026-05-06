@@ -221,6 +221,40 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public bool ExistsWithName(string fileName, int folderId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM storage.FileDocument " +
+                    "WHERE FolderID = @FolderID AND OriginalFileName = @OriginalFileName AND FileStatus <> 3", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@FolderID",         folderId);
+                    cmd.Parameters.AddWithValue("@OriginalFileName", fileName);
+                    return (int)cmd.ExecuteScalar() > 0;
+                }
+            }
+        }
+
+        public int CountByNamePrefix(string namePrefix, int folderId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM storage.FileDocument " +
+                    "WHERE FolderID = @FolderID AND OriginalFileName LIKE @Prefix AND FileStatus <> 3", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@FolderID", folderId);
+                    cmd.Parameters.AddWithValue("@Prefix",   namePrefix + "%");
+                    return (int)cmd.ExecuteScalar();
+                }
+            }
+        }
+
         public void RenameFile(int fileId, string newName)
         {
             using (var conn = new SqlConnection(_connectionString))
@@ -231,6 +265,54 @@ namespace CMS.Data.Repositories
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@FileID",           fileId);
                     cmd.Parameters.AddWithValue("@OriginalFileName", newName);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public IEnumerable<FileDocument> GetDeletedFiles(int? orgUnitId)
+        {
+            var results = new List<FileDocument>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT fd.*, f.FolderName, ou.OrgUnitNameTH AS OrgUnitName
+                    FROM   storage.FileDocument fd
+                    INNER JOIN storage.Folder  f  ON fd.FolderID = f.FolderID
+                    INNER JOIN core.OrgUnit    ou ON f.OrgUnitID = ou.OrgUnitID
+                    WHERE  fd.FileStatus = 3
+                    AND   (@OrgUnitID IS NULL OR f.OrgUnitID = @OrgUnitID)
+                    ORDER BY fd.DeletedDate DESC";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@OrgUnitID", (object)orgUnitId ?? DBNull.Value);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var doc = MapFileDocument(reader);
+                            doc.FolderName  = reader["FolderName"]  as string;
+                            doc.OrgUnitName = reader["OrgUnitName"] as string;
+                            results.Add(doc);
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+
+        public void RestoreFile(int fileId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "UPDATE storage.FileDocument " +
+                    "SET FileStatus = 1, DeletedBy = NULL, DeletedDate = NULL " +
+                    "WHERE FileID = @FileID", conn))
+                {
+                    cmd.Parameters.AddWithValue("@FileID", fileId);
                     cmd.ExecuteNonQuery();
                 }
             }

@@ -6,11 +6,30 @@ namespace CMS.Data.Interfaces
 {
     public interface IOrgUnitRepository
     {
+        // ── Many-to-Many: SubCommittee ↔ Division ─────────────────────────────
+
+        /// <summary>เพิ่ม/เปิดใช้งาน relationship ระหว่าง Division กับ SubCommittee</summary>
+        void LinkDivisionToSubCommittee(int divisionId, int subCommitteeId, int createdBy);
+
+        /// <summary>ตรวจสอบว่า Division นี้เชื่อมกับ SubCommittee นี้แล้วหรือยัง (FK หรือ Relationship)</summary>
+        bool IsDivisionLinkedToSubCommittee(int divisionId, int subCommitteeId);
+
+        /// <summary>ดึง relationship ที่ active ทั้งหมด (สำหรับ build tree)</summary>
+        IEnumerable<OrgUnitRelationship> GetAllActiveRelationships();
+
+
         int Insert(OrgUnit orgUnit);
         void Update(OrgUnit orgUnit);
         OrgUnit GetById(int orgUnitId);
         OrgUnit GetByCode(string orgUnitCode);
         bool ExistsByCode(string orgUnitCode);
+
+        /// <summary>
+        /// ตรวจสอบว่ามีชื่อ OrgUnitNameTH ซ้ำกันภายใต้ Parent เดียวกันหรือไม่
+        /// excludeOrgUnitId ใช้สำหรับกรณี Update เพื่อยกเว้นตัวเองออกจากการตรวจ
+        /// </summary>
+        bool ExistsByNameUnderParent(string nameTH, int? parentId, int? excludeOrgUnitId = null);
+
         IEnumerable<OrgUnit> GetHierarchy();
         IEnumerable<OrgUnit> GetByConfidentialityLevel(ConfidentialityLevel level);
         bool HasActiveDependents(int orgUnitId);
@@ -18,5 +37,11 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Alias for SoftDelete — deactivates the OrgUnit (no deletedBy required).</summary>
         void Deactivate(int orgUnitId);
+
+        /// <summary>
+        /// Cascade soft-delete: soft-deletes all Folders, detaches UserAccounts,
+        /// then soft-deletes the OrgUnit itself — bypasses the active-dependents guard.
+        /// </summary>
+        void ForceDeleteWithDependents(int orgUnitId, int deletedBy);
     }
 }

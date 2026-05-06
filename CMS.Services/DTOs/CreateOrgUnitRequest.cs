@@ -40,5 +40,11 @@ namespace CMS.Services.DTOs
             get { return ParentOrgUnitID; }
             set { ParentOrgUnitID = value; }
         }
+
+        /// <summary>
+        /// ถ้ามีค่า = เป็นการ Link Division ที่มีอยู่แล้วเข้า SubCommittee (ใช้ OrgUnitRelationship)
+        /// ไม่ได้สร้าง OrgUnit ใหม่
+        /// </summary>
+        public int? LinkExistingOrgUnitId { get; set; }
     }
 }

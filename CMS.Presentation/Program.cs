@@ -1,6 +1,10 @@
 using System;
+using System.IO;
+using System.Reflection;
+using System.Text;
 using System.Windows.Forms;
 using CMS.Data.Repositories;
+using CMS.Controllers;
 using CMS.Controllers.DMS.Document;
 using CMS.Domain.Models;
 using CMS.Infrastructure;
@@ -24,47 +28,47 @@ namespace CMS.Presentation
             try
             {
                 // --- Infrastructure / repositories ---
-                var configManager          = new ConfigManager();
-                var adHelper               = new ActiveDirectoryHelper();
-                var userAccountRepo        = new UserAccountRepository(configManager);
-                var auditRepository        = new AuditRepository(configManager);
+                var configManager = new ConfigManager();
+                var adHelper = new ActiveDirectoryHelper();
+                var userAccountRepo = new UserAccountRepository(configManager);
+                var auditRepository = new AuditRepository(configManager);
                 var notificationRepository = new NotificationRepository(configManager);
-                var approvalRepository     = new ApprovalRepository(configManager);
-                var folderRepository       = new FolderRepository(configManager);
-                var permissionRepository   = new PermissionRepository(configManager);
-                var orgUnitRepository      = new OrgUnitRepository(configManager);
-                var hrDivisionRepository      = new HrDivisionRepository(configManager);
-                var hrDepartmentRepository    = new HrDepartmentRepository(configManager);
-                var hrPositionRepository      = new HrPositionRepository(configManager);
+                var approvalRepository = new ApprovalRepository(configManager);
+                var folderRepository = new FolderRepository(configManager);
+                var permissionRepository = new PermissionRepository(configManager);
+                var orgUnitRepository = new OrgUnitRepository(configManager);
+                var hrDivisionRepository = new HrDivisionRepository(configManager);
+                var hrDepartmentRepository = new HrDepartmentRepository(configManager);
+                var hrPositionRepository = new HrPositionRepository(configManager);
                 var hrPositionLevelRepository = new HrPositionLevelRepository(configManager);
                 var hrPositionMappingRepository = new HrPositionMappingRepository(configManager);
 
-                var fileDocumentRepository   = new FileDocumentRepository(configManager);
+                var fileDocumentRepository = new FileDocumentRepository(configManager);
                 var filePermissionRepository = new FilePermissionRepository(configManager);
                 var folderTemplateRepository = new FolderTemplateRepository(configManager);
-                var quickAccessRepository    = new QuickAccessRepository(configManager);
-                var externalShareRepository  = new ExternalShareRepository(configManager);
+                var quickAccessRepository = new QuickAccessRepository(configManager);
+                var externalShareRepository = new ExternalShareRepository(configManager);
                 var shareAccessLogRepository = new ShareAccessLogRepository(configManager);
                 var shareTokenRepository     = new ShareTokenRepository(configManager);
-                var kbCategoryRepository     = new KBCategoryRepository(configManager);
-                var kbArticleRepository      = new KBArticleRepository(configManager);
-                var kbVersionRepository      = new KBVersionRepository(configManager);
                 var kbDashboardRepository    = new KBDashboardRepository(configManager);
-                var kbArticleLinkRepository  = new KBArticleLinkRepository(configManager);
+                var kbCategoryRepository = new KBCategoryRepository(configManager);
+                var kbArticleRepository = new KBArticleRepository(configManager);
+                var kbVersionRepository = new KBVersionRepository(configManager);
+                var kbArticleLinkRepository = new KBArticleLinkRepository(configManager);
 
-                var auditService        = new AuditService(auditRepository, loggingService);
+                var auditService = new AuditService(auditRepository, loggingService);
                 var notificationService = new NotificationService(notificationRepository, loggingService);
-                var permissionService   = new PermissionService(permissionRepository, folderRepository, userAccountRepo, auditService, fileDocumentRepository, filePermissionRepository);
+                var permissionService = new PermissionService(permissionRepository, folderRepository, userAccountRepo, auditService, fileDocumentRepository, filePermissionRepository);
                 var filePermissionService = new FilePermissionService(filePermissionRepository, auditService);
 
-                var userOrgVisibilityRepo    = new UserOrgVisibilityRepository(configManager);
+                var userOrgVisibilityRepo = new UserOrgVisibilityRepository(configManager);
                 var userOrgVisibilityService = new UserOrgVisibilityService(userOrgVisibilityRepo, orgUnitRepository, auditService);
 
                 var orgStructureService = new OrgStructureService(orgUnitRepository, auditService, userOrgVisibilityService);
-                
-                var networkDriveHelper  = new NetworkDriveHelper(configManager);
-                var clamAvAdapter       = new ClamAVAdapter(configManager);
-                var virusScanService    = new VirusScanService(
+
+                var networkDriveHelper = new NetworkDriveHelper(configManager);
+                var clamAvAdapter = new ClamAVAdapter(configManager);
+                var virusScanService = new VirusScanService(
                     clamAvAdapter,
                     loggingService,
                     notificationRepository,
@@ -84,7 +88,7 @@ namespace CMS.Presentation
                     userOrgVisibilityService,
                     userAccountRepo);
 
-                var approvalService     = new ApprovalService(
+                var approvalService = new ApprovalService(
                     approvalRepository,
                     folderRepository,
                     folderService,
@@ -92,7 +96,9 @@ namespace CMS.Presentation
                     notificationRepository,
                     userAccountRepo,
                     auditService,
-                    loggingService);
+                    loggingService,
+                    externalShareRepository,
+                    shareTokenRepository);
 
                 var fileService = new FileService(
                     fileDocumentRepository,
@@ -108,16 +114,16 @@ namespace CMS.Presentation
                     permissionRepository,
                     filePermissionRepository);
 
-                var employeeApiService      = new EmployeeApiService(configManager);
+                var employeeApiService = new EmployeeApiService(configManager);
                 var uploadCheckpointService = new UploadCheckpointService(loggingService);
-                var quickAccessService      = new QuickAccessService(quickAccessRepository, folderRepository);
+                var quickAccessService = new QuickAccessService(quickAccessRepository, folderRepository);
 
-                var folderAuthorityRepo    = new FolderAuthorityRepository(configManager);
+                var folderAuthorityRepo = new FolderAuthorityRepository(configManager);
                 var folderAuthorityService = new FolderAuthorityService(folderAuthorityRepo);
 
                 // ── File Sharing Services ─────────────────────────────────────
-                var shareTokenService   = new ShareTokenService(shareTokenRepository, loggingService);
-                var shareAccessService  = new ShareAccessService(
+                var shareTokenService = new ShareTokenService(shareTokenRepository, loggingService);
+                var shareAccessService = new ShareAccessService(
                     externalShareRepository,
                     shareAccessLogRepository,
                     shareTokenService,
@@ -139,12 +145,45 @@ namespace CMS.Presentation
                     permissionService,
                     notificationService,
                     auditService,
-                    loggingService);
+                    loggingService,
+                    approvalRepository,
+                    userAccountRepo);
 
                 // ── KB Services (MOD-006) ─────────────────────────────────────
                 var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);
                 var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, auditService);
                 var kbDashboardService = new KBDashboardService(kbDashboardRepository, loggingService);
+
+                // ── Workflow Engine Services (MOD-008) ────────────────────────
+                var workflowRepository = new WorkflowRepository(configManager);
+                var workflowTemplateRepository = new WorkflowTemplateRepository(configManager);
+                var workflowStepRepository = new WorkflowStepRepository(configManager);
+                var workflowStepInstanceRepository = new WorkflowStepInstanceRepository(configManager);
+                var delegationRepository = new DelegationRepository(configManager);
+                var wfReportRepository = new WFReportRepository(configManager);
+
+                var conditionEvaluatorService = new ConditionEvaluatorService(loggingService);
+                var workflowNotificationService = new WorkflowNotificationService(auditService, loggingService);
+                var slaCalculator = new SLACalculator(workflowStepInstanceRepository, wfReportRepository, workflowNotificationService, auditService, loggingService);
+                var stepResolverService = new StepResolverService(workflowStepRepository, conditionEvaluatorService, loggingService);
+                var workflowDelegationService = new WorkflowDelegationService(delegationRepository, workflowStepInstanceRepository, workflowNotificationService, auditService, loggingService);
+
+                var workflowService = new WorkflowService(
+                    workflowRepository,
+                    workflowTemplateRepository,
+                    workflowStepRepository,
+                    workflowStepInstanceRepository,
+                    stepResolverService,
+                    slaCalculator,
+                    workflowNotificationService,
+                    auditService,
+                    loggingService);
+
+                var workflowTemplateService = new WorkflowTemplateService(
+                    workflowTemplateRepository,
+                    workflowRepository,
+                    auditService,
+                    loggingService);
 
                 // ── AD Auth Service ───────────────────────────────────────────
                 var adAuthService = new AdAuthService(configManager);
@@ -201,8 +240,8 @@ namespace CMS.Presentation
                         if (loginForm.ShowDialog() != DialogResult.OK)
                             return; // ผู้ใช้ปิด form
 
-                        authResult             = loginForm.AuthResult;
-                        startup.Username       = loginForm.EnteredUsername;
+                        authResult = loginForm.AuthResult;
+                        startup.Username = loginForm.EnteredUsername;
                     }
                 }
 
@@ -246,12 +285,12 @@ namespace CMS.Presentation
                         var emp = authResult.EmployeeInfo;
                         var newAccount = new UserAccount
                         {
-                            ADUserName  = adUserName,
+                            ADUserName = adUserName,
                             DisplayName = emp != null ? emp.FullNameTh : adUserName,
-                            Email       = null,
-                            AppRole     = 1,      // Default: Officer
-                            OrgUnitID   = 1,
-                            IsActive    = true,
+                            Email = null,
+                            AppRole = 1,      // Default: Officer
+                            OrgUnitID = 1,
+                            IsActive = true,
                             ConsentGiven = false,
                             CreatedDate = DateTime.Now
                         };
@@ -317,31 +356,32 @@ namespace CMS.Presentation
                 // ── Build session context ──────────────────────────────────────
                 var userContext = new UserContext
                 {
-                    UserID         = account.UserID,
-                    ADUserName     = account.ADUserName,
-                    AppRole        = account.AppRole,
-                    MachineName    = System.Net.Dns.GetHostName(),
-                    LevelCode      = account.LevelCode,
-                    PositionName   = account.PositionName,
+                    UserID = account.UserID,
+                    ADUserName = account.ADUserName,
+                    AppRole = account.AppRole,
+                    MachineName = System.Net.Dns.GetHostName(),
+                    IPAddress = GetLocalIPAddress(),
+                    LevelCode = account.LevelCode,
+                    PositionName = account.PositionName,
                     DepartmentCode = account.DepartmentCode,
                     DepartmentName = account.DepartmentName,
                     // Resolve Authority จาก ตำแหน่ง/แผนก/ฝ่าย ของพนักงาน
-                    Authority      = TryResolveAuthority(folderAuthorityService, account, loggingService)
+                    Authority = TryResolveAuthority(folderAuthorityService, account, loggingService)
                 };
 
                 // ── Audit LOGIN ───────────────────────────────────────────────
                 auditService.Log(new AuditEntry
                 {
-                    Module      = "Auth",
-                    Action      = "LOGIN",
-                    UserID      = userContext.UserID,
-                    UserName    = account.DisplayName,
-                    TableName   = "core.UserAccount",
-                    RecordID    = userContext.UserID,
+                    Module = "Auth",
+                    Action = "LOGIN",
+                    UserID = userContext.UserID,
+                    UserName = account.ADUserName,
+                    TableName = "core.UserAccount",
+                    RecordID = userContext.UserID,
                     MachineName = userContext.MachineName,
-                    IPAddress   = userContext.IPAddress,
-                    Result      = 1,
-                    AuditDate   = DateTime.Now
+                    IPAddress = userContext.IPAddress,
+                    Result = 1,
+                    AuditDate = DateTime.Now
                 });
 
                 Application.ApplicationExit += (s, e) =>
@@ -350,17 +390,17 @@ namespace CMS.Presentation
                     {
                         auditService.Log(new AuditEntry
                         {
-                            Module      = "Auth",
-                            Action      = "LOGOUT",
-                            UserID      = userContext.UserID,
-                            UserName    = userContext.ADUserName ?? string.Empty,
-                            UserRole    = userContext.AppRole,
-                            TableName   = "core.UserAccount",
-                            RecordID    = userContext.UserID,
+                            Module = "Auth",
+                            Action = "LOGOUT",
+                            UserID = userContext.UserID,
+                            UserName = userContext.ADUserName ?? string.Empty,
+                            UserRole = userContext.AppRole,
+                            TableName = "core.UserAccount",
+                            RecordID = userContext.UserID,
                             MachineName = userContext.MachineName,
-                            IPAddress   = userContext.IPAddress,
-                            Result      = 1,
-                            AuditDate   = DateTime.Now
+                            IPAddress = userContext.IPAddress,
+                            Result = 1,
+                            AuditDate = DateTime.Now
                         });
                     }
                     catch (Exception ex)
@@ -384,7 +424,7 @@ namespace CMS.Presentation
                 var userAdminWithHrController = new UserAdminController(userAccountRepo, hrDivisionRepository, hrDepartmentRepository, hrPositionRepository, hrPositionLevelRepository);
                 var menuManagementController = new MenuManagementController(menuService);
                 var approvalInboxController = new ApprovalInboxController(approvalService);
-                var recycleBinController = new RecycleBinController(folderService, orgStructureService);
+                var recycleBinController = new RecycleBinController(folderService, orgStructureService, fileDocumentRepository);
                 var fileUploadController = new FileUploadController(fileService, folderService);
                 var fileBrowseController = new FileBrowseController(fileService);
                 var fileCommandController = new FileCommandController(fileService);
@@ -406,7 +446,14 @@ namespace CMS.Presentation
                     userAccountRepo);
                 var employeeDirectoryController = new EmployeeDirectoryController(employeeApiService);
                 var userOrgVisibilityController = new UserOrgVisibilityController(userOrgVisibilityService);
-                
+
+                // ── Workflow Engine Controllers (MOD-008) ─────────────────────
+                var workflowController = new WorkflowController(workflowService, loggingService);
+                var workflowTemplateController = new WorkflowTemplateController(workflowTemplateService, loggingService);
+                var workflowDashboardController = new WorkflowDashboardController(workflowService, slaCalculator, loggingService);
+                var workflowDelegationController = new WorkflowDelegationController(workflowDelegationService, loggingService);
+                var workflowReportController = new WorkflowReportController(slaCalculator, loggingService);
+
                 // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(
                     logger: loggingService,
@@ -414,6 +461,7 @@ namespace CMS.Presentation
                     currentUser: userContext,
                     notificationService: notificationService,
                     approvalService: approvalService,
+                    folderAuthorityService: folderAuthorityService,
                     orgStructureService: orgStructureService,
                     folderService: folderService,
                     configManager: configManager,
@@ -446,9 +494,13 @@ namespace CMS.Presentation
                     authorityConfigController: authorityConfigController,
                     employeeDirectoryController: employeeDirectoryController,
                     userOrgVisibilityController: userOrgVisibilityController,
+                    employeeApiService: employeeApiService,
                     folderRepository: folderRepository,
                     kbCategoryService: kbCategoryService,
                     kbArticleService: kbArticleService,
+                    workflowService: workflowService,
+                    slaCalculator: slaCalculator,
+                    workflowTemplateService: workflowTemplateService,
                     kbArticleLinkRepository: kbArticleLinkRepository,
                     kbVersionRepository: kbVersionRepository,
                     kbDashboardService: kbDashboardService);
@@ -461,11 +513,103 @@ namespace CMS.Presentation
             }
             catch (Exception ex)
             {
-                loggingService.Fatal("Unhandled exception in application entry point.", ex);
+                Exception root = UnwrapInvocationException(ex);
+                string details = BuildExceptionDetails(ex);
+
+                loggingService.Fatal("Unhandled exception in application entry point. Root: " + root.Message, ex);
+                TryWriteFatalLog(details);
+
                 MessageBox.Show(
-                    "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาติดต่อผู้ดูแลระบบ\r\n\r\n" + ex.Message,
+                    "เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาติดต่อผู้ดูแลระบบ\r\n\r\n"
+                    + "สาเหตุหลัก: " + root.Message + "\r\n"
+                    + "(รายละเอียดถูกบันทึกในไฟล์ fatal-startup-error.log)",
                     "CMS - Fatal Error",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// หา IP address จริงของเครื่องนี้ (primary network adapter)
+        /// ใช้ UDP trick เพื่อให้ OS เลือก adapter หลัก โดยไม่ส่งข้อมูลจริง
+        /// </summary>
+        private static string GetLocalIPAddress()
+        {
+            // วิธีที่ 1: UDP trick — ให้ OS เลือก primary adapter โดยอัตโนมัติ
+            try
+            {
+                using (var socket = new System.Net.Sockets.Socket(
+                    System.Net.Sockets.AddressFamily.InterNetwork,
+                    System.Net.Sockets.SocketType.Dgram, 0))
+                {
+                    socket.Connect("8.8.8.8", 65530); // ไม่ส่งข้อมูลจริง
+                    var ep = socket.LocalEndPoint as System.Net.IPEndPoint;
+                    if (ep != null)
+                        return ep.Address.ToString();
+                }
+            }
+            catch { }
+
+            // วิธีที่ 2: ดึงจาก DNS hostname (กรณี network restricted)
+            try
+            {
+                var hostEntry = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                foreach (var addr in hostEntry.AddressList)
+                {
+                    if (addr.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork
+                        && !System.Net.IPAddress.IsLoopback(addr))
+                        return addr.ToString();
+                }
+            }
+            catch { }
+
+            return "127.0.0.1";
+        }
+
+        private static Exception UnwrapInvocationException(Exception ex)
+        {
+            var current = ex;
+            while (current is TargetInvocationException && current.InnerException != null)
+            {
+                current = current.InnerException;
+            }
+
+            return current;
+        }
+
+        private static string BuildExceptionDetails(Exception ex)
+        {
+            var sb = new StringBuilder();
+            int level = 0;
+            var current = ex;
+
+            while (current != null)
+            {
+                sb.AppendLine("=== Exception Level " + level + " ===");
+                sb.AppendLine("Type: " + current.GetType().FullName);
+                sb.AppendLine("Message: " + current.Message);
+                sb.AppendLine("Source: " + (current.Source ?? "(null)"));
+                sb.AppendLine("StackTrace:");
+                sb.AppendLine(current.StackTrace ?? "(null)");
+                sb.AppendLine();
+
+                current = current.InnerException;
+                level++;
+            }
+
+            return sb.ToString();
+        }
+
+        private static void TryWriteFatalLog(string details)
+        {
+            try
+            {
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string path = Path.Combine(baseDir, "fatal-startup-error.log");
+                File.WriteAllText(path, details);
+            }
+            catch
+            {
+                // Last-resort path; swallowing avoids masking the original startup exception.
             }
         }
 
@@ -498,14 +642,14 @@ namespace CMS.Presentation
             try
             {
                 bool needsUpdate =
-                    account.EmployeeCode        != emp.EmployeeCode        ||
+                    account.EmployeeCode != emp.EmployeeCode ||
                     account.EmployeeFirstNameTh != emp.EmployeeFirstNameTh ||
-                    account.EmployeeLastNameTh  != emp.EmployeeLastNameTh  ||
-                    account.DepartmentCode      != emp.DepartmentCode      ||
-                    account.DepartmentName      != emp.DepartmentNameTh    ||
-                    account.DivisionCode        != emp.DivisionCode        ||
-                    account.DivisionName        != emp.DivisionNameTh      ||
-                    account.PositionName        != emp.Position;
+                    account.EmployeeLastNameTh != emp.EmployeeLastNameTh ||
+                    account.DepartmentCode != emp.DepartmentCode ||
+                    account.DepartmentName != emp.DepartmentNameTh ||
+                    account.DivisionCode != emp.DivisionCode ||
+                    account.DivisionName != emp.DivisionNameTh ||
+                    account.PositionName != emp.Position;
 
                 if (needsUpdate)
                 {
@@ -515,7 +659,7 @@ namespace CMS.Presentation
                         emp.EmployeeTitleNameEn, emp.EmployeeFirstNameEn, emp.EmployeeLastNameEn,
                         emp.EmployeeTitleNameTh, emp.EmployeeFirstNameTh, emp.EmployeeLastNameTh,
                         null, emp.DepartmentCode, emp.DepartmentNameEn, emp.DepartmentNameTh,
-                        null, emp.DivisionCode,   emp.DivisionNameEn,   emp.DivisionNameTh,
+                        null, emp.DivisionCode, emp.DivisionNameEn, emp.DivisionNameTh,
                         emp.Position);
                 }
             }
@@ -549,12 +693,12 @@ namespace CMS.Presentation
                 if (pos == null) return;
 
                 bool needsUpdate =
-                    account.EmployeeCode   != emp.EmployeeCode      ||
-                    account.DepartmentCode != pos.DepartmentCode    ||
-                    account.DepartmentName != pos.DepartmentNameTh  ||
-                    account.DivisionCode   != pos.DivisionCode      ||
-                    account.DivisionName   != pos.DivisionNameTh    ||
-                    account.PositionName   != pos.PositionName;
+                    account.EmployeeCode != emp.EmployeeCode ||
+                    account.DepartmentCode != pos.DepartmentCode ||
+                    account.DepartmentName != pos.DepartmentNameTh ||
+                    account.DivisionCode != pos.DivisionCode ||
+                    account.DivisionName != pos.DivisionNameTh ||
+                    account.PositionName != pos.PositionName;
 
                 if (needsUpdate)
                 {
@@ -564,7 +708,7 @@ namespace CMS.Presentation
                         null, null, null,
                         null, null, null,
                         pos.DepartmentId, pos.DepartmentCode, pos.DepartmentNameEn, pos.DepartmentNameTh,
-                        pos.DivisionId,   pos.DivisionCode,   pos.DivisionNameEn,   pos.DivisionNameTh,
+                        pos.DivisionId, pos.DivisionCode, pos.DivisionNameEn, pos.DivisionNameTh,
                         pos.PositionName);
                 }
             }
@@ -583,10 +727,10 @@ namespace CMS.Presentation
 
     internal class StartupArgs
     {
-        public AuthMode Mode     { get; private set; } = AuthMode.None;
-        public string   Username { get; set; }
-        public string   Password { get; private set; }
-        public string   Token    { get; private set; }
+        public AuthMode Mode { get; private set; } = AuthMode.None;
+        public string Username { get; set; }
+        public string Password { get; private set; }
+        public string Token { get; private set; }
 
         /// <summary>
         /// Parse command-line args:

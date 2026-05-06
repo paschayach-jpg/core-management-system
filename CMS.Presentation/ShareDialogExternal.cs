@@ -419,8 +419,8 @@ namespace CMS.Presentation
             {
                 var request = new CreateExternalShareRequest
                 {
-                    FileID = _selectedFile?.FileID,
-                    FolderID = _selectedFolder?.FolderID,
+                    FileID   = _selectedFile?.FileID,
+                    FolderID = _selectedFile == null ? _selectedFolder?.FolderID : (int?)null,
                     Password = string.IsNullOrEmpty(txtPassword.Text) ? null : txtPassword.Text,
                     ExpiryDate = chkNoExpiry.Checked ? (DateTime?)null : dtpExpiry.Value,
                     DownloadLimit = chkNoLimit.Checked ? (int?)null : (int)nudDownloadLimit.Value,

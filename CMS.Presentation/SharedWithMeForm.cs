@@ -18,9 +18,11 @@ namespace CMS.Presentation
     {
         private readonly UserContext              _user;
         private readonly IShareLookupController   _shareLookupController;
+        private readonly bool                     _isAdmin;
 
         private DataGridView _grid;
         private Label        _lblCount;
+        private Button       _btnRevoke;
 
         // ── สาธารณะ: จำนวนรายการใหม่ (ใช้อัพเดต badge ใน MDI) ───────────
         public int NewItemCount { get; private set; }
@@ -39,8 +41,9 @@ namespace CMS.Presentation
             UserContext               user,
             IShareLookupController    shareLookupController)
         {
-            _user         = user       ?? throw new ArgumentNullException("user");
+            _user                  = user ?? throw new ArgumentNullException("user");
             _shareLookupController = shareLookupController;
+            _isAdmin               = user.AppRole == 4;
             BuildUI();
         }
 
@@ -168,6 +171,7 @@ namespace CMS.Presentation
                 new DataGridViewTextBoxColumn { Name = "colNew",     HeaderText = "",                Width = 28,  MinimumWidth = 28,  AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colType",    HeaderText = "ประเภท",           Width = 70,  MinimumWidth = 60,  AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colFolder",  HeaderText = "รายการที่แบ่งปัน", MinimumWidth = 180, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill },
+                new DataGridViewTextBoxColumn { Name = "colFileName",HeaderText = "ชื่อไฟล์",          Width = 180, MinimumWidth = 140, AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colLevel",   HeaderText = "ระดับ",             Width = 60,  AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colPerms",   HeaderText = "สิทธิ์ที่ได้รับ",  Width = 120, AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
                 new DataGridViewTextBoxColumn { Name = "colGrantBy", HeaderText = "แบ่งปันโดย",      Width = 130, AutoSizeMode = DataGridViewAutoSizeColumnMode.None },
@@ -190,6 +194,7 @@ namespace CMS.Presentation
                 if (e.RowIndex < 0) return;
                 var row = _grid.Rows[e.RowIndex].Tag as SharedRow;
                 if (row == null) return;
+                if (!CanOpenSharedRow(row)) return;
                 if (row.FileID > 0)
                     OpenFileRequested?.Invoke(row.FolderID, row.FileID);
                 else if (row.FolderID > 0)
@@ -201,6 +206,11 @@ namespace CMS.Presentation
                 if (e.KeyCode != Keys.Enter || _grid.CurrentRow == null) return;
                 var row = _grid.CurrentRow.Tag as SharedRow;
                 if (row == null) return;
+                if (!CanOpenSharedRow(row))
+                {
+                    e.Handled = true;
+                    return;
+                }
                 if (row.FileID > 0)
                     OpenFileRequested?.Invoke(row.FolderID, row.FileID);
                 else if (row.FolderID > 0)
@@ -247,14 +257,30 @@ namespace CMS.Presentation
             };
             btnClose.FlatAppearance.BorderSize = 0;
 
+            _btnRevoke = new Button
+            {
+                Text      = "🚫 ยกเลิกสิทธิ์",
+                Size      = new Size(120, 32),
+                Anchor    = AnchorStyles.Right | AnchorStyles.Top,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(200, 60, 60),
+                ForeColor = Color.White,
+                Font      = boldFont,
+                Visible   = _isAdmin,
+            };
+            _btnRevoke.FlatAppearance.BorderSize = 0;
+            _btnRevoke.Click += BtnRevoke_Click;
+
             pnlFooter.Resize += (s, e) =>
             {
-                btnClose.Location   = new Point(pnlFooter.Width - 108, 9);
-                btnRefresh.Location = new Point(pnlFooter.Width - 210, 9);
+                btnClose.Location    = new Point(pnlFooter.Width - 108, 9);
+                btnRefresh.Location  = new Point(pnlFooter.Width - 210, 9);
+                _btnRevoke.Location  = new Point(pnlFooter.Width - 338, 9);
             };
-            btnClose.Location   = new Point(752, 9);
-            btnRefresh.Location = new Point(650, 9);
-            pnlFooter.Controls.AddRange(new Control[] { lblHint, btnRefresh, btnClose });
+            btnClose.Location    = new Point(752, 9);
+            btnRefresh.Location  = new Point(650, 9);
+            _btnRevoke.Location  = new Point(522, 9);
+            pnlFooter.Controls.AddRange(new Control[] { lblHint, _btnRevoke, btnRefresh, btnClose });
 
             // ── Layout ──────────────────────────────────────────────────────
             var pnlBody = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 6, 10, 0), BackColor = bodyBg };
@@ -302,6 +328,8 @@ namespace CMS.Presentation
 
                     foreach (var p in folderPerms)
                     {
+                        if (p.RevokedDate.HasValue) continue;
+
                         string folderName = "(ไม่พบ)";
                         string levelCode  = "—";
                         var folder = _shareLookupController.GetFolderById(p.FolderID);
@@ -317,18 +345,21 @@ namespace CMS.Presentation
 
                         _allRows.Add(new SharedRow
                         {
-                            FolderID    = p.FolderID,
-                            ItemType    = "📁 Folder",
-                            IsNew       = isNew,
-                            IsExpired   = isExpired,
-                            IsDeny      = isDeny,
-                            DisplayName = folderName,
-                            LevelCode   = levelCode,
-                            Perms       = BuildPermText(p),
-                            GrantedBy   = ResolveGranterName(p.GrantedBy),
-                            GrantedDate = p.GrantedDate,
-                            Expiry      = p.ExpiryDate.HasValue ? p.ExpiryDate.Value.ToString("dd/MM/yyyy") : "ไม่มีกำหนด",
-                            Status      = isDeny ? "🚫 Deny" : isExpired ? "⚠ หมดอายุ" : "✔ ใช้งาน",
+                            FolderID     = p.FolderID,
+                            PermissionID = p.PermissionID,
+                            IsFolderPerm = true,
+                            ItemType     = "📁 Folder",
+                            FileName     = string.Empty,
+                            IsNew        = isNew,
+                            IsExpired    = isExpired,
+                            IsDeny       = isDeny,
+                            DisplayName  = folderName,
+                            LevelCode    = levelCode,
+                            Perms        = BuildPermText(p),
+                            GrantedBy    = ResolveGranterName(p.GrantedBy),
+                            GrantedDate  = p.GrantedDate,
+                            Expiry       = p.ExpiryDate.HasValue ? p.ExpiryDate.Value.ToString("dd/MM/yyyy") : "ไม่มีกำหนด",
+                            Status       = isDeny ? "🚫 Deny" : isExpired ? "⚠ หมดอายุ" : "✔ ใช้งาน",
                         });
 
                         if (isNew && !isDeny && !isExpired) NewItemCount++;
@@ -342,6 +373,8 @@ namespace CMS.Presentation
 
                     foreach (var p in filePerms)
                     {
+                        if (p.RevokedDate.HasValue) continue;
+
                         var doc = _shareLookupController.GetFileById(p.FileID);
                         if (doc == null) continue;  // FileID ไม่มีใน storage.FileDocument
 
@@ -361,19 +394,22 @@ namespace CMS.Presentation
 
                         _allRows.Add(new SharedRow
                         {
-                            FolderID    = folderId,
-                            FileID      = p.FileID,
-                            ItemType    = "📄 ไฟล์",
-                            IsNew       = isNew,
-                            IsExpired   = isExpired,
-                            IsDeny      = isDeny,
-                            DisplayName = fileName,
-                            LevelCode   = levelCode,
-                            Perms       = BuildFilePermText(p),
-                            GrantedBy   = ResolveGranterName(p.GrantedBy),
-                            GrantedDate = p.GrantedDate,
-                            Expiry      = p.ExpiryDate.HasValue ? p.ExpiryDate.Value.ToString("dd/MM/yyyy") : "ไม่มีกำหนด",
-                            Status      = isDeny ? "🚫 Deny" : isExpired ? "⚠ หมดอายุ" : "✔ ใช้งาน",
+                            FolderID     = folderId,
+                            FileID       = p.FileID,
+                            PermissionID = p.FilePermissionID,
+                            IsFolderPerm = false,
+                            ItemType     = "📄 ไฟล์",
+                            FileName     = fileName,
+                            IsNew        = isNew,
+                            IsExpired    = isExpired,
+                            IsDeny       = isDeny,
+                            DisplayName  = fileName,
+                            LevelCode    = levelCode,
+                            Perms        = BuildFilePermText(p),
+                            GrantedBy    = ResolveGranterName(p.GrantedBy),
+                            GrantedDate  = p.GrantedDate,
+                            Expiry       = p.ExpiryDate.HasValue ? p.ExpiryDate.Value.ToString("dd/MM/yyyy") : "ไม่มีกำหนด",
+                            Status       = isDeny ? "🚫 Deny" : isExpired ? "⚠ หมดอายุ" : "✔ ใช้งาน",
                         });
 
                         if (isNew && !isDeny && !isExpired) NewItemCount++;
@@ -412,6 +448,7 @@ namespace CMS.Presentation
                     r.IsNew ? "🔴" : "",
                     r.ItemType,
                     r.DisplayName,
+                    r.FileName,
                     r.LevelCode,
                     r.Perms,
                     r.GrantedBy,
@@ -470,14 +507,114 @@ namespace CMS.Presentation
         }
 
         // ════════════════════════════════════════════════════════════════════
+        // Admin Actions
+        // ════════════════════════════════════════════════════════════════════
+
+        private void BtnRevoke_Click(object sender, EventArgs e)
+        {
+            if (!_isAdmin || _shareLookupController == null) return;
+
+            var row = _grid.CurrentRow?.Tag as SharedRow;
+            if (row == null || row.PermissionID <= 0)
+            {
+                MessageBox.Show("กรุณาเลือกรายการที่ต้องการยกเลิกสิทธิ์", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string itemName = row.DisplayName;
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการยกเลิกสิทธิ์รายการ \"{0}\" ใช่หรือไม่?", itemName),
+                "ยืนยันการยกเลิกสิทธิ์",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                if (row.IsFolderPerm)
+                    _shareLookupController.RevokeFolderPermission(row.PermissionID, _user.UserID);
+                else
+                    _shareLookupController.RevokeFilePermission(row.PermissionID, _user.UserID);
+
+                LoadData();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
         // Helpers
         // ════════════════════════════════════════════════════════════════════
 
         private void AddInfoRow(string msg)
         {
-            int idx = _grid.Rows.Add("", "", msg, "", "", "", "", "", "");
+            int idx = _grid.Rows.Add("", "", msg, "", "", "", "", "", "", "");
             _grid.Rows[idx].DefaultCellStyle.ForeColor = Color.FromArgb(130, 130, 140);
             _grid.Rows[idx].DefaultCellStyle.Font      = new Font("Segoe UI", 8.5f, FontStyle.Italic);
+        }
+
+        private bool CanOpenSharedRow(SharedRow row)
+        {
+            if (row == null)
+                return false;
+
+            if (row.IsDeny)
+            {
+                MessageBox.Show("รายการนี้ถูกปฏิเสธสิทธิ์ จึงไม่สามารถเปิดใช้งานได้", "แบ่งปันให้ฉัน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+
+            if (row.IsExpired)
+            {
+                MessageBox.Show("รายการนี้หมดอายุแล้ว จึงไม่สามารถเปิดใช้งานได้", "แบ่งปันให้ฉัน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+
+            if (row.FileID > 0)
+            {
+                var activeFileShare = _shareLookupController
+                    .GetFilePermissionsForUser(_user.UserID)
+                    .Any(p => p.FileID == row.FileID
+                           && !p.IsDeny
+                           && p.CanRead
+                           && !p.RevokedDate.HasValue
+                           && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
+
+                if (!activeFileShare)
+                {
+                    MessageBox.Show("สิทธิ์แชร์ไฟล์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แบ่งปันให้ฉัน",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    return false;
+                }
+            }
+            else if (row.FolderID > 0)
+            {
+                var activeFolderShare = _shareLookupController
+                    .GetFolderPermissionsForUser(_user.UserID)
+                    .Any(p => p.FolderID == row.FolderID
+                           && !p.IsDeny
+                           && p.CanRead
+                           && !p.RevokedDate.HasValue
+                           && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
+
+                if (!activeFolderShare)
+                {
+                    MessageBox.Show("สิทธิ์แชร์โฟลเดอร์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แบ่งปันให้ฉัน",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadData();
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private string ResolveGranterName(int userId)
@@ -527,11 +664,14 @@ namespace CMS.Presentation
         {
             public int      FolderID;       // navigate ไปยัง folder นี้
             public int      FileID;         // > 0 เมื่อเป็นไฟล์
+            public int      PermissionID;   // ID สำหรับ revoke
+            public bool     IsFolderPerm;   // true = FolderPermission, false = FilePermission
             public string   ItemType;       // "📁 Folder" หรือ "📄 ไฟล์"
             public bool     IsNew;
             public bool     IsExpired;
             public bool     IsDeny;
             public string   DisplayName;    // ชื่อ folder หรือชื่อไฟล์
+            public string   FileName;       // แสดงเฉพาะเมื่อเป็นรายการไฟล์
             public string   LevelCode;
             public string   Perms;
             public string   GrantedBy;

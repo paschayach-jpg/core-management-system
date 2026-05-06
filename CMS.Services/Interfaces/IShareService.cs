@@ -98,6 +98,13 @@ namespace CMS.Services.Interfaces
         void RevokeExternalShare(int externalShareId, string revocationReason, UserContext user);
 
         /// <summary>
+        /// Toggles an external share between Active and Disabled.
+        /// Active → Disabled (pause), Disabled → Active (resume).
+        /// Not applicable for Pending, Revoked, Expired.
+        /// </summary>
+        void ToggleExternalShare(int externalShareId, UserContext user);
+
+        /// <summary>
         /// Modifies an external share (expiry date, download limit, password).
         /// 
         /// Validates:
@@ -126,6 +133,8 @@ namespace CMS.Services.Interfaces
         /// Requirements: 13.1, 13.2, 15.5
         /// </summary>
         IEnumerable<FilePermission> GetInternalSharesForUser(int userId, UserContext user);
+        IEnumerable<FilePermission> GetAllInternalShares(UserContext admin);
+        IEnumerable<ExternalShare>  GetAllExternalShares(UserContext admin);
 
         /// <summary>
         /// Returns all external shares created by the specified user.

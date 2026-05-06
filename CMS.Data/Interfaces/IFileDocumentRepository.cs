@@ -19,5 +19,17 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Hard-deletes ALL FileDocument records for a folder regardless of FileStatus (used during permanent folder deletion).</summary>
         void DeleteAllByFolder(int folderId);
+
+        /// <summary>Returns true when an active (non-deleted) file with the given original name already exists in the folder.</summary>
+        bool ExistsWithName(string fileName, int folderId);
+
+        /// <summary>Returns the number of active files whose name starts with <paramref name="namePrefix"/> in the folder (used for copy-counter naming).</summary>
+        int CountByNamePrefix(string namePrefix, int folderId);
+
+        /// <summary>Returns all soft-deleted files (FileStatus=3), optionally filtered by OrgUnit.</summary>
+        IEnumerable<FileDocument> GetDeletedFiles(int? orgUnitId);
+
+        /// <summary>Restores a soft-deleted file back to active (FileStatus=1).</summary>
+        void RestoreFile(int fileId);
     }
 }

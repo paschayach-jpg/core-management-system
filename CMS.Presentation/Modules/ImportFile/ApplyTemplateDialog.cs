@@ -170,7 +170,22 @@ namespace CMS.Presentation
                 treePreview.ExpandAll();
                 treePreview.EndUpdate();
 
-                lblStatus.Text = string.Format("Template: {0}  |  {1} folder(s)", tmpl.TemplateName, items.Count);
+                // แสดง summary ใน lblStatus แทน confirmation dialog
+                if (_parentFolder != null)
+                {
+                    lblStatus.Text = string.Format(
+                        "จะสร้างใต้: {0}  |  Template: {1}  |  {2} folder(s)  — กด \"สร้าง Folder\" เพื่อดำเนินการ",
+                        _parentFolder.FolderName, tmpl.TemplateName, items.Count);
+                }
+                else
+                {
+                    var ou2 = GetSelectedOrgUnit();
+                    lblStatus.Text = string.Format(
+                        "Template: {0}  |  {1} folder(s){2}  — กด \"สร้าง Folder\" เพื่อดำเนินการ",
+                        tmpl.TemplateName, items.Count,
+                        ou2 != null ? "  |  หน่วยงาน: " + ou2.Name : "");
+                }
+                lblStatus.ForeColor = Color.FromArgb(0, 100, 180);
             }
             catch { }
         }
@@ -203,11 +218,6 @@ namespace CMS.Presentation
             // ถ้ามี parentFolder → สร้างภายใต้ folder นั้น (ไม่ต้องเลือก OrgUnit)
             if (_parentFolder != null)
             {
-                if (MessageBox.Show(
-                    string.Format("ยืนยันการสร้าง Folder?\n\nสร้างใต้ :  {0}\nTemplate  :  {1}\nระดับ :  {2}",
-                        _parentFolder.FolderName, tmpl.TemplateName, cboConfidentiality.Text.Trim()),
-                    "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-
                 try
                 {
                     btnApply.Enabled = false;
@@ -255,11 +265,6 @@ namespace CMS.Presentation
                 MessageBox.Show("กรุณาระบุชื่อ Root Folder", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
-            if (MessageBox.Show(
-                string.Format("ยืนยันการสร้าง Folder?\n\nหน่วยงาน :  {0}\nTemplate  :  {1}\nRoot Folder :  {2}\nระดับ :  {3}",
-                    ou.Name, tmpl.TemplateName, txtRootName.Text.Trim(), cboConfidentiality.Text.Trim()),
-                "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
             try
             {

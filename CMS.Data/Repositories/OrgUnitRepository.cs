@@ -116,6 +116,31 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public bool ExistsByNameUnderParent(string nameTH, int? parentId, int? excludeOrgUnitId = null)
+        {
+            const string sql = @"
+                SELECT COUNT(*) FROM core.OrgUnit
+                WHERE OrgUnitNameTH = @OrgUnitNameTH
+                  AND IsDeleted = 0
+                  AND (
+                        (@ParentOrgUnitID IS NULL AND ParentOrgUnitID IS NULL)
+                     OR (ParentOrgUnitID = @ParentOrgUnitID)
+                  )
+                  AND (@ExcludeID IS NULL OR OrgUnitID <> @ExcludeID)";
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@OrgUnitNameTH", nameTH);
+                    cmd.Parameters.AddWithValue("@ParentOrgUnitID", (object)parentId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ExcludeID",       (object)excludeOrgUnitId ?? DBNull.Value);
+                    return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+            }
+        }
+
         public IEnumerable<OrgUnit> GetHierarchy()
         {
             var results = new List<OrgUnit>();
@@ -186,6 +211,153 @@ namespace CMS.Data.Repositories
         public void Deactivate(int orgUnitId)
         {
             SoftDelete(orgUnitId, 0);
+        }
+
+        public void ForceDeleteWithDependents(int orgUnitId, int deletedBy)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. Soft-delete all active folders belonging to this OrgUnit
+                        var cmdFolders = new SqlCommand(
+                            @"UPDATE storage.Folder
+                              SET    IsDeleted = 1, DeletedDate = GETDATE(), DeletedBy = @DeletedBy
+                              WHERE  OrgUnitID = @OrgUnitID AND IsDeleted = 0", conn, tx);
+                        cmdFolders.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                        cmdFolders.Parameters.AddWithValue("@DeletedBy", deletedBy);
+                        cmdFolders.ExecuteNonQuery();
+
+                        // 2. Detach users — clear OrgUnitID (do NOT deactivate their accounts)
+                        var cmdUsers = new SqlCommand(
+                            @"UPDATE core.UserAccount
+                              SET    OrgUnitID = NULL
+                              WHERE  OrgUnitID = @OrgUnitID", conn, tx);
+                        cmdUsers.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                        cmdUsers.ExecuteNonQuery();
+
+                        // 3. Soft-delete the OrgUnit itself
+                        var cmdOrg = new SqlCommand("core.sp_SoftDeleteOrgUnit", conn, tx);
+                        cmdOrg.CommandType = CommandType.StoredProcedure;
+                        cmdOrg.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                        cmdOrg.Parameters.AddWithValue("@DeletedBy", deletedBy);
+                        cmdOrg.ExecuteNonQuery();
+
+                        tx.Commit();
+                    }
+                    catch
+                    {
+                        tx.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
+        // ── Many-to-Many: SubCommittee ↔ Division ─────────────────────────────
+
+        public void LinkDivisionToSubCommittee(int divisionId, int subCommitteeId, int createdBy)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                try
+                {
+                    using (var cmd = new SqlCommand("core.sp_AddOrgUnitRelationship", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.AddWithValue("@SubCommitteeID", subCommitteeId);
+                        cmd.Parameters.AddWithValue("@DivisionID",     divisionId);
+                        cmd.Parameters.AddWithValue("@CreatedBy",      createdBy);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                catch (SqlException ex)
+                {
+                    // Backward-compat: some DBs have CreatedDate as NOT NULL without a default.
+                    // Fallback to explicit upsert that always sets CreatedDate.
+                    var isCreatedDateNullError =
+                        ex.Message.IndexOf("CreatedDate", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                        ex.Message.IndexOf("OrgUnitRelationship", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (!isCreatedDateNullError)
+                        throw;
+
+                    const string fallbackSql = @"
+IF EXISTS (SELECT 1 FROM core.OrgUnitRelationship
+           WHERE SubCommitteeID = @SubCommitteeID AND DivisionID = @DivisionID)
+BEGIN
+    UPDATE core.OrgUnitRelationship
+    SET IsActive = 1,
+        CreatedBy = @CreatedBy,
+        CreatedDate = ISNULL(CreatedDate, GETDATE())
+    WHERE SubCommitteeID = @SubCommitteeID AND DivisionID = @DivisionID;
+END
+ELSE
+BEGIN
+    INSERT INTO core.OrgUnitRelationship
+        (SubCommitteeID, DivisionID, IsActive, CreatedBy, CreatedDate)
+    VALUES
+        (@SubCommitteeID, @DivisionID, 1, @CreatedBy, GETDATE());
+END";
+
+                    using (var fallbackCmd = new SqlCommand(fallbackSql, conn))
+                    {
+                        fallbackCmd.CommandType = CommandType.Text;
+                        fallbackCmd.Parameters.AddWithValue("@SubCommitteeID", subCommitteeId);
+                        fallbackCmd.Parameters.AddWithValue("@DivisionID", divisionId);
+                        fallbackCmd.Parameters.AddWithValue("@CreatedBy", createdBy);
+                        fallbackCmd.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
+        public bool IsDivisionLinkedToSubCommittee(int divisionId, int subCommitteeId)
+        {
+            const string sql = @"
+                SELECT COUNT(*) FROM core.OrgUnitRelationship
+                WHERE DivisionID = @DivisionID AND SubCommitteeID = @SubCommitteeID AND IsActive = 1";
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@DivisionID",    divisionId);
+                    cmd.Parameters.AddWithValue("@SubCommitteeID", subCommitteeId);
+                    return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+            }
+        }
+
+        public IEnumerable<OrgUnitRelationship> GetAllActiveRelationships()
+        {
+            const string sql = @"
+                SELECT RelationshipID, SubCommitteeID, DivisionID, IsActive
+                FROM core.OrgUnitRelationship WHERE IsActive = 1";
+            var results = new List<OrgUnitRelationship>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        results.Add(new OrgUnitRelationship
+                        {
+                            RelationshipID = (int)reader["RelationshipID"],
+                            SubCommitteeID = (int)reader["SubCommitteeID"],
+                            DivisionID     = (int)reader["DivisionID"],
+                            IsActive       = (bool)reader["IsActive"]
+                        });
+                    }
+                }
+            }
+            return results;
         }
 
         private static OrgUnit MapOrgUnit(SqlDataReader reader)

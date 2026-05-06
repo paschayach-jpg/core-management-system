@@ -14,7 +14,7 @@ namespace CMS.Services
 {
     public class FileService : IFileService
     {
-        private const long   MaxFileSizeBytes = 100L * 1024 * 1024;
+        private const long MaxFileSizeBytes = 100L * 1024 * 1024;
 
         private static readonly HashSet<string> AllowedExtensions = new HashSet<string>(
             StringComparer.OrdinalIgnoreCase)
@@ -23,55 +23,55 @@ namespace CMS.Services
             ".ppt", ".pptx", ".jpg", ".png", ".gif", ".zip"
         };
 
-        private readonly IFileDocumentRepository  _fileDocumentRepository;
-        private readonly IFolderRepository        _folderRepository;
-        private readonly IOrgUnitRepository       _orgUnitRepository;
-        private readonly IVirusScanService        _virusScanService;
-        private readonly IPermissionService       _permissionService;
-        private readonly INetworkDriveHelper      _networkDriveHelper;
-        private readonly IAuditService            _auditService;
-        private readonly INotificationRepository  _notificationRepository;
-        private readonly IUserAccountRepository   _userAccountRepository;
-        private readonly ILoggingService          _loggingService;
-        private readonly IPermissionRepository    _permissionRepository;
+        private readonly IFileDocumentRepository _fileDocumentRepository;
+        private readonly IFolderRepository _folderRepository;
+        private readonly IOrgUnitRepository _orgUnitRepository;
+        private readonly IVirusScanService _virusScanService;
+        private readonly IPermissionService _permissionService;
+        private readonly INetworkDriveHelper _networkDriveHelper;
+        private readonly IAuditService _auditService;
+        private readonly INotificationRepository _notificationRepository;
+        private readonly IUserAccountRepository _userAccountRepository;
+        private readonly ILoggingService _loggingService;
+        private readonly IPermissionRepository _permissionRepository;
         private readonly IFilePermissionRepository _filePermissionRepository;
 
         public FileService(
-            IFileDocumentRepository  fileDocumentRepository,
-            IFolderRepository        folderRepository,
-            IOrgUnitRepository       orgUnitRepository,
-            IVirusScanService        virusScanService,
-            IPermissionService       permissionService,
-            INetworkDriveHelper      networkDriveHelper,
-            IAuditService            auditService,
-            INotificationRepository  notificationRepository,
-            IUserAccountRepository   userAccountRepository,
-            ILoggingService          loggingService,
-            IPermissionRepository    permissionRepository    = null,
+            IFileDocumentRepository fileDocumentRepository,
+            IFolderRepository folderRepository,
+            IOrgUnitRepository orgUnitRepository,
+            IVirusScanService virusScanService,
+            IPermissionService permissionService,
+            INetworkDriveHelper networkDriveHelper,
+            IAuditService auditService,
+            INotificationRepository notificationRepository,
+            IUserAccountRepository userAccountRepository,
+            ILoggingService loggingService,
+            IPermissionRepository permissionRepository = null,
             IFilePermissionRepository filePermissionRepository = null)
         {
             if (fileDocumentRepository == null) throw new ArgumentNullException("fileDocumentRepository");
-            if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
-            if (orgUnitRepository      == null) throw new ArgumentNullException("orgUnitRepository");
-            if (virusScanService       == null) throw new ArgumentNullException("virusScanService");
-            if (permissionService      == null) throw new ArgumentNullException("permissionService");
-            if (networkDriveHelper     == null) throw new ArgumentNullException("networkDriveHelper");
-            if (auditService           == null) throw new ArgumentNullException("auditService");
+            if (folderRepository == null) throw new ArgumentNullException("folderRepository");
+            if (orgUnitRepository == null) throw new ArgumentNullException("orgUnitRepository");
+            if (virusScanService == null) throw new ArgumentNullException("virusScanService");
+            if (permissionService == null) throw new ArgumentNullException("permissionService");
+            if (networkDriveHelper == null) throw new ArgumentNullException("networkDriveHelper");
+            if (auditService == null) throw new ArgumentNullException("auditService");
             if (notificationRepository == null) throw new ArgumentNullException("notificationRepository");
-            if (userAccountRepository  == null) throw new ArgumentNullException("userAccountRepository");
-            if (loggingService         == null) throw new ArgumentNullException("loggingService");
+            if (userAccountRepository == null) throw new ArgumentNullException("userAccountRepository");
+            if (loggingService == null) throw new ArgumentNullException("loggingService");
 
-            _fileDocumentRepository   = fileDocumentRepository;
-            _folderRepository         = folderRepository;
-            _orgUnitRepository        = orgUnitRepository;
-            _virusScanService         = virusScanService;
-            _permissionService        = permissionService;
-            _networkDriveHelper       = networkDriveHelper;
-            _auditService             = auditService;
-            _notificationRepository   = notificationRepository;
-            _userAccountRepository    = userAccountRepository;
-            _loggingService           = loggingService;
-            _permissionRepository     = permissionRepository;
+            _fileDocumentRepository = fileDocumentRepository;
+            _folderRepository = folderRepository;
+            _orgUnitRepository = orgUnitRepository;
+            _virusScanService = virusScanService;
+            _permissionService = permissionService;
+            _networkDriveHelper = networkDriveHelper;
+            _auditService = auditService;
+            _notificationRepository = notificationRepository;
+            _userAccountRepository = userAccountRepository;
+            _loggingService = loggingService;
+            _permissionRepository = permissionRepository;
             _filePermissionRepository = filePermissionRepository;
         }
 
@@ -83,10 +83,10 @@ namespace CMS.Services
             IEnumerable<FileUploadRequest> files, int folderId, UserContext user)
         {
             if (files == null) throw new ArgumentNullException("files");
-            if (user  == null) throw new ArgumentNullException("user");
+            if (user == null) throw new ArgumentNullException("user");
 
             var fileList = files.ToList();
-            var results  = new List<UploadResult>();
+            var results = new List<UploadResult>();
 
             var folder = _folderRepository.GetById(folderId);
             if (folder == null)
@@ -140,10 +140,10 @@ namespace CMS.Services
                 var filePerms = _filePermissionRepository.GetByFile(doc.FileID);
                 hasDirectShare = filePerms.Any(p =>
                     p.PrincipalType == 1 &&          // User
-                    p.PrincipalID   == user.UserID &&
-                    p.CanRead       == true &&
-                    p.IsDeny        == false &&
-                    p.RevokedDate   == null &&
+                    p.PrincipalID == user.UserID &&
+                    p.CanRead == true &&
+                    p.IsDeny == false &&
+                    p.RevokedDate == null &&
                     !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
             }
 
@@ -162,8 +162,8 @@ namespace CMS.Services
                     "FileService: Failed to read file '{0}' from network drive.", doc.PhysicalPath), ex);
                 return new FileDownloadResult
                 {
-                    FileName     = doc.OriginalFileName,
-                    Success      = false,
+                    FileName = doc.OriginalFileName,
+                    Success = false,
                     ErrorMessage = "The file could not be read from storage."
                 };
             }
@@ -180,9 +180,9 @@ namespace CMS.Services
                 _notificationRepository.Insert(new Notification
                 {
                     RecipientUserId = user.UserID,
-                    EventType       = "FileIntegrityFailure",
+                    EventType = "FileIntegrityFailure",
                     RelatedEntityId = fileId.ToString(),
-                    MessageText     = string.Format(
+                    MessageText = string.Format(
                         "File '{0}' failed integrity check. Please contact your administrator.",
                         doc.OriginalFileName),
                     DeliveredAt = DateTime.Now
@@ -191,8 +191,8 @@ namespace CMS.Services
                 fileStream.Dispose();
                 return new FileDownloadResult
                 {
-                    FileName     = doc.OriginalFileName,
-                    Success      = false,
+                    FileName = doc.OriginalFileName,
+                    Success = false,
                     ErrorMessage = string.Format("File '{0}' failed integrity check.", doc.OriginalFileName)
                 };
             }
@@ -202,10 +202,10 @@ namespace CMS.Services
 
             return new FileDownloadResult
             {
-                FileName      = doc.OriginalFileName,
-                FileStream    = fileStream,
+                FileName = doc.OriginalFileName,
+                FileStream = fileStream,
                 FileSizeBytes = doc.FileSizeBytes,
-                Success       = true
+                Success = true
             };
         }
 
@@ -245,7 +245,7 @@ namespace CMS.Services
                 var filePerms = _filePermissionRepository.GetByFile(fileId).ToList();
                 if (filePerms.Count > 0)
                 {
-                    var account   = _userAccountRepository.GetById(user.UserID);
+                    var account = _userAccountRepository.GetById(user.UserID);
                     int? userRole = account != null ? (int?)account.AppRole : null;
 
                     var applicable = filePerms.Where(e =>
@@ -271,6 +271,18 @@ namespace CMS.Services
             }
 
             _fileDocumentRepository.SoftDelete(fileId, user.UserID);
+
+            // Keep Folder.FileCount in sync after soft-delete.
+            try
+            {
+                _folderRepository.UpdateFileCount(doc.FolderID);
+            }
+            catch (Exception updateEx)
+            {
+                _loggingService.Error(string.Format(
+                    "FileService: Could not update FileCount via stored procedure after delete for folder {0}: {1}",
+                    doc.FolderID, updateEx.Message), updateEx);
+            }
 
             Log(user, "File", "DELETE", "storage.FileDocument", fileId, 1,
                 string.Format("Soft-deleted file '{0}'.", doc.OriginalFileName));
@@ -317,7 +329,7 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format("OrgUnit with ID {0} was not found.", orgUnitId));
 
             var rootFolders = _folderRepository.GetRootFoldersByOrgUnit(orgUnitId).ToList();
-            var allFolders  = new List<Folder>();
+            var allFolders = new List<Folder>();
             foreach (var root in rootFolders)
             {
                 allFolders.Add(root);
@@ -326,7 +338,7 @@ namespace CMS.Services
 
             var report = new StorageUsageReport
             {
-                OrgUnitID   = orgUnitId,
+                OrgUnitID = orgUnitId,
                 OrgUnitName = orgUnit.OrgUnitNameTH
             };
 
@@ -334,8 +346,8 @@ namespace CMS.Services
             {
                 report.Folders.Add(new FolderStorageEntry
                 {
-                    FolderID          = folder.FolderID,
-                    FolderName        = folder.FolderName,
+                    FolderID = folder.FolderID,
+                    FolderName = folder.FolderName,
                     CurrentUsageBytes = folder.FolderSizeBytes
                 });
             }
@@ -361,7 +373,7 @@ namespace CMS.Services
 
         public void RenameFile(int fileId, string newName, UserContext user)
         {
-            if (user    == null) throw new ArgumentNullException("user");
+            if (user == null) throw new ArgumentNullException("user");
             if (string.IsNullOrWhiteSpace(newName)) throw new ArgumentException("ชื่อไฟล์ต้องไม่ว่าง");
 
             var file = _fileDocumentRepository.GetById(fileId);
@@ -400,7 +412,7 @@ namespace CMS.Services
         public void MoveFiles(MoveFileRequest request, UserContext user)
         {
             if (request == null) throw new ArgumentNullException("request");
-            if (user    == null) throw new ArgumentNullException("user");
+            if (user == null) throw new ArgumentNullException("user");
 
             if (request.FileIds == null || !request.FileIds.Any())
                 throw new ArgumentException("ต้องระบุไฟล์อย่างน้อย 1 รายการ");
@@ -412,9 +424,14 @@ namespace CMS.Services
 
             if (user.AppRole < 4)
             {
-                if (!_permissionService.CheckPermission(user.UserID, request.DestinationFolderId, "Write"))
+                bool hasDestinationAuthority = user.CanAddToFolder(destination.ConfidentialityLevel)
+                                            || user.CanEditFolder(destination.ConfidentialityLevel);
+                bool hasDestinationAcl = _permissionService.CheckPermission(user.UserID, request.DestinationFolderId, "Write")
+                                      || _permissionService.CheckPermission(user.UserID, request.DestinationFolderId, "Modify");
+
+                if (!hasDestinationAuthority && !hasDestinationAcl)
                     throw new UnauthorizedAccessException(
-                        string.Format("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง '{0}'", destination.FolderName));
+                        string.Format("ไม่มีสิทธิ์ย้ายไปยัง Folder ปลายทาง '{0}'", destination.FolderName));
             }
 
             foreach (int fileId in request.FileIds)
@@ -430,12 +447,19 @@ namespace CMS.Services
 
                 if (user.AppRole < 4)
                 {
-                    if (!_permissionService.CheckPermission(user.UserID, file.FolderID, "Write"))
+                    var sourceFolder = _folderRepository.GetById(file.FolderID);
+                    bool hasSourceAuthority = sourceFolder != null
+                                           && (user.CanAddToFolder(sourceFolder.ConfidentialityLevel)
+                                            || user.CanEditFolder(sourceFolder.ConfidentialityLevel));
+                    bool hasSourceAcl = _permissionService.CheckPermission(user.UserID, file.FolderID, "Write")
+                                   || _permissionService.CheckPermission(user.UserID, file.FolderID, "Modify");
+
+                    if (!hasSourceAuthority && !hasSourceAcl)
                         throw new UnauthorizedAccessException(
-                            string.Format("ไม่มีสิทธิ์เขียนใน Folder ต้นทาง (ID: {0})", file.FolderID));
+                            string.Format("ไม่มีสิทธิ์ย้ายจาก Folder ต้นทาง (ID: {0})", file.FolderID));
                 }
 
-                int    oldFolderId   = file.FolderID;
+                int oldFolderId = file.FolderID;
                 string oldPhysicalPath = file.PhysicalPath;   // เก็บ path เดิมไว้ก่อน
 
                 string newPhysicalPath = _networkDriveHelper.BuildPath(
@@ -452,7 +476,7 @@ namespace CMS.Services
                 // แต่บันทึก path ใหม่ไว้ถูกต้องเผื่อ upload ซ้ำในอนาคต
 
                 // ── Update DB ─────────────────────────────────────────────────
-                file.FolderID     = request.DestinationFolderId;
+                file.FolderID = request.DestinationFolderId;
                 file.PhysicalPath = newPhysicalPath;
 
                 try
@@ -470,24 +494,32 @@ namespace CMS.Services
                     throw;
                 }
 
+                RefreshFolderFileCounts(oldFolderId, request.DestinationFolderId);
+
                 _auditService.Log(new AuditEntry
                 {
-                    Module      = "File",
-                    Action      = "MoveFile",
-                    UserID      = user.UserID,
-                    UserName    = user.ADUserName ?? string.Empty,
-                    UserRole    = user.AppRole,
-                    TableName   = "storage.FileDocument",
-                    RecordID    = fileId,
-                    OldValue    = string.Format("FolderID={0} Path={1}", oldFolderId, oldPhysicalPath),
-                    NewValue    = string.Format("FolderID={0} Path={1}", request.DestinationFolderId, newPhysicalPath),
+                    Module = "File",
+                    Action = "MoveFile",
+                    UserID = user.UserID,
+                    UserName = user.ADUserName ?? string.Empty,
+                    UserRole = user.AppRole,
+                    TableName = "storage.FileDocument",
+                    RecordID = fileId,
+                    OldValue = string.Format("FolderID={0} Path={1}", oldFolderId, oldPhysicalPath),
+                    NewValue = string.Format("FolderID={0} Path={1}", request.DestinationFolderId, newPhysicalPath),
                     MachineName = user.MachineName,
-                    IPAddress   = user.IPAddress,
-                    SessionID   = user.SessionID,
-                    Result      = 1,
-                    AuditDate   = DateTime.Now
+                    IPAddress = user.IPAddress,
+                    SessionID = user.SessionID,
+                    Result = 1,
+                    AuditDate = DateTime.Now
                 });
             }
+        }
+
+        private void RefreshFolderFileCounts(params int[] folderIds)
+        {
+            foreach (int folderId in folderIds.Where(id => id > 0).Distinct())
+                _folderRepository.UpdateFileCount(folderId);
         }
 
 
@@ -518,18 +550,18 @@ namespace CMS.Services
             }
 
             // Build a unique stored filename in destination (append copy index if collision)
-            string baseName  = Path.GetFileNameWithoutExtension(source.StoredFileName ?? source.OriginalFileName);
-            string ext       = source.FileExtension ?? Path.GetExtension(source.OriginalFileName ?? "");
+            string baseName = Path.GetFileNameWithoutExtension(source.StoredFileName ?? source.OriginalFileName);
+            string ext = source.FileExtension ?? Path.GetExtension(source.OriginalFileName ?? "");
             if (!ext.StartsWith(".")) ext = "." + ext;
 
             string storedName = baseName + "_copy" + ext;
-            string destPath   = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
+            string destPath = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
 
             int suffix = 1;
             while (_networkDriveHelper.FileExists(destPath))
             {
                 storedName = string.Format("{0}_copy({1}){2}", baseName, suffix++, ext);
-                destPath   = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
+                destPath = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
             }
 
             // Copy physical file
@@ -545,40 +577,41 @@ namespace CMS.Services
             // Create new DB record
             var newDoc = new FileDocument
             {
-                FolderID         = destinationFolderId,
+                FolderID = destinationFolderId,
                 OriginalFileName = source.OriginalFileName,
-                StoredFileName   = storedName,
-                FileExtension    = source.FileExtension,
-                MimeType         = source.MimeType,
-                FileSizeBytes    = source.FileSizeBytes,
-                PhysicalPath     = destPath,
-                Checksum         = source.Checksum,
-                VirusScanStatus  = source.VirusScanStatus,
-                VirusScanDate    = source.VirusScanDate,
-                FileStatus       = 1,
-                UploadedBy       = user.UserID,
-                UploadedDate     = DateTime.Now,
-                Version          = 1
+                StoredFileName = storedName,
+                FileExtension = source.FileExtension,
+                MimeType = source.MimeType,
+                FileSizeBytes = source.FileSizeBytes,
+                PhysicalPath = destPath,
+                Checksum = source.Checksum,
+                VirusScanStatus = source.VirusScanStatus,
+                VirusScanDate = source.VirusScanDate,
+                FileStatus = 1,
+                UploadedBy = user.UserID,
+                UploadedDate = DateTime.Now,
+                Version = 1
             };
 
             int newId = _fileDocumentRepository.Insert(newDoc);
+            RefreshFolderFileCounts(destinationFolderId);
 
             _auditService.Log(new AuditEntry
             {
-                Module      = "File",
-                Action      = "CopyFile",
-                UserID      = user.UserID,
-                UserName    = user.ADUserName ?? string.Empty,
-                UserRole    = user.AppRole,
-                TableName   = "storage.FileDocument",
-                RecordID    = newId,
-                OldValue    = string.Format("SourceFileID={0} FolderID={1}", fileId, source.FolderID),
-                NewValue    = string.Format("NewFileID={0} FolderID={1} Path={2}", newId, destinationFolderId, destPath),
+                Module = "File",
+                Action = "CopyFile",
+                UserID = user.UserID,
+                UserName = user.ADUserName ?? string.Empty,
+                UserRole = user.AppRole,
+                TableName = "storage.FileDocument",
+                RecordID = newId,
+                OldValue = string.Format("SourceFileID={0} FolderID={1}", fileId, source.FolderID),
+                NewValue = string.Format("NewFileID={0} FolderID={1} Path={2}", newId, destinationFolderId, destPath),
                 MachineName = user.MachineName,
-                IPAddress   = user.IPAddress,
-                SessionID   = user.SessionID,
-                Result      = 1,
-                AuditDate   = DateTime.Now
+                IPAddress = user.IPAddress,
+                SessionID = user.SessionID,
+                Result = 1,
+                AuditDate = DateTime.Now
             });
 
             return newId;
@@ -591,7 +624,7 @@ namespace CMS.Services
         private UploadResult UploadSingleFile(FileUploadRequest request, Folder folder, UserContext user)
         {
             string writtenPath = null;
-            int?   insertedId  = null;
+            int? insertedId = null;
 
             try
             {
@@ -606,6 +639,10 @@ namespace CMS.Services
 
                 if (request.FileStream == null)
                     return Fail(request.FileName, "File stream is null.");
+
+                // Resolve duplicate file name — append " copy", " copy(2)", " copy(3)", …
+                string resolvedName = ResolveFileName(request.FileName, folder.FolderID);
+                bool isDuplicate = !string.Equals(resolvedName, request.FileName, StringComparison.OrdinalIgnoreCase);
 
                 // Check quota before proceeding
                 if (folder.QuotaBytes.HasValue)
@@ -628,7 +665,7 @@ namespace CMS.Services
                 ScanResult scanResult = new ScanResult { IsClean = true, ScannerError = false };
 
                 // Write to network drive
-                writtenPath = _networkDriveHelper.BuildPath(folder.OrgUnitID, folder.FolderID, request.FileName);
+                writtenPath = _networkDriveHelper.BuildPath(folder.OrgUnitID, folder.FolderID, resolvedName);
                 _networkDriveHelper.WriteFile(writtenPath, request.FileStream);
 
                 string storedFileName = Path.GetFileName(writtenPath);
@@ -636,22 +673,22 @@ namespace CMS.Services
 
                 var doc = new FileDocument
                 {
-                    FolderID         = folder.FolderID,
-                    OriginalFileName = request.FileName,
-                    StoredFileName   = storedFileName,
-                    FileExtension    = ext,
-                    MimeType         = mimeType,
-                    FileSizeBytes    = request.FileSizeBytes,
-                    PhysicalPath     = writtenPath,
-                    Checksum         = checksum,
-                    VirusScanStatus  = scanResult.ScannerError ? 0   // 0=Pending (scanner unavailable)
-                                     : scanResult.IsClean    ? 1   // 1=Clean
+                    FolderID = folder.FolderID,
+                    OriginalFileName = resolvedName,
+                    StoredFileName = storedFileName,
+                    FileExtension = ext,
+                    MimeType = mimeType,
+                    FileSizeBytes = request.FileSizeBytes,
+                    PhysicalPath = writtenPath,
+                    Checksum = checksum,
+                    VirusScanStatus = scanResult.ScannerError ? 0   // 0=Pending (scanner unavailable)
+                                     : scanResult.IsClean ? 1   // 1=Clean
                                                              : 2,  // 2=Infected
-                    VirusScanDate    = DateTime.Now,
-                    FileStatus       = 1, // 1=Active
-                    UploadedBy       = user.UserID,
-                    UploadedDate     = DateTime.Now,
-                    Version          = 1
+                    VirusScanDate = DateTime.Now,
+                    FileStatus = 1, // 1=Active
+                    UploadedBy = user.UserID,
+                    UploadedDate = DateTime.Now,
+                    Version = 1
                 };
 
                 insertedId = _fileDocumentRepository.Insert(doc);
@@ -675,18 +712,18 @@ namespace CMS.Services
                         {
                             _filePermissionRepository.Insert(new FilePermission
                             {
-                                FileID         = insertedId.Value,
-                                PrincipalType  = (int)fp.PrincipalType,
-                                PrincipalID    = fp.PrincipalID,
-                                CanRead        = fp.CanRead,
-                                CanWrite       = fp.CanWrite,
-                                CanDelete      = fp.CanDelete,
-                                CanModify      = fp.CanModify,
+                                FileID = insertedId.Value,
+                                PrincipalType = (int)fp.PrincipalType,
+                                PrincipalID = fp.PrincipalID,
+                                CanRead = fp.CanRead,
+                                CanWrite = fp.CanWrite,
+                                CanDelete = fp.CanDelete,
+                                CanModify = fp.CanModify,
                                 CanFullControl = fp.CanFullControl,
-                                IsDeny         = fp.IsDeny,
-                                ExpiryDate     = fp.ExpiryDate,
-                                GrantedBy      = user.UserID,
-                                GrantedDate    = DateTime.Now
+                                IsDeny = fp.IsDeny,
+                                ExpiryDate = fp.ExpiryDate,
+                                GrantedBy = user.UserID,
+                                GrantedDate = DateTime.Now
                             });
                         }
                     }
@@ -701,9 +738,9 @@ namespace CMS.Services
 
                 // Update folder size and file count
                 folder.FolderSizeBytes += request.FileSizeBytes;
-                folder.FileCount       += 1;
+                folder.FileCount += 1;
                 _folderRepository.Update(folder);
-                
+
                 // Try to ensure FileCount is accurate by calling stored procedure (if available)
                 try
                 {
@@ -719,13 +756,15 @@ namespace CMS.Services
 
                 Log(user, "File", "UPLOAD", "storage.FileDocument", insertedId.Value, 1,
                     string.Format("Uploaded '{0}' ({1:N0} bytes) to folder {2}.",
-                        request.FileName, request.FileSizeBytes, folder.FolderID));
+                        resolvedName, request.FileSizeBytes, folder.FolderID));
 
                 return new UploadResult
                 {
                     OriginalFileName = request.FileName,
-                    Success          = true,
-                    FileDocumentId   = insertedId
+                    ActualFileName = resolvedName,
+                    IsDuplicate = isDuplicate,
+                    Success = true,
+                    FileDocumentId = insertedId
                 };
             }
             catch (Exception ex)
@@ -783,25 +822,66 @@ namespace CMS.Services
         {
             _auditService.Log(new AuditEntry
             {
-                Module      = module,
-                Action      = action,
-                UserID      = user.UserID,
-                UserName    = user.ADUserName ?? string.Empty,
-                UserRole    = user.AppRole,
-                TableName   = tableName,
-                RecordID    = recordId > 0 ? (int?)recordId : null,
-                NewValue    = newValue,
+                Module = module,
+                Action = action,
+                UserID = user.UserID,
+                UserName = user.ADUserName ?? string.Empty,
+                UserRole = user.AppRole,
+                TableName = tableName,
+                RecordID = recordId > 0 ? (int?)recordId : null,
+                NewValue = newValue,
                 MachineName = user.MachineName,
-                IPAddress   = user.IPAddress,
-                SessionID   = user.SessionID,
-                Result      = result,
-                AuditDate   = DateTime.Now
+                IPAddress = user.IPAddress,
+                SessionID = user.SessionID,
+                Result = result,
+                AuditDate = DateTime.Now
             });
         }
 
         private static UploadResult Fail(string fileName, string message)
         {
             return new UploadResult { OriginalFileName = fileName, Success = false, ErrorMessage = message };
+        }
+
+        public IEnumerable<string> FindDuplicateNames(IEnumerable<string> fileNames, int folderId, UserContext user)
+        {
+            if (fileNames == null) throw new ArgumentNullException("fileNames");
+            if (user == null) throw new ArgumentNullException("user");
+
+            return fileNames
+                .Where(name => !string.IsNullOrEmpty(name)
+                            && _fileDocumentRepository.ExistsWithName(name, folderId))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Returns a unique file name within the folder.
+        /// If <paramref name="fileName"/> is already taken, counts existing copies and names the new file
+        /// "{name} copy({count+1}).ext", guaranteeing no collision in a single extra check.
+        /// </summary>
+        private string ResolveFileName(string fileName, int folderId)
+        {
+            if (!_fileDocumentRepository.ExistsWithName(fileName, folderId))
+                return fileName;
+
+            string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+            string ext = Path.GetExtension(fileName);
+
+            // Count all existing copies: original + any "name copy*" files
+            string copyPrefix = nameWithoutExt + " copy";
+            int existingCopies = _fileDocumentRepository.CountByNamePrefix(copyPrefix, folderId);
+
+            // Start at count+1 and increment until a free slot is found (handles gaps/race conditions)
+            int counter = existingCopies + 1;
+            string candidate;
+            do
+            {
+                candidate = string.Format("{0} copy({1}){2}", nameWithoutExt, counter, ext);
+                counter++;
+            }
+            while (_fileDocumentRepository.ExistsWithName(candidate, folderId));
+
+            return candidate;
         }
     }
 }

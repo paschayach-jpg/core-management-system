@@ -181,6 +181,17 @@ namespace CMS.Controllers.DMS.Document
             _currentFolderId = folderId;
             try
             {
+                // โฟลเดอร์อาจถูกลบ/ย้ายระหว่าง refresh ทำให้ ID เดิมไม่ถูกต้อง
+                // ให้ fallback ไป root view แทนการเด้ง error popup
+                var folder = _folderReadLookupController.GetFolder(folderId, _user);
+                if (folder == null || folder.IsDeleted || folder.IsArchived)
+                {
+                    _currentFolderId = null;
+                    ShowOrgUnitRootFolders(_currentOrgUnitId);
+                    _view.ShowInfo("ℹ️ โฟลเดอร์ที่เลือกไม่มีอยู่แล้ว ระบบแสดงรายการโฟลเดอร์หลักแทน");
+                    return;
+                }
+
                 IEnumerable<Folder>       subFolders = _folderReadLookupController.GetChildrenWithPermission(folderId, _user)
                     .Where(f => !f.IsDeleted && !f.IsArchived);
                 IEnumerable<FileDocument> files      = null;
@@ -192,7 +203,6 @@ namespace CMS.Controllers.DMS.Document
                         var rawFiles = _fileBrowseController.GetFilesInFolder(folderId, _user);
 
                         // Enrich files with folder's confidentiality level
-                        var folder = _folderReadLookupController.GetFolder(folderId, _user);
                         int folderLevel = folder != null ? folder.ConfidentialityLevel : 0;
                         var enriched = new List<FileDocument>();
                         foreach (var f in rawFiles)
@@ -223,6 +233,16 @@ namespace CMS.Controllers.DMS.Document
             }
             catch (Exception ex)
             {
+                // รองรับกรณี stale folder id จาก UI state เก่า
+                if (!string.IsNullOrEmpty(ex.Message)
+                    && ex.Message.IndexOf("was not found", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    _currentFolderId = null;
+                    ShowOrgUnitRootFolders(_currentOrgUnitId);
+                    _view.ShowInfo("ℹ️ โฟลเดอร์เดิมไม่พบแล้ว ระบบแสดงรายการโฟลเดอร์หลักแทน");
+                    return;
+                }
+
                 _view.ShowError("Failed to load folder contents: " + ex.Message);
             }
         }
@@ -282,26 +302,6 @@ namespace CMS.Controllers.DMS.Document
         {
             try
             {
-                if (confidentialityLevel == 1)
-                {
-                    var result = MessageBox.Show(
-                        string.Format(
-                            "สร้าง HC Folder \"{0}\"\n\n" +
-                            "ℹ️ คำขอสร้าง HC Folder จะถูกส่งให้ Admin อนุมัติ\n\n" +
-                            "รายละเอียด:\n" +
-                            "• Folder ที่มี Confidentiality Level = HC ต้องได้รับการอนุมัติจาก Admin\n" +
-                            "• คำขอของคุณจะถูกส่งให้ Admin ทั้งหมดในระบบ\n" +
-                            "• Folder จะถูกสร้างหลังจากที่ Admin อนุมัติแล้ว\n" +
-                            "• คุณจะได้รับการแจ้งเตือนเมื่อคำขอได้รับการอนุมัติ",
-                            name),
-                        "สร้าง HC Folder",
-                        MessageBoxButtons.OKCancel,
-                        MessageBoxIcon.Information);
-
-                    if (result != DialogResult.OK)
-                        return;
-                }
-
                 var request = new CreateFolderRequest
                 {
                     ParentFolderId       = parentFolderId,
@@ -311,12 +311,11 @@ namespace CMS.Controllers.DMS.Document
                 };
                 Folder created = _folderCommandController.CreateFolder(request, _user);
 
+                _currentOrgUnitId = orgUnitId;
                 LoadFolderTree(_currentOrgUnitId);
                 RefreshContentPanel();
 
-                if (confidentialityLevel == 1)
-                    _view.ShowInfo(string.Format("คำขอสร้าง HC Folder '{0}' ได้ถูกส่งให้ Admin อนุมัติแล้ว\n\nFolder จะถูกสร้างหลังจากที่ได้รับการอนุมัติ", created.FolderName));
-                else if (showSuccessMessage)
+                if (showSuccessMessage)
                     _view.ShowInfo(string.Format("Folder '{0}' สร้างสำเร็จ", created.FolderName));
             }
             catch (InvalidOperationException ex) { _view.ShowError(ex.Message); }
@@ -330,11 +329,11 @@ namespace CMS.Controllers.DMS.Document
             {
                 _folderCommandController.RenameFolder(folderId, newName, _user);
                 LoadFolderTree(_currentOrgUnitId);
-                _view.ShowInfo(string.Format("Folder was renamed to '{0}'.", newName));
+                _view.ShowInfo(string.Format("เปลี่ยนชื่อโฟลเดอร์เป็น \"{0}\" เรียบร้อยแล้ว", newName));
             }
-            catch (InvalidOperationException ex) { _view.ShowError("Cannot rename folder: " + ex.Message); }
-            catch (ArgumentException ex)         { _view.ShowError("Validation error: " + ex.Message); }
-            catch (Exception ex)                 { _view.ShowError("Failed to rename folder: " + ex.Message); }
+            catch (InvalidOperationException ex) { _view.ShowError("ไม่สามารถเปลี่ยนชื่อโฟลเดอร์ได้: " + ex.Message); }
+            catch (ArgumentException ex)         { _view.ShowError("ข้อมูลไม่ถูกต้อง: " + ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("เกิดข้อผิดพลาดในการเปลี่ยนชื่อ: " + ex.Message); }
         }
 
         // -----------------------------------------------------------------------

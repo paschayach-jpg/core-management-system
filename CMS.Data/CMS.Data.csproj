@@ -73,6 +73,12 @@
     <Compile Include="Interfaces\IKBArticleLinkRepository.cs" />
     <Compile Include="Interfaces\IMenuItemRepository.cs" />
     <Compile Include="Interfaces\IKBDashboardRepository.cs" />
+    <Compile Include="Interfaces\IWorkflowRepository.cs" />
+    <Compile Include="Interfaces\IWorkflowTemplateRepository.cs" />
+    <Compile Include="Interfaces\IWorkflowStepRepository.cs" />
+    <Compile Include="Interfaces\IWorkflowStepInstanceRepository.cs" />
+    <Compile Include="Interfaces\IDelegationRepository.cs" />
+    <Compile Include="Interfaces\IWFReportRepository.cs" />
     <Compile Include="Models\AuditQuery.cs" />
     <Compile Include="Models\PagedResult.cs" />
     <Compile Include="Repositories\UserAccountRepository.cs" />
@@ -102,6 +108,12 @@
     <Compile Include="Repositories\KBArticleLinkRepository.cs" />
     <Compile Include="Repositories\MenuItemRepository.cs" />
     <Compile Include="Repositories\KBDashboardRepository.cs" />
+    <Compile Include="Repositories\WorkflowRepository.cs" />
+    <Compile Include="Repositories\WorkflowTemplateRepository.cs" />
+    <Compile Include="Repositories\WorkflowStepRepository.cs" />
+    <Compile Include="Repositories\WorkflowStepInstanceRepository.cs" />
+    <Compile Include="Repositories\DelegationRepository.cs" />
+    <Compile Include="Repositories\WFReportRepository.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

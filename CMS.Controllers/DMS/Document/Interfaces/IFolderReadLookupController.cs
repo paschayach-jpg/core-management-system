@@ -12,6 +12,11 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         IList<Folder> GetAllFolders(int? orgUnitId, UserContext user);
         IList<Folder> GetRootFolders(int? orgUnitId, UserContext user);
         IList<Folder> GetFoldersByOrgUnit(int orgUnitId, UserContext user);
+        /// <summary>
+        /// ค้นหา Folder ทั้งหมดที่ user มีสิทธิ์เข้าถึง
+        /// ใช้สำหรับ FolderPickerDialog และ ShareDialog เพื่อแสดงเฉพาะ folder ที่มีสิทธิ์
+        /// </summary>
+        IList<Folder> GetAccessibleFolders(int? orgUnitId, UserContext user);
         Folder GetFolder(int folderId, UserContext user);
         IList<Folder> GetDescendantsByUser(int folderId);
     }

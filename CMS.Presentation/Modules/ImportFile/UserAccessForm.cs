@@ -570,7 +570,10 @@ namespace CMS.Presentation
             var results = new List<OrgUnit>();
             var allOrgs = (_orgLookupController != null
                 ? _orgLookupController.GetHierarchy() ?? Enumerable.Empty<OrgUnit>()
-                : _allOrgs).ToList();
+                : _allOrgs)
+                .Where(o => o.IsActive && !o.IsDeleted)
+                .ToList();
+            var activeOrgIds = new HashSet<int>(allOrgs.Select(o => o.OrgUnitID));
 
             // Collect already-granted IDs — use explicit grants only (no role-based fallback)
             var alreadyGrantedIds = new HashSet<int>();
@@ -667,7 +670,9 @@ namespace CMS.Presentation
 
                 tree.BeginUpdate();
                 foreach (var root in allOrgs
-                    .Where(o => !o.ParentOrgUnitID.HasValue || o.ParentOrgUnitID == 0)
+                    .Where(o => !o.ParentOrgUnitID.HasValue
+                        || o.ParentOrgUnitID == 0
+                        || !activeOrgIds.Contains(o.ParentOrgUnitID.Value))
                     .OrderBy(o => o.SortOrder).ThenBy(o => o.Name))
                 {
                     tree.Nodes.Add(buildNode(root));
@@ -809,29 +814,122 @@ namespace CMS.Presentation
 
             using (var dlg = new Form())
             {
+                // ── Palette ────────────────────────────────────────────────────
+                var navyDark  = Color.FromArgb(25,  55,  105);
+                var navyMid   = Color.FromArgb(50,  90,  150);
+                var navyLight = Color.FromArgb(215, 228, 248);
+                var bodyBg    = Color.FromArgb(243, 246, 251);
+                var footerBg  = Color.FromArgb(228, 234, 245);
+                var lblColor  = Color.FromArgb(55,  65,  90);
+                var boldFont  = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+                var uiFont    = new Font("Segoe UI", 10.5f);
+                var lblFont   = new Font("Segoe UI", 10f);
+
                 dlg.Text            = "เปลี่ยนบทบาทผู้ใช้";
-                dlg.Size            = new Size(360, 180);
+                dlg.Size            = new Size(420, 310);
                 dlg.StartPosition   = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox     = false;
                 dlg.MinimizeBox     = false;
-                dlg.Font            = new Font("Segoe UI", 10F);
+                dlg.BackColor       = bodyBg;
+                dlg.Font            = uiFont;
 
-                var lbl = new Label
+                // ── Header ──────────────────────────────────────────────────────
+                var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = navyDark };
+                var pnlIcon   = new Panel { Size = new Size(36, 36), Location = new Point(14, 11), BackColor = Color.Transparent };
+                pnlIcon.Paint += (s, pe) =>
                 {
-                    Text   = string.Format("ผู้ใช้: {0}\nบทบาทปัจจุบัน: {1}",
-                                user.DisplayName ?? user.ADUserName, RoleName(user.AppRole)),
-                    Left = 12, Top = 12, Width = 320, Height = 48
+                    pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    pe.Graphics.FillEllipse(new SolidBrush(navyMid), 0, 0, 35, 35);
+                    using (var f = new Font("Segoe UI", 16f))
+                    using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                        pe.Graphics.DrawString("★", f, Brushes.White, new RectangleF(0, 0, 36, 36), sf);
                 };
-                var cmb = new ComboBox { Left = 12, Top = 64, Width = 230, DropDownStyle = ComboBoxStyle.DropDownList };
+                pnlHeader.Controls.Add(pnlIcon);
+                pnlHeader.Controls.Add(new Label
+                {
+                    Text      = "เปลี่ยนบทบาทผู้ใช้",
+                    Font      = new Font("Segoe UI", 13f, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    AutoSize  = true,
+                    Location  = new Point(58, 16),
+                });
+
+                // ── Body ────────────────────────────────────────────────────────
+                var pnlBody = new Panel { Dock = DockStyle.Fill, BackColor = bodyBg, Padding = new Padding(16, 14, 16, 8) };
+
+                // Section: ข้อมูลผู้ใช้
+                var barUser = new Panel { Left = 0, Top = 0, Width = 370, Height = 24, BackColor = navyLight };
+                barUser.Controls.Add(new Label { Text = "  ข้อมูลผู้ใช้", Font = boldFont, ForeColor = navyDark, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft });
+                pnlBody.Controls.Add(barUser);
+
+                pnlBody.Controls.Add(new Label { Text = "ผู้ใช้:", Left = 0, Top = 34, Width = 90, Height = 24, Font = lblFont, ForeColor = lblColor, TextAlign = ContentAlignment.MiddleRight });
+                pnlBody.Controls.Add(new Label
+                {
+                    Text      = user.DisplayName ?? user.ADUserName,
+                    Left      = 96, Top = 34, Width = 270, Height = 24,
+                    Font      = new Font("Segoe UI", 10.5f, FontStyle.Bold),
+                    ForeColor = navyDark,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                });
+                pnlBody.Controls.Add(new Label { Text = "บทบาทปัจจุบัน:", Left = 0, Top = 62, Width = 90, Height = 24, Font = lblFont, ForeColor = lblColor, TextAlign = ContentAlignment.MiddleRight });
+                pnlBody.Controls.Add(new Label
+                {
+                    Text      = RoleName(user.AppRole),
+                    Left      = 96, Top = 62, Width = 200, Height = 24,
+                    Font      = lblFont,
+                    ForeColor = Color.FromArgb(60, 120, 60),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                });
+
+                // Section: บทบาทใหม่
+                var barRole = new Panel { Left = 0, Top = 98, Width = 370, Height = 24, BackColor = navyLight };
+                barRole.Controls.Add(new Label { Text = "  เลือกบทบาทใหม่", Font = boldFont, ForeColor = navyDark, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft });
+                pnlBody.Controls.Add(barRole);
+
+                pnlBody.Controls.Add(new Label { Text = "บทบาท:", Left = 0, Top = 132, Width = 90, Height = 28, Font = lblFont, ForeColor = lblColor, TextAlign = ContentAlignment.MiddleRight });
+                var cmb = new ComboBox
+                {
+                    Left = 96, Top = 130, Width = 270,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Font = uiFont, FlatStyle = FlatStyle.Flat, BackColor = Color.White,
+                };
                 cmb.Items.AddRange(new object[] { "Officer (1)", "SrOfficer (2)", "Manager (3)", "Admin (4)" });
                 cmb.SelectedIndex = Math.Max(0, Math.Min(3, user.AppRole - 1));
+                pnlBody.Controls.Add(cmb);
 
-                var btnOk  = new Button { Text = "บันทึก",  Left = 12,  Top = 104, Width = 90, Height = 28, DialogResult = DialogResult.OK };
-                var btnCan = new Button { Text = "ยกเลิก", Left = 112, Top = 104, Width = 90, Height = 28, DialogResult = DialogResult.Cancel };
+                // ── Footer ──────────────────────────────────────────────────────
+                var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = footerBg };
+                var btnOk = new Button
+                {
+                    Text = "บันทึก", Size = new Size(110, 36),
+                    FlatStyle = FlatStyle.Flat, BackColor = navyDark,
+                    ForeColor = Color.White, Font = boldFont, DialogResult = DialogResult.OK,
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+                var btnCan = new Button
+                {
+                    Text = "ยกเลิก", Size = new Size(90, 36),
+                    FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(220, 228, 245),
+                    ForeColor = navyDark, Font = boldFont, DialogResult = DialogResult.Cancel,
+                };
+                btnCan.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
+                btnCan.FlatAppearance.BorderSize  = 1;
+                pnlFooter.Resize += (s, ev) =>
+                {
+                    btnOk.Location  = new Point(pnlFooter.Width - btnOk.Width - btnCan.Width - 20, 9);
+                    btnCan.Location = new Point(pnlFooter.Width - btnCan.Width - 10, 9);
+                };
+                btnOk.Location  = new Point(420 - btnOk.Width - btnCan.Width - 20, 9);
+                btnCan.Location = new Point(420 - btnCan.Width - 10, 9);
+                pnlFooter.Controls.Add(btnOk);
+                pnlFooter.Controls.Add(btnCan);
+
                 dlg.AcceptButton = btnOk;
                 dlg.CancelButton = btnCan;
-                dlg.Controls.AddRange(new Control[] { lbl, cmb, btnOk, btnCan });
+                dlg.Controls.Add(pnlHeader);
+                dlg.Controls.Add(pnlFooter);
+                dlg.Controls.Add(pnlBody);
 
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
@@ -932,40 +1030,161 @@ namespace CMS.Presentation
         {
             using (var dlg = new Form())
             {
+                // ── Palette ────────────────────────────────────────────────────
+                var navyDark  = Color.FromArgb(25,  55,  105);
+                var navyMid   = Color.FromArgb(50,  90,  150);
+                var navyLight = Color.FromArgb(215, 228, 248);
+                var bodyBg    = Color.FromArgb(243, 246, 251);
+                var footerBg  = Color.FromArgb(228, 234, 245);
+                var savedBg   = Color.FromArgb(232, 245, 233);
+                var savedColor = Color.FromArgb(30, 110, 50);
+                var lblColor  = Color.FromArgb(55,  65,  90);
+                var boldFont  = new Font("Segoe UI", 10.5f, FontStyle.Bold);
+                var uiFont    = new Font("Segoe UI", 10.5f);
+                var lblFont   = new Font("Segoe UI", 10f);
+
                 dlg.Text            = string.Format("กำหนดหน่วยงาน — {0}", user.DisplayName ?? user.ADUserName);
-                dlg.Size            = new Size(480, 460);
+                dlg.Size            = new Size(500, 520);
                 dlg.StartPosition   = FormStartPosition.CenterParent;
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.MaximizeBox     = false;
                 dlg.MinimizeBox     = false;
-                dlg.Font            = new Font("Segoe UI", 10F);
+                dlg.BackColor       = bodyBg;
+                dlg.Font            = uiFont;
 
                 // ── Header ────────────────────────────────────────────────────
-                var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 36, BackColor = Color.FromArgb(0, 51, 102) };
-                pnlHdr.Controls.Add(new Label {
-                    Text = "🏢  กำหนดหน่วยงาน (SubCommittee → Division → Department)",
-                    Dock = DockStyle.Fill, ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                    TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(8, 0, 0, 0)
+                var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 58, BackColor = navyDark };
+                var pnlIcon = new Panel { Size = new Size(36, 36), Location = new Point(14, 11), BackColor = Color.Transparent };
+                pnlIcon.Paint += (s, pe) =>
+                {
+                    pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    pe.Graphics.FillEllipse(new SolidBrush(navyMid), 0, 0, 35, 35);
+                    using (var f = new Font("Segoe UI", 15f))
+                    using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                        pe.Graphics.DrawString("🏢", f, Brushes.White, new RectangleF(0, 0, 36, 36), sf);
+                };
+                pnlHdr.Controls.Add(pnlIcon);
+                pnlHdr.Controls.Add(new Label
+                {
+                    Text      = "กำหนดหน่วยงาน",
+                    Font      = new Font("Segoe UI", 13f, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    AutoSize  = true,
+                    Location  = new Point(58, 10),
+                });
+                pnlHdr.Controls.Add(new Label
+                {
+                    Text      = user.DisplayName ?? user.ADUserName,
+                    Font      = new Font("Segoe UI", 9.5f),
+                    ForeColor = Color.FromArgb(190, 210, 245),
+                    AutoSize  = true,
+                    Location  = new Point(58, 34),
                 });
 
-                // ── SubCommittee ──────────────────────────────────────────────
-                var lblSC  = new Label { Text = "SubCommittee:", Left = 12, Top = 52, Width = 120, TextAlign = ContentAlignment.MiddleRight };
-                var cmbSC  = new ComboBox { Left = 140, Top = 50, Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
+                // ── Body ─────────────────────────────────────────────────────
+                var pnlBody = new Panel { Dock = DockStyle.Fill, BackColor = bodyBg, AutoScroll = true };
+                int lx = 14, lw = 130, tx = 152, fw = 300, rowH = 36;
+                int y = 20;
 
-                // ── Division ──────────────────────────────────────────────────
-                var lblDiv = new Label { Text = "Division (ฝ่าย):", Left = 12, Top = 96, Width = 120, TextAlign = ContentAlignment.MiddleRight };
-                var cmbDiv = new ComboBox { Left = 140, Top = 94, Width = 300, DropDownStyle = ComboBoxStyle.DropDownList, Enabled = false };
+                Action<string, int> addBar = (title, yy) =>
+                {
+                    var bar = new Panel { Left = lx, Top = yy, Width = lw + fw + 8, Height = 24, BackColor = navyLight };
+                    bar.Controls.Add(new Label { Text = "  " + title, Font = boldFont, ForeColor = navyDark, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft });
+                    pnlBody.Controls.Add(bar);
+                };
+                Action<string, int> addLbl = (text, yy) =>
+                    pnlBody.Controls.Add(new Label { Text = text, Left = lx, Top = yy + 3, Width = lw, Font = lblFont, ForeColor = lblColor, TextAlign = ContentAlignment.MiddleRight });
+                Func<int, ComboBox> addCmb = (yy) =>
+                {
+                    var c = new ComboBox { Left = tx, Top = yy, Width = fw, DropDownStyle = ComboBoxStyle.DropDownList, Font = uiFont, FlatStyle = FlatStyle.Flat, BackColor = Color.White };
+                    pnlBody.Controls.Add(c);
+                    return c;
+                };
 
-                // ── Department ────────────────────────────────────────────────
-                var lblDept = new Label { Text = "Department (แผนก):", Left = 12, Top = 140, Width = 120, TextAlign = ContentAlignment.MiddleRight };
-                var cmbDept = new ComboBox { Left = 140, Top = 138, Width = 300, DropDownStyle = ComboBoxStyle.DropDownList, Enabled = false };
+                // ── กล่องหน่วยงานปัจจุบัน ──────────────────────────────────
+                addBar("หน่วยงานปัจจุบัน", y); y += 28;
+                var currentOrg0 = _allOrgs.FirstOrDefault(o => o.OrgUnitID == user.OrgUnitID);
+                bool hasCurrentOrg = currentOrg0 != null;
 
-                // ── Summary label ─────────────────────────────────────────────
-                var lblSummary = new Label {
-                    Left = 12, Top = 185, Width = 440, Height = 40,
-                    ForeColor = Color.FromArgb(0, 80, 160),
-                    Font = new Font("Segoe UI", 9f, FontStyle.Italic)
+                string pathText = hasCurrentOrg ? BuildOrgPath(currentOrg0) : "";
+
+                var pnlCurrent = new Panel
+                {
+                    Left        = lx,
+                    Top         = y,
+                    Width       = lw + fw + 8,
+                    Height      = 42,
+                    BackColor   = hasCurrentOrg ? savedBg : Color.FromArgb(245, 245, 250),
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Padding     = new Padding(10, 8, 10, 8),
+                };
+
+                int currentLabelW = lw + fw - 18;
+                var lblCurrentOrg = new Label
+                {
+                    Text      = hasCurrentOrg
+                        ? string.Format("✓  {0}  [{1}]", currentOrg0.OrgUnitNameTH ?? currentOrg0.Name, currentOrg0.OrgUnitCode)
+                        : "ℹ  ยังไม่ได้กำหนดหน่วยงาน",
+                    Left      = 10, Top = 20,
+                    Width     = currentLabelW,
+                    Height    = 24,
+                    Font      = new Font("Segoe UI", 9.5f, hasCurrentOrg ? FontStyle.Bold : FontStyle.Regular),
+                    ForeColor = hasCurrentOrg ? savedColor : Color.Gray,
+                    AutoSize  = false,
+                };
+
+                // ใช้ preferred size จริงของ control เพื่อให้รองรับ DPI/ภาษาไทยได้แม่นยำ
+                var currentPreferred = lblCurrentOrg.GetPreferredSize(new Size(currentLabelW, 0));
+                lblCurrentOrg.Height = Math.Max(24, currentPreferred.Height + 2);
+                pnlCurrent.Controls.Add(lblCurrentOrg);
+
+                if (hasCurrentOrg)
+                {
+                    var lblPath = new Label
+                    {
+                        Text      = pathText,
+                        Left      = 10,
+                        Top       = lblCurrentOrg.Bottom + 10,
+                        Width     = currentLabelW,
+                        Font      = new Font("Segoe UI", 8.5f, FontStyle.Italic),
+                        ForeColor = savedColor,
+                        AutoSize  = false,
+                    };
+
+                    var pathPreferred = lblPath.GetPreferredSize(new Size(currentLabelW, 0));
+                    lblPath.Height = Math.Max(20, pathPreferred.Height + 2);
+                    pnlCurrent.Controls.Add(lblPath);
+
+                    // ความสูง panel ผูกกับขนาดข้อความจริง ลดปัญหาซ้อนเมื่อ DPI/ฟอนต์ต่างกัน
+                    pnlCurrent.Height = lblPath.Bottom + 12;
+                }
+                else
+                {
+                    pnlCurrent.Height = lblCurrentOrg.Bottom + 10;
+                }
+
+                pnlBody.Controls.Add(pnlCurrent);
+                y += pnlCurrent.Height + 22;
+
+                // ── Section: เลือกหน่วยงานใหม่ ─────────────────────────────
+                addBar("เลือกหน่วยงานใหม่  (SubCommittee → Division → Department)", y); y += 28;
+
+                addLbl("SubCommittee:", y);
+                var cmbSC  = addCmb(y); y += rowH;
+
+                addLbl("Division (ฝ่าย):", y);
+                var cmbDiv = addCmb(y); cmbDiv.Enabled = false; y += rowH;
+
+                addLbl("Department:", y);
+                var cmbDept = addCmb(y); cmbDept.Enabled = false; y += rowH;
+
+                // ── Summary breadcrumb ──────────────────────────────────────
+                var lblSummary = new Label
+                {
+                    Left = tx, Top = y, Width = fw, Height = 36,
+                    ForeColor = navyMid,
+                    Font = new Font("Segoe UI", 9f, FontStyle.Italic),
+                    AutoSize  = false,
                 };
 
                 // โหลด SubCommittee
@@ -1103,25 +1322,34 @@ namespace CMS.Presentation
                     }
                 }
 
+                pnlBody.Controls.Add(lblSummary);
+
                 // ── Footer ────────────────────────────────────────────────────
-                var pnlFoot = new Panel { Dock = DockStyle.Bottom, Height = 44, BackColor = Color.FromArgb(243, 243, 243) };
-                var btnOk   = new Button {
-                    Text = "✔ บันทึก", Size = new Size(90, 28),
-                    BackColor = Color.FromArgb(0, 51, 102), ForeColor = Color.White,
-                    FlatStyle = FlatStyle.Flat, Anchor = AnchorStyles.Right | AnchorStyles.Top
+                var pnlFoot = new Panel { Dock = DockStyle.Bottom, Height = 54, BackColor = footerBg };
+                var btnOk = new Button
+                {
+                    Text = "บันทึก", Size = new Size(110, 36),
+                    FlatStyle = FlatStyle.Flat, BackColor = navyDark,
+                    ForeColor = Color.White, Font = boldFont,
                 };
                 btnOk.FlatAppearance.BorderSize = 0;
-                var btnCan = new Button {
-                    Text = "ยกเลิก", Size = new Size(80, 28), FlatStyle = FlatStyle.Flat,
-                    DialogResult = DialogResult.Cancel, Anchor = AnchorStyles.Right | AnchorStyles.Top
+                var btnCan = new Button
+                {
+                    Text = "ยกเลิก", Size = new Size(90, 36),
+                    FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(220, 228, 245),
+                    ForeColor = navyDark, Font = boldFont, DialogResult = DialogResult.Cancel,
                 };
+                btnCan.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
+                btnCan.FlatAppearance.BorderSize  = 1;
+                pnlFoot.Resize += (s, ev) =>
+                {
+                    btnOk.Location  = new Point(pnlFoot.Width - btnOk.Width - btnCan.Width - 20, 9);
+                    btnCan.Location = new Point(pnlFoot.Width - btnCan.Width - 10, 9);
+                };
+                btnOk.Location  = new Point(500 - btnOk.Width - btnCan.Width - 20, 9);
+                btnCan.Location = new Point(500 - btnCan.Width - 10, 9);
                 pnlFoot.Controls.Add(btnOk);
                 pnlFoot.Controls.Add(btnCan);
-                pnlFoot.Resize += (s, ev) => {
-                    btnCan.Left = pnlFoot.ClientSize.Width - btnCan.Width - 8;
-                    btnOk.Left  = btnCan.Left - btnOk.Width - 8;
-                    btnOk.Top   = btnCan.Top = (pnlFoot.Height - btnOk.Height) / 2;
-                };
 
                 btnOk.Click += (s, ev) =>
                 {
@@ -1175,13 +1403,10 @@ namespace CMS.Presentation
                                 AuditDate   = DateTime.Now
                             });
 
-                        // อัปเดต cache
                         var cached = _allUsers.FirstOrDefault(u => u.UserID == user.UserID);
                         if (cached != null) cached.OrgUnitID = selected.OrgUnitID;
 
-                        // อัปเดต ListView
                         var sel = _lvUsers.SelectedItems[0];
-                        // แสดง path ใน column แผนก
                         sel.SubItems[2].Text = selected.OrgUnitType == 3 ? selected.Name : "";
                         sel.SubItems[3].Text = selected.OrgUnitType == 2 ? selected.Name :
                                                selected.OrgUnitType == 3
@@ -1197,20 +1422,16 @@ namespace CMS.Presentation
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("บันทึกไม่สำเร็จ: " + ex.Message, "Error",
+                        MessageBox.Show("บันทึกไม่สำเร็จ: " + ex.Message, "ข้อผิดพลาด",
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 };
 
-                dlg.Controls.Add(lblSummary);
-                dlg.Controls.Add(cmbDept);
-                dlg.Controls.Add(lblDept);
-                dlg.Controls.Add(cmbDiv);
-                dlg.Controls.Add(lblDiv);
-                dlg.Controls.Add(cmbSC);
-                dlg.Controls.Add(lblSC);
-                dlg.Controls.Add(pnlFoot);
-                dlg.Controls.Add(pnlHdr);
+                dlg.AcceptButton = btnOk;
+                dlg.CancelButton = btnCan;
+                dlg.Controls.Add(pnlHdr);    // DockStyle.Top
+                dlg.Controls.Add(pnlFoot);   // DockStyle.Bottom
+                dlg.Controls.Add(pnlBody);   // DockStyle.Fill
                 dlg.ShowDialog(this);
             }
         }
@@ -1315,6 +1536,20 @@ namespace CMS.Presentation
         // Utility
         // ─────────────────────────────────────────────────────────────────────
 
+        private string BuildOrgPath(OrgUnit org)
+        {
+            if (org == null) return "";
+            var parts = new System.Collections.Generic.List<string>();
+            var current = org;
+            while (current != null)
+            {
+                parts.Insert(0, current.OrgUnitNameTH ?? current.Name ?? current.OrgUnitCode);
+                if (!current.ParentOrgUnitID.HasValue || current.ParentOrgUnitID == 0) break;
+                current = _allOrgs.FirstOrDefault(o => o.OrgUnitID == current.ParentOrgUnitID);
+            }
+            return string.Join("  ›  ", parts);
+        }
+
         private static string RoleName(int appRole)
         {
             switch (appRole)
@@ -1332,6 +1567,11 @@ namespace CMS.Presentation
             if (lbl == null) return;
             lbl.Text      = text;
             lbl.ForeColor = color;
+        }
+
+        private void _btnAssignOrg_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

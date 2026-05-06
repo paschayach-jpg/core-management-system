@@ -81,6 +81,7 @@ namespace CMS.Presentation
             this.btnRibbonRename = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonMove = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonDelete = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.sepRibbon1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnRibbonTemplate = new System.Windows.Forms.ToolStripButton();
             this.btnRibbonFavorites = new System.Windows.Forms.ToolStripButton();
@@ -117,7 +118,6 @@ namespace CMS.Presentation
             this.lblStatusFolder = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblStatusPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblStatusDateTime = new System.Windows.Forms.ToolStripStatusLabel();
-            this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.pnlDashboard.SuspendLayout();
             this.pnlDashContent.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -140,10 +140,10 @@ namespace CMS.Presentation
             this.pnlDashboard.Controls.Add(this.pnlDashLeft);
             this.pnlDashboard.Controls.Add(this.lblDashTitle);
             this.pnlDashboard.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlDashboard.Location = new System.Drawing.Point(0, 61);
+            this.pnlDashboard.Location = new System.Drawing.Point(0, 56);
             this.pnlDashboard.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlDashboard.Name = "pnlDashboard";
-            this.pnlDashboard.Size = new System.Drawing.Size(1959, 858);
+            this.pnlDashboard.Size = new System.Drawing.Size(1959, 863);
             this.pnlDashboard.TabIndex = 0;
             // 
             // pnlDashContent
@@ -156,7 +156,7 @@ namespace CMS.Presentation
             this.pnlDashContent.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlDashContent.Name = "pnlDashContent";
             this.pnlDashContent.Padding = new System.Windows.Forms.Padding(27, 25, 27, 25);
-            this.pnlDashContent.Size = new System.Drawing.Size(1555, 796);
+            this.pnlDashContent.Size = new System.Drawing.Size(1555, 801);
             this.pnlDashContent.TabIndex = 0;
             // 
             // splitContainer1
@@ -184,7 +184,7 @@ namespace CMS.Presentation
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.lvRecentFiles);
-            this.splitContainer1.Size = new System.Drawing.Size(1501, 746);
+            this.splitContainer1.Size = new System.Drawing.Size(1501, 751);
             this.splitContainer1.SplitterDistance = 258;
             this.splitContainer1.SplitterWidth = 5;
             this.splitContainer1.TabIndex = 10;
@@ -323,7 +323,7 @@ namespace CMS.Presentation
             this.lvRecentFiles.Location = new System.Drawing.Point(0, 0);
             this.lvRecentFiles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.lvRecentFiles.Name = "lvRecentFiles";
-            this.lvRecentFiles.Size = new System.Drawing.Size(1501, 483);
+            this.lvRecentFiles.Size = new System.Drawing.Size(1501, 488);
             this.lvRecentFiles.TabIndex = 9;
             this.lvRecentFiles.UseCompatibleStateImageBehavior = false;
             this.lvRecentFiles.View = System.Windows.Forms.View.Details;
@@ -334,7 +334,7 @@ namespace CMS.Presentation
             this.splitterDash.Location = new System.Drawing.Point(399, 62);
             this.splitterDash.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.splitterDash.Name = "splitterDash";
-            this.splitterDash.Size = new System.Drawing.Size(5, 796);
+            this.splitterDash.Size = new System.Drawing.Size(5, 801);
             this.splitterDash.TabIndex = 1;
             this.splitterDash.TabStop = false;
             // 
@@ -351,7 +351,7 @@ namespace CMS.Presentation
             this.pnlDashLeft.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.pnlDashLeft.Name = "pnlDashLeft";
             this.pnlDashLeft.Padding = new System.Windows.Forms.Padding(11, 10, 11, 10);
-            this.pnlDashLeft.Size = new System.Drawing.Size(399, 796);
+            this.pnlDashLeft.Size = new System.Drawing.Size(399, 801);
             this.pnlDashLeft.TabIndex = 2;
             // 
             // treeViewFolders
@@ -361,9 +361,10 @@ namespace CMS.Presentation
             this.treeViewFolders.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.treeViewFolders.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
             this.treeViewFolders.ItemHeight = 22;
-            this.treeViewFolders.Location = new System.Drawing.Point(8, 97);
+            this.treeViewFolders.Location = new System.Drawing.Point(11, 118);
+            this.treeViewFolders.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.treeViewFolders.Name = "treeViewFolders";
-            this.treeViewFolders.Size = new System.Drawing.Size(375, 666);
+            this.treeViewFolders.Size = new System.Drawing.Size(375, 671);
             this.treeViewFolders.TabIndex = 0;
             // 
             // txtSearchFolder
@@ -721,7 +722,7 @@ namespace CMS.Presentation
             this.ribbonStrip.Location = new System.Drawing.Point(0, 31);
             this.ribbonStrip.Name = "ribbonStrip";
             this.ribbonStrip.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.ribbonStrip.Size = new System.Drawing.Size(1959, 30);
+            this.ribbonStrip.Size = new System.Drawing.Size(1959, 25);
             this.ribbonStrip.TabIndex = 1;
             // 
             // btnRibbonUpload
@@ -730,6 +731,7 @@ namespace CMS.Presentation
             this.btnRibbonUpload.Size = new System.Drawing.Size(96, 27);
             this.btnRibbonUpload.Text = "📤 อัพโหลด";
             this.btnRibbonUpload.ToolTipText = "อัพโหลดไฟล์ไปยัง Folder ที่เลือก";
+            this.btnRibbonUpload.Visible = false;
             // 
             // btnRibbonNewFolder
             // 
@@ -753,6 +755,7 @@ namespace CMS.Presentation
             this.btnRibbonRename.Size = new System.Drawing.Size(104, 27);
             this.btnRibbonRename.Text = "✏️ เปลี่ยนชื่อ";
             this.btnRibbonRename.ToolTipText = "เปลี่ยนชื่อรายการที่เลือก";
+            this.btnRibbonRename.Visible = false;
             // 
             // btnRibbonMove
             // 
@@ -760,6 +763,7 @@ namespace CMS.Presentation
             this.btnRibbonMove.Size = new System.Drawing.Size(68, 27);
             this.btnRibbonMove.Text = "✂️ ย้าย";
             this.btnRibbonMove.ToolTipText = "ย้ายรายการที่เลือก";
+            this.btnRibbonMove.Visible = false;
             // 
             // btnRibbonDelete
             // 
@@ -767,6 +771,17 @@ namespace CMS.Presentation
             this.btnRibbonDelete.Size = new System.Drawing.Size(61, 27);
             this.btnRibbonDelete.Text = "🗑️ ลบ";
             this.btnRibbonDelete.ToolTipText = "ลบรายการที่เลือก";
+            this.btnRibbonDelete.Visible = false;
+            // 
+            // toolStripButton1
+            // 
+            this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
+            this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripButton1.Name = "toolStripButton1";
+            this.toolStripButton1.Size = new System.Drawing.Size(29, 24);
+            this.toolStripButton1.Text = "toolStripButton1";
+            this.toolStripButton1.Visible = false;
             // 
             // sepRibbon1
             // 
@@ -1051,15 +1066,6 @@ namespace CMS.Presentation
             this.lblStatusDateTime.ForeColor = System.Drawing.Color.White;
             this.lblStatusDateTime.Name = "lblStatusDateTime";
             this.lblStatusDateTime.Size = new System.Drawing.Size(4, 20);
-            // 
-            // toolStripButton1
-            // 
-            this.toolStripButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
-            this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButton1.Name = "toolStripButton1";
-            this.toolStripButton1.Size = new System.Drawing.Size(29, 27);
-            this.toolStripButton1.Text = "toolStripButton1";
             // 
             // MDI_Container
             // 

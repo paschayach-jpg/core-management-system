@@ -12,5 +12,7 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         string ResolveGranterName(int userId);
         string ResolvePrincipalName(int principalType, int principalId);
         string ResolveFileName(int fileId);
+        void RevokeFolderPermission(int permissionId, int revokedBy);
+        void RevokeFilePermission(int filePermissionId, int revokedBy);
     }
 }

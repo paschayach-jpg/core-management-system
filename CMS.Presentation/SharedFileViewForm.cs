@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
@@ -179,10 +180,13 @@ namespace CMS.Presentation
                 _lblType.Text     = _doc.FileExtension?.TrimStart('.').ToUpperInvariant() ?? "—";
                 _lblSize.Text     = FormatSize(_doc.FileSizeBytes);
                 _lblFolder.Text   = _doc.FolderName ?? string.Format("FolderID={0}", _doc.FolderID);
-                _lblStatus.Text   = _doc.IsDeleted ? "⚠ ถูกลบแล้ว" : "✔ พร้อมใช้งาน";
+                bool hasActiveShare = HasActiveDirectShare();
+                _lblStatus.Text   = _doc.IsDeleted
+                    ? "⚠ ถูกลบแล้ว"
+                    : hasActiveShare ? "✔ พร้อมใช้งาน" : "🚫 สิทธิ์แชร์ถูกยกเลิกหรือหมดอายุแล้ว";
 
-                _btnDownload.Enabled = !_doc.IsDeleted;
-                _btnOpen.Enabled     = !_doc.IsDeleted;
+                _btnDownload.Enabled = !_doc.IsDeleted && hasActiveShare;
+                _btnOpen.Enabled     = !_doc.IsDeleted && hasActiveShare;
             }
             catch (Exception ex)
             {
@@ -191,9 +195,26 @@ namespace CMS.Presentation
             }
         }
 
+        private bool HasActiveDirectShare()
+        {
+            var shares = _shareLookupController.GetFilePermissionsForUser(_user.UserID);
+            return shares.Any(p => p.FileID == _fileId
+                                && p.CanRead
+                                && !p.IsDeny
+                                && !p.RevokedDate.HasValue
+                                && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
+        }
+
         private void DoOpen()
         {
             if (_doc == null) return;
+            if (!HasActiveDirectShare())
+            {
+                MessageBox.Show("สิทธิ์แชร์ไฟล์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แบ่งปันให้ฉัน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadFileInfo();
+                return;
+            }
             try
             {
                 var result = _fileBrowseController.DownloadFile(_fileId, _user);
@@ -221,6 +242,13 @@ namespace CMS.Presentation
         private void DoDownload()
         {
             if (_doc == null) return;
+            if (!HasActiveDirectShare())
+            {
+                MessageBox.Show("สิทธิ์แชร์ไฟล์นี้ถูกยกเลิกหรือหมดอายุแล้ว", "แบ่งปันให้ฉัน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadFileInfo();
+                return;
+            }
 
             using (var sfd = new SaveFileDialog())
             {

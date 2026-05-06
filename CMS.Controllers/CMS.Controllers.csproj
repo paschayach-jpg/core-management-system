@@ -138,6 +138,12 @@
     <Compile Include="DMS\Document\FolderCommandController.cs" />
     <Compile Include="DMS\Document\FileCommandController.cs" />
     <Compile Include="DMS\Document\KBController.cs" />
+    <!-- Workflow Engine (MOD-008) Controllers -->
+    <Compile Include="WFE\WorkflowController.cs" />
+    <Compile Include="WFE\WorkflowTemplateController.cs" />
+    <Compile Include="WFE\WorkflowDashboardController.cs" />
+    <Compile Include="WFE\WorkflowDelegationController.cs" />
+    <Compile Include="WFE\WorkflowReportController.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">

@@ -12,6 +12,7 @@ namespace CMS.Services
     public class FolderService : IFolderService
     {
         private const int MaxFolderDepth = 10;
+        private static readonly int[] MainRootConfidentialityLevels = { 1, 2, 3, 4 };
 
         private static readonly char[] InvalidFolderNameChars = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' };
 
@@ -23,16 +24,117 @@ namespace CMS.Services
                     string.Format("ชื่อ Folder ไม่อนุญาตให้ใช้อักขระ: {0}", string.Join(" ", found)));
         }
 
-        private readonly IFolderRepository            _folderRepository;
-        private readonly IFileDocumentRepository      _fileDocumentRepository;
-        private readonly IPermissionRepository        _permissionRepository;
-        private readonly IPermissionService           _permissionService;
-        private readonly INetworkDriveHelper          _networkDriveHelper;
-        private readonly IAuditService                _auditService;
-        private readonly IFolderTemplateRepository    _folderTemplateRepository;
-        private readonly IApprovalRepository          _approvalRepository;
-        private readonly IUserOrgVisibilityService    _visibilityService;
-        private readonly IUserAccountRepository       _userAccountRepository;
+        private static bool IsRootFolder(Folder folder)
+        {
+            return folder != null && (!folder.ParentFolderID.HasValue || folder.ParentFolderID.Value == 0);
+        }
+
+        private static bool IsMainRootLevel(int confidentialityLevel)
+        {
+            return MainRootConfidentialityLevels.Contains(confidentialityLevel);
+        }
+
+        private static string GetMainRootCode(int confidentialityLevel)
+        {
+            switch (confidentialityLevel)
+            {
+                case 1: return "1HC";
+                case 2: return "2SC";
+                case 3: return "3NC";
+                case 4: return "4PC";
+                default: return string.Empty;
+            }
+        }
+
+        private static bool RootNameMatchesLevel(string folderName, int confidentialityLevel)
+        {
+            string expectedCode = GetMainRootCode(confidentialityLevel);
+            if (string.IsNullOrWhiteSpace(expectedCode) || string.IsNullOrWhiteSpace(folderName))
+                return false;
+
+            return folderName.Trim().StartsWith(expectedCode, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsMainRootFolder(Folder folder)
+        {
+            return IsRootFolder(folder)
+                && IsMainRootLevel(folder.ConfidentialityLevel)
+                && RootNameMatchesLevel(folder.FolderName, folder.ConfidentialityLevel);
+        }
+
+        private static bool IsMatchingCreateHcRequest(ApprovalRequest request, int orgUnitId, string folderName)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Remark) || string.IsNullOrWhiteSpace(folderName))
+                return false;
+
+            return request.Remark.Contains(string.Format("OrgUnitId={0}", orgUnitId))
+                && request.Remark.Contains(string.Format("FolderName={0}", folderName.Trim()));
+        }
+
+        private Folder GetRootAncestor(Folder folder)
+        {
+            var current = folder;
+            var visitedFolderIds = new HashSet<int>();
+
+            while (current != null && current.ParentFolderID.HasValue && current.ParentFolderID.Value > 0)
+            {
+                if (!visitedFolderIds.Add(current.FolderID))
+                    throw new InvalidOperationException("Folder hierarchy contains a cycle.");
+
+                current = _folderRepository.GetById(current.ParentFolderID.Value);
+            }
+
+            return current;
+        }
+
+        private void EnsureRootCreationAllowed(string folderName, int orgUnitId, int? confidentialityLevel)
+        {
+            if (!confidentialityLevel.HasValue || !IsMainRootLevel(confidentialityLevel.Value))
+                throw new InvalidOperationException(
+                    "ไม่อนุญาตให้สร้าง Root Folder ใหม่โดยตรง ยกเว้น 4 Folder หลัก (1HC, 2SC, 3NC, 4PC)");
+
+            string expectedCode = GetMainRootCode(confidentialityLevel.Value);
+            if (!RootNameMatchesLevel(folderName, confidentialityLevel.Value))
+                throw new InvalidOperationException(
+                    string.Format("Root Folder ระดับ {0} ต้องขึ้นต้นด้วย '{0}'", expectedCode));
+
+            var rootFolders = _folderRepository.GetRootFoldersByOrgUnit(orgUnitId)
+                .Where(f => f != null && !f.IsDeleted && !f.IsArchived)
+                .ToList();
+
+            // 1HC ข้าม duplicate check เพราะอาจมีอยู่แต่ invisible (รอ approval / ยังไม่มี ACL)
+            // การส่ง approval request ซ้ำจะถูก block ใน alreadyPending check ด้านล่างแทน
+            if (confidentialityLevel.Value != 1)
+            {
+                if (rootFolders.Any(f => f.ConfidentialityLevel == confidentialityLevel.Value))
+                    throw new InvalidOperationException(
+                        string.Format("มี Root Folder หลักระดับ {0} อยู่แล้ว", expectedCode));
+            }
+
+            int mainRootCount = rootFolders.Count(f => IsMainRootLevel(f.ConfidentialityLevel) && f.ConfidentialityLevel != 1);
+            if (mainRootCount >= MainRootConfidentialityLevels.Length - 1 && confidentialityLevel.Value != 1)
+                throw new InvalidOperationException(
+                    "ไม่อนุญาตให้สร้าง Root Folder เพิ่มนอก 4 Folder หลัก (1HC, 2SC, 3NC, 4PC)");
+        }
+
+        private void EnsureCreationUnderMainRoots(Folder parentFolder)
+        {
+            var rootFolder = GetRootAncestor(parentFolder);
+            if (!IsMainRootFolder(rootFolder))
+                throw new InvalidOperationException(
+                    "อนุญาตให้สร้าง Folder ภายใต้ 4 Folder หลัก (1HC, 2SC, 3NC, 4PC) เท่านั้น");
+        }
+
+        private readonly IFolderRepository _folderRepository;
+        private readonly IFileDocumentRepository _fileDocumentRepository;
+        private readonly IPermissionRepository _permissionRepository;
+        private readonly IPermissionService _permissionService;
+        private readonly INetworkDriveHelper _networkDriveHelper;
+        private readonly IAuditService _auditService;
+        private readonly IFolderTemplateRepository _folderTemplateRepository;
+        private readonly IApprovalRepository _approvalRepository;
+        private readonly IUserOrgVisibilityService _visibilityService;
+        private readonly IUserAccountRepository _userAccountRepository;
 
         // Session-level folder cache: key = orgUnitId (null = all), value = folder list
         // ลด DB calls ซ้ำเมื่อ navigate ไปมาใน session เดียวกัน
@@ -53,40 +155,40 @@ namespace CMS.Services
         }
 
         public FolderService(
-            IFolderRepository          folderRepository,
-            IFileDocumentRepository    fileDocumentRepository,
-            IPermissionRepository      permissionRepository,
-            IPermissionService         permissionService,
-            INetworkDriveHelper        networkDriveHelper,
-            IAuditService              auditService,
-            IFolderTemplateRepository  folderTemplateRepository = null,
-            IApprovalRepository        approvalRepository       = null,
-            IUserOrgVisibilityService  visibilityService        = null,
-            IUserAccountRepository     userAccountRepository    = null)
+            IFolderRepository folderRepository,
+            IFileDocumentRepository fileDocumentRepository,
+            IPermissionRepository permissionRepository,
+            IPermissionService permissionService,
+            INetworkDriveHelper networkDriveHelper,
+            IAuditService auditService,
+            IFolderTemplateRepository folderTemplateRepository = null,
+            IApprovalRepository approvalRepository = null,
+            IUserOrgVisibilityService visibilityService = null,
+            IUserAccountRepository userAccountRepository = null)
         {
-            if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
+            if (folderRepository == null) throw new ArgumentNullException("folderRepository");
             if (fileDocumentRepository == null) throw new ArgumentNullException("fileDocumentRepository");
-            if (permissionRepository   == null) throw new ArgumentNullException("permissionRepository");
-            if (permissionService      == null) throw new ArgumentNullException("permissionService");
-            if (networkDriveHelper     == null) throw new ArgumentNullException("networkDriveHelper");
-            if (auditService           == null) throw new ArgumentNullException("auditService");
+            if (permissionRepository == null) throw new ArgumentNullException("permissionRepository");
+            if (permissionService == null) throw new ArgumentNullException("permissionService");
+            if (networkDriveHelper == null) throw new ArgumentNullException("networkDriveHelper");
+            if (auditService == null) throw new ArgumentNullException("auditService");
 
-            _folderRepository          = folderRepository;
-            _fileDocumentRepository    = fileDocumentRepository;
-            _permissionRepository      = permissionRepository;
-            _permissionService         = permissionService;
-            _networkDriveHelper        = networkDriveHelper;
-            _auditService              = auditService;
-            _folderTemplateRepository  = folderTemplateRepository;
-            _approvalRepository        = approvalRepository;
-            _visibilityService         = visibilityService;
-            _userAccountRepository     = userAccountRepository;
+            _folderRepository = folderRepository;
+            _fileDocumentRepository = fileDocumentRepository;
+            _permissionRepository = permissionRepository;
+            _permissionService = permissionService;
+            _networkDriveHelper = networkDriveHelper;
+            _auditService = auditService;
+            _folderTemplateRepository = folderTemplateRepository;
+            _approvalRepository = approvalRepository;
+            _visibilityService = visibilityService;
+            _userAccountRepository = userAccountRepository;
         }
 
         public Folder CreateFolder(CreateFolderRequest request, UserContext user)
         {
             if (request == null) throw new ArgumentNullException("request");
-            if (user    == null) throw new ArgumentNullException("user");
+            if (user == null) throw new ArgumentNullException("user");
             if (string.IsNullOrWhiteSpace(request.Name))
                 throw new ArgumentException("Folder name is required.");
 
@@ -112,13 +214,19 @@ namespace CMS.Services
             }
 
             // Duplicate check: compare case-insensitive + trimmed against active siblings
+            // หมายเหตุ: 1HC ข้ามการ check ตรงนี้ เพราะจะถูก handle ใน approval flow ด้านล่าง
+            // (อาจมี 1HC เก่าที่ invisible เพราะยังไม่มี ACL — ต้องส่ง approval ใหม่ให้ Admin เห็น)
             string trimmedName = request.Name.Trim();
-            var siblings = _folderRepository.GetSiblings(request.ParentFolderId, request.OrgUnitId);
-            var duplicate = siblings.FirstOrDefault(
-                f => string.Equals(f.FolderName.Trim(), trimmedName, StringComparison.OrdinalIgnoreCase));
-            if (duplicate != null)
-                throw new InvalidOperationException(
-                    string.Format("มี Folder ชื่อ '{0}' อยู่แล้วใน Parent เดียวกัน", duplicate.FolderName));
+            int resolvedConfidentiality = request.ConfidentialityLevel ?? 4;
+            if (resolvedConfidentiality != 1)
+            {
+                var siblings = _folderRepository.GetSiblings(request.ParentFolderId, request.OrgUnitId);
+                var duplicate = siblings.FirstOrDefault(
+                    f => string.Equals(f.FolderName.Trim(), trimmedName, StringComparison.OrdinalIgnoreCase));
+                if (duplicate != null)
+                    throw new InvalidOperationException(
+                        string.Format("มี Folder ชื่อ '{0}' อยู่แล้วใน Parent เดียวกัน", duplicate.FolderName));
+            }
 
             int depth;
             int confidentiality;
@@ -134,6 +242,8 @@ namespace CMS.Services
                     throw new InvalidOperationException("Cannot create a folder under a deleted parent folder.");
                 if (parent.IsArchived)
                     throw new InvalidOperationException("Cannot create a folder under an archived parent folder.");
+
+                EnsureCreationUnderMainRoots(parent);
 
                 depth = parent.FolderDepth + 1;
                 if (depth > MaxFolderDepth)
@@ -152,93 +262,26 @@ namespace CMS.Services
             }
             else
             {
+                EnsureRootCreationAllowed(trimmedName, request.OrgUnitId, request.ConfidentialityLevel);
+
                 depth = 1;  // root folder อยู่ที่ depth 1 (ไม่มี parent)
-                confidentiality   = request.ConfidentialityLevel ?? 4; // 4=Public
+                confidentiality = request.ConfidentialityLevel ?? 4; // 4=Public
                 inheritPermission = !request.ConfidentialityLevel.HasValue;
             }
 
-            // HC (ConfidentialityLevel=1) folders require approval before creation
-            if (confidentiality == 1)
-            {
-                // Store folder creation request data in Remark for later retrieval after approval
-                var folderData = new
-                {
-                    ParentFolderId = request.ParentFolderId,
-                    OrgUnitId = request.OrgUnitId,
-                    FolderName = request.Name.Trim(),
-                    FolderDepth = depth,
-                    ConfidentialityLevel = confidentiality,
-                    InheritPermission = inheritPermission
-                };
-
-                var approvalRequest = new ApprovalRequest
-                {
-                    RequestType = "CREATE_HC",
-                    RequestedBy = user.UserID,
-                    RequestedDate = DateTime.Now,
-                    RequestStatus = 1, // Pending
-                    Subject = string.Format("สร้าง HC Folder: {0}", request.Name.Trim()),
-                    Remark = string.Format("ParentFolderId={0}|OrgUnitId={1}|FolderName={2}|FolderDepth={3}|ConfidentialityLevel={4}|InheritPermission={5}",
-                        request.ParentFolderId ?? 0, request.OrgUnitId, request.Name.Trim(), depth, confidentiality, inheritPermission),
-                    ExpiryDate = DateTime.Now.AddDays(1)
-                };
-
-                int requestId = _approvalRepository.InsertRequest(approvalRequest);
-
-                // Get all admins to create approval steps
-                var admins = _userAccountRepository.GetByRole(4); // 4 = Admin
-                if (admins == null || !admins.Any())
-                    throw new InvalidOperationException("ไม่พบ Admin ในระบบ ไม่สามารถสร้าง HC Folder ได้");
-
-                int stepOrder = 1;
-                foreach (var admin in admins)
-                {
-                    var step = new ApprovalStep
-                    {
-                        RequestID = requestId,
-                        StepOrder = stepOrder,
-                        ApproverID = admin.UserID,
-                        StepStatus = 1 // Pending
-                    };
-                    _approvalRepository.InsertStep(step);
-                    stepOrder++;
-                }
-
-                Log(user, "Folder", "REQUEST_CREATE_HC", "workflow.ApprovalRequest", requestId, 1,
-                    string.Format("HC Folder creation request submitted. Subject: {0}", approvalRequest.Subject));
-
-                // Return a placeholder folder with RequestID in FolderID (temporary)
-                // This indicates the folder is pending approval
-                var placeholderFolder = new Folder
-                {
-                    FolderID = requestId * -1, // Negative ID to indicate pending approval
-                    FolderName = request.Name.Trim(),
-                    ParentFolderID = request.ParentFolderId,
-                    OrgUnitID = request.OrgUnitId,
-                    ConfidentialityLevel = confidentiality,
-                    FolderDepth = depth,
-                    IsDeleted = false,
-                    IsArchived = false,
-                    CreatedBy = user.UserID,
-                    CreatedDate = DateTime.Now
-                };
-
-                return placeholderFolder;
-            }
-
-            // Non-HC folders are created immediately
+            // HC/SC/NC/PC folders are created immediately.
             var folder = new Folder
             {
-                ParentFolderID     = request.ParentFolderId,
-                OrgUnitID          = request.OrgUnitId,
-                FolderName         = request.Name.Trim(),
-                FolderDepth        = depth,
+                ParentFolderID = request.ParentFolderId,
+                OrgUnitID = request.OrgUnitId,
+                FolderName = request.Name.Trim(),
+                FolderDepth = depth,
                 ConfidentialityLevel = confidentiality,
-                InheritPermission  = inheritPermission,
-                IsDeleted          = false,
-                IsArchived         = false,
-                CreatedBy          = user.UserID,
-                CreatedDate        = DateTime.Now
+                InheritPermission = inheritPermission,
+                IsDeleted = false,
+                IsArchived = false,
+                CreatedBy = user.UserID,
+                CreatedDate = DateTime.Now
             };
 
             int newId = _folderRepository.Insert(folder);
@@ -309,6 +352,12 @@ namespace CMS.Services
                     throw new InvalidOperationException("Cannot create folder under a deleted parent.");
                 if (parent.IsArchived)
                     throw new InvalidOperationException("Cannot create folder under an archived parent.");
+
+                EnsureCreationUnderMainRoots(parent);
+            }
+            else
+            {
+                EnsureRootCreationAllowed(folderName.Trim(), orgUnitId, confidentiality);
             }
 
             // Check for duplicate name again (in case it was created while approval was pending)
@@ -337,9 +386,35 @@ namespace CMS.Services
             int newId = _folderRepository.Insert(folder);
             folder.FolderID = newId;
 
+            // ให้ผู้ยื่นคำขอเห็นโฟลเดอร์ที่สร้างแล้วทันที (แก้ปัญหา default-deny เมื่อยังไม่มี ACL)
+            try
+            {
+                if (_permissionService != null && approvalRequest.RequestedBy > 0)
+                {
+                    _permissionService.SetFolderPermission(new SetPermissionRequest
+                    {
+                        FolderID = newId,
+                        PrincipalType = CMS.Domain.Enums.PrincipalType.User,
+                        PrincipalID = approvalRequest.RequestedBy,
+                        CanRead = true,
+                        CanWrite = false,
+                        CanDelete = false,
+                        CanModify = false,
+                        CanFullControl = false,
+                        IsDeny = false,
+                        BreakInheritance = false
+                    }, user);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log(user, "Folder", "GRANT_READ_FAILED", "security.FolderPermission", newId, 0,
+                    string.Format("Failed to grant requester read permission for HC folder '{0}': {1}", folderName, ex.Message));
+            }
+
             InvalidateFolderCache(folder.OrgUnitID);
-            Log(user, "Folder", "CREATE_HC_APPROVED", "storage.Folder", newId, 1,
-                string.Format("HC Folder '{0}' created after approval of request {1}.", folderName, approvalRequest.RequestID));
+            Log(user, "Folder", "APPROVE", "storage.Folder", newId, 1,
+                string.Format("CREATE_HC_APPROVED: HC Folder '{0}' created after approval of request {1}.", folderName, approvalRequest.RequestID));
 
             return folder;
 
@@ -409,16 +484,16 @@ namespace CMS.Services
             if (folder.IsDeleted)
                 throw new InvalidOperationException("Cannot archive a deleted folder.");
 
-            folder.IsArchived  = true;
-            folder.ArchivedBy  = user.UserID;
+            folder.IsArchived = true;
+            folder.ArchivedBy = user.UserID;
             folder.ArchivedDate = DateTime.Now;
             _folderRepository.Update(folder);
 
             var descendants = _folderRepository.GetDescendants(folderId).ToList();
             foreach (var descendant in descendants)
             {
-                descendant.IsArchived   = true;
-                descendant.ArchivedBy   = user.UserID;
+                descendant.IsArchived = true;
+                descendant.ArchivedBy = user.UserID;
                 descendant.ArchivedDate = DateTime.Now;
                 _folderRepository.Update(descendant);
             }
@@ -455,13 +530,12 @@ namespace CMS.Services
                 throw new InvalidOperationException("Folder is already in the recycle bin.");
 
             // Modify permission: CanModify required (ลบ folder — สิทธิ์สูงสุด)
-            // ห้ามลบ Root Folders หลัก
+            // Root Folders หลัก — เฉพาะ Admin (AppRole >= 3) เท่านั้นที่ลบได้
             bool isRootFolder = !folder.ParentFolderID.HasValue || folder.ParentFolderID == 0;
-            if (isRootFolder)
+            bool isPrivileged = user.AppRole >= 3;
+            if (isRootFolder && !isPrivileged)
                 throw new InvalidOperationException(
                     string.Format("ไม่อนุญาตให้ลบ Root Folder หลัก '{0}'", folder.FolderName));
-
-            bool isPrivileged = user.AppRole >= 3;
             if (!isPrivileged)
             {
                 // เงื่อนไขที่ 1: FolderAuthorityConfig — CanEdit ตาม LevelCode/ตำแหน่ง/แผนก/ฝ่าย
@@ -572,7 +646,7 @@ namespace CMS.Services
                         // Also delete any soft-deleted files via direct hard-delete by folder
                         try { _fileDocumentRepository.DeleteAllByFolder(f.FolderID); }
                         catch { /* fallback to per-file delete below */ }
-                        
+
                         foreach (var file in files)
                         {
                             // Delete physical file if it exists
@@ -631,7 +705,7 @@ namespace CMS.Services
                     catch (Exception ex)
                     {
                         throw new InvalidOperationException(
-                            string.Format("Failed to delete folder '{0}' (ID: {1}): {2}", f.FolderName, f.FolderID, ex.Message), 
+                            string.Format("Failed to delete folder '{0}' (ID: {1}): {2}", f.FolderName, f.FolderID, ex.Message),
                             ex);
                     }
                 }
@@ -645,9 +719,9 @@ namespace CMS.Services
                 // Log the error and re-throw with more context
                 Log(user, "Folder", "DELETE_ERROR", "storage.Folder", folderId, 0,
                     string.Format("Failed to permanently delete folder '{0}': {1}", folder.FolderName, ex.Message));
-                
+
                 throw new InvalidOperationException(
-                    string.Format("ไม่สามารถลบ Folder '{0}' ได้: {1}", folder.FolderName, ex.Message), 
+                    string.Format("ไม่สามารถลบ Folder '{0}' ได้: {1}", folder.FolderName, ex.Message),
                     ex);
             }
         }
@@ -723,7 +797,7 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format("Folder with ID {0} was not found.", folderId));
 
             folder.ConfidentialityLevel = newLevel;
-            folder.InheritPermission    = false;
+            folder.InheritPermission = false;
             _folderRepository.Update(folder);
 
             foreach (var descendant in _folderRepository.GetDescendants(folderId))
@@ -762,8 +836,19 @@ namespace CMS.Services
             if (visibleIds != null)
                 roots = roots.Where(f => visibleIds.Contains(f.OrgUnitID));
 
-            // กรองเฉพาะ folder ที่ user มีสิทธิ์ Read (Admin/Manager ผ่านโดยอัตโนมัติเว้นแต่ถูก Deny)
-            return roots.Where(f => _permissionService.CheckPermission(user.UserID, f.FolderID, "Read"));
+            // กรองเฉพาะ folder ที่ user มีสิทธิ์ Read
+            // - Admin/Manager: ผ่านโดยอัตโนมัติ (ยกเว้น Explicit Deny) ผ่าน CheckPermission
+            // - Officer/SrOfficer: อนุญาตเมื่อผ่าน Authority model หรือ ACL
+            return roots.Where(f =>
+            {
+                bool isPrivileged = user.AppRole >= 3;
+                if (isPrivileged)
+                    return _permissionService.CheckPermission(user.UserID, f.FolderID, "Read");
+
+                bool hasAuthority = user.CanViewFolder(f.ConfidentialityLevel);
+                bool hasAclRead = _permissionService.CheckPermission(user.UserID, f.FolderID, "Read");
+                return hasAuthority || hasAclRead;
+            });
         }
 
         public IEnumerable<Folder> GetDeletedFolders(int? orgUnitId, UserContext user)
@@ -818,7 +903,7 @@ namespace CMS.Services
                 // ค้นหา Folder ของ parent OrgUnit ทั้งหมด
                 // โดยค้นหา Folder ที่มี OrgUnitID ไม่เท่ากับ Department แต่อยู่ใน hierarchy เดียวกัน
                 var allFolders = _folderRepository.GetAll().ToList();
-                
+
                 // ค้นหา Folder ที่อาจเป็นของ parent OrgUnit
                 // (ในกรณีที่ Department ไม่มี Folder แต่ Division หรือ SubCommittee มี)
                 folders = allFolders
@@ -839,8 +924,14 @@ namespace CMS.Services
         public void ApplyTemplateToOrgUnit(int orgUnitId, int templateId, string rootFolderName, int confidentialityLevel, UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");
-            if (user.AppRole < 3)
-                throw new UnauthorizedAccessException("การสร้าง Folder จาก Template ต้องการสิทธิ์ระดับ Manager หรือ Admin");
+
+            // ตรวจสิทธิ์ตาม FolderAuthorityConfig (CanAdd) — เหมือน CreateFolder
+            int clampedLevel = (confidentialityLevel >= 1 && confidentialityLevel <= 4) ? confidentialityLevel : 4;
+            bool hasAuthority = user.CanAddToFolder(clampedLevel);
+            if (!hasAuthority)
+                throw new UnauthorizedAccessException(
+                    string.Format("ไม่มีสิทธิ์สร้าง Folder ระดับ {0} (ต้องการสิทธิ์ Add)", clampedLevel));
+
             if (_folderTemplateRepository == null)
                 throw new InvalidOperationException("FolderTemplateRepository is not configured.");
 
@@ -852,19 +943,21 @@ namespace CMS.Services
             if (confidentialityLevel < 1 || confidentialityLevel > 4)
                 confidentialityLevel = 4;
 
+            EnsureRootCreationAllowed(rootFolderName.Trim(), orgUnitId, confidentialityLevel);
+
             // สร้าง root folder ของ OrgUnit
             var rootFolder = new Folder
             {
-                ParentFolderID       = null,
-                OrgUnitID            = orgUnitId,
-                FolderName           = rootFolderName.Trim(),
-                FolderDepth          = 1,
+                ParentFolderID = null,
+                OrgUnitID = orgUnitId,
+                FolderName = rootFolderName.Trim(),
+                FolderDepth = 1,
                 ConfidentialityLevel = confidentialityLevel,
-                InheritPermission    = false,
-                IsDeleted            = false,
-                IsArchived           = false,
-                CreatedBy            = user.UserID,
-                CreatedDate          = DateTime.Now
+                InheritPermission = false,
+                IsDeleted = false,
+                IsArchived = false,
+                CreatedBy = user.UserID,
+                CreatedDate = DateTime.Now
             };
             int rootId = _folderRepository.Insert(rootFolder);
 
@@ -882,8 +975,6 @@ namespace CMS.Services
         public void ApplyTemplateToFolder(int parentFolderId, int templateId, int confidentialityLevel, UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");
-            if (user.AppRole < 3)
-                throw new UnauthorizedAccessException("การสร้าง Folder จาก Template ต้องการสิทธิ์ระดับ Manager หรือ Admin");
             if (_folderTemplateRepository == null)
                 throw new InvalidOperationException("FolderTemplateRepository is not configured.");
 
@@ -892,6 +983,16 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format("Parent folder with ID {0} was not found.", parentFolderId));
             if (parentFolder.IsDeleted)
                 throw new InvalidOperationException("Cannot apply a template to a deleted folder.");
+
+            // ตรวจสิทธิ์ตาม FolderAuthorityConfig (CanAdd) หรือ ACL Write — เหมือน CreateFolder
+            int targetLevel = (confidentialityLevel >= 1 && confidentialityLevel <= 4)
+                ? confidentialityLevel
+                : parentFolder.ConfidentialityLevel;
+            bool hasAuthority = user.CanAddToFolder(targetLevel);
+            bool hasAclWrite = !hasAuthority && _permissionService.CheckPermission(user.UserID, parentFolderId, "Write");
+            if (!hasAuthority && !hasAclWrite)
+                throw new UnauthorizedAccessException(
+                    string.Format("ไม่มีสิทธิ์สร้าง Folder ใน '{0}' (ต้องการสิทธิ์ Add)", parentFolder.FolderName));
 
             var items = _folderTemplateRepository.GetItems(templateId).ToList();
             if (items.Count == 0)
@@ -932,16 +1033,16 @@ namespace CMS.Services
 
                 var folder = new Folder
                 {
-                    ParentFolderID       = parentFolderId,
-                    OrgUnitID            = orgUnitId,
-                    FolderName           = item.FolderName,
-                    FolderDepth          = depth,
+                    ParentFolderID = parentFolderId,
+                    OrgUnitID = orgUnitId,
+                    FolderName = item.FolderName,
+                    FolderDepth = depth,
                     ConfidentialityLevel = itemConfidentiality,
-                    InheritPermission    = item.InheritPermission,
-                    IsDeleted            = false,
-                    IsArchived           = false,
-                    CreatedBy            = user.UserID,
-                    CreatedDate          = DateTime.Now
+                    InheritPermission = item.InheritPermission,
+                    IsDeleted = false,
+                    IsArchived = false,
+                    CreatedBy = user.UserID,
+                    CreatedDate = DateTime.Now
                 };
 
                 int newId = _folderRepository.Insert(folder);
@@ -953,28 +1054,13 @@ namespace CMS.Services
         {
             // 3.1 — Null check
             if (request == null) throw new ArgumentNullException("request");
-            if (user    == null) throw new ArgumentNullException("user");
+            if (user == null) throw new ArgumentNullException("user");
 
-            int sourceFolderId            = request.SourceFolderId;
+            int sourceFolderId = request.SourceFolderId;
             int destinationParentFolderId = request.DestinationParentFolderId;
 
-            // 3.1 — Permission check: role gate
-            if (user.AppRole < 2)
-                throw new UnauthorizedAccessException("ต้องมีสิทธิ์ระดับ SrOfficer ขึ้นไป");
-
-            // 3.1 — Permission check: Write on source and destination (skip for Admin)
-            if (user.AppRole < 4)
-            {
-                if (!_permissionService.CheckPermission(user.UserID, sourceFolderId, "Write"))
-                    throw new UnauthorizedAccessException(
-                        string.Format("ไม่มีสิทธิ์เขียนใน Folder ต้นทาง (ID: {0})", sourceFolderId));
-
-                if (!_permissionService.CheckPermission(user.UserID, destinationParentFolderId, "Write"))
-                    throw new UnauthorizedAccessException("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง");
-            }
-
             // 3.2 — Load source and destination
-            var source      = _folderRepository.GetById(sourceFolderId);
+            var source = _folderRepository.GetById(sourceFolderId);
             var destination = _folderRepository.GetById(destinationParentFolderId);
 
             if (source == null)
@@ -983,6 +1069,29 @@ namespace CMS.Services
             if (destination == null)
                 throw new InvalidOperationException(
                     string.Format("ไม่พบ Folder ปลายทาง ID {0}", destinationParentFolderId));
+
+            // 3.1 — Permission check: role gate
+            if (user.AppRole < 2)
+                throw new UnauthorizedAccessException("ต้องมีสิทธิ์ระดับ SrOfficer ขึ้นไป");
+
+            // 3.1 — Permission check on source and destination (skip for Admin)
+            if (user.AppRole < 4)
+            {
+                bool hasSourceAuthority = user.CanAddToFolder(source.ConfidentialityLevel)
+                                       || user.CanEditFolder(source.ConfidentialityLevel);
+                bool hasSourceAcl = _permissionService.CheckPermission(user.UserID, sourceFolderId, "Write")
+                                 || _permissionService.CheckPermission(user.UserID, sourceFolderId, "Modify");
+                if (!hasSourceAuthority && !hasSourceAcl)
+                    throw new UnauthorizedAccessException(
+                        string.Format("ไม่มีสิทธิ์ย้ายจาก Folder ต้นทาง (ID: {0})", sourceFolderId));
+
+                bool hasDestinationAuthority = user.CanAddToFolder(destination.ConfidentialityLevel)
+                                            || user.CanEditFolder(destination.ConfidentialityLevel);
+                bool hasDestinationAcl = _permissionService.CheckPermission(user.UserID, destinationParentFolderId, "Write")
+                                      || _permissionService.CheckPermission(user.UserID, destinationParentFolderId, "Modify");
+                if (!hasDestinationAuthority && !hasDestinationAcl)
+                    throw new UnauthorizedAccessException("ไม่มีสิทธิ์ย้ายไปยัง Folder ปลายทาง");
+            }
 
             // 3.2 — Circular reference: self-move
             if (sourceFolderId == destinationParentFolderId)
@@ -997,7 +1106,7 @@ namespace CMS.Services
             int maxDescendantDepth = descendants.Any()
                 ? descendants.Max(d => d.FolderDepth)
                 : source.FolderDepth;
-            int subtreeHeight  = maxDescendantDepth - source.FolderDepth;
+            int subtreeHeight = maxDescendantDepth - source.FolderDepth;
             int projectedDepth = destination.FolderDepth + 1 + subtreeHeight;
             if (projectedDepth > MaxFolderDepth)
                 throw new InvalidOperationException(
@@ -1013,30 +1122,30 @@ namespace CMS.Services
 
             // 3.3 / 3.4 — Record old values for audit and depth delta
             int? oldParentFolderId = source.ParentFolderID;
-            int  originalSourceDepth = source.FolderDepth;
-            int  depthDelta = (destination.FolderDepth + 1) - originalSourceDepth;
+            int originalSourceDepth = source.FolderDepth;
+            int depthDelta = (destination.FolderDepth + 1) - originalSourceDepth;
 
             // 3.3 — Update source folder
             int newConfidentialityLevel = destination.ConfidentialityLevel; // inherit from destination
-            int newOrgUnitId            = destination.OrgUnitID;            // inherit OrgUnit from destination
-            source.ParentFolderID       = destinationParentFolderId;
-            source.FolderDepth          = destination.FolderDepth + 1;
+            int newOrgUnitId = destination.OrgUnitID;            // inherit OrgUnit from destination
+            source.ParentFolderID = destinationParentFolderId;
+            source.FolderDepth = destination.FolderDepth + 1;
             source.ConfidentialityLevel = newConfidentialityLevel;
-            source.OrgUnitID            = newOrgUnitId;
-            source.PhysicalPath         = _networkDriveHelper.BuildPath(newOrgUnitId, source.FolderID, source.FolderName);
-            source.UpdatedBy            = user.UserID;
-            source.UpdatedDate          = DateTime.Now;
+            source.OrgUnitID = newOrgUnitId;
+            source.PhysicalPath = _networkDriveHelper.BuildPath(newOrgUnitId, source.FolderID, source.FolderName);
+            source.UpdatedBy = user.UserID;
+            source.UpdatedDate = DateTime.Now;
             _folderRepository.Update(source);
 
             // 3.4 — Update all descendants
             foreach (var descendant in descendants)
             {
-                descendant.FolderDepth          += depthDelta;
-                descendant.ConfidentialityLevel  = newConfidentialityLevel;
-                descendant.OrgUnitID             = newOrgUnitId;
-                descendant.PhysicalPath          = _networkDriveHelper.BuildPath(newOrgUnitId, descendant.FolderID, descendant.FolderName);
-                descendant.UpdatedBy             = user.UserID;
-                descendant.UpdatedDate           = DateTime.Now;
+                descendant.FolderDepth += depthDelta;
+                descendant.ConfidentialityLevel = newConfidentialityLevel;
+                descendant.OrgUnitID = newOrgUnitId;
+                descendant.PhysicalPath = _networkDriveHelper.BuildPath(newOrgUnitId, descendant.FolderID, descendant.FolderName);
+                descendant.UpdatedBy = user.UserID;
+                descendant.UpdatedDate = DateTime.Now;
                 _folderRepository.Update(descendant);
             }
 
@@ -1061,20 +1170,20 @@ namespace CMS.Services
             InvalidateFolderCache(); // invalidate all — folder moved across OrgUnits possibly
             _auditService.Log(new AuditEntry
             {
-                Module      = "Folder",
-                Action      = "MoveFolder",
-                UserID      = user.UserID,
-                UserName    = user.ADUserName ?? string.Empty,
-                UserRole    = user.AppRole,
-                TableName   = "storage.Folder",
-                RecordID    = sourceFolderId,
-                OldValue    = oldParentFolderId.HasValue ? oldParentFolderId.Value.ToString() : null,
-                NewValue    = destinationParentFolderId.ToString(),
+                Module = "Folder",
+                Action = "MoveFolder",
+                UserID = user.UserID,
+                UserName = user.ADUserName ?? string.Empty,
+                UserRole = user.AppRole,
+                TableName = "storage.Folder",
+                RecordID = sourceFolderId,
+                OldValue = oldParentFolderId.HasValue ? oldParentFolderId.Value.ToString() : null,
+                NewValue = destinationParentFolderId.ToString(),
                 MachineName = user.MachineName,
-                IPAddress   = user.IPAddress,
-                SessionID   = user.SessionID,
-                Result      = 1,
-                AuditDate   = DateTime.Now
+                IPAddress = user.IPAddress,
+                SessionID = user.SessionID,
+                Result = 1,
+                AuditDate = DateTime.Now
             });
         }
 
@@ -1099,16 +1208,16 @@ namespace CMS.Services
 
             var newRoot = new Folder
             {
-                ParentFolderID       = destinationParentFolderId,
-                OrgUnitID            = destinationParent.OrgUnitID,
-                FolderName           = source.FolderName,
-                FolderDepth          = newDepth,
+                ParentFolderID = destinationParentFolderId,
+                OrgUnitID = destinationParent.OrgUnitID,
+                FolderName = source.FolderName,
+                FolderDepth = newDepth,
                 ConfidentialityLevel = source.ConfidentialityLevel,
-                InheritPermission    = source.InheritPermission,
-                IsDeleted            = false,
-                IsArchived           = false,
-                CreatedBy            = user.UserID,
-                CreatedDate          = DateTime.Now
+                InheritPermission = source.InheritPermission,
+                IsDeleted = false,
+                IsArchived = false,
+                CreatedBy = user.UserID,
+                CreatedDate = DateTime.Now
             };
 
             int newRootId = _folderRepository.Insert(newRoot);
@@ -1130,16 +1239,16 @@ namespace CMS.Services
 
                 var newFolder = new Folder
                 {
-                    ParentFolderID       = newParentId,
-                    OrgUnitID            = orgUnitId,
-                    FolderName           = child.FolderName,
-                    FolderDepth          = childDepth,
+                    ParentFolderID = newParentId,
+                    OrgUnitID = orgUnitId,
+                    FolderName = child.FolderName,
+                    FolderDepth = childDepth,
                     ConfidentialityLevel = child.ConfidentialityLevel,
-                    InheritPermission    = child.InheritPermission,
-                    IsDeleted            = false,
-                    IsArchived           = false,
-                    CreatedBy            = user.UserID,
-                    CreatedDate          = DateTime.Now
+                    InheritPermission = child.InheritPermission,
+                    IsDeleted = false,
+                    IsArchived = false,
+                    CreatedBy = user.UserID,
+                    CreatedDate = DateTime.Now
                 };
 
                 int newId = _folderRepository.Insert(newFolder);
@@ -1156,16 +1265,16 @@ namespace CMS.Services
 
                 var newFolder = new Folder
                 {
-                    ParentFolderID       = newParentId,
-                    OrgUnitID            = orgUnitId,
-                    FolderName           = child.FolderName,
-                    FolderDepth          = childDepth,
+                    ParentFolderID = newParentId,
+                    OrgUnitID = orgUnitId,
+                    FolderName = child.FolderName,
+                    FolderDepth = childDepth,
                     ConfidentialityLevel = child.ConfidentialityLevel,
-                    InheritPermission    = child.InheritPermission,
-                    IsDeleted            = false,
-                    IsArchived           = false,
-                    CreatedBy            = user.UserID,
-                    CreatedDate          = DateTime.Now
+                    InheritPermission = child.InheritPermission,
+                    IsDeleted = false,
+                    IsArchived = false,
+                    CreatedBy = user.UserID,
+                    CreatedDate = DateTime.Now
                 };
 
                 int newId = _folderRepository.Insert(newFolder);
@@ -1185,20 +1294,50 @@ namespace CMS.Services
         {
             _auditService.Log(new AuditEntry
             {
-                Module      = module,
-                Action      = action,
-                UserID      = user.UserID,
-                UserName    = user.ADUserName ?? string.Empty,
-                UserRole    = user.AppRole,
-                TableName   = tableName,
-                RecordID    = recordId,
-                NewValue    = newValue,
+                Module = module,
+                Action = action,
+                UserID = user.UserID,
+                UserName = user.ADUserName ?? string.Empty,
+                UserRole = user.AppRole,
+                TableName = tableName,
+                RecordID = recordId,
+                NewValue = newValue,
                 MachineName = user.MachineName,
-                IPAddress   = user.IPAddress,
-                SessionID   = user.SessionID,
-                Result      = result,
-                AuditDate   = DateTime.Now
+                IPAddress = user.IPAddress,
+                SessionID = user.SessionID,
+                Result = result,
+                AuditDate = DateTime.Now
             });
+        }
+
+        /// <summary>
+        /// ค้นหา Folder ทั้งหมดที่ user มีสิทธิ์เข้าถึง (filter ตาม permission)
+        /// ใช้สำหรับ FolderPickerDialog และ ShareDialog เพื่อแสดงเฉพาะ folder ที่มีสิทธิ์
+        /// 
+        /// Filtering logic:
+        /// - Admin/Manager: pass ผ่าน CheckPermission (default Allow + Explicit Deny check)
+        /// - Officer/SrOfficer: อนุญาตเมื่อผ่าน Authority model หรือ ACL
+        /// </summary>
+        public IEnumerable<Folder> GetAccessibleFolders(int? orgUnitId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            // Get all folders (with cache)
+            var allFolders = GetAllFolders(orgUnitId, user);
+
+            // Filter by visibility + permission
+            return allFolders
+                .Where(f => !f.IsDeleted && !f.IsArchived)
+                .Where(f =>
+                {
+                    bool isPrivileged = user.AppRole >= 3;
+                    if (isPrivileged)
+                        return _permissionService.CheckPermission(user.UserID, f.FolderID, "Read");
+
+                    bool hasAuthority = user.CanViewFolder(f.ConfidentialityLevel);
+                    bool hasAclRead = _permissionService.CheckPermission(user.UserID, f.FolderID, "Read");
+                    return hasAuthority || hasAclRead;
+                });
         }
     }
 }

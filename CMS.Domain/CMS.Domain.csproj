@@ -44,11 +44,13 @@
     <Compile Include="Enums\OrgUnitTier.cs" />
     <Compile Include="Enums\ApprovalStatus.cs" />
     <Compile Include="Enums\PrincipalType.cs" />
+    <Compile Include="Enums\FormFieldType.cs" />
     <Compile Include="Models\UserContext.cs" />
     <Compile Include="Models\EffectivePermission.cs" />
     <Compile Include="Models\UploadResult.cs" />
     <Compile Include="Models\ScanResult.cs" />
     <Compile Include="Models\OrgUnit.cs" />
+    <Compile Include="Models\OrgUnitRelationship.cs" />
     <Compile Include="Models\Folder.cs" />
     <Compile Include="Models\FileDocument.cs" />
     <Compile Include="Models\FolderPermission.cs" />
@@ -87,6 +89,14 @@
     <Compile Include="Models\KBMonthlyArticle.cs" />
     <Compile Include="Models\KBTopArticle.cs" />
     <Compile Include="Models\NotificationDto.cs" />
+    <Compile Include="Models\WorkflowDefinition.cs" />
+    <Compile Include="Models\WorkflowStep.cs" />
+    <Compile Include="Models\WorkflowConnection.cs" />
+    <Compile Include="Models\WorkflowInstance.cs" />
+    <Compile Include="Models\WorkflowStepInstance.cs" />
+    <Compile Include="Models\WFDelegation.cs" />
+    <Compile Include="Models\WFSLARule.cs" />
+    <Compile Include="Enums\WorkflowEnums.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

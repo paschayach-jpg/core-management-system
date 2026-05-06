@@ -115,12 +115,6 @@ namespace CMS.Controllers.DMS.Document
                 return;
             }
 
-            if (files.Count > 10)
-            {
-                _view.ShowError("A maximum of 10 files may be uploaded in a single operation.");
-                return;
-            }
-
             _view.SetUploadEnabled(false);
             _view.SetProgress(0);
             _view.HideQuotaWarning();

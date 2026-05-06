@@ -23,9 +23,11 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("usp_UserOrgVisibility_GetByUser", conn))
+                using (var cmd = new SqlCommand(@"
+                    SELECT UserID, OrgUnitID, GrantedBy, GrantedDate
+                    FROM security.UserOrgVisibility
+                    WHERE UserID = @UserID", conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@UserID", userId);
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -43,9 +45,11 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("usp_UserOrgVisibility_GetByOrgUnit", conn))
+                using (var cmd = new SqlCommand(@"
+                    SELECT UserID, OrgUnitID, GrantedBy, GrantedDate
+                    FROM security.UserOrgVisibility
+                    WHERE OrgUnitID = @OrgUnitID", conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -63,9 +67,24 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("usp_UserOrgVisibility_Grant", conn))
+                using (var cmd = new SqlCommand(@"
+IF EXISTS (
+    SELECT 1
+    FROM security.UserOrgVisibility
+    WHERE UserID = @UserID AND OrgUnitID = @OrgUnitID
+)
+BEGIN
+    UPDATE security.UserOrgVisibility
+    SET GrantedBy = @GrantedBy,
+        GrantedDate = GETDATE()
+    WHERE UserID = @UserID AND OrgUnitID = @OrgUnitID;
+END
+ELSE
+BEGIN
+    INSERT INTO security.UserOrgVisibility (UserID, OrgUnitID, GrantedBy, GrantedDate)
+    VALUES (@UserID, @OrgUnitID, @GrantedBy, GETDATE());
+END", conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@UserID",    record.UserID);
                     cmd.Parameters.AddWithValue("@OrgUnitID", record.OrgUnitID);
                     cmd.Parameters.AddWithValue("@GrantedBy", record.GrantedBy);
@@ -80,9 +99,10 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("usp_UserOrgVisibility_Revoke", conn))
+                using (var cmd = new SqlCommand(@"
+                    DELETE FROM security.UserOrgVisibility
+                    WHERE UserID = @UserID AND OrgUnitID = @OrgUnitID", conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@UserID",    userId);
                     cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
                     cmd.ExecuteNonQuery();

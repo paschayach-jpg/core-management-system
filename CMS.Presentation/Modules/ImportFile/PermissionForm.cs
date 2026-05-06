@@ -20,7 +20,7 @@ namespace CMS.Presentation
     {
         private PermissionPresenter _presenter;
         private readonly IAuditLogController _auditLogController;
-        private UserContext         _currentUser;
+        private UserContext _currentUser;
         private Folder _folder;
         private readonly IFolderPermissionLookupController _folderPermissionLookupController;
         private List<FolderPermission> _aclEntries = new List<FolderPermission>();
@@ -40,28 +40,28 @@ namespace CMS.Presentation
         // ── Constructor ──────────────────────────────────────────────────────
 
         public PermissionForm(
-            IPermissionService  permissionService,
-            IApprovalService    approvalService,
-            IFolderService      folderService,
+            IPermissionService permissionService,
+            IApprovalService approvalService,
+            IFolderService folderService,
             IFolderPermissionLookupController folderPermissionLookupController,
-            UserContext         user,
-            Folder              folder,
+            UserContext user,
+            Folder folder,
             IUserAccountLookupController userAccountLookupController = null,
             IFolderSettingsController folderSettingsController = null,
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
             IUserAccessOrgLookupController orgLookupController = null,
             IFileDocumentLookupController fileDocumentLookupController = null,
-            IAuditService       auditService = null)
+            IAuditService auditService = null)
         {
             if (permissionService == null) throw new ArgumentNullException("permissionService");
-            if (approvalService   == null) throw new ArgumentNullException("approvalService");
-            if (folderService     == null) throw new ArgumentNullException("folderService");
+            if (approvalService == null) throw new ArgumentNullException("approvalService");
+            if (folderService == null) throw new ArgumentNullException("folderService");
             _folderPermissionLookupController = folderPermissionLookupController ?? throw new ArgumentNullException("folderPermissionLookupController");
-            if (user              == null) throw new ArgumentNullException("user");
+            if (user == null) throw new ArgumentNullException("user");
 
-            _folder        = folder;
+            _folder = folder;
             _auditLogController = new AuditLogController(auditService);
-            _currentUser   = user;
+            _currentUser = user;
             _userAccountController = userAccountLookupController;
             _folderSettingsController = folderSettingsController;
             _userList = new List<UserAccount>();
@@ -147,9 +147,9 @@ namespace CMS.Presentation
 
                 // Color swatch + text
                 pnlColorSwatch.BackColor = ConfidentialityColor(lvl);
-                lblColorText.Text        = ConfidentialityColorLabel(lvl);
+                lblColorText.Text = ConfidentialityColorLabel(lvl);
 
-                txtFolderName.Text   = _folder.FolderName ?? string.Empty;
+                txtFolderName.Text = _folder.FolderName ?? string.Empty;
                 txtPhysicalPath.Text = _folder.PhysicalPath ?? string.Empty;
 
                 // Size + quota
@@ -250,8 +250,8 @@ namespace CMS.Presentation
                     .Where(p => p.RevokedDate == null
                              && !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today))
                     .ToList();
-                var revoked  = allPermissions.Where(p => p.RevokedDate != null).ToList();
-                var expired  = allPermissions.Where(p => p.RevokedDate == null
+                var revoked = allPermissions.Where(p => p.RevokedDate != null).ToList();
+                var expired = allPermissions.Where(p => p.RevokedDate == null
                                                       && p.ExpiryDate.HasValue
                                                       && p.ExpiryDate.Value.Date < DateTime.Today).ToList();
 
@@ -261,7 +261,7 @@ namespace CMS.Presentation
                 // _allAclEntries = ทั้งหมด (ใช้เมื่อกด "แสดงทั้งหมด")
                 // _aclEntries    = เฉพาะที่ใช้งาน (ค่าเริ่มต้นที่แสดง)
                 _allAclEntries = allPermissions;
-                _aclEntries    = active;
+                _aclEntries = active;
 
                 // Populate ListView — แสดงเฉพาะรายการที่ใช้งาน
                 DiagLog(string.Format("Step 4: Populating ListView (active only: {0} รายการ)...", active.Count));
@@ -351,7 +351,7 @@ namespace CMS.Presentation
 
             foreach (var entry in toShow)
             {
-                bool isDeny    = entry.IsDeny;
+                bool isDeny = entry.IsDeny;
                 bool isRevoked = entry.RevokedDate.HasValue;
 
                 string principalName;
@@ -383,8 +383,8 @@ namespace CMS.Presentation
 
                 var item = new ListViewItem(isDeny ? "⊘ " + principalName : principalName);
                 item.SubItems.Add(PrincipalTypeLabel((int)entry.PrincipalType));
-                item.SubItems.Add(PermCheck(entry.CanRead,   isDeny));
-                item.SubItems.Add(PermCheck(entry.CanWrite,  isDeny));
+                item.SubItems.Add(PermCheck(entry.CanRead, isDeny));
+                item.SubItems.Add(PermCheck(entry.CanWrite, isDeny));
                 item.SubItems.Add(PermCheck(entry.CanDelete, isDeny));
                 item.SubItems.Add(PermCheck(entry.CanModify, isDeny));
                 item.SubItems.Add("—"); // colFull — ซ่อน (Width=0)
@@ -397,20 +397,20 @@ namespace CMS.Presentation
                 {
                     item.SubItems.Add("ยกเลิกแล้ว");
                     item.ForeColor = Color.Gray;
-                    item.Font      = new Font(aclListView.Font, FontStyle.Strikeout);
+                    item.Font = new Font(aclListView.Font, FontStyle.Strikeout);
                 }
                 else if (isExpired)
                 {
                     item.SubItems.Add("⚠ หมดอายุ");
                     item.ForeColor = Color.FromArgb(160, 90, 0);
-                    item.Font      = new Font(aclListView.Font, FontStyle.Strikeout);
+                    item.Font = new Font(aclListView.Font, FontStyle.Strikeout);
                     item.BackColor = Color.FromArgb(255, 248, 215);
                 }
                 else if (isDeny)
                 {
                     item.SubItems.Add("✔ ใช้งาน (Deny)");
                     item.ForeColor = Color.Crimson;
-                    item.Font      = new Font(aclListView.Font, FontStyle.Bold);
+                    item.Font = new Font(aclListView.Font, FontStyle.Bold);
                 }
                 else
                 {
@@ -423,10 +423,10 @@ namespace CMS.Presentation
             }
 
             int activeCount = _aclEntries.Count;
-            int totalCount  = _allAclEntries.Count;
+            int totalCount = _allAclEntries.Count;
             if (activeCount == 0 && !_showAllEntries)
             {
-                lblAclStatus.Text      = "ยังไม่มีสิทธิ์ — กด + เพิ่ม เพื่อเพิ่มรายการ";
+                lblAclStatus.Text = "ยังไม่มีสิทธิ์ — กด + เพิ่ม เพื่อเพิ่มรายการ";
                 lblAclStatus.ForeColor = Color.Gray;
             }
             else
@@ -462,40 +462,40 @@ namespace CMS.Presentation
             // Collapsible trace panel docked to Bottom of tabPermission
             var pnlTrace = new System.Windows.Forms.Panel
             {
-                Dock      = System.Windows.Forms.DockStyle.Bottom,
-                Height    = 110,
+                Dock = System.Windows.Forms.DockStyle.Bottom,
+                Height = 110,
                 BackColor = System.Drawing.Color.FromArgb(240, 240, 245),
                 BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
             };
 
             var lblHeader = new System.Windows.Forms.Label
             {
-                Text      = "📋 Trace Log (Debug Output)",
-                Dock      = System.Windows.Forms.DockStyle.Top,
-                Height    = 20,
-                Font      = new System.Drawing.Font("Segoe UI", 8f, System.Drawing.FontStyle.Bold),
+                Text = "📋 Trace Log (Debug Output)",
+                Dock = System.Windows.Forms.DockStyle.Top,
+                Height = 20,
+                Font = new System.Drawing.Font("Segoe UI", 8f, System.Drawing.FontStyle.Bold),
                 ForeColor = System.Drawing.Color.FromArgb(0, 51, 102),
-                Padding   = new System.Windows.Forms.Padding(4, 2, 0, 0)
+                Padding = new System.Windows.Forms.Padding(4, 2, 0, 0)
             };
 
             var btnClear = new System.Windows.Forms.Button
             {
-                Text      = "Clear",
-                Width     = 50,
-                Height    = 18,
+                Text = "Clear",
+                Width = 50,
+                Height = 18,
                 FlatStyle = System.Windows.Forms.FlatStyle.Flat,
-                Font      = new System.Drawing.Font("Segoe UI", 7f),
-                Dock      = System.Windows.Forms.DockStyle.None,
-                Anchor    = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right
+                Font = new System.Drawing.Font("Segoe UI", 7f),
+                Dock = System.Windows.Forms.DockStyle.None,
+                Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right
             };
             btnClear.Location = new System.Drawing.Point(pnlTrace.Width - 56, 1);
             btnClear.Click += (s, e) => { _rtbTrace.Clear(); _diagLog.Clear(); };
 
             _rtbTrace = new System.Windows.Forms.RichTextBox
             {
-                Dock      = System.Windows.Forms.DockStyle.Fill,
-                ReadOnly  = true,
-                Font      = new System.Drawing.Font("Consolas", 7.5f),
+                Dock = System.Windows.Forms.DockStyle.Fill,
+                ReadOnly = true,
+                Font = new System.Drawing.Font("Consolas", 7.5f),
                 BackColor = System.Drawing.Color.FromArgb(248, 248, 255),
                 BorderStyle = System.Windows.Forms.BorderStyle.None,
                 ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical
@@ -512,11 +512,11 @@ namespace CMS.Presentation
 
             _chkShowAll = new CheckBox
             {
-                Text      = "แสดงทั้งหมด (รวมที่ยกเลิก)",
-                AutoSize  = true,
-                Font      = new Font("Segoe UI", 8.5f),
+                Text = "แสดงทั้งหมด (รวมที่ยกเลิก)",
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(80, 80, 80),
-                Checked   = false
+                Checked = false
             };
 
             // Position it in the toolbar panel (pnlPermToolbar) to the right of lblAclStatus
@@ -555,8 +555,8 @@ namespace CMS.Presentation
 
                 item.BackColor = Color.FromArgb(255, 248, 215);   // เหลืองอ่อน
                 item.ForeColor = Color.FromArgb(160, 90, 0);      // น้ำตาลส้ม
-                item.Font      = new Font(aclListView.Font, FontStyle.Italic);
-                item.Tag       = req;  // tag เป็น ApprovalRequest ไม่ใช่ FolderPermission
+                item.Font = new Font(aclListView.Font, FontStyle.Italic);
+                item.Tag = req;  // tag เป็น ApprovalRequest ไม่ใช่ FolderPermission
 
                 aclListView.Items.Add(item);
             }
@@ -565,7 +565,7 @@ namespace CMS.Presentation
             int pendingCount = aclListView.Items.Cast<ListViewItem>().Count(i => i.Tag is ApprovalRequest);
             if (pendingCount > 0)
             {
-                lblAclStatus.Text      = string.Format("{0} รายการ  (รออนุมัติ {1})", _aclEntries.Count, pendingCount);
+                lblAclStatus.Text = string.Format("{0} รายการ  (รออนุมัติ {1})", _aclEntries.Count, pendingCount);
                 lblAclStatus.ForeColor = Color.FromArgb(160, 90, 0);
             }
             else
@@ -624,18 +624,18 @@ namespace CMS.Presentation
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            if (_folder == null) 
+            if (_folder == null)
             {
                 ShowError("กรุณาเลือก Folder ก่อนเพิ่มสิทธิ์");
                 return;
             }
-            
+
             var reqs = PromptForPermissionRequests(_folder.FolderId, null);
             if (reqs != null)
             {
                 foreach (var req in reqs)
                     _presenter.SetPermission(req);
-                
+
                 // Refresh permissions immediately after adding
                 LoadPermissionsImmediate();
             }
@@ -643,20 +643,20 @@ namespace CMS.Presentation
 
         private void btnEdit_Click(object sender, EventArgs e)
         {
-            if (aclListView.SelectedItems.Count == 0) 
+            if (aclListView.SelectedItems.Count == 0)
             {
                 ShowError("กรุณาเลือกรายการที่ต้องการแก้ไข");
                 return;
             }
-            
+
             var entry = aclListView.SelectedItems[0].Tag as FolderPermission;
             if (entry == null)
             {
                 ShowError("ไม่สามารถแก้ไขรายการที่รออนุมัติได้");
                 return;
             }
-            
-            if (_folder == null) 
+
+            if (_folder == null)
             {
                 // Fallback: ใช้ FolderId จาก entry ที่เลือก
                 var editReqs = PromptForPermissionRequests(entry.FolderID, entry);
@@ -664,19 +664,19 @@ namespace CMS.Presentation
                 {
                     foreach (var req in editReqs)
                         _presenter.SetPermission(req);
-                    
+
                     // Refresh permissions immediately after editing
                     LoadPermissionsImmediate();
                 }
                 return;
             }
-            
+
             var reqs = PromptForPermissionRequests(_folder.FolderId, entry);
             if (reqs != null)
             {
                 foreach (var req in reqs)
                     _presenter.SetPermission(req);
-                
+
                 // Refresh permissions immediately after editing
                 LoadPermissionsImmediate();
             }
@@ -729,7 +729,7 @@ namespace CMS.Presentation
             {
                 // Get all permissions for this folder (including revoked)
                 var allPermissions = _folderPermissionLookupController.GetAllByFolder(_folder.FolderID).ToList();
-                
+
                 // Get pending approval requests
                 var pendingApprovals = _approvalWorkflowController.GetAllApprovalsByFolder(_folder.FolderID)
                     .Where(r => r.RequestStatus == 1 && r.RequestType == "CHANGE_PERMISSION")
@@ -768,12 +768,12 @@ namespace CMS.Presentation
             try
             {
                 System.Diagnostics.Debug.WriteLine("=== LoadDisplayNames START ===");
-                
+
                 // Initialize display maps if they don't exist
                 if (_userDisplayMap == null) _userDisplayMap = new Dictionary<int, string>();
                 if (_orgUnitNameMap == null) _orgUnitNameMap = new Dictionary<int, string>();
 
-                if (_allAclEntries == null) 
+                if (_allAclEntries == null)
                 {
                     System.Diagnostics.Debug.WriteLine("LoadDisplayNames: _allAclEntries is null, returning");
                     return;
@@ -788,14 +788,14 @@ namespace CMS.Presentation
                     {
                         var users = _userAccountController.GetAllUsers().ToList();
                         System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: Found {users.Count} users from repository");
-                        
+
                         foreach (var u in users)
                         {
                             string displayName = string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
                             _userDisplayMap[u.UserID] = displayName;
                             System.Diagnostics.Debug.WriteLine($"  User {u.UserID}: {displayName}");
                         }
-                        
+
                         System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: _userDisplayMap now has {_userDisplayMap.Count} entries");
                     }
                     catch (Exception ex)
@@ -815,14 +815,14 @@ namespace CMS.Presentation
                     {
                         var orgUnits = _orgLookupController.GetHierarchy().ToList();
                         System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: Found {orgUnits.Count} org units from service");
-                        
+
                         foreach (var u in orgUnits)
                         {
                             string displayName = u.OrgUnitNameTH ?? u.OrgUnitNameEN ?? u.OrgUnitCode ?? u.OrgUnitID.ToString();
                             _orgUnitNameMap[u.OrgUnitID] = displayName;
                             System.Diagnostics.Debug.WriteLine($"  OrgUnit {u.OrgUnitID}: {displayName}");
                         }
-                        
+
                         System.Diagnostics.Debug.WriteLine($"LoadDisplayNames: _orgUnitNameMap now has {_orgUnitNameMap.Count} entries");
                     }
                     catch (Exception ex)
@@ -863,7 +863,7 @@ namespace CMS.Presentation
                         System.Diagnostics.Debug.WriteLine($"  Added fallback org unit {e.PrincipalID}: {fallback}");
                     }
                 }
-                
+
                 System.Diagnostics.Debug.WriteLine($"=== LoadDisplayNames END - Users: {_userDisplayMap.Count}, OrgUnits: {_orgUnitNameMap.Count} ===");
             }
             catch (Exception ex)
@@ -881,7 +881,7 @@ namespace CMS.Presentation
             {
                 // Get all permissions for this folder (including revoked ones)
                 var allPermissions = _folderPermissionLookupController.GetAllByFolder(_folder.FolderID).ToList();
-                
+
                 // Get all approval requests for this folder
                 var allApprovals = _approvalWorkflowController.GetAllApprovalsByFolder(_folder.FolderID).ToList();
                 var pendingApprovals = allApprovals
@@ -929,7 +929,7 @@ namespace CMS.Presentation
         private void AddPermissionItemToListView(FolderPermission perm)
         {
             string principalName = GetPrincipalName(perm.PrincipalType, perm.PrincipalID);
-            bool isDeny    = perm.IsDeny;
+            bool isDeny = perm.IsDeny;
             bool isRevoked = perm.RevokedDate.HasValue;
             bool isExpired = !isRevoked && perm.ExpiryDate.HasValue && perm.ExpiryDate.Value.Date < DateTime.Today;
 
@@ -939,8 +939,8 @@ namespace CMS.Presentation
 
             var item = new ListViewItem(isDeny ? "⊘ " + principalName : principalName);
             item.SubItems.Add(GetPrincipalTypeText(perm.PrincipalType));
-            item.SubItems.Add(perm.CanRead   ? (isDeny ? "—" : "✓") : "—");
-            item.SubItems.Add(perm.CanWrite  ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanRead ? (isDeny ? "—" : "✓") : "—");
+            item.SubItems.Add(perm.CanWrite ? (isDeny ? "—" : "✓") : "—");
             item.SubItems.Add(perm.CanDelete ? (isDeny ? "—" : "✓") : "—");
             item.SubItems.Add(perm.CanModify ? (isDeny ? "—" : "✓") : "—");
             item.SubItems.Add("—"); // colFull — ซ่อน (Width=0)
@@ -1025,7 +1025,7 @@ namespace CMS.Presentation
             try
             {
                 System.Diagnostics.Debug.WriteLine($"GetPrincipalName: Type={principalType}, ID={principalId}");
-                
+
                 switch (principalType)
                 {
                     case PrincipalType.User:
@@ -1036,19 +1036,19 @@ namespace CMS.Presentation
                         }
                         System.Diagnostics.Debug.WriteLine($"  User lookup: Result={userName}");
                         return userName;
-                    
+
                     case PrincipalType.Department:
                         bool deptFound = _orgUnitNameMap.TryGetValue(principalId, out string deptName);
                         string deptResult = deptFound ? deptName : $"Department {principalId}";
                         System.Diagnostics.Debug.WriteLine($"  Department lookup: Found={deptFound}, Result={deptResult}");
                         return deptResult;
-                    
+
                     case PrincipalType.Division:
                         bool divFound = _orgUnitNameMap.TryGetValue(principalId, out string divName);
                         string divResult = divFound ? divName : $"Division {principalId}";
                         System.Diagnostics.Debug.WriteLine($"  Division lookup: Found={divFound}, Result={divResult}");
                         return divResult;
-                    
+
                     default:
                         string defaultResult = $"{principalType} {principalId}";
                         System.Diagnostics.Debug.WriteLine($"  Default result: {defaultResult}");
@@ -1135,8 +1135,8 @@ namespace CMS.Presentation
                     inputForm.AcceptButton = okButton;
                     inputForm.CancelButton = cancelButton;
 
-                    if (inputForm.ShowDialog(this) != DialogResult.OK || 
-                        string.IsNullOrEmpty(textBox.Text) || 
+                    if (inputForm.ShowDialog(this) != DialogResult.OK ||
+                        string.IsNullOrEmpty(textBox.Text) ||
                         !int.TryParse(textBox.Text, out folderId))
                     {
                         ShowError("กรุณาป้อน Folder ID ที่ถูกต้อง");
@@ -1188,7 +1188,7 @@ namespace CMS.Presentation
                                      $"• สิทธิ์ที่ใช้งาน: {activeCount}\n" +
                                      $"• สิทธิ์ที่ยกเลิก: {revokedCount}\n\n" +
                                      $"✅ แสดงข้อมูลทั้งหมดในแท็บสิทธิ์แล้ว";
-                
+
                 ShowInfo(resultMessage);
                 System.Diagnostics.Debug.WriteLine($"=== FORCE LOAD SIMPLE END ===");
             }
@@ -1264,12 +1264,12 @@ namespace CMS.Presentation
         {
             var dlg = new Form
             {
-                Text            = "🔍 Diagnostic & Trace Log",
-                Width           = 760,
-                Height          = 560,
-                StartPosition   = FormStartPosition.CenterParent,
-                MinimizeBox     = false,
-                MaximizeBox     = true,
+                Text = "🔍 Diagnostic & Trace Log",
+                Width = 760,
+                Height = 560,
+                StartPosition = FormStartPosition.CenterParent,
+                MinimizeBox = false,
+                MaximizeBox = true,
                 FormBorderStyle = FormBorderStyle.Sizable
             };
 
@@ -1279,8 +1279,10 @@ namespace CMS.Presentation
             var tabSum = new System.Windows.Forms.TabPage("📊 สรุป");
             var rtbSum = new System.Windows.Forms.RichTextBox
             {
-                Dock = DockStyle.Fill, ReadOnly = true,
-                Font = new Font("Consolas", 9f), Text = summary
+                Dock = DockStyle.Fill,
+                ReadOnly = true,
+                Font = new Font("Consolas", 9f),
+                Text = summary
             };
             tabSum.Controls.Add(rtbSum);
 
@@ -1288,7 +1290,8 @@ namespace CMS.Presentation
             var tabLog = new System.Windows.Forms.TabPage("📋 Trace Log");
             var rtbLog = new System.Windows.Forms.RichTextBox
             {
-                Dock = DockStyle.Fill, ReadOnly = true,
+                Dock = DockStyle.Fill,
+                ReadOnly = true,
                 Font = new Font("Consolas", 8.5f),
                 Text = _diagLog.Length > 0 ? _diagLog.ToString() : "(ยังไม่มี log)"
             };
@@ -1300,11 +1303,11 @@ namespace CMS.Presentation
             var pnlBtn = new Panel { Dock = DockStyle.Bottom, Height = 36 };
             var btnClose = new Button { Text = "ปิด", Width = 80, Height = 26, DialogResult = DialogResult.OK };
             btnClose.Location = new System.Drawing.Point(dlg.ClientSize.Width - 90, 5);
-            btnClose.Anchor   = AnchorStyles.Right | AnchorStyles.Top;
+            btnClose.Anchor = AnchorStyles.Right | AnchorStyles.Top;
             var btnCopyLog = new Button { Text = "Copy Log", Width = 90, Height = 26 };
             btnCopyLog.Location = new System.Drawing.Point(dlg.ClientSize.Width - 186, 5);
-            btnCopyLog.Anchor   = AnchorStyles.Right | AnchorStyles.Top;
-            btnCopyLog.Click   += (s, e2) => { Clipboard.SetText(_diagLog.ToString()); };
+            btnCopyLog.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            btnCopyLog.Click += (s, e2) => { Clipboard.SetText(_diagLog.ToString()); };
             pnlBtn.Controls.Add(btnClose);
             pnlBtn.Controls.Add(btnCopyLog);
 
@@ -1395,20 +1398,20 @@ namespace CMS.Presentation
                     aclListView.Items.Count,
                     _aclEntries?.Count ?? 0,
                     _allAclEntries?.Count ?? 0,
-                    allPermissions.Any() ? 
-                        string.Join("\n", allPermissions.Take(5).Select(p => 
-                            string.Format("- ID:{0}, Principal:{1}({2}), Read:{3}, Write:{4}, Revoked:{5}", 
+                    allPermissions.Any() ?
+                        string.Join("\n", allPermissions.Take(5).Select(p =>
+                            string.Format("- ID:{0}, Principal:{1}({2}), Read:{3}, Write:{4}, Revoked:{5}",
                                 p.PermissionID, p.PrincipalID, p.PrincipalType, p.CanRead, p.CanWrite, p.RevokedDate.HasValue))) :
                         "ไม่มี Permissions",
-                    activePermissions.Any() ? 
-                        string.Join("\n", activePermissions.Take(5).Select(p => 
-                            string.Format("- ID:{0}, Principal:{1}({2}), Read:{3}, Write:{4}, Revoked:{5}", 
+                    activePermissions.Any() ?
+                        string.Join("\n", activePermissions.Take(5).Select(p =>
+                            string.Format("- ID:{0}, Principal:{1}({2}), Read:{3}, Write:{4}, Revoked:{5}",
                                 p.PermissionID, p.PrincipalID, p.PrincipalType, p.CanRead, p.CanWrite, p.RevokedDate.HasValue))) :
                         "ไม่มี Active Permissions",
                     approvedApprovals.Any() ?
                         string.Join("\n", approvedApprovals.Take(5).Select(a =>
                             string.Format("- ID:{0}, Status:{1}, Date:{2}, Remark:{3}",
-                                a.RequestID, a.RequestStatus, a.RequestedDate.ToString("dd/MM/yy HH:mm"), 
+                                a.RequestID, a.RequestStatus, a.RequestedDate.ToString("dd/MM/yy HH:mm"),
                                 (a.Remark != null ? a.Remark.Substring(0, Math.Min(50, a.Remark.Length)) : "") + "..."))) :
                         "ไม่มี Approved Approvals",
                     pendingApprovals.Any() ?
@@ -1539,18 +1542,18 @@ namespace CMS.Presentation
                     if (_auditLogController != null && _currentUser != null)
                         _auditLogController.Log(new AuditEntry
                         {
-                            Module      = "Permission",
-                            Action      = "SAVE_FOLDER_SETTINGS",
-                            UserID      = _currentUser.UserID,
-                            TableName   = "Folder",
-                            RecordID    = _folder.FolderID,
-                            NewValue    = string.Format("Name:{0} Level:{1} Inherit:{2}",
+                            Module = "Permission",
+                            Action = "SAVE_FOLDER_SETTINGS",
+                            UserID = _currentUser.UserID,
+                            TableName = "Folder",
+                            RecordID = _folder.FolderID,
+                            NewValue = string.Format("Name:{0} Level:{1} Inherit:{2}",
                                              _folder.FolderName, _folder.ConfidentialityLevel, _folder.InheritPermission),
                             MachineName = _currentUser.MachineName,
-                            IPAddress   = _currentUser.IPAddress,
-                            SessionID   = _currentUser.SessionID,
-                            Result      = 1,
-                            AuditDate   = DateTime.Now
+                            IPAddress = _currentUser.IPAddress,
+                            SessionID = _currentUser.SessionID,
+                            Result = 1,
+                            AuditDate = DateTime.Now
                         });
                 }
 
@@ -1573,7 +1576,7 @@ namespace CMS.Presentation
         {
             bool[] permissionChecked = new bool[5];
             int principalType = 1;
-            int principalId   = 0;
+            int principalId = 0;
 
             // ShowPermissionDialog returns dlg with Tag = List<OrgUnitSelection> when multi-org selected
             List<OrgUnitSelection> multiOrg = null;
@@ -1626,15 +1629,15 @@ namespace CMS.Presentation
 
             return new SetPermissionRequest
             {
-                FolderID       = folderId,
-                PrincipalType  = principalType,
-                PrincipalID    = principalId,
-                CanRead        = permissions[0],
-                CanWrite       = permissions[1],
-                CanDelete      = permissions[2],
-                CanModify      = permissions[3],
+                FolderID = folderId,
+                PrincipalType = principalType,
+                PrincipalID = principalId,
+                CanRead = permissions[0],
+                CanWrite = permissions[1],
+                CanDelete = permissions[2],
+                CanModify = permissions[3],
                 CanFullControl = false,
-                IsDeny         = false  // Always Allow since we removed Deny option
+                IsDeny = false  // Always Allow since we removed Deny option
             };
         }
 
@@ -1645,18 +1648,18 @@ namespace CMS.Presentation
             List<OrgUnitSelection> multiOrg;
             if (!ShowPermissionDialog(folderId, existing, out permissionChecked, out pt, out pid, out multiOrg))
                 return null;
-            
+
             return new SetPermissionRequest
             {
-                FolderID       = folderId,
-                PrincipalType  = (PrincipalType)pt,
-                PrincipalID    = pid,
-                CanRead        = permissionChecked[0],
-                CanWrite       = permissionChecked[1],
-                CanDelete      = permissionChecked[2],
-                CanModify      = permissionChecked[3],
+                FolderID = folderId,
+                PrincipalType = (PrincipalType)pt,
+                PrincipalID = pid,
+                CanRead = permissionChecked[0],
+                CanWrite = permissionChecked[1],
+                CanDelete = permissionChecked[2],
+                CanModify = permissionChecked[3],
                 CanFullControl = false,
-                IsDeny         = false  // Always Allow since we removed Deny option
+                IsDeny = false  // Always Allow since we removed Deny option
             };
         }
 
@@ -1667,39 +1670,39 @@ namespace CMS.Presentation
             multiOrg = null;
             using (var dlg = new Form())
             {
-                dlg.Text            = "🔒 เพิ่ม/แก้ไข Permission";
-                dlg.ClientSize      = new Size(460, 530);
+                dlg.Text = "🔒 เพิ่ม/แก้ไข Permission";
+                dlg.ClientSize = new Size(460, 530);
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.StartPosition   = FormStartPosition.CenterParent;
-                dlg.MaximizeBox     = false;
-                dlg.MinimizeBox     = false;
-                dlg.BackColor       = Color.White;
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+                dlg.BackColor = Color.White;
 
                 // ── Header bar (navy) ────────────────────────────────────────
                 var pnlHdr = new Panel
                 {
-                    Location  = new Point(0, 0),
-                    Size      = new Size(460, 44),
+                    Location = new Point(0, 0),
+                    Size = new Size(460, 44),
                     BackColor = Color.FromArgb(31, 56, 100)
                 };
                 var lblHdrTitle = new Label
                 {
-                    Text      = "🔒 เพิ่ม/แก้ไข Permission",
-                    Location  = new Point(12, 0),
-                    Size      = new Size(400, 44),
-                    Font      = new Font("Segoe UI", 10, FontStyle.Bold),
+                    Text = "🔒 เพิ่ม/แก้ไข Permission",
+                    Location = new Point(12, 0),
+                    Size = new Size(400, 44),
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     ForeColor = Color.White,
                     TextAlign = ContentAlignment.MiddleLeft
                 };
                 var btnHdrClose = new Button
                 {
-                    Text        = "✕",
-                    Location    = new Point(416, 0),
-                    Size        = new Size(44, 44),
-                    FlatStyle   = FlatStyle.Flat,
-                    ForeColor   = Color.White,
-                    BackColor   = Color.Transparent,
-                    Font        = new Font("Segoe UI", 11, FontStyle.Bold),
+                    Text = "✕",
+                    Location = new Point(416, 0),
+                    Size = new Size(44, 44),
+                    FlatStyle = FlatStyle.Flat,
+                    ForeColor = Color.White,
+                    BackColor = Color.Transparent,
+                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
                     DialogResult = DialogResult.Cancel
                 };
                 btnHdrClose.FlatAppearance.BorderSize = 0;
@@ -1710,33 +1713,33 @@ namespace CMS.Presentation
                 // ── Folder info box ──────────────────────────────────────────
                 var pnlFolder = new Panel
                 {
-                    Location    = new Point(12, 52),
-                    Size        = new Size(436, 36),
-                    BackColor   = Color.FromArgb(232, 240, 254),
+                    Location = new Point(12, 52),
+                    Size = new Size(436, 36),
+                    BackColor = Color.FromArgb(232, 240, 254),
                     BorderStyle = BorderStyle.FixedSingle
                 };
                 string folderPath = _folder != null ? _folder.Name : "—";
-                int    confLevel  = _folder != null ? _folder.ConfidentialityLevel : 3;
-                string badgeText  = ConfidentialityBadge(confLevel);
+                int confLevel = _folder != null ? _folder.ConfidentialityLevel : 3;
+                string badgeText = ConfidentialityBadge(confLevel);
 
                 var lblFolderPath = new Label
                 {
-                    Text      = "Folder:  " + folderPath,
-                    Location  = new Point(8, 0),
-                    Size      = new Size(340, 34),
-                    Font      = new Font("Segoe UI", 9, FontStyle.Bold),
+                    Text = "Folder:  " + folderPath,
+                    Location = new Point(8, 0),
+                    Size = new Size(340, 34),
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
                     ForeColor = Color.FromArgb(31, 56, 100),
                     TextAlign = ContentAlignment.MiddleLeft
                 };
                 var lblBadge = new Label
                 {
-                    Text      = badgeText,
-                    Location  = new Point(354, 7),
-                    AutoSize  = true,
-                    Font      = new Font("Segoe UI", 8, FontStyle.Bold),
+                    Text = badgeText,
+                    Location = new Point(354, 7),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 8, FontStyle.Bold),
                     BackColor = ConfidentialityColor(confLevel),
                     ForeColor = Color.White,
-                    Padding   = new Padding(5, 2, 5, 2)
+                    Padding = new Padding(5, 2, 5, 2)
                 };
                 pnlFolder.Controls.Add(lblFolderPath);
                 pnlFolder.Controls.Add(lblBadge);
@@ -1745,16 +1748,16 @@ namespace CMS.Presentation
                 // ── ประเภทผู้ใช้ ─────────────────────────────────────────────
                 dlg.Controls.Add(new Label
                 {
-                    Text      = "ประเภทผู้ใช้:",
-                    Location  = new Point(12, 100),
-                    AutoSize  = true,
-                    Font      = new Font("Segoe UI", 9, FontStyle.Bold),
+                    Text = "ประเภทผู้ใช้:",
+                    Location = new Point(12, 100),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
                     ForeColor = Color.FromArgb(50, 50, 50)
                 });
 
-                var rdUser  = new RadioButton { Text = "ผู้ใช้เฉพาะราย", Location = new Point(24,  122), AutoSize = true, Font = new Font("Segoe UI", 9) };
-                var rdGroup = new RadioButton { Text = "กลุ่ม/แผนก",     Location = new Point(160, 122), AutoSize = true, Font = new Font("Segoe UI", 9) };
-                var rdRole  = new RadioButton { Text = "Role",            Location = new Point(280, 122), AutoSize = true, Font = new Font("Segoe UI", 9) };
+                var rdUser = new RadioButton { Text = "ผู้ใช้เฉพาะราย", Location = new Point(24, 122), AutoSize = true, Font = new Font("Segoe UI", 9) };
+                var rdGroup = new RadioButton { Text = "กลุ่ม/แผนก", Location = new Point(160, 122), AutoSize = true, Font = new Font("Segoe UI", 9) };
+                var rdRole = new RadioButton { Text = "Role", Location = new Point(280, 122), AutoSize = true, Font = new Font("Segoe UI", 9) };
                 dlg.Controls.Add(rdUser);
                 dlg.Controls.Add(rdGroup);
                 dlg.Controls.Add(rdRole);
@@ -1762,38 +1765,38 @@ namespace CMS.Presentation
                 // ── ปุ่มเปิด OrgUnit Picker (แสดงเฉพาะตอน rdGroup checked) ──
                 var btnOrgPicker = new Button
                 {
-                    Text      = "🏢  เลือกจากโครงสร้างองค์กร...",
-                    Location  = new Point(12, 148),
-                    Size      = new Size(220, 28),
+                    Text = "🏢  เลือกจากโครงสร้างองค์กร...",
+                    Location = new Point(12, 148),
+                    Size = new Size(220, 28),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(43, 87, 154),
                     ForeColor = Color.White,
-                    Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                    Cursor    = Cursors.Hand,
-                    Visible   = false
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    Visible = false
                 };
                 btnOrgPicker.FlatAppearance.BorderSize = 0;
 
                 // Label แสดงหัวข้อรายการที่เลือก
                 var lblSelectedOrg = new Label
                 {
-                    Text      = "หน่วยงานที่เลือก:",
-                    Location  = new Point(12, 182),
-                    AutoSize  = true,
-                    Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    Text = "หน่วยงานที่เลือก:",
+                    Location = new Point(12, 182),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(50, 50, 50),
-                    Visible   = false
+                    Visible = false
                 };
 
                 // ListBox แสดงรายการที่เลือกจาก OrgUnitPickerDialog
                 var lstSelectedOrg = new ListBox
                 {
-                    Location    = new Point(12, 200),
-                    Size        = new Size(430, 60),
-                    Font        = new Font("Segoe UI", 9),
+                    Location = new Point(12, 200),
+                    Size = new Size(430, 60),
+                    Font = new Font("Segoe UI", 9),
                     BorderStyle = BorderStyle.FixedSingle,
-                    Visible     = false,
-                    BackColor   = Color.FromArgb(248, 249, 252)
+                    Visible = false,
+                    BackColor = Color.FromArgb(248, 249, 252)
                 };
 
                 // เก็บ OrgUnitSelection list ที่เลือก
@@ -1828,14 +1831,14 @@ namespace CMS.Presentation
                                     // สร้าง OrgUnit stub เพื่อให้ OrgUnitSelection.OrgUnit ไม่เป็น null
                                     var orgUnitStub = new CMS.Domain.Models.OrgUnit
                                     {
-                                        OrgUnitID   = sel.Id,
+                                        OrgUnitID = sel.Id,
                                         OrgUnitCode = sel.Code,
                                         OrgUnitNameTH = sel.NameTh
                                     };
                                     pickedOrgUnits.Add(new OrgUnitSelection
                                     {
-                                        OrgUnit       = orgUnitStub,
-                                        DisplayName   = string.Format("[{0}] {1}", sel.Code, sel.NameTh),
+                                        OrgUnit = orgUnitStub,
+                                        DisplayName = string.Format("[{0}] {1}", sel.Code, sel.NameTh),
                                         PrincipalType = sel.Type == "Division" ? 4 : 3
                                     });
                                     lstSelectedOrg.Items.Add(string.Format("[{0}] {1}", sel.Code, sel.NameTh));
@@ -1866,54 +1869,177 @@ namespace CMS.Presentation
                 // ── เลือกหน่วยงาน / ผู้ใช้ ──────────────────────────────────
                 var lblSelect = new Label
                 {
-                    Text      = "เลือกหน่วยงาน:",
-                    Location  = new Point(12, 158),
-                    AutoSize  = true,
-                    Font      = new Font("Segoe UI", 9),
+                    Text = "เลือกหน่วยงาน:",
+                    Location = new Point(12, 158),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9),
                     ForeColor = Color.FromArgb(50, 50, 50)
                 };
                 var cboSelect = new ComboBox
                 {
-                    Location      = new Point(132, 154),
-                    Size          = new Size(240, 24),
+                    Location = new Point(132, 154),
+                    Size = new Size(240, 24),
                     DropDownStyle = ComboBoxStyle.DropDown,
-                    Font          = new Font("Segoe UI", 9)
+                    Font = new Font("Segoe UI", 9)
                 };
 
                 // ── ปุ่มค้นหาพนักงาน (Employee API) ─────────────────────────
                 var btnSearchEmp = new Button
                 {
-                    Text      = "🔍 ค้นหา",
-                    Location  = new Point(378, 152),
-                    Size      = new Size(70, 26),
+                    Text = "🔍 ค้นหา",
+                    Location = new Point(378, 152),
+                    Size = new Size(70, 26),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(43, 87, 154),
                     ForeColor = Color.White,
-                    Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                    Cursor    = Cursors.Hand,
-                    Visible   = false   // แสดงเฉพาะตอน rdUser checked
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    Visible = false   // แสดงเฉพาะตอน rdUser checked
                 };
                 btnSearchEmp.FlatAppearance.BorderSize = 0;
                 btnSearchEmp.Click += (s, e) =>
                 {
-                    if (_employeeApiService == null)
+                    if ((_userList == null || _userList.Count == 0) && _userAccountController != null)
                     {
-                        MessageBox.Show("Employee API service ไม่พร้อมใช้งาน",
+                        try { _userList = _userAccountController.GetAllUsers().ToList(); }
+                        catch { }
+                    }
+
+                    if (_userList == null || _userList.Count == 0)
+                    {
+                        MessageBox.Show("ไม่พบข้อมูลผู้ใช้งาน กรุณาตรวจสอบการเชื่อมต่อฐานข้อมูล",
                             "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
-                    using (var searchDlg = new EmployeeSearchDialog(new EmployeeDirectoryController(_employeeApiService)))
+
+                    using (var searchDlg = new Form())
                     {
-                        if (searchDlg.ShowDialog(dlg) == DialogResult.OK && searchDlg.SelectedEmployee != null)
+                        searchDlg.Text = "ค้นหาผู้ใช้งาน";
+                        searchDlg.ClientSize = new Size(540, 420);
+                        searchDlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        searchDlg.StartPosition = FormStartPosition.CenterParent;
+                        searchDlg.MaximizeBox = false;
+                        searchDlg.MinimizeBox = false;
+
+                        var pnlSearchHdr = new Panel { Dock = DockStyle.Top, Height = 36, BackColor = Color.FromArgb(0, 51, 102) };
+                        pnlSearchHdr.Controls.Add(new Label
                         {
-                            var emp = searchDlg.SelectedEmployee;
-                            string label = string.Format("{0} — {1} [{2}]",
-                                emp.DisplayName,
-                                emp.DepartmentNameTh ?? emp.DepartmentNameEn ?? "—",
-                                emp.EmployeeCode);
+                            Text = "🔍  ค้นหาผู้ใช้งาน",
+                            Dock = DockStyle.Fill,
+                            ForeColor = Color.White,
+                            Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                            TextAlign = ContentAlignment.MiddleLeft,
+                            Padding = new Padding(10, 0, 0, 0)
+                        });
+
+                        var pnlFt = new Panel { Dock = DockStyle.Bottom, Height = 44, BackColor = Color.FromArgb(243, 243, 243) };
+                        var lblFtCount = new Label { Dock = DockStyle.Left, Width = 150, TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(8, 0, 0, 0), Font = new Font("Segoe UI", 9f) };
+                        var btnSel = new Button
+                        {
+                            Text = "✔ เลือก",
+                            Size = new Size(90, 28),
+                            BackColor = Color.FromArgb(0, 51, 102),
+                            ForeColor = Color.White,
+                            FlatStyle = FlatStyle.Flat,
+                            Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                            Anchor = AnchorStyles.Right | AnchorStyles.Top
+                        };
+                        btnSel.FlatAppearance.BorderSize = 0;
+                        var btnCnl2 = new Button
+                        {
+                            Text = "ยกเลิก",
+                            Size = new Size(80, 28),
+                            BackColor = Color.White,
+                            ForeColor = Color.FromArgb(80, 80, 80),
+                            FlatStyle = FlatStyle.Flat,
+                            DialogResult = DialogResult.Cancel,
+                            Anchor = AnchorStyles.Right | AnchorStyles.Top
+                        };
+                        btnCnl2.FlatAppearance.BorderColor = Color.FromArgb(190, 190, 190);
+                        pnlFt.Controls.Add(lblFtCount);
+                        pnlFt.Controls.Add(btnSel);
+                        pnlFt.Controls.Add(btnCnl2);
+                        pnlFt.Resize += (ps, pe) =>
+                        {
+                            btnCnl2.Left = pnlFt.ClientSize.Width - btnCnl2.Width - 8;
+                            btnSel.Left = btnCnl2.Left - btnSel.Width - 8;
+                            btnSel.Top = btnCnl2.Top = (pnlFt.Height - btnSel.Height) / 2;
+                        };
+
+                        var pnlSrch = new Panel { Dock = DockStyle.Top, Height = 36, BackColor = Color.White, Padding = new Padding(6, 4, 6, 4) };
+                        bool isHolder = true;
+                        var txtSrch = new TextBox { Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10f), ForeColor = Color.Gray, Text = "ค้นหาชื่อผู้ใช้ ชื่อ-นามสกุล หรือแผนก..." };
+                        txtSrch.GotFocus += (ts, te) => { if (!isHolder) return; isHolder = false; txtSrch.Text = ""; txtSrch.ForeColor = Color.Black; };
+                        txtSrch.LostFocus += (ts, te) => { if (!string.IsNullOrWhiteSpace(txtSrch.Text)) return; isHolder = true; txtSrch.Text = "ค้นหาชื่อผู้ใช้ ชื่อ-นามสกุล หรือแผนก..."; txtSrch.ForeColor = Color.Gray; };
+                        pnlSrch.Controls.Add(txtSrch);
+
+                        var lv = new ListView
+                        {
+                            Dock = DockStyle.Fill,
+                            View = View.Details,
+                            FullRowSelect = true,
+                            GridLines = true,
+                            MultiSelect = false,
+                            Font = new Font("Segoe UI", 9.5f)
+                        };
+                        lv.Columns.Add("Username", 130);
+                        lv.Columns.Add("ชื่อ-นามสกุล (TH)", 170);
+                        lv.Columns.Add("แผนก / ฝ่าย", 195);
+
+                        var activeUsers = _userList.Where(u => u.IsActive).OrderBy(u => u.ADUserName).ToList();
+                        var allLvItems = activeUsers.Select(u =>
+                        {
+                            var row = new ListViewItem(u.ADUserName ?? "");
+                            string name = !string.IsNullOrEmpty(u.FullNameTh) ? u.FullNameTh : (u.DisplayName ?? "");
+                            string org = !string.IsNullOrEmpty(u.DepartmentName) ? u.DepartmentName
+                                        : (!string.IsNullOrEmpty(u.DivisionName) ? u.DivisionName : "");
+                            row.SubItems.Add(name);
+                            row.SubItems.Add(org);
+                            row.Tag = u;
+                            return row;
+                        }).ToList();
+
+                        lv.Items.AddRange(allLvItems.ToArray());
+                        lblFtCount.Text = string.Format("{0} รายการ", allLvItems.Count);
+
+                        txtSrch.TextChanged += (ts, te) =>
+                        {
+                            if (isHolder) return;
+                            string kw = txtSrch.Text.Trim().ToLower();
+                            lv.BeginUpdate();
+                            lv.Items.Clear();
+                            var filtered = string.IsNullOrEmpty(kw) ? allLvItems : allLvItems.Where(r =>
+                                r.Text.ToLower().Contains(kw) ||
+                                (r.SubItems.Count > 1 && r.SubItems[1].Text.ToLower().Contains(kw)) ||
+                                (r.SubItems.Count > 2 && r.SubItems[2].Text.ToLower().Contains(kw))).ToList();
+                            lv.Items.AddRange(filtered.ToArray());
+                            lblFtCount.Text = string.Format("{0} รายการ", filtered.Count);
+                            lv.EndUpdate();
+                        };
+
+                        Action confirmSel = () =>
+                        {
+                            if (lv.SelectedItems.Count == 0) return;
+                            var selUser = lv.SelectedItems[0].Tag as UserAccount;
+                            if (selUser == null) return;
+                            string label = string.Format("{0} — {1} (ID:{2})",
+                                selUser.ADUserName,
+                                !string.IsNullOrEmpty(selUser.FullNameTh) ? selUser.FullNameTh : selUser.DisplayName ?? "",
+                                selUser.UserID);
                             cboSelect.Text = label;
-                            cboSelect.Tag = emp;
-                        }
+                            cboSelect.Tag = selUser;
+                            searchDlg.DialogResult = DialogResult.OK;
+                            searchDlg.Close();
+                        };
+                        btnSel.Click += (bs, be) => confirmSel();
+                        lv.DoubleClick += (ls, le) => confirmSel();
+
+                        searchDlg.Controls.Add(lv);
+                        searchDlg.Controls.Add(pnlSrch);
+                        searchDlg.Controls.Add(pnlFt);
+                        searchDlg.Controls.Add(pnlSearchHdr);
+                        searchDlg.Shown += (ss, se) => txtSrch.Focus();
+                        searchDlg.ShowDialog(dlg);
                     }
                 };
 
@@ -1963,8 +2089,10 @@ namespace CMS.Presentation
                     }
                 };
 
-                rdUser.CheckedChanged  += (s, e) => {
-                    if (rdUser.Checked)  {
+                rdUser.CheckedChanged += (s, e) =>
+                {
+                    if (rdUser.Checked)
+                    {
                         lblSelect.Text = "เลือกผู้ใช้:";
                         btnSearchEmp.Visible = true;
                         btnOrgPicker.Visible = false;
@@ -1975,8 +2103,10 @@ namespace CMS.Presentation
                         reloadList(true);
                     }
                 };
-                rdGroup.CheckedChanged += (s, e) => {
-                    if (rdGroup.Checked) {
+                rdGroup.CheckedChanged += (s, e) =>
+                {
+                    if (rdGroup.Checked)
+                    {
                         lblSelect.Text = "เลือกหน่วยงาน:";
                         btnSearchEmp.Visible = false;
                         btnOrgPicker.Visible = true;
@@ -1986,8 +2116,10 @@ namespace CMS.Presentation
                         cboSelect.Visible = false;
                     }
                 };
-                rdRole.CheckedChanged  += (s, e) => {
-                    if (rdRole.Checked)  {
+                rdRole.CheckedChanged += (s, e) =>
+                {
+                    if (rdRole.Checked)
+                    {
                         lblSelect.Text = "เลือก Role:";
                         btnSearchEmp.Visible = false;
                         btnOrgPicker.Visible = false;
@@ -2004,7 +2136,7 @@ namespace CMS.Presentation
                 {
                     switch (existing.PrincipalType)
                     {
-                        case PrincipalType.User:  rdUser.Checked  = true; break;
+                        case PrincipalType.User: rdUser.Checked = true; break;
                         case PrincipalType.Department:  // Department
                         case PrincipalType.Division:  // Division
                             rdGroup.Checked = true; break;
@@ -2056,10 +2188,10 @@ namespace CMS.Presentation
                 // ── สิทธิการเข้าถึง header ────────────────────────────────
                 var lblPermHeader = new Label
                 {
-                    Text      = "สิทธิการเข้าถึง:",
-                    Location  = new Point(12, 192),
-                    AutoSize  = true,
-                    Font      = new Font("Segoe UI", 9, FontStyle.Bold),
+                    Text = "สิทธิการเข้าถึง:",
+                    Location = new Point(12, 192),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
                     ForeColor = Color.FromArgb(50, 50, 50)
                 };
                 dlg.Controls.Add(lblPermHeader);
@@ -2067,21 +2199,21 @@ namespace CMS.Presentation
                 // ── Permission table ──────────────────────────────────────────
                 var pnlPerm = new Panel
                 {
-                    Location    = new Point(12, 212),
-                    Size        = new Size(436, 177),
-                    BackColor   = Color.White,
+                    Location = new Point(12, 212),
+                    Size = new Size(436, 177),
+                    BackColor = Color.White,
                     BorderStyle = BorderStyle.FixedSingle
                 };
 
                 // Table header row
                 var pnlPermHdr = new Panel
                 {
-                    Location  = new Point(0, 0),
-                    Size      = new Size(436, 27),
+                    Location = new Point(0, 0),
+                    Size = new Size(436, 27),
                     BackColor = Color.FromArgb(240, 244, 250)
                 };
-                pnlPermHdr.Controls.Add(new Label { Text = "สิทธิ์",  Location = new Point(10, 5), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60) });
-                pnlPermHdr.Controls.Add(new Label { Text = "เลือก",   Location = new Point(320, 5), Size = new Size(60, 18), Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60), TextAlign = ContentAlignment.MiddleCenter });
+                pnlPermHdr.Controls.Add(new Label { Text = "สิทธิ์", Location = new Point(10, 5), AutoSize = true, Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60) });
+                pnlPermHdr.Controls.Add(new Label { Text = "เลือก", Location = new Point(320, 5), Size = new Size(60, 18), Font = new Font("Segoe UI", 9, FontStyle.Bold), ForeColor = Color.FromArgb(60, 60, 60), TextAlign = ContentAlignment.MiddleCenter });
                 pnlPerm.Controls.Add(pnlPermHdr);
 
                 // Row data: label, existing permission (checked if has permission and not denied)
@@ -2100,26 +2232,26 @@ namespace CMS.Presentation
                     int rowY = 28 + i * 29;
                     var rowPnl = new Panel
                     {
-                        Location  = new Point(0, rowY),
-                        Size      = new Size(434, 29),
+                        Location = new Point(0, rowY),
+                        Size = new Size(434, 29),
                         BackColor = i % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 255)
                     };
 
                     rowPnl.Controls.Add(new Label
                     {
-                        Text      = permDefs[i].Label,
-                        Location  = new Point(10, 5),
-                        Size      = new Size(280, 20),
-                        Font      = new Font("Segoe UI", 9),
+                        Text = permDefs[i].Label,
+                        Location = new Point(10, 5),
+                        Size = new Size(280, 20),
+                        Font = new Font("Segoe UI", 9),
                         ForeColor = Color.FromArgb(40, 40, 40)
                     });
 
                     // Single checkbox for permission
-                    chkPermissions[i] = new CheckBox 
-                    { 
-                        Location = new Point(335, 5), 
-                        Size = new Size(20, 20), 
-                        Checked = permDefs[i].Checked 
+                    chkPermissions[i] = new CheckBox
+                    {
+                        Location = new Point(335, 5),
+                        Size = new Size(20, 20),
+                        Checked = permDefs[i].Checked
                     };
                     rowPnl.Controls.Add(chkPermissions[i]);
                     pnlPerm.Controls.Add(rowPnl);
@@ -2130,30 +2262,30 @@ namespace CMS.Presentation
                 int expiryY = 400;
                 var lblExpiry = new Label
                 {
-                    Text      = "วันหมดอายุ:",
-                    Location  = new Point(12, expiryY + 5),
-                    AutoSize  = true,
-                    Font      = new Font("Segoe UI", 9),
+                    Text = "วันหมดอายุ:",
+                    Location = new Point(12, expiryY + 5),
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 9),
                     ForeColor = Color.FromArgb(50, 50, 50)
                 };
                 dlg.Controls.Add(lblExpiry);
                 var dtpExpiry = new DateTimePicker
                 {
                     Location = new Point(100, expiryY),
-                    Size     = new Size(154, 24),
-                    Format   = DateTimePickerFormat.Short,
-                    Font     = new Font("Segoe UI", 9),
-                    Enabled  = existing != null && existing.ExpiryDate.HasValue
+                    Size = new Size(154, 24),
+                    Format = DateTimePickerFormat.Short,
+                    Font = new Font("Segoe UI", 9),
+                    Enabled = existing != null && existing.ExpiryDate.HasValue
                 };
                 if (existing != null && existing.ExpiryDate.HasValue)
                     dtpExpiry.Value = existing.ExpiryDate.Value;
                 var chkNoExpiry = new CheckBox
                 {
-                    Text     = "ไม่มีวันหมดอายุ",
+                    Text = "ไม่มีวันหมดอายุ",
                     Location = new Point(264, expiryY + 3),
                     AutoSize = true,
-                    Font     = new Font("Segoe UI", 9),
-                    Checked  = existing == null || !existing.ExpiryDate.HasValue
+                    Font = new Font("Segoe UI", 9),
+                    Checked = existing == null || !existing.ExpiryDate.HasValue
                 };
                 chkNoExpiry.CheckedChanged += (s, e) => dtpExpiry.Enabled = !chkNoExpiry.Checked;
                 dlg.Controls.Add(dtpExpiry);
@@ -2162,50 +2294,50 @@ namespace CMS.Presentation
                 // ── Warning box ───────────────────────────────────────────────
                 var pnlWarn = new Panel
                 {
-                    Location    = new Point(12, 434),
-                    Size        = new Size(436, 34),
-                    BackColor   = Color.FromArgb(255, 248, 215),
+                    Location = new Point(12, 434),
+                    Size = new Size(436, 34),
+                    BackColor = Color.FromArgb(255, 248, 215),
                     BorderStyle = BorderStyle.FixedSingle
                 };
                 pnlWarn.Controls.Add(new Label
                 {
-                    Text      = "⚠ การเปลี่ยนแปลงนี้ต้องได้รับอนุมัติจาก Admin (เลือก = มีสิทธิ์, ไม่เลือก = ไม่มีสิทธิ์)",
-                    Dock      = DockStyle.Fill,
-                    Font      = new Font("Segoe UI", 9),
+                    Text = "⚠ การเปลี่ยนแปลงนี้ต้องได้รับอนุมัติจาก Admin (เลือก = มีสิทธิ์, ไม่เลือก = ไม่มีสิทธิ์)",
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Segoe UI", 9),
                     ForeColor = Color.FromArgb(160, 90, 0),
                     TextAlign = ContentAlignment.MiddleLeft,
-                    Padding   = new Padding(6, 0, 0, 0)
+                    Padding = new Padding(6, 0, 0, 0)
                 });
                 dlg.Controls.Add(pnlWarn);
 
                 // ── Footer buttons ────────────────────────────────────────────
                 var pnlFooter = new Panel
                 {
-                    Location  = new Point(0, 478),
-                    Size      = new Size(460, 52),
+                    Location = new Point(0, 478),
+                    Size = new Size(460, 52),
                     BackColor = Color.FromArgb(248, 250, 255)
                 };
                 var btnOk = new Button
                 {
-                    Text      = "✉ ส่งขออนุมัติ",
-                    Location  = new Point(316, 9),
-                    Size      = new Size(130, 34),
+                    Text = "✉ ส่งขออนุมัติ",
+                    Location = new Point(316, 9),
+                    Size = new Size(130, 34),
                     BackColor = Color.FromArgb(43, 87, 154),
                     ForeColor = Color.White,
                     FlatStyle = FlatStyle.Flat,
-                    Font      = new Font("Segoe UI", 9, FontStyle.Bold),
+                    Font = new Font("Segoe UI", 9, FontStyle.Bold),
                     DialogResult = DialogResult.OK
                 };
                 btnOk.FlatAppearance.BorderSize = 0;
                 var btnCnl = new Button
                 {
-                    Text      = "ยกเลิก",
-                    Location  = new Point(228, 9),
-                    Size      = new Size(80, 34),
+                    Text = "ยกเลิก",
+                    Location = new Point(228, 9),
+                    Size = new Size(80, 34),
                     BackColor = Color.White,
                     ForeColor = Color.FromArgb(80, 80, 80),
                     FlatStyle = FlatStyle.Flat,
-                    Font      = new Font("Segoe UI", 9),
+                    Font = new Font("Segoe UI", 9),
                     DialogResult = DialogResult.Cancel
                 };
                 btnCnl.FlatAppearance.BorderColor = Color.FromArgb(190, 190, 190);
@@ -2220,20 +2352,20 @@ namespace CMS.Presentation
                     int orgListExtra = lstSelectedOrg.Visible
                         ? 20 + lstSelectedOrg.Height   // lblSelectedOrg (~20px) + lstSelectedOrg
                         : 0;
-                    int permY    = 192 + orgListExtra;
+                    int permY = 192 + orgListExtra;
                     int pnlPermY = permY + 20;
-                    int expY     = pnlPermY + pnlPerm.Height + 12;
-                    int warnY    = expY + 44;
-                    int footerY  = warnY + 44;
+                    int expY = pnlPermY + pnlPerm.Height + 12;
+                    int warnY = expY + 44;
+                    int footerY = warnY + 44;
 
                     lblPermHeader.Location = new Point(12, permY);
-                    pnlPerm.Location       = new Point(12, pnlPermY);
-                    lblExpiry.Location     = new Point(12, expY + 5);
-                    dtpExpiry.Location     = new Point(100, expY);
-                    chkNoExpiry.Location   = new Point(264, expY + 3);
-                    pnlWarn.Location       = new Point(12, warnY);
-                    pnlFooter.Location     = new Point(0, footerY);
-                    dlg.ClientSize         = new Size(460, footerY + pnlFooter.Height);
+                    pnlPerm.Location = new Point(12, pnlPermY);
+                    lblExpiry.Location = new Point(12, expY + 5);
+                    dtpExpiry.Location = new Point(100, expY);
+                    chkNoExpiry.Location = new Point(264, expY + 3);
+                    pnlWarn.Location = new Point(12, warnY);
+                    pnlFooter.Location = new Point(0, footerY);
+                    dlg.ClientSize = new Size(460, footerY + pnlFooter.Height);
                 };
 
                 // คำนวณ layout เริ่มต้น (lstSelectedOrg ซ่อนอยู่)
@@ -2241,7 +2373,7 @@ namespace CMS.Presentation
 
                 // เรียก updateLayout ทุกครั้งที่ org list เปลี่ยน
                 lstSelectedOrg.VisibleChanged += (s, e) => updateLayout();
-                lstSelectedOrg.SizeChanged    += (s, e) => updateLayout();
+                lstSelectedOrg.SizeChanged += (s, e) => updateLayout();
 
                 dlg.AcceptButton = btnOk;
                 dlg.CancelButton = btnCnl;
@@ -2253,8 +2385,8 @@ namespace CMS.Presentation
                     {
                         permissionChecked = new bool[5];
                         principalType = 1;
-                        principalId   = 0;
-                        multiOrg      = null;
+                        principalId = 0;
+                        multiOrg = null;
                         return false;
                     }
 
@@ -2359,10 +2491,10 @@ namespace CMS.Presentation
                 if (rdGroup.Checked && pickedOrgUnits.Count > 0)
                 {
                     permissionChecked = new bool[] { chkPermissions[0].Checked, chkPermissions[1].Checked, chkPermissions[2].Checked, chkPermissions[3].Checked };
-                    var first     = pickedOrgUnits[0];
+                    var first = pickedOrgUnits[0];
                     principalType = first.PrincipalType;
-                    principalId   = first.OrgUnit.OrgUnitID;
-                    multiOrg      = pickedOrgUnits;
+                    principalId = first.OrgUnit.OrgUnitID;
+                    multiOrg = pickedOrgUnits;
                     return true;
                 }
 
@@ -2386,7 +2518,7 @@ namespace CMS.Presentation
 
                 // Set out parameters with per-permission checked state
                 permissionChecked = new bool[] { chkPermissions[0].Checked, chkPermissions[1].Checked, chkPermissions[2].Checked, chkPermissions[3].Checked };
-                
+
                 // Determine principalType: 1=User, 3=Department, 4=Division
                 if (rdUser.Checked)
                 {
@@ -2412,8 +2544,12 @@ namespace CMS.Presentation
         private static void AddRow(TableLayoutPanel t, string label, Control ctrl, int row)
         {
             if (!string.IsNullOrEmpty(label))
-                t.Controls.Add(new Label { Text = label, Dock = DockStyle.Fill,
-                    TextAlign = System.Drawing.ContentAlignment.MiddleLeft }, 0, row);
+                t.Controls.Add(new Label
+                {
+                    Text = label,
+                    Dock = DockStyle.Fill,
+                    TextAlign = System.Drawing.ContentAlignment.MiddleLeft
+                }, 0, row);
             t.Controls.Add(ctrl, 1, row);
         }
 
@@ -2474,14 +2610,14 @@ namespace CMS.Presentation
 
                 var newAccount = new UserAccount
                 {
-                    ADUserName   = adUserName,
-                    DisplayName  = emp.DisplayName ?? fullNameEn,
-                    Email        = null,
-                    AppRole      = 1,       // Officer (ระดับต่ำสุด)
-                    OrgUnitID    = orgUnitId,
+                    ADUserName = adUserName,
+                    DisplayName = emp.DisplayName ?? fullNameEn,
+                    Email = null,
+                    AppRole = 1,       // Officer (ระดับต่ำสุด)
+                    OrgUnitID = orgUnitId,
                     ConsentGiven = false,
-                    IsActive     = true,
-                    CreatedDate  = DateTime.Now
+                    IsActive = true,
+                    CreatedDate = DateTime.Now
                 };
 
                 int newId = _userAccountController.CreateUser(newAccount);
@@ -2504,7 +2640,7 @@ namespace CMS.Presentation
         private static string ExtractEnglishName(string displayName)
         {
             if (string.IsNullOrEmpty(displayName)) return string.Empty;
-            int open  = displayName.LastIndexOf('(');
+            int open = displayName.LastIndexOf('(');
             int close = displayName.LastIndexOf(')');
             if (open >= 0 && close > open)
                 return displayName.Substring(open + 1, close - open - 1).Trim();
@@ -2562,13 +2698,13 @@ namespace CMS.Presentation
         // ── Helper class สำหรับ dropdown แผนก/ฝ่าย ─────────────────────────
         private class OrgUnitItem
         {
-            public int    PrincipalType { get; private set; }
-            public int    Id            { get; private set; }
-            public string Name          { get; private set; }
+            public int PrincipalType { get; private set; }
+            public int Id { get; private set; }
+            public string Name { get; private set; }
             public OrgUnitItem(int principalType, int id, string name)
             {
                 PrincipalType = principalType;
-                Id   = id;
+                Id = id;
                 Name = name;
             }
             public override string ToString() { return Name; }

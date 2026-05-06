@@ -35,6 +35,7 @@ namespace CMS.Presentation
         }
 
         private readonly IFileUploadController _fileUploadController;
+        private readonly IAuditLogController _auditLogController;
 
         private int     _folderId;
         private readonly UserContext _user;
@@ -54,6 +55,7 @@ namespace CMS.Presentation
         private const int ICON_X       = 12;
         private const int NAME_X       = 50;
         private const int RIGHT_MARGIN = 12;
+        private const int MAX_FILES_PER_UPLOAD = 40;
 
         // ── Constructor ───────────────────────────────────────────────────────
 
@@ -61,7 +63,8 @@ namespace CMS.Presentation
             IFileUploadController fileUploadController,
             UserContext    user,
             Folder         targetFolder,
-            IUploadCheckpointController checkpointController = null)
+            IUploadCheckpointController checkpointController = null,
+            IAuditLogController auditLogController = null)
         {
             if (fileUploadController == null) throw new ArgumentNullException("fileUploadController");
             if (user          == null) throw new ArgumentNullException("user");
@@ -72,6 +75,7 @@ namespace CMS.Presentation
             _selectedFolder    = targetFolder;
             _folderId          = targetFolder.FolderID;
             _checkpointController = checkpointController;
+            _auditLogController = auditLogController;
 
             InitializeComponent();
 
@@ -176,8 +180,11 @@ namespace CMS.Presentation
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            if (files.Length > 10) Array.Resize(ref files, 10);
-            LoadFilesIntoList(files);
+            string[] validated;
+            if (!TryValidateMaxFilesPerUpload(files, "DragDrop", out validated))
+                return;
+
+            LoadFilesIntoList(validated);
         }
 
         // ── BackgroundWorker ──────────────────────────────────────────────────
@@ -250,7 +257,7 @@ namespace CMS.Presentation
         {
             using (var dlg = new OpenFileDialog())
             {
-                dlg.Title       = "เลือกไฟล์ที่ต้องการอัพโหลด (สูงสุด 10 ไฟล์)";
+                dlg.Title       = string.Format("เลือกไฟล์ที่ต้องการอัพโหลด (สูงสุด {0} ไฟล์)", MAX_FILES_PER_UPLOAD);
                 dlg.Multiselect = true;
                 dlg.Filter      =
                     "Permitted files|*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.ppt;*.pptx;" +
@@ -258,14 +265,70 @@ namespace CMS.Presentation
 
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
-                string[] paths = dlg.FileNames;
-                if (paths.Length > 10)
+                string[] validated;
+                if (!TryValidateMaxFilesPerUpload(dlg.FileNames, "FileDialog", out validated))
+                    return;
+
+                LoadFilesIntoList(validated);
+            }
+        }
+
+        private bool TryValidateMaxFilesPerUpload(string[] paths, string source, out string[] validatedPaths)
+        {
+            if (paths == null || paths.Length == 0)
+            {
+                validatedPaths = Array.Empty<string>();
+                return false;
+            }
+
+            if (paths.Length <= MAX_FILES_PER_UPLOAD)
+            {
+                validatedPaths = paths;
+                return true;
+            }
+
+            LogUploadLimitExceeded(paths.Length, source);
+
+            MessageBox.Show(
+                string.Format(
+                    "เลือกไฟล์มา {0} ไฟล์ ซึ่งเกินเงื่อนไขที่กำหนด (สูงสุด {1} ไฟล์ต่อครั้ง)\n\nกรุณาเลือกใหม่ไม่เกิน {1} ไฟล์",
+                    paths.Length,
+                    MAX_FILES_PER_UPLOAD),
+                "เกินเงื่อนไขจำนวนไฟล์",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+
+            validatedPaths = Array.Empty<string>();
+            return false;
+        }
+
+        private void LogUploadLimitExceeded(int selectedCount, string source)
+        {
+            if (_auditLogController == null || _user == null)
+                return;
+
+            try
+            {
+                _auditLogController.Log(new AuditEntry
                 {
-                    MessageBox.Show("เลือกได้สูงสุด 10 ไฟล์ต่อครั้ง", "ไฟล์มากเกินไป",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    Array.Resize(ref paths, 10);
-                }
-                LoadFilesIntoList(paths);
+                    Module = "File",
+                    Action = "UPLOAD_FILE_LIMIT_EXCEEDED",
+                    UserID = _user.UserID,
+                    UserName = _user.ADUserName,
+                    UserRole = _user.AppRole,
+                    TableName = "FileUpload",
+                    RecordID = _folderId > 0 ? (int?)_folderId : null,
+                    NewValue = string.Format("Source:{0}; Selected:{1}; MaxAllowed:{2}", source ?? "Unknown", selectedCount, MAX_FILES_PER_UPLOAD),
+                    Result = 2,
+                    MachineName = _user.MachineName,
+                    IPAddress = _user.IPAddress,
+                    SessionID = _user.SessionID,
+                    AuditDate = DateTime.Now
+                });
+            }
+            catch
+            {
+                // Keep UI flow responsive even when audit logging fails.
             }
         }
 
@@ -281,6 +344,44 @@ namespace CMS.Presentation
             if (_folderId <= 0 || _selectedFolder == null) { ShowError("ไม่พบข้อมูล Folder ปลายทาง"); return; }
             if (_pendingFiles.Count == 0)                  { ShowError("กรุณาเลือกไฟล์ที่ต้องการอัพโหลด"); return; }
             if (_fileUploadController == null)             { ShowError("บริการอัพโหลดไม่พร้อม"); return; }
+
+            // ── ตรวจสอบไฟล์ซ้ำก่อนเริ่ม upload ─────────────────────────────
+            var fileNames  = _pendingFiles.Select(f => f.FileName);
+            var duplicates = _fileUploadController
+                                 .FindDuplicateNames(fileNames, _folderId, _user)
+                                 .ToList();
+
+            if (duplicates.Count > 0)
+            {
+                DuplicateFileChoiceDialog.Choice choice;
+                using (var dialog = new DuplicateFileChoiceDialog(
+                    _selectedFolder != null ? _selectedFolder.FolderName : "Folder ปลายทาง",
+                    duplicates))
+                {
+                    if (dialog.ShowDialog(this) != DialogResult.OK)
+                        return;
+
+                    choice = dialog.SelectedChoice;
+                }
+
+                if (choice == DuplicateFileChoiceDialog.Choice.Cancel)
+                    return;
+
+                if (choice == DuplicateFileChoiceDialog.Choice.SkipDuplicates)
+                {
+                    // ข้ามไฟล์ซ้ำออก — อัพโหลดเฉพาะไฟล์ที่ไม่ซ้ำ
+                    var dupSet = new System.Collections.Generic.HashSet<string>(
+                        duplicates, StringComparer.OrdinalIgnoreCase);
+                    _pendingFiles.RemoveAll(f => dupSet.Contains(f.FileName));
+
+                    if (_pendingFiles.Count == 0)
+                    {
+                        ShowError("ไม่มีไฟล์ที่จะอัพโหลด (ทุกไฟล์ซ้ำกับไฟล์ในโฟลเดอร์)");
+                        return;
+                    }
+                }
+                // SaveCopy → ดำเนินการต่อโดย FileService จะตั้งชื่อ copy อัตโนมัติ
+            }
 
             // Req 10.1 — save checkpoint for each file before starting
             if (_checkpointController != null)

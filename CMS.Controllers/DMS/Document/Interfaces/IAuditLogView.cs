@@ -22,6 +22,11 @@ namespace CMS.Controllers.DMS.Document
         void ShowStatus(string message, bool isError);
         void ShowDetail(AuditLog entry);
 
+        /// <summary>
+        /// Shows a SaveFileDialog and returns the chosen path, or null if cancelled.
+        /// </summary>
+        string PromptSaveFilePath(string defaultFileName);
+
         // ── Pagination ────────────────────────────────────────────────────────
         int  CurrentPage { get; set; }
         int  PageSize    { get; }

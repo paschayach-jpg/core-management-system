@@ -73,6 +73,8 @@ namespace CMS.Presentation
                 btnDeactivate.ToolTipText = "เฉพาะ Admin เท่านั้น";
             }
 
+            SetupTreeViewContextMenu(isAdmin);
+
             // placeholder สี
             txtSearch.ForeColor = Color.Gray;
 
@@ -374,11 +376,21 @@ namespace CMS.Presentation
                 }
             }
 
-            // Step 4: เปิด dialog สร้างหน่วยงาน พร้อมส่ง context ของ selected node
-            using (var dlg = new CreateOrgUnitDialog(_allUnits, null, null, selectedParent: selectedOrgUnit, authorityOrgLookupController: _authorityOrgLookupController))
+            // Step 4: เปิด dialog สร้างหน่วยงาน — SubCommittee ไม่มี parent ให้ nullify context
+            OrgUnit parentForDialog = selectedTier.Value == OrgUnitTier.SubCommittee ? null : selectedOrgUnit;
+            using (var dlg = new CreateOrgUnitDialog(_allUnits, null, selectedTier, selectedParent: parentForDialog, authorityOrgLookupController: _authorityOrgLookupController))
             {
-                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.Result != null)
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                if (dlg.BatchResults != null && dlg.BatchResults.Count > 0)
+                {
+                    foreach (var req in dlg.BatchResults)
+                        _presenter.CreateOrgUnit(req);
+                }
+                else if (dlg.Result != null)
+                {
                     _presenter.CreateOrgUnit(dlg.Result);
+                }
             }
         }
 
@@ -435,9 +447,10 @@ namespace CMS.Presentation
                 }
                 else if (selectedParent.Tier == OrgUnitTier.SubCommittee)
                 {
-                    // Parent เป็น SubCommittee - สร้างได้แค่ Division
+                    // Parent เป็น SubCommittee - สร้างฝ่ายใต้ SubCommittee นี้ หรือสร้าง SubCommittee ใหม่
                     availableTiers.Add(OrgUnitTier.Division);
-                    result = OrgUnitTier.Division; // Set default
+                    availableTiers.Add(OrgUnitTier.SubCommittee);
+                    result = OrgUnitTier.Division; // Set default เป็น Division
                 }
                 else if (selectedParent.Tier == OrgUnitTier.Division)
                 {
@@ -851,6 +864,61 @@ namespace CMS.Presentation
                 chk3NC.Checked = false;
                 FilterByConfidentialityLevel(ConfidentialityLevel.PC);
             }
+        }
+
+        // ── Right-click context menu ──────────────────────────────────────────
+        private void SetupTreeViewContextMenu(bool isAdmin)
+        {
+            var ctx = new ContextMenuStrip();
+            ctx.Font = new Font("Segoe UI", 9.5f);
+
+            var mnuAdd = new ToolStripMenuItem("+ เพิ่มหน่วยงาน");
+            mnuAdd.Enabled = isAdmin;
+            mnuAdd.Click  += (s, e) => btnCreate_Click(s, e);
+
+            var mnuEdit = new ToolStripMenuItem("✏ แก้ไขชื่อ");
+            mnuEdit.Enabled = isAdmin;
+            mnuEdit.Click  += (s, e) => btnEdit_Click(s, e);
+
+            var mnuMove = new ToolStripMenuItem("↕ ย้าย");
+            mnuMove.Enabled = isAdmin;
+            mnuMove.Click  += (s, e) => btnMove_Click(s, e);
+
+            var mnuDelete = new ToolStripMenuItem("🗑 ลบ");
+            mnuDelete.Enabled = isAdmin;
+            mnuDelete.ForeColor = isAdmin ? Color.Firebrick : SystemColors.GrayText;
+            mnuDelete.Click  += (s, e) => btnDelete_Click(s, e);
+
+            var mnuDeactivate = new ToolStripMenuItem("⛔ ปิดใช้งาน");
+            mnuDeactivate.Enabled = isAdmin;
+            mnuDeactivate.Click  += (s, e) => btnDeactivate_Click(s, e);
+
+            ctx.Items.Add(mnuAdd);
+            ctx.Items.Add(new ToolStripSeparator());
+            ctx.Items.Add(mnuEdit);
+            ctx.Items.Add(mnuMove);
+            ctx.Items.Add(new ToolStripSeparator());
+            ctx.Items.Add(mnuDelete);
+            ctx.Items.Add(mnuDeactivate);
+
+            // เลือก node ที่ right-click ก่อนเปิด menu
+            treeView.NodeMouseClick += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right)
+                    treeView.SelectedNode = e.Node;
+            };
+
+            // ปรับ enable/disable ตาม node ที่เลือกก่อนแสดง menu
+            ctx.Opening += (s, e) =>
+            {
+                bool hasSelection = treeView.SelectedNode?.Tag is OrgUnit;
+                mnuEdit.Enabled      = isAdmin && hasSelection;
+                mnuMove.Enabled      = isAdmin && hasSelection;
+                mnuDelete.Enabled    = isAdmin && hasSelection;
+                mnuDeactivate.Enabled = isAdmin && hasSelection;
+            };
+
+            treeView.ContextMenuStrip = ctx;
         }
 
         private void FilterByConfidentialityLevel(ConfidentialityLevel level)

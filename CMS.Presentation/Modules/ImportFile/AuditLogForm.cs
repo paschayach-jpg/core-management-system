@@ -32,15 +32,21 @@ namespace CMS.Presentation
 
         public string FilterModule
         {
-            get { return cmbModule.SelectedItem != null && cmbModule.SelectedItem.ToString() != "(ทั้งหมด)"
-                    ? cmbModule.SelectedItem.ToString() : null; }
+            get
+            {
+                return cmbModule.SelectedItem != null && cmbModule.SelectedItem.ToString() != "(ทั้งหมด)"
+                    ? cmbModule.SelectedItem.ToString() : null;
+            }
             set { cmbModule.SelectedItem = value; }
         }
 
         public string FilterAction
         {
-            get { return cmbAction.SelectedItem != null && cmbAction.SelectedItem.ToString() != "(ทั้งหมด)"
-                    ? cmbAction.SelectedItem.ToString() : null; }
+            get
+            {
+                return cmbAction.SelectedItem != null && cmbAction.SelectedItem.ToString() != "(ทั้งหมด)"
+                    ? cmbAction.SelectedItem.ToString() : null;
+            }
             set { cmbAction.SelectedItem = value; }
         }
 
@@ -52,15 +58,18 @@ namespace CMS.Presentation
 
         public string FilterResult
         {
-            get { return cmbResult.SelectedItem != null && cmbResult.SelectedItem.ToString() != "(ทั้งหมด)"
-                    ? cmbResult.SelectedItem.ToString() : null; }
+            get
+            {
+                return cmbResult.SelectedItem != null && cmbResult.SelectedItem.ToString() != "(ทั้งหมด)"
+                    ? cmbResult.SelectedItem.ToString() : null;
+            }
             set { cmbResult.SelectedItem = value; }
         }
 
         // ── IAuditLogView — pagination ────────────────────────────────────────
 
         public int CurrentPage { get; set; } = 1;
-        public int PageSize    { get { return 50; } }
+        public int PageSize { get { return 50; } }
 
         // ── IAuditLogView — events ────────────────────────────────────────────
 
@@ -73,7 +82,7 @@ namespace CMS.Presentation
         public AuditLogForm(IAuditService auditService, UserContext user)
         {
             if (auditService == null) throw new ArgumentNullException("auditService");
-            if (user         == null) throw new ArgumentNullException("user");
+            if (user == null) throw new ArgumentNullException("user");
 
             InitializeComponent();
             PopulateFilterDropdowns();
@@ -92,8 +101,8 @@ namespace CMS.Presentation
                 var item = new ListViewItem(log.AuditID.ToString());
                 item.SubItems.Add(log.AuditDate.ToString("dd/MM/yy HH:mm:ss"));
                 item.SubItems.Add(log.UserName ?? "");
-                item.SubItems.Add(log.Module   ?? "");
-                item.SubItems.Add(log.Action   ?? "");
+                item.SubItems.Add(log.Module ?? "");
+                item.SubItems.Add(log.Action ?? "");
                 item.SubItems.Add(log.TableName ?? "");
                 item.SubItems.Add(log.RecordID.HasValue ? log.RecordID.Value.ToString() : "");
                 item.SubItems.Add(log.Outcome);
@@ -124,13 +133,13 @@ namespace CMS.Presentation
             totalPages = Math.Max(1, totalPages);
 
             lblPageInfo.Text = string.Format("หน้า {0} / {1}", pageNumber, totalPages);
-            btnPrev.Enabled  = pageNumber > 1;
-            btnNext.Enabled  = pageNumber < totalPages;
+            btnPrev.Enabled = pageNumber > 1;
+            btnNext.Enabled = pageNumber < totalPages;
         }
 
         public void ShowStatus(string message, bool isError)
         {
-            lblStatus.Text      = message;
+            lblStatus.Text = message;
             lblStatus.ForeColor = isError ? Color.DarkRed : Color.FromArgb(31, 56, 100);
         }
 
@@ -139,7 +148,7 @@ namespace CMS.Presentation
             if (entry == null) return;
 
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine("── รายละเอียด Audit Log ──────────────────────────");
+            sb.AppendLine("-- รายละเอียด Audit Log ----------------------------------");
             sb.AppendLine(string.Format("AuditID    : {0}", entry.AuditID));
             sb.AppendLine(string.Format("วันที่เวลา : {0}", entry.AuditDate.ToString("dd/MM/yyyy HH:mm:ss")));
             sb.AppendLine(string.Format("ผู้ใช้     : {0} (ID: {1})", entry.UserName, entry.UserID));
@@ -155,21 +164,21 @@ namespace CMS.Presentation
             if (!string.IsNullOrEmpty(entry.OldValue))
             {
                 sb.AppendLine();
-                sb.AppendLine("── ค่าเดิม ──────────────────────────────────────");
+                sb.AppendLine("-- ค่าเดิม -----------------------------------------------");
                 sb.AppendLine(entry.OldValue);
             }
 
             if (!string.IsNullOrEmpty(entry.NewValue))
             {
                 sb.AppendLine();
-                sb.AppendLine("── ค่าใหม่ ──────────────────────────────────────");
+                sb.AppendLine("-- ค่าใหม่ -----------------------------------------------");
                 sb.AppendLine(entry.NewValue);
             }
 
             if (!string.IsNullOrEmpty(entry.ErrorMessage))
             {
                 sb.AppendLine();
-                sb.AppendLine("── ข้อความผิดพลาด ───────────────────────────────");
+                sb.AppendLine("-- ข้อความผิดพลาด ----------------------------------------");
                 sb.AppendLine(entry.ErrorMessage);
             }
 
@@ -213,14 +222,28 @@ namespace CMS.Presentation
 
         private void btnClearFilter_Click(object sender, EventArgs e)
         {
-            dtpFrom.Value          = DateTime.Today.AddDays(-7);
-            dtpTo.Value            = DateTime.Today;
+            dtpFrom.Value = DateTime.Today.AddDays(-7);
+            dtpTo.Value = DateTime.Today;
             cmbModule.SelectedIndex = 0;
             cmbAction.SelectedIndex = 0;
             cmbResult.SelectedIndex = 0;
-            txtUserName.Text        = "";
-            CurrentPage             = 1;
+            txtUserName.Text = "";
+            CurrentPage = 1;
             SearchRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        public string PromptSaveFilePath(string defaultFileName)
+        {
+            using (var dlg = new SaveFileDialog())
+            {
+                dlg.Title = "ส่งออก Audit Log เป็น CSV";
+                dlg.FileName = defaultFileName;
+                dlg.Filter = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*";
+                dlg.DefaultExt = "csv";
+                dlg.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+                return dlg.ShowDialog(this) == DialogResult.OK ? dlg.FileName : null;
+            }
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────

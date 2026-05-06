@@ -110,7 +110,16 @@ namespace CMS.Presentation
                         return ShowTargetForm(context, new AccessLogView(context.ShareManagementController, context.User, 0));
 
                     case "AuditLog":
-                        return ShowTargetForm(context, new AuditLogForm(context.AuditService, context.User));
+                        if (!TryRequestMdiAction(context, "AuditLog"))
+                        {
+                            if (context.AuditService == null)
+                            {
+                                MessageBox.Show("Audit service is not available in this context.", "Audit Log", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return true;
+                            }
+                            return ShowTargetForm(context, new AuditLogForm(context.AuditService, context.User));
+                        }
+                        return true;
 
                     case "ConfigAdmin":
                         if (!TryRequestMdiAction(context, "ConfigAdmin"))
@@ -184,6 +193,41 @@ namespace CMS.Presentation
                         if (!TryRequestMdiAction(context, "KBCategoryForm"))
                             MessageBox.Show("กรุณาเปิด KB Category Form ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
+
+                    case "WorkflowDashboard":
+                        if (!TryRequestMdiAction(context, "WorkflowDashboard"))
+                            MessageBox.Show("กรุณาเปิด Workflow Dashboard ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowDetail":
+                        if (!TryRequestMdiAction(context, "WorkflowDetail"))
+                            MessageBox.Show("กรุณาเปิด Workflow Detail ผ่าน MDI Container", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowTemplateList":
+                        if (!TryRequestMdiAction(context, "WorkflowTemplateList"))
+                            MessageBox.Show("กรุณาเปิด Workflow Template List ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowDelegation":
+                        if (!TryRequestMdiAction(context, "WorkflowDelegation"))
+                            MessageBox.Show("กรุณาเปิด Workflow Delegation ผ่าน MDI Container", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "SLAReport":
+                        if (!TryRequestMdiAction(context, "SLAReport"))
+                            MessageBox.Show("กรุณาเปิด SLA Report ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowMonitor":
+                        if (!TryRequestMdiAction(context, "WorkflowMonitor"))
+                            MessageBox.Show("กรุณาเปิด Workflow Monitor ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "WorkflowVisualFlow":
+                        if (!TryRequestMdiAction(context, "WorkflowVisualFlow"))
+                            MessageBox.Show("กรุณาเปิด Workflow Visual Flow ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
                 }
             }
             catch (Exception ex)
@@ -249,8 +293,17 @@ namespace CMS.Presentation
                             MessageBox.Show("Org structure service is not available for internal sharing in this context.", "Share", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return true;
                         }
-                        using (var dlg = new ShareDialogInternal(context.ShareCommandController, context.UserAccountLookupController, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), context.User, context.SelectedFile, context.SelectedFolder))
+                        using (var dlg = new ShareDialogInternal(
+                            context.ShareCommandController,
+                            context.UserAccountLookupController,
+                            context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService),
+                            context.User,
+                            context.FolderReadLookupController,
+                            context.SelectedFile,
+                            context.SelectedFolder))
+                        {
                             dlg.ShowDialog(context.Owner);
+                        }
                     }
                     else
                     {

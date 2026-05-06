@@ -30,6 +30,8 @@ namespace CMS.Services
         private readonly INotificationService _notificationService;
         private readonly IAuditService _auditService;
         private readonly ILoggingService _loggingService;
+        private readonly IApprovalRepository _approvalRepository;
+        private readonly IUserAccountRepository _userAccountRepository;
 
         public ShareService(
             IExternalShareRepository externalShareRepository,
@@ -43,7 +45,9 @@ namespace CMS.Services
             IPermissionService permissionService,
             INotificationService notificationService,
             IAuditService auditService,
-            ILoggingService loggingService)
+            ILoggingService loggingService,
+            IApprovalRepository approvalRepository = null,
+            IUserAccountRepository userAccountRepository = null)
         {
             if (externalShareRepository == null) throw new ArgumentNullException("externalShareRepository");
             if (shareTokenRepository == null) throw new ArgumentNullException("shareTokenRepository");
@@ -70,6 +74,8 @@ namespace CMS.Services
             _notificationService = notificationService;
             _auditService = auditService;
             _loggingService = loggingService;
+            _approvalRepository = approvalRepository;
+            _userAccountRepository = userAccountRepository;
         }
 
         // =====================================================================
@@ -278,6 +284,66 @@ namespace CMS.Services
                     targetName, token, request.ExpiryDate?.ToString("yyyy-MM-dd") ?? "None", request.DownloadLimit ?? 0)
             });
 
+            // Create ApprovalRequest so managers can approve in Approval Inbox
+            if (_approvalRepository != null && _userAccountRepository != null)
+            {
+                var approvers = _userAccountRepository.GetByRole(3) // Manager
+                    .Where(a => a.IsActive && a.UserID != user.UserID)
+                    .ToList();
+                if (!approvers.Any())
+                    approvers = _userAccountRepository.GetByRole(4) // Admin fallback
+                        .Where(a => a.IsActive)
+                        .ToList();
+
+                if (approvers.Any())
+                {
+                    var approvalRequest = new Domain.Models.ApprovalRequest
+                    {
+                        RequestType   = "EXTERNAL_SHARE",
+                        FileID        = request.FileID,
+                        FolderID      = request.FolderID,
+                        RequestedBy   = user.UserID,
+                        RequestedDate = DateTime.Now,
+                        RequestStatus = 1, // Pending
+                        Subject       = string.Format("ขออนุมัติแชร์ภายนอก: {0}", targetName),
+                        Remark        = string.Format("ExternalShareID:{0}", shareId),
+                        ExpiryDate    = DateTime.Now.AddDays(PendingApprovalExpiryDays)
+                    };
+                    int approvalId;
+                    try
+                    {
+                        approvalId = _approvalRepository.InsertRequest(approvalRequest);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Backward compatibility: old DB constraint may not include EXTERNAL_SHARE.
+                        bool isRequestTypeConstraint = ex.Message != null &&
+                            ex.Message.IndexOf("CK_wf_ApprovalRequest_Type", StringComparison.OrdinalIgnoreCase) >= 0;
+                        if (!isRequestTypeConstraint)
+                            throw;
+
+                        _loggingService.Warn(
+                            "ShareService.CreateExternalShare: Falling back to RequestType=CHANGE_PERMISSION " +
+                            "because CK_wf_ApprovalRequest_Type does not allow EXTERNAL_SHARE.");
+
+                        approvalRequest.RequestType = "CHANGE_PERMISSION";
+                        approvalId = _approvalRepository.InsertRequest(approvalRequest);
+                    }
+
+                    int stepOrder = 1;
+                    foreach (var approver in approvers)
+                    {
+                        _approvalRepository.InsertStep(new Domain.Models.ApprovalStep
+                        {
+                            RequestID  = approvalId,
+                            StepOrder  = stepOrder++,
+                            ApproverID = approver.UserID,
+                            StepStatus = 1 // Pending
+                        });
+                    }
+                }
+            }
+
             return externalShare;
         }
 
@@ -440,6 +506,51 @@ namespace CMS.Services
             });
         }
 
+        public void ToggleExternalShare(int externalShareId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var share = _externalShareRepository.GetById(externalShareId);
+            if (share == null)
+                throw new InvalidOperationException("External share not found.");
+
+            if (share.SharerUserID != user.UserID && user.AppRole < 4)
+                throw new UnauthorizedAccessException("Only the original Sharer or an Administrator can toggle this share.");
+
+            if (share.ShareTokenStatus != "Active" && share.ShareTokenStatus != "Disabled")
+                throw new InvalidOperationException(
+                    string.Format("Cannot toggle a share with status '{0}'.", share.ShareTokenStatus));
+
+            bool isDisabling = share.ShareTokenStatus == "Active";
+            share.ShareTokenStatus = isDisabling ? "Disabled" : "Active";
+
+            if (isDisabling)
+            {
+                share.DisabledDate  = DateTime.Now;
+                share.DisabledReason = "Disabled by owner";
+            }
+            else
+            {
+                share.DisabledDate   = null;
+                share.DisabledReason = null;
+            }
+
+            _externalShareRepository.Update(share);
+
+            _auditService.Log(new AuditEntry
+            {
+                Module     = "FileSharing",
+                Action     = isDisabling ? "DisableExternalShare" : "EnableExternalShare",
+                UserID     = user.UserID,
+                UserName   = user.ADUserName ?? string.Empty,
+                TableName  = "storage.ExternalShare",
+                RecordID   = externalShareId,
+                NewValue   = string.Format("Status={0}", share.ShareTokenStatus),
+                Result     = 1,
+                AuditDate  = DateTime.Now
+            });
+        }
+
         public void ModifyExternalShare(ModifyExternalShareRequest request, UserContext user)
         {
             if (request == null) throw new ArgumentNullException("request");
@@ -539,6 +650,24 @@ namespace CMS.Services
                 throw new UnauthorizedAccessException("You can only view your own shares.");
 
             return _externalShareRepository.GetBySharer(userId);
+        }
+
+        public IEnumerable<FilePermission> GetAllInternalShares(UserContext admin)
+        {
+            if (admin == null) throw new ArgumentNullException("admin");
+            if (admin.AppRole < 4)
+                throw new UnauthorizedAccessException("เฉพาะ Admin เท่านั้นที่สามารถดูรายการ share ทั้งหมดได้");
+
+            return _filePermissionRepository.GetAll();
+        }
+
+        public IEnumerable<ExternalShare> GetAllExternalShares(UserContext admin)
+        {
+            if (admin == null) throw new ArgumentNullException("admin");
+            if (admin.AppRole < 4)
+                throw new UnauthorizedAccessException("เฉพาะ Admin เท่านั้นที่สามารถดูรายการ share ทั้งหมดได้");
+
+            return _externalShareRepository.GetAll();
         }
 
         public IEnumerable<ExternalShare> GetExternalSharesByStatus(string status, UserContext user)

@@ -25,6 +25,8 @@ namespace CMS.Services
         private readonly IUserAccountRepository  _userAccountRepository;
         private readonly IAuditService           _auditService;
         private readonly ILoggingService         _loggingService;
+        private readonly IExternalShareRepository  _externalShareRepository;
+        private readonly IShareTokenRepository     _shareTokenRepository;
 
         public ApprovalService(
             IApprovalRepository     approvalRepository,
@@ -34,7 +36,9 @@ namespace CMS.Services
             INotificationRepository notificationRepository,
             IUserAccountRepository  userAccountRepository,
             IAuditService           auditService,
-            ILoggingService         loggingService)
+            ILoggingService         loggingService,
+            IExternalShareRepository externalShareRepository = null,
+            IShareTokenRepository    shareTokenRepository    = null)
         {
             if (approvalRepository     == null) throw new ArgumentNullException("approvalRepository");
             if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
@@ -53,6 +57,8 @@ namespace CMS.Services
             _userAccountRepository  = userAccountRepository;
             _auditService           = auditService;
             _loggingService         = loggingService;
+            _externalShareRepository = externalShareRepository;
+            _shareTokenRepository    = shareTokenRepository;
         }
 
         // -----------------------------------------------------------------------
@@ -166,8 +172,23 @@ namespace CMS.Services
             var allSteps = _approvalRepository.GetAllSteps(step.RequestID)
                 .OrderBy(s => s.StepOrder).ToList();
 
-            var nextStep = allSteps.FirstOrDefault(s =>
-                s.StepOrder > step.StepOrder && s.StepStatus == 1);
+            bool isCreateHc = string.Equals(approvalRequest.RequestType, "CREATE_HC", StringComparison.OrdinalIgnoreCase);
+            ApprovalStep nextStep = null;
+
+            if (isCreateHc)
+            {
+                // CREATE_HC ใช้นโยบายอนุมัติคนแรกจบ: ปิดขั้นที่เหลือทั้งหมดแบบ auto-close
+                foreach (var pending in allSteps.Where(s => s.StepID != step.StepID && s.StepStatus == 1))
+                {
+                    _approvalRepository.UpdateStepStatus(pending.StepID, 4,
+                        "Auto-closed: CREATE_HC is finalized by first admin approval.");
+                }
+            }
+            else
+            {
+                nextStep = allSteps.FirstOrDefault(s =>
+                    s.StepOrder > step.StepOrder && s.StepStatus == 1);
+            }
 
             if (nextStep != null)
             {
@@ -176,6 +197,26 @@ namespace CMS.Services
             }
             else
             {
+                if (isCreateHc)
+                {
+                    // CREATE_HC ต้องสร้างโฟลเดอร์สำเร็จก่อนค่อย mark request เป็น approved
+                    try
+                    {
+                        _folderService.CreateHCFolderAfterApproval(approvalRequest, user);
+                        Log(user, "Folder", "APPROVE", "workflow.ApprovalRequest", step.RequestID, 1,
+                            string.Format("CREATE_HC_APPROVED: HC Folder created after approval of request {0}.", step.RequestID));
+                    }
+                    catch (Exception ex)
+                    {
+                        _loggingService.Error(string.Format(
+                            "ApprovalService.ApproveStep: Failed to create HC folder for request {0}. {1}",
+                            step.RequestID, ex.Message), ex);
+
+                        throw new InvalidOperationException(
+                            string.Format("ไม่สามารถสร้าง 1HC Folder หลังอนุมัติได้: {0}", ex.Message), ex);
+                    }
+                }
+
                 // Final step — mark request approved
                 _approvalRepository.UpdateRequestStatus(step.RequestID, 2, user.UserID, remark); // 2=Approved
 
@@ -183,7 +224,14 @@ namespace CMS.Services
                     "All steps approved. Permissions applied.");
 
                 // Apply the permission change that was requested
-                if (approvalRequest.RequestType == "CHANGE_PERMISSION" && approvalRequest.FolderID.HasValue)
+                int externalShareIdFromRemark = ParseExternalShareId(approvalRequest.Remark);
+                bool isExternalShareRequest =
+                    string.Equals(approvalRequest.RequestType, "EXTERNAL_SHARE", StringComparison.OrdinalIgnoreCase)
+                    || externalShareIdFromRemark > 0;
+
+                if (approvalRequest.RequestType == "CHANGE_PERMISSION" &&
+                    approvalRequest.FolderID.HasValue &&
+                    !isExternalShareRequest)
                 {
                     try
                     {
@@ -237,25 +285,54 @@ namespace CMS.Services
                             approvalRequest.FolderID.Value, step.RequestID, ex.Message), ex);
                     }
                 }
-                else if (approvalRequest.RequestType == "CREATE_HC")
+                else if (isExternalShareRequest && _externalShareRepository != null)
                 {
                     try
                     {
-                        _folderService.CreateHCFolderAfterApproval(approvalRequest, user);
-                        Log(user, "Folder", "CREATE_HC_APPROVED", "workflow.ApprovalRequest", step.RequestID, 1,
-                            string.Format("HC Folder created after approval of request {0}.", step.RequestID));
+                        int externalShareId = externalShareIdFromRemark;
+                        if (externalShareId > 0)
+                        {
+                            var share = _externalShareRepository.GetById(externalShareId);
+                            if (share != null && share.ShareTokenStatus == "Pending")
+                            {
+                                share.ShareTokenStatus = "Active";
+                                share.ApprovedDate    = DateTime.Now;
+                                share.ApproverUserID  = user.UserID;
+                                _externalShareRepository.Update(share);
+
+                                if (_shareTokenRepository != null)
+                                {
+                                    foreach (var tok in _shareTokenRepository.GetByExternalShare(externalShareId))
+                                    {
+                                        tok.Status        = "Active";
+                                        tok.ActivatedDate = DateTime.Now;
+                                        _shareTokenRepository.Update(tok);
+                                    }
+                                }
+
+                                Log(user, "FileSharing", "APPROVE_EXTERNAL_SHARE",
+                                    "storage.ExternalShare", externalShareId, 1,
+                                    string.Format("ExternalShare {0} activated after approval of request {1}.",
+                                        externalShareId, step.RequestID));
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
                         _loggingService.Error(string.Format(
-                            "ApprovalService.ApproveStep: Failed to create HC folder for request {0}. {1}",
+                            "ApprovalService.ApproveStep: Failed to activate ExternalShare for request {0}. {1}",
                             step.RequestID, ex.Message), ex);
                     }
                 }
 
+                string approvedMessage = isCreateHc
+                    ? string.Format("คำขอสร้าง 1HC Folder (ID {0}) ได้รับการอนุมัติและสร้างโฟลเดอร์เรียบร้อยแล้ว", step.RequestID)
+                    : isExternalShareRequest
+                        ? string.Format("คำขอแชร์ภายนอก (ID {0}) ได้รับการอนุมัติและเปิดใช้งานลิงก์แล้ว", step.RequestID)
+                        : string.Format("คำขอเปลี่ยนสิทธิ์ (ID {0}) ได้รับการอนุมัติและมีผลแล้ว", step.RequestID);
+
                 NotifyUser(approvalRequest.RequestedBy, "ApprovalRequestApproved",
-                    step.RequestID.ToString(),
-                    string.Format("คำขอเปลี่ยนสิทธิ์ (ID {0}) ได้รับการอนุมัติและมีผลแล้ว", step.RequestID));
+                    step.RequestID.ToString(), approvedMessage);
             }
         }
 
@@ -340,17 +417,35 @@ namespace CMS.Services
             
             try
             {
-                // Get all pending requests (not just expired ones)
+                var approverUser = _userAccountRepository.GetById(approverId);
+                bool isAdmin    = approverUser != null && approverUser.IsActive && approverUser.AppRole == 4;
+                bool isPrivileged = approverUser != null && approverUser.IsActive && approverUser.AppRole >= 3;
+
                 var allPendingRequests = _approvalRepository.GetPendingRequests().ToList();
                 
-                // For each request, check if the approver has a pending step
                 foreach (var request in allPendingRequests)
                 {
-                    var pendingSteps = _approvalRepository.GetPendingSteps(request.RequestID);
-                    if (pendingSteps.Any(step => step.ApproverID == approverId && step.StepStatus == 1))
+                    string requestType = (request.RequestType ?? string.Empty).Trim().ToUpperInvariant();
+
+                    // CREATE_HC — แสดงให้ Admin ทุกคนเห็นโดยตรง (ไม่ต้อง check step)
+                    if (requestType == "CREATE_HC" && isAdmin)
                     {
                         results.Add(request);
+                        continue;
                     }
+
+                    // Request types อื่น — ตรวจ pending step ที่ assign หา approver นี้
+                    var pendingSteps = _approvalRepository.GetPendingSteps(request.RequestID).ToList();
+                    bool hasOwnPendingStep = pendingSteps.Any(step => step.ApproverID == approverId);
+
+                    // Fallback: Manager/Admin เห็น delete request ที่ยังมี step ค้าง
+                    bool isDeleteFallback = isPrivileged
+                        && (requestType == "DELETE" || requestType == "DELETE_FILE"
+                            || requestType == "FILE_DELETE" || requestType == "DELETE_FOLDER")
+                        && pendingSteps.Any();
+
+                    if (hasOwnPendingStep || isDeleteFallback)
+                        results.Add(request);
                 }
             }
             catch (Exception ex)
@@ -579,6 +674,21 @@ namespace CMS.Services
                 return null;
             }
         }
+        private static int ParseExternalShareId(string remark)
+        {
+            if (string.IsNullOrEmpty(remark)) return 0;
+            foreach (var token in remark.Split(' '))
+            {
+                if (token.StartsWith("ExternalShareID:", StringComparison.OrdinalIgnoreCase))
+                {
+                    int id;
+                    if (int.TryParse(token.Substring("ExternalShareID:".Length), out id))
+                        return id;
+                }
+            }
+            return 0;
+        }
+
         /// <summary>
         /// Parses the permission remark string stored in ApprovalRequest.Remark back into a SetPermissionRequest.
         /// Format: "FolderID:X PrincipalType:Y PrincipalID:Z Read:True Write:True Delete:False Modify:False FullControl:False IsDeny:False"

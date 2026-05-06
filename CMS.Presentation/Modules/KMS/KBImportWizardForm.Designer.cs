@@ -15,7 +15,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblHeaderTitle = new System.Windows.Forms.Label();
             this.pnlStepProgress = new System.Windows.Forms.Panel();
@@ -56,11 +56,12 @@ namespace CMS.Presentation.Modules.KMS
             this.btnRemoveFile = new System.Windows.Forms.Button();
             this.lblFileIconDisplay = new System.Windows.Forms.Label();
             this.pnlUploadZone = new System.Windows.Forms.Panel();
-            this.lblUploadIcon = new System.Windows.Forms.Label();
-            this.lblUploadText = new System.Windows.Forms.Label();
-            this.lblUploadSub = new System.Windows.Forms.Label();
-            this.btnSelectFile = new System.Windows.Forms.Button();
             this.lblUploadHint = new System.Windows.Forms.Label();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.btnSelectFile = new System.Windows.Forms.Button();
+            this.lblUploadSub = new System.Windows.Forms.Label();
+            this.lblUploadText = new System.Windows.Forms.Label();
+            this.lblUploadIcon = new System.Windows.Forms.Label();
             this.pnlUploadSectionHdr = new System.Windows.Forms.Panel();
             this.lblUploadSectionHdr = new System.Windows.Forms.Label();
             this.pnlStep2 = new System.Windows.Forms.Panel();
@@ -171,7 +172,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatusMessage = new System.Windows.Forms.Label();
             this.lblStepStatus = new System.Windows.Forms.Label();
             this.lblStatusUser = new System.Windows.Forms.Label();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.pnlHeader.SuspendLayout();
             this.pnlStepProgress.SuspendLayout();
             this.pnlStep1Indicator.SuspendLayout();
@@ -189,6 +189,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlUploadedFile.SuspendLayout();
             this.pnlFileInfo.SuspendLayout();
             this.pnlUploadZone.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.pnlUploadSectionHdr.SuspendLayout();
             this.pnlStep2.SuspendLayout();
             this.pnlStep2Inner.SuspendLayout();
@@ -221,7 +222,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlProgress.SuspendLayout();
             this.pnlValidation.SuspendLayout();
             this.pnlStatusBar.SuspendLayout();
-            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlHeader
@@ -670,40 +670,26 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlUploadZone.Size = new System.Drawing.Size(1588, 172);
             this.pnlUploadZone.TabIndex = 2;
             // 
-            // lblUploadIcon
+            // lblUploadHint
             // 
-            this.lblUploadIcon.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblUploadIcon.Font = new System.Drawing.Font("Segoe UI", 22F);
-            this.lblUploadIcon.Location = new System.Drawing.Point(0, 0);
-            this.lblUploadIcon.Name = "lblUploadIcon";
-            this.lblUploadIcon.Size = new System.Drawing.Size(1588, 36);
-            this.lblUploadIcon.TabIndex = 0;
-            this.lblUploadIcon.Text = "📊";
-            this.lblUploadIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblUploadHint.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblUploadHint.Font = new System.Drawing.Font("Segoe UI", 7.5F);
+            this.lblUploadHint.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblUploadHint.Location = new System.Drawing.Point(0, 148);
+            this.lblUploadHint.Name = "lblUploadHint";
+            this.lblUploadHint.Size = new System.Drawing.Size(1588, 18);
+            this.lblUploadHint.TabIndex = 4;
+            this.lblUploadHint.Text = ".xlsx  .xls  ·  ไม่เกิน 10 MB";
+            this.lblUploadHint.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // lblUploadText
+            // panel1
             // 
-            this.lblUploadText.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblUploadText.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.lblUploadText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblUploadText.Location = new System.Drawing.Point(0, 36);
-            this.lblUploadText.Name = "lblUploadText";
-            this.lblUploadText.Size = new System.Drawing.Size(1588, 32);
-            this.lblUploadText.TabIndex = 1;
-            this.lblUploadText.Text = "ลาก Excel มาวางที่นี่";
-            this.lblUploadText.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblUploadSub
-            // 
-            this.lblUploadSub.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblUploadSub.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.lblUploadSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblUploadSub.Location = new System.Drawing.Point(0, 68);
-            this.lblUploadSub.Name = "lblUploadSub";
-            this.lblUploadSub.Size = new System.Drawing.Size(1588, 18);
-            this.lblUploadSub.TabIndex = 2;
-            this.lblUploadSub.Text = "หรือ";
-            this.lblUploadSub.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.panel1.Controls.Add(this.btnSelectFile);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel1.Location = new System.Drawing.Point(0, 86);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(1588, 62);
+            this.panel1.TabIndex = 5;
             // 
             // btnSelectFile
             // 
@@ -724,17 +710,40 @@ namespace CMS.Presentation.Modules.KMS
             this.btnSelectFile.UseVisualStyleBackColor = false;
             this.btnSelectFile.Click += new System.EventHandler(this.BtnSelectFile_Click);
             // 
-            // lblUploadHint
+            // lblUploadSub
             // 
-            this.lblUploadHint.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblUploadHint.Font = new System.Drawing.Font("Segoe UI", 7.5F);
-            this.lblUploadHint.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblUploadHint.Location = new System.Drawing.Point(0, 148);
-            this.lblUploadHint.Name = "lblUploadHint";
-            this.lblUploadHint.Size = new System.Drawing.Size(1588, 18);
-            this.lblUploadHint.TabIndex = 4;
-            this.lblUploadHint.Text = ".xlsx  .xls  ·  ไม่เกิน 10 MB";
-            this.lblUploadHint.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblUploadSub.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblUploadSub.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblUploadSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblUploadSub.Location = new System.Drawing.Point(0, 68);
+            this.lblUploadSub.Name = "lblUploadSub";
+            this.lblUploadSub.Size = new System.Drawing.Size(1588, 18);
+            this.lblUploadSub.TabIndex = 2;
+            this.lblUploadSub.Text = "หรือ";
+            this.lblUploadSub.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lblUploadText
+            // 
+            this.lblUploadText.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblUploadText.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblUploadText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblUploadText.Location = new System.Drawing.Point(0, 36);
+            this.lblUploadText.Name = "lblUploadText";
+            this.lblUploadText.Size = new System.Drawing.Size(1588, 32);
+            this.lblUploadText.TabIndex = 1;
+            this.lblUploadText.Text = "ลาก Excel มาวางที่นี่";
+            this.lblUploadText.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lblUploadIcon
+            // 
+            this.lblUploadIcon.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblUploadIcon.Font = new System.Drawing.Font("Segoe UI", 22F);
+            this.lblUploadIcon.Location = new System.Drawing.Point(0, 0);
+            this.lblUploadIcon.Name = "lblUploadIcon";
+            this.lblUploadIcon.Size = new System.Drawing.Size(1588, 36);
+            this.lblUploadIcon.TabIndex = 0;
+            this.lblUploadIcon.Text = "📊";
+            this.lblUploadIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // pnlUploadSectionHdr
             // 
@@ -791,14 +800,14 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvPreview.AllowUserToDeleteRows = false;
             this.dgvPreview.BackgroundColor = System.Drawing.Color.White;
             this.dgvPreview.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle6.Font = new System.Drawing.Font("Segoe UI", 8F);
-            dataGridViewCellStyle6.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvPreview.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 8F);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvPreview.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvPreview.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvPreview.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colPreviewNo,
@@ -2018,15 +2027,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatusUser.Text = "👤  ผู้ใช้งาน  |  📅  dd/MM/yyyy";
             this.lblStatusUser.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.btnSelectFile);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(0, 86);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1588, 62);
-            this.panel1.TabIndex = 5;
-            // 
             // KBImportWizardForm
             // 
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
@@ -2062,6 +2062,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlUploadedFile.ResumeLayout(false);
             this.pnlFileInfo.ResumeLayout(false);
             this.pnlUploadZone.ResumeLayout(false);
+            this.panel1.ResumeLayout(false);
             this.pnlUploadSectionHdr.ResumeLayout(false);
             this.pnlStep2.ResumeLayout(false);
             this.pnlStep2Inner.ResumeLayout(false);
@@ -2094,7 +2095,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlProgress.ResumeLayout(false);
             this.pnlValidation.ResumeLayout(false);
             this.pnlStatusBar.ResumeLayout(false);
-            this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

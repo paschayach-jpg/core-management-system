@@ -35,5 +35,11 @@ namespace CMS.Controllers.DMS.Document
             var presenter = new FilePresenter(_fileService, _folderService, view, user);
             presenter.DownloadFile(fileDocumentId, getSavePath);
         }
+
+        public IEnumerable<string> FindDuplicateNames(IEnumerable<string> fileNames, int folderId, UserContext user)
+        {
+            if (_fileService == null || user == null) return new List<string>();
+            return _fileService.FindDuplicateNames(fileNames, folderId, user);
+        }
     }
 }
