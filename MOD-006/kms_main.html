@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KMS — คลังความรู้ | Core Management System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --primary: #2E74B5;
+    --primary-dark: #1E3A5F;
+    --primary-light: #D6E4F0;
+    --accent: #4A9FD4;
+    --success: #27AE60;
+    --warning: #F39C12;
+    --danger: #E74C3C;
+    --archived: #7F8C8D;
+    --expiring: #E67E22;
+    --white: #FFFFFF;
+    --bg-light: #F5F7FA;
+    --border: #D0D7DE;
+    --text-dark: #1A2332;
+    --text-mid: #4A5568;
+    --text-light: #7F8C8D;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    --radius: 2px;
+    --titlebar-h: 32px;
+    --menubar-h: 32px;
+    --toolbar-h: 36px;
+    --statusbar-h: 26px;
+    --sidebar-w: 210px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    font-family: 'Sarabun', 'Segoe UI', Tahoma, sans-serif;
+    font-size: 13px;
+    color: var(--text-dark);
+    background: var(--primary-dark);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ═══════════════════════════════════════
+     APP WINDOW CHROME
+  ═══════════════════════════════════════ */
+  .app-window {
+    width: 100vw;
+    height: 100vh;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Title Bar */
+  .title-bar {
+    height: var(--titlebar-h);
+    background: linear-gradient(180deg, #2C5F8A 0%, var(--primary-dark) 100%);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .title-bar-icon { font-size: 14px; margin-right: 6px; }
+  .title-bar-text {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    flex: 1;
+    letter-spacing: 0.2px;
+  }
+  .win-controls { display: flex; gap: 0; }
+  .win-btn {
+    width: 46px; height: var(--titlebar-h);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.85);
+    font-size: 11px; cursor: pointer; border: none; background: transparent;
+    transition: background 0.15s;
+  }
+  .win-btn:hover { background: rgba(255,255,255,0.12); }
+  .win-btn.close:hover { background: #C42B1C; color: #fff; }
+
+  /* Menu Bar */
+  .menu-bar {
+    height: var(--menubar-h);
+    background: #EEF2F7;
+    border-bottom: 1px solid #C8D0DC;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .menu-item {
+    padding: 0 10px;
+    height: 100%;
+    display: flex; align-items: center;
+    font-size: 12px; color: var(--text-dark);
+    cursor: pointer; border-radius: var(--radius);
+    transition: background 0.12s;
+    white-space: nowrap;
+  }
+  .menu-item:hover { background: var(--primary-light); color: var(--primary-dark); }
+  .menu-item.active { background: var(--primary); color: #fff; }
+  .menu-sep { flex: 1; }
+  .menu-right { display: flex; align-items: center; gap: 2px; }
+
+  /* Main Layout */
+  .main-layout {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: #F0F4F9;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .sidebar-search {
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .search-wrap {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .search-wrap input {
+    flex: 1; border: none; outline: none;
+    padding: 4px 6px; font-size: 12px;
+    font-family: inherit; color: var(--text-dark);
+    background: transparent;
+  }
+  .search-wrap button {
+    background: var(--primary); border: none;
+    color: #fff; padding: 0 8px; height: 26px;
+    cursor: pointer; font-size: 11px;
+  }
+  .sidebar-tree {
+    flex: 1; overflow-y: auto; padding: 4px 0;
+  }
+  .sidebar-tree::-webkit-scrollbar { width: 5px; }
+  .sidebar-tree::-webkit-scrollbar-thumb { background: #C0CBDA; border-radius: 3px; }
+
+  .tree-section-header {
+    padding: 6px 10px 4px;
+    font-size: 11px; font-weight: 700;
+    color: var(--primary-dark);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .tree-section-header:first-child { border-top: none; margin-top: 0; }
+
+  .tree-node {
+    display: flex; align-items: center;
+    padding: 4px 10px 4px 12px;
+    cursor: pointer; font-size: 12px;
+    color: var(--text-dark);
+    transition: background 0.1s;
+    border-left: 2px solid transparent;
+  }
+  .tree-node:hover { background: var(--primary-light); }
+  .tree-node.active {
+    background: #D6E4F0; border-left-color: var(--primary);
+    color: var(--primary-dark); font-weight: 600;
+  }
+  .tree-node .node-icon { margin-right: 5px; font-size: 12px; }
+  .tree-node.child { padding-left: 24px; font-size: 12px; }
+  .tree-count {
+    margin-left: auto;
+    background: var(--primary);
+    color: #fff; font-size: 10px;
+    padding: 1px 5px; border-radius: 8px;
+    font-weight: 600;
+  }
+
+  .sidebar-footer {
+    padding: 6px 8px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-add-cat {
+    width: 100%; padding: 4px 8px;
+    background: transparent; border: 1px dashed var(--primary);
+    color: var(--primary); font-size: 12px;
+    cursor: pointer; border-radius: var(--radius);
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-add-cat:hover { background: var(--primary); color: #fff; }
+
+  /* Content Area */
+  .content-area {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden; background: var(--white);
+  }
+
+  /* Toolbar */
+  .toolbar {
+    height: var(--toolbar-h);
+    background: #F8FAFB;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 12px; gap: 4px; flex-shrink: 0;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: var(--radius);
+    font-size: 12px; font-family: inherit;
+    cursor: pointer; border: 1px solid;
+    white-space: nowrap; transition: all 0.12s;
+    height: 26px;
+  }
+  .btn-primary {
+    background: var(--primary); border-color: #1E5F9A;
+    color: #fff;
+  }
+  .btn-primary:hover { background: #2568a5; }
+  .btn-secondary {
+    background: #fff; border-color: var(--border);
+    color: var(--text-dark);
+  }
+  .btn-secondary:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+  .btn-success {
+    background: var(--success); border-color: #1e8449;
+    color: #fff;
+  }
+  .btn-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  .toolbar-right { margin-left: auto; }
+
+  /* Filter Bar */
+  .filter-bar {
+    padding: 6px 12px;
+    background: #F8FAFB;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0; flex-wrap: wrap;
+  }
+  .filter-label { font-size: 11px; color: var(--text-light); }
+  .select-ctrl {
+    height: 24px; padding: 0 6px;
+    border: 1px solid var(--border);
+    background: #fff; font-size: 12px;
+    font-family: inherit; color: var(--text-dark);
+    border-radius: var(--radius); cursor: pointer;
+  }
+  .filter-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .filter-info { font-size: 11px; color: var(--text-light); }
+
+  /* Article List */
+  .article-list {
+    flex: 1; overflow-y: auto; padding: 10px 12px;
+  }
+  .article-list::-webkit-scrollbar { width: 6px; }
+  .article-list::-webkit-scrollbar-thumb { background: #C0CBDA; border-radius: 3px; }
+
+  .article-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    transition: all 0.15s;
+    cursor: pointer;
+    position: relative;
+    border-left: 3px solid transparent;
+  }
+  .article-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent);
+    border-left-color: var(--primary);
+    transform: translateY(-1px);
+  }
+  .article-card.selected {
+    border-color: var(--primary);
+    border-left-color: var(--primary);
+    background: #F0F7FF;
+  }
+
+  .card-header {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 4px;
+  }
+  .badge-type {
+    font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 2px;
+    border: 1px solid; white-space: nowrap;
+  }
+  .badge-sop { background: #FDE8D8; color: #C0392B; border-color: #E74C3C; }
+  .badge-faq { background: #FEF9E7; color: #B7770D; border-color: #F39C12; }
+  .badge-guide { background: #D6EAF8; color: #1F618D; border-color: #2980B9; }
+  .badge-wiki { background: #E8DAEF; color: #6C3483; border-color: #8E44AD; }
+  .badge-template { background: #D5F5E3; color: #1E8449; border-color: #27AE60; }
+
+  .card-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--text-dark); flex: 1;
+  }
+  .card-title a { color: inherit; text-decoration: none; }
+  .card-title a:hover { color: var(--primary); text-decoration: underline; }
+  .card-menu-btn {
+    color: var(--text-light); cursor: pointer;
+    padding: 2px 6px; border-radius: 2px;
+    font-size: 14px; background: none; border: none;
+  }
+  .card-menu-btn:hover { background: var(--primary-light); color: var(--primary); }
+
+  .card-meta {
+    font-size: 11px; color: var(--text-light);
+    margin-bottom: 5px;
+  }
+  .card-meta span { margin-right: 12px; }
+
+  .card-tags {
+    display: flex; align-items: center;
+    gap: 4px; flex-wrap: wrap; margin-bottom: 6px;
+  }
+  .tag {
+    font-size: 10px; padding: 1px 6px;
+    background: var(--bg-light); color: var(--text-mid);
+    border: 1px solid #D0D7DE; border-radius: 10px;
+  }
+  .craf-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 1px 5px; border-radius: 2px; color: #fff;
+  }
+  .craf-1hc { background: var(--danger); }
+  .craf-2sc { background: var(--expiring); }
+  .craf-3nc { background: var(--success); }
+  .craf-4pc { background: var(--archived); }
+
+  .status-badge {
+    font-size: 10px; padding: 1px 6px; border-radius: 2px;
+    font-weight: 600;
+  }
+  .status-published { background: #D5F5E3; color: #1E8449; }
+  .status-draft { background: #FADBD8; color: #922B21; }
+  .status-review { background: #FEF9E7; color: #B7770D; }
+  .status-archived { background: #F2F3F4; color: var(--archived); }
+  .status-expiring { background: #FDEBD0; color: #935116; }
+
+  .card-footer {
+    display: flex; align-items: center; gap: 6px;
+    padding-top: 6px; border-top: 1px solid #EEF2F7;
+  }
+  .card-stats { font-size: 11px; color: var(--text-light); flex: 1; }
+  .card-actions { display: flex; gap: 4px; }
+  .action-btn {
+    padding: 2px 8px; font-size: 11px;
+    background: #fff; border: 1px solid var(--border);
+    border-radius: var(--radius); cursor: pointer;
+    font-family: inherit; transition: all 0.12s; height: 22px;
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+  .action-btn:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+  .action-btn.publish { background: #D5F5E3; border-color: var(--success); color: var(--success); }
+
+  /* Pagination */
+  .pagination-bar {
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F8FAFB; flex-shrink: 0;
+  }
+  .pagination { display: flex; gap: 2px; }
+  .page-btn {
+    width: 26px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; border: 1px solid var(--border);
+    background: #fff; cursor: pointer; border-radius: var(--radius);
+    transition: all 0.12s;
+  }
+  .page-btn:hover { background: var(--primary-light); border-color: var(--primary); }
+  .page-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .page-btn.text { width: auto; padding: 0 8px; }
+
+  /* Status Bar */
+  .status-bar {
+    height: var(--statusbar-h);
+    background: var(--primary-dark);
+    display: flex; align-items: center;
+    padding: 0 12px; gap: 16px; flex-shrink: 0;
+  }
+  .status-item {
+    font-size: 11px; color: rgba(255,255,255,0.85);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .status-sep { width: 1px; height: 14px; background: rgba(255,255,255,0.2); }
+  .status-right { margin-left: auto; }
+
+  /* ═══════ VIEWER OVERLAY ═══════ */
+  .viewer-overlay {
+    position: fixed;
+    top: calc(var(--titlebar-h) + var(--menubar-h));
+    left: 0; right: 0;
+    bottom: var(--statusbar-h);
+    background: #fff;
+    display: none;
+    flex-direction: column;
+    z-index: 100;
+  }
+  .viewer-overlay.visible { display: flex; }
+
+  .viewer-toolbar {
+    height: var(--toolbar-h);
+    background: #F8FAFB;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 12px; gap: 4px; flex-shrink: 0;
+  }
+  .viewer-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--primary-dark); margin-left: 8px; flex: 1;
+  }
+
+  .viewer-body {
+    flex: 1; display: flex; overflow: hidden;
+  }
+
+  .viewer-main {
+    flex: 1; overflow-y: auto; padding: 16px 20px;
+  }
+  .viewer-main::-webkit-scrollbar { width: 6px; }
+  .viewer-main::-webkit-scrollbar-thumb { background: #C0CBDA; border-radius: 3px; }
+
+  .article-header-block {
+    background: linear-gradient(135deg, #F0F7FF 0%, #E8F2FF 100%);
+    border: 1px solid #C5DCF7;
+    border-radius: 3px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+  }
+  .article-header-top {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;
+  }
+  .article-main-title {
+    font-size: 18px; font-weight: 700; color: var(--primary-dark);
+    flex: 1;
+  }
+  .article-meta-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 4px 16px; font-size: 12px;
+  }
+  .meta-row { display: flex; gap: 4px; }
+  .meta-key { color: var(--text-light); min-width: 100px; }
+  .meta-val { color: var(--text-dark); font-weight: 500; }
+
+  .article-content { font-size: 13px; line-height: 1.8; }
+  .article-content h2 {
+    font-size: 15px; font-weight: 700; color: var(--primary-dark);
+    margin: 16px 0 8px; padding-bottom: 4px;
+    border-bottom: 2px solid var(--primary-light);
+  }
+  .article-content h3 {
+    font-size: 13px; font-weight: 600; color: var(--text-dark);
+    margin: 12px 0 6px;
+  }
+  .article-content p { margin-bottom: 10px; }
+  .article-content ol, .article-content ul {
+    margin: 6px 0 10px 20px;
+  }
+  .article-content li { margin-bottom: 4px; }
+
+  .callout {
+    border-radius: 3px; padding: 10px 14px;
+    margin: 10px 0; border-left: 4px solid;
+    font-size: 12px;
+  }
+  .callout-info { background: #EBF5FB; border-color: var(--accent); color: #1A5276; }
+  .callout-warn { background: #FEF9E7; border-color: var(--warning); color: #6E2F0C; }
+  .callout-danger { background: #FDEDEC; border-color: var(--danger); color: #7B241C; }
+
+  /* Viewer Right Panel */
+  .viewer-right {
+    width: 320px; flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    overflow-y: auto; background: #FAFBFC;
+    display: flex; flex-direction: column;
+  }
+  .viewer-right::-webkit-scrollbar { width: 5px; }
+  .viewer-right::-webkit-scrollbar-thumb { background: #C0CBDA; border-radius: 3px; }
+
+  .right-section {
+    border-bottom: 1px solid var(--border);
+    padding: 10px;
+  }
+  .right-section-title {
+    font-size: 11px; font-weight: 700; color: var(--primary-dark);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 8px; display: flex; align-items: center; gap: 5px;
+  }
+
+  /* Mapping Tabs (Compact Viewer) */
+  .mapping-tabs-compact { }
+  .mapping-tab-headers {
+    display: flex; gap: 2px; flex-wrap: wrap; margin-bottom: 8px;
+  }
+  .map-tab-btn {
+    padding: 3px 7px; font-size: 11px;
+    border: 1px solid var(--border);
+    background: var(--bg-light); color: var(--text-mid);
+    cursor: pointer; border-radius: var(--radius);
+    transition: all 0.12s; font-family: inherit;
+    white-space: nowrap;
+  }
+  .map-tab-btn.active {
+    background: var(--primary); border-color: var(--primary-dark);
+    color: #fff;
+  }
+  .map-tab-btn:hover:not(.active) { background: var(--primary-light); color: var(--primary); }
+
+  .map-tab-content { display: none; }
+  .map-tab-content.active { display: block; }
+
+  .attach-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 0; border-bottom: 1px solid #EEF2F7;
+    font-size: 11px;
+  }
+  .attach-item:last-child { border-bottom: none; }
+  .attach-icon { font-size: 14px; }
+  .attach-info { flex: 1; }
+  .attach-name { color: var(--primary); cursor: pointer; }
+  .attach-name:hover { text-decoration: underline; }
+  .attach-meta { color: var(--text-light); font-size: 10px; }
+  .attach-locked { color: var(--danger); font-size: 11px; }
+
+  .related-item {
+    display: flex; align-items: flex-start; gap: 5px;
+    padding: 5px 0; border-bottom: 1px solid #EEF2F7;
+    font-size: 11px; cursor: pointer;
+  }
+  .related-item:last-child { border-bottom: none; }
+  .related-item:hover .related-title { color: var(--primary); text-decoration: underline; }
+  .related-dot { color: var(--success); font-size: 8px; margin-top: 3px; }
+  .related-title { color: var(--text-dark); }
+  .related-code { color: var(--text-light); font-size: 10px; }
+
+  .version-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 0; border-bottom: 1px solid #EEF2F7; font-size: 11px;
+  }
+  .version-item:last-child { border-bottom: none; }
+  .ver-num { font-weight: 600; color: var(--primary); }
+  .ver-date { color: var(--text-light); }
+
+  .right-link-btn {
+    display: block; width: 100%; text-align: center;
+    padding: 4px; font-size: 11px;
+    color: var(--primary); background: none; border: 1px solid var(--primary-light);
+    cursor: pointer; border-radius: var(--radius); margin-top: 6px;
+    font-family: inherit; transition: all 0.12s;
+  }
+  .right-link-btn:hover { background: var(--primary-light); }
+
+  /* SOP Ack Bar */
+  .sop-ack-bar {
+    padding: 8px 12px;
+    background: #FEF9E7; border-top: 2px solid var(--warning);
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .sop-ack-text { font-size: 12px; color: #7D5A0C; flex: 1; }
+  .btn-ack {
+    padding: 4px 16px; background: var(--warning);
+    border: 1px solid #B7860B; color: #fff;
+    border-radius: var(--radius); cursor: pointer;
+    font-size: 12px; font-family: inherit; font-weight: 600;
+  }
+  .btn-ack:hover { background: #D4A017; }
+
+  /* Notification Toast */
+  .toast-container {
+    position: fixed; bottom: 40px; right: 20px;
+    z-index: 1000; display: flex; flex-direction: column; gap: 6px;
+  }
+  .toast {
+    background: var(--primary-dark); color: #fff;
+    padding: 10px 16px; border-radius: 3px;
+    font-size: 12px; max-width: 300px;
+    box-shadow: var(--shadow-lg);
+    animation: slideIn 0.2s ease;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.success { background: var(--success); }
+  .toast.warning { background: var(--warning); }
+  .toast.error { background: var(--danger); }
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  /* Rating Stars */
+  .stars { color: #F39C12; font-size: 11px; letter-spacing: 1px; }
+
+  /* Scrollbar global */
+  ::-webkit-scrollbar { width: 7px; height: 7px; }
+  ::-webkit-scrollbar-track { background: #F5F7FA; }
+  ::-webkit-scrollbar-thumb { background: #BBC8D9; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #9AAEC0; }
+
+  .highlight { background: #FFFACD; font-weight: 600; }
+
+  /* Dropdown Menu */
+  .dropdown-menu {
+    position: absolute; background: #fff;
+    border: 1px solid var(--border); box-shadow: var(--shadow-md);
+    border-radius: 2px; z-index: 200; min-width: 160px;
+    display: none;
+  }
+  .dropdown-menu.open { display: block; }
+  .dropdown-item {
+    padding: 6px 12px; font-size: 12px;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  .dropdown-item:hover { background: var(--primary-light); color: var(--primary); }
+  .dropdown-sep { height: 1px; background: var(--border); margin: 3px 0; }
+
+  /* Page navigation links */
+  .nav-link {
+    color: var(--primary); text-decoration: none; font-size: 12px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .nav-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="app-window" id="appWindow">
+  <!-- Title Bar -->
+  <div class="title-bar">
+    <span class="title-bar-icon">🏢</span>
+    <span class="title-bar-text">Core Management System — คลังความรู้ (KMS) | โครงการ 2511AL01</span>
+    <div class="win-controls">
+      <button class="win-btn">─</button>
+      <button class="win-btn">□</button>
+      <button class="win-btn close">✕</button>
+    </div>
+  </div>
+
+  <!-- Menu Bar -->
+  <div class="menu-bar">
+    <div class="menu-item" onclick="showToast('เมนูไฟล์','info')">📁 ไฟล์</div>
+    <div class="menu-item active">📝 บทความ</div>
+    <div class="menu-item" onclick="window.open('kms_dashboard.html','_blank')">📊 รายงาน</div>
+    <div class="menu-item" onclick="window.open('kms_category.html','_blank')">⚙️ ตั้งค่า</div>
+    <div class="menu-item" onclick="showToast('ระบบช่วยเหลือ','info')">❓ ช่วยเหลือ</div>
+    <div class="menu-sep"></div>
+    <div class="menu-right">
+      <a class="nav-link" href="kms_editor.html" target="_blank">✏️ Editor</a>
+      &nbsp;&nbsp;
+      <a class="nav-link" href="kms_dashboard.html" target="_blank">📊 Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="main-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-search">
+        <div class="search-wrap">
+          <input type="text" placeholder="🔍 ค้นหาทั่วระบบ KMS..." id="globalSearch" oninput="filterArticles(this.value)">
+          <button onclick="filterArticles(document.getElementById('globalSearch').value)">🔎</button>
+        </div>
+      </div>
+      <div class="sidebar-tree">
+        <div class="tree-section-header">📚 ห้องความรู้</div>
+        <div class="tree-node active" onclick="filterByCategory('all')">
+          <span class="node-icon">🗂️</span> ทั้งหมด
+          <span class="tree-count">36</span>
+        </div>
+
+        <div class="tree-section-header">📂 กฎหมาย</div>
+        <div class="tree-node" onclick="filterByCategory('กฎหมาย')">
+          <span class="node-icon">📂</span> กฎหมายทั้งหมด
+          <span class="tree-count">8</span>
+        </div>
+        <div class="tree-node child" onclick="filterByCategory('แพ่ง')">
+          <span class="node-icon">└</span> ประมวลกฎหมายแพ่ง
+        </div>
+        <div class="tree-node child" onclick="filterByCategory('บริษัทมหาชน')">
+          <span class="node-icon">└</span> พ.ร.บ.บริษัทมหาชน
+        </div>
+        <div class="tree-node child" onclick="filterByCategory('ประกันวินาศภัย')">
+          <span class="node-icon">└</span> พ.ร.บ.ประกันวินาศภัย
+        </div>
+
+        <div class="tree-section-header">📂 ความรู้ประกันภัย</div>
+        <div class="tree-node" onclick="filterByCategory('ประกันภัย')">
+          <span class="node-icon">📂</span> ความรู้ประกันภัย
+          <span class="tree-count">22</span>
+        </div>
+        <div class="tree-node child" onclick="filterByCategory('UW')">
+          <span class="node-icon">└</span> รับประกันภัย (UW)
+        </div>
+        <div class="tree-node child" onclick="filterByCategory('Claims')">
+          <span class="node-icon">└</span> สินไหมทดแทน
+        </div>
+        <div class="tree-node child" onclick="filterByCategory('Marine')">
+          <span class="node-icon">└</span> ประกันภัยทางทะเล
+        </div>
+        <div class="tree-node child" onclick="filterByCategory('Motor')">
+          <span class="node-icon">└</span> ประกันภัยรถยนต์
+        </div>
+
+        <div class="tree-section-header">📂 SOP & แนวทาง</div>
+        <div class="tree-node" onclick="filterByCategory('SOP')">
+          <span class="node-icon">📋</span> SOP ทั้งหมด
+          <span class="tree-count">15</span>
+        </div>
+        <div class="tree-node" onclick="filterByCategory('FAQ')">
+          <span class="node-icon">❓</span> FAQ
+          <span class="tree-count">8</span>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <button class="btn-add-cat" onclick="window.open('kms_category.html','_blank')">⚙️ จัดการหมวดหมู่</button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="window.open('kms_editor.html','_blank')">+ สร้างบทความ</button>
+        <button class="btn btn-secondary" onclick="window.open('kms_import.html','_blank')">📥 Import Excel</button>
+        <button class="btn btn-secondary" onclick="showToast('กำลัง Export PDF...','success')">📊 Export PDF</button>
+        <div class="btn-sep"></div>
+        <button class="btn btn-secondary" onclick="showToast('ตั้งค่าการแสดงผล','info')">⚙️ ตั้งค่า</button>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+          <span style="font-size:11px; color:var(--text-light)">ค้นหา:</span>
+          <div class="search-wrap" style="width:200px;">
+            <input type="text" placeholder="🔍 ค้นหาบทความ..." id="articleSearch" oninput="filterArticles(this.value)">
+            <button onclick="filterArticles(document.getElementById('articleSearch').value)">🔎</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <span class="filter-label">ฟิลเตอร์:</span>
+        <select class="select-ctrl" onchange="applyFilter()">
+          <option>ประเภท ▼</option>
+          <option>SOP</option><option>FAQ</option>
+          <option>Wiki</option><option>แนวทาง</option>
+        </select>
+        <select class="select-ctrl" onchange="applyFilter()">
+          <option>สถานะ ▼</option>
+          <option>Published</option><option>Draft</option>
+          <option>In Review</option><option>Archived</option>
+        </select>
+        <select class="select-ctrl" onchange="applyFilter()">
+          <option>ฝ่าย/แผนก ▼</option>
+          <option>สินไหมทดแทน</option><option>รับประกันภัย</option>
+          <option>กฎหมาย</option><option>IT</option>
+        </select>
+        <button class="btn btn-secondary" style="height:24px; padding:0 8px; font-size:11px;" onclick="clearFilter()">ล้าง</button>
+        <div class="filter-right">
+          <span class="filter-label">เรียงตาม:</span>
+          <select class="select-ctrl" onchange="sortArticles(this.value)">
+            <option>วันที่ล่าสุด ▼</option>
+            <option>ชื่อบทความ</option>
+            <option>ยอดอ่าน</option>
+            <option>คะแนน</option>
+          </select>
+          <span class="filter-label">แสดง:</span>
+          <select class="select-ctrl">
+            <option>20 รายการ ▼</option>
+            <option>50 รายการ</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Article List -->
+      <div class="article-list" id="articleList">
+        <!-- Cards will be rendered by JS -->
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-bar">
+        <span style="font-size:11px; color:var(--text-light)" id="pageInfo">แสดง 1-36 จาก 36 รายการ</span>
+        <div class="pagination">
+          <div class="page-btn text">« ก่อนหน้า</div>
+          <div class="page-btn active">1</div>
+          <div class="page-btn" onclick="showToast('หน้า 2','info')">2</div>
+          <div class="page-btn" onclick="showToast('หน้า 3','info')">3</div>
+          <div class="page-btn">...</div>
+          <div class="page-btn" onclick="showToast('หน้า 8','info')">8</div>
+          <div class="page-btn text" onclick="showToast('หน้าถัดไป','info')">ถัดไป »</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-item">👤 สมชาย กิจการ</div>
+    <div class="status-sep"></div>
+    <div class="status-item">🏢 Sr. Officer | แผนก UW</div>
+    <div class="status-sep"></div>
+    <div class="status-item">📅 08/04/2569</div>
+    <div class="status-sep"></div>
+    <div class="status-item">🕐 <span id="clock">09:45</span></div>
+    <div class="status-sep"></div>
+    <div class="status-item" style="color:var(--warning)">📋 Approval Queue: 5 รายการ</div>
+    <div class="status-right status-item">✅ ระบบปกติ</div>
+  </div>
+
+  <!-- ARTICLE VIEWER OVERLAY -->
+  <div class="viewer-overlay" id="viewerOverlay">
+    <div class="viewer-toolbar">
+      <button class="btn btn-secondary" onclick="closeViewer()" style="height:24px; padding:0 8px; font-size:11px;">← กลับ</button>
+      <span class="viewer-title" id="viewerTitle">👁️ ดูบทความ: นโยบายการรับสินไหมทดแทน</span>
+      <div style="display:flex; gap:4px;">
+        <button class="btn btn-secondary" style="height:24px; font-size:11px;" onclick="window.open('kms_editor.html','_blank')">✏️ แก้ไข</button>
+        <button class="btn btn-secondary" style="height:24px; font-size:11px;" onclick="showToast('คัดลอก Share Link','success')">📤 แชร์</button>
+        <button class="btn btn-secondary" style="height:24px; font-size:11px;" onclick="showToast('กำลังพิมพ์...','info')">🖨️ พิมพ์</button>
+        <button class="btn btn-secondary" style="height:24px; font-size:11px;" onclick="showToast('กำลัง Export PDF...','success')">📄 Export PDF</button>
+        <button class="btn btn-secondary" style="height:24px; font-size:11px;" onclick="showToast('Pin บทความแล้ว','success')">📌 Pin</button>
+      </div>
+    </div>
+
+    <div class="viewer-body">
+      <!-- Main Content -->
+      <div class="viewer-main" id="viewerMain">
+        <!-- Dynamic content -->
+      </div>
+
+      <!-- Right Panel -->
+      <div class="viewer-right">
+        <!-- Article Info -->
+        <div class="right-section" id="viewerInfoPanel">
+          <!-- Dynamic -->
+        </div>
+
+        <!-- Mapping Tabs Full -->
+        <div class="right-section" style="flex:1; display:flex; flex-direction:column; padding:0;">
+          <div style="padding:8px 10px 0; background:#F0F4F8; border-bottom:1px solid var(--border);">
+            <div style="font-size:11px; font-weight:700; color:var(--primary-dark); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">🔗 Mapping รายการที่เกี่ยวข้อง</div>
+          </div>
+          <div class="mapping-tab-headers" style="padding:0 6px; background:#F0F4F8; border-bottom:2px solid var(--border);">
+            <button class="map-tab-btn active" onclick="switchMapTab(this,'t-attach')" style="font-size:11px; padding:4px 8px;">📎 ไฟล์แนบ (2)</button>
+            <button class="map-tab-btn" onclick="switchMapTab(this,'t-related')" style="font-size:11px; padding:4px 8px;">🔗 ความรู้ (3)</button>
+            <button class="map-tab-btn" onclick="switchMapTab(this,'t-workflow')" style="font-size:11px; padding:4px 8px;">⚖️ เส้นงาน (2)</button>
+            <button class="map-tab-btn" onclick="switchMapTab(this,'t-prog')" style="font-size:11px; padding:4px 8px;">💻 โปรแกรม (5)</button>
+            <button class="map-tab-btn" onclick="switchMapTab(this,'t-doc')" style="font-size:11px; padding:4px 8px;">📋 เอกสาร (1)</button>
+          </div>
+
+          <!-- Tab: Attachments -->
+          <div class="map-tab-content active" id="t-attach" style="padding:8px 10px; overflow-y:auto; flex:1;">
+            <div class="attach-item">
+              <span class="attach-icon">📄</span>
+              <div class="attach-info">
+                <div class="attach-name" onclick="showToast('เปิด Claims_Form_2569.pdf','info')">Claims_Form_2569.pdf</div>
+                <div class="attach-meta">245 KB <span class="craf-badge craf-3nc">3NC</span></div>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:2px;">
+                <button class="action-btn" onclick="showToast('กำลังเปิดไฟล์...','info')" style="font-size:10px; height:18px;">👁️ ดู</button>
+                <button class="action-btn" onclick="showToast('กำลังดาวน์โหลด...','success')" style="font-size:10px; height:18px;">📥</button>
+              </div>
+            </div>
+            <div class="attach-item" style="background:#FEF9E7; padding:5px 4px; border-radius:2px;">
+              <span class="attach-icon">📊</span>
+              <div class="attach-info">
+                <div class="attach-name" style="color:var(--text-mid);">UW_Criteria_Table.xlsx</div>
+                <div class="attach-meta">89 KB <span class="craf-badge craf-1hc">1HC</span></div>
+              </div>
+              <span class="attach-locked">🔒 ต้องสิทธิ์ 1HC</span>
+            </div>
+          </div>
+
+          <!-- Tab: Related -->
+          <div class="map-tab-content" id="t-related" style="padding:8px 10px; overflow-y:auto; flex:1;">
+            <div class="related-item" onclick="showToast('เปิด KB-2569-005','info')">
+              <span class="related-dot">●</span>
+              <div>
+                <div class="related-title">[SOP] กฎระเบียบข้อบังคับการรับสินไหม</div>
+                <div class="related-code">KB-2569-005</div>
+              </div>
+            </div>
+            <div class="related-item" onclick="showToast('เปิด KB-2569-015','info')">
+              <span class="related-dot">●</span>
+              <div>
+                <div class="related-title">[FAQ] วิธีการเคลมประกันรถยนต์</div>
+                <div class="related-code">KB-2569-015</div>
+              </div>
+            </div>
+            <div class="related-item" onclick="showToast('เปิด KB-2569-008','info')">
+              <span class="related-dot">●</span>
+              <div>
+                <div class="related-title">[แนวทาง] คู่มือ UW ฉบับ 2</div>
+                <div class="related-code">KB-2569-003</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Workflow -->
+          <div class="map-tab-content" id="t-workflow" style="padding:8px 10px; overflow-y:auto; flex:1;">
+            <div class="attach-item">
+              <span class="attach-icon">⚖️</span>
+              <div class="attach-info">
+                <div class="attach-name">การรับแจ้งอุบัติเหตุ (RG01000)</div>
+                <div class="attach-meta">5 Step | v2.1 <span class="status-badge status-published">Active</span></div>
+              </div>
+            </div>
+            <div class="attach-item">
+              <span class="attach-icon">⚖️</span>
+              <div class="attach-info">
+                <div class="attach-name">การออกสำรวจภัย (RG02000)</div>
+                <div class="attach-meta">8 Step | v1.5 <span class="status-badge status-published">Active</span></div>
+              </div>
+            </div>
+            <button class="right-link-btn" onclick="showToast('เปิด Workflow Module','info')">▶️ เริ่ม Workflow</button>
+          </div>
+
+          <!-- Tab: Programs -->
+          <div class="map-tab-content" id="t-prog" style="padding:8px 10px; overflow-y:auto; flex:1;">
+            <div style="font-size:11px;">
+              <div class="attach-item">
+                <span class="attach-icon">💻</span>
+                <div class="attach-info">
+                  <div class="attach-name">RISC Claim</div>
+                  <div class="attach-meta">ฝ่ายสินไหมทดแทน</div>
+                </div>
+                <button class="action-btn" onclick="showToast('เปิด RISC Claim','info')" style="font-size:10px; height:18px;">เปิด</button>
+              </div>
+              <div class="attach-item">
+                <span class="attach-icon">💻</span>
+                <div class="attach-info">
+                  <div class="attach-name">ทะเบียนสินไหม</div>
+                  <div class="attach-meta">ฝ่ายสินไหมทดแทน</div>
+                </div>
+                <button class="action-btn" onclick="showToast('เปิด ทะเบียนสินไหม','info')" style="font-size:10px; height:18px;">เปิด</button>
+              </div>
+              <div class="attach-item">
+                <span class="attach-icon">💻</span>
+                <div class="attach-info">
+                  <div class="attach-name">New E-Filing</div>
+                  <div class="attach-meta">IT</div>
+                </div>
+                <button class="action-btn" onclick="showToast('เปิด E-Filing','info')" style="font-size:10px; height:18px;">เปิด</button>
+              </div>
+              <div class="attach-item">
+                <span class="attach-icon">💻</span>
+                <div class="attach-info">
+                  <div class="attach-name">BIS Claim</div>
+                  <div class="attach-meta">ฝ่ายสินไหมทดแทน</div>
+                </div>
+                <button class="action-btn" onclick="showToast('เปิด BIS Claim','info')" style="font-size:10px; height:18px;">เปิด</button>
+              </div>
+              <div class="attach-item">
+                <span class="attach-icon">💻</span>
+                <div class="attach-info">
+                  <div class="attach-name">TFRS17</div>
+                  <div class="attach-meta">แผนกบัญชี</div>
+                </div>
+                <button class="action-btn" onclick="showToast('เปิด TFRS17','info')" style="font-size:10px; height:18px;">เปิด</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Documents -->
+          <div class="map-tab-content" id="t-doc" style="padding:8px 10px; overflow-y:auto; flex:1;">
+            <div class="attach-item">
+              <span style="font-size:12px;">☑️</span>
+              <div class="attach-info">
+                <div class="attach-name" style="font-size:11px;">FM-CLM-001 แบบฟอร์มรับแจ้งสินไหม</div>
+                <div class="attach-meta">Rev.5 | <span class="craf-badge craf-3nc">3NC</span></div>
+              </div>
+              <button class="action-btn" onclick="showToast('ดาวน์โหลดแบบฟอร์ม','success')" style="font-size:10px; height:18px;">📥</button>
+            </div>
+            <div class="attach-item">
+              <span style="font-size:12px;">☐</span>
+              <div class="attach-info">
+                <div class="attach-name" style="font-size:11px;">FM-CLM-002 แบบฟอร์มประเมินความเสียหาย</div>
+                <div class="attach-meta">Rev.3 | <span class="craf-badge craf-3nc">3NC</span></div>
+              </div>
+              <button class="action-btn" onclick="showToast('ดาวน์โหลดแบบฟอร์ม','success')" style="font-size:10px; height:18px;">📥</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  MOCK DATA
+// ═══════════════════════════════════════════════════════
+const existingArticles = [  {
+    id: 'KB-2569-001',
+    type: 'SOP', typeCls: 'badge-sop',
+    title: 'นโยบายการรับสินไหมทดแทน',
+    version: 'v3.2',
+    author: 'สมชาย กิจการ',
+    date: '20 มี.ค. 69',
+    craf: '1HC', crafCls: 'craf-1hc',
+    views: 234,
+    rating: 4.2, ratingN: 18,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['สินไหม', 'UW', 'OIC'],
+    reviewDue: '20 มี.ค. 70',
+    dept: ['สำรวจภัย', 'รับแจ้ง'],
+    isSOP: true,
+    content: `
+      <div class="article-header-block">
+        <div class="article-header-top">
+          <span class="badge-type badge-sop">📋 SOP</span>
+          <h1 class="article-main-title">นโยบายการรับสินไหมทดแทน</h1>
+          <span class="craf-badge craf-1hc">1HC</span>
+        </div>
+        <div class="article-meta-grid">
+          <div class="meta-row"><span class="meta-key">รหัสบทความ:</span><span class="meta-val">KB-2569-001</span></div>
+          <div class="meta-row"><span class="meta-key">เวอร์ชัน:</span><span class="meta-val">3.2 <span class="status-badge status-published">✅ Published</span></span></div>
+          <div class="meta-row"><span class="meta-key">ผู้เขียน:</span><span class="meta-val">สมชาย กิจการ</span></div>
+          <div class="meta-row"><span class="meta-key">Publish:</span><span class="meta-val">20 มีนาคม 2569</span></div>
+          <div class="meta-row"><span class="meta-key">หมวดหมู่:</span><span class="meta-val">ความรู้สินไหม » การรับสินไหม</span></div>
+          <div class="meta-row"><span class="meta-key">Review Due:</span><span class="meta-val">20 มีนาคม 2570</span></div>
+        </div>
+      </div>
+      <div class="article-content">
+        <h2>1. วัตถุประสงค์</h2>
+        <p>บทความนี้กำหนดนโยบายและขั้นตอนการพิจารณาสินไหมทดแทนสำหรับบริษัทประกันวินาศภัย ให้สอดคล้องกับข้อกำหนดของสำนักงานคณะกรรมการกำกับและส่งเสริมการประกอบธุรกิจประกันภัย (คปภ.) และกฎหมายที่เกี่ยวข้อง</p>
+        <div class="callout callout-info">
+          💡 <strong>หมายเหตุ:</strong> นโยบายนี้มีผลบังคับใช้กับพนักงานทุกระดับที่เกี่ยวข้องกับกระบวนการรับสินไหมทดแทน และต้องได้รับการรับทราบ (Acknowledge) ก่อนดำเนินการ
+        </div>
+
+        <h2>2. ขอบเขต</h2>
+        <p>ใช้กับพนักงานฝ่ายสินไหมทุกคน รวมถึงหน่วยงานที่มีส่วนเกี่ยวข้องกับกระบวนการสินไหม ได้แก่:</p>
+        <ul>
+          <li>ฝ่ายรับแจ้งความเสียหาย (First Notice of Loss — FNOL)</li>
+          <li>ฝ่ายสำรวจและประเมินความเสียหาย</li>
+          <li>ฝ่ายอนุมัติสินไหมทดแทน</li>
+          <li>ฝ่ายกฎหมายและคดีความ</li>
+        </ul>
+
+        <h2>3. ขั้นตอนการดำเนินการ</h2>
+        <h3>3.1 การรับแจ้งสินไหม</h3>
+        <p>เมื่อได้รับแจ้งสินไหม พนักงานต้องดำเนินการตรวจสอบข้อมูลเบื้องต้น และบันทึกข้อมูลลงในระบบ RISC Claim ภายใน <strong>24 ชั่วโมง</strong> นับจากวันที่ได้รับแจ้ง</p>
+
+        <h3>3.2 การตรวจสอบเอกสาร</h3>
+        <p>ตรวจสอบความครบถ้วนของเอกสารตามรายการในแบบฟอร์ม FM-CLM-001 โดยเอกสารที่จำเป็นได้แก่:</p>
+        <ol>
+          <li>สำเนาบัตรประชาชนผู้เอาประกัน</li>
+          <li>สำเนากรมธรรม์ประกันภัย</li>
+          <li>ภาพถ่ายความเสียหาย (อย่างน้อย 4 มุม)</li>
+          <li>รายงานตำรวจ (กรณีอุบัติเหตุรถยนต์)</li>
+          <li>ใบเสนอราคาซ่อมแซม</li>
+        </ol>
+
+        <h3>3.3 การประเมินความเสียหาย</h3>
+        <p>วิศวกรสำรวจภัยต้องออกสำรวจภายใน <strong>3 วันทำการ</strong> สำหรับความเสียหายมูลค่าไม่เกิน 500,000 บาท และ <strong>1 วันทำการ</strong> สำหรับความเสียหายมูลค่าเกิน 500,000 บาท</p>
+
+        <div class="callout callout-warn">
+          ⚠️ <strong>คำเตือน:</strong> กรณีที่ความเสียหายมีมูลค่าเกิน 1,000,000 บาท หรือมีข้อสงสัยเรื่องการฉ้อโกง ต้องรายงานผู้จัดการฝ่ายทันทีและไม่อนุมัติสินไหมก่อนได้รับการตรวจสอบ
+        </div>
+
+        <h2>4. อำนาจการอนุมัติ</h2>
+        <p>กำหนดอำนาจการอนุมัติสินไหมตามระดับมูลค่าความเสียหาย:</p>
+        <ul>
+          <li>ไม่เกิน 50,000 บาท — เจ้าหน้าที่สินไหม Senior Officer</li>
+          <li>50,001 – 500,000 บาท — ผู้จัดการแผนก</li>
+          <li>500,001 – 2,000,000 บาท — ผู้จัดการฝ่าย</li>
+          <li>เกิน 2,000,000 บาท — คณะกรรมการบริหาร</li>
+        </ul>
+
+        <div class="callout callout-danger">
+          🚫 <strong>ข้อห้าม:</strong> ห้ามอนุมัติสินไหมเกินอำนาจที่กำหนดไว้โดยเด็ดขาด การฝ่าฝืนถือเป็นการกระทำผิดระเบียบบริษัทและอาจมีผลทางกฎหมาย
+        </div>
+
+        <h2>5. การบันทึกและรายงาน</h2>
+        <p>บันทึกข้อมูลทุกขั้นตอนลงในระบบ RISC Claim และส่งรายงานสรุปสินไหมประจำเดือนให้ผู้จัดการภายในวันที่ 5 ของเดือนถัดไป</p>
+      </div>
+    `
+  },
+  {
+    id: 'KB-2569-015',
+    type: 'FAQ', typeCls: 'badge-faq',
+    title: 'วิธีการเคลมประกันรถยนต์',
+    version: 'v1.0',
+    author: 'วิชัย สมใจ',
+    date: '19 มี.ค. 69',
+    craf: '3NC', crafCls: 'craf-3nc',
+    views: 89,
+    rating: 3.8, ratingN: 12,
+    status: 'Draft', statusCls: 'status-draft',
+    tags: ['Motor', 'Claims', 'FAQ'],
+    reviewDue: null,
+    dept: ['สินไหม'],
+    isSOP: false,
+    content: `
+      <div class="article-header-block">
+        <div class="article-header-top">
+          <span class="badge-type badge-faq">❓ FAQ</span>
+          <h1 class="article-main-title">วิธีการเคลมประกันรถยนต์</h1>
+          <span class="craf-badge craf-3nc">3NC</span>
+        </div>
+        <div class="article-meta-grid">
+          <div class="meta-row"><span class="meta-key">รหัสบทความ:</span><span class="meta-val">KB-2569-015</span></div>
+          <div class="meta-row"><span class="meta-key">สถานะ:</span><span class="meta-val"><span class="status-badge status-draft">🔴 Draft</span></span></div>
+          <div class="meta-row"><span class="meta-key">ผู้เขียน:</span><span class="meta-val">วิชัย สมใจ</span></div>
+          <div class="meta-row"><span class="meta-key">แก้ไขล่าสุด:</span><span class="meta-val">19 มีนาคม 2569</span></div>
+        </div>
+      </div>
+      <div class="article-content">
+        <h2>Q: เกิดอุบัติเหตุต้องทำอย่างไรก่อน?</h2>
+        <p><strong>A:</strong> ขั้นตอนแรกที่สำคัญที่สุดคือความปลอดภัย จากนั้นให้ดำเนินการตามขั้นตอน:</p>
+        <ol>
+          <li>ถ่ายรูปสถานที่เกิดเหตุและความเสียหาย</li>
+          <li>แจ้งตำรวจและขอใบบันทึกประจำวัน</li>
+          <li>แจ้งบริษัทประกันภายใน 24 ชั่วโมง โทร. 1300</li>
+          <li>อย่าเคลื่อนย้ายรถก่อนได้รับอนุญาต</li>
+        </ol>
+        <div class="callout callout-info">
+          💡 สายด่วนประกันภัย: <strong>1300</strong> (24 ชั่วโมง)
+        </div>
+        <h2>Q: เอกสารที่ต้องใช้ในการเคลมมีอะไรบ้าง?</h2>
+        <p><strong>A:</strong> เอกสารสำคัญที่ต้องเตรียม:</p>
+        <ul>
+          <li>สำเนาบัตรประชาชน</li>
+          <li>สำเนาใบขับขี่</li>
+          <li>สำเนากรมธรรม์</li>
+          <li>ใบบันทึกประจำวันของตำรวจ</li>
+          <li>ภาพถ่ายความเสียหาย</li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    id: 'KB-2569-003',
+    type: 'แนวทาง', typeCls: 'badge-guide',
+    title: 'คู่มือการ Underwriting ฉบับ 2',
+    version: 'v2.0',
+    author: 'อารีย์ แสงดี',
+    date: '15 มี.ค. 69',
+    craf: '3NC', crafCls: 'craf-3nc',
+    views: 512,
+    rating: 4.7, ratingN: 32,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['UW', 'Guideline', 'Motor'],
+    reviewDue: '15 มี.ค. 70',
+    dept: ['รับประกันภัย'],
+    isSOP: false,
+    content: `
+      <div class="article-header-block">
+        <div class="article-header-top">
+          <span class="badge-type badge-guide">📖 แนวทาง</span>
+          <h1 class="article-main-title">คู่มือการ Underwriting ฉบับ 2</h1>
+          <span class="craf-badge craf-3nc">3NC</span>
+        </div>
+        <div class="article-meta-grid">
+          <div class="meta-row"><span class="meta-key">รหัสบทความ:</span><span class="meta-val">KB-2569-003</span></div>
+          <div class="meta-row"><span class="meta-key">เวอร์ชัน:</span><span class="meta-val">2.0 <span class="status-badge status-published">✅ Published</span></span></div>
+          <div class="meta-row"><span class="meta-key">ผู้เขียน:</span><span class="meta-val">อารีย์ แสงดี</span></div>
+          <div class="meta-row"><span class="meta-key">Publish:</span><span class="meta-val">15 มีนาคม 2569</span></div>
+        </div>
+      </div>
+      <div class="article-content">
+        <h2>1. หลักการพื้นฐาน Underwriting</h2>
+        <p>การรับประกันภัย (Underwriting) คือกระบวนการประเมินความเสี่ยงและกำหนดเงื่อนไขของกรมธรรม์ประกันภัย โดยมีหลักการพื้นฐาน 5 ประการ:</p>
+        <ol>
+          <li><strong>Selection</strong> — การคัดเลือกความเสี่ยงที่รับได้</li>
+          <li><strong>Classification</strong> — การจำแนกประเภทความเสี่ยง</li>
+          <li><strong>Rating</strong> — การกำหนดอัตราเบี้ยประกัน</li>
+          <li><strong>Policy Writing</strong> — การออกกรมธรรม์</li>
+          <li><strong>Portfolio Management</strong> — การบริหารพอร์ตโฟลิโอ</li>
+        </ol>
+        <h2>2. เกณฑ์การรับประกันภัยรถยนต์</h2>
+        <p>ปัจจัยที่ใช้ในการประเมินความเสี่ยงรถยนต์ประกอบด้วย:</p>
+        <ul>
+          <li>อายุและประสบการณ์ของผู้ขับขี่</li>
+          <li>ประวัติการเคลม (Loss History)</li>
+          <li>ประเภทและอายุของยานพาหนะ</li>
+          <li>การใช้งานรถยนต์ (ส่วนตัว/พาณิชย์)</li>
+          <li>พื้นที่ใช้งานและความเสี่ยงของพื้นที่</li>
+        </ul>
+      </div>
+    `
+  },
+  {
+    id: 'KB-2569-020',
+    type: 'แนวทาง', typeCls: 'badge-guide',
+    title: 'คู่มือการประเมินความเสี่ยง Marine',
+    version: 'v1.3',
+    author: 'สมชาย กิจการ',
+    date: '14 มี.ค. 69',
+    craf: '2SC', crafCls: 'craf-2sc',
+    views: 67,
+    rating: 4.0, ratingN: 8,
+    status: 'Review', statusCls: 'status-review',
+    tags: ['Marine', 'Risk', 'UW'],
+    reviewDue: null,
+    dept: ['รับประกันภัย'],
+    isSOP: false,
+    content: `<div class="article-header-block"><h1 class="article-main-title">คู่มือการประเมินความเสี่ยง Marine</h1></div><div class="article-content"><p>เนื้อหาอยู่ระหว่างการ Review...</p></div>`
+  },
+  {
+    id: 'KB-2569-008',
+    type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย 2535 และที่แก้ไขเพิ่มเติม',
+    version: 'v1.1',
+    author: 'ทีมกฎหมาย',
+    date: '10 มี.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc',
+    views: 312,
+    rating: 4.5, ratingN: 24,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมาย', 'OIC', 'ประกันวินาศภัย'],
+    reviewDue: '10 มี.ค. 70',
+    dept: ['กฎหมาย'],
+    isSOP: false,
+    content: `<div class="article-header-block"><h1 class="article-main-title">พ.ร.บ.ประกันวินาศภัย 2535</h1></div><div class="article-content"><h2>มาตรา 1</h2><p>เนื้อหากฎหมาย...</p></div>`
+  },
+  {
+    id: 'KB-2568-055',
+    type: 'SOP', typeCls: 'badge-sop',
+    title: 'แนวทาง Marine Underwriting (Expiring)',
+    version: 'v2.4',
+    author: 'อารีย์ แสงดี',
+    date: '15 ม.ค. 69',
+    craf: '2SC', crafCls: 'craf-2sc',
+    views: 145,
+    rating: 3.5, ratingN: 9,
+    status: 'Expiring', statusCls: 'status-expiring',
+    tags: ['Marine', 'UW', 'SOP'],
+    reviewDue: '15 เม.ย. 69',
+    dept: ['รับประกันภัย'],
+    isSOP: true,
+    content: `<div class="article-header-block"><h1 class="article-main-title">แนวทาง Marine Underwriting</h1><p style="color:var(--expiring); font-weight:600;">⚠️ บทความนี้จะหมดอายุใน 7 วัน</p></div>`
+  }
+];
+
+// ═══════════════════════════════════════════════════════
+//  MOCK DATA — กฎหมาย (30 รายการ)
+// ═══════════════════════════════════════════════════════
+const lawContent = (title, cat, articles) => `
+  <div class="article-header-block">
+    <div class="article-header-top">
+      <span class="badge-type badge-wiki">📖 Wiki</span>
+      <h1 class="article-main-title">${title}</h1>
+      <span class="craf-badge craf-4pc">4PC</span>
+    </div>
+    <div class="article-meta-grid">
+      <div class="meta-row"><span class="meta-key">หมวดหมู่:</span><span class="meta-val">กฎหมาย » ${cat}</span></div>
+      <div class="meta-row"><span class="meta-key">สถานะ:</span><span class="meta-val"><span class="status-badge status-published">✅ Published</span></span></div>
+    </div>
+  </div>
+  <div class="article-content">
+    ${articles.map((a,i) => `<h2>${a.num} ${a.title}</h2><p>${a.body}</p>`).join('')}
+  </div>`;
+
+const lawArticles = [
+  // ── ประมวลกฎหมายแพ่งและพาณิชย์ (10 รายการ) ──
+  {
+    id: 'LAW-CIV-001', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 1 – 35: บทเบ็ดเสร็จทั่วไป',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '01 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 210, rating: 4.3, ratingN: 15,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'แพ่ง'], reviewDue: '01 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false,
+    catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 1–35: บทเบ็ดเสร็จทั่วไป', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 1', title:'การใช้บังคับกฎหมาย', body:'กฎหมายจะใช้บังคับแก่กรณีซึ่งต้องด้วยบทบัญญัติใดๆ แห่งกฎหมายทุกตัวอักษร ถ้าไม่มีบทกฎหมายที่จะยกมาปรับคดีได้ ให้วินิจฉัยคดีนั้นตามจารีตประเพณีแห่งท้องถิ่น' },
+      { num:'มาตรา 4', title:'บทสันนิษฐานของกฎหมาย', body:'เมื่อไม่มีบทกฎหมายที่จะยกมาปรับ และไม่มีจารีตประเพณี ให้วินิจฉัยคดีอาศัยหลักกฎหมายทั่วไป' },
+      { num:'มาตรา 15', title:'สภาพบุคคล', body:'สภาพบุคคลย่อมเริ่มแต่เมื่อคลอดแล้วอยู่รอดเป็นทารก และสิ้นสุดลงเมื่อตาย' },
+    ])
+  },
+  {
+    id: 'LAW-CIV-002', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 149 – 153: นิติกรรม หลักทั่วไป',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '02 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 185, rating: 4.1, ratingN: 12,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'นิติกรรม', 'แพ่ง'], reviewDue: '02 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 149–153: นิติกรรม', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 149', title:'ความหมายของนิติกรรม', body:'นิติกรรม หมายความว่า การใดๆ อันทำลงโดยชอบด้วยกฎหมายและด้วยใจสมัคร มุ่งโดยตรงต่อการผูกนิติสัมพันธ์ขึ้นระหว่างบุคคล เพื่อจะก่อ เปลี่ยนแปลง โอน สงวน หรือระงับซึ่งสิทธิ' },
+      { num:'มาตรา 150', title:'นิติกรรมที่เป็นโมฆะ', body:'การใดมีวัตถุประสงค์เป็นการต้องห้ามชัดแจ้งโดยกฎหมาย เป็นการพ้นวิสัย หรือเป็นการขัดต่อความสงบเรียบร้อยหรือศีลธรรมอันดีของประชาชน การนั้นเป็นโมฆะ' },
+    ])
+  },
+  {
+    id: 'LAW-CIV-003', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 354 – 394: สัญญา บทเบ็ดเสร็จทั่วไป',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '03 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 167, rating: 4.2, ratingN: 11,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'สัญญา', 'แพ่ง'], reviewDue: '03 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 354–394: สัญญา', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 354', title:'คำเสนอทำสัญญา', body:'คำเสนอจะทำสัญญาบอกปัดก็ได้ แต่ถ้าบอกปัดเมื่อพ้นเวลาอันสมควรแล้ว ผู้เสนอจะไม่รับผิดต่อผู้รับเสนอก็หาได้ไม่' },
+      { num:'มาตรา 361', title:'การทำสัญญาระหว่างคนอยู่ห่างกัน', body:'อันสัญญาระหว่างบุคคลซึ่งอยู่ห่างกันโดยระยะทางนั้น ย่อมเกิดเป็นสัญญาขึ้นแต่เวลาเมื่อคำบอกกล่าวสนองไปถึงผู้เสนอ' },
+    ])
+  },
+  {
+    id: 'LAW-CIV-004', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 420 – 452: ละเมิด',
+    version: 'v1.2', author: 'ทีมกฎหมาย', date: '04 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 298, rating: 4.6, ratingN: 22,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'ละเมิด', 'แพ่ง'], reviewDue: '04 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 420–452: ละเมิด', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 420', title:'ความรับผิดเพื่อละเมิด', body:'ผู้ใดจงใจหรือประมาทเลินเล่อ ทำต่อบุคคลอื่นโดยผิดกฎหมายให้เขาเสียหายถึงแก่ชีวิตก็ดี แก่ร่างกายก็ดี อนามัยก็ดี เสรีภาพก็ดี ทรัพย์สินหรือสิทธิอย่างหนึ่งอย่างใดก็ดี ท่านว่าผู้นั้นทำละเมิด จำต้องใช้ค่าสินไหมทดแทนเพื่อการนั้น' },
+      { num:'มาตรา 438', title:'ค่าสินไหมทดแทน', body:'ค่าสินไหมทดแทนจะพึงใช้โดยสถานใดเพียงใดนั้น ให้ศาลวินิจฉัยตามควรแก่พฤติการณ์และความร้ายแรงแห่งละเมิด' },
+    ])
+  },
+  {
+    id: 'LAW-CIV-005', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 193/1 – 193/35: อายุความ',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '05 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 143, rating: 4.0, ratingN: 9,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'อายุความ', 'แพ่ง'], reviewDue: '05 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 193: อายุความ', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 193/9', title:'อายุความทั่วไป', body:'สิทธิเรียกร้องใดๆ ถ้ามิได้ใช้บังคับภายในสิบปี สิทธิเรียกร้องนั้นเป็นอันขาดอายุความ' },
+      { num:'มาตรา 193/30', title:'อายุความ 2 ปี', body:'ในกรณีค่าเสียหายอันเกิดแต่มูลละเมิด มีอายุความสองปีนับแต่วันที่ผู้ต้องเสียหายรู้ถึงการละเมิดและรู้ตัวผู้จะพึงต้องใช้ค่าสินไหมทดแทน' },
+    ])
+  },
+  {
+    id: 'LAW-CIV-006', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 653 – 679: ยืม (Loan)',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '06 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 89, rating: 3.9, ratingN: 7,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'สัญญายืม', 'แพ่ง'], reviewDue: '06 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 653–679: ยืม', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 653', title:'สัญญายืมใช้คงรูป', body:'อันว่ายืมใช้คงรูปนั้น คือสัญญาซึ่งบุคคลคนหนึ่งเรียกว่าผู้ให้ยืม ให้บุคคลอีกคนหนึ่งเรียกว่าผู้ยืมใช้สอยทรัพย์สินสิ่งใดสิ่งหนึ่งได้เปล่า และผู้ยืมตกลงว่าจะคืนทรัพย์สินนั้น' },
+    ])
+  },
+  {
+    id: 'LAW-CIV-007', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 850 – 868: ประนีประนอมยอมความ',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '07 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 124, rating: 4.1, ratingN: 10,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'ประนีประนอม', 'แพ่ง'], reviewDue: '07 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 850–868: ประนีประนอมยอมความ', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 850', title:'ประนีประนอมยอมความ', body:'อันว่าประนีประนอมยอมความนั้น คือสัญญาซึ่งผู้เป็นคู่สัญญาทั้งสองฝ่ายระงับข้อพิพาทอันใดอันหนึ่งซึ่งมีอยู่หรือจะมีขึ้นนั้นให้เสร็จไปด้วยต่างยอมผ่อนผันให้แก่กัน' },
+    ])
+  },
+  {
+    id: 'LAW-CIV-008', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 1523 – 1535: มรดก หลักทั่วไป',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '08 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 78, rating: 3.8, ratingN: 6,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'มรดก', 'แพ่ง'], reviewDue: '08 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 1523–1535: มรดก', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 1523', title:'สิทธิรับมรดก', body:'เมื่อบุคคลใดตาย มรดกของบุคคลนั้นตกทอดแก่ทายาท' },
+    ])
+  },
+  {
+    id: 'LAW-CIV-009', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 571 – 600: เช่าทรัพย์',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '09 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 95, rating: 4.0, ratingN: 8,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'เช่าทรัพย์', 'แพ่ง'], reviewDue: '09 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 571–600: เช่าทรัพย์', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 571', title:'สัญญาเช่าทรัพย์', body:'อันว่าเช่าทรัพย์นั้น คือสัญญาซึ่งบุคคลคนหนึ่งเรียกว่าผู้ให้เช่า ตกลงให้บุคคลอีกคนหนึ่งเรียกว่าผู้เช่าได้ใช้หรือได้รับประโยชน์ในทรัพย์สินอย่างใดอย่างหนึ่ง ชั่วระยะเวลาอันมีจำกัด และผู้เช่าตกลงจะให้ค่าเช่าเพื่อการนั้น' },
+    ])
+  },
+  {
+    id: 'LAW-CIV-010', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'ป.พ.พ. มาตรา 680 – 733: ค้ำประกัน',
+    version: 'v1.1', author: 'ทีมกฎหมาย', date: '10 ม.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 156, rating: 4.3, ratingN: 14,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['กฎหมายแพ่ง', 'ป.พ.พ.', 'ค้ำประกัน', 'แพ่ง'], reviewDue: '10 ม.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'แพ่ง',
+    content: lawContent('ป.พ.พ. มาตรา 680–733: ค้ำประกัน', 'ประมวลกฎหมายแพ่ง', [
+      { num:'มาตรา 680', title:'สัญญาค้ำประกัน', body:'อันว่าค้ำประกันนั้น คือสัญญาซึ่งบุคคลภายนอกคนหนึ่ง เรียกว่าผู้ค้ำประกัน ผูกพันตนต่อเจ้าหนี้คนหนึ่งเพื่อชำระหนี้ในเมื่อลูกหนี้ไม่ชำระหนี้นั้น' },
+    ])
+  },
+
+  // ── พ.ร.บ.บริษัทมหาชนจำกัด 2535 (10 รายการ) ──
+  {
+    id: 'LAW-PLC-001', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 1 – 20: บทนิยามและหลักการ',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '01 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 134, rating: 4.0, ratingN: 10,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'พ.ร.บ.บริษัทมหาชน', 'บริษัทมหาชน'], reviewDue: '01 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 1–20: บทนิยาม', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 4', title:'บทนิยาม', body:'"บริษัท" หมายความว่า บริษัทมหาชนจำกัดที่จัดตั้งขึ้นตามพระราชบัญญัตินี้ "ผู้ถือหุ้น" หมายความว่า ผู้ถือหุ้นของบริษัท' },
+      { num:'มาตรา 15', title:'จำนวนผู้เริ่มก่อการ', body:'บริษัทจะจัดตั้งได้ต้องมีผู้เริ่มก่อการตั้งแต่สิบห้าคนขึ้นไป' },
+    ])
+  },
+  {
+    id: 'LAW-PLC-002', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 65 – 95: หุ้นและผู้ถือหุ้น',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '02 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 119, rating: 4.1, ratingN: 9,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'หุ้น', 'ผู้ถือหุ้น', 'บริษัทมหาชน'], reviewDue: '02 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 65–95: หุ้น', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 65', title:'ประเภทหุ้น', body:'หุ้นของบริษัทจะออกเป็นหุ้นสามัญหรือหุ้นบุริมสิทธิก็ได้ หุ้นทุกหุ้นต้องมีราคาเท่ากัน' },
+      { num:'มาตรา 69', title:'การชำระค่าหุ้น', body:'ผู้ถือหุ้นต้องชำระค่าหุ้นครบถ้วนก่อนจึงจะได้สิทธิออกเสียงในที่ประชุมผู้ถือหุ้น' },
+    ])
+  },
+  {
+    id: 'LAW-PLC-003', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 96 – 125: คณะกรรมการ',
+    version: 'v1.1', author: 'ทีมกฎหมาย', date: '03 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 201, rating: 4.4, ratingN: 16,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'คณะกรรมการ', 'กรรมการ', 'บริษัทมหาชน'], reviewDue: '03 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 96–125: คณะกรรมการ', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 96', title:'การจัดตั้งคณะกรรมการ', body:'ให้บริษัทมีคณะกรรมการคณะหนึ่ง ประกอบด้วยกรรมการอย่างน้อยห้าคน และกรรมการไม่น้อยกว่ากึ่งหนึ่งของจำนวนกรรมการทั้งหมดต้องมีถิ่นที่อยู่ในราชอาณาจักร' },
+      { num:'มาตรา 110', title:'การประชุมคณะกรรมการ', body:'คณะกรรมการต้องประชุมอย่างน้อยทุกสามเดือนครั้งหนึ่ง' },
+    ])
+  },
+  {
+    id: 'LAW-PLC-004', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 126 – 156: ที่ประชุมผู้ถือหุ้น',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '04 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 178, rating: 4.2, ratingN: 13,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'ที่ประชุมผู้ถือหุ้น', 'AGM', 'บริษัทมหาชน'], reviewDue: '04 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 126–156: ที่ประชุมผู้ถือหุ้น', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 126', title:'ที่ประชุมสามัญ', body:'บริษัทต้องจัดให้มีการประชุมผู้ถือหุ้นเป็นการประชุมสามัญภายในสี่เดือนนับแต่วันสิ้นสุดของรอบปีบัญชีของบริษัท' },
+    ])
+  },
+  {
+    id: 'LAW-PLC-005', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 157 – 178: เงินปันผล',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '05 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 145, rating: 4.1, ratingN: 11,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'เงินปันผล', 'dividend', 'บริษัทมหาชน'], reviewDue: '05 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 157–178: เงินปันผล', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 157', title:'การจ่ายเงินปันผล', body:'บริษัทจะจ่ายเงินปันผลได้ก็แต่โดยมติของที่ประชุมผู้ถือหุ้น และต้องจ่ายตามส่วนจำนวนหุ้นที่ผู้ถือหุ้นมีอยู่' },
+    ])
+  },
+  {
+    id: 'LAW-PLC-006', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 179 – 196: งบการเงิน',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '06 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 112, rating: 4.0, ratingN: 8,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'งบการเงิน', 'บัญชี', 'บริษัทมหาชน'], reviewDue: '06 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 179–196: งบการเงิน', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 179', title:'การจัดทำงบการเงิน', body:'ให้คณะกรรมการจัดให้มีการทำงบดุล บัญชีกำไรขาดทุน และรายงานประจำปีเสนอต่อที่ประชุมสามัญผู้ถือหุ้น' },
+    ])
+  },
+  {
+    id: 'LAW-PLC-007', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 197 – 218: การแก้ไขข้อบังคับ',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '07 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 98, rating: 3.9, ratingN: 7,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'ข้อบังคับ', 'การแก้ไข', 'บริษัทมหาชน'], reviewDue: '07 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 197–218: การแก้ไขข้อบังคับ', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 197', title:'การแก้ไขข้อบังคับ', body:'การแก้ไขหนังสือบริคณห์สนธิหรือข้อบังคับของบริษัทจะกระทำได้โดยมติพิเศษ' },
+    ])
+  },
+  {
+    id: 'LAW-PLC-008', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 219 – 240: การเพิ่มทุน-ลดทุน',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '08 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 163, rating: 4.2, ratingN: 12,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'เพิ่มทุน', 'ลดทุน', 'บริษัทมหาชน'], reviewDue: '08 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 219–240: การเพิ่มทุน-ลดทุน', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 219', title:'การเพิ่มทุน', body:'บริษัทจะเพิ่มทุนได้ก็แต่โดยมติพิเศษและต้องออกหุ้นใหม่' },
+      { num:'มาตรา 230', title:'การลดทุน', body:'บริษัทจะลดทุนได้ก็แต่โดยมติพิเศษ' },
+    ])
+  },
+  {
+    id: 'LAW-PLC-009', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 241 – 262: การควบบริษัท',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '09 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 87, rating: 4.0, ratingN: 6,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'ควบรวม', 'M&A', 'บริษัทมหาชน'], reviewDue: '09 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 241–262: การควบบริษัท', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 241', title:'การควบบริษัท', body:'บริษัทตั้งแต่สองบริษัทขึ้นไปจะควบเข้ากันได้ก็แต่โดยมติพิเศษของแต่ละบริษัท' },
+    ])
+  },
+  {
+    id: 'LAW-PLC-010', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.บริษัทมหาชน มาตรา 263 – 285: การเลิกบริษัท',
+    version: 'v1.0', author: 'ทีมกฎหมาย', date: '10 ก.พ. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 74, rating: 3.8, ratingN: 5,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['บริษัทมหาชน', 'เลิกบริษัท', 'ชำระบัญชี', 'บริษัทมหาชน'], reviewDue: '10 ก.พ. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'บริษัทมหาชน',
+    content: lawContent('พ.ร.บ.บริษัทมหาชน มาตรา 263–285: การเลิกบริษัท', 'พ.ร.บ.บริษัทมหาชน', [
+      { num:'มาตรา 263', title:'เหตุเลิกบริษัท', body:'บริษัทย่อมเลิกกันเมื่อที่ประชุมผู้ถือหุ้นมีมติพิเศษให้เลิก หรือเมื่อมีเหตุตามที่กฎหมายกำหนด' },
+    ])
+  },
+
+  // ── พ.ร.บ.ประกันวินาศภัย 2535 (10 รายการ) ──
+  {
+    id: 'LAW-INS-001', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย มาตรา 1 – 25: บทนิยามและหน่วยงานกำกับ',
+    version: 'v2.0', author: 'ทีมกฎหมาย', date: '01 มี.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 389, rating: 4.7, ratingN: 30,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'OIC', 'คปภ.', 'ประกันวินาศภัย'], reviewDue: '01 มี.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('พ.ร.บ.ประกันวินาศภัย มาตรา 1–25: บทนิยาม', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'มาตรา 4', title:'บทนิยาม', body:'"การประกันวินาศภัย" หมายความว่า การประกันภัยซึ่งบริษัทรับประกันภัยความเสียหายอันอาจจะเกิดขึ้นแก่วัตถุที่เอาประกันภัยหรือรับประกันความรับผิดชอบตามกฎหมายต่อบุคคลภายนอก' },
+      { num:'มาตรา 7', title:'สำนักงาน คปภ.', body:'ให้มีสำนักงานคณะกรรมการกำกับและส่งเสริมการประกอบธุรกิจประกันภัย เรียกโดยย่อว่า "สำนักงาน คปภ."' },
+    ])
+  },
+  {
+    id: 'LAW-INS-002', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย มาตรา 26 – 50: การขอรับใบอนุญาต',
+    version: 'v2.0', author: 'ทีมกฎหมาย', date: '02 มี.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 267, rating: 4.5, ratingN: 20,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'ใบอนุญาต', 'OIC', 'ประกันวินาศภัย'], reviewDue: '02 มี.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('พ.ร.บ.ประกันวินาศภัย มาตรา 26–50: ใบอนุญาต', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'มาตรา 26', title:'การขอใบอนุญาต', body:'ผู้ใดประสงค์จะประกอบธุรกิจประกันวินาศภัยต้องได้รับใบอนุญาตจากรัฐมนตรี โดยคำแนะนำของคณะกรรมการ' },
+      { num:'มาตรา 27', title:'คุณสมบัติผู้ขอใบอนุญาต', body:'ผู้ขอรับใบอนุญาตต้องเป็นบริษัทจำกัดหรือบริษัทมหาชนจำกัดที่จัดตั้งขึ้นตามกฎหมายไทย และมีทุนจดทะเบียนชำระแล้วไม่น้อยกว่าที่กำหนดในกฎกระทรวง' },
+    ])
+  },
+  {
+    id: 'LAW-INS-003', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย มาตรา 51 – 75: การดำเนินกิจการ',
+    version: 'v2.0', author: 'ทีมกฎหมาย', date: '03 มี.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 312, rating: 4.6, ratingN: 25,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'กรมธรรม์', 'เบี้ยประกัน', 'ประกันวินาศภัย'], reviewDue: '03 มี.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('พ.ร.บ.ประกันวินาศภัย มาตรา 51–75: การดำเนินกิจการ', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'มาตรา 51', title:'กรมธรรม์ประกันภัย', body:'บริษัทต้องออกกรมธรรม์ประกันภัยให้แก่ผู้เอาประกันภัยทุกรายซึ่งต้องมีรายการตามที่คณะกรรมการกำหนด' },
+      { num:'มาตรา 57', title:'การกำหนดเบี้ยประกันภัย', body:'อัตราเบี้ยประกันภัยต้องได้รับความเห็นชอบจากนายทะเบียน' },
+    ])
+  },
+  {
+    id: 'LAW-INS-004', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย มาตรา 76 – 100: สินทรัพย์และเงินสำรอง',
+    version: 'v2.0', author: 'ทีมกฎหมาย', date: '04 มี.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 245, rating: 4.4, ratingN: 18,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'เงินสำรอง', 'สินทรัพย์', 'ประกันวินาศภัย'], reviewDue: '04 มี.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('พ.ร.บ.ประกันวินาศภัย มาตรา 76–100: สินทรัพย์และเงินสำรอง', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'มาตรา 76', title:'เงินสำรองตามกฎหมาย', body:'บริษัทต้องดำรงเงินสำรองสำหรับเบี้ยประกันภัยที่ยังไม่ถือเป็นรายได้ เงินสำรองสำหรับค่าสินไหมทดแทน และเงินสำรองอื่นตามที่คณะกรรมการกำหนด' },
+    ])
+  },
+  {
+    id: 'LAW-INS-005', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย มาตรา 101 – 120: การตรวจสอบและรายงาน',
+    version: 'v2.0', author: 'ทีมกฎหมาย', date: '05 มี.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 198, rating: 4.3, ratingN: 15,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'รายงาน', 'คปภ.', 'ประกันวินาศภัย'], reviewDue: '05 มี.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('พ.ร.บ.ประกันวินาศภัย มาตรา 101–120: การตรวจสอบ', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'มาตรา 101', title:'การส่งรายงาน', body:'บริษัทต้องจัดทำและส่งรายงานและงบการเงินประจำปีต่อนายทะเบียนภายในสี่เดือนนับแต่วันสิ้นรอบปีบัญชี' },
+    ])
+  },
+  {
+    id: 'LAW-INS-006', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย มาตรา 121 – 140: การจ่ายค่าสินไหมทดแทน',
+    version: 'v2.1', author: 'ทีมกฎหมาย', date: '06 มี.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 456, rating: 4.8, ratingN: 35,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'สินไหม', 'ค่าสินไหม', 'ประกันวินาศภัย'], reviewDue: '06 มี.ค. 70',
+    dept: ['กฎหมาย', 'สินไหมทดแทน'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('พ.ร.บ.ประกันวินาศภัย มาตรา 121–140: ค่าสินไหมทดแทน', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'มาตรา 121', title:'กำหนดจ่ายสินไหม', body:'เมื่อบริษัทได้รับหลักฐานจากผู้รับประโยชน์ครบถ้วนแล้ว ต้องจ่ายค่าสินไหมทดแทนหรือค่าชดเชยภายในสิบห้าวัน' },
+      { num:'มาตรา 122', title:'ดอกเบี้ยผิดนัด', body:'ถ้าบริษัทมิได้จ่ายค่าสินไหมทดแทนภายในกำหนด บริษัทต้องชำระดอกเบี้ยในอัตราร้อยละสิบห้าต่อปีของจำนวนเงินที่ค้างชำระ' },
+    ])
+  },
+  {
+    id: 'LAW-INS-007', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย มาตรา 141 – 160: ตัวแทนและนายหน้า',
+    version: 'v2.0', author: 'ทีมกฎหมาย', date: '07 มี.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 223, rating: 4.3, ratingN: 17,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'ตัวแทน', 'นายหน้า', 'ประกันวินาศภัย'], reviewDue: '07 มี.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('พ.ร.บ.ประกันวินาศภัย มาตรา 141–160: ตัวแทนและนายหน้า', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'มาตรา 141', title:'ตัวแทนประกันวินาศภัย', body:'ผู้ใดประสงค์จะเป็นตัวแทนประกันวินาศภัยต้องได้รับใบอนุญาตจากนายทะเบียน' },
+      { num:'มาตรา 150', title:'นายหน้าประกันวินาศภัย', body:'นายหน้าประกันวินาศภัยต้องมีใบอนุญาตและปฏิบัติตามหลักเกณฑ์ที่คณะกรรมการกำหนด' },
+    ])
+  },
+  {
+    id: 'LAW-INS-008', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย มาตรา 161 – 180: บทกำหนดโทษ',
+    version: 'v2.0', author: 'ทีมกฎหมาย', date: '08 มี.ค. 69',
+    craf: '4PC', crafCls: 'craf-4pc', views: 187, rating: 4.2, ratingN: 14,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'โทษ', 'บทลงโทษ', 'ประกันวินาศภัย'], reviewDue: '08 มี.ค. 70',
+    dept: ['กฎหมาย'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('พ.ร.บ.ประกันวินาศภัย มาตรา 161–180: บทกำหนดโทษ', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'มาตรา 161', title:'โทษฝ่าฝืนบทบัญญัติ', body:'ผู้ใดฝ่าฝืนหรือไม่ปฏิบัติตามพระราชบัญญัตินี้ ต้องระวางโทษตามที่บัญญัติไว้ในหมวดนี้' },
+    ])
+  },
+  {
+    id: 'LAW-INS-009', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย: OIC Circular 2566 — Data Classification',
+    version: 'v3.0', author: 'ทีมกฎหมาย', date: '09 มี.ค. 69',
+    craf: '3NC', crafCls: 'craf-3nc', views: 534, rating: 4.9, ratingN: 42,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'OIC', 'CRAF', 'Circular 2566', 'ประกันวินาศภัย'], reviewDue: '09 มี.ค. 70',
+    dept: ['กฎหมาย', 'IT'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('OIC Circular 2566: Data Classification (CRAF)', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'หมวด 1', title:'การจำแนกประเภทข้อมูล', body:'คปภ. กำหนดให้บริษัทประกันภัยจำแนกข้อมูลออกเป็น 4 ระดับ ได้แก่ 1HC (High Confidential), 2SC (Semi Confidential), 3NC (Normal Confidential), และ 4PC (Public Confidential)' },
+      { num:'หมวด 2', title:'มาตรการคุ้มครองข้อมูล', body:'แต่ละระดับความลับต้องมีมาตรการคุ้มครองข้อมูลที่เหมาะสม รวมถึงการกำหนดสิทธิ์การเข้าถึง การเข้ารหัส และการตรวจสอบการใช้งาน' },
+    ])
+  },
+  {
+    id: 'LAW-INS-010', type: 'Wiki', typeCls: 'badge-wiki',
+    title: 'พ.ร.บ.ประกันวินาศภัย: แนวปฏิบัติด้าน PDPA สำหรับบริษัทประกันภัย',
+    version: 'v2.2', author: 'ทีมกฎหมาย', date: '10 มี.ค. 69',
+    craf: '3NC', crafCls: 'craf-3nc', views: 478, rating: 4.8, ratingN: 38,
+    status: 'Published', statusCls: 'status-published',
+    tags: ['ประกันวินาศภัย', 'PDPA', 'ข้อมูลส่วนบุคคล', 'ประกันวินาศภัย'], reviewDue: '10 มี.ค. 70',
+    dept: ['กฎหมาย', 'IT'], isSOP: false, catKey: 'ประกันวินาศภัย',
+    content: lawContent('PDPA สำหรับบริษัทประกันภัย', 'พ.ร.บ.ประกันวินาศภัย', [
+      { num:'หมวด 1', title:'ข้อมูลส่วนบุคคลในธุรกิจประกันภัย', body:'บริษัทประกันภัยเก็บรวบรวมข้อมูลส่วนบุคคลจำนวนมาก ได้แก่ ชื่อ ที่อยู่ ข้อมูลสุขภาพ ข้อมูลทางการเงิน ซึ่งถือเป็นข้อมูลอ่อนไหวที่ต้องได้รับความยินยอมเป็นพิเศษ' },
+      { num:'หมวด 2', title:'สิทธิ์ของเจ้าของข้อมูล', body:'เจ้าของข้อมูลมีสิทธิ์เข้าถึง แก้ไข ลบ โอน และคัดค้านการประมวลผลข้อมูลส่วนบุคคลของตน ซึ่งบริษัทต้องดำเนินการให้แล้วเสร็จภายใน 30 วัน' },
+    ])
+  }
+];
+
+const articles = [...existingArticles, ...lawArticles];
+let allArticles = [...articles];
+let filteredArticles = [...allArticles];
+
+// ═══════════════════════════════════════════════════════
+//  RENDER ARTICLES
+// ═══════════════════════════════════════════════════════
+function renderArticles(list) {
+  const container = document.getElementById('articleList');
+  const pageInfo = document.getElementById('pageInfo');
+  if (pageInfo) pageInfo.textContent = `แสดง 1-${list.length} จาก ${list.length} รายการ`;
+  if (list.length === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-light);">
+      <div style="font-size:40px; margin-bottom:12px;">🔍</div>
+      <div>ไม่พบบทความที่ตรงกับเงื่อนไข</div>
+    </div>`;
+    return;
+  }
+  container.innerHTML = list.map(a => `
+    <div class="article-card" id="card-${a.id}" onclick="openViewer('${a.id}')">
+      <div class="card-header">
+        <span class="badge-type ${a.typeCls}">${a.type}</span>
+        <span class="card-title">${a.title}
+          <span style="font-size:11px; font-weight:400; color:var(--text-light)"> ${a.version}</span>
+        </span>
+        <button class="card-menu-btn" onclick="event.stopPropagation(); showContextMenu(event,'${a.id}')">⋮</button>
+      </div>
+      <div class="card-meta">
+        <span>📋 ${a.id}</span>
+        <span>👤 ${a.author}</span>
+        <span>📅 ${a.date}</span>
+      </div>
+      <div class="card-tags">
+        <span class="craf-badge ${a.crafCls}">${a.craf}</span>
+        <span class="stars">${getStars(a.rating)}</span>
+        <span style="font-size:10px; color:var(--text-light);">(${a.ratingN})</span>
+        <span style="margin-left:4px;">📖 ${a.views} ครั้ง</span>
+        <span class="status-badge ${a.statusCls}" style="margin-left:4px;">
+          ${getStatusIcon(a.status)} ${a.status}
+        </span>
+        ${a.reviewDue ? `<span style="font-size:10px; color:var(--text-light);">Review: ${a.reviewDue}</span>` : ''}
+      </div>
+      <div class="card-tags">
+        ${a.tags.map(t => `<span class="tag">🏷️ ${t}</span>`).join('')}
+        ${a.dept.map(d => `<span class="tag" style="background:#E8F4FD; color:#1A5276;">🏢 ${d}</span>`).join('')}
+      </div>
+      <div class="card-footer">
+        <span class="card-stats">📖 ${a.views} ครั้ง | ${a.date}</span>
+        <div class="card-actions">
+          <button class="action-btn" onclick="event.stopPropagation(); openViewer('${a.id}')">👁️ อ่าน</button>
+          <button class="action-btn" onclick="event.stopPropagation(); window.open('kms_editor.html','_blank')">✏️ แก้ไข</button>
+          <button class="action-btn" onclick="event.stopPropagation(); showToast('คัดลอก Share Link','success')">📤 แชร์</button>
+          ${a.status === 'Draft' ? `<button class="action-btn publish" onclick="event.stopPropagation(); showToast('ส่ง Review แล้ว','success')">📤 ส่ง Review</button>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getStars(rating) {
+  const full = Math.floor(rating);
+  const half = rating % 1 >= 0.5;
+  let s = '★'.repeat(full);
+  if (half) s += '½';
+  s += '☆'.repeat(5 - full - (half ? 1 : 0));
+  return s;
+}
+
+function getStatusIcon(s) {
+  return {
+    'Published': '✅', 'Draft': '🔴', 'Review': '🟡',
+    'Archived': '⚫', 'Expiring': '🟠'
+  }[s] || '';
+}
+
+// ═══════════════════════════════════════════════════════
+//  VIEWER
+// ═══════════════════════════════════════════════════════
+function openViewer(id) {
+  const art = allArticles.find(a => a.id === id);
+  if (!art) return;
+
+  document.getElementById('viewerTitle').textContent = `👁️ ดูบทความ: ${art.title}`;
+  document.getElementById('viewerMain').innerHTML = art.content;
+  document.getElementById('viewerInfoPanel').innerHTML = `
+    <div class="right-section-title">📋 ข้อมูลบทความ</div>
+    <div style="font-size:11px; line-height:1.8;">
+      <div><span class="badge-type ${art.typeCls}" style="font-size:9px;">${art.type}</span>
+        <span class="status-badge ${art.statusCls}" style="margin-left:4px;">${art.status}</span>
+      </div>
+      <div style="margin-top:6px;"><strong>${art.id}</strong> | Version ${art.version}</div>
+      <div style="color:var(--text-light)">หมวดหมู่: ความรู้สินไหม</div>
+      <div style="color:var(--text-light)">ระดับความลับ: <span class="craf-badge ${art.crafCls}">${art.craf}</span></div>
+      <div style="margin-top:4px;">👤 ${art.author}</div>
+      <div>📅 ${art.date}</div>
+    </div>
+  `;
+
+  document.getElementById('viewerOverlay').classList.add('visible');
+}
+
+function closeViewer() {
+  document.getElementById('viewerOverlay').classList.remove('visible');
+}
+
+function acknowledgeSOp() {
+  showToast('✅ รับทราบ SOP เรียบร้อย — ระบบบันทึกแล้ว', 'success');
+}
+
+function switchMapTab(btn, tabId) {
+  document.querySelectorAll('.map-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.map-tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════
+//  FILTERS
+// ═══════════════════════════════════════════════════════
+function filterArticles(q) {
+  if (!q) { filteredArticles = [...allArticles]; }
+  else {
+    q = q.toLowerCase();
+    filteredArticles = allArticles.filter(a =>
+      a.title.toLowerCase().includes(q) ||
+      a.id.toLowerCase().includes(q) ||
+      a.tags.some(t => t.toLowerCase().includes(q)) ||
+      a.author.toLowerCase().includes(q)
+    );
+  }
+  renderArticles(filteredArticles);
+}
+
+function filterByCategory(cat) {
+  document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active'));
+  if (event && event.target) {
+    const node = event.target.closest('.tree-node');
+    if (node) node.classList.add('active');
+  }
+  if (cat === 'all') {
+    filteredArticles = [...allArticles];
+  } else if (cat === 'กฎหมาย') {
+    // แสดงทั้งหมดในหมวดกฎหมาย
+    filteredArticles = allArticles.filter(a =>
+      a.catKey || a.dept.some(d => d.includes('กฎหมาย')) || a.tags.some(t => t.includes('กฎหมาย'))
+    );
+  } else if (['แพ่ง', 'บริษัทมหาชน', 'ประกันวินาศภัย'].includes(cat)) {
+    // หมวดย่อยกฎหมาย — match catKey
+    filteredArticles = allArticles.filter(a => a.catKey === cat);
+  } else {
+    filteredArticles = allArticles.filter(a =>
+      a.tags.some(t => t.includes(cat)) ||
+      a.type.includes(cat) ||
+      a.dept.some(d => d.includes(cat))
+    );
+  }
+  renderArticles(filteredArticles);
+}
+
+function applyFilter() { renderArticles(filteredArticles); }
+function clearFilter() {
+  filteredArticles = [...allArticles];
+  renderArticles(filteredArticles);
+  showToast('ล้างฟิลเตอร์แล้ว', 'info');
+}
+
+function sortArticles(val) {
+  if (val.includes('ชื่อ')) filteredArticles.sort((a,b) => a.title.localeCompare(b.title,'th'));
+  else if (val.includes('ยอดอ่าน')) filteredArticles.sort((a,b) => b.views - a.views);
+  else if (val.includes('คะแนน')) filteredArticles.sort((a,b) => b.rating - a.rating);
+  renderArticles(filteredArticles);
+}
+
+function showContextMenu(e, id) {
+  e.preventDefault();
+  showToast(`เมนูสำหรับ ${id}`, 'info');
+}
+
+// ═══════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icons = { success:'✅', warning:'⚠️', error:'❌', info:'ℹ️' };
+  t.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(100%)'; t.style.transition='all 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// ═══════════════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════════════
+function getCurrentTime() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function updateClock() {
+  document.getElementById('clock').textContent = getCurrentTime();
+}
+setInterval(updateClock, 1000);
+
+// Init
+renderArticles(allArticles);
+updateClock();
+
+// Demo: open viewer after 1s for first article
+// setTimeout(() => openViewer('KB-2569-001'), 800);
+</script>
+</body>
+</html>

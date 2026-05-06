@@ -77,9 +77,14 @@ namespace CMS.Presentation.Modules.KMS
             pnlUploadZone.DragEnter += PnlUploadZone_DragEnter;
             pnlUploadZone.DragDrop  += PnlUploadZone_DragDrop;
 
+            // Distribute pill widths evenly on load and whenever the panel resizes
+            pnlSummaryPills.Resize   += (s, ev) => DistributePillWidths();
+            pnlCompleteStats.Resize  += (s, ev) => DistributeStatWidths();
+            DistributePillWidths();
+            DistributeStatWidths();
+
             // Resize all step panels to match the content container
-            pnlContent.Resize += (s, ev) => SyncStepPanelSizes();
-            SyncStepPanelSizes();
+            // (no longer needed — vertical scroll layout uses DockStyle.Top)
 
             ShowStep(1);
         }
@@ -122,6 +127,7 @@ namespace CMS.Presentation.Modules.KMS
                 "📥  นำเข้า ({0} รายการ)", result.ValidRecords + result.WarningRecords);
 
             PopulatePreviewGrid(result.Rows);
+            BindValidationItems(result);
             ShowStep(2);
             SetStatus("ตรวจสอบข้อมูลเรียบร้อย");
         }
@@ -134,6 +140,10 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (summary == null) return;
 
+            // TotalRecords  = total rows in the file
+            // ValidRecords  = successfully inserted rows
+            // WarningRecords = rows that had warnings (imported or skipped depending on option)
+            // ErrorRecords  = rows that failed or were skipped (pre-filter errors + insert errors)
             lblCompleteTotalNum.Text   = summary.TotalRecords.ToString();
             lblCompleteSuccessNum.Text = summary.ValidRecords.ToString();
             lblCompleteWarnNum.Text    = summary.WarningRecords.ToString();
@@ -157,14 +167,7 @@ namespace CMS.Presentation.Modules.KMS
             lblStatusMessage.Text = message;
         }
 
-        // ── Sync step-panel sizes to fill pnlContent ────────────────────────────
-        private void SyncStepPanelSizes()
-        {
-            var sz = pnlContent.ClientSize;
-            pnlStep1.Size = sz;
-            pnlStep2.Size = sz;
-            pnlStep3.Size = sz;
-        }
+        // ── (removed — vertical scroll layout uses DockStyle.Top, no resize needed) ──
 
         // ── Template combo ──────────────────────────────────────────────────────
         private void InitTemplateCombo()
@@ -181,17 +184,33 @@ namespace CMS.Presentation.Modules.KMS
         private void PopulateColumnReference()
         {
             lvColumnRef.Items.Clear();
+
+            // Columns A–T as defined in requirements.md (Requirement 1.2)
+            // Required columns: A, B, C, D, E, F, H, J, L, N, P, R, T
             var cols = new[]
             {
-                new { L="A", F="ชื่อบทความ",          T="Text (max 200)",                R=true,  E="นโยบายการรับสินไหมทดแทน" },
-                new { L="B", F="ประเภทบทความ",        T="Enum: SOP/FAQ/แนวทาง/Template", R=true,  E="SOP" },
-                new { L="C", F="หมวดหมู่",            T="Text — ต้องมีในระบบ",            R=true,  E="ความรู้ประกันภัย > UW" },
-                new { L="D", F="ระดับความลับ (CRAF)", T="Enum: 1HC/2SC/3NC/4PC",         R=true,  E="3NC" },
-                new { L="E", F="แท็ก",                T="Text คั่นด้วย comma",            R=false, E="UW, Claims, OIC" },
-                new { L="F", F="ฝ่าย/แผนก",          T="Text คั่นด้วย comma",            R=false, E="สินไหมทดแทน, UW" },
-                new { L="G", F="วันหมดอายุ",          T="Date (DD/MM/YYYY)",              R=false, E="20/03/2570" },
-                new { L="H", F="เนื้อหาบทความ",      T="Text (HTML หรือ Plain Text)",    R=false, E="เนื้อหาบทความ..." },
+                new { L="A",  F="รหัสหมวดหมู่หลัก (ParentCategory)",  T="Text",                          R=true,  E="LW" },
+                new { L="B",  F="รหัสหมวดหมู่ย่อย (SubCategory)",     T="Numeric",                       R=true,  E="03" },
+                new { L="C",  F="ชื่อหมวดหมู่ (CategoryName)",        T="Text",                          R=true,  E="กฎหมายประกันภัย" },
+                new { L="D",  F="รหัสส่วนที่ 3 (code segment 3)",      T="Numeric",                       R=true,  E="003" },
+                new { L="E",  F="ชื่อบทความ / สรุปส่วนที่ 1",         T="Text",                          R=true,  E="มาตรา 31" },
+                new { L="F",  F="รหัสส่วนที่ 4 (code segment 4)",      T="Numeric",                       R=true,  E="1" },
+                new { L="G",  F="สรุปส่วนที่ 2 (summary segment 2)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
+                new { L="H",  F="รหัสส่วนที่ 5 (code segment 5)",      T="Numeric",                       R=true,  E="0002" },
+                new { L="I",  F="สรุปส่วนที่ 3 (summary segment 3)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="ไม่มีค่า" },
+                new { L="J",  F="รหัสส่วนที่ 6 (code segment 6)",      T="Numeric",                       R=true,  E="03" },
+                new { L="K",  F="สรุปส่วนที่ 4 (summary segment 4)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
+                new { L="L",  F="รหัสส่วนที่ 7 (code segment 7)",      T="Numeric",                       R=true,  E="0000" },
+                new { L="M",  F="สรุปส่วนที่ 5 (summary segment 5)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
+                new { L="N",  F="รหัสส่วนที่ 8 (code segment 8)",      T="Numeric",                       R=true,  E="000" },
+                new { L="O",  F="สรุปส่วนที่ 6 (summary segment 6)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
+                new { L="P",  F="รหัสส่วนที่ 9 (code segment 9)",      T="Numeric",                       R=true,  E="0" },
+                new { L="Q",  F="สรุปส่วนที่ 7 (summary segment 7)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
+                new { L="R",  F="วันที่เผยแพร่ (PublishedDate)",       T="Date — Thai B.E. text เช่น \"9 เมษายน 2535\"", R=true,  E="9 เมษายน 2535" },
+                new { L="S",  F="วันหมดอายุ (ExpiryDate)",             T="Date — Thai B.E. text (ไม่บังคับ)",             R=false, E="31 ธันวาคม 2570" },
+                new { L="T",  F="เนื้อหาบทความ (ContentHTML)",        T="Text (HTML หรือ Plain Text)",   R=true,  E="<p>เนื้อหา...</p>" },
             };
+
             foreach (var c in cols)
             {
                 var item = new ListViewItem(c.L);
@@ -207,47 +226,191 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        // ── Validation items (Step 2) — update text properties only ──────────────
+        // ── Validation items (Step 2) — driven by dgvPreview data ──────────────
         private void BuildValidationItems()
         {
-            // Validation item panels are pre-created in Designer.
-            // This method only updates the Text properties of existing labels.
-            
-            // Item 1: File format validation
-            lblValItem1Icon.Text   = "✅";
-            lblValItem1Title.Text  = "รูปแบบไฟล์: Excel (.xlsx)";
-            lblValItem1Detail.Text = "ไฟล์ถูกต้องและสามารถเปิดได้";
+            // Called on form load with placeholder text; real data arrives via BindValidationItems().
+            SetValItem(1, "⏳", "รูปแบบไฟล์",          "รอการตรวจสอบ...", false);
+            SetValItem(2, "⏳", "โครงสร้าง Template",   "รอการตรวจสอบ...", false);
+            SetValItem(3, "⏳", "คอลัมน์จำเป็น",        "รอการตรวจสอบ...", false);
+            SetValItem(4, "⏳", "คำเตือน",              "รอการตรวจสอบ...", false);
+            SetValItem(5, "⏳", "วันที่ (R/S)",          "รอการตรวจสอบ...", false);
+            SetValItem(6, "⏳", "แถวที่มีข้อผิดพลาด",   "รอการตรวจสอบ...", false);
+        }
 
-            // Item 2: Template structure validation
-            lblValItem2Icon.Text   = "✅";
-            lblValItem2Title.Text  = "โครงสร้าง Template: ถูกต้อง";
-            lblValItem2Detail.Text = "พบคอลัมน์ครบตาม Template \"ความรู้ประกันภัย\" — 8 คอลัมน์ (A-H)";
+        /// <summary>
+        /// Refreshes pnlValidationItems based on the actual validation result.
+        /// Called from ShowValidationResult() after PopulatePreviewGrid().
+        /// </summary>
+        private void BindValidationItems(KBImportValidationResult result)
+        {
+            var rows = result.Rows ?? new List<KBImportRow>();
 
-            // Item 3: Required columns validation
-            lblValItem3Icon.Text   = "✅";
-            lblValItem3Title.Text  = "คอลัมน์จำเป็น: ครบถ้วน";
-            lblValItem3Detail.Text = "คอลัมน์ ชื่อบทความ, ประเภท, หมวดหมู่, CRAF ครบทุกแถว";
+            // Item 1 — File format (always passes if we got a result back)
+            SetValItem(1, "✅", "รูปแบบไฟล์: Excel (.xlsx)",
+                "ไฟล์ถูกต้องและสามารถเปิดได้", true);
 
-            // Item 4: Data warnings
-            lblValItem4Icon.Text   = "⚠️";
-            lblValItem4Title.Text  = "พบ 2 คำเตือน";
-            lblValItem4Detail.Text = "แถวที่ 5: ไม่มีวันหมดอายุ  |  แถวที่ 12: หมวดหมู่ใหม่ (จะสร้างอัตโนมัติ)";
+            // Item 2 — Template structure: data rows found
+            bool structureOk = result.TotalRecords > 0;
+            SetValItem(2,
+                structureOk ? "✅" : "❌",
+                structureOk ? "โครงสร้าง Template: ถูกต้อง" : "โครงสร้าง Template: ไม่ถูกต้อง",
+                structureOk
+                    ? string.Format("พบ {0} แถวข้อมูล — คอลัมน์ครบตาม Template", result.TotalRecords)
+                    : "ไม่พบข้อมูลในไฟล์ หรือ Template ไม่ตรง",
+                structureOk);
 
-            // Item 5: CRAF validation
-            lblValItem5Icon.Text   = "✅";
-            lblValItem5Title.Text  = "ข้อมูล CRAF: ถูกต้องทุกแถว";
-            lblValItem5Detail.Text = "ค่า CRAF ทุกแถวเป็น 1HC/2SC/3NC/4PC ตามที่กำหนด";
+            // Item 3 — Required columns: count rows with missing-required-field errors
+            // Required columns per requirements.md: A, B, C, D, E, F, H, J, L, N, P, R, T
+            int missingRequired = 0;
+            foreach (var r in rows)
+                if (r.Status == "Error" && r.StatusNote != null &&
+                    r.StatusNote.IndexOf("จำเป็น", StringComparison.OrdinalIgnoreCase) >= 0)
+                    missingRequired++;
+
+            bool reqOk = missingRequired == 0;
+            SetValItem(3,
+                reqOk ? "✅" : "❌",
+                reqOk ? "คอลัมน์จำเป็น: ครบถ้วน"
+                      : string.Format("คอลัมน์จำเป็น: ขาด {0} แถว", missingRequired),
+                reqOk ? "คอลัมน์ A, B, C, D, E, F, H, J, L, N, P, R, T ครบทุกแถว"
+                      : string.Format("{0} แถวขาดข้อมูลในคอลัมน์บังคับ (A/B/C/D/E/F/H/J/L/N/P/R/T)", missingRequired),
+                reqOk);
+
+            // Item 4 — Warnings
+            int warnCount = result.WarningRecords;
+            bool noWarns  = warnCount == 0;
+            string warnDetail;
+            if (noWarns)
+            {
+                warnDetail = "ไม่พบคำเตือน — ข้อมูลทุกแถวสมบูรณ์";
+            }
+            else
+            {
+                var warnNotes = new System.Text.StringBuilder();
+                foreach (var r in rows)
+                    if (r.Status == "Warn" && !string.IsNullOrEmpty(r.StatusNote))
+                        warnNotes.AppendFormat("แถวที่ {0}: {1}  |  ", r.RowNumber, r.StatusNote);
+                string notes = warnNotes.ToString().TrimEnd(' ', '|', ' ');
+                warnDetail = string.IsNullOrEmpty(notes)
+                    ? string.Format("พบ {0} แถวที่มีคำเตือน", warnCount)
+                    : notes;
+            }
+            SetValItem(4,
+                noWarns ? "✅" : "⚠️",
+                noWarns ? "ไม่พบคำเตือน" : string.Format("พบ {0} คำเตือน", warnCount),
+                warnDetail,
+                noWarns);
+
+            // Item 5 — Date parse errors: rows with unparseable PublishedDate or ExpiryDate
+            int dateBadCount = 0;
+            foreach (var r in rows)
+                if (r.Status == "Error" && r.StatusNote != null &&
+                    r.StatusNote.IndexOf("แปลงวันที่", StringComparison.OrdinalIgnoreCase) >= 0)
+                    dateBadCount++;
+
+            bool dateOk = dateBadCount == 0;
+            SetValItem(5,
+                dateOk ? "✅" : "❌",
+                dateOk ? "วันที่ (R/S): แปลงได้ทุกแถว"
+                       : string.Format("วันที่ (R/S): แปลงไม่ได้ {0} แถว", dateBadCount),
+                dateOk ? "คอลัมน์ R (PublishedDate) และ S (ExpiryDate) แปลงเป็น ค.ศ. ได้ทุกแถว"
+                       : string.Format("{0} แถวมีรูปแบบวันที่ที่ไม่รู้จัก — ตรวจสอบคอลัมน์ R/S", dateBadCount),
+                dateOk);
+
+            // Item 6 — Error rows: total count matching dgvPreview red rows
+            int errorCount = result.ErrorRecords;
+            bool noErrors  = errorCount == 0;
+
+            string errorDetail;
+            if (noErrors)
+            {
+                errorDetail = "ไม่พบแถวที่มีข้อผิดพลาด — ข้อมูลพร้อมนำเข้าทุกแถว";
+            }
+            else
+            {
+                // List the first 3 error rows with their notes (same data as dgvPreview red rows)
+                var sb = new System.Text.StringBuilder();
+                int shown = 0;
+                foreach (var r in rows)
+                {
+                    if (r.Status != "Error") continue;
+                    sb.AppendFormat("แถว {0}: {1}  |  ", r.RowNumber,
+                        string.IsNullOrEmpty(r.StatusNote) ? "ข้อผิดพลาดไม่ระบุ" : r.StatusNote);
+                    if (++shown >= 3) break;
+                }
+                string preview = sb.ToString().TrimEnd(' ', '|', ' ');
+                errorDetail = shown < errorCount
+                    ? string.Format("{0} (และอีก {1} แถว)", preview, errorCount - shown)
+                    : preview;
+            }
+
+            SetValItem(6,
+                noErrors ? "✅" : "❌",
+                noErrors ? "ข้อผิดพลาด: ไม่พบ"
+                         : string.Format("❌  ข้อผิดพลาด: {0} แถว (ดูรายละเอียดใน Preview)", errorCount),
+                errorDetail,
+                noErrors);
+        }
+
+        /// <summary>Updates one validation item row (icon, title, detail, stripe colour).</summary>
+        private void SetValItem(int item, string icon, string title, string detail, bool ok)
+        {
+            Label lblIcon, lblTitle, lblDetail;
+            Panel stripe;
+            switch (item)
+            {
+                case 1: lblIcon=lblValItem1Icon; lblTitle=lblValItem1Title; lblDetail=lblValItem1Detail; stripe=pnlValItem1Stripe; break;
+                case 2: lblIcon=lblValItem2Icon; lblTitle=lblValItem2Title; lblDetail=lblValItem2Detail; stripe=pnlValItem2Stripe; break;
+                case 3: lblIcon=lblValItem3Icon; lblTitle=lblValItem3Title; lblDetail=lblValItem3Detail; stripe=pnlValItem3Stripe; break;
+                case 4: lblIcon=lblValItem4Icon; lblTitle=lblValItem4Title; lblDetail=lblValItem4Detail; stripe=pnlValItem4Stripe; break;
+                case 5: lblIcon=lblValItem5Icon; lblTitle=lblValItem5Title; lblDetail=lblValItem5Detail; stripe=pnlValItem5Stripe; break;
+                default: lblIcon=lblValItem6Icon; lblTitle=lblValItem6Title; lblDetail=lblValItem6Detail; stripe=pnlValItem6Stripe; break;
+            }
+            lblIcon.Text   = icon;
+            lblTitle.Text  = title;
+            lblDetail.Text = detail;
+
+            // stripe colour: green=ok, amber=warn(⚠️), red=error(❌), grey=pending
+            if (icon == "✅")      stripe.BackColor = Color.FromArgb(39, 174, 96);
+            else if (icon == "⚠️") stripe.BackColor = Color.FromArgb(243, 156, 18);
+            else if (icon == "❌") stripe.BackColor = Color.FromArgb(192, 57, 43);
+            else                   stripe.BackColor = Color.FromArgb(189, 195, 199);
+
+            // also tint the panel background to match
+            Panel pnl;
+            switch (item)
+            {
+                case 1: pnl = pnlValItem1; break;
+                case 2: pnl = pnlValItem2; break;
+                case 3: pnl = pnlValItem3; break;
+                case 4: pnl = pnlValItem4; break;
+                case 5: pnl = pnlValItem5; break;
+                default: pnl = pnlValItem6; break;
+            }
+            if (icon == "✅")      pnl.BackColor = Color.FromArgb(240, 255, 244);
+            else if (icon == "⚠️") pnl.BackColor = Color.FromArgb(254, 249, 231);
+            else if (icon == "❌") pnl.BackColor = Color.FromArgb(253, 237, 236);
+            else                   pnl.BackColor = Color.FromArgb(248, 250, 253);
         }
 
         // ── Step navigation ──────────────────────────────────────────────────────
+        /// <summary>
+        /// Shows only the current step panel and hides others.
+        /// Step 1: Show pnlStep1 only
+        /// Step 2: Show pnlStep2 only (hide pnlStep1 and pnlStep3)
+        /// Step 3: Show pnlStep3 only (hide pnlStep1 and pnlStep2)
+        /// </summary>
         private void ShowStep(int step)
         {
             _currentStep = step;
 
+            // Show only the current step panel, hide others
             pnlStep1.Visible = (step == 1);
             pnlStep2.Visible = (step == 2);
             pnlStep3.Visible = (step == 3);
 
+            // Action bar buttons
             pnlActStep1.Visible = (step == 1);
             pnlActStep2.Visible = (step == 2);
             pnlActStep3.Visible = (step == 3);
@@ -257,6 +420,9 @@ namespace CMS.Presentation.Modules.KMS
             lblStepStatus.Text = string.Format("📋  Step {0}/3: {1}", step,
                 step == 1 ? "อัพโหลดไฟล์" :
                 step == 2 ? "ตรวจสอบข้อมูล" : "นำเข้าเสร็จสิ้น");
+
+            // Scroll to top when changing steps
+            pnlScroll.AutoScrollPosition = new System.Drawing.Point(0, 0);
         }
 
         private void UpdateStepIndicators()
@@ -434,7 +600,20 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.ValidateFile();
         }
 
-        private void BtnBack_Click(object sender, EventArgs e) { ShowStep(1); }
+        private void BtnBack_Click(object sender, EventArgs e)
+        {
+            // Navigate back to previous step
+            if (_currentStep == 2)
+            {
+                // From Step 2 back to Step 1
+                ShowStep(1);
+            }
+            else if (_currentStep == 3)
+            {
+                // From Step 3 back to Step 2
+                ShowStep(2);
+            }
+        }
 
         // ── Import (delegates to presenter after animation) ───────────────────────
         private void BtnImport_Click(object sender, EventArgs e)
@@ -494,23 +673,7 @@ namespace CMS.Presentation.Modules.KMS
         // ── Preview grid ────────────────────────────────────────────────────────
         private void PopulatePreviewGrid(IList<KBImportRow> rows)
         {
-            dgvPreview.Rows.Clear();
-            if (rows == null) return;
-
-            for (int i = 0; i < rows.Count; i++)
-            {
-                var r   = rows[i];
-                int idx = dgvPreview.Rows.Add(
-                    r.RowNumber.ToString(), r.Title, r.ArticleType,
-                    r.Category, r.CrafLevel, r.Tags, r.ExpiryDate,
-                    r.Status == "Valid" ? "✅  Valid" : "⚠️  Warn");
-
-                var row = dgvPreview.Rows[idx];
-                if (r.Status == "Warn")
-                    row.DefaultCellStyle.BackColor = Color.FromArgb(254, 249, 231);
-                else if (i % 2 == 1)
-                    row.DefaultCellStyle.BackColor = Color.FromArgb(248, 250, 253);
-            }
+            previewControl.BindRows(rows);
         }
 
         // ── Step 3 buttons ───────────────────────────────────────────────────────
@@ -543,8 +706,9 @@ namespace CMS.Presentation.Modules.KMS
             pnlUploadZone.Visible   = true;
             btnNext.Enabled         = false;
             lblFileHint.Visible     = true;
-            dgvPreview.Rows.Clear();
+            previewControl.Clear();
 
+            // Show Step 1, hide Step 2 and Step 3
             ShowStep(1);
         }
 
@@ -556,11 +720,43 @@ namespace CMS.Presentation.Modules.KMS
             return (bytes / (1024.0 * 1024)).ToString("0.0") + " MB";
         }
 
-        // ── Action bar bottom border ─────────────────────────────────────────────
-        private void PnlActions_Paint(object sender, PaintEventArgs e)
+        /// <summary>
+        /// Distributes the four summary pills evenly across the full width of
+        /// <c>pnlSummaryPills</c>, so they always fill the same horizontal space
+        /// as <c>dgvPreview</c> (both use <c>DockStyle.Top</c> inside the same parent).
+        /// </summary>
+        private void DistributePillWidths()
         {
-            using (var pen = new Pen(Color.FromArgb(208, 215, 222), 1))
-                e.Graphics.DrawLine(pen, 0, 0, pnlActions.Width, 0);
+            int total     = pnlSummaryPills.ClientSize.Width;
+            if (total <= 0) return;
+
+            int quarter   = total / 4;
+            int remainder = total - quarter * 4;   // absorb rounding in the last pill
+
+            // Pills use DockStyle.Left, so order matters: Total → Valid → Warn → Error
+            pnlPillTotal.Width = quarter;
+            pnlPillValid.Width = quarter;
+            pnlPillWarn.Width  = quarter;
+            pnlPillError.Width = quarter + remainder;
+        }
+
+        /// <summary>
+        /// Distributes the four Step-3 stat panels evenly across the full width of
+        /// <c>pnlCompleteStats</c>, matching the proportions of the summary pills.
+        /// </summary>
+        private void DistributeStatWidths()
+        {
+            int total     = pnlCompleteStats.ClientSize.Width;
+            if (total <= 0) return;
+
+            int quarter   = total / 4;
+            int remainder = total - quarter * 4;   // absorb rounding in the last panel
+
+            // Stat panels use DockStyle.Left: Total → Success → Warn → Skip
+            pnlStatTotal.Width   = quarter;
+            pnlStatSuccess.Width = quarter;
+            pnlStatWarn.Width    = quarter;
+            pnlStatSkip.Width    = quarter + remainder;
         }
 
         // ── Step progress bottom border ──────────────────────────────────────────

@@ -138,6 +138,8 @@ namespace CMS.Presentation.Modules.KMS
             }
             InitFilterCombo();
             _presenter.Initialize();
+            // Ensure ArticleCardControl widths are properly calculated after form layout is complete
+            BeginInvoke(new Action(ResizeArticleCards));
         }
 
         private void KBMainForm_Resize(object sender, EventArgs e) { ResizeArticleCards(); }
@@ -164,7 +166,17 @@ namespace CMS.Presentation.Modules.KMS
             flpArticles.SuspendLayout();
             flpArticles.Controls.Clear();
             foreach (var a in articles)
-                flpArticles.Controls.Add(BuildArticleCard(a));
+            {
+                var card = new ArticleCardControl();
+                card.Article           = a;
+                card.CardClicked      += (s, ev) => OnArticleCardClick(ev);
+                card.ReadClicked      += (s, ev) => OnArticleCardClick(ev);
+                card.EditClicked      += (s, ev) => OnEditClick(ev);
+                card.ShareClicked     += (s, ev) => OnShareClick(ev);
+                card.SendReviewClicked += (s, ev) => OnSendReviewClick(ev);
+                card.LikeClicked      += (s, ev) => _presenter.LikeArticle(ev.ArticleID);
+                flpArticles.Controls.Add(card);
+            }
             flpArticles.ResumeLayout();
             ResizeArticleCards();
         }
@@ -431,6 +443,11 @@ namespace CMS.Presentation.Modules.KMS
 
             if (_presenter != null)
                 _presenter.LoadArticles();
+
+            // Force layout update and resize article cards
+            splitMain.PerformLayout();
+            flpArticles.PerformLayout();
+            BeginInvoke(new Action(ResizeArticleCards));
         }
 
         private void CloseActiveViewer()
@@ -524,87 +541,41 @@ namespace CMS.Presentation.Modules.KMS
             return node;
         }
 
-        private Panel BuildArticleCard(KBArticle article)
+        private void OnEditClick(KBArticle article)
         {
-            var card = new Panel
-            {
-                BackColor   = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
-                Cursor      = Cursors.Hand,
-                Margin      = new Padding(0, 0, 0, 6),
-                Tag         = article,
-                Height      = 90,
-            };
-            card.Click += (s, e) => OnArticleCardClick(article);
-
-            var stripe = new Panel { Dock = DockStyle.Left, Width = 5, BackColor = GetStatusColor(article.Status) };
-            stripe.Click += (s, e) => OnArticleCardClick(article);
-            card.Controls.Add(stripe);
-
-            var pnlContent = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 8, 10, 6) };
-            pnlContent.Click += (s, e) => OnArticleCardClick(article);
-
-            var lblCardTitle = new Label
-            {
-                AutoSize  = false, Dock = DockStyle.Top, Height = 22,
-                Font      = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 51, 102),
-                Text      = article.IsOfficialPolicy ? "🏛 " + article.Title : article.Title ?? "(ไม่มีชื่อ)",
-                TextAlign = ContentAlignment.MiddleLeft,
-            };
-            lblCardTitle.Click += (s, e) => OnArticleCardClick(article);
-
-            var lblMeta = new Label
-            {
-                AutoSize  = false, Dock = DockStyle.Top, Height = 18,
-                Font      = new Font("Segoe UI", 8f), ForeColor = Color.FromArgb(100, 110, 130),
-                Text      = string.Format("{0}  |  {1}  |  Version {2}  |  {3}",
-                    article.ArticleTypeName, article.StatusName,
-                    article.CurrentVersion, article.CategoryName ?? "-"),
-                TextAlign = ContentAlignment.MiddleLeft,
-            };
-            lblMeta.Click += (s, e) => OnArticleCardClick(article);
-
-            var lblSummary = new Label
-            {
-                AutoSize  = false, Dock = DockStyle.Top, Height = 20,
-                Font      = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(60, 60, 60),
-                Text      = article.Summary ?? string.Empty,
-                TextAlign = ContentAlignment.MiddleLeft,
-            };
-            lblSummary.Click += (s, e) => OnArticleCardClick(article);
-
-            var lblStats = new Label
-            {
-                AutoSize  = false, Dock = DockStyle.Top, Height = 18,
-                Font      = new Font("Segoe UI", 8f), ForeColor = Color.FromArgb(130, 140, 155),
-                Text      = string.Format("👁 {0}   👍 {1}   🏷 {2}",
-                    article.ViewCount, article.LikeCount,
-                    string.IsNullOrEmpty(article.Tags) ? "-" : article.Tags),
-                TextAlign = ContentAlignment.MiddleLeft,
-            };
-            lblStats.Click += (s, e) => OnArticleCardClick(article);
-
-            pnlContent.Controls.Add(lblStats);
-            pnlContent.Controls.Add(lblSummary);
-            pnlContent.Controls.Add(lblMeta);
-            pnlContent.Controls.Add(lblCardTitle);
-            card.Controls.Add(pnlContent);
-
-            card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(240, 246, 255);
-            card.MouseLeave += (s, e) => card.BackColor = Color.White;
-            return card;
+            if (_editorFactory == null) return;
+            if (_editorFactory(article) == DialogResult.OK)
+                _presenter.LoadArticles();
         }
 
-        private static Color GetStatusColor(byte status)
+        private void OnShareClick(KBArticle article)
         {
-            switch (status)
+            MessageBox.Show(
+                string.Format("ฟีเจอร์แชร์บทความ \"{0}\"\n\nจะพัฒนาในอนาคต", article.Title),
+                "Share Article",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+
+        private void OnSendReviewClick(KBArticle article)
+        {
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการส่งบทความ \"{0}\" ขอ Review ใช่หรือไม่?", article.Title),
+                "ยืนยันส่งขอ Review",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes) return;
+
+            if (_presenter != null)
             {
-                case 1:  return Color.FromArgb(180, 180, 180);
-                case 2:  return Color.FromArgb(255, 165, 0);
-                case 3:  return Color.FromArgb(34, 139, 34);
-                case 4:  return Color.FromArgb(139, 0, 0);
-                default: return Color.FromArgb(200, 200, 200);
+                _presenter.SendArticleForReview(article.ArticleID);
+                _presenter.LoadArticles();
+                MessageBox.Show(
+                    "ส่งขอ Review เรียบร้อยแล้ว",
+                    "สำเร็จ",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
             }
         }
 
@@ -613,7 +584,7 @@ namespace CMS.Presentation.Modules.KMS
             int cardWidth = flpArticles.ClientSize.Width - 16;
             if (cardWidth < 200) return;
             foreach (Control c in flpArticles.Controls)
-                if (c is Panel) c.Width = cardWidth;
+                if (c is ArticleCardControl) c.Width = cardWidth;
         }
     }
 }

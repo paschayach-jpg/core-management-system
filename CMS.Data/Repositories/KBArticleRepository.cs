@@ -160,11 +160,11 @@ namespace CMS.Data.Repositories
                 const string sql = @"
                     INSERT INTO KMS.t_KBArticle
                         (ArticleCode, Title, ContentHTML, Summary, CategoryID, ArticleType,
-                         Status, CurrentVersion, ExpiryDate, ReviewDueDate, IsOfficialPolicy,
+                         Status, CurrentVersion, PublishedDate, ExpiryDate, ReviewDueDate, IsOfficialPolicy,
                          Tags, CreatedBy, CreatedDate, ViewCount, LikeCount)
                     VALUES
                         (@ArticleCode, @Title, @ContentHTML, @Summary, @CategoryID, @ArticleType,
-                         @Status, 1, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
+                         @Status, 1, @PublishedDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
                          @Tags, @CreatedBy, GETDATE(), 0, 0);
                     SELECT SCOPE_IDENTITY();";
                 using (var cmd = new SqlCommand(sql, conn))
@@ -282,6 +282,7 @@ namespace CMS.Data.Repositories
             cmd.Parameters.AddWithValue("@CategoryID",       a.CategoryID);
             cmd.Parameters.AddWithValue("@ArticleType",      a.ArticleType);
             cmd.Parameters.AddWithValue("@Status",           a.Status);
+            cmd.Parameters.AddWithValue("@PublishedDate",     (object)a.PublishedDate    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ExpiryDate",       (object)a.ExpiryDate       ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ReviewDueDate",    (object)a.ReviewDueDate    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsOfficialPolicy", a.IsOfficialPolicy);

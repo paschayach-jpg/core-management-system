@@ -78,6 +78,10 @@ namespace CMS.Presentation.Modules.KMS
             InitializeRelatedCategoryDropdown();
             LoadRelatedArticles();
             
+            // Initialize tabDepartments - NEW IMPLEMENTATION (Mockup)
+            InitializeDepartmentsDataGridView();
+            LoadLinkedDepartments();
+            
             _presenter.Initialize();
         }
 
@@ -99,6 +103,7 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnSendReview_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
+            if (!ValidateInput()) return;
 
             string action = btnSendReview.Text.Contains("Review") ? "ส่งขอ Review" : "เผยแพร่";
             var confirm = MessageBox.Show(
@@ -109,7 +114,15 @@ namespace CMS.Presentation.Modules.KMS
 
             try
             {
-                _presenter.Publish();
+                // Check if this is "Send Review" or "Publish" based on button text
+                if (btnSendReview.Text.Contains("Review"))
+                {
+                    _presenter.SendReview();
+                }
+                else
+                {
+                    _presenter.Publish();
+                }
             }
             catch (Exception ex)
             {
@@ -241,12 +254,12 @@ namespace CMS.Presentation.Modules.KMS
                         flpTags.Controls.RemoveAt(i);
                 }
                 
-                // Add chips from comma-separated string
+                // Add chips from comma-separated string (skip validation for existing data)
                 if (!string.IsNullOrEmpty(value))
                 {
                     foreach (var tag in value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
                     {
-                        AddTagChip(tag.Trim());
+                        AddTagChip(tag.Trim(), skipValidation: true);
                     }
                 }
             }
@@ -347,11 +360,6 @@ namespace CMS.Presentation.Modules.KMS
             set { lblLikeCount.Text = value; }
         }
 
-        public string VersionTabText
-        {
-            set { tabVersions.Text = value; }
-        }
-
         public bool PublishButtonVisible
         {
             set { btnSendReview.Visible = value; }
@@ -414,24 +422,6 @@ namespace CMS.Presentation.Modules.KMS
             cboCategory.SelectedIndex = 0;
         }
 
-        public void BindVersionHistory(IEnumerable<KBVersion> versions)
-        {
-            lstVersions.Items.Clear();
-
-            foreach (var v in versions)
-            {
-                var item = new ListViewItem(string.Format("v{0}", v.VersionNumber));
-                item.SubItems.Add(v.CreatedDate.ToString("dd/MM/yyyy HH:mm"));
-                item.SubItems.Add(v.CreatedBy ?? "-");
-                item.SubItems.Add(v.ChangeDescription ?? "-");
-                item.Tag       = v;
-                item.BackColor = v.VersionNumber % 2 == 0
-                    ? Color.White
-                    : Color.FromArgb(248, 250, 253);
-                lstVersions.Items.Add(item);
-            }
-        }
-
         public void CloseOk()
         {
             DialogResult = DialogResult.OK;
@@ -460,12 +450,6 @@ namespace CMS.Presentation.Modules.KMS
         {
             return dgvRelatedLinked;
         }
-        
-        [Obsolete("Use GetRelatedDataGridView() instead")]
-        public System.Windows.Forms.ListView GetRelatedListView()
-        {
-            throw new NotSupportedException("ListView has been replaced with DataGridView. Use GetRelatedDataGridView() instead.");
-        }
 
         public System.Windows.Forms.DataGridView GetWorkflowLinkedDataGridView()
         {
@@ -475,12 +459,6 @@ namespace CMS.Presentation.Modules.KMS
         public System.Windows.Forms.DataGridView GetWorkflowSearchDataGridView()
         {
             return dgvWorkflowSearch;
-        }
-        
-        [Obsolete("Use GetWorkflowLinkedDataGridView() and GetWorkflowSearchDataGridView() instead")]
-        public System.Windows.Forms.ListView GetWorkflowListView()
-        {
-            throw new NotSupportedException("ListView has been replaced with DataGridView. Use GetWorkflowLinkedDataGridView() and GetWorkflowSearchDataGridView() instead.");
         }
 
         public System.Windows.Forms.DataGridView GetProgramsLinkedDataGridView()
@@ -492,12 +470,6 @@ namespace CMS.Presentation.Modules.KMS
         {
             return dgvProgramsSearch;
         }
-        
-        [Obsolete("Use GetProgramsLinkedDataGridView() and GetProgramsSearchDataGridView() instead")]
-        public System.Windows.Forms.ListView GetProgramsListView()
-        {
-            throw new NotSupportedException("ListView has been replaced with DataGridView. Use GetProgramsLinkedDataGridView() and GetProgramsSearchDataGridView() instead.");
-        }
 
         public System.Windows.Forms.DataGridView GetDocsLinkedDataGridView()
         {
@@ -507,12 +479,6 @@ namespace CMS.Presentation.Modules.KMS
         public System.Windows.Forms.DataGridView GetDocsSearchDataGridView()
         {
             return dgvDocsSearch;
-        }
-        
-        [Obsolete("Use GetDocsLinkedDataGridView() and GetDocsSearchDataGridView() instead")]
-        public System.Windows.Forms.ListView GetDocsListView()
-        {
-            throw new NotSupportedException("ListView has been replaced with DataGridView. Use GetDocsLinkedDataGridView() and GetDocsSearchDataGridView() instead.");
         }
 
         // ── Private UI Helpers ───────────────────────────────────────────────
@@ -727,7 +693,7 @@ namespace CMS.Presentation.Modules.KMS
             return chip;
         }
 
-        private void AddTagChip(string tag)
+        private void AddTagChip(string tag, bool skipValidation = false)
         {
             if (string.IsNullOrWhiteSpace(tag)) return;
             
@@ -735,20 +701,24 @@ namespace CMS.Presentation.Modules.KMS
             tag = tag.TrimEnd(',');
             if (string.IsNullOrWhiteSpace(tag)) return;
             
-            // Validate tag input - allow only alphanumeric, spaces, hyphens, and underscores
-            if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9\s\-_]+$"))
+            // Validate tag input only when not loading existing data
+            if (!skipValidation)
             {
-                MessageBox.Show("Tag can only contain letters, numbers, spaces, hyphens, and underscores.", 
-                    "Invalid Tag", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            
-            // Limit tag length
-            if (tag.Length > 50)
-            {
-                MessageBox.Show("Tag cannot exceed 50 characters.", 
-                    "Tag Too Long", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                // Validate tag input - allow only alphanumeric, spaces, hyphens, and underscores
+                if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9\s\-_]+$"))
+                {
+                    MessageBox.Show("Tag can only contain letters, numbers, spaces, hyphens, and underscores.", 
+                        "Invalid Tag", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                
+                // Limit tag length
+                if (tag.Length > 50)
+                {
+                    MessageBox.Show("Tag cannot exceed 50 characters.", 
+                        "Tag Too Long", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
             }
             
             // Check for duplicate tags (case-insensitive)
@@ -762,8 +732,11 @@ namespace CMS.Presentation.Modules.KMS
                         {
                             if (string.Equals(label.Text, tag, StringComparison.OrdinalIgnoreCase))
                             {
-                                MessageBox.Show($"Tag '{tag}' already exists.", 
-                                    "Duplicate Tag", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                if (!skipValidation)
+                                {
+                                    MessageBox.Show($"Tag '{tag}' already exists.", 
+                                        "Duplicate Tag", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                }
                                 return;
                             }
                         }
@@ -960,47 +933,7 @@ namespace CMS.Presentation.Modules.KMS
 
         // ── Tab Mapping Toolbars ─────────────────────────────────────────────
         // CreateAttachToolbar() removed - buttons now integrated into DataGridView
-        // CreateRelatedToolbar() removed - search integrated into pnlRelatedSearch
-        // CreateWorkflowToolbar() removed - search integrated into pnlWorkflowSearch
-
-        [Obsolete("Toolbar removed - tabPrograms now uses integrated search panel like tabRelated")]
-        private Panel CreateProgramsToolbar()
-        {
-            // This method is no longer used - tabPrograms now has integrated search
-            // The search panel (pnlProgramsSearch) is created in the Designer
-            return null;
-        }
-
-
-
         // ── Tab Mapping Event Handlers ───────────────────────────────────────
-
-        private void BtnUploadAttachment_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - redirect to new implementation
-            BtnUploadFileNew_Click(sender, e);
-        }
-
-        private void BtnLoadAttachFromKB_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - deprecated
-            // This functionality is now handled by the new two-section design
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'อัพโหลดไฟล์' หรือ 'เลือกจาก DMS' แทน");
-        }
-
-        private void BtnRemoveAttachment_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - deprecated
-            // This functionality is now handled by button columns in DataGridView
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'ลบไฟล์' ใน DataGridView แทน");
-        }
-
-        private void BtnAddRelated_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - deprecated
-            // This functionality is now handled by the new two-section design with search
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ช่องค้นหาและฟิลเตอร์ในแท็บ 'บทความที่เกี่ยวข้อง' แทน");
-        }
 
         private void BtnLoadRelatedFromKB_Click(object sender, EventArgs e)
         {
@@ -1043,31 +976,10 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        private void BtnRemoveRelated_Click(object sender, EventArgs e)
-        {
-            // This is the OLD toolbar button handler - redirects to new implementation
-            BtnRemoveRelatedNew_Click(sender, e);
-        }
-
         private void BtnAddWorkflow_Click(object sender, EventArgs e)
         {
             // TODO: Open workflow selection dialog
             ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือก Workflow\n\nสามารถเชื่อมโยงบทความกับเส้นงาน (Workflow) ที่เกี่ยวข้อง");
-        }
-
-        [Obsolete("Replaced by search-based approach in tabWorkflow")]
-        private void BtnLoadWorkflowFromKB_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - deprecated (references non-existent lstSearchWorkflow control)
-            // This functionality is now handled by the new two-section design
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้การดับเบิลคลิกจากรายการ Workflow ที่มีอยู่แทน");
-        }
-
-        [Obsolete("Replaced by delete button in DataGridView")]
-        private void BtnRemoveWorkflow_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - redirect to new implementation
-            BtnRemoveWorkflowNew_Click(sender, e);
         }
 
         private void BtnAddProgram_Click(object sender, EventArgs e)
@@ -1076,76 +988,28 @@ namespace CMS.Presentation.Modules.KMS
             ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือกโปรแกรม\n\nสามารถเชื่อมโยงบทความกับโปรแกรมที่เกี่ยวข้อง");
         }
 
-        private void BtnLoadProgramsFromKB_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - deprecated (references non-existent lstSearchPrograms control)
-            // This functionality is now handled by the new two-section design
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้การดับเบิลคลิกจากรายการโปรแกรมที่มีอยู่แทน");
-        }
-
-        [Obsolete("Toolbar removed - functionality integrated into DataGridView")]
-        private void BtnRemoveProgram_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - no longer used
-            // Functionality moved to delete button in DataGridView
-        }
-
         private void BtnAddDoc_Click(object sender, EventArgs e)
         {
             // TODO: Open document selection dialog (from DMS)
             ShowInfo("ฟีเจอร์นี้จะเปิด Dialog เลือกเอกสารจากระบบ DMS\n\nสามารถเชื่อมโยงบทความกับเอกสารในระบบจัดการเอกสาร");
         }
 
-        private void BtnLoadDocsFromKB_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - deprecated (references non-existent lstSearchDocs control)
-            // This functionality is now handled by the new two-section design
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'อัพโหลดเอกสาร' หรือ 'เลือกจาก DMS' แทน");
-        }
-
-        private void BtnRemoveDoc_Click(object sender, EventArgs e)
-        {
-            // OLD toolbar button - redirect to new implementation
-            BtnRemoveDocNew_Click(sender, e);
-        }
-
         // ── Search Event Handlers ────────────────────────────────────────────
 
         private System.Threading.Timer _searchRelatedTimer;
-        private System.Threading.Timer _searchAttachTimer;
-        
-        // Search textbox references (deprecated - using Designer controls now)
-        private TextBox _txtSearchAttach;
         private System.Threading.Timer _searchProgramsTimer;
         private System.Threading.Timer _searchDocsTimer;
 
         private void TxtSearchRelated_TextChanged(object sender, EventArgs e)
         {
-            // Debounce search to avoid excessive queries (300ms delay)
             _searchRelatedTimer?.Dispose();
             _searchRelatedTimer = new System.Threading.Timer(
                 _ => this.Invoke(new Action(PerformRelatedSearch)),
                 null, 300, System.Threading.Timeout.Infinite);
         }
 
-        private void TxtSearchAttach_TextChanged(object sender, EventArgs e)
-        {
-            // Debounce search (300ms delay)
-            _searchAttachTimer?.Dispose();
-            _searchAttachTimer = new System.Threading.Timer(
-                _ => this.Invoke(new Action(PerformAttachSearch)),
-                null, 300, System.Threading.Timeout.Infinite);
-        }
-
-        [Obsolete("Replaced by BtnSearchWorkflow_Click with integrated search panel")]
-        private void TxtSearchWorkflow_TextChanged(object sender, EventArgs e)
-        {
-            // No longer used - search is now triggered by button click or Enter key
-        }
-
         private void TxtSearchPrograms_TextChanged(object sender, EventArgs e)
         {
-            // Debounce search (300ms delay)
             _searchProgramsTimer?.Dispose();
             _searchProgramsTimer = new System.Threading.Timer(
                 _ => this.Invoke(new Action(PerformProgramsSearch)),
@@ -1154,7 +1018,6 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TxtSearchDocs_TextChanged(object sender, EventArgs e)
         {
-            // Debounce search (300ms delay)
             _searchDocsTimer?.Dispose();
             _searchDocsTimer = new System.Threading.Timer(
                 _ => this.Invoke(new Action(PerformDocsSearch)),
@@ -1211,49 +1074,14 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        private void PerformAttachSearch()
-        {
-            // OLD method - deprecated (references non-existent lstSearchAttach control)
-            // This functionality is now handled by the new two-section design
-            // No search functionality needed for file attachments
-        }
-
-        [Obsolete("Replaced by BtnSearchWorkflow_Click with integrated search panel")]
-        private void PerformWorkflowSearch()
-        {
-            // OLD method - deprecated (references non-existent lstSearchWorkflow control)
-            // This functionality is now handled by the new two-section design
-            // Workflows are selected from available list, not searched
-        }
-
         private void PerformProgramsSearch()
         {
-            // OLD method - deprecated (references non-existent lstSearchPrograms control)
-            // This functionality is now handled by the new two-section design
-            // Programs are selected from available list, not searched
+            // Placeholder — replace with real program search when PMS integration is available
         }
 
         private void PerformDocsSearch()
         {
-            // OLD method - deprecated (references non-existent lstSearchDocs control)
-            // This functionality is now handled by the new two-section design
-            // No search functionality needed for document attachments
-        }
-
-        // ── Double-Click Event Handlers ──────────────────────────────────────
-
-        // OLD handler removed - now using LstRelatedSearch_DoubleClick in new implementation
-
-        // OLD handler removed - now using new implementation
-
-        // OLD handler removed - now using new implementation
-
-        // OLD handler removed - now using new implementation
-
-        private void LstSearchDocs_DoubleClick(object sender, EventArgs e)
-        {
-            // OLD handler - deprecated (references non-existent lstSearchDocs and lstDocs controls)
-            // This functionality is now handled by the new two-section design
+            // Placeholder — replace with real document search when DMS integration is available
         }
 
         // ── Helper Methods ───────────────────────────────────────────────────
@@ -1491,39 +1319,8 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        [Obsolete("Replaced by DgvProgramsLinked_CellContentClick with delete button column")]
-        private void LstProgramsLinked_DoubleClick(object sender, EventArgs e)
-        {
-            // No longer used - DataGridView doesn't need double-click on linked items
-            // Delete functionality moved to button column in DataGridView
-        }
-
-        [Obsolete("Replaced by delete button column in DataGridView")]
-        private void BtnRemoveProgramNew_Click(object sender, EventArgs e)
-        {
-            // Replaced by delete button in DataGridView (DgvProgramsLinked_CellContentClick)
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'ลบ' ใน DataGridView แทน");
-        }
-
-        [Obsolete("Replaced by integrated view in DataGridView")]
-        private void BtnViewProgramDetails_Click(object sender, EventArgs e)
-        {
-            // This functionality can be integrated into the DataGridView if needed
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nดับเบิลคลิกที่แถวเพื่อดูรายละเอียด");
-        }
-
-        [Obsolete("Replaced by DgvProgramsSearch_CellDoubleClick")]
-        private void LstProgramsAvailable_DoubleClick(object sender, EventArgs e)
-        {
-            // Replaced by DgvProgramsSearch_CellDoubleClick
-        }
-
         // ══════════════════════════════════════════════════════════════════════════
-        // TAB WORKFLOW - NEW IMPLEMENTATION (Two-Section Design - Mockup)
-        // ══════════════════════════════════════════════════════════════════════════
-
-        // ══════════════════════════════════════════════════════════════════════════
-        // TAB WORKFLOW - NEW IMPLEMENTATION (Two-Section Design - Mockup with DataGridView)
+        // TAB WORKFLOW
         // ══════════════════════════════════════════════════════════════════════════
 
         /// <summary>
@@ -1752,55 +1549,7 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         // ══════════════════════════════════════════════════════════════════════════
-        // TAB WORKFLOW - DEPRECATED METHODS (Old ListView-based implementation)
-        // ══════════════════════════════════════════════════════════════════════════
-
-        [Obsolete("Replaced by DataGridView-based implementation. Use InitializeWorkflowDataGridViews() instead.")]
-        private Panel CreateWorkflowToolbar()
-        {
-            // This method is no longer used - workflow actions are now integrated into the DataGridView
-            return new Panel { Visible = false };
-        }
-
-        [Obsolete("Replaced by DgvWorkflowLinked_CellContentClick. Use delete button in DataGridView instead.")]
-        private void LstWorkflowLinked_DoubleClick(object sender, EventArgs e)
-        {
-            throw new NotSupportedException("ListView has been replaced with DataGridView. Use DgvWorkflowLinked_CellContentClick() instead.");
-        }
-
-        [Obsolete("Replaced by DgvWorkflowLinked_CellContentClick. Use delete button in DataGridView instead.")]
-        private void BtnRemoveWorkflowNew_Click(object sender, EventArgs e)
-        {
-            throw new NotSupportedException("ListView has been replaced with DataGridView. Use delete button column in dgvWorkflowLinked instead.");
-        }
-
-        [Obsolete("Workflow diagram viewing should be implemented separately. Not part of the core linking functionality.")]
-        private void BtnViewWorkflowDiagram_Click(object sender, EventArgs e)
-        {
-            throw new NotSupportedException("This functionality should be implemented separately from the workflow linking interface.");
-        }
-
-        [Obsolete("Workflow starting should be implemented separately. Not part of the core linking functionality.")]
-        private void BtnStartWorkflow_Click(object sender, EventArgs e)
-        {
-            throw new NotSupportedException("This functionality should be implemented separately from the workflow linking interface.");
-        }
-
-        [Obsolete("Replaced by DgvWorkflowSearch_CellDoubleClick. Use search-based approach instead.")]
-        private void LstWorkflowAvailable_DoubleClick(object sender, EventArgs e)
-        {
-            throw new NotSupportedException("ListView has been replaced with DataGridView. Use DgvWorkflowSearch_CellDoubleClick() instead.");
-        }
-
-        [Obsolete("Replaced by search-based approach. Use BtnSearchWorkflow_Click() instead.")]
-        private void LoadAvailableWorkflows()
-        {
-            // No longer needed - workflows are loaded via search
-        }
-
-        // ══════════════════════════════════════════════════════════════════════════
-        // TAB ATTACH - NEW IMPLEMENTATION (Two-Section Design - Mockup with DataGridView)
-        // ══════════════════════════════════════════════════════════════════════════
+        // TAB ATTACH
 
         /// <summary>
         /// Initialize DataGridView columns for attached files
@@ -1988,7 +1737,7 @@ namespace CMS.Presentation.Modules.KMS
             cboRelatedStatus.SelectedIndex = 0;
             
             // Placeholder text for search textbox
-            txtSearchRelated.Text = "🔍 ค้นหาชื่อบทความ / รหัส...";
+            txtSearchRelated.Text = "";
             txtSearchRelated.ForeColor = Color.Gray;
         }
 
@@ -2222,35 +1971,6 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        [Obsolete("Replaced by DgvDocsLinked_CellContentClick with button columns")]
-        private void LstDocsLinked_DoubleClick(object sender, EventArgs e)
-        {
-            // No longer used - DataGridView uses button columns for view/delete actions
-            // Functionality moved to DgvDocsLinked_CellContentClick
-        }
-
-        [Obsolete("Replaced by delete button column in DataGridView")]
-        private void BtnRemoveDocNew_Click(object sender, EventArgs e)
-        {
-            // Replaced by delete button in DataGridView (DgvDocsLinked_CellContentClick)
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'ลบ' ใน DataGridView แทน");
-        }
-
-        [Obsolete("Replaced by view button column in DataGridView")]
-        private void BtnViewDocNew_Click(object sender, EventArgs e)
-        {
-            // Replaced by view button in DataGridView (DgvDocsLinked_CellContentClick)
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'ดู' ใน DataGridView แทน");
-        }
-
-        [Obsolete("Replaced by integrated upload functionality in tabDocs")]
-        private void BtnUploadDocNew_Click(object sender, EventArgs e)
-        {
-            // This method is deprecated - tabDocs now uses the same pattern as tabAttach
-            // with integrated upload buttons in the tab itself
-            ShowInfo("ฟีเจอร์นี้ถูกแทนที่ด้วยการออกแบบใหม่\n\nใช้ปุ่ม 'อัพโหลดเอกสาร' หรือ 'เลือกจาก DMS' ในแท็บเอกสารแทน");
-        }
-
         private void BtnSelectDocFromDMSNew_Click(object sender, EventArgs e)
         {
             ShowInfo("ฟีเจอร์เลือกเอกสารจาก DMS จะเปิด Document Browser\n\n" +
@@ -2311,10 +2031,13 @@ namespace CMS.Presentation.Modules.KMS
             if (e.RowIndex < 0) return; // Header clicked
             
             // Check if Delete button clicked
-            if (e.ColumnIndex == dgvRelatedLinked.Columns["colDelete"].Index)
+            if (e.ColumnIndex == dgvRelatedLinked.Columns["colRelatedLinkedDelete"].Index)
             {
-                int articleId = (int)dgvRelatedLinked.Rows[e.RowIndex].Tag;
-                string title = dgvRelatedLinked.Rows[e.RowIndex].Cells["colTitle"].Value?.ToString();
+                var row = dgvRelatedLinked.Rows[e.RowIndex];
+                if (row.Tag == null) return;
+
+                int articleId = (int)row.Tag;
+                string title = row.Cells["colTitle"].Value?.ToString();
                 
                 var confirm = MessageBox.Show(
                     string.Format("ต้องการลบความเชื่อมโยงกับบทความ '{0}' ใช่หรือไม่?", title),
@@ -2326,13 +2049,15 @@ namespace CMS.Presentation.Modules.KMS
                 {
                     try
                     {
-                        _presenter.RemoveRelatedArticleLink(articleId);
+                        if (_presenter != null && _presenter.EditingArticle != null)
+                            _presenter.RemoveRelatedArticleLink(articleId);
+
                         dgvRelatedLinked.Rows.RemoveAt(e.RowIndex);
                         
                         // Renumber
                         for (int i = 0; i < dgvRelatedLinked.Rows.Count; i++)
                         {
-                            dgvRelatedLinked.Rows[i].Cells["colNum"].Value = (i + 1).ToString();
+                            dgvRelatedLinked.Rows[i].Cells["colRelatedLinkedNum"].Value = (i + 1).ToString();
                             dgvRelatedLinked.Rows[i].DefaultCellStyle.BackColor = 
                                 (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
                         }
@@ -2488,25 +2213,6 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        [Obsolete("Replaced by DgvRelatedLinked_CellContentClick with delete button column")]
-        private void LstRelatedLinked_DoubleClick(object sender, EventArgs e)
-        {
-            // No longer used - DataGridView doesn't need double-click on linked items
-            // Delete functionality moved to button column in DataGridView
-        }
-
-        [Obsolete("Replaced by DgvRelatedSearch_CellDoubleClick")]
-        private void LstRelatedSearch_DoubleClick(object sender, EventArgs e)
-        {
-            // Replaced by DgvRelatedSearch_CellDoubleClick
-        }
-
-        [Obsolete("Replaced by delete button column in DataGridView")]
-        private void BtnRemoveRelatedNew_Click(object sender, EventArgs e)
-        {
-            // Replaced by delete button in DataGridView (DgvRelatedLinked_CellContentClick)
-        }
-
         private void TxtSearchRelatedNew_Enter(object sender, EventArgs e)
         {
             if (txtSearchRelated.Text == "🔍 ค้นหาชื่อบทความ / รหัส / แท็ก...")
@@ -2531,6 +2237,92 @@ namespace CMS.Presentation.Modules.KMS
             {
                 e.SuppressKeyPress = true;
                 BtnSearchRelated_Click(sender, e);
+            }
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        // TAB DEPARTMENTS - NEW IMPLEMENTATION (Mockup with DataGridView)
+        // ══════════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Initialize DataGridView for departments
+        /// </summary>
+        private void InitializeDepartmentsDataGridView()
+        {
+            // Columns are now defined in Designer.cs
+            // No column creation needed here
+        }
+
+        /// <summary>
+        /// Load linked departments when form initializes (Mockup data)
+        /// </summary>
+        private void LoadLinkedDepartments()
+        {
+            dgvDepartmentsLinked.Rows.Clear();
+            
+            // Mockup data - will be replaced with actual HR/Org integration
+            var mockupDepartments = new[]
+            {
+                new { Code = "DEPT-UW-001", Name = "ฝ่ายรับประกันภัย (Underwriting)", Type = "ฝ่าย" },
+                new { Code = "DEPT-CLM-002", Name = "ฝ่ายสินไหมทดแทน (Claims)", Type = "ฝ่าย" },
+                new { Code = "DEPT-ACT-003", Name = "แผนกคณิตศาสตร์ประกันภัย (Actuarial)", Type = "แผนก" },
+                new { Code = "DEPT-IT-004", Name = "ฝ่ายเทคโนโลยีสารสนเทศ (IT)", Type = "ฝ่าย" }
+            };
+            
+            int index = 1;
+            foreach (var dept in mockupDepartments)
+            {
+                int rowIndex = dgvDepartmentsLinked.Rows.Add(
+                    index.ToString(),
+                    dept.Code,
+                    dept.Name,
+                    dept.Type
+                );
+                
+                dgvDepartmentsLinked.Rows[rowIndex].Tag = index; // Mockup ID
+                dgvDepartmentsLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
+                    index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                index++;
+            }
+            
+            UpdateDepartmentsLinkedCount();
+        }
+
+        private void UpdateDepartmentsLinkedCount()
+        {
+            lblDepartmentsLinked.Text = string.Format("ฝ่าย/แผนก ที่เกี่ยวข้อง ({0} รายการ)", dgvDepartmentsLinked.Rows.Count);
+        }
+
+        private void DgvDepartmentsLinked_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return; // Header clicked
+            
+            // Check if Delete button clicked
+            if (e.ColumnIndex == dgvDepartmentsLinked.Columns["colDeptDelete"].Index)
+            {
+                string deptName = dgvDepartmentsLinked.Rows[e.RowIndex].Cells["colDeptName"].Value?.ToString();
+                
+                var confirm = MessageBox.Show(
+                    string.Format("ต้องการลบ '{0}' ใช่หรือไม่?", deptName),
+                    "ยืนยันการลบ", 
+                    MessageBoxButtons.YesNo, 
+                    MessageBoxIcon.Question);
+                
+                if (confirm == DialogResult.Yes)
+                {
+                    dgvDepartmentsLinked.Rows.RemoveAt(e.RowIndex);
+                    
+                    // Renumber
+                    for (int i = 0; i < dgvDepartmentsLinked.Rows.Count; i++)
+                    {
+                        dgvDepartmentsLinked.Rows[i].Cells["colDeptNum"].Value = (i + 1).ToString();
+                        dgvDepartmentsLinked.Rows[i].DefaultCellStyle.BackColor = 
+                            (i + 1) % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    }
+                    
+                    UpdateDepartmentsLinkedCount();
+                    ShowInfo("ลบฝ่าย/แผนกเรียบร้อยแล้ว");
+                }
             }
         }
 

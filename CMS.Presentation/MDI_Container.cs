@@ -76,6 +76,8 @@ namespace CMS.Presentation
         private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;
         private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
+        private readonly CMS.Data.Interfaces.IKBCategoryRepository _kbCategoryRepository;
+        private readonly CMS.Data.Interfaces.IKBArticleRepository  _kbArticleRepository;
         private readonly IWorkflowService _workflowService;
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
@@ -195,7 +197,9 @@ namespace CMS.Presentation
             CMS.Services.Interfaces.IWorkflowTemplateService workflowTemplateService = null,
             CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null,
             CMS.Data.Interfaces.IKBVersionRepository kbVersionRepository = null,
-            CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null)
+            CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null,
+            CMS.Data.Interfaces.IKBCategoryRepository kbCategoryRepository = null,
+            CMS.Data.Interfaces.IKBArticleRepository  kbArticleRepository  = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -256,6 +260,8 @@ namespace CMS.Presentation
             _kbArticleLinkRepository = kbArticleLinkRepository;
             _kbVersionRepository = kbVersionRepository;
             _kbDashboardService = kbDashboardService;
+            _kbCategoryRepository = kbCategoryRepository;
+            _kbArticleRepository  = kbArticleRepository;
 
             InitializeComponent();
             BuildFileDetailPanel();
@@ -1420,9 +1426,12 @@ namespace CMS.Presentation
             // importWizardFactory — สร้าง KBImportWizardForm พร้อม presenter
             form.AttachImportWizardFactory(() =>
             {
-                var wizard = new KBImportWizardForm(_currentUser);
+                var wizard          = new KBImportWizardForm(_currentUser);
+                var excelReader     = new CMS.Services.KBExcelReader();
+                var processor       = new CMS.Services.KBImportProcessor(
+                    _kbCategoryRepository, _kbArticleRepository, _kbVersionRepository);
                 var wizardPresenter = new KBImportWizardController(
-                    wizard, _kbArticleService, _kbCategoryService, _currentUser);
+                    wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
                 wizard.AttachPresenter(wizardPresenter);
                 return wizard.ShowDialog(this);
             });

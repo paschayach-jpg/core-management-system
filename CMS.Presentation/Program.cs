@@ -503,7 +503,9 @@ namespace CMS.Presentation
                     workflowTemplateService: workflowTemplateService,
                     kbArticleLinkRepository: kbArticleLinkRepository,
                     kbVersionRepository: kbVersionRepository,
-                    kbDashboardService: kbDashboardService);
+                    kbDashboardService: kbDashboardService,
+                    kbCategoryRepository: kbCategoryRepository,
+                    kbArticleRepository: kbArticleRepository);
 
                 Application.Run(mainForm);
 
