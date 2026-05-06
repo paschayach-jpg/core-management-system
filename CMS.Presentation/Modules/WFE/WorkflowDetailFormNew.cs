@@ -13,6 +13,7 @@ namespace CMS.Presentation.Modules.Workflow
     public partial class WorkflowDetailFormNew : Form
     {
         private readonly IWorkflowService _workflowService;
+        private readonly IWorkflowTemplateService _templateService;
         private readonly ILoggingService _loggingService;
         private readonly UserContext _userContext;
         private int _workflowInstanceId;
@@ -30,11 +31,13 @@ namespace CMS.Presentation.Modules.Workflow
         public WorkflowDetailFormNew(
             int workflowInstanceId,
             IWorkflowService workflowService,
+            IWorkflowTemplateService templateService,
             ILoggingService loggingService,
             UserContext userContext)
         {
             _workflowInstanceId = workflowInstanceId;
             _workflowService = workflowService;
+            _templateService = templateService;
             _loggingService = loggingService;
             _userContext = userContext;
             InitializeComponent();
@@ -50,7 +53,7 @@ namespace CMS.Presentation.Modules.Workflow
                     pnlSidebarContainer, "monitor", OnNavItemClick, out _activeNavItem);
                 BuildTimelineTabs();
                 BuildPaintHandlers();
-                if (_workflowService != null)
+                if (_workflowService != null && _workflowInstanceId > 0)
                     LoadFromService();
                 else
                     LoadMockData();
@@ -306,11 +309,11 @@ namespace CMS.Presentation.Modules.Workflow
             WorkflowNavigationHandler.HandleNavigation(
                 tag,
                 this,
-                null, // workflowService
-                null, // templateService
+                _workflowService,
+                _templateService,
                 null, // slaCalculator
-                null, // loggingService
-                null); // userContext
+                _loggingService,
+                _userContext);
         }
 
         // ════════════════════════════════════════════════════════════════════════

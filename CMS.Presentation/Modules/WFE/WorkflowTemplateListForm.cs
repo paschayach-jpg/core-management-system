@@ -94,7 +94,7 @@ namespace CMS.Presentation.Modules.Workflow
         private void WorkflowTemplateListForm_Load(object sender, EventArgs e)
         {
             InitializeControls();
-            
+
             // Only load data if presenter is available
             if (_presenter != null)
             {
@@ -183,10 +183,7 @@ namespace CMS.Presentation.Modules.Workflow
                 // Create new template: show wizard
                 if (template == null)
                 {
-                    var wizard = new WorkflowCreateTemplateWizard(
-                        _templateService, _loggingService, _userContext, this);
-                    wizard.ShowWizard();
-                    _presenter.LoadTemplates();
+                    ShowCreateTemplateWizard();
                     return;
                 }
 
@@ -195,13 +192,53 @@ namespace CMS.Presentation.Modules.Workflow
                 using (var designerForm = new WorkflowDesignerForm(
                     templateId, _templateService, _loggingService, _userContext))
                 {
-                    designerForm.ShowDialog(this);
+                    designerForm.ShowDialog(this.MdiParent ?? this);
                 }
                 _presenter.LoadTemplates();
             }
             catch (Exception ex)
             {
-                ShowError("ไม่สามารถเปิดหน้าจอ Workflow Template ได้: " + ex.Message);
+                _loggingService?.Error($"ShowTemplateForm Exception: {ex.GetType().Name} - {ex.Message}\nStackTrace: {ex.StackTrace}", ex);
+                ShowError($"ไม่สามารถเปิดหน้าจอ Workflow Template ได้:\n\n{ex.GetType().Name}\n{ex.Message}");
+            }
+        }
+
+        private void ShowCreateTemplateWizard()
+        {
+            if (_templateService == null)
+            {
+                MessageBox.Show(
+                    "ไม่สามารถสร้าง Template ได้ เนื่องจาก WorkflowTemplateService ไม่พร้อมใช้งาน\n\n" +
+                    "กรุณาตรวจสอบ:\n" +
+                    "1. การเชื่อมต่อฐานข้อมูล\n" +
+                    "2. Log file ที่ bin\\Debug\\ เพื่อดูข้อผิดพลาดตอน Startup\n" +
+                    "3. Warning dialog ที่อาจขึ้นตอนเปิดโปรแกรม",
+                    "ไม่สามารถสร้าง Template",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                var dialogOwner = this.MdiParent ?? this;
+                var wizard = new WorkflowCreateTemplateWizard(
+                    _templateService,
+                    _loggingService,
+                    _userContext,
+                    dialogOwner);
+
+                wizard.ShowWizard();
+
+                if (_presenter != null)
+                {
+                    _presenter.LoadTemplates();
+                }
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error($"ShowCreateTemplateWizard Exception: {ex.GetType().Name} - {ex.Message}\nStackTrace: {ex.StackTrace}", ex);
+                ShowError($"ไม่สามารถเปิดหน้าสร้าง Template ได้:\n\n{ex.GetType().Name}\n{ex.Message}");
             }
         }
 
@@ -236,17 +273,17 @@ namespace CMS.Presentation.Modules.Workflow
                 }).ToList();
 
                 frm.Controls.Add(dgv);
-                frm.ShowDialog(this);
+                frm.ShowDialog(this.MdiParent ?? this);
             }
         }
 
         public void SetActionButtonsEnabled(bool canEdit, bool canDelete, bool canDuplicate)
         {
-            SetRibbonPanelEnabled(_pnlRibbonBtnEdit,       canEdit);
-            SetRibbonPanelEnabled(_pnlRibbonBtnDelete,     canDelete);
-            SetRibbonPanelEnabled(_pnlRibbonBtnDuplicate,  canDuplicate);
-            SetRibbonPanelEnabled(_pnlRibbonBtnVersions,   canEdit);
-            SetRibbonPanelEnabled(_pnlRibbonBtnPublish,    canEdit);
+            SetRibbonPanelEnabled(_pnlRibbonBtnEdit, canEdit);
+            SetRibbonPanelEnabled(_pnlRibbonBtnDelete, canDelete);
+            SetRibbonPanelEnabled(_pnlRibbonBtnDuplicate, canDuplicate);
+            SetRibbonPanelEnabled(_pnlRibbonBtnVersions, canEdit);
+            SetRibbonPanelEnabled(_pnlRibbonBtnPublish, canEdit);
             SetRibbonPanelEnabled(_pnlRibbonBtnDeactivate, canEdit);
         }
 
@@ -284,7 +321,15 @@ namespace CMS.Presentation.Modules.Workflow
         // ════════════════════════════════════════════════════════════════════
         private void btnCreate_Click(object sender, EventArgs e)
         {
-            if (_presenter != null) _presenter.CreateTemplate();
+            try
+            {
+                ShowCreateTemplateWizard();
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error($"btnCreate_Click Exception: {ex.Message}", ex);
+                ShowError($"ไม่สามารถเปิดหน้าสร้าง Template ได้:\n\n{ex.GetType().Name}\n{ex.Message}");
+            }
         }
 
         private void btnEdit_Click(object sender, EventArgs e)
@@ -675,11 +720,11 @@ namespace CMS.Presentation.Modules.Workflow
         // ════════════════════════════════════════════════════════════════════
         private void BuildRibbonToolbar()
         {
-            var iconColor  = Color.FromArgb(55, 65, 81);
+            var iconColor = Color.FromArgb(55, 65, 81);
             var hoverColor = Color.FromArgb(243, 244, 246);
-            var iconFont   = new Font("Segoe MDL2 Assets", 13F);
-            var textFont   = new Font("Segoe UI", 7.5F);
-            var primaryBg  = Color.FromArgb(37, 99, 235);
+            var iconFont = new Font("Segoe MDL2 Assets", 13F);
+            var textFont = new Font("Segoe UI", 7.5F);
+            var primaryBg = Color.FromArgb(37, 99, 235);
 
             var groups = new[]
             {
@@ -709,39 +754,39 @@ namespace CMS.Presentation.Modules.Workflow
                 int groupStartX = x;
                 foreach (var item in group.Items)
                 {
-                    bool   primary = item.Primary;
-                    string tag     = item.Tag;
-                    var    back    = primary ? primaryBg : Color.White;
-                    var    fg      = primary ? Color.White : iconColor;
+                    bool primary = item.Primary;
+                    string tag = item.Tag;
+                    var back = primary ? primaryBg : Color.White;
+                    var fg = primary ? Color.White : iconColor;
 
                     var pnlBtn = new Panel
                     {
-                        Location  = new Point(x, 4),
-                        Size      = new Size(60, 66),
+                        Location = new Point(x, 4),
+                        Size = new Size(60, 66),
                         BackColor = back,
-                        Cursor    = Cursors.Hand,
-                        Tag       = tag,
+                        Cursor = Cursors.Hand,
+                        Tag = tag,
                     };
 
                     var lblIcon = new Label
                     {
-                        Text      = item.Icon,
-                        Font      = iconFont,
+                        Text = item.Icon,
+                        Font = iconFont,
                         ForeColor = fg,
                         BackColor = back,
                         TextAlign = ContentAlignment.MiddleCenter,
-                        Location  = new Point(0, 4),
-                        Size      = new Size(60, 30),
+                        Location = new Point(0, 4),
+                        Size = new Size(60, 30),
                     };
                     var lblText = new Label
                     {
-                        Text      = item.Text,
-                        Font      = textFont,
+                        Text = item.Text,
+                        Font = textFont,
                         ForeColor = fg,
                         BackColor = back,
                         TextAlign = ContentAlignment.MiddleCenter,
-                        Location  = new Point(0, 36),
-                        Size      = new Size(60, 22),
+                        Location = new Point(0, 36),
+                        Size = new Size(60, 22),
                     };
 
                     pnlBtn.Controls.Add(lblIcon);
@@ -751,21 +796,21 @@ namespace CMS.Presentation.Modules.Workflow
                     {
                         EventHandler enter = (s, ev) => { pnlBtn.BackColor = hoverColor; lblIcon.BackColor = hoverColor; lblText.BackColor = hoverColor; };
                         EventHandler leave = (s, ev) => { pnlBtn.BackColor = Color.White; lblIcon.BackColor = Color.White; lblText.BackColor = Color.White; };
-                        pnlBtn.MouseEnter  += enter; lblIcon.MouseEnter  += enter; lblText.MouseEnter  += enter;
-                        pnlBtn.MouseLeave  += leave; lblIcon.MouseLeave  += leave; lblText.MouseLeave  += leave;
+                        pnlBtn.MouseEnter += enter; lblIcon.MouseEnter += enter; lblText.MouseEnter += enter;
+                        pnlBtn.MouseLeave += leave; lblIcon.MouseLeave += leave; lblText.MouseLeave += leave;
                     }
 
                     EventHandler click = (s, ev) => OnRibbonToolbarClick(tag);
-                    pnlBtn.Click  += click; lblIcon.Click  += click; lblText.Click  += click;
+                    pnlBtn.Click += click; lblIcon.Click += click; lblText.Click += click;
 
                     switch (tag)
                     {
-                        case "duplicate":  _pnlRibbonBtnDuplicate   = pnlBtn; break;
-                        case "edit":       _pnlRibbonBtnEdit         = pnlBtn; break;
-                        case "delete":     _pnlRibbonBtnDelete       = pnlBtn; break;
-                        case "publish":    _pnlRibbonBtnPublish      = pnlBtn; break;
-                        case "deactivate": _pnlRibbonBtnDeactivate   = pnlBtn; break;
-                        case "versions":   _pnlRibbonBtnVersions     = pnlBtn; break;
+                        case "duplicate": _pnlRibbonBtnDuplicate = pnlBtn; break;
+                        case "edit": _pnlRibbonBtnEdit = pnlBtn; break;
+                        case "delete": _pnlRibbonBtnDelete = pnlBtn; break;
+                        case "publish": _pnlRibbonBtnPublish = pnlBtn; break;
+                        case "deactivate": _pnlRibbonBtnDeactivate = pnlBtn; break;
+                        case "versions": _pnlRibbonBtnVersions = pnlBtn; break;
                     }
 
                     pnlRibbonContent.Controls.Add(pnlBtn);
@@ -774,12 +819,12 @@ namespace CMS.Presentation.Modules.Workflow
 
                 var lblGrp = new Label
                 {
-                    Text      = group.Header,
-                    Font      = new Font("Segoe UI", 7.5F),
+                    Text = group.Header,
+                    Font = new Font("Segoe UI", 7.5F),
                     ForeColor = Color.FromArgb(107, 114, 128),
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Location  = new Point(groupStartX, 72),
-                    Size      = new Size(x - groupStartX, 14),
+                    Location = new Point(groupStartX, 72),
+                    Size = new Size(x - groupStartX, 14),
                 };
                 pnlRibbonContent.Controls.Add(lblGrp);
 
@@ -788,8 +833,8 @@ namespace CMS.Presentation.Modules.Workflow
                     pnlRibbonContent.Controls.Add(new Panel
                     {
                         BackColor = Color.FromArgb(229, 231, 235),
-                        Location  = new Point(x + 2, 8),
-                        Size      = new Size(1, 58),
+                        Location = new Point(x + 2, 8),
+                        Size = new Size(1, 58),
                     });
                     x += 10;
                 }
@@ -800,15 +845,15 @@ namespace CMS.Presentation.Modules.Workflow
         {
             switch (tag)
             {
-                case "create":     btnCreate_Click(null, EventArgs.Empty);     break;
-                case "duplicate":  btnDuplicate_Click(null, EventArgs.Empty);  break;
-                case "edit":       btnEdit_Click(null, EventArgs.Empty);       break;
-                case "delete":     btnDelete_Click(null, EventArgs.Empty);     break;
-                case "publish":    btnPublish_Click(null, EventArgs.Empty);    break;
+                case "create": btnCreate_Click(null, EventArgs.Empty); break;
+                case "duplicate": btnDuplicate_Click(null, EventArgs.Empty); break;
+                case "edit": btnEdit_Click(null, EventArgs.Empty); break;
+                case "delete": btnDelete_Click(null, EventArgs.Empty); break;
+                case "publish": btnPublish_Click(null, EventArgs.Empty); break;
                 case "deactivate": btnDeactivate_Click(null, EventArgs.Empty); break;
-                case "versions":   btnVersions_Click(null, EventArgs.Empty);   break;
-                case "import":     btnImport_Click(null, EventArgs.Empty);     break;
-                case "export":     btnExport_Click(null, EventArgs.Empty);     break;
+                case "versions": btnVersions_Click(null, EventArgs.Empty); break;
+                case "import": btnImport_Click(null, EventArgs.Empty); break;
+                case "export": btnExport_Click(null, EventArgs.Empty); break;
             }
         }
 

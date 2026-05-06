@@ -37,6 +37,9 @@ namespace CMS.Presentation
             this.btnMove = new System.Windows.Forms.ToolStripButton();
             this.sep4 = new System.Windows.Forms.ToolStripSeparator();
             this.btnApplyTemplate = new System.Windows.Forms.ToolStripButton();
+            this.sep5 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnHideFile = new System.Windows.Forms.ToolStripButton();
+            this.btnUnhideFile = new System.Windows.Forms.ToolStripButton();
             this.sep3 = new System.Windows.Forms.ToolStripSeparator();
             this.btnChangeLevel = new System.Windows.Forms.ToolStripButton();
             this.btnCopyStructure = new System.Windows.Forms.ToolStripButton();
@@ -59,6 +62,7 @@ namespace CMS.Presentation
             this.chk4PC = new System.Windows.Forms.CheckBox();
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.splitLR = new System.Windows.Forms.SplitContainer();
+            this.btnToggleSidebar = new System.Windows.Forms.Button();
             this.pnlExplorer = new System.Windows.Forms.Panel();
             this.folderTreeView = new System.Windows.Forms.TreeView();
             this.txtFolderSearch = new System.Windows.Forms.TextBox();
@@ -259,7 +263,7 @@ namespace CMS.Presentation
             this.lblFilterExt.Name = "lblFilterExt";
             this.lblFilterExt.Size = new System.Drawing.Size(49, 15);
             this.lblFilterExt.TabIndex = 0;
-            this.lblFilterExt.Text = "นามสกุล:";
+            this.lblFilterExt.Text = "ประเภทไฟล์:";
             // 
             // toolStrip
             // 
@@ -279,6 +283,9 @@ namespace CMS.Presentation
             this.btnMove,
             this.sep4,
             this.btnApplyTemplate,
+            this.sep5,
+            this.btnHideFile,
+            this.btnUnhideFile,
             this.sep3,
             this.btnChangeLevel,
             this.btnCopyStructure,
@@ -375,6 +382,27 @@ namespace CMS.Presentation
             this.btnApplyTemplate.ToolTipText = "Apply Template Folder";
             this.btnApplyTemplate.Click += new System.EventHandler(this.btnApplyTemplate_Click);
             // 
+            // sep5
+            // 
+            this.sep5.Name = "sep5";
+            this.sep5.Size = new System.Drawing.Size(6, 26);
+            // 
+            // btnHideFile
+            // 
+            this.btnHideFile.Name = "btnHideFile";
+            this.btnHideFile.Size = new System.Drawing.Size(66, 23);
+            this.btnHideFile.Text = "🔒 ซ่อน";
+            this.btnHideFile.ToolTipText = "ซ่อนไฟล์ที่เลือก";
+            this.btnHideFile.Click += new System.EventHandler(this.btnHideFile_Click);
+            // 
+            // btnUnhideFile
+            // 
+            this.btnUnhideFile.Name = "btnUnhideFile";
+            this.btnUnhideFile.Size = new System.Drawing.Size(92, 23);
+            this.btnUnhideFile.Text = "👁️ แสดง";
+            this.btnUnhideFile.ToolTipText = "แสดงไฟล์ที่ซ่อนไว้";
+            this.btnUnhideFile.Click += new System.EventHandler(this.btnUnhideFile_Click);
+            // 
             // sep3
             // 
             this.sep3.Name = "sep3";
@@ -468,7 +496,7 @@ namespace CMS.Presentation
             // 
             // txtBreadcrumb
             // 
-            this.txtBreadcrumb.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.txtBreadcrumb.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtBreadcrumb.BackColor = System.Drawing.Color.White;
             this.txtBreadcrumb.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
@@ -634,14 +662,15 @@ namespace CMS.Presentation
             // splitLR
             // 
             this.splitLR.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitLR.IsSplitterFixed = true;
+            this.splitLR.IsSplitterFixed = false;
             this.splitLR.Location = new System.Drawing.Point(0, 0);
             this.splitLR.Name = "splitLR";
             // 
             // splitLR.Panel1
             // 
+            this.splitLR.Panel1.Controls.Add(this.btnToggleSidebar);
             this.splitLR.Panel1.Controls.Add(this.pnlExplorer);
-            this.splitLR.Panel1MinSize = 200;
+            this.splitLR.Panel1MinSize = 20;  // Keep minimum 20px for toggle button
             // 
             // splitLR.Panel2
             // 
@@ -649,6 +678,24 @@ namespace CMS.Presentation
             this.splitLR.Size = new System.Drawing.Size(1197, 734);
             this.splitLR.SplitterDistance = 303;
             this.splitLR.TabIndex = 0;
+            // 
+            // btnToggleSidebar
+            // 
+            this.btnToggleSidebar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(238)))), ((int)(((byte)(242)))), ((int)(((byte)(248)))));
+            this.btnToggleSidebar.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnToggleSidebar.FlatAppearance.BorderSize = 1;
+            this.btnToggleSidebar.FlatAppearance.BorderColor = System.Drawing.Color.LightGray;
+            this.btnToggleSidebar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnToggleSidebar.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.btnToggleSidebar.ForeColor = System.Drawing.Color.Gray;
+            this.btnToggleSidebar.Location = new System.Drawing.Point(283, 0);
+            this.btnToggleSidebar.Name = "btnToggleSidebar";
+            this.btnToggleSidebar.Size = new System.Drawing.Size(20, 734);
+            this.btnToggleSidebar.TabIndex = 1;
+            this.btnToggleSidebar.Text = "◀";
+            this.btnToggleSidebar.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnToggleSidebar.UseVisualStyleBackColor = false;
+            this.btnToggleSidebar.Click += new System.EventHandler(this.btnToggleSidebar_Click);
             // 
             // pnlExplorer
             // 
@@ -713,7 +760,7 @@ namespace CMS.Presentation
             // 
             // treeOrgUnit
             // 
-            this.treeOrgUnit.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.treeOrgUnit.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
             | System.Windows.Forms.AnchorStyles.Left)));
             this.treeOrgUnit.BackColor = System.Drawing.Color.White;
             this.treeOrgUnit.BorderStyle = System.Windows.Forms.BorderStyle.None;
@@ -1090,99 +1137,103 @@ namespace CMS.Presentation
         }
 
         // ── Field declarations ────────────────────────────────────────────────
-        private System.Windows.Forms.ToolStrip          toolStrip;
-        private System.Windows.Forms.ToolStripButton    btnNewFolder;
-        private System.Windows.Forms.ToolStripButton    btnAuto4Folders;
-        private System.Windows.Forms.ToolStripButton    btnRename;
+        private System.Windows.Forms.ToolStrip toolStrip;
+        private System.Windows.Forms.ToolStripButton btnNewFolder;
+        private System.Windows.Forms.ToolStripButton btnAuto4Folders;
+        private System.Windows.Forms.ToolStripButton btnRename;
         private System.Windows.Forms.ToolStripSeparator sep1;
-        private System.Windows.Forms.ToolStripButton    btnArchive;
-        private System.Windows.Forms.ToolStripButton    btnDelete;
+        private System.Windows.Forms.ToolStripButton btnArchive;
+        private System.Windows.Forms.ToolStripButton btnDelete;
         private System.Windows.Forms.ToolStripSeparator sep2;
-        private System.Windows.Forms.ToolStripButton    btnUploadFile;
-        private System.Windows.Forms.ToolStripButton    btnMove;
+        private System.Windows.Forms.ToolStripButton btnUploadFile;
+        private System.Windows.Forms.ToolStripButton btnMove;
         private System.Windows.Forms.ToolStripSeparator sep4;
-        private System.Windows.Forms.ToolStripButton    btnApplyTemplate;
+        private System.Windows.Forms.ToolStripButton btnApplyTemplate;
+        private System.Windows.Forms.ToolStripSeparator sep5;
+        private System.Windows.Forms.ToolStripButton btnHideFile;
+        private System.Windows.Forms.ToolStripButton btnUnhideFile;
         private System.Windows.Forms.ToolStripSeparator sep3;
-        private System.Windows.Forms.ToolStripButton    btnChangeLevel;
-        private System.Windows.Forms.ToolStripButton    btnCopyStructure;
-        private System.Windows.Forms.ToolStripLabel     lblConfidentialityBadge;
+        private System.Windows.Forms.ToolStripButton btnChangeLevel;
+        private System.Windows.Forms.ToolStripButton btnCopyStructure;
+        private System.Windows.Forms.ToolStripLabel lblConfidentialityBadge;
 
-        private System.Windows.Forms.Panel              pnlNavBar;
-        private System.Windows.Forms.TextBox            txtBreadcrumb;
-        private System.Windows.Forms.Button             btnNavBack;
-        private System.Windows.Forms.Button             btnNavForward;
-        private System.Windows.Forms.Button             btnNavUp;
-        private System.Windows.Forms.Button             btnNavRefresh;
-        private System.Windows.Forms.Button             btnViewList;
-        private System.Windows.Forms.Button             btnViewGrid;
-        private System.Windows.Forms.TextBox            txtSearch;
-        private System.Windows.Forms.Label              lblSearch;
+        private System.Windows.Forms.Panel pnlNavBar;
+        private System.Windows.Forms.TextBox txtBreadcrumb;
+        private System.Windows.Forms.Button btnNavBack;
+        private System.Windows.Forms.Button btnNavForward;
+        private System.Windows.Forms.Button btnNavUp;
+        private System.Windows.Forms.Button btnNavRefresh;
+        private System.Windows.Forms.Button btnViewList;
+        private System.Windows.Forms.Button btnViewGrid;
+        private System.Windows.Forms.TextBox txtSearch;
+        private System.Windows.Forms.Label lblSearch;
 
-        private System.Windows.Forms.Panel              pnlFilterBar;
-        private System.Windows.Forms.Label              lblFilterInfo;
-        private System.Windows.Forms.CheckBox           chk1HC;
-        private System.Windows.Forms.CheckBox           chk2SC;
-        private System.Windows.Forms.CheckBox           chk3NC;
-        private System.Windows.Forms.CheckBox           chk4PC;
+        private System.Windows.Forms.Panel pnlFilterBar;
+        private System.Windows.Forms.Label lblFilterInfo;
+        private System.Windows.Forms.CheckBox chk1HC;
+        private System.Windows.Forms.CheckBox chk2SC;
+        private System.Windows.Forms.CheckBox chk3NC;
+        private System.Windows.Forms.CheckBox chk4PC;
 
-        private System.Windows.Forms.SplitContainer     splitMain;
+        private System.Windows.Forms.SplitContainer splitMain;
 
-        private System.Windows.Forms.Panel              pnlExplorer;
-        private System.Windows.Forms.Label              lblExplorerHeader;
-        private System.Windows.Forms.Panel              pnlOrgFilter;
-        private System.Windows.Forms.TreeView           treeOrgUnit;
-        private System.Windows.Forms.Label              lblOrgUnitStatus;
-        private System.Windows.Forms.TextBox            txtFolderSearch;
-        private System.Windows.Forms.TreeView           folderTreeView;
-        private System.Windows.Forms.Panel              pnlRecycleBinNode;
-        private System.Windows.Forms.Label              lblRecycleBin;
-        private System.Windows.Forms.Label              lblRecycleBinCount;
+        private System.Windows.Forms.Panel pnlExplorer;
+        private System.Windows.Forms.Label lblExplorerHeader;
+        private System.Windows.Forms.Button btnToggleSidebar;
+        private System.Windows.Forms.Panel pnlOrgFilter;
+        private System.Windows.Forms.TreeView treeOrgUnit;
+        private System.Windows.Forms.Label lblOrgUnitStatus;
+        private System.Windows.Forms.TextBox txtFolderSearch;
+        private System.Windows.Forms.TreeView folderTreeView;
+        private System.Windows.Forms.Panel pnlRecycleBinNode;
+        private System.Windows.Forms.Label lblRecycleBin;
+        private System.Windows.Forms.Label lblRecycleBinCount;
 
-        private System.Windows.Forms.Panel              pnlContent;
-        private System.Windows.Forms.Panel              pnlContentHeader;
-        private System.Windows.Forms.Label              lblContentInfo;
-        private System.Windows.Forms.ListView           contentsListView;
-        private System.Windows.Forms.ColumnHeader       colName;
-        private System.Windows.Forms.ColumnHeader       colType;
-        private System.Windows.Forms.ColumnHeader       colConfidentiality;
-        private System.Windows.Forms.ColumnHeader       colSize;
-        private System.Windows.Forms.ColumnHeader       colDate;
-        private System.Windows.Forms.ColumnHeader       colUploadedBy;
-        private System.Windows.Forms.ColumnHeader       colVersion;
-        private System.Windows.Forms.ColumnHeader       colOrgUnit;
-        private System.Windows.Forms.ColumnHeader       colPermissions;
+        private System.Windows.Forms.Panel pnlContent;
+        private System.Windows.Forms.Panel pnlContentHeader;
+        private System.Windows.Forms.Label lblContentInfo;
+        private System.Windows.Forms.ListView contentsListView;
+        private System.Windows.Forms.ColumnHeader colName;
+        private System.Windows.Forms.ColumnHeader colType;
+        private System.Windows.Forms.ColumnHeader colConfidentiality;
+        private System.Windows.Forms.ColumnHeader colSize;
+        private System.Windows.Forms.ColumnHeader colDate;
+        private System.Windows.Forms.ColumnHeader colUploadedBy;
+        private System.Windows.Forms.ColumnHeader colVersion;
+        private System.Windows.Forms.ColumnHeader colOrgUnit;
+        private System.Windows.Forms.ColumnHeader colPermissions;
 
-        private System.Windows.Forms.Panel              pnlDetail;
-        private System.Windows.Forms.Label              lblDetailHeader;
-        private System.Windows.Forms.Label              lblDetailContent;
+        private System.Windows.Forms.Panel pnlDetail;
+        private System.Windows.Forms.Label lblDetailHeader;
+        private System.Windows.Forms.Label lblDetailContent;
 
-        private System.Windows.Forms.GroupBox           recycleBinGroupBox;
-        private System.Windows.Forms.ToolStrip          recycleBinToolStrip;
-        private System.Windows.Forms.ToolStripButton    btnRbSelectAll;
-        private System.Windows.Forms.ToolStripLabel     lblRbSelCount;
+        private System.Windows.Forms.GroupBox recycleBinGroupBox;
+        private System.Windows.Forms.ToolStrip recycleBinToolStrip;
+        private System.Windows.Forms.ToolStripButton btnRbSelectAll;
+        private System.Windows.Forms.ToolStripLabel lblRbSelCount;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolStripButton    btnRestore;
-        private System.Windows.Forms.ToolStripButton    btnRestoreToParent;
-        private System.Windows.Forms.ToolStripButton    btnPermanentDelete;
-        private System.Windows.Forms.ListView           recycleBinListView;
-        private System.Windows.Forms.ColumnHeader       colRbName;
-        private System.Windows.Forms.ColumnHeader       colRbConfidentiality;
-        private System.Windows.Forms.ColumnHeader       colRbDeletedAt;
+        private System.Windows.Forms.ToolStripButton btnRestore;
+        private System.Windows.Forms.ToolStripButton btnRestoreToParent;
+        private System.Windows.Forms.ToolStripButton btnPermanentDelete;
+        private System.Windows.Forms.ListView recycleBinListView;
+        private System.Windows.Forms.ColumnHeader colRbName;
+        private System.Windows.Forms.ColumnHeader colRbConfidentiality;
+        private System.Windows.Forms.ColumnHeader colRbDeletedAt;
         private System.Windows.Forms.SplitContainer splitLR;
         private System.Windows.Forms.SplitContainer splitContent;
 
         // Filter panel controls (Req 6.1)
-        private System.Windows.Forms.Panel              pnlFilter;
-        private System.Windows.Forms.Label              lblFilterExt;
-        private System.Windows.Forms.ComboBox           cmbExtension;
-        private System.Windows.Forms.Label              lblFilterFrom;
-        private System.Windows.Forms.DateTimePicker     dtpFrom;
-        private System.Windows.Forms.Label              lblFilterTo;
-        private System.Windows.Forms.DateTimePicker     dtpTo;
-        private System.Windows.Forms.Label              lblFilterUploader;
-        private System.Windows.Forms.TextBox            txtUploadedBy;
-        private System.Windows.Forms.Button             btnApplyFilter;
-        private System.Windows.Forms.Button             btnClearFilter;
-        private System.Windows.Forms.Label              lblFilterStatus;
+        private System.Windows.Forms.Panel pnlFilter;
+        private System.Windows.Forms.Label lblFilterExt;
+        private System.Windows.Forms.ComboBox cmbExtension;
+        private System.Windows.Forms.Label lblFilterFrom;
+        private System.Windows.Forms.DateTimePicker dtpFrom;
+        private System.Windows.Forms.Label lblFilterTo;
+        private System.Windows.Forms.DateTimePicker dtpTo;
+        private System.Windows.Forms.Label lblFilterUploader;
+        private System.Windows.Forms.TextBox txtUploadedBy;
+        private System.Windows.Forms.Button btnApplyFilter;
+        private System.Windows.Forms.Button btnClearFilter;
+        private System.Windows.Forms.Label lblFilterStatus;
     }
 }

@@ -38,41 +38,71 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void WorkflowCreateTemplateForm_Load(object sender, EventArgs e)
         {
-            // Wire up button events
-            var btnNext = FindButton("btnNext");
-            var btnSaveDraft = FindButton("btnSaveDraft");
-            var btnCancel = FindButton("btnCancel");
-            var btnBrowse = FindButton("btnBrowse");
+            try
+            {
+                _loggingService?.Info("WorkflowCreateTemplateForm_Load: Starting initialization");
 
-            if (btnNext != null)
-                btnNext.Click += (s, ev) => OnNextClick();
+                // Wire up button events
+                var btnNext = FindButton("btnNext");
+                var btnSaveDraft = FindButton("btnSaveDraft");
+                var btnCancel = FindButton("btnCancel");
+                var btnBrowse = FindButton("btnBrowse");
 
-            if (btnSaveDraft != null)
-                btnSaveDraft.Click += (s, ev) => OnSaveDraftClick();
+                _loggingService?.Info($"WorkflowCreateTemplateForm_Load: Buttons found - Next:{btnNext != null}, SaveDraft:{btnSaveDraft != null}, Cancel:{btnCancel != null}, Browse:{btnBrowse != null}");
 
-            if (btnCancel != null)
-                btnCancel.Click += (s, ev) => this.DialogResult = DialogResult.Cancel;
+                if (btnNext != null)
+                    btnNext.Click += (s, ev) => OnNextClick();
 
-            if (btnBrowse != null)
-                btnBrowse.Click += (s, ev) => OnBrowseClick();
+                if (btnSaveDraft != null)
+                    btnSaveDraft.Click += (s, ev) => OnSaveDraftClick();
 
-            if (txtTemplateCode != null)
-                txtTemplateCode.ReadOnly = true;
+                if (btnCancel != null)
+                    btnCancel.Click += (s, ev) => this.DialogResult = DialogResult.Cancel;
 
-            // Wire up radio button change events
-            if (rdoFresh != null)
-                rdoFresh.CheckedChanged += (s, ev) => OnModeChanged();
+                if (btnBrowse != null)
+                    btnBrowse.Click += (s, ev) => OnBrowseClick();
 
-            if (rdoCopy != null)
-                rdoCopy.CheckedChanged += (s, ev) => OnModeChanged();
+                if (txtTemplateCode != null)
+                    txtTemplateCode.ReadOnly = true;
 
-            if (rdoImport != null)
-                rdoImport.CheckedChanged += (s, ev) => OnModeChanged();
+                // Wire up radio button change events
+                if (rdoFresh != null)
+                    rdoFresh.CheckedChanged += (s, ev) => OnModeChanged();
 
-            // Load data and template list
-            InitializeDropdownData();
-            LoadTemplateList();
-            LoadFormData();
+                if (rdoCopy != null)
+                    rdoCopy.CheckedChanged += (s, ev) => OnModeChanged();
+
+                if (rdoImport != null)
+                    rdoImport.CheckedChanged += (s, ev) => OnModeChanged();
+
+                // Load data and template list
+                _loggingService?.Info("WorkflowCreateTemplateForm_Load: Calling InitializeDropdownData");
+                InitializeDropdownData();
+
+                if (_templateService == null && rdoCopy != null)
+                {
+                    rdoCopy.Checked = false;
+                    rdoCopy.Enabled = false;
+                }
+
+                _loggingService?.Info("WorkflowCreateTemplateForm_Load: Calling LoadTemplateList");
+                LoadTemplateList();
+
+                _loggingService?.Info("WorkflowCreateTemplateForm_Load: Calling LoadFormData");
+                LoadFormData();
+
+                _loggingService?.Info("WorkflowCreateTemplateForm_Load: Initialization completed successfully");
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error($"WorkflowCreateTemplateForm_Load Exception: {ex.GetType().Name} - {ex.Message}\nStackTrace: {ex.StackTrace}", ex);
+                MessageBox.Show(
+                    $"เกิดข้อผิดพลาดในการเริ่มต้น Form:\n\n{ex.GetType().Name}\n{ex.Message}",
+                    "ข้อผิดพลาด",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                this.DialogResult = DialogResult.Cancel;
+            }
         }
 
         private void InitializeDropdownData()
@@ -131,6 +161,16 @@ namespace CMS.Presentation.Modules.Workflow
         {
             try
             {
+                if (_templateService == null || _userContext == null)
+                {
+                    if (cmbCopyFrom != null)
+                    {
+                        cmbCopyFrom.DataSource = null;
+                        cmbCopyFrom.Items.Clear();
+                    }
+                    return;
+                }
+
                 var filter = new WorkflowTemplateFilter { IsActive = true };
                 var result = _templateService.GetTemplates(filter, _userContext);
 
@@ -233,6 +273,11 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void OnModeChanged()
         {
+            if (_templateService == null && rdoCopy != null && rdoCopy.Checked)
+            {
+                rdoFresh.Checked = true;
+            }
+
             UpdateCardStyles();
             ShowConditionalPanels();
         }
@@ -441,7 +486,8 @@ namespace CMS.Presentation.Modules.Workflow
                 if (ctrl.Name == name)
                     return ctrl;
 
-                if (ctrl is Panel || ctrl is GroupBox || ctrl is TabPage)
+                // Recursively search in containers (Panel, GroupBox, TabPage, and any control with child controls)
+                if (ctrl.HasChildren)
                 {
                     var found = FindControl(ctrl.Controls, name);
                     if (found != null)

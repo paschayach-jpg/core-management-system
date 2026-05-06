@@ -30,6 +30,9 @@ namespace CMS.Domain.Models
         public int? DeletedBy { get; set; }
         public DateTime? DeletedDate { get; set; }
         public int Version { get; set; }
+        public bool IsHidden { get; set; }
+        public string HiddenBy { get; set; }
+        public DateTime? HiddenDate { get; set; }
 
         // -----------------------------------------------------------------------
         // Aliases used by presentation / report layers

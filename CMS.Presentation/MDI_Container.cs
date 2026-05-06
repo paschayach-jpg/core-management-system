@@ -75,6 +75,7 @@ namespace CMS.Presentation
         private readonly IWorkflowService _workflowService;
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
+        public CMS.Services.Interfaces.IWorkflowTemplateService WorkflowTemplateService => _workflowTemplateService;
 
         // Notification inbox controls (built programmatically)
         private Panel _notificationPanel;
@@ -301,11 +302,13 @@ namespace CMS.Presentation
                 clockTimer.Tick += (s, ev) => UpdateStatusBarDateTime();
                 clockTimer.Start();
 
-                // Handle MDI child activation to show/hide dashboard
+                // Dashboard is permanently hidden — FolderForm is the home view
+                pnlDashboard.Visible = false;
+
+                // Handle MDI child activation
                 this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
 
-                // Auto-open FolderForm first — must appear before dashboard data loads
-                // Requirement: FolderForm (MOD-002) should open automatically on startup
+                // Auto-open FolderForm on startup
                 this.BeginInvoke(new Action(() =>
                 {
                     try
@@ -321,19 +324,12 @@ namespace CMS.Presentation
                     }
                 }));
 
-                // Load dashboard data after FolderForm is open — runs after FolderForm BeginInvoke
                 this.BeginInvoke(new Action(() =>
                 {
-                    try
-                    {
-                        LoadDashboardFolderTree();
-                        LoadRecentFiles();
-                        UpdateStatusBar();
-                        LoadDashboardStats();
-                    }
+                    try { UpdateStatusBar(); }
                     catch (Exception ex)
                     {
-                        _logger.Error($"Error loading dashboard data: {ex.Message}", ex);
+                        _logger.Error($"Error updating status bar: {ex.Message}", ex);
                     }
                 }));
             }
@@ -347,15 +343,21 @@ namespace CMS.Presentation
 
         private void OnMdiChildActivate()
         {
-            bool showDashboard = (this.ActiveMdiChild == null);
-            pnlDashboard.Visible = showDashboard;
+            // Dashboard is permanently hidden — FolderForm is always the home view
+            pnlDashboard.Visible = false;
+
+            // Re-open FolderForm when all MDI children are closed
+            if (this.ActiveMdiChild == null)
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    try { OpenFolderStructure(); }
+                    catch { }
+                }));
+            }
 
             ApplyAdminSectionVisibilityForActiveChild();
             SetTopMenuVisibilityForAuthorityConfig(HasOpenAuthorityConfigForm());
-
-            // Reload lvRecentFiles ทุกครั้งที่ dashboard กลับมาแสดง
-            if (showDashboard)
-                RefreshDashboardFiles();
 
             // Update move controls enabled state based on active child (Req 9.4)
             UpdateMoveControlsState();
@@ -1657,29 +1659,28 @@ namespace CMS.Presentation
                 _workflowService,
                 _slaCalculator,
                 _logger,
-                _currentUser));
+                _currentUser,
+                _workflowTemplateService));
         }
 
         public void OpenWorkflowDetail()
         {
-            // Open with mock-friendly constructor so it can be previewed from menu immediately.
-            OpenChildForm(new WorkflowDetailFormNew());
+            OpenChildForm(new WorkflowDetailFormNew(
+                0,
+                _workflowService,
+                _workflowTemplateService,
+                _logger,
+                _currentUser));
         }
 
         public void OpenWorkflowTemplateList()
         {
-            if (_workflowTemplateService == null)
-            {
-                MessageBox.Show("Workflow Template service is not available.", "Workflow Template",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowTemplateListForm(
                 _workflowTemplateService,
                 _auditService,
                 _logger,
                 _currentUser));
+
         }
 
         public void OpenWorkflowDesigner(int? templateId = null)

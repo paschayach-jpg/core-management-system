@@ -1,4 +1,5 @@
 # CMS Project Structure & Architecture
+> อัปเดตล่าสุด: พฤษภาคม 2569 | เพิ่ม WFE v2.0 Architecture
 
 ## Project Overview
 
@@ -368,3 +369,66 @@ Return success message to UI
 5. Establish data migration strategies
 6. Performance optimization for large file operations
 7. Add comprehensive error handling & logging
+
+---
+
+## WFE v2.0 Architecture (MOD-008 Workflow Engine)
+
+> เอกสารอ้างอิง: `SRS-WFE-v2.0.md`, `SDD-WFE-v2.0.md`, `WFE-Database.md`, `WFE-Wireframe.md`
+> Skill guide: `/wfe-engine` (engine) | `/wfe-form-ui` (UI pattern)
+
+### Design Principles ของ WFE v2.0
+
+| Principle | รายละเอียด |
+|-----------|-----------|
+| Workflow as Data | Flow = JSON definition ใน DB ไม่ต้อง redeploy เมื่อเพิ่ม workflow |
+| FrozenDefJSON | Snapshot DefinitionJSON ตอน StartInstance → Instance ไม่ถูก affect เมื่อ Definition เปลี่ยน |
+| Polymorphic Reference | `RefType` (VARCHAR) + `RefId` (INT) แทน FK 3 ตัว (LinkedFileID/TaskID/FolderID) |
+| Plugin Architecture | AutoTask → `IWorkflowPlugin.ExecuteAsync()` ผ่าน `PluginRegistry` |
+| OCC Concurrency | `RowVer` (rowversion) ใน t_WorkflowInstance ป้องกัน race condition |
+| Audit HashChain | SHA256 chain ทุก row ใน l_AuditLog ตาม OIC Circular 2566 |
+
+### Layer Structure ของ WFE
+
+```
+Presentation (WFE Forms)
+    ↓
+Controllers/WFE/ (WorkflowController, WorkflowDashboardController, ...)
+    ↓
+Services/Workflow/ (IWorkflowService → WorkflowOrchestrator)
+    ├── Engine/ (WorkflowOrchestrator, ConcurrencyGuard)
+    ├── Definition/ (DefinitionService, DefinitionParser, StepGraphCache)
+    ├── Rules/ (RuleEngine, ConditionEvaluator/NCalc, SlaCalculator, EscalationChecker)
+    └── Plugins/ (IWorkflowPlugin, PluginRegistry, built-in plugins)
+        ↓
+Data/Repositories/Workflow* (WFERepository, ADO.NET + Stored Procedures)
+    ↓
+SQL Server 2019 (WFE Schema: m_WorkflowDefinition, t_WorkflowInstance, t_WorkflowStepInstance, ...)
+```
+
+### GAP: Current v1.0 vs Target v2.0
+
+| Component | v1.0 (มีอยู่แล้ว) | v2.0 (ต้องสร้าง/แก้) |
+|-----------|-------------------|----------------------|
+| `IWorkflowService` | Synchronous + UserContext | Async + StartWorkflowDto |
+| `WorkflowInstance` | `TemplateVersion`, `CurrentStepId` | + `FrozenDefJSON`, `RefType`, `RefId`, `RowVer`, `TenantId` |
+| Condition Engine | ไม่มี | `ConditionEvaluator` (NCalc) |
+| AutoTask | ไม่มี plugin | `IWorkflowPlugin` + `PluginRegistry` |
+| Concurrency | ไม่มี | `ConcurrencyGuard` (OCC rowversion) |
+| AuditLog | ADUserName snapshot | + `HashChain` SHA256 |
+| Plugin Registry UI | ไม่มี | `PluginRegistryForm.cs` |
+
+### WFE Forms (Wireframe ↔ Form)
+
+| Wireframe | Form File | สถานะ |
+|-----------|-----------|-------|
+| WFE-01 Workflow Designer | `WorkflowDesignerForm.cs` | มี |
+| WFE-02 Instance Detail | `WorkflowInstanceDetailForm.cs` | มี |
+| WFE-03 My Tasks | `WorkflowDashboardFormNew.cs` (master ref) | มี |
+| WFE-04 Complete Step | `Dialogs/WorkflowStepActionForm.cs` | มี |
+| WFE-05 Monitor Dashboard | `WorkflowMonitorForm.cs` | มี |
+| WFE-06 SLA Report | `SLAReportForm.cs` | มี |
+| WFE-07 Plugin Registry | **ยังไม่มี** | ต้องสร้าง |
+| WFE-08 Start Workflow | `Dialogs/WorkflowStartDialog.cs` | มี |
+| WFE-09 Definition List | `WorkflowTemplateListForm.cs` | มี |
+| WFE-10 Delegate | `Dialogs/DelegationDialog.cs` | มี |

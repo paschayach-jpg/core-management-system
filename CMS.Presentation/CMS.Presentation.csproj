@@ -130,6 +130,9 @@
     <Compile Include="Modules\DMS\DuplicateFileChoiceDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Modules\DMS\FileCopyProgressForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\DMS\DuplicateFileChoiceDialog.Designer.cs">
       <DependentUpon>DuplicateFileChoiceDialog.cs</DependentUpon>
     </Compile>

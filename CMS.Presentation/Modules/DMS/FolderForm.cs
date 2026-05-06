@@ -98,6 +98,10 @@ namespace CMS.Presentation
         private Button _btnConfView;
         private Button _btnMainMenu;
         private TreeView _treeConfidentiality;
+
+        // Sidebar toggle state
+        private bool _sidebarCollapsed = false;
+        private int _sidebarExpandedWidth = 303; // Default width
         private TreeView _treeMainMenu;
         private bool _showingConfView = false;
         private bool _showingMainMenuView = false;
@@ -116,6 +120,7 @@ namespace CMS.Presentation
         private enum ClipboardMode { None, Cut, Copy }
         private ClipboardMode _clipboardMode = ClipboardMode.None;
         private List<int> _clipboardFileIds = new List<int>();
+        private List<FileDocument> _clipboardFiles = new List<FileDocument>();
         private readonly Dictionary<ListViewItem, Color> _cutHighlightedItems = new Dictionary<ListViewItem, Color>();
         private ToolTip _navToolTip;
 
@@ -492,6 +497,8 @@ namespace CMS.Presentation
             var mnuDelete = new ToolStripMenuItem("ลบ", null, (s, e) => btnDelete_Click(s, e)) { ShortcutKeys = System.Windows.Forms.Keys.Delete, ShowShortcutKeys = true };
             var mnuClearFolder = new ToolStripMenuItem("🗑️  ล้างไฟล์ทั้งหมดใน Folder...", null, (s, e) => ClearFolderContents());
             var mnuArchive = new ToolStripMenuItem("Archive", null, (s, e) => btnArchive_Click(s, e));
+            var mnuHide = new ToolStripMenuItem("🔒 ซ่อน", null, (s, e) => HideSelectedFiles());
+            var mnuUnhide = new ToolStripMenuItem("👁️ แสดง", null, (s, e) => UnhideSelectedFiles());
             var mnuShare = new ToolStripMenuItem("แชร์...", null, CtxShare_Click);
             var mnuPermission = new ToolStripMenuItem("ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
             var mnuMyPermission = new ToolStripMenuItem("สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
@@ -514,6 +521,9 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuClearFolder);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuArchive);
+            ctx.Items.Add(mnuHide);
+            ctx.Items.Add(mnuUnhide);
+            ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuShare);
             ctx.Items.Add(mnuPermission);
             ctx.Items.Add(mnuMyPermission);
@@ -579,6 +589,8 @@ namespace CMS.Presentation
                 mnuDelete.Enabled = canDeleteContent;
                 mnuClearFolder.Enabled = _fileBrowseController != null && _fileCommandController != null && _currentNavFolderId.HasValue && canEdit;
                 mnuArchive.Enabled = singleFileSelected && canEdit;
+                mnuHide.Enabled = hasFileSelection && !hasFolderSelection && canEdit && _fileCommandController != null;
+                mnuUnhide.Enabled = hasFileSelection && !hasFolderSelection && canEdit && _fileCommandController != null;
                 mnuShare.Enabled = singleFileSelected && canView && _shareCommandController != null;
                 mnuPermission.Enabled = isPrivileged;
                 mnuMyPermission.Enabled = true;
@@ -889,6 +901,7 @@ namespace CMS.Presentation
 
             _clipboardMode = ClipboardMode.Cut;
             _clipboardFileIds = files.Select(f => f.FileID).Distinct().ToList();
+            _clipboardFiles = files;
 
             ApplyCutHighlightToSelectedFiles();
         }
@@ -902,6 +915,7 @@ namespace CMS.Presentation
 
             _clipboardMode = ClipboardMode.Copy;
             _clipboardFileIds = files.Select(f => f.FileID).Distinct().ToList();
+            _clipboardFiles = files;
         }
 
         private void CtxFilePaste_Click(object sender, EventArgs e)
@@ -912,9 +926,9 @@ namespace CMS.Presentation
 
             int destFolderId = _currentNavFolderId.Value;
 
-            try
+            if (_clipboardMode == ClipboardMode.Cut)
             {
-                if (_clipboardMode == ClipboardMode.Cut)
+                try
                 {
                     var req = new CMS.Services.DTOs.MoveFileRequest
                     {
@@ -922,32 +936,93 @@ namespace CMS.Presentation
                         DestinationFolderId = destFolderId
                     };
                     _fileCommandController.MoveFiles(req, _user);
+
+                    ClearCutHighlight();
+                    _clipboardMode = ClipboardMode.None;
+                    _clipboardFileIds.Clear();
+                    _clipboardFiles.Clear();
+
+                    if (_currentNavFolderId.HasValue)
+                        _presenter.GetFolderContents(_currentNavFolderId.Value);
                 }
-                else // Copy
+                catch (Exception ex)
                 {
-                    foreach (int fileId in _clipboardFileIds)
-                        _fileCommandController.CopyFile(fileId, destFolderId, _user);
+                    ClearCutHighlight();
+                    ShowError("ย้ายไฟล์ไม่สำเร็จ: " + ex.Message);
                 }
-
-                ClearCutHighlight();
-
-                // Clear clipboard state
-                _clipboardMode = ClipboardMode.None;
-                _clipboardFileIds.Clear();
-
-                // Refresh current folder view
-                if (_currentNavFolderId.HasValue)
-                    _presenter.GetFolderContents(_currentNavFolderId.Value);
             }
-            catch (Exception ex)
+            else
             {
-                // Restore cut color on failure
-                ClearCutHighlight();
-
-                ShowError(string.Format("{0}ไม่สำเร็จ: {1}",
-                    _clipboardMode == ClipboardMode.Cut ? "ย้ายไฟล์" : "คัดลอกไฟล์",
-                    ex.Message));
+                PasteCopyWithDuplicateCheck(destFolderId);
             }
+        }
+
+        private void PasteCopyWithDuplicateCheck(int destFolderId)
+        {
+            // Resolve file list from stored clipboard files (matched by ID)
+            var clipIds = new HashSet<int>(_clipboardFileIds);
+            var filesToCopy = _clipboardFiles
+                .Where(f => clipIds.Contains(f.FileID))
+                .ToList();
+
+            // Fallback: if stored objects are missing, show an error
+            if (filesToCopy.Count == 0)
+            {
+                ShowError("ไม่พบข้อมูลไฟล์ที่ต้องการคัดลอก กรุณา Copy ใหม่อีกครั้ง");
+                return;
+            }
+
+            // ── Duplicate check ───────────────────────────────────────────────
+            var fileNames = filesToCopy.Select(f => f.OriginalFileName).ToList();
+            var duplicateNames = new List<string>();
+
+            if (_fileUploadController != null)
+            {
+                try
+                {
+                    duplicateNames = _fileUploadController
+                        .FindDuplicateNames(fileNames, destFolderId, _user)
+                        .ToList();
+                }
+                catch { /* ถ้าเช็คไม่ได้ ให้ทำต่อโดยไม่ข้าม */ }
+            }
+
+            if (duplicateNames.Count > 0)
+            {
+                using (var dlg = new DuplicateFileChoiceDialog("โฟลเดอร์ปลายทาง", duplicateNames))
+                {
+                    var owner = this.MdiParent ?? this;
+                    if (dlg.ShowDialog(owner) != System.Windows.Forms.DialogResult.OK
+                        || dlg.SelectedChoice == DuplicateFileChoiceDialog.Choice.Cancel)
+                        return;
+
+                    if (dlg.SelectedChoice == DuplicateFileChoiceDialog.Choice.SkipDuplicates)
+                    {
+                        var dupSet = new HashSet<string>(duplicateNames, StringComparer.OrdinalIgnoreCase);
+                        filesToCopy = filesToCopy
+                            .Where(f => !dupSet.Contains(f.OriginalFileName))
+                            .ToList();
+
+                        if (filesToCopy.Count == 0)
+                        {
+                            ShowInfo("ข้ามไฟล์ซ้ำทั้งหมดแล้ว ไม่มีไฟล์ที่ต้องคัดลอก");
+                            return;
+                        }
+                    }
+                    // Choice.SaveCopy → copy ทุกไฟล์ โดย service จะ rename อัตโนมัติ
+                }
+            }
+
+            // ── Progress dialog ───────────────────────────────────────────────
+            var copyItems = filesToCopy.Select(f => new FileCopyInput { FileId = f.FileID, FileName = f.OriginalFileName });
+            using (var progressForm = new FileCopyProgressForm(copyItems, destFolderId, _fileCommandController, _user))
+            {
+                progressForm.ShowDialog(this.MdiParent ?? this);
+            }
+
+            // Refresh folder view
+            if (_currentNavFolderId.HasValue)
+                _presenter.GetFolderContents(_currentNavFolderId.Value);
         }
 
         private List<FileDocument> GetSelectedFilesFromContents()
@@ -1197,7 +1272,7 @@ namespace CMS.Presentation
             btnCollapseAll.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 230);
             btnCollapseAll.FlatAppearance.BorderSize = 1;
 
-            btnExpandAll.Click  += (s, e) => GetActiveOrgTree()?.ExpandAll();
+            btnExpandAll.Click += (s, e) => GetActiveOrgTree()?.ExpandAll();
             btnCollapseAll.Click += (s, e) => GetActiveOrgTree()?.CollapseAll();
 
             pnlExpandCollapse.Controls.Add(btnExpandAll);
@@ -1222,9 +1297,9 @@ namespace CMS.Presentation
 
         private TreeView GetActiveOrgTree()
         {
-            if (treeOrgUnit.Visible)        return treeOrgUnit;
+            if (treeOrgUnit.Visible) return treeOrgUnit;
             if (_treeConfidentiality.Visible) return _treeConfidentiality;
-            if (_treeMainMenu.Visible)      return _treeMainMenu;
+            if (_treeMainMenu.Visible) return _treeMainMenu;
             return null;
         }
 
@@ -3108,16 +3183,16 @@ namespace CMS.Presentation
             listImageList.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
             contentsListView.SmallImageList = listImageList;
 
-            // ── LargeImageList (32×32) for Large Icon view ────────────────────
-            var largeImageList = new ImageList { ImageSize = new Size(32, 32), ColorDepth = ColorDepth.Depth32Bit };
-            largeImageList.Images.Add("folder", new Bitmap(Properties.Resources.folder, 32, 32));
-            try { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.lightning_bolt1, 32, 32)); }
-            catch { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.book_red1.ToBitmap(), 32, 32)); }
-            largeImageList.Images.Add("book_red", new Bitmap(Properties.Resources.lightning_bolt1, 32, 32));
-            largeImageList.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange, 32, 32));
-            largeImageList.Images.Add("book_bule", new Bitmap(Properties.Resources.book_bule, 32, 32));
-            largeImageList.Images.Add("book_green", new Bitmap(Properties.Resources.book_green, 32, 32));
-            largeImageList.Images.Add("file_docs", new Bitmap(Properties.Resources.File_docs.ToBitmap(), 32, 32));
+            // ── LargeImageList (64×64) for Large Icon view ────────────────────
+            var largeImageList = new ImageList { ImageSize = new Size(64, 64), ColorDepth = ColorDepth.Depth32Bit };
+            largeImageList.Images.Add("folder", new Bitmap(Properties.Resources.folder, 64, 64));
+            try { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.lightning_bolt1, 64, 64)); }
+            catch { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.book_red1.ToBitmap(), 64, 64)); }
+            largeImageList.Images.Add("book_red", new Bitmap(Properties.Resources.lightning_bolt1, 64, 64));
+            largeImageList.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange, 64, 64));
+            largeImageList.Images.Add("book_bule", new Bitmap(Properties.Resources.book_bule, 64, 64));
+            largeImageList.Images.Add("book_green", new Bitmap(Properties.Resources.book_green, 64, 64));
+            largeImageList.Images.Add("file_docs", new Bitmap(Properties.Resources.File_docs.ToBitmap(), 64, 64));
             contentsListView.LargeImageList = largeImageList;
 
             // ── View toggle buttons (Details / Tile / Large Icons) ───────────
@@ -3505,7 +3580,7 @@ namespace CMS.Presentation
                     file.OrgUnitName = "—";
                 }
 
-                string icon = FileIcon(file.FileExtension);
+                string icon = GetFileImageKey(file);
                 var item = new ListViewItem(file.OriginalFileName) { ImageKey = icon };
                 item.SubItems.Add(file.FileExtension.TrimStart('.').ToUpper()); // ประเภท
                 item.SubItems.Add(ConfidentialityShort(file.ConfidentialityLevel)); // ระดับ
@@ -3517,6 +3592,13 @@ namespace CMS.Presentation
                 item.SubItems.Add("—");                                          // สิทธิ์ (files inherit from folder)
                 item.Tag = file;
                 item.UseItemStyleForSubItems = false;
+
+                // ── Display hidden status with RED circle ──────────────────────
+                if (file.IsHidden)
+                {
+                    // Mark hidden file with red circle: 🔴
+                    item.SubItems[0].Text = "🔴 " + item.SubItems[0].Text;
+                }
 
                 // Confidentiality badge colored
                 item.SubItems[2].ForeColor = ConfidentialityColor(file.ConfidentialityLevel);
@@ -3548,11 +3630,11 @@ namespace CMS.Presentation
 
             // Populate extension ComboBox with distinct extensions from current files (Req 6.1)
             cmbExtension.Items.Clear();
-            cmbExtension.Items.Add(string.Empty); // "all" option
+            cmbExtension.Items.Add("ทั้งหมด"); // "all" option
             foreach (var ext in fileList.Select(f => f.FileExtension).Distinct().OrderBy(e => e))
                 if (!string.IsNullOrEmpty(ext))
                     cmbExtension.Items.Add(ext);
-            cmbExtension.Text = string.Empty;
+            cmbExtension.Text = "ทั้งหมด";
 
             // Clear filter status when folder changes (Req 6.3)
             lblFilterStatus.Text = string.Empty;
@@ -4440,6 +4522,30 @@ namespace CMS.Presentation
             {
                 btnNavRefresh.Enabled = true;
                 btnNavRefresh.Text = "↺";
+            }
+        }
+
+        private void btnToggleSidebar_Click(object sender, EventArgs e)
+        {
+            // Toggle sidebar visibility and update button icon
+            _sidebarCollapsed = !_sidebarCollapsed;
+
+            if (_sidebarCollapsed)
+            {
+                // Collapse: save current width, collapse to 20px (leaving button visible)
+                _sidebarExpandedWidth = splitLR.SplitterDistance;
+                splitLR.SplitterDistance = 20;  // Keep 20px for button edge only
+                pnlExplorer.Visible = false;
+                btnToggleSidebar.Text = "▶"; // Right-pointing arrow when collapsed
+                btnToggleSidebar.BackColor = Color.FromArgb(220, 230, 245); // Light blue for collapsed state
+            }
+            else
+            {
+                // Expand: restore previous width
+                pnlExplorer.Visible = true;
+                splitLR.SplitterDistance = _sidebarExpandedWidth;
+                btnToggleSidebar.Text = "◀"; // Left-pointing arrow when expanded
+                btnToggleSidebar.BackColor = Color.FromArgb(238, 242, 248); // Normal color when expanded
             }
         }
 
@@ -6418,6 +6524,82 @@ namespace CMS.Presentation
         }
 
         // -----------------------------------------------------------------------
+        // Hide/Unhide File Feature (MOD-003)
+        // -----------------------------------------------------------------------
+
+        private void btnHideFile_Click(object sender, EventArgs e)
+        {
+            HideSelectedFiles();
+        }
+
+        private void btnUnhideFile_Click(object sender, EventArgs e)
+        {
+            UnhideSelectedFiles();
+        }
+
+        private void HideSelectedFiles()
+        {
+            var selectedFiles = GetSelectedFilesFromContents();
+            if (selectedFiles.Count == 0)
+            {
+                ShowError("กรุณาเลือกไฟล์ที่ต้องการซ่อน");
+                return;
+            }
+
+            var fileIds = selectedFiles.Select(f => f.FileID).ToList();
+            if (MessageBox.Show(
+                string.Format("ต้องการซ่อนไฟล์ {0} ไฟล์หรือไม่?", fileIds.Count),
+                "ซ่อนไฟล์",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            try
+            {
+                _fileCommandController.HideFiles(fileIds, _user);
+                ShowInfo(string.Format("✅ ซ่อนไฟล์ {0} ไฟล์เรียบร้อยแล้ว", fileIds.Count));
+                var folderId = SelectedFolder?.FolderId ?? (_currentNavFolderId.HasValue ? _currentNavFolderId.Value : 0);
+                if (folderId > 0)
+                    _presenter.GetFolderContents(folderId);
+            }
+            catch (Exception ex)
+            {
+                ShowError($"ไม่สามารถซ่อนไฟล์: {ex.Message}");
+            }
+        }
+
+        private void UnhideSelectedFiles()
+        {
+            var selectedFiles = GetSelectedFilesFromContents();
+            if (selectedFiles.Count == 0)
+            {
+                ShowError("กรุณาเลือกไฟล์ที่ต้องการแสดง");
+                return;
+            }
+
+            var fileIds = selectedFiles.Select(f => f.FileID).ToList();
+            if (MessageBox.Show(
+                string.Format("ต้องการแสดงไฟล์ {0} ไฟล์หรือไม่?", fileIds.Count),
+                "แสดงไฟล์",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            try
+            {
+                _fileCommandController.UnhideFiles(fileIds, _user);
+                ShowInfo(string.Format("✅ แสดงไฟล์ {0} ไฟล์เรียบร้อยแล้ว", fileIds.Count));
+                var folderId = SelectedFolder?.FolderId ?? (_currentNavFolderId.HasValue ? _currentNavFolderId.Value : 0);
+                if (folderId > 0)
+                    _presenter.GetFolderContents(folderId);
+            }
+            catch (Exception ex)
+            {
+                ShowError($"ไม่สามารถแสดงไฟล์: {ex.Message}");
+            }
+        }
+
+        // -----------------------------------------------------------------------
         // Confidentiality level change  (Req 7.5, 7.6)
         // -----------------------------------------------------------------------
 
@@ -7559,6 +7741,67 @@ namespace CMS.Presentation
             return "file_docs";
         }
 
+        private static readonly System.Collections.Generic.HashSet<string> _imageExtensions =
+            new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+            { "jpg", "jpeg", "png", "gif", "bmp", "webp", "tiff", "tif" };
+
+        /// <summary>
+        /// Returns the ImageList key for a file.
+        /// For image files with a valid PhysicalPath, loads a thumbnail and registers it
+        /// in both SmallImageList (16×16) and LargeImageList (64×64) on demand.
+        /// Falls back to "file_docs" on any error.
+        /// </summary>
+        private string GetFileImageKey(FileDocument file)
+        {
+            string ext = (file.FileExtension ?? string.Empty).TrimStart('.').ToLowerInvariant();
+
+            if (!_imageExtensions.Contains(ext))
+                return "file_docs";
+
+            string thumbKey = "thumb_" + file.FileID;
+
+            // Already registered — reuse
+            if (contentsListView.SmallImageList != null &&
+                contentsListView.SmallImageList.Images.ContainsKey(thumbKey))
+                return thumbKey;
+
+            string physPath = file.PhysicalPath;
+            if (string.IsNullOrWhiteSpace(physPath) || !System.IO.File.Exists(physPath))
+                return "file_docs";
+
+            try
+            {
+                // Skip very large files to avoid slow load (> 20 MB)
+                var fi = new System.IO.FileInfo(physPath);
+                if (fi.Length > 20L * 1024 * 1024) return "file_docs";
+
+                using (var original = Image.FromFile(physPath))
+                {
+                    if (contentsListView.SmallImageList != null &&
+                        !contentsListView.SmallImageList.Images.ContainsKey(thumbKey))
+                    {
+                        var thumb16 = new Bitmap(original, new Size(16, 16));
+                        contentsListView.SmallImageList.Images.Add(thumbKey, thumb16);
+                    }
+
+                    if (contentsListView.LargeImageList != null &&
+                        !contentsListView.LargeImageList.Images.ContainsKey(thumbKey))
+                    {
+                        // Use 64×64 for meaningful large-icon preview
+                        var largeSize = contentsListView.LargeImageList.ImageSize;
+                        var thumb64 = new Bitmap(original, largeSize);
+                        contentsListView.LargeImageList.Images.Add(thumbKey, thumb64);
+                    }
+                }
+
+                return thumbKey;
+            }
+            catch
+            {
+                return "file_docs";
+            }
+        }
+
         // -----------------------------------------------------------------------
         // ImageList for contentsListView icons
         // -----------------------------------------------------------------------
@@ -8176,7 +8419,7 @@ namespace CMS.Presentation
             // Apply AND logic to _currentFiles
             var filtered = _currentFiles.AsEnumerable();
 
-            if (!string.IsNullOrEmpty(extFilter))
+            if (!string.IsNullOrEmpty(extFilter) && extFilter != "ทั้งหมด")
             {
                 string ext = extFilter.StartsWith(".") ? extFilter : "." + extFilter;
                 filtered = filtered.Where(f =>
@@ -8220,7 +8463,7 @@ namespace CMS.Presentation
         internal void ClearFileFilter()
         {
             // Clear filter controls
-            cmbExtension.Text = string.Empty;
+            cmbExtension.Text = "ทั้งหมด";
             dtpFrom.Checked = false;
             dtpTo.Checked = false;
             txtUploadedBy.Text = string.Empty;
@@ -8278,7 +8521,7 @@ namespace CMS.Presentation
             // Add filtered file items
             foreach (var file in filesToShow)
             {
-                string icon = FileIcon(file.FileExtension);
+                string icon = GetFileImageKey(file);
                 var item = new ListViewItem(file.OriginalFileName) { ImageKey = icon };
                 item.SubItems.Add(file.FileExtension.TrimStart('.').ToUpper());
                 item.SubItems.Add(ConfidentialityShort(file.ConfidentialityLevel));

@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Services.Interfaces;
+using CMS.Presentation;
 
 namespace CMS.Presentation.Modules.Workflow
 {
@@ -119,7 +120,10 @@ namespace CMS.Presentation.Modules.Workflow
             if (currentForm is WorkflowTemplateListForm)
                 return;
 
-            // Allow opening without services for preview/testing
+            // Fallback: get service from MDI_Container if not passed by calling form
+            if (templateService == null && currentForm.MdiParent is MDI_Container mdi)
+                templateService = mdi.WorkflowTemplateService;
+
             var form = new WorkflowTemplateListForm(templateService, null, loggingService, userContext);
             OpenAsMdiChild(currentForm, form);
         }

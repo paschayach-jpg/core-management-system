@@ -30,5 +30,11 @@ namespace CMS.Services.Interfaces
 
         /// <summary>Returns the subset of <paramref name="fileNames"/> that already exist (active) in the folder.</summary>
         IEnumerable<string> FindDuplicateNames(IEnumerable<string> fileNames, int folderId, UserContext user);
+
+        /// <summary>Hide the specified files (IsHidden = true).</summary>
+        void HideFiles(List<int> fileIds, UserContext user);
+
+        /// <summary>Unhide the specified files (IsHidden = false).</summary>
+        void UnhideFiles(List<int> fileIds, UserContext user);
     }
 }

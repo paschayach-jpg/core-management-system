@@ -108,15 +108,13 @@ namespace CMS.Presentation
             if (checkBox1.Checked == true)
             {
                 username = "khanitthac";
-                password = "Knid_poonpun@1412K";
+                password = "KnidK@1412";
             }
             else
             {
                 username = "pitakpong";
                 password = "P@takpong01714";
             }
-
-
 
             if (username.Length == 0)
             {

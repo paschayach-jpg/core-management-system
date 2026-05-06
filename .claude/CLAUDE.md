@@ -18,16 +18,16 @@
 ```
 CMS.sln
 ├── CMS.Presentation      (.NET 4.5 WinForms — UI Layer)
-├── CMS.Controllers       (Controller Layer — MVC Pattern)
-├── CMS.Services          (Business Logic + Validation)
-├── CMS.DataAccess        (Repository Layer — Raw ADO.NET)
-├── CMS.Models            (Domain Models)
-├── CMS.Common            (Shared Utilities, Constants, Enums)
-└── CMS.Tests             (Unit Tests — MSTest หรือ NUnit)
+├── CMS.Controllers       (Controller Layer — MVP Presenter + View Interfaces)
+├── CMS.Services          (Business Logic + Validation + Background Jobs)
+├── CMS.Data              (Repository Layer — Raw ADO.NET)
+├── CMS.Domain            (Domain Models + Enums)
+├── CMS.Infrastructure    (AD Auth, ClamAV, log4net, NetworkDrive, ConfigManager)
+└── CMS.Tests             (Unit Tests — NUnit 3 + NSubstitute + FsCheck)
 ```
 
-**กฎสำคัญ:** ห้าม reference Project ข้ามชั้น เช่น Presentation → DataAccess โดยตรง  
-ต้องผ่าน: Presentation → Controllers → Services → DataAccess
+**กฎสำคัญ:** ห้าม reference Project ข้ามชั้น เช่น Presentation → Data โดยตรง  
+ต้องผ่าน: Presentation → Controllers → Services → Data
 
 ---
 

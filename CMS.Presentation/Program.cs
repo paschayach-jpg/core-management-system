@@ -176,11 +176,26 @@ namespace CMS.Presentation
                     auditService,
                     loggingService);
 
-                var workflowTemplateService = new WorkflowTemplateService(
-                    workflowTemplateRepository,
-                    workflowRepository,
-                    auditService,
-                    loggingService);
+                IWorkflowTemplateService workflowTemplateService = null;
+                try
+                {
+                    workflowTemplateService = new WorkflowTemplateService(
+                        workflowTemplateRepository,
+                        workflowRepository,
+                        auditService,
+                        loggingService);
+                    loggingService.Info("workflowTemplateService created successfully");
+                }
+                catch (Exception ex)
+                {
+                    loggingService.Error($"ERROR creating workflowTemplateService: {ex.Message}\n{ex.StackTrace}", ex);
+                    MessageBox.Show(
+                        $"WARNING: Cannot create WorkflowTemplateService\n\n{ex.GetType().Name}\n{ex.Message}\n\nWorkflow features will be unavailable.\n\nDetails:\n{ex.StackTrace}",
+                        "WARNING",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    // Don't throw - allow app to continue with workflowTemplateService = null
+                }
 
                 // ── AD Auth Service ───────────────────────────────────────────
                 var adAuthService = new AdAuthService(configManager);

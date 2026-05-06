@@ -289,6 +289,54 @@ namespace CMS.Services
         }
 
         // -----------------------------------------------------------------------
+        // Hide/Unhide Files (MOD-003)
+        // -----------------------------------------------------------------------
+
+        public void HideFiles(List<int> fileIds, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (fileIds == null) throw new ArgumentNullException("fileIds");
+
+            foreach (var fileId in fileIds)
+            {
+                var doc = _fileDocumentRepository.GetById(fileId);
+                if (doc == null || doc.IsDeleted)
+                    continue;
+
+                doc.IsHidden = true;
+                doc.HiddenBy = user.ADUserName;
+                doc.HiddenDate = DateTime.Now;
+
+                _fileDocumentRepository.Update(doc);
+
+                Log(user, "File", "HIDE", "storage.FileDocument", fileId, 1,
+                    string.Format("Hid file '{0}'.", doc.OriginalFileName));
+            }
+        }
+
+        public void UnhideFiles(List<int> fileIds, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (fileIds == null) throw new ArgumentNullException("fileIds");
+
+            foreach (var fileId in fileIds)
+            {
+                var doc = _fileDocumentRepository.GetById(fileId);
+                if (doc == null || doc.IsDeleted)
+                    continue;
+
+                doc.IsHidden = false;
+                doc.HiddenBy = null;
+                doc.HiddenDate = null;
+
+                _fileDocumentRepository.Update(doc);
+
+                Log(user, "File", "UNHIDE", "storage.FileDocument", fileId, 1,
+                    string.Format("Unhid file '{0}'.", doc.OriginalFileName));
+            }
+        }
+
+        // -----------------------------------------------------------------------
         // GetFilesInFolder
         // -----------------------------------------------------------------------
 
@@ -574,11 +622,21 @@ namespace CMS.Services
                 File.Copy(source.PhysicalPath, destPath, overwrite: false);
             }
 
+            // Build unique OriginalFileName to avoid duplicate display names
+            string origBase = Path.GetFileNameWithoutExtension(source.OriginalFileName ?? "");
+            string origExt = Path.GetExtension(source.OriginalFileName ?? "");
+            string uniqueOriginalName = source.OriginalFileName;
+            int origSuffix = 1;
+            while (_fileDocumentRepository.ExistsWithName(uniqueOriginalName, destinationFolderId))
+            {
+                uniqueOriginalName = string.Format("{0} ({1}){2}", origBase, origSuffix++, origExt);
+            }
+
             // Create new DB record
             var newDoc = new FileDocument
             {
                 FolderID = destinationFolderId,
-                OriginalFileName = source.OriginalFileName,
+                OriginalFileName = uniqueOriginalName,
                 StoredFileName = storedName,
                 FileExtension = source.FileExtension,
                 MimeType = source.MimeType,
