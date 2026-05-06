@@ -257,12 +257,26 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             if (_importWizardFactory == null) return;
-            if (_importWizardFactory() == DialogResult.OK)
+            
+            try
             {
-                // Refresh the article list after successful import
-                _presenter.LoadArticles();
-                MessageBox.Show("นำเข้าข้อมูลเรียบร้อยแล้ว", "สำเร็จ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                DialogResult result = _importWizardFactory();
+                switch (result)
+                {
+                    case DialogResult.OK :
+                    case DialogResult.Cancel :
+                        _presenter.LoadCategoryTree();
+                        _presenter.LoadArticles();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "เกิดข้อผิดพลาดในการนำเข้าข้อมูล:\n" + ex.Message,
+                    "ข้อผิดพลาด",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 

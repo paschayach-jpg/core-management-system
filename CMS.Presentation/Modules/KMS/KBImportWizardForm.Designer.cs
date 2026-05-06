@@ -12,6 +12,10 @@ namespace CMS.Presentation.Modules.KMS
 
         #region Windows Form Designer generated code
 
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
         private void InitializeComponent()
         {
             this.pnlHeader = new System.Windows.Forms.Panel();
@@ -123,11 +127,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblValidationHdr = new System.Windows.Forms.Label();
             this.pnlStep1 = new System.Windows.Forms.Panel();
             this.pnlStep1Inner = new System.Windows.Forms.Panel();
-            this.pnlActStep1 = new System.Windows.Forms.Panel();
-            this.btnCancel = new System.Windows.Forms.Button();
-            this.btnNext = new System.Windows.Forms.Button();
-            this.btnDemo = new System.Windows.Forms.Button();
-            this.lblFileHint = new System.Windows.Forms.Label();
             this.pnlColumnRef = new System.Windows.Forms.Panel();
             this.pnlColumnRefBody = new System.Windows.Forms.Panel();
             this.lvColumnRef = new System.Windows.Forms.ListView();
@@ -159,6 +158,11 @@ namespace CMS.Presentation.Modules.KMS
             this.lblUploadIcon = new System.Windows.Forms.Label();
             this.pnlUploadSectionHdr = new System.Windows.Forms.Panel();
             this.lblUploadSectionHdr = new System.Windows.Forms.Label();
+            this.pnlActStep1 = new System.Windows.Forms.Panel();
+            this.lblFileHint = new System.Windows.Forms.Label();
+            this.btnCancel = new System.Windows.Forms.Button();
+            this.btnNext = new System.Windows.Forms.Button();
+            this.btnDemo = new System.Windows.Forms.Button();
             this.pnlStatusBar = new System.Windows.Forms.Panel();
             this.lblStatusMessage = new System.Windows.Forms.Label();
             this.lblStepStatus = new System.Windows.Forms.Label();
@@ -204,7 +208,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlValidationHdr.SuspendLayout();
             this.pnlStep1.SuspendLayout();
             this.pnlStep1Inner.SuspendLayout();
-            this.pnlActStep1.SuspendLayout();
             this.pnlColumnRef.SuspendLayout();
             this.pnlColumnRefBody.SuspendLayout();
             this.pnlColumnRefHdr.SuspendLayout();
@@ -216,6 +219,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlUploadZone.SuspendLayout();
             this.panel1.SuspendLayout();
             this.pnlUploadSectionHdr.SuspendLayout();
+            this.pnlActStep1.SuspendLayout();
             this.pnlStatusBar.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -390,7 +394,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep3.Controls.Add(this.pnlStep3Inner);
             this.pnlStep3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep3.Location = new System.Drawing.Point(0, 1475);
+            this.pnlStep3.Location = new System.Drawing.Point(0, 1469);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Padding = new System.Windows.Forms.Padding(60, 20, 60, 20);
             this.pnlStep3.Size = new System.Drawing.Size(1179, 460);
@@ -436,7 +440,6 @@ namespace CMS.Presentation.Modules.KMS
             // pnlActStep3
             // 
             this.pnlActStep3.BackColor = System.Drawing.Color.Transparent;
-            this.pnlActStep3.Controls.Add(this.pnlProgress);
             this.pnlActStep3.Controls.Add(this.btnClose);
             this.pnlActStep3.Controls.Add(this.btnImportNew);
             this.pnlActStep3.Dock = System.Windows.Forms.DockStyle.Bottom;
@@ -452,10 +455,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlProgress.Controls.Add(this.progressBar);
             this.pnlProgress.Controls.Add(this.lblProgressText);
             this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlProgress.Location = new System.Drawing.Point(679, 0);
+            this.pnlProgress.Location = new System.Drawing.Point(497, 0);
             this.pnlProgress.Name = "pnlProgress";
             this.pnlProgress.Padding = new System.Windows.Forms.Padding(0, 10, 20, 10);
-            this.pnlProgress.Size = new System.Drawing.Size(340, 50);
+            this.pnlProgress.Size = new System.Drawing.Size(340, 45);
             this.pnlProgress.TabIndex = 3;
             this.pnlProgress.Visible = false;
             // 
@@ -464,7 +467,7 @@ namespace CMS.Presentation.Modules.KMS
             this.progressBar.Dock = System.Windows.Forms.DockStyle.Fill;
             this.progressBar.Location = new System.Drawing.Point(0, 10);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(320, 14);
+            this.progressBar.Size = new System.Drawing.Size(320, 9);
             this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.progressBar.TabIndex = 0;
             // 
@@ -473,7 +476,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.lblProgressText.Font = new System.Drawing.Font("Segoe UI", 7.5F);
             this.lblProgressText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblProgressText.Location = new System.Drawing.Point(0, 24);
+            this.lblProgressText.Location = new System.Drawing.Point(0, 19);
             this.lblProgressText.Name = "lblProgressText";
             this.lblProgressText.Size = new System.Drawing.Size(320, 16);
             this.lblProgressText.TabIndex = 1;
@@ -733,7 +736,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep2.Controls.Add(this.pnlStep2Inner);
             this.pnlStep2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep2.Location = new System.Drawing.Point(0, 719);
+            this.pnlStep2.Location = new System.Drawing.Point(0, 713);
             this.pnlStep2.Name = "pnlStep2";
             this.pnlStep2.Padding = new System.Windows.Forms.Padding(16, 8, 16, 16);
             this.pnlStep2.Size = new System.Drawing.Size(1179, 756);
@@ -758,6 +761,7 @@ namespace CMS.Presentation.Modules.KMS
             // pnlActStep2
             // 
             this.pnlActStep2.BackColor = System.Drawing.Color.Transparent;
+            this.pnlActStep2.Controls.Add(this.pnlProgress);
             this.pnlActStep2.Controls.Add(this.btnCancel2);
             this.pnlActStep2.Controls.Add(this.btnBack);
             this.pnlActStep2.Controls.Add(this.btnImport);
@@ -1513,7 +1517,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep1.Location = new System.Drawing.Point(0, 0);
             this.pnlStep1.Name = "pnlStep1";
             this.pnlStep1.Padding = new System.Windows.Forms.Padding(16);
-            this.pnlStep1.Size = new System.Drawing.Size(1179, 719);
+            this.pnlStep1.Size = new System.Drawing.Size(1179, 713);
             this.pnlStep1.TabIndex = 0;
             // 
             // pnlStep1Inner
@@ -1525,93 +1529,16 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep1Inner.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlStep1Inner.Location = new System.Drawing.Point(16, 16);
             this.pnlStep1Inner.Name = "pnlStep1Inner";
-            this.pnlStep1Inner.Size = new System.Drawing.Size(1147, 687);
+            this.pnlStep1Inner.Size = new System.Drawing.Size(1147, 681);
             this.pnlStep1Inner.TabIndex = 0;
-            // 
-            // pnlActStep1
-            // 
-            this.pnlActStep1.BackColor = System.Drawing.Color.Transparent;
-            this.pnlActStep1.Controls.Add(this.lblFileHint);
-            this.pnlActStep1.Controls.Add(this.btnCancel);
-            this.pnlActStep1.Controls.Add(this.btnNext);
-            this.pnlActStep1.Controls.Add(this.btnDemo);
-            this.pnlActStep1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlActStep1.Location = new System.Drawing.Point(0, 650);
-            this.pnlActStep1.Name = "pnlActStep1";
-            this.pnlActStep1.Size = new System.Drawing.Size(1147, 37);
-            this.pnlActStep1.TabIndex = 0;
-            // 
-            // btnCancel
-            // 
-            this.btnCancel.BackColor = System.Drawing.Color.White;
-            this.btnCancel.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnCancel.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnCancel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
-            this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancel.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnCancel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.btnCancel.Location = new System.Drawing.Point(130, 0);
-            this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(130, 37);
-            this.btnCancel.TabIndex = 1;
-            this.btnCancel.Text = "✕  ยกเลิก";
-            this.btnCancel.UseVisualStyleBackColor = false;
-            this.btnCancel.Click += new System.EventHandler(this.BtnCancel_Click);
-            // 
-            // btnNext
-            // 
-            this.btnNext.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnNext.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnNext.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnNext.Enabled = false;
-            this.btnNext.FlatAppearance.BorderSize = 0;
-            this.btnNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNext.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.btnNext.ForeColor = System.Drawing.Color.White;
-            this.btnNext.Location = new System.Drawing.Point(0, 0);
-            this.btnNext.Name = "btnNext";
-            this.btnNext.Size = new System.Drawing.Size(130, 37);
-            this.btnNext.TabIndex = 0;
-            this.btnNext.Text = "ถัดไป  ▶";
-            this.btnNext.UseVisualStyleBackColor = false;
-            this.btnNext.Click += new System.EventHandler(this.BtnNext_Click);
-            // 
-            // btnDemo
-            // 
-            this.btnDemo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
-            this.btnDemo.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnDemo.Dock = System.Windows.Forms.DockStyle.Right;
-            this.btnDemo.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
-            this.btnDemo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnDemo.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.btnDemo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnDemo.Location = new System.Drawing.Point(944, 0);
-            this.btnDemo.Name = "btnDemo";
-            this.btnDemo.Size = new System.Drawing.Size(203, 37);
-            this.btnDemo.TabIndex = 3;
-            this.btnDemo.Text = "🧪  โหลดข้อมูลตัวอย่าง";
-            this.btnDemo.UseVisualStyleBackColor = false;
-            this.btnDemo.Click += new System.EventHandler(this.BtnDemo_Click);
-            // 
-            // lblFileHint
-            // 
-            this.lblFileHint.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblFileHint.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblFileHint.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(183)))), ((int)(((byte)(119)))), ((int)(((byte)(13)))));
-            this.lblFileHint.Location = new System.Drawing.Point(260, 0);
-            this.lblFileHint.Name = "lblFileHint";
-            this.lblFileHint.Size = new System.Drawing.Size(279, 37);
-            this.lblFileHint.TabIndex = 2;
-            this.lblFileHint.Text = "⚠  กรุณาเลือกไฟล์ Excel ก่อนกดถัดไป";
-            this.lblFileHint.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlColumnRef
             // 
             this.pnlColumnRef.BackColor = System.Drawing.Color.Transparent;
             this.pnlColumnRef.Controls.Add(this.pnlColumnRefBody);
             this.pnlColumnRef.Controls.Add(this.pnlColumnRefHdr);
-            this.pnlColumnRef.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlColumnRef.Location = new System.Drawing.Point(0, 336);
+            this.pnlColumnRef.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlColumnRef.Location = new System.Drawing.Point(0, 316);
             this.pnlColumnRef.Name = "pnlColumnRef";
             this.pnlColumnRef.Size = new System.Drawing.Size(1147, 314);
             this.pnlColumnRef.TabIndex = 0;
@@ -1959,6 +1886,83 @@ namespace CMS.Presentation.Modules.KMS
             this.lblUploadSectionHdr.Text = "📁  Step 1 — อัพโหลดไฟล์ Excel";
             this.lblUploadSectionHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // pnlActStep1
+            // 
+            this.pnlActStep1.BackColor = System.Drawing.Color.Transparent;
+            this.pnlActStep1.Controls.Add(this.lblFileHint);
+            this.pnlActStep1.Controls.Add(this.btnCancel);
+            this.pnlActStep1.Controls.Add(this.btnNext);
+            this.pnlActStep1.Controls.Add(this.btnDemo);
+            this.pnlActStep1.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlActStep1.Location = new System.Drawing.Point(0, 644);
+            this.pnlActStep1.Name = "pnlActStep1";
+            this.pnlActStep1.Size = new System.Drawing.Size(1147, 37);
+            this.pnlActStep1.TabIndex = 0;
+            // 
+            // lblFileHint
+            // 
+            this.lblFileHint.Dock = System.Windows.Forms.DockStyle.Left;
+            this.lblFileHint.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblFileHint.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(183)))), ((int)(((byte)(119)))), ((int)(((byte)(13)))));
+            this.lblFileHint.Location = new System.Drawing.Point(260, 0);
+            this.lblFileHint.Name = "lblFileHint";
+            this.lblFileHint.Size = new System.Drawing.Size(279, 37);
+            this.lblFileHint.TabIndex = 2;
+            this.lblFileHint.Text = "⚠  กรุณาเลือกไฟล์ Excel ก่อนกดถัดไป";
+            this.lblFileHint.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // btnCancel
+            // 
+            this.btnCancel.BackColor = System.Drawing.Color.White;
+            this.btnCancel.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCancel.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnCancel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
+            this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCancel.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnCancel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
+            this.btnCancel.Location = new System.Drawing.Point(130, 0);
+            this.btnCancel.Name = "btnCancel";
+            this.btnCancel.Size = new System.Drawing.Size(130, 37);
+            this.btnCancel.TabIndex = 1;
+            this.btnCancel.Text = "✕  ยกเลิก";
+            this.btnCancel.UseVisualStyleBackColor = false;
+            this.btnCancel.Click += new System.EventHandler(this.BtnCancel_Click);
+            // 
+            // btnNext
+            // 
+            this.btnNext.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnNext.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnNext.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnNext.Enabled = false;
+            this.btnNext.FlatAppearance.BorderSize = 0;
+            this.btnNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnNext.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnNext.ForeColor = System.Drawing.Color.White;
+            this.btnNext.Location = new System.Drawing.Point(0, 0);
+            this.btnNext.Name = "btnNext";
+            this.btnNext.Size = new System.Drawing.Size(130, 37);
+            this.btnNext.TabIndex = 0;
+            this.btnNext.Text = "ถัดไป  ▶";
+            this.btnNext.UseVisualStyleBackColor = false;
+            this.btnNext.Click += new System.EventHandler(this.BtnNext_Click);
+            // 
+            // btnDemo
+            // 
+            this.btnDemo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
+            this.btnDemo.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnDemo.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnDemo.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
+            this.btnDemo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDemo.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnDemo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnDemo.Location = new System.Drawing.Point(944, 0);
+            this.btnDemo.Name = "btnDemo";
+            this.btnDemo.Size = new System.Drawing.Size(203, 37);
+            this.btnDemo.TabIndex = 3;
+            this.btnDemo.Text = "🧪  โหลดข้อมูลตัวอย่าง";
+            this.btnDemo.UseVisualStyleBackColor = false;
+            this.btnDemo.Click += new System.EventHandler(this.BtnDemo_Click);
+            // 
             // pnlStatusBar
             // 
             this.pnlStatusBar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
@@ -2073,7 +2077,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlValidationHdr.ResumeLayout(false);
             this.pnlStep1.ResumeLayout(false);
             this.pnlStep1Inner.ResumeLayout(false);
-            this.pnlActStep1.ResumeLayout(false);
             this.pnlColumnRef.ResumeLayout(false);
             this.pnlColumnRefBody.ResumeLayout(false);
             this.pnlColumnRefHdr.ResumeLayout(false);
@@ -2085,12 +2088,15 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlUploadZone.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.pnlUploadSectionHdr.ResumeLayout(false);
+            this.pnlActStep1.ResumeLayout(false);
             this.pnlStatusBar.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
 
         #endregion
+
+        #region Component Fields
 
         // ── Field declarations ───────────────────────────────────────────────
         private System.Windows.Forms.Panel    pnlHeader;
@@ -2250,5 +2256,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label lblUploadIcon;
         private System.Windows.Forms.Panel pnlUploadSectionHdr;
         private System.Windows.Forms.Label lblUploadSectionHdr;
+
+        #endregion
     }
 }
