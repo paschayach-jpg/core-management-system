@@ -446,7 +446,6 @@ namespace CMS.Presentation
             this.menuStrip.Name = "menuStrip";
             this.menuStrip.Size = new System.Drawing.Size(1469, 27);
             this.menuStrip.TabIndex = 0;
-            this.menuStrip.Visible = false;  // Hide the top menu bar with Share buttons
             // 
             // menuItemHome
             // 

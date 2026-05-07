@@ -18,6 +18,8 @@ namespace CMS.Presentation.Modules.ImportFile
     {
         private readonly UserContext               _user;
         private readonly IShareLookupController   _shareLookupController;
+        private DataGridView _aclGrid;
+        private DataGridView _shareGrid;
 
         private sealed class LevelDefinition
         {
@@ -70,7 +72,9 @@ namespace CMS.Presentation.Modules.ImportFile
             Icon            = SystemIcons.Shield;
 
             var pnlHeader = BuildHeader();
-            var pnlBody   = BuildBody(out var grid, out var pnlCards);
+            var pnlBody   = BuildBody(out var grid, out var pnlCards, out var shareGrid);
+            _aclGrid      = grid;
+            _shareGrid    = shareGrid;
             var pnlFooter = BuildFooter();
 
             Controls.Add(pnlBody);
@@ -148,7 +152,7 @@ namespace CMS.Presentation.Modules.ImportFile
         }
 
         // ── Body ────────────────────────────────────────────────────────────
-        private Panel BuildBody(out DataGridView gridOut, out FlowLayoutPanel cardsOut)
+        private Panel BuildBody(out DataGridView gridOut, out FlowLayoutPanel cardsOut, out DataGridView shareGridOut)
         {
             // ── Layout constants ─────────────────────────────────────────────
             const int SEC1_Y    = 8;
@@ -199,8 +203,9 @@ namespace CMS.Presentation.Modules.ImportFile
             grid3.Location = new Point(1, GRID3_Y);
 
             pnl.Controls.AddRange(new Control[] { sec1, pnlCards, sec2, grid2, sec3, grid3 });
-            gridOut  = grid2;
-            cardsOut = pnlCards;
+            gridOut      = grid2;
+            cardsOut     = pnlCards;
+            shareGridOut = grid3;
 
             // Initial sizing
             pnl.Layout += (s, e) =>
@@ -250,7 +255,11 @@ namespace CMS.Presentation.Modules.ImportFile
                 Font      = new Font("Segoe UI", 8.5f),
             };
             btnRefresh.FlatAppearance.BorderSize = 0;
-            btnRefresh.Click += (s, e) => Close(); // ปิดแล้วเปิดใหม่
+            btnRefresh.Click += (s, e) =>
+            {
+                if (_aclGrid != null)   PopulateAclGrid(_aclGrid);
+                if (_shareGrid != null) PopulateShareGrid(_shareGrid);
+            };
 
             var btnClose = new Button
             {

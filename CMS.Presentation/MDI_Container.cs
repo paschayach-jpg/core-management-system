@@ -113,8 +113,8 @@ namespace CMS.Presentation
         // Admin-only sub-items inside _grpPermission
         private ToolStripMenuItem _mnuUserAccess;
         private ToolStripMenuItem _mnuUserMgmt;
-        // Ribbon collapse toggle
-        private ToolStripMenuItem _mnuToggleRibbon;
+        // Persistent logout button in ribbonStrip
+        private ToolStripButton _btnLogout;
         private bool _ribbonCollapsed = false;
         private bool _adminTabActive = false;
 
@@ -269,6 +269,8 @@ namespace CMS.Presentation
                 this.WindowState = FormWindowState.Maximized;
 
                 Text = string.Format("CMS — {0}", _currentUser.AdIdentity);
+                menuStrip.Visible = false;
+
                 BuildGroupedAdminToolbar();
                 ApplyRoleBasedMenuVisibility();
                 WireRibbonHandlers();
@@ -792,44 +794,18 @@ namespace CMS.Presentation
                 _grpSystem,
             });
 
-            // ── ปุ่มซ่อน/แสดงแถบ ribbon (ชิดขวาของ menuStrip) ──────────────
-            // ลบปุ่มเดิมออกก่อน (กรณี BuildGroupedAdminToolbar ถูกเรียกซ้ำ)
-            if (_mnuToggleRibbon != null)
-                menuStrip.Items.Remove(_mnuToggleRibbon);
+            // ── ปุ่ม Logout (ชิดขวาของ ribbonStrip — แสดงตลอด) ─────────────
+            if (_btnLogout != null)
+                ribbonStrip.Items.Remove(_btnLogout);
 
-            _mnuToggleRibbon = new ToolStripMenuItem("▲ ซ่อนแถบ");
-            _mnuToggleRibbon.Alignment = ToolStripItemAlignment.Right;
-            _mnuToggleRibbon.ForeColor = System.Drawing.Color.FromArgb(180, 200, 230);
-            _mnuToggleRibbon.BackColor = System.Drawing.Color.Transparent;
-            _mnuToggleRibbon.AutoToolTip = false;
-            _mnuToggleRibbon.ToolTipText = "ซ่อน/แสดงแถบเครื่องมือ";
-            _mnuToggleRibbon.Click += (s, e) =>
-            {
-                _ribbonCollapsed = !_ribbonCollapsed;
-                if (_adminTabActive)
-                {
-                    ribbonStrip.Visible = false;
-                    ribbonStripAdmin.Visible = !_ribbonCollapsed;
-                }
-                else
-                {
-                    ribbonStrip.Visible = !_ribbonCollapsed;
-                    ribbonStripAdmin.Visible = false;
-                }
-                _mnuToggleRibbon.Text = _ribbonCollapsed ? "▼ แสดงแถบ" : "▲ ซ่อนแถบ";
-            };
-            menuStrip.Items.Add(_mnuToggleRibbon);
-
-            // ── ปุ่ม Logout (ชิดขวา ถัดจาก toggle ribbon) ───────────────────
-            var mnuLogout = new ToolStripMenuItem(
+            _btnLogout = new ToolStripButton(
                 string.Format("🚪 ออกจากระบบ ({0})", _currentUser.ADUserName ?? _currentUser.AdIdentity));
-            mnuLogout.Alignment = ToolStripItemAlignment.Right;
-            mnuLogout.ForeColor = System.Drawing.Color.FromArgb(255, 180, 180);
-            mnuLogout.BackColor = System.Drawing.Color.Transparent;
-            mnuLogout.AutoToolTip = false;
-            mnuLogout.ToolTipText = "ออกจากระบบและ Login ด้วยผู้ใช้อื่น";
-            mnuLogout.Click += (s, e) => PerformLogout();
-            menuStrip.Items.Add(mnuLogout);
+            _btnLogout.Alignment = ToolStripItemAlignment.Right;
+            _btnLogout.ForeColor = System.Drawing.Color.FromArgb(180, 50, 50);
+            _btnLogout.AutoToolTip = false;
+            _btnLogout.ToolTipText = "ออกจากระบบและ Login ด้วยผู้ใช้อื่น";
+            _btnLogout.Click += (s, e) => PerformLogout();
+            ribbonStrip.Items.Add(_btnLogout);
         }
 
         /// <summary>Logout: audit → ปิด form → Program.cs จะแสดง LoginForm ใหม่</summary>

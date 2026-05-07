@@ -109,6 +109,9 @@ namespace CMS.Presentation
         private int _orgFilterDefaultHeight = 0;
         private bool _orgTreeLoaded = false;
 
+        // Tracks which TreeNode is currently active (highlight)
+        private TreeNode _activeTreeNode;
+
         // ป้องกัน PromptToCreateFirstFolder ยิงซ้ำระหว่างสร้าง Auto 4 Folders
         private bool _suppressCreatePrompt = false;
         // ป้องกัน MessageBox ซ้อน/เด้งซ้ำจาก event ที่วิ่งทับกัน
@@ -187,6 +190,10 @@ namespace CMS.Presentation
             _user = user;
 
             InitializeComponent();
+
+            folderTreeView.HideSelection = false;
+            folderTreeView.DrawMode = System.Windows.Forms.TreeViewDrawMode.OwnerDrawText;
+            folderTreeView.DrawNode += FolderTreeView_DrawNode;
 
             _orgFilterDefaultHeight = pnlOrgFilter.Height;
 
@@ -3052,7 +3059,7 @@ namespace CMS.Presentation
             this.WindowState = FormWindowState.Maximized;
 
             pnlContentHeader.Visible = true;
-            pnlContentHeader.Height = 26;
+            pnlContentHeader.Height = 36;
 
             // Set up folder open/closed icons from Resources (shared ImageList)
             var folderImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
@@ -3203,8 +3210,9 @@ namespace CMS.Presentation
 
             var btnViewDetails = new Button
             {
-                Text = "☰",
-                Size = new Size(28, 22),
+                Name = "btnViewDetails",
+                Text = "รายการ",
+                Size = new Size(64, 26),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10f),
                 Cursor = Cursors.Hand,
@@ -3215,24 +3223,11 @@ namespace CMS.Presentation
             };
             btnViewDetails.FlatAppearance.BorderSize = 0;
 
-            var btnViewTile = new Button
-            {
-                Text = "▤",
-                Size = new Size(28, 22),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 10f),
-                Cursor = Cursors.Hand,
-                Dock = DockStyle.Right,
-                BackColor = inactiveColor,
-                ForeColor = inactiveFg,
-                TabStop = false
-            };
-            btnViewTile.FlatAppearance.BorderSize = 0;
-
             var btnViewLarge = new Button
             {
-                Text = "⊞",
-                Size = new Size(28, 22),
+                Name = "btnViewLarge",
+                Text = "ไอคอน",
+                Size = new Size(62, 26),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 10f),
                 Cursor = Cursors.Hand,
@@ -3244,14 +3239,13 @@ namespace CMS.Presentation
             btnViewLarge.FlatAppearance.BorderSize = 0;
 
             var viewTip = new ToolTip();
-            viewTip.SetToolTip(btnViewDetails, "รายการ (Details)");
-            viewTip.SetToolTip(btnViewTile, "Tile");
-            viewTip.SetToolTip(btnViewLarge, "ไอคอนใหญ่");
+            viewTip.SetToolTip(btnViewDetails, "แสดงแบบรายการ");
+            viewTip.SetToolTip(btnViewLarge, "แสดงแบบไอคอน");
 
             // helper: reset all buttons then highlight active one
             Action<Button> setActive = (active) =>
             {
-                foreach (var b in new[] { btnViewDetails, btnViewTile, btnViewLarge })
+                foreach (var b in new[] { btnViewDetails, btnViewLarge })
                 {
                     b.BackColor = (b == active) ? activeColor : inactiveColor;
                     b.ForeColor = (b == active) ? activeFg : inactiveFg;
@@ -3266,16 +3260,6 @@ namespace CMS.Presentation
                 setActive(btnViewDetails);
             };
 
-            btnViewTile.Click += (s, ev) =>
-            {
-                _currentView = View.Tile;
-                contentsListView.OwnerDraw = false;
-                contentsListView.View = View.Tile;
-                // Tile size: icon(32) + padding + text area
-                contentsListView.TileSize = new Size(260, 42);
-                setActive(btnViewTile);
-            };
-
             btnViewLarge.Click += (s, ev) =>
             {
                 _currentView = View.LargeIcon;
@@ -3284,20 +3268,11 @@ namespace CMS.Presentation
                 setActive(btnViewLarge);
             };
 
-            // Add right-to-left so Details is rightmost
-            pnlContentHeader.Controls.Add(btnViewDetails);
-            pnlContentHeader.Controls.Add(btnViewTile);
-            pnlContentHeader.Controls.Add(btnViewLarge);
-
-            // ─── UX: Filter toggle button ────────────────────────────────────
-            // ซ่อน filter bar ไว้ก่อน — แสดงเฉพาะเมื่อ user ต้องการกรอง
-            pnlFilter.Visible = false;
-
             var btnToggleFilter = new Button
             {
                 Name = "btnToggleFilter",
-                Text = "🔍 กรอง",
-                Size = new Size(72, 22),
+                Text = "🔍 ค้นหา",
+                Size = new Size(88, 26),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Microsoft Sans Serif", 9f),
                 Cursor = Cursors.Hand,
@@ -3307,7 +3282,16 @@ namespace CMS.Presentation
                 TabStop = false
             };
             btnToggleFilter.FlatAppearance.BorderSize = 0;
-            viewTip.SetToolTip(btnToggleFilter, "กรองขั้นสูง: นามสกุล, วันที่, ผู้อัพโหลด");
+            viewTip.SetToolTip(btnToggleFilter, "ค้นหาและกรองขั้นสูง: นามสกุล, วันที่, ผู้อัพโหลด");
+
+            pnlContentHeader.Controls.Add(btnViewDetails);
+            pnlContentHeader.Controls.Add(btnViewLarge);
+            pnlContentHeader.Controls.Add(btnToggleFilter);
+
+            // ─── UX: Filter toggle button ────────────────────────────────────
+            // ซ่อน filter bar ไว้ก่อน — แสดงเฉพาะเมื่อ user ต้องการกรอง
+            pnlFilter.Visible = false;
+
             btnToggleFilter.Click += (s, ev) =>
             {
                 pnlFilter.Visible = !pnlFilter.Visible;
@@ -3323,7 +3307,6 @@ namespace CMS.Presentation
                     btnToggleFilter.ForeColor = filterActive ? Color.FromArgb(43, 87, 154) : inactiveFg;
                 }
             };
-            pnlContentHeader.Controls.Add(btnToggleFilter);
 
             // ─── UX: ซ่อน column ที่ไม่จำเป็น ────────────────────────────────
             // ผู้ใช้ทั่วไปต้องการ: ชื่อ, ประเภท, ขนาด, วันที่, โดย เท่านั้น
@@ -3411,6 +3394,7 @@ namespace CMS.Presentation
             var expandedFolderIds = new HashSet<int>();
             CollectExpandedNodes(folderTreeView.Nodes, expandedFolderIds);
 
+            _activeTreeNode = null;
             folderTreeView.BeginUpdate();
             folderTreeView.Nodes.Clear();
 
@@ -3501,6 +3485,10 @@ namespace CMS.Presentation
                 ClearContentPanel();
                 return;
             }
+
+            // Reset quick-search when navigating to a new folder
+            txtSearch.Text = "ค้นหาใน Folder...";
+            txtSearch.ForeColor = Color.Gray;
 
             contentsListView.SuspendLayout();
             contentsListView.BeginUpdate();
@@ -3950,6 +3938,7 @@ namespace CMS.Presentation
                 // Build breadcrumb จาก tree hierarchy แทน string-append
                 // เพื่อป้องกัน breadcrumb ยาวซ้ำเมื่อ navigate หลายชั้น
                 bool found = RestoreSelectedNode(folderTreeView.Nodes, folder.FolderId);
+                SetActiveNode(folderTreeView.SelectedNode);
                 string newBreadcrumb;
                 if (found && folderTreeView.SelectedNode != null)
                 {
@@ -4007,7 +3996,7 @@ namespace CMS.Presentation
             {
                 splitContent.Panel2Collapsed = true;
 
-                lblDetailHeader.Text = "📋 ตัวอย่าง";
+                lblDetailHeader.Text = "📄 รายละเอียด";
                 lblDetailContent.Text = "เลือกรายการเพื่อดูรายละเอียด";
                 lblContentInfo.Text = lblContentInfo.Text.Contains("|")
                     ? lblContentInfo.Text.Substring(0, lblContentInfo.Text.LastIndexOf('|') + 1)
@@ -4248,15 +4237,15 @@ namespace CMS.Presentation
             bool isEven = e.ItemIndex % 2 == 0;
 
             Color backColor = isSelected
-                ? Color.FromArgb(204, 228, 247)
-                : isEven ? Color.White : Color.FromArgb(248, 249, 252);
+                ? Color.FromArgb(66, 133, 244)
+                : isEven ? Color.White : Color.FromArgb(245, 247, 252);
 
             using (var brush = new SolidBrush(backColor))
                 e.Graphics.FillRectangle(brush, e.Bounds);
 
-            Color textColor = isSelected ? Color.Black : e.SubItem.ForeColor;
-            if (textColor == Color.Empty || textColor == SystemColors.WindowText)
-                textColor = isSelected ? Color.Black : e.Item.ForeColor;
+            Color textColor = isSelected ? Color.White : e.SubItem.ForeColor;
+            if (!isSelected && (textColor == Color.Empty || textColor == SystemColors.WindowText))
+                textColor = e.Item.ForeColor;
             if (textColor == Color.Empty) textColor = Color.Black;
 
             // ── Column 0: draw icon + name ────────────────────────────────────
@@ -4473,6 +4462,7 @@ namespace CMS.Presentation
             // อัพเดท state เท่านั้น ไม่ reload content (NodeMouseClick ทำแล้ว)
             _lastSelectedFolder = folder;
             _currentNavFolderId = folder.FolderId;
+            SetActiveNode(e.Node);
             UpdateNavButtons();
         }
 
@@ -4523,6 +4513,58 @@ namespace CMS.Presentation
                 btnNavRefresh.Enabled = true;
                 btnNavRefresh.Text = "↺";
             }
+        }
+
+        private void btnViewList_Click(object sender, EventArgs e)
+        {
+            _currentView = View.Details;
+            contentsListView.View = View.Details;
+            btnViewList.BackColor = Color.FromArgb(43, 87, 154);
+            btnViewList.ForeColor = Color.White;
+            btnViewGrid.BackColor = Color.FromArgb(240, 244, 250);
+            btnViewGrid.ForeColor = Color.FromArgb(43, 87, 154);
+        }
+
+        private void btnViewGrid_Click(object sender, EventArgs e)
+        {
+            _currentView = View.LargeIcon;
+            contentsListView.View = View.LargeIcon;
+            btnViewGrid.BackColor = Color.FromArgb(43, 87, 154);
+            btnViewGrid.ForeColor = Color.White;
+            btnViewList.BackColor = Color.FromArgb(240, 244, 250);
+            btnViewList.ForeColor = Color.FromArgb(43, 87, 154);
+        }
+
+        private void txtSearch_Enter(object sender, EventArgs e)
+        {
+            if (txtSearch.Text == "ค้นหาใน Folder...")
+            {
+                txtSearch.Text = string.Empty;
+                txtSearch.ForeColor = Color.Black;
+            }
+        }
+
+        private void txtSearch_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtSearch.Text))
+            {
+                txtSearch.Text = "ค้นหาใน Folder...";
+                txtSearch.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtSearch_TextChanged(object sender, EventArgs e)
+        {
+            if (txtSearch.Text == "ค้นหาใน Folder...") return;
+            var keyword = txtSearch.Text.Trim().ToLower();
+            contentsListView.BeginUpdate();
+            foreach (ListViewItem item in contentsListView.Items)
+            {
+                bool match = string.IsNullOrEmpty(keyword) ||
+                             item.Text.ToLower().Contains(keyword);
+                item.ForeColor = match ? Color.Black : Color.LightGray;
+            }
+            contentsListView.EndUpdate();
         }
 
         private void btnToggleSidebar_Click(object sender, EventArgs e)
@@ -7468,6 +7510,41 @@ namespace CMS.Presentation
         /// Creates a TreeNode for a folder with a Confidentiality_Level badge in the label
         /// and a color matching the classification (Req 7.6).
         /// </summary>
+        private void FolderTreeView_DrawNode(object sender, DrawTreeNodeEventArgs e)
+        {
+            if (e.Node != _activeTreeNode || e.Node.NodeFont == null)
+            {
+                e.DrawDefault = true;
+                return;
+            }
+
+            // วาด text พร้อม background สีน้ำเงิน + text สีขาว ไม่ถูก clip
+            e.DrawDefault = false;
+            var tv = (TreeView)sender;
+            var rect = new Rectangle(e.Bounds.X, e.Bounds.Y,
+                tv.ClientSize.Width - e.Bounds.X, e.Bounds.Height);
+
+            using (var bg = new SolidBrush(Color.FromArgb(66, 133, 244)))
+                e.Graphics.FillRectangle(bg, rect);
+
+            TextRenderer.DrawText(e.Graphics, e.Node.Text, e.Node.NodeFont, rect,
+                Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+        }
+
+        private void SetActiveNode(TreeNode node)
+        {
+            if (_activeTreeNode != null && _activeTreeNode != node)
+                _activeTreeNode.NodeFont = null;
+
+            _activeTreeNode = node;
+            if (node != null)
+            {
+                var baseFont = folderTreeView.Font;
+                node.NodeFont = new Font(baseFont, FontStyle.Bold);
+                folderTreeView.SelectedNode = node;
+            }
+        }
+
         private TreeNode CreateFolderNode(Folder folder)
         {
             string badge = ConfidentialityBadge(folder.ConfidentialityLevel);

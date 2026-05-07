@@ -143,10 +143,10 @@ namespace CMS.Presentation
             this.pnlFilter.Controls.Add(this.cmbExtension);
             this.pnlFilter.Controls.Add(this.lblFilterExt);
             this.pnlFilter.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlFilter.Location = new System.Drawing.Point(0, 26);
+            this.pnlFilter.Location = new System.Drawing.Point(0, 0);
             this.pnlFilter.Name = "pnlFilter";
             this.pnlFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlFilter.Size = new System.Drawing.Size(890, 32);
+            this.pnlFilter.Size = new System.Drawing.Size(925, 32);
             this.pnlFilter.TabIndex = 6;
             // 
             // lblFilterStatus
@@ -154,7 +154,7 @@ namespace CMS.Presentation
             this.lblFilterStatus.AutoSize = true;
             this.lblFilterStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblFilterStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.lblFilterStatus.Location = new System.Drawing.Point(836, 8);
+            this.lblFilterStatus.Location = new System.Drawing.Point(862, 8);
             this.lblFilterStatus.Name = "lblFilterStatus";
             this.lblFilterStatus.Size = new System.Drawing.Size(0, 15);
             this.lblFilterStatus.TabIndex = 10;
@@ -165,7 +165,7 @@ namespace CMS.Presentation
             this.btnClearFilter.FlatAppearance.BorderSize = 0;
             this.btnClearFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClearFilter.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.btnClearFilter.Location = new System.Drawing.Point(758, 4);
+            this.btnClearFilter.Location = new System.Drawing.Point(784, 4);
             this.btnClearFilter.Name = "btnClearFilter";
             this.btnClearFilter.Size = new System.Drawing.Size(70, 23);
             this.btnClearFilter.TabIndex = 9;
@@ -179,18 +179,18 @@ namespace CMS.Presentation
             this.btnApplyFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnApplyFilter.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.btnApplyFilter.ForeColor = System.Drawing.Color.White;
-            this.btnApplyFilter.Location = new System.Drawing.Point(672, 4);
+            this.btnApplyFilter.Location = new System.Drawing.Point(698, 4);
             this.btnApplyFilter.Name = "btnApplyFilter";
             this.btnApplyFilter.Size = new System.Drawing.Size(80, 23);
             this.btnApplyFilter.TabIndex = 8;
-            this.btnApplyFilter.Text = "🔍 กรอง";
+            this.btnApplyFilter.Text = "🔍 ค้นหา";
             this.btnApplyFilter.UseVisualStyleBackColor = false;
             this.btnApplyFilter.Click += new System.EventHandler(this.btnApplyFilter_Click);
             // 
             // txtUploadedBy
             // 
             this.txtUploadedBy.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.txtUploadedBy.Location = new System.Drawing.Point(534, 5);
+            this.txtUploadedBy.Location = new System.Drawing.Point(560, 5);
             this.txtUploadedBy.Name = "txtUploadedBy";
             this.txtUploadedBy.Size = new System.Drawing.Size(130, 21);
             this.txtUploadedBy.TabIndex = 7;
@@ -199,7 +199,7 @@ namespace CMS.Presentation
             // 
             this.lblFilterUploader.AutoSize = true;
             this.lblFilterUploader.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterUploader.Location = new System.Drawing.Point(470, 8);
+            this.lblFilterUploader.Location = new System.Drawing.Point(496, 8);
             this.lblFilterUploader.Name = "lblFilterUploader";
             this.lblFilterUploader.Size = new System.Drawing.Size(56, 15);
             this.lblFilterUploader.TabIndex = 6;
@@ -210,7 +210,7 @@ namespace CMS.Presentation
             this.dtpTo.Checked = false;
             this.dtpTo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.dtpTo.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpTo.Location = new System.Drawing.Point(352, 5);
+            this.dtpTo.Location = new System.Drawing.Point(378, 5);
             this.dtpTo.Name = "dtpTo";
             this.dtpTo.ShowCheckBox = true;
             this.dtpTo.Size = new System.Drawing.Size(110, 21);
@@ -220,7 +220,7 @@ namespace CMS.Presentation
             // 
             this.lblFilterTo.AutoSize = true;
             this.lblFilterTo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterTo.Location = new System.Drawing.Point(318, 8);
+            this.lblFilterTo.Location = new System.Drawing.Point(344, 8);
             this.lblFilterTo.Name = "lblFilterTo";
             this.lblFilterTo.Size = new System.Drawing.Size(22, 15);
             this.lblFilterTo.TabIndex = 4;
@@ -231,7 +231,7 @@ namespace CMS.Presentation
             this.dtpFrom.Checked = false;
             this.dtpFrom.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.dtpFrom.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpFrom.Location = new System.Drawing.Point(200, 5);
+            this.dtpFrom.Location = new System.Drawing.Point(226, 5);
             this.dtpFrom.Name = "dtpFrom";
             this.dtpFrom.ShowCheckBox = true;
             this.dtpFrom.Size = new System.Drawing.Size(110, 21);
@@ -241,7 +241,7 @@ namespace CMS.Presentation
             // 
             this.lblFilterFrom.AutoSize = true;
             this.lblFilterFrom.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterFrom.Location = new System.Drawing.Point(156, 8);
+            this.lblFilterFrom.Location = new System.Drawing.Point(182, 8);
             this.lblFilterFrom.Name = "lblFilterFrom";
             this.lblFilterFrom.Size = new System.Drawing.Size(37, 15);
             this.lblFilterFrom.TabIndex = 2;
@@ -250,7 +250,7 @@ namespace CMS.Presentation
             // cmbExtension
             // 
             this.cmbExtension.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.cmbExtension.Location = new System.Drawing.Point(58, 5);
+            this.cmbExtension.Location = new System.Drawing.Point(84, 5);
             this.cmbExtension.Name = "cmbExtension";
             this.cmbExtension.Size = new System.Drawing.Size(90, 23);
             this.cmbExtension.TabIndex = 1;
@@ -261,9 +261,9 @@ namespace CMS.Presentation
             this.lblFilterExt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.lblFilterExt.Location = new System.Drawing.Point(4, 8);
             this.lblFilterExt.Name = "lblFilterExt";
-            this.lblFilterExt.Size = new System.Drawing.Size(49, 15);
+            this.lblFilterExt.Size = new System.Drawing.Size(69, 15);
             this.lblFilterExt.TabIndex = 0;
-            this.lblFilterExt.Text = "ประเภทไฟล์:";
+            this.lblFilterExt.Text = "นามสกุลไฟล์:";
             // 
             // toolStrip
             // 
@@ -390,7 +390,7 @@ namespace CMS.Presentation
             // btnHideFile
             // 
             this.btnHideFile.Name = "btnHideFile";
-            this.btnHideFile.Size = new System.Drawing.Size(66, 23);
+            this.btnHideFile.Size = new System.Drawing.Size(57, 23);
             this.btnHideFile.Text = "🔒 ซ่อน";
             this.btnHideFile.ToolTipText = "ซ่อนไฟล์ที่เลือก";
             this.btnHideFile.Click += new System.EventHandler(this.btnHideFile_Click);
@@ -398,7 +398,7 @@ namespace CMS.Presentation
             // btnUnhideFile
             // 
             this.btnUnhideFile.Name = "btnUnhideFile";
-            this.btnUnhideFile.Size = new System.Drawing.Size(92, 23);
+            this.btnUnhideFile.Size = new System.Drawing.Size(64, 23);
             this.btnUnhideFile.Text = "👁️ แสดง";
             this.btnUnhideFile.ToolTipText = "แสดงไฟล์ที่ซ่อนไว้";
             this.btnUnhideFile.Click += new System.EventHandler(this.btnUnhideFile_Click);
@@ -449,8 +449,8 @@ namespace CMS.Presentation
             this.pnlNavBar.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pnlNavBar.Location = new System.Drawing.Point(0, 0);
             this.pnlNavBar.Name = "pnlNavBar";
-            this.pnlNavBar.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.pnlNavBar.Size = new System.Drawing.Size(1197, 40);
+            this.pnlNavBar.Padding = new System.Windows.Forms.Padding(4);
+            this.pnlNavBar.Size = new System.Drawing.Size(1197, 44);
             this.pnlNavBar.TabIndex = 5;
             // 
             // btnNavBack
@@ -496,7 +496,7 @@ namespace CMS.Presentation
             // 
             // txtBreadcrumb
             // 
-            this.txtBreadcrumb.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.txtBreadcrumb.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtBreadcrumb.BackColor = System.Drawing.Color.White;
             this.txtBreadcrumb.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
@@ -506,55 +506,68 @@ namespace CMS.Presentation
             this.txtBreadcrumb.Multiline = true;
             this.txtBreadcrumb.Name = "txtBreadcrumb";
             this.txtBreadcrumb.ReadOnly = true;
-            this.txtBreadcrumb.Size = new System.Drawing.Size(800, 28);
+            this.txtBreadcrumb.Size = new System.Drawing.Size(798, 28);
             this.txtBreadcrumb.TabIndex = 4;
             this.txtBreadcrumb.Text = "🏠 ราก";
             // 
             // btnViewList
             // 
             this.btnViewList.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnViewList.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.btnViewList.FlatAppearance.BorderSize = 0;
             this.btnViewList.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewList.Location = new System.Drawing.Point(-83, 0);
+            this.btnViewList.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.btnViewList.ForeColor = System.Drawing.Color.White;
+            this.btnViewList.Location = new System.Drawing.Point(924, 7);
             this.btnViewList.Name = "btnViewList";
-            this.btnViewList.Size = new System.Drawing.Size(26, 24);
+            this.btnViewList.Size = new System.Drawing.Size(36, 26);
             this.btnViewList.TabIndex = 5;
             this.btnViewList.Text = "☰";
-            this.btnViewList.Visible = false;
+            this.btnViewList.UseVisualStyleBackColor = false;
+            this.btnViewList.Click += new System.EventHandler(this.btnViewList_Click);
             // 
             // btnViewGrid
             // 
             this.btnViewGrid.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnViewGrid.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(228)))), ((int)(((byte)(242)))));
+            this.btnViewGrid.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.btnViewGrid.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewGrid.Location = new System.Drawing.Point(-83, 0);
+            this.btnViewGrid.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.btnViewGrid.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
+            this.btnViewGrid.Location = new System.Drawing.Point(964, 7);
             this.btnViewGrid.Name = "btnViewGrid";
-            this.btnViewGrid.Size = new System.Drawing.Size(26, 24);
+            this.btnViewGrid.Size = new System.Drawing.Size(36, 26);
             this.btnViewGrid.TabIndex = 6;
             this.btnViewGrid.Text = "⊞";
-            this.btnViewGrid.Visible = false;
+            this.btnViewGrid.UseVisualStyleBackColor = false;
+            this.btnViewGrid.Click += new System.EventHandler(this.btnViewGrid_Click);
             // 
             // lblSearch
             // 
             this.lblSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblSearch.AutoSize = true;
-            this.lblSearch.Location = new System.Drawing.Point(-83, 0);
+            this.lblSearch.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
+            this.lblSearch.Location = new System.Drawing.Point(1008, 11);
             this.lblSearch.Name = "lblSearch";
-            this.lblSearch.Size = new System.Drawing.Size(24, 17);
+            this.lblSearch.Size = new System.Drawing.Size(22, 20);
             this.lblSearch.TabIndex = 7;
             this.lblSearch.Text = "🔍";
-            this.lblSearch.Visible = false;
+            this.lblSearch.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // txtSearch
             // 
             this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.txtSearch.BackColor = System.Drawing.Color.White;
+            this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtSearch.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.5F);
             this.txtSearch.ForeColor = System.Drawing.Color.Gray;
-            this.txtSearch.Location = new System.Drawing.Point(-83, 0);
+            this.txtSearch.Location = new System.Drawing.Point(1034, 9);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(160, 16);
+            this.txtSearch.Size = new System.Drawing.Size(155, 22);
             this.txtSearch.TabIndex = 8;
             this.txtSearch.Text = "ค้นหาใน Folder...";
-            this.txtSearch.Visible = false;
+            this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
+            this.txtSearch.Enter += new System.EventHandler(this.txtSearch_Enter);
+            this.txtSearch.Leave += new System.EventHandler(this.txtSearch_Leave);
             // 
             // pnlFilterBar
             // 
@@ -565,7 +578,7 @@ namespace CMS.Presentation
             this.pnlFilterBar.Controls.Add(this.chk3NC);
             this.pnlFilterBar.Controls.Add(this.chk4PC);
             this.pnlFilterBar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlFilterBar.Location = new System.Drawing.Point(0, 40);
+            this.pnlFilterBar.Location = new System.Drawing.Point(0, 44);
             this.pnlFilterBar.Name = "pnlFilterBar";
             this.pnlFilterBar.Padding = new System.Windows.Forms.Padding(4, 4, 4, 2);
             this.pnlFilterBar.Size = new System.Drawing.Size(1197, 28);
@@ -642,7 +655,7 @@ namespace CMS.Presentation
             // splitMain
             // 
             this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitMain.Location = new System.Drawing.Point(0, 68);
+            this.splitMain.Location = new System.Drawing.Point(0, 72);
             this.splitMain.Name = "splitMain";
             this.splitMain.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -655,14 +668,13 @@ namespace CMS.Presentation
             this.splitMain.Panel2.Controls.Add(this.recycleBinGroupBox);
             this.splitMain.Panel2Collapsed = true;
             this.splitMain.Panel2MinSize = 0;
-            this.splitMain.Size = new System.Drawing.Size(1197, 734);
+            this.splitMain.Size = new System.Drawing.Size(1197, 730);
             this.splitMain.SplitterDistance = 533;
             this.splitMain.TabIndex = 3;
             // 
             // splitLR
             // 
             this.splitLR.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitLR.IsSplitterFixed = false;
             this.splitLR.Location = new System.Drawing.Point(0, 0);
             this.splitLR.Name = "splitLR";
             // 
@@ -670,30 +682,28 @@ namespace CMS.Presentation
             // 
             this.splitLR.Panel1.Controls.Add(this.btnToggleSidebar);
             this.splitLR.Panel1.Controls.Add(this.pnlExplorer);
-            this.splitLR.Panel1MinSize = 20;  // Keep minimum 20px for toggle button
+            this.splitLR.Panel1MinSize = 20;
             // 
             // splitLR.Panel2
             // 
             this.splitLR.Panel2.Controls.Add(this.splitContent);
-            this.splitLR.Size = new System.Drawing.Size(1197, 734);
-            this.splitLR.SplitterDistance = 303;
+            this.splitLR.Size = new System.Drawing.Size(1197, 730);
+            this.splitLR.SplitterDistance = 268;
             this.splitLR.TabIndex = 0;
             // 
             // btnToggleSidebar
             // 
             this.btnToggleSidebar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(238)))), ((int)(((byte)(242)))), ((int)(((byte)(248)))));
             this.btnToggleSidebar.Dock = System.Windows.Forms.DockStyle.Right;
-            this.btnToggleSidebar.FlatAppearance.BorderSize = 1;
             this.btnToggleSidebar.FlatAppearance.BorderColor = System.Drawing.Color.LightGray;
             this.btnToggleSidebar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnToggleSidebar.Font = new System.Drawing.Font("Segoe UI", 11F);
             this.btnToggleSidebar.ForeColor = System.Drawing.Color.Gray;
-            this.btnToggleSidebar.Location = new System.Drawing.Point(283, 0);
+            this.btnToggleSidebar.Location = new System.Drawing.Point(248, 0);
             this.btnToggleSidebar.Name = "btnToggleSidebar";
-            this.btnToggleSidebar.Size = new System.Drawing.Size(20, 734);
+            this.btnToggleSidebar.Size = new System.Drawing.Size(20, 730);
             this.btnToggleSidebar.TabIndex = 1;
             this.btnToggleSidebar.Text = "◀";
-            this.btnToggleSidebar.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.btnToggleSidebar.UseVisualStyleBackColor = false;
             this.btnToggleSidebar.Click += new System.EventHandler(this.btnToggleSidebar_Click);
             // 
@@ -709,7 +719,7 @@ namespace CMS.Presentation
             this.pnlExplorer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlExplorer.Location = new System.Drawing.Point(0, 0);
             this.pnlExplorer.Name = "pnlExplorer";
-            this.pnlExplorer.Size = new System.Drawing.Size(303, 734);
+            this.pnlExplorer.Size = new System.Drawing.Size(268, 730);
             this.pnlExplorer.TabIndex = 0;
             // 
             // folderTreeView
@@ -719,7 +729,7 @@ namespace CMS.Presentation
             this.folderTreeView.HotTracking = true;
             this.folderTreeView.Location = new System.Drawing.Point(0, 412);
             this.folderTreeView.Name = "folderTreeView";
-            this.folderTreeView.Size = new System.Drawing.Size(303, 294);
+            this.folderTreeView.Size = new System.Drawing.Size(268, 290);
             this.folderTreeView.TabIndex = 0;
             this.folderTreeView.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.folderTreeView_AfterSelect);
             // 
@@ -729,7 +739,7 @@ namespace CMS.Presentation
             this.txtFolderSearch.ForeColor = System.Drawing.Color.Gray;
             this.txtFolderSearch.Location = new System.Drawing.Point(0, 392);
             this.txtFolderSearch.Name = "txtFolderSearch";
-            this.txtFolderSearch.Size = new System.Drawing.Size(303, 20);
+            this.txtFolderSearch.Size = new System.Drawing.Size(268, 20);
             this.txtFolderSearch.TabIndex = 1;
             this.txtFolderSearch.Text = "ค้นหา Folder...";
             // 
@@ -742,7 +752,7 @@ namespace CMS.Presentation
             this.lblOrgUnitStatus.Location = new System.Drawing.Point(0, 372);
             this.lblOrgUnitStatus.Name = "lblOrgUnitStatus";
             this.lblOrgUnitStatus.Padding = new System.Windows.Forms.Padding(6, 0, 0, 0);
-            this.lblOrgUnitStatus.Size = new System.Drawing.Size(303, 20);
+            this.lblOrgUnitStatus.Size = new System.Drawing.Size(268, 20);
             this.lblOrgUnitStatus.TabIndex = 5;
             this.lblOrgUnitStatus.Text = "📂 กำลังดู: — ทั้งหมด —";
             this.lblOrgUnitStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -755,12 +765,12 @@ namespace CMS.Presentation
             this.pnlOrgFilter.Location = new System.Drawing.Point(0, 26);
             this.pnlOrgFilter.Name = "pnlOrgFilter";
             this.pnlOrgFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlOrgFilter.Size = new System.Drawing.Size(303, 346);
+            this.pnlOrgFilter.Size = new System.Drawing.Size(268, 346);
             this.pnlOrgFilter.TabIndex = 2;
             // 
             // treeOrgUnit
             // 
-            this.treeOrgUnit.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            this.treeOrgUnit.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
             this.treeOrgUnit.BackColor = System.Drawing.Color.White;
             this.treeOrgUnit.BorderStyle = System.Windows.Forms.BorderStyle.None;
@@ -780,7 +790,7 @@ namespace CMS.Presentation
             this.lblExplorerHeader.ForeColor = System.Drawing.Color.White;
             this.lblExplorerHeader.Location = new System.Drawing.Point(0, 0);
             this.lblExplorerHeader.Name = "lblExplorerHeader";
-            this.lblExplorerHeader.Size = new System.Drawing.Size(303, 26);
+            this.lblExplorerHeader.Size = new System.Drawing.Size(268, 26);
             this.lblExplorerHeader.TabIndex = 3;
             this.lblExplorerHeader.Text = "  📁 Folder Explorer";
             this.lblExplorerHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -791,10 +801,10 @@ namespace CMS.Presentation
             this.pnlRecycleBinNode.Controls.Add(this.lblRecycleBin);
             this.pnlRecycleBinNode.Controls.Add(this.lblRecycleBinCount);
             this.pnlRecycleBinNode.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlRecycleBinNode.Location = new System.Drawing.Point(0, 706);
+            this.pnlRecycleBinNode.Location = new System.Drawing.Point(0, 702);
             this.pnlRecycleBinNode.Name = "pnlRecycleBinNode";
             this.pnlRecycleBinNode.Padding = new System.Windows.Forms.Padding(8, 4, 4, 4);
-            this.pnlRecycleBinNode.Size = new System.Drawing.Size(303, 28);
+            this.pnlRecycleBinNode.Size = new System.Drawing.Size(268, 28);
             this.pnlRecycleBinNode.TabIndex = 4;
             // 
             // lblRecycleBin
@@ -837,18 +847,18 @@ namespace CMS.Presentation
             this.splitContent.Panel2.Controls.Add(this.pnlDetail);
             this.splitContent.Panel2Collapsed = true;
             this.splitContent.Panel2MinSize = 100;
-            this.splitContent.Size = new System.Drawing.Size(890, 734);
+            this.splitContent.Size = new System.Drawing.Size(925, 730);
             this.splitContent.SplitterDistance = 25;
             this.splitContent.TabIndex = 0;
             // 
             // pnlContent
-            //
+            // 
             this.pnlContent.Controls.Add(this.contentsListView);
             this.pnlContent.Controls.Add(this.pnlFilter);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlContent.Location = new System.Drawing.Point(0, 0);
+            this.pnlContent.Location = new System.Drawing.Point(0, 34);
             this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Size = new System.Drawing.Size(890, 734);
+            this.pnlContent.Size = new System.Drawing.Size(925, 696);
             this.pnlContent.TabIndex = 0;
             // 
             // contentsListView
@@ -867,9 +877,9 @@ namespace CMS.Presentation
             this.contentsListView.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.contentsListView.FullRowSelect = true;
             this.contentsListView.HideSelection = false;
-            this.contentsListView.Location = new System.Drawing.Point(0, 58);
+            this.contentsListView.Location = new System.Drawing.Point(0, 32);
             this.contentsListView.Name = "contentsListView";
-            this.contentsListView.Size = new System.Drawing.Size(890, 676);
+            this.contentsListView.Size = new System.Drawing.Size(925, 664);
             this.contentsListView.TabIndex = 1;
             this.contentsListView.UseCompatibleStateImageBehavior = false;
             this.contentsListView.View = System.Windows.Forms.View.Details;
@@ -926,17 +936,17 @@ namespace CMS.Presentation
             this.pnlContentHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlContentHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlContentHeader.Name = "pnlContentHeader";
-            this.pnlContentHeader.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.pnlContentHeader.Size = new System.Drawing.Size(890, 26);
+            this.pnlContentHeader.Padding = new System.Windows.Forms.Padding(8, 5, 8, 5);
+            this.pnlContentHeader.Size = new System.Drawing.Size(925, 34);
             this.pnlContentHeader.TabIndex = 2;
             // 
             // lblContentInfo
             // 
             this.lblContentInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblContentInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblContentInfo.Location = new System.Drawing.Point(4, 3);
+            this.lblContentInfo.Location = new System.Drawing.Point(8, 5);
             this.lblContentInfo.Name = "lblContentInfo";
-            this.lblContentInfo.Size = new System.Drawing.Size(882, 20);
+            this.lblContentInfo.Size = new System.Drawing.Size(909, 24);
             this.lblContentInfo.TabIndex = 0;
             this.lblContentInfo.Text = "— | — | ไม่มีรายการที่เลือก";
             this.lblContentInfo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -976,7 +986,7 @@ namespace CMS.Presentation
             this.lblDetailHeader.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
             this.lblDetailHeader.Size = new System.Drawing.Size(80, 26);
             this.lblDetailHeader.TabIndex = 1;
-            this.lblDetailHeader.Text = "📋 ตัวอย่าง";
+            this.lblDetailHeader.Text = "📄 รายละเอียด";
             this.lblDetailHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // recycleBinGroupBox
