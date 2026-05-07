@@ -33,6 +33,8 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private readonly Stack<ArticleViewerForm> _viewerHistory = new Stack<ArticleViewerForm>();
 
+        private int _currentPage = 1;
+
         // ── Category settings embedded panel state ───────────────────────────────
         private KBCategoryForm _activeCategoryForm = null;
 
@@ -149,6 +151,19 @@ namespace CMS.Presentation.Modules.KMS
         public string SearchKeyword      { get { return txtToolbarSearch.Text.Trim(); } }
         public int    StatusFilterIndex  { get { return cboStatus.SelectedIndex; } }
 
+        public int PageSize
+        {
+            get
+            {
+                switch (cboPageSize.SelectedIndex)
+                {
+                    case 1:  return 50;
+                    case 2:  return 100;
+                    default: return 20;
+                }
+            }
+        }
+
         public int? SelectedCategoryId  { get; set; }
 
         public string ArticleTitleText  { set { lblArticleTitle.Text = value; } }
@@ -190,6 +205,49 @@ namespace CMS.Presentation.Modules.KMS
         {
             MessageBox.Show(reportText, "รายงาน Knowledge Base",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        public void RenderPagination(int totalCount, int currentPage, int pageSize)
+        {
+            _currentPage = currentPage;
+            int totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling((double)totalCount / pageSize);
+
+            int from = totalCount == 0 ? 0 : (currentPage - 1) * pageSize + 1;
+            int to   = Math.Min(currentPage * pageSize, totalCount);
+            lblPageInfo.Text = totalCount == 0
+                ? "ไม่มีรายการ"
+                : string.Format("แสดง {0}-{1} จาก {2} รายการ", from, to, totalCount);
+
+            btnPrevPage.Enabled = currentPage > 1;
+            btnNextPage.Enabled = currentPage < totalPages;
+
+            int startPage = Math.Max(1, currentPage - 1);
+            if (startPage + 2 > totalPages) startPage = Math.Max(1, totalPages - 2);
+
+            var pageBtns = new Button[] { btnPage1, btnPage2, btnPage3 };
+            for (int i = 0; i < pageBtns.Length; i++)
+            {
+                int pageNum = startPage + i;
+                if (pageNum <= totalPages)
+                {
+                    pageBtns[i].Visible   = true;
+                    pageBtns[i].Text      = pageNum.ToString();
+                    pageBtns[i].Tag       = pageNum;
+                    bool isCurrent        = pageNum == currentPage;
+                    pageBtns[i].BackColor = isCurrent
+                        ? Color.FromArgb(46, 116, 181)
+                        : Color.White;
+                    pageBtns[i].ForeColor = isCurrent
+                        ? Color.White
+                        : Color.FromArgb(26, 35, 50);
+                }
+                else
+                {
+                    pageBtns[i].Visible = false;
+                }
+            }
+
+            pnlPaginationButtons.Visible = totalPages > 1;
         }
 
         // ── Search / filter handlers ─────────────────────────────────────────────
@@ -496,10 +554,19 @@ namespace CMS.Presentation.Modules.KMS
             cboStatus.Items.Add("📦 Archived");
             cboStatus.SelectedIndex = 0;
 
-            cboType.SelectedIndex = 0;
+            cboType.SelectedIndex       = 0;
             cboDepartment.SelectedIndex = 0;
-            cboSortBy.SelectedIndex = 0;
-            cboPageSize.SelectedIndex = 0;
+            cboSortBy.SelectedIndex     = 0;
+            cboPageSize.SelectedIndex   = 0;
+
+            // Wire up after initial values are set to avoid spurious loads
+            btnPrevPage.Click  += BtnPrevPage_Click;
+            btnNextPage.Click  += BtnNextPage_Click;
+            btnPage1.Click     += BtnPageNumber_Click;
+            btnPage2.Click     += BtnPageNumber_Click;
+            btnPage3.Click     += BtnPageNumber_Click;
+            cboPageSize.SelectedIndexChanged += CboPageSize_SelectedIndexChanged;
+            btnClearFilter.Click += BtnClearFilter_Click;
         }
 
         private void BuildCategoryTree(
@@ -591,6 +658,42 @@ namespace CMS.Presentation.Modules.KMS
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
+        }
+
+        private void BtnPrevPage_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null || _currentPage <= 1) return;
+            _presenter.GoToPage(_currentPage - 1);
+        }
+
+        private void BtnNextPage_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            _presenter.GoToPage(_currentPage + 1);
+        }
+
+        private void BtnPageNumber_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            var btn = sender as Button;
+            if (btn != null && btn.Tag != null)
+                _presenter.GoToPage((int)btn.Tag);
+        }
+
+        private void CboPageSize_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            _presenter.LoadArticles();
+        }
+
+        private void BtnClearFilter_Click(object sender, EventArgs e)
+        {
+            cboStatus.SelectedIndex     = 0;
+            cboType.SelectedIndex       = 0;
+            cboDepartment.SelectedIndex = 0;
+            cboSortBy.SelectedIndex     = 0;
+            txtToolbarSearch.Text       = string.Empty;
+            if (_presenter != null) _presenter.LoadArticles();
         }
 
         private void ResizeArticleCards()

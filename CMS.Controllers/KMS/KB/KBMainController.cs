@@ -17,6 +17,7 @@ namespace CMS.Controllers.KMS.KB
         private readonly UserContext         _user;
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
+        private int _currentPage = 1;
 
         public KBMainController(
             IKBMainController  view,
@@ -70,11 +71,24 @@ namespace CMS.Controllers.KMS.KB
 
         public void LoadArticles()
         {
+            _currentPage = 1;
+            LoadArticlesAtPage();
+        }
+
+        public void GoToPage(int page)
+        {
+            _currentPage = page;
+            LoadArticlesAtPage();
+        }
+
+        private void LoadArticlesAtPage()
+        {
             try
             {
                 string keyword      = _view.SearchKeyword;
                 byte?  statusFilter = GetStatusFilter(_view.StatusFilterIndex);
                 int?   catId        = _view.SelectedCategoryId;
+                int    pageSize     = _view.PageSize;
 
                 IEnumerable<KBArticle> articles;
                 if (string.IsNullOrEmpty(keyword) && !catId.HasValue && !statusFilter.HasValue)
@@ -87,15 +101,19 @@ namespace CMS.Controllers.KMS.KB
                         catId, statusFilter, null);
 
                 var list = articles.ToList();
-                
-                // Resolve latest version from KMS.t_KBVersion for each article
                 foreach (var article in list)
-                {
                     ResolveLatestVersion(article);
-                }
-                
-                _view.RenderArticles(list);
-                _view.ArticleCountText = string.Format("{0} บทความ", list.Count);
+
+                int totalCount = list.Count;
+                int totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling((double)totalCount / pageSize);
+                if (_currentPage > totalPages) _currentPage = totalPages;
+                if (_currentPage < 1)          _currentPage = 1;
+
+                var pageItems = list.Skip((_currentPage - 1) * pageSize).Take(pageSize).ToList();
+
+                _view.RenderArticles(pageItems);
+                _view.ArticleCountText = string.Format("{0} บทความ", totalCount);
+                _view.RenderPagination(totalCount, _currentPage, pageSize);
             }
             catch (Exception ex) { _view.ShowError("Load articles failed: " + ex.Message); }
         }
