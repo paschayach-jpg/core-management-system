@@ -191,9 +191,17 @@ public partial class KBImportWizardForm : Form,
 }
 ```
 
-#### `<FeatureForm>.Designer.cs` — Visual designer (auto-generated, never edit manually)
-- All control declarations, `InitializeComponent()`, layout code
-- VS designer writes this file — treat as read-only
+#### `<FeatureForm>.Designer.cs` — Visual designer (all control definitions live here)
+- All control field declarations, `InitializeComponent()`, layout code, styles
+- VS designer writes this file. **You may edit it manually** when adding new controls — but follow the exact WinForms designer pattern:
+  1. Declare the field in the `#region Component Fields` block at the bottom
+  2. Instantiate with `this.controlName = new ControlType();` inside `InitializeComponent()`
+  3. Add `SuspendLayout()` / `BeginInit()` at the top of the suspend block, and matching `ResumeLayout()` / `EndInit()` before the method ends
+  4. Wire up all properties (Size, Location, Dock, Font, Text, etc.) between BeginInit and EndInit
+  5. Add the control to its parent via `parentControl.Controls.Add(this.controlName)`
+- Use `DataGridViewCellStyle` as a **local variable** inside `InitializeComponent()`, not as a field
+
+**Rule: ALL control creation belongs in Designer.cs. Code-behind must never instantiate controls.**
 
 ---
 
@@ -313,18 +321,43 @@ CMS.Presentation/
 ## 7. Code-Behind Rules (Hard Rules)
 
 ```csharp
-// ✅ ALLOWED in Form.cs
+// ✅ ALLOWED in Form.cs (code-behind)
 private void btnSave_Click(object sender, EventArgs e) => _presenter.Save();
 private void dgv_CellClick(object sender, DataGridViewCellEventArgs e) => _presenter.SelectRow(e.RowIndex);
-public string InputText => txtInput.Text.Trim();          // view property
+public string InputText => txtInput.Text.Trim();             // view property
 public void ShowResult(MyModel m) => lblResult.Text = m.Name; // view method
+public void SetProgress(int pct, string msg) {               // view method updating designer controls
+    progressBar.Value = pct;
+    lblStatus.Text    = msg;
+    Application.DoEvents();                                  // flush UI during synchronous work
+}
 
 // ❌ NOT ALLOWED in Form.cs
 private void btnSave_Click(object sender, EventArgs e) {
     var conn = new SqlConnection(...);   // ❌ no DB in form
-    if (txtName.Text.Length < 3) { }    // ❌ no validation logic in form
+    if (txtName.Text.Length < 3) { }    // ❌ no business validation in form
     var svc = new MyService();          // ❌ no new on services
+    var lbl = new Label();             // ❌ NEVER create controls in code-behind
+    var dgv = new DataGridView();      // ❌ NEVER create controls in code-behind
+    panel.Controls.Add(lbl);          // ❌ NEVER add controls dynamically in code-behind
 }
 ```
 
 The form **only** bridges user gestures → presenter calls, and presenter calls → control updates.
+
+### Designer/Code-Behind Separation — Absolute Rules
+
+| What | Where |
+|---|---|
+| Control field declaration | `Designer.cs` — `#region Component Fields` |
+| Control instantiation (`new Label()`) | `Designer.cs` — inside `InitializeComponent()` |
+| Control property setup (Size, Dock, Font…) | `Designer.cs` — inside `InitializeComponent()` |
+| `Controls.Add(…)` | `Designer.cs` — inside `InitializeComponent()` |
+| `SuspendLayout / ResumeLayout` | `Designer.cs` — wrapping `InitializeComponent()` body |
+| Event handler wiring (`btn.Click += …`) | `Designer.cs` — inside `InitializeComponent()` |
+| Event handler implementation | `Form.cs` (code-behind) |
+| View interface properties/methods | `Form.cs` (code-behind) |
+| Business logic | **Never** in any Form file — belongs in presenter/service |
+
+**Violation example (from KBImportWizardForm history):**
+A method `EnsureErrorDetailPanel()` was added to code-behind that called `new Panel()`, `new DataGridView()`, set styles, and called `Controls.Add()`. This violated the Designer/Code-Behind separation rule. The fix was to move ALL of this to `Designer.cs` and remove `EnsureErrorDetailPanel()` entirely from code-behind.

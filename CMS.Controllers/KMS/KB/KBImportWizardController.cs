@@ -109,37 +109,74 @@ namespace CMS.Controllers.KMS.KB
                 bool skipWarnings = _view.OptSkipWarning;
                 string createdBy  = _user.AdIdentity ?? _user.UserID.ToString();
 
-                // ── Filter rows to import ────────────────────────────────────
+                // ── Phase 1: filter rows ─────────────────────────────────────
+                _view.SetProgress(5, "กำลังกรองแถวข้อมูล...");
                 var rowsToImport    = new List<KBImportRow>();
+                var skippedRows     = new List<KBImportRow>();   // pre-import excluded rows
                 int preFilterErrors = 0;
 
                 foreach (var row in _lastValidation.Rows)
                 {
-                    if (row.Status == "Error")                { preFilterErrors++; continue; }
-                    if (row.Status == "Warn" && skipWarnings) { preFilterErrors++; continue; }
+                    if (row.Status == "Error")                { preFilterErrors++; skippedRows.Add(row); continue; }
+                    if (row.Status == "Warn" && skipWarnings) { preFilterErrors++; skippedRows.Add(row); continue; }
                     rowsToImport.Add(row);
                 }
+                _view.SetProgress(15, string.Format("กรองแล้ว: {0} รายการพร้อมนำเข้า", rowsToImport.Count));
 
                 // ── Phase 2: category upsert ─────────────────────────────────
+                _view.SetProgress(20, "กำลังสร้าง/ค้นหาหมวดหมู่...");
                 _processor.ResolveCategories(rowsToImport, createdBy);
+                _view.SetProgress(40, "หมวดหมู่เรียบร้อย");
 
-                // ── Phase 3: article + version insert ────────────────────────
+                // Rows that failed ResolveCategories are now "Error" — exclude them
+                var readyToInsert   = new List<KBImportRow>();
+                int categoryErrors  = 0;
+                foreach (var row in rowsToImport)
+                {
+                    if (row.Status == "Error") categoryErrors++;
+                    else                       readyToInsert.Add(row);
+                }
+
+                // ── Phase 3: article + version insert (per-row progress) ─────
                 int successCount;
                 int errorCount;
-                _processor.InsertArticles(rowsToImport, createdBy, out successCount, out errorCount);
+                int totalToInsert = readyToInsert.Count;
 
-                int totalErrors = preFilterErrors + errorCount;
+                _processor.InsertArticles(
+                    readyToInsert,
+                    createdBy,
+                    out successCount,
+                    out errorCount,
+                    onProgress: (done, total) =>
+                    {
+                        // Map 0→total onto 40%→99% so 100% marks true completion.
+                        int pct = total == 0 ? 99
+                            : 40 + (done * 59 / total);
+                        _view.SetProgress(pct,
+                            string.Format("กำลังนำเข้าบทความ... {0}/{1}", done, total));
+                    });
+
+                _view.SetProgress(100, "นำเข้าเสร็จสิ้น");
+
+                // Collect rows that failed DURING import (category resolution or DB insert).
+                var importFailedRows = new List<KBImportRow>();
+                foreach (var row in rowsToImport)
+                    if (row.Status == "Error") importFailedRows.Add(row);
+
+                int totalErrors = preFilterErrors + categoryErrors + errorCount;
                 var summary = new KBImportValidationResult
                 {
-                    TotalRecords   = _lastValidation.TotalRecords,
-                    ValidRecords   = successCount,
-                    WarningRecords = _lastValidation.WarningRecords,
-                    ErrorRecords   = totalErrors,
-                    IsSuccess      = true,
-                    Message        = totalErrors == 0
+                    TotalRecords     = _lastValidation.TotalRecords,
+                    ValidRecords     = successCount,
+                    WarningRecords   = _lastValidation.WarningRecords,
+                    ErrorRecords     = totalErrors,
+                    IsSuccess        = true,
+                    Message          = totalErrors == 0
                         ? string.Format("นำเข้าสำเร็จ {0} รายการ", successCount)
-                        : string.Format("นำเข้าสำเร็จ {0} รายการ, ล้มเหลว {1} รายการ", successCount, totalErrors),
-                    Rows           = _lastValidation.Rows,
+                        : string.Format("นำเข้าสำเร็จ {0} รายการ, ถูกข้าม/ล้มเหลว {1} รายการ", successCount, totalErrors),
+                    Rows             = _lastValidation.Rows,
+                    SkippedRows      = skippedRows,
+                    ImportFailedRows = importFailedRows,
                 };
 
                 _view.ShowImportComplete(summary);

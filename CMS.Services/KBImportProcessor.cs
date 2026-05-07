@@ -3,7 +3,9 @@ using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace CMS.Services
@@ -64,35 +66,49 @@ namespace CMS.Services
         {
             if (rows == null) throw new ArgumentNullException("rows");
 
-            // Cache: CategoryCode → CategoryID (avoids repeated DB round-trips for
-            // the same code appearing in multiple rows of the same batch).
             var cache = new Dictionary<string, int>(StringComparer.Ordinal);
             KBCategoryCodeName result;
             foreach (var row in rows)
             {
                 if (row.Status == "Error")
-                    continue;                
+                    continue;
 
-                bool success = Enum.TryParse(row.ColA, out result);
-                if (!success) throw new Exception($"Not found category in a row : {row.RowNumber}.Please check category code.");
+                try
+                {
+                    bool success = Enum.TryParse(row.ColA, out result);
+                    if (!success)
+                    {
+                        row.Status     = "Error";
+                        row.StatusNote = TruncateTo200(string.Format(
+                            "ไม่พบรหัสหมวดหมู่ '{0}' ในระบบ", row.ColA));
+                        continue;
+                    }
 
-                // ── Parent category (Column A) ───────────────────────────────
-                int parentCategoryId = ResolveOrInsertCategory(
-                    code:       row.ColA,
-                    name:       row.ColC,
-                    parentId:   null,
-                    createdBy:  createdBy,
-                    cache:      cache);
+                    FieldInfo field = result.GetType().GetField(result.ToString());
+                    DescriptionAttribute attr = (DescriptionAttribute)Attribute.GetCustomAttribute(
+                        field, typeof(DescriptionAttribute));
 
-                // ── Sub-category (Column B) ──────────────────────────────────
-                //int subCategoryId = ResolveOrInsertCategory(
-                //    code:       row.ColB,
-                //    name:       row.ColC,
-                //    parentId:   parentCategoryId,
-                //    createdBy:  createdBy,
-                //    cache:      cache);
+                    int parentCategoryId = ResolveOrInsertCategory(
+                        code:      row.ColA,
+                        name:      attr.Description,
+                        parentId:  null,
+                        createdBy: createdBy,
+                        cache:     cache);
 
-                row.ResolvedCategoryID = parentCategoryId;
+                    int subCategoryId = ResolveOrInsertCategory(
+                        code:      row.ColB,
+                        name:      row.ColC,
+                        parentId:  parentCategoryId,
+                        createdBy: createdBy,
+                        cache:     cache);
+
+                    row.ResolvedCategoryID = subCategoryId;
+                }
+                catch (Exception ex)
+                {
+                    row.Status     = "Error";
+                    row.StatusNote = TruncateTo200(ex.Message);
+                }
             }
         }
 
@@ -104,22 +120,28 @@ namespace CMS.Services
         /// Each row is wrapped in its own <c>try/catch</c>; a failure on one row
         /// increments <paramref name="errorCount"/> and processing continues.
         /// </summary>
+        /// <param name="onProgress">
+        /// Optional callback invoked after each row with (rowsProcessed, totalRows).
+        /// Use to update a progress bar in the UI.
+        /// </param>
         public void InsertArticles(
             IList<KBImportRow> rows,
             string createdBy,
             out int successCount,
-            out int errorCount)
+            out int errorCount,
+            Action<int, int> onProgress)
         {
             if (rows == null) throw new ArgumentNullException("rows");
 
             successCount = 0;
             errorCount   = 0;
+            int total    = rows.Count;
 
-            foreach (var row in rows)
+            for (int i = 0; i < total; i++)
             {
+                var row = rows[i];
                 try
                 {
-                    // ── Build KBArticle ──────────────────────────────────────
                     var article = new KBArticle
                     {
                         ArticleCode      = row.ArticleCode,
@@ -127,8 +149,8 @@ namespace CMS.Services
                         ContentHTML      = row.ColT,
                         Summary          = row.Summary,
                         CategoryID       = row.ResolvedCategoryID,
-                        ArticleType      = 5,   // Policy
-                        Status           = 1,   // Draft
+                        ArticleType      = 5,
+                        Status           = 1,
                         CurrentVersion   = 1,
                         PublishedDate    = row.PublishedDateParsed,
                         ExpiryDate       = row.ExpiryDateParsed,
@@ -143,13 +165,11 @@ namespace CMS.Services
 
                     int articleId = _articleRepo.Insert(article);
 
-                    // ── Build KBVersion ──────────────────────────────────────
                     var version = new KBVersion
                     {
                         ArticleID         = articleId,
                         VersionNumber     = 1,
                         ContentSnapshot   = row.ColT,
-                        ChangeDescription = row.ColT,
                         CreatedBy         = createdBy,
                         CreatedDate       = DateTime.Now,
                     };
@@ -164,6 +184,9 @@ namespace CMS.Services
                     row.StatusNote = TruncateTo200(ex.Message);
                     errorCount++;
                 }
+
+                if (onProgress != null)
+                    onProgress(i + 1, total);
             }
         }
 

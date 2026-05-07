@@ -18,6 +18,22 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private void InitializeComponent()
         {
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            this.pnlErrorDetail = new System.Windows.Forms.Panel();
+            this.dgvFailedRows = new System.Windows.Forms.DataGridView();
+            this.colFRow = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colFCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colFCat = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colFTitle = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colFRaw = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colFReason = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.pnlErrPager = new System.Windows.Forms.Panel();
+            this.lblErrPage = new System.Windows.Forms.Label();
+            this.btnErrNext = new System.Windows.Forms.Button();
+            this.btnErrPrev = new System.Windows.Forms.Button();
+            this.lblErrorDetailHdr = new System.Windows.Forms.Label();
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblHeaderTitle = new System.Windows.Forms.Label();
             this.pnlStepProgress = new System.Windows.Forms.Panel();
@@ -38,9 +54,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlCompleteWrap = new System.Windows.Forms.Panel();
             this.pnlCompleteBody = new System.Windows.Forms.Panel();
             this.pnlActStep3 = new System.Windows.Forms.Panel();
-            this.pnlProgress = new System.Windows.Forms.Panel();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
-            this.lblProgressText = new System.Windows.Forms.Label();
             this.btnClose = new System.Windows.Forms.Button();
             this.btnImportNew = new System.Windows.Forms.Button();
             this.pnlCompleteStats = new System.Windows.Forms.Panel();
@@ -64,9 +77,13 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep2 = new System.Windows.Forms.Panel();
             this.pnlStep2Inner = new System.Windows.Forms.Panel();
             this.pnlActStep2 = new System.Windows.Forms.Panel();
+            this.pnlProgress = new System.Windows.Forms.Panel();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.lblProgressText = new System.Windows.Forms.Label();
             this.btnCancel2 = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
             this.btnImport = new System.Windows.Forms.Button();
+            this.previewControl = new CMS.Presentation.Modules.KMS.KBImportPreviewControl();
             this.pnlImportOptions = new System.Windows.Forms.Panel();
             this.chkSkipWarning = new System.Windows.Forms.CheckBox();
             this.chkAutoCategory = new System.Windows.Forms.CheckBox();
@@ -167,7 +184,9 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatusMessage = new System.Windows.Forms.Label();
             this.lblStepStatus = new System.Windows.Forms.Label();
             this.lblStatusUser = new System.Windows.Forms.Label();
-            this.previewControl = new CMS.Presentation.Modules.KMS.KBImportPreviewControl();
+            this.pnlErrorDetail.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvFailedRows)).BeginInit();
+            this.pnlErrPager.SuspendLayout();
             this.pnlHeader.SuspendLayout();
             this.pnlStepProgress.SuspendLayout();
             this.pnlStep1Indicator.SuspendLayout();
@@ -179,7 +198,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlCompleteWrap.SuspendLayout();
             this.pnlCompleteBody.SuspendLayout();
             this.pnlActStep3.SuspendLayout();
-            this.pnlProgress.SuspendLayout();
             this.pnlCompleteStats.SuspendLayout();
             this.pnlStatSkip.SuspendLayout();
             this.pnlStatWarn.SuspendLayout();
@@ -189,6 +207,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep2.SuspendLayout();
             this.pnlStep2Inner.SuspendLayout();
             this.pnlActStep2.SuspendLayout();
+            this.pnlProgress.SuspendLayout();
             this.pnlImportOptions.SuspendLayout();
             this.pnlSummaryPills.SuspendLayout();
             this.pnlPillError.SuspendLayout();
@@ -222,6 +241,182 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlActStep1.SuspendLayout();
             this.pnlStatusBar.SuspendLayout();
             this.SuspendLayout();
+            // 
+            // pnlErrorDetail
+            // 
+            this.pnlErrorDetail.BackColor = System.Drawing.Color.White;
+            this.pnlErrorDetail.Controls.Add(this.dgvFailedRows);
+            this.pnlErrorDetail.Controls.Add(this.pnlErrPager);
+            this.pnlErrorDetail.Controls.Add(this.lblErrorDetailHdr);
+            this.pnlErrorDetail.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlErrorDetail.Location = new System.Drawing.Point(20, 297);
+            this.pnlErrorDetail.Name = "pnlErrorDetail";
+            this.pnlErrorDetail.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.pnlErrorDetail.Size = new System.Drawing.Size(1019, 122);
+            this.pnlErrorDetail.TabIndex = 10;
+            this.pnlErrorDetail.Visible = false;
+            // 
+            // dgvFailedRows
+            // 
+            this.dgvFailedRows.AllowUserToAddRows = false;
+            this.dgvFailedRows.AllowUserToDeleteRows = false;
+            this.dgvFailedRows.BackgroundColor = System.Drawing.Color.White;
+            this.dgvFailedRows.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvFailedRows.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            this.dgvFailedRows.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvFailedRows.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colFRow,
+            this.colFCode,
+            this.colFCat,
+            this.colFTitle,
+            this.colFRaw,
+            this.colFReason});
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvFailedRows.DefaultCellStyle = dataGridViewCellStyle2;
+            this.dgvFailedRows.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvFailedRows.EnableHeadersVisualStyles = false;
+            this.dgvFailedRows.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.dgvFailedRows.GridColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
+            this.dgvFailedRows.Location = new System.Drawing.Point(0, 42);
+            this.dgvFailedRows.Name = "dgvFailedRows";
+            this.dgvFailedRows.ReadOnly = true;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle3.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvFailedRows.RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            this.dgvFailedRows.RowHeadersVisible = false;
+            this.dgvFailedRows.RowHeadersWidth = 51;
+            this.dgvFailedRows.RowTemplate.Height = 26;
+            this.dgvFailedRows.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvFailedRows.Size = new System.Drawing.Size(1019, 44);
+            this.dgvFailedRows.TabIndex = 0;
+            // 
+            // colFRow
+            // 
+            this.colFRow.HeaderText = "#แถว Excel";
+            this.colFRow.MinimumWidth = 6;
+            this.colFRow.Name = "colFRow";
+            this.colFRow.ReadOnly = true;
+            this.colFRow.Width = 80;
+            // 
+            // colFCode
+            // 
+            this.colFCode.HeaderText = "ArticleCode";
+            this.colFCode.MinimumWidth = 6;
+            this.colFCode.Name = "colFCode";
+            this.colFCode.ReadOnly = true;
+            this.colFCode.Width = 170;
+            // 
+            // colFCat
+            // 
+            this.colFCat.HeaderText = "หมวดหมู่ (A>B)";
+            this.colFCat.MinimumWidth = 6;
+            this.colFCat.Name = "colFCat";
+            this.colFCat.ReadOnly = true;
+            this.colFCat.Width = 120;
+            // 
+            // colFTitle
+            // 
+            this.colFTitle.HeaderText = "ชื่อบทความ (E)";
+            this.colFTitle.MinimumWidth = 6;
+            this.colFTitle.Name = "colFTitle";
+            this.colFTitle.ReadOnly = true;
+            this.colFTitle.Width = 200;
+            // 
+            // colFRaw
+            // 
+            this.colFRaw.HeaderText = "ข้อมูลที่เกี่ยวข้อง";
+            this.colFRaw.MinimumWidth = 6;
+            this.colFRaw.Name = "colFRaw";
+            this.colFRaw.ReadOnly = true;
+            this.colFRaw.Width = 200;
+            // 
+            // colFReason
+            // 
+            this.colFReason.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colFReason.HeaderText = "สาเหตุ";
+            this.colFReason.MinimumWidth = 6;
+            this.colFReason.Name = "colFReason";
+            this.colFReason.ReadOnly = true;
+            // 
+            // pnlErrPager
+            // 
+            this.pnlErrPager.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
+            this.pnlErrPager.Controls.Add(this.lblErrPage);
+            this.pnlErrPager.Controls.Add(this.btnErrNext);
+            this.pnlErrPager.Controls.Add(this.btnErrPrev);
+            this.pnlErrPager.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlErrPager.Location = new System.Drawing.Point(0, 86);
+            this.pnlErrPager.Name = "pnlErrPager";
+            this.pnlErrPager.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.pnlErrPager.Size = new System.Drawing.Size(1019, 36);
+            this.pnlErrPager.TabIndex = 3;
+            // 
+            // lblErrPage
+            // 
+            this.lblErrPage.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblErrPage.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblErrPage.Location = new System.Drawing.Point(108, 4);
+            this.lblErrPage.Name = "lblErrPage";
+            this.lblErrPage.Size = new System.Drawing.Size(803, 28);
+            this.lblErrPage.TabIndex = 1;
+            this.lblErrPage.Text = "หน้า 1 / 1  (0 รายการ)";
+            this.lblErrPage.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // btnErrNext
+            // 
+            this.btnErrNext.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnErrNext.Enabled = false;
+            this.btnErrNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnErrNext.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnErrNext.Location = new System.Drawing.Point(911, 4);
+            this.btnErrNext.Name = "btnErrNext";
+            this.btnErrNext.Size = new System.Drawing.Size(100, 28);
+            this.btnErrNext.TabIndex = 2;
+            this.btnErrNext.Text = "ถัดไป  ▶";
+            this.btnErrNext.Click += new System.EventHandler(this.BtnErrNext_Click);
+            // 
+            // btnErrPrev
+            // 
+            this.btnErrPrev.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnErrPrev.Enabled = false;
+            this.btnErrPrev.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnErrPrev.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnErrPrev.Location = new System.Drawing.Point(8, 4);
+            this.btnErrPrev.Name = "btnErrPrev";
+            this.btnErrPrev.Size = new System.Drawing.Size(100, 28);
+            this.btnErrPrev.TabIndex = 0;
+            this.btnErrPrev.Text = "◀  ก่อนหน้า";
+            this.btnErrPrev.Click += new System.EventHandler(this.BtnErrPrev_Click);
+            // 
+            // lblErrorDetailHdr
+            // 
+            this.lblErrorDetailHdr.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(253)))), ((int)(((byte)(237)))), ((int)(((byte)(236)))));
+            this.lblErrorDetailHdr.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblErrorDetailHdr.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblErrorDetailHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.lblErrorDetailHdr.Location = new System.Drawing.Point(0, 8);
+            this.lblErrorDetailHdr.Name = "lblErrorDetailHdr";
+            this.lblErrorDetailHdr.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
+            this.lblErrorDetailHdr.Size = new System.Drawing.Size(1019, 34);
+            this.lblErrorDetailHdr.TabIndex = 1;
+            this.lblErrorDetailHdr.Text = "⚠️  รายการที่ถูกข้ามหรือล้มเหลว";
+            this.lblErrorDetailHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlHeader
             // 
@@ -394,10 +589,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep3.Controls.Add(this.pnlStep3Inner);
             this.pnlStep3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep3.Location = new System.Drawing.Point(0, 1469);
+            this.pnlStep3.Location = new System.Drawing.Point(0, 1486);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Padding = new System.Windows.Forms.Padding(60, 20, 60, 20);
-            this.pnlStep3.Size = new System.Drawing.Size(1179, 460);
+            this.pnlStep3.Size = new System.Drawing.Size(1179, 569);
             this.pnlStep3.TabIndex = 2;
             this.pnlStep3.Visible = false;
             // 
@@ -408,7 +603,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep3Inner.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlStep3Inner.Location = new System.Drawing.Point(60, 20);
             this.pnlStep3Inner.Name = "pnlStep3Inner";
-            this.pnlStep3Inner.Size = new System.Drawing.Size(1059, 420);
+            this.pnlStep3Inner.Size = new System.Drawing.Size(1059, 529);
             this.pnlStep3Inner.TabIndex = 0;
             // 
             // pnlCompleteWrap
@@ -419,12 +614,13 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlCompleteWrap.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlCompleteWrap.Location = new System.Drawing.Point(0, 0);
             this.pnlCompleteWrap.Name = "pnlCompleteWrap";
-            this.pnlCompleteWrap.Size = new System.Drawing.Size(1059, 420);
+            this.pnlCompleteWrap.Size = new System.Drawing.Size(1059, 529);
             this.pnlCompleteWrap.TabIndex = 0;
             // 
             // pnlCompleteBody
             // 
             this.pnlCompleteBody.BackColor = System.Drawing.Color.White;
+            this.pnlCompleteBody.Controls.Add(this.pnlErrorDetail);
             this.pnlCompleteBody.Controls.Add(this.pnlActStep3);
             this.pnlCompleteBody.Controls.Add(this.pnlCompleteStats);
             this.pnlCompleteBody.Controls.Add(this.lblCompleteSub);
@@ -434,7 +630,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlCompleteBody.Location = new System.Drawing.Point(0, 40);
             this.pnlCompleteBody.Name = "pnlCompleteBody";
             this.pnlCompleteBody.Padding = new System.Windows.Forms.Padding(20);
-            this.pnlCompleteBody.Size = new System.Drawing.Size(1059, 380);
+            this.pnlCompleteBody.Size = new System.Drawing.Size(1059, 489);
             this.pnlCompleteBody.TabIndex = 0;
             // 
             // pnlActStep3
@@ -443,45 +639,11 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlActStep3.Controls.Add(this.btnClose);
             this.pnlActStep3.Controls.Add(this.btnImportNew);
             this.pnlActStep3.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlActStep3.Location = new System.Drawing.Point(20, 310);
+            this.pnlActStep3.Location = new System.Drawing.Point(20, 419);
             this.pnlActStep3.Name = "pnlActStep3";
             this.pnlActStep3.Size = new System.Drawing.Size(1019, 50);
             this.pnlActStep3.TabIndex = 2;
             this.pnlActStep3.Visible = false;
-            // 
-            // pnlProgress
-            // 
-            this.pnlProgress.BackColor = System.Drawing.Color.Transparent;
-            this.pnlProgress.Controls.Add(this.progressBar);
-            this.pnlProgress.Controls.Add(this.lblProgressText);
-            this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlProgress.Location = new System.Drawing.Point(497, 0);
-            this.pnlProgress.Name = "pnlProgress";
-            this.pnlProgress.Padding = new System.Windows.Forms.Padding(0, 10, 20, 10);
-            this.pnlProgress.Size = new System.Drawing.Size(340, 45);
-            this.pnlProgress.TabIndex = 3;
-            this.pnlProgress.Visible = false;
-            // 
-            // progressBar
-            // 
-            this.progressBar.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.progressBar.Location = new System.Drawing.Point(0, 10);
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(320, 9);
-            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.progressBar.TabIndex = 0;
-            // 
-            // lblProgressText
-            // 
-            this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.lblProgressText.Font = new System.Drawing.Font("Segoe UI", 7.5F);
-            this.lblProgressText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblProgressText.Location = new System.Drawing.Point(0, 19);
-            this.lblProgressText.Name = "lblProgressText";
-            this.lblProgressText.Size = new System.Drawing.Size(320, 16);
-            this.lblProgressText.TabIndex = 1;
-            this.lblProgressText.Text = "กำลังนำเข้าข้อมูล...";
-            this.lblProgressText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // btnClose
             // 
@@ -739,7 +901,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep2.Location = new System.Drawing.Point(0, 713);
             this.pnlStep2.Name = "pnlStep2";
             this.pnlStep2.Padding = new System.Windows.Forms.Padding(16, 8, 16, 16);
-            this.pnlStep2.Size = new System.Drawing.Size(1179, 756);
+            this.pnlStep2.Size = new System.Drawing.Size(1179, 773);
             this.pnlStep2.TabIndex = 1;
             this.pnlStep2.Visible = false;
             // 
@@ -747,15 +909,15 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlStep2Inner.BackColor = System.Drawing.Color.Transparent;
             this.pnlStep2Inner.Controls.Add(this.pnlActStep2);
-            this.pnlStep2Inner.Controls.Add(this.pnlImportOptions);
             this.pnlStep2Inner.Controls.Add(this.previewControl);
+            this.pnlStep2Inner.Controls.Add(this.pnlImportOptions);
             this.pnlStep2Inner.Controls.Add(this.pnlSummaryPills);
             this.pnlStep2Inner.Controls.Add(this.pnlPreviewHdr);
             this.pnlStep2Inner.Controls.Add(this.pnlValidation);
             this.pnlStep2Inner.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlStep2Inner.Location = new System.Drawing.Point(16, 8);
             this.pnlStep2Inner.Name = "pnlStep2Inner";
-            this.pnlStep2Inner.Size = new System.Drawing.Size(1147, 732);
+            this.pnlStep2Inner.Size = new System.Drawing.Size(1147, 749);
             this.pnlStep2Inner.TabIndex = 0;
             // 
             // pnlActStep2
@@ -765,12 +927,46 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlActStep2.Controls.Add(this.btnCancel2);
             this.pnlActStep2.Controls.Add(this.btnBack);
             this.pnlActStep2.Controls.Add(this.btnImport);
-            this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlActStep2.Location = new System.Drawing.Point(310, 687);
+            this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlActStep2.Location = new System.Drawing.Point(310, 704);
             this.pnlActStep2.Name = "pnlActStep2";
             this.pnlActStep2.Size = new System.Drawing.Size(837, 45);
             this.pnlActStep2.TabIndex = 1;
             this.pnlActStep2.Visible = false;
+            // 
+            // pnlProgress
+            // 
+            this.pnlProgress.BackColor = System.Drawing.Color.Transparent;
+            this.pnlProgress.Controls.Add(this.progressBar);
+            this.pnlProgress.Controls.Add(this.lblProgressText);
+            this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Right;
+            this.pnlProgress.Location = new System.Drawing.Point(497, 0);
+            this.pnlProgress.Name = "pnlProgress";
+            this.pnlProgress.Padding = new System.Windows.Forms.Padding(0, 10, 20, 10);
+            this.pnlProgress.Size = new System.Drawing.Size(340, 45);
+            this.pnlProgress.TabIndex = 3;
+            this.pnlProgress.Visible = false;
+            // 
+            // progressBar
+            // 
+            this.progressBar.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.progressBar.Location = new System.Drawing.Point(0, 10);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.Size = new System.Drawing.Size(320, 9);
+            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.progressBar.TabIndex = 0;
+            // 
+            // lblProgressText
+            // 
+            this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblProgressText.Font = new System.Drawing.Font("Segoe UI", 7.5F);
+            this.lblProgressText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblProgressText.Location = new System.Drawing.Point(0, 19);
+            this.lblProgressText.Name = "lblProgressText";
+            this.lblProgressText.Size = new System.Drawing.Size(320, 16);
+            this.lblProgressText.TabIndex = 1;
+            this.lblProgressText.Text = "กำลังนำเข้าข้อมูล...";
+            this.lblProgressText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // btnCancel2
             // 
@@ -823,6 +1019,15 @@ namespace CMS.Presentation.Modules.KMS
             this.btnImport.UseVisualStyleBackColor = false;
             this.btnImport.Click += new System.EventHandler(this.BtnImport_Click);
             // 
+            // previewControl
+            // 
+            this.previewControl.BackColor = System.Drawing.Color.White;
+            this.previewControl.Dock = System.Windows.Forms.DockStyle.Top;
+            this.previewControl.Location = new System.Drawing.Point(310, 259);
+            this.previewControl.Name = "previewControl";
+            this.previewControl.Size = new System.Drawing.Size(837, 449);
+            this.previewControl.TabIndex = 2;
+            // 
             // pnlImportOptions
             // 
             this.pnlImportOptions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
@@ -834,7 +1039,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlImportOptions.Controls.Add(this.chkAuditLog);
             this.pnlImportOptions.Controls.Add(this.lblOptionsHeader);
             this.pnlImportOptions.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlImportOptions.Location = new System.Drawing.Point(310, 567);
+            this.pnlImportOptions.Location = new System.Drawing.Point(310, 139);
             this.pnlImportOptions.Name = "pnlImportOptions";
             this.pnlImportOptions.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
             this.pnlImportOptions.Size = new System.Drawing.Size(837, 120);
@@ -1117,7 +1322,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlValidation.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlValidation.Location = new System.Drawing.Point(0, 0);
             this.pnlValidation.Name = "pnlValidation";
-            this.pnlValidation.Size = new System.Drawing.Size(310, 732);
+            this.pnlValidation.Size = new System.Drawing.Size(310, 749);
             this.pnlValidation.TabIndex = 4;
             // 
             // pnlValidationBody
@@ -1127,7 +1332,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlValidationBody.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlValidationBody.Location = new System.Drawing.Point(0, 36);
             this.pnlValidationBody.Name = "pnlValidationBody";
-            this.pnlValidationBody.Size = new System.Drawing.Size(310, 696);
+            this.pnlValidationBody.Size = new System.Drawing.Size(310, 713);
             this.pnlValidationBody.TabIndex = 0;
             // 
             // pnlValidationItems
@@ -2011,15 +2216,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatusUser.Text = "👤  ผู้ใช้งาน  |  📅  dd/MM/yyyy";
             this.lblStatusUser.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // previewControl
-            // 
-            this.previewControl.BackColor = System.Drawing.Color.White;
-            this.previewControl.Dock = System.Windows.Forms.DockStyle.Top;
-            this.previewControl.Location = new System.Drawing.Point(310, 139);
-            this.previewControl.Name = "previewControl";
-            this.previewControl.Size = new System.Drawing.Size(837, 428);
-            this.previewControl.TabIndex = 0;
-            // 
             // KBImportWizardForm
             // 
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
@@ -2037,6 +2233,9 @@ namespace CMS.Presentation.Modules.KMS
             this.Text = "นำเข้าบทความ Knowledge Base";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.KBImportWizardForm_Load);
+            this.pnlErrorDetail.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvFailedRows)).EndInit();
+            this.pnlErrPager.ResumeLayout(false);
             this.pnlHeader.ResumeLayout(false);
             this.pnlStepProgress.ResumeLayout(false);
             this.pnlStep1Indicator.ResumeLayout(false);
@@ -2048,7 +2247,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlCompleteWrap.ResumeLayout(false);
             this.pnlCompleteBody.ResumeLayout(false);
             this.pnlActStep3.ResumeLayout(false);
-            this.pnlProgress.ResumeLayout(false);
             this.pnlCompleteStats.ResumeLayout(false);
             this.pnlStatSkip.ResumeLayout(false);
             this.pnlStatWarn.ResumeLayout(false);
@@ -2058,6 +2256,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStep2.ResumeLayout(false);
             this.pnlStep2Inner.ResumeLayout(false);
             this.pnlActStep2.ResumeLayout(false);
+            this.pnlProgress.ResumeLayout(false);
             this.pnlImportOptions.ResumeLayout(false);
             this.pnlSummaryPills.ResumeLayout(false);
             this.pnlPillError.ResumeLayout(false);
@@ -2256,6 +2455,20 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label lblUploadIcon;
         private System.Windows.Forms.Panel pnlUploadSectionHdr;
         private System.Windows.Forms.Label lblUploadSectionHdr;
+        // Step 3 — skipped/failed row detail grid
+        private System.Windows.Forms.Panel                      pnlErrorDetail;
+        private System.Windows.Forms.Label                      lblErrorDetailHdr;
+        private System.Windows.Forms.DataGridView               dgvFailedRows;
+        private System.Windows.Forms.DataGridViewTextBoxColumn  colFRow;
+        private System.Windows.Forms.DataGridViewTextBoxColumn  colFCode;
+        private System.Windows.Forms.DataGridViewTextBoxColumn  colFCat;
+        private System.Windows.Forms.DataGridViewTextBoxColumn  colFTitle;
+        private System.Windows.Forms.DataGridViewTextBoxColumn  colFRaw;
+        private System.Windows.Forms.DataGridViewTextBoxColumn  colFReason;
+        private System.Windows.Forms.Panel                      pnlErrPager;
+        private System.Windows.Forms.Button                     btnErrPrev;
+        private System.Windows.Forms.Label                      lblErrPage;
+        private System.Windows.Forms.Button                     btnErrNext;
 
         #endregion
     }

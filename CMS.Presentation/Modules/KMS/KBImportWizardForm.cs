@@ -34,6 +34,11 @@ namespace CMS.Presentation.Modules.KMS
         private long     _uploadedFileSize;
         private DateTime _uploadedTime;
 
+        // Step 3 — skipped/failed grid paging
+        private IList<KBImportRow> _errAllRows;
+        private int                _errCurrentPage;
+        private const int          ErrPageSize = 20;
+
         #endregion
 
         #region Constructor
@@ -156,14 +161,42 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (summary == null) return;
 
-            // TotalRecords  = total rows in the file
-            // ValidRecords  = successfully inserted rows
-            // WarningRecords = rows that had warnings (imported or skipped depending on option)
-            // ErrorRecords  = rows that failed or were skipped (pre-filter errors + insert errors)
             lblCompleteTotalNum.Text   = summary.TotalRecords.ToString();
             lblCompleteSuccessNum.Text = summary.ValidRecords.ToString();
             lblCompleteWarnNum.Text    = summary.WarningRecords.ToString();
             lblCompleteSkipNum.Text    = summary.ErrorRecords.ToString();
+
+            var skipped = summary.SkippedRows      ?? new List<KBImportRow>();
+            var failed  = summary.ImportFailedRows ?? new List<KBImportRow>();
+
+            var allProblemRows = new List<KBImportRow>(skipped);
+            allProblemRows.AddRange(failed);
+
+            bool hasProblemRows = allProblemRows.Count > 0;
+
+            if (hasProblemRows)
+            {
+                lblCompleteIcon.Text  = "⚠️";
+                lblCompleteTitle.Text = string.Format(
+                    "นำเข้าสำเร็จ {0} รายการ  /  ข้าม (ก่อนนำเข้า) {1} รายการ  /  ล้มเหลวระหว่างนำเข้า {2} รายการ",
+                    summary.ValidRecords, skipped.Count, failed.Count);
+                lblCompleteTitle.ForeColor = Color.FromArgb(192, 57, 43);
+                lblCompleteSub.Text        = "รายการด้านล่างถูกข้ามหรือล้มเหลว — ตรวจสอบสาเหตุและแก้ไขไฟล์ก่อนนำเข้าใหม่";
+
+                PopulateErrorGrid(allProblemRows);
+                pnlErrorDetail.Visible = true;
+                pnlStep3.Height        = 800;
+            }
+            else
+            {
+                lblCompleteIcon.Text       = "✅";
+                lblCompleteTitle.Text      = "นำเข้าข้อมูลสำเร็จ!";
+                lblCompleteTitle.ForeColor = Color.FromArgb(30, 132, 73);
+                lblCompleteSub.Text        = "บทความทั้งหมดได้ถูกนำเข้าไปยัง Knowledge Base เรียบร้อยแล้ว";
+
+                pnlErrorDetail.Visible = false;
+                pnlStep3.Height        = 460;
+            }
 
             ShowStep(3);
         }
@@ -181,6 +214,13 @@ namespace CMS.Presentation.Modules.KMS
         public void SetStatus(string message)
         {
             lblStatusMessage.Text = message;
+        }
+
+        public void SetProgress(int percent, string message)
+        {
+            progressBar.Value    = Math.Max(0, Math.Min(100, percent));
+            lblProgressText.Text = string.Format("{0}  ({1}%)", message, percent);
+            Application.DoEvents();
         }
 
         #endregion
@@ -312,7 +352,7 @@ namespace CMS.Presentation.Modules.KMS
                 "ยืนยันการนำเข้า", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (confirm != DialogResult.Yes) return;
 
-            StartImportAnimation();
+            StartImport();
         }
 
         private void BtnClose_Click(object sender, EventArgs e)
@@ -346,8 +386,24 @@ namespace CMS.Presentation.Modules.KMS
             lblFileHint.Visible     = true;
             previewControl.Clear();
 
-            // Show Step 1, hide Step 2 and Step 3
+            pnlStep3.Height        = 460;
+            pnlErrorDetail.Visible = false;
+            _errAllRows            = null;
+            _errCurrentPage        = 0;
+
             ShowStep(1);
+        }
+
+        // Step 3 — error grid pager events
+
+        private void BtnErrPrev_Click(object sender, EventArgs e)
+        {
+            ShowErrorPage(_errCurrentPage - 1);
+        }
+
+        private void BtnErrNext_Click(object sender, EventArgs e)
+        {
+            ShowErrorPage(_errCurrentPage + 1);
         }
 
         // Step Progress Paint Event
@@ -737,42 +793,25 @@ namespace CMS.Presentation.Modules.KMS
             SetStatus(string.Format("✅  อัพโหลดไฟล์ \"{0}\" สำเร็จ", _uploadedFileName));
         }
 
-        // Import Animation
+        // Import
 
-        /// <summary>
-        /// Plays the progress-bar animation (UI-only), then asks the presenter to
-        /// execute the actual import. The presenter calls ShowImportComplete() when done.
-        /// </summary>
-        private void StartImportAnimation()
+        private void StartImport()
         {
             pnlProgress.Visible  = true;
             progressBar.Value    = 0;
-            lblProgressText.Text = "กำลังเตรียมข้อมูล...";
+            lblProgressText.Text = "กำลังเตรียมข้อมูล...  (0%)";
             btnImport.Enabled    = false;
             btnBack.Enabled      = false;
+            Application.DoEvents();
 
-            var timer    = new Timer { Interval = 80 };
-            int progress = 0;
-            timer.Tick += (s, ev) =>
-            {
-                progress         += 5;
-                progressBar.Value = Math.Min(progress, 100);
-                lblProgressText.Text = string.Format(
-                    "กำลังนำเข้าข้อมูล... {0}%", progressBar.Value);
+            // Presenter reports real progress via SetProgress(); calls ShowImportComplete() on success.
+            _presenter.ExecuteImport();
 
-                if (progress >= 100)
-                {
-                    timer.Stop();
-                    timer.Dispose();
-                    pnlProgress.Visible = false;
-                    btnImport.Enabled   = true;
-                    btnBack.Enabled     = true;
-
-                    // Hand off to presenter — calls ShowImportComplete() on success
-                    _presenter.ExecuteImport();
-                }
-            };
-            timer.Start();
+            // ExecuteImport calls ShowImportComplete → ShowStep(3) which hides pnlStep2.
+            // Reset buttons in case an error occurred and we stayed on Step 2.
+            pnlProgress.Visible = false;
+            btnImport.Enabled   = true;
+            btnBack.Enabled     = true;
         }
 
         // Preview Grid Population
@@ -828,6 +867,135 @@ namespace CMS.Presentation.Modules.KMS
             pnlStatSuccess.Width = quarter;
             pnlStatWarn.Width    = quarter;
             pnlStatSkip.Width    = quarter + remainder;
+        }
+
+        // Step 3 — skipped/failed row grid with paging
+
+        private void PopulateErrorGrid(IList<KBImportRow> rows)
+        {
+            _errAllRows     = rows;
+            _errCurrentPage = 0;
+            ShowErrorPage(0);
+        }
+
+        private void ShowErrorPage(int page)
+        {
+            int total     = _errAllRows == null ? 0 : _errAllRows.Count;
+            int pageCount = total == 0 ? 1 : (total + ErrPageSize - 1) / ErrPageSize;
+            page = Math.Max(0, Math.Min(page, pageCount - 1));
+            _errCurrentPage = page;
+
+            dgvFailedRows.Rows.Clear();
+
+            int start = page * ErrPageSize;
+            int end   = Math.Min(start + ErrPageSize, total);
+
+            for (int i = start; i < end; i++)
+            {
+                var row = _errAllRows[i];
+                string reason, relatedData;
+
+                if (row.Status == "Warn")
+                {
+                    reason      = "⚠️ ข้ามตามตัวเลือก";
+                    relatedData = row.StatusNote ?? string.Empty;
+                }
+                else
+                {
+                    ClassifyError(row.StatusNote ?? string.Empty, out reason, out relatedData);
+                }
+
+                int idx = dgvFailedRows.Rows.Add(
+                    row.RowNumber,
+                    row.ArticleCode ?? string.Empty,
+                    string.Format("{0} > {1}", row.ColA, row.ColB),
+                    row.ColE ?? string.Empty,
+                    relatedData,
+                    reason);
+
+                Color rowColor = row.Status == "Warn"
+                    ? Color.FromArgb(254, 249, 231)
+                    : Color.FromArgb(253, 237, 236);
+                dgvFailedRows.Rows[idx].DefaultCellStyle.BackColor = rowColor;
+            }
+
+            lblErrPage.Text    = string.Format("หน้า {0} / {1}  ({2} รายการ)", page + 1, pageCount, total);
+            btnErrPrev.Enabled = page > 0;
+            btnErrNext.Enabled = page < pageCount - 1;
+        }
+
+        /// <summary>
+        /// Maps a raw exception / StatusNote string to a short Thai reason label and
+        /// a "related data" snippet extracted from the message where possible.
+        /// </summary>
+        private static void ClassifyError(string note, out string reason, out string relatedData)
+        {
+            relatedData = string.Empty;
+
+            if (string.IsNullOrEmpty(note))
+            {
+                reason = "ข้อผิดพลาดไม่ระบุ";
+                return;
+            }
+
+            // Duplicate / unique key
+            if (note.IndexOf("duplicate key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("Violation of UNIQUE KEY", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("Cannot insert duplicate", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason = "❌ Duplicate key — ข้อมูลซ้ำในฐานข้อมูล";
+                // Extract the duplicate value from "The duplicate key value is (…)"
+                int p = note.IndexOf("(", StringComparison.Ordinal);
+                int q = note.IndexOf(")", StringComparison.Ordinal);
+                if (p >= 0 && q > p)
+                    relatedData = "ค่าซ้ำ: " + note.Substring(p, q - p + 1);
+                return;
+            }
+
+            // String truncation
+            if (note.IndexOf("String or binary data would be truncated", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("truncated", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ ค่าในคอลัมน์ยาวเกินขนาดที่กำหนด";
+                relatedData = "ตรวจสอบคอลัมน์ที่มีข้อความยาว (E, C, T)";
+                return;
+            }
+
+            // NULL constraint
+            if (note.IndexOf("Cannot insert the value NULL", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("null value", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason = "❌ ค่า NULL ในคอลัมน์บังคับ";
+                int col = note.IndexOf("column '", StringComparison.OrdinalIgnoreCase);
+                if (col >= 0)
+                {
+                    int end = note.IndexOf("'", col + 8, StringComparison.Ordinal);
+                    if (end > col + 8)
+                        relatedData = "คอลัมน์: " + note.Substring(col + 8, end - col - 8);
+                }
+                return;
+            }
+
+            // Foreign key
+            if (note.IndexOf("FOREIGN KEY", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("conflicted with the", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ Foreign key — ค่าอ้างอิงไม่มีในตาราง";
+                relatedData = "ตรวจสอบ CategoryID หรือ ArticleType";
+                return;
+            }
+
+            // Category code not found (from ResolveCategories)
+            if (note.IndexOf("ไม่พบรหัสหมวดหมู่", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ รหัสหมวดหมู่ไม่ถูกต้อง";
+                relatedData = note;
+                return;
+            }
+
+            // Generic — return raw note, truncated
+            reason      = "❌ ข้อผิดพลาดทั่วไป";
+            relatedData = note.Length > 200 ? note.Substring(0, 200) + "…" : note;
         }
 
         #endregion
