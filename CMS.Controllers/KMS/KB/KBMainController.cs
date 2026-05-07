@@ -90,10 +90,10 @@ namespace CMS.Controllers.KMS.KB
                 int?   catId        = _view.SelectedCategoryId;
                 int    pageSize     = _view.PageSize;
 
+                if (!catId.HasValue) return;   // require a specific category selection
+
                 IEnumerable<KBArticle> articles;
-                if (string.IsNullOrEmpty(keyword) && !catId.HasValue && !statusFilter.HasValue)
-                    articles = _articleService.GetAll();
-                else if (string.IsNullOrEmpty(keyword) && !statusFilter.HasValue && catId.HasValue)
+                if (string.IsNullOrEmpty(keyword) && !statusFilter.HasValue)
                     articles = _articleService.GetByCategory(catId.Value);
                 else
                     articles = _articleService.Search(
