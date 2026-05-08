@@ -524,6 +524,7 @@ namespace CMS.Presentation
             this.btnViewList.TabIndex = 5;
             this.btnViewList.Text = "☰";
             this.btnViewList.UseVisualStyleBackColor = false;
+            this.btnViewList.Visible = false;
             this.btnViewList.Click += new System.EventHandler(this.btnViewList_Click);
             // 
             // btnViewGrid
@@ -540,6 +541,7 @@ namespace CMS.Presentation
             this.btnViewGrid.TabIndex = 6;
             this.btnViewGrid.Text = "⊞";
             this.btnViewGrid.UseVisualStyleBackColor = false;
+            this.btnViewGrid.Visible = false;
             this.btnViewGrid.Click += new System.EventHandler(this.btnViewGrid_Click);
             // 
             // lblSearch
@@ -552,6 +554,7 @@ namespace CMS.Presentation
             this.lblSearch.TabIndex = 7;
             this.lblSearch.Text = "🔍";
             this.lblSearch.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblSearch.Visible = false;
             // 
             // txtSearch
             // 
@@ -565,6 +568,7 @@ namespace CMS.Presentation
             this.txtSearch.Size = new System.Drawing.Size(155, 22);
             this.txtSearch.TabIndex = 8;
             this.txtSearch.Text = "ค้นหาใน Folder...";
+            this.txtSearch.Visible = false;
             this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
             this.txtSearch.Enter += new System.EventHandler(this.txtSearch_Enter);
             this.txtSearch.Leave += new System.EventHandler(this.txtSearch_Leave);

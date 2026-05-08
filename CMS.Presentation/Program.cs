@@ -64,7 +64,8 @@ namespace CMS.Presentation
 
                 var orgStructureService = new OrgStructureService(orgUnitRepository, auditService, userOrgVisibilityService);
 
-                var networkDriveHelper = new NetworkDriveHelper(configManager);
+                var networkShareConnector = new NetworkShareConnector(configManager);
+                var networkDriveHelper = new NetworkDriveHelper(configManager, networkShareConnector);
                 var clamAvAdapter = new ClamAVAdapter(configManager);
                 var virusScanService = new VirusScanService(
                     clamAvAdapter,
@@ -274,8 +275,7 @@ namespace CMS.Presentation
                     return;
                 }
 
-                // Optional: establish authenticated SMB session from config to prevent credential prompts.
-                var networkShareConnector = new NetworkShareConnector(configManager);
+                // Establish authenticated SMB session (connector already injected into networkDriveHelper).
                 string networkShareMessage;
                 if (!networkShareConnector.TryEnsureConnected(out networkShareMessage))
                 {

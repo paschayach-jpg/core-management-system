@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
@@ -13,6 +14,7 @@ namespace CMS.Presentation
         public string MenuText { get; set; }
         public Folder SelectedFolder { get; set; }
         public FileDocument SelectedFile { get; set; }
+        public List<FileDocument> SelectedFiles { get; set; }
 
         public IFolderService FolderService { get; set; }
         public IOrgStructureService OrgStructureService { get; set; }

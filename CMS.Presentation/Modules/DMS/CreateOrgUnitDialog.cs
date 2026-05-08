@@ -18,13 +18,21 @@ namespace CMS.Presentation
         private readonly OrgUnit                  _selectedParent;
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
 
-        // เก็บ DivisionID ที่เลือกไว้ เพื่อ filter แผนก
-        private int _selectedDivisionID = 0;
+        private int           _selectedDivisionID = 0;
+        private OrgUnitData   _pendingDivision;
+        private List<OrgUnitData> _pendingDepartments;
 
-        public CreateOrgUnitRequest       Result       { get; private set; }
-        public List<CreateOrgUnitRequest> BatchResults { get; private set; }
+        public CreateOrgUnitRequest       Result            { get; private set; }
+        public List<CreateOrgUnitRequest> BatchResults      { get; private set; }
+        public HierarchicalBatchResult    HierarchicalResult { get; private set; }
 
         private List<OrgUnitData> _batchSelections;
+
+        public class HierarchicalBatchResult
+        {
+            public CreateOrgUnitRequest       DivisionRequest    { get; set; }
+            public List<CreateOrgUnitRequest> DepartmentRequests { get; set; }
+        }
 
         public CreateOrgUnitDialog(IEnumerable<OrgUnit> allUnits,
             IEmployeeDirectoryController employeeDirectoryController = null,
@@ -197,6 +205,8 @@ namespace CMS.Presentation
         private void OnTierChanged(object sender, EventArgs e)
         {
             if (cboTier.SelectedItem == null) return;
+            _pendingDivision    = null;
+            _pendingDepartments = null;
             var selectedTier = (OrgUnitTier)cboTier.SelectedItem;
             RefreshParentList(selectedTier);
             ApplyTierUiRules(selectedTier);
@@ -227,12 +237,68 @@ namespace CMS.Presentation
                 return;
             }
 
-            string dlgTitle = isDivision ? "เลือกฝ่าย" : "เลือกแผนก";
+            if (isDivision)
+                ShowDivisionTreePicker();
+            else
+                ShowDepartmentFlatPicker();
+        }
+
+        // ── Division Tree Picker (Approach A) ────────────────────────────────
+        // แสดง TreeView: Division (root) → Departments (children, auto-checked)
+        // User เลือก 1 Division เท่านั้น สามารถ uncheck Dept ที่ไม่ต้องการออกได้
+        private void ShowDivisionTreePicker()
+        {
+            if (_authorityOrgLookupController == null && _employeeDirectoryController == null)
+            {
+                MessageBox.Show("ไม่มีแหล่งข้อมูลฝ่าย กรุณาตรวจสอบการตั้งค่า",
+                    "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // โหลด Divisions และ Departments ทั้งหมด (grouped by DivisionID)
+            List<HrDivision>   hrDivisions   = null;
+            List<HrDepartment> hrDepartments = null;
+
+            try
+            {
+                if (_authorityOrgLookupController != null)
+                {
+                    hrDivisions   = _authorityOrgLookupController.GetDivisions()
+                                       .OrderBy(d => d.DivisionCode).ToList();
+                    hrDepartments = _authorityOrgLookupController.GetDepartments()
+                                       .OrderBy(d => d.DepartmentCode).ToList();
+                }
+                else
+                {
+                    hrDivisions = _employeeDirectoryController.GetDivisions()
+                                      .Select(d => new HrDivision {
+                                          DivisionID   = 0,
+                                          DivisionCode = d.DivisionCode,
+                                          DivisionName = d.NameTh
+                                      }).OrderBy(d => d.DivisionCode).ToList();
+                    hrDepartments = new List<HrDepartment>();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("โหลดข้อมูลไม่สำเร็จ: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // หา parent context เพื่อตรวจสอบรายการที่มีแล้ว
+            int? subCommitteeId = null;
+            if (cboParent.SelectedItem is OrgUnitItem pi && pi.OrgUnit != null)
+                subCommitteeId = pi.OrgUnit.OrgUnitId;
+
+            var deptsByDivId = hrDepartments
+                .GroupBy(d => d.DivisionID)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             using (var dlg = new Form())
             {
-                dlg.Text            = dlgTitle;
-                dlg.ClientSize      = new System.Drawing.Size(420, 380);
+                dlg.Text            = "เลือกฝ่ายและแผนก";
+                dlg.ClientSize      = new System.Drawing.Size(480, 480);
                 dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
                 dlg.StartPosition   = FormStartPosition.CenterParent;
                 dlg.MaximizeBox     = false;
@@ -242,28 +308,437 @@ namespace CMS.Presentation
                 var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 36,
                     BackColor = Color.FromArgb(0, 51, 102) };
                 pnlHdr.Controls.Add(new Label {
-                    Text = "🔍  " + dlgTitle, Dock = DockStyle.Fill,
-                    ForeColor = Color.White, Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                    TextAlign = ContentAlignment.MiddleLeft, Padding = new Padding(10, 0, 0, 0)
+                    Text      = "🔍  เลือกฝ่าย — แผนกในฝ่ายที่เลือกจะถูกเพิ่มอัตโนมัติ",
+                    Dock      = DockStyle.Fill,
+                    ForeColor = Color.White,
+                    Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding   = new Padding(10, 0, 0, 0)
                 });
 
                 // ── Footer ────────────────────────────────────────────────────
-                var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 44,
+                var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 48,
                     BackColor = Color.FromArgb(243, 243, 243) };
 
                 var btnOk = new Button {
-                    Text = "✔ เลือก", Size = new System.Drawing.Size(90, 28),
-                    BackColor = Color.FromArgb(0, 51, 102), ForeColor = Color.White,
-                    FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                    Anchor = AnchorStyles.Right | AnchorStyles.Top
+                    Text      = "✔ สร้าง",
+                    Size      = new System.Drawing.Size(110, 30),
+                    BackColor = Color.FromArgb(0, 51, 102),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+                    Enabled   = false
                 };
                 btnOk.FlatAppearance.BorderSize = 0;
 
                 var btnCnl = new Button {
-                    Text = "ยกเลิก", Size = new System.Drawing.Size(80, 28),
-                    BackColor = Color.White, ForeColor = Color.FromArgb(80, 80, 80),
-                    FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel,
-                    Anchor = AnchorStyles.Right | AnchorStyles.Top
+                    Text        = "ยกเลิก",
+                    Size        = new System.Drawing.Size(80, 30),
+                    BackColor   = Color.White,
+                    ForeColor   = Color.FromArgb(80, 80, 80),
+                    FlatStyle   = FlatStyle.Flat,
+                    DialogResult = DialogResult.Cancel
+                };
+                btnCnl.FlatAppearance.BorderColor = Color.FromArgb(190, 190, 190);
+
+                var lblSummary = new Label {
+                    Text      = "ยังไม่ได้เลือกฝ่าย",
+                    AutoSize  = false,
+                    Font      = new Font("Segoe UI", 9f),
+                    ForeColor = Color.FromArgb(100, 100, 100),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Dock      = DockStyle.Left,
+                    Width     = 250,
+                    Padding   = new Padding(8, 0, 0, 0)
+                };
+
+                pnlFooter.Controls.Add(lblSummary);
+                pnlFooter.Controls.Add(btnOk);
+                pnlFooter.Controls.Add(btnCnl);
+                pnlFooter.Resize += (s, e2) => {
+                    btnCnl.Left = pnlFooter.ClientSize.Width - btnCnl.Width - 8;
+                    btnOk.Left  = btnCnl.Left - btnOk.Width - 8;
+                    btnOk.Top   = btnCnl.Top = (pnlFooter.Height - btnOk.Height) / 2;
+                };
+
+                // ── Search box ────────────────────────────────────────────────
+                var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 36,
+                    BackColor = Color.White, Padding = new Padding(6, 4, 6, 4) };
+                bool isPlaceholder = true;
+                var txtSearch = new TextBox {
+                    Dock      = DockStyle.Fill,
+                    Font      = new Font("Segoe UI", 10f),
+                    ForeColor = Color.Gray,
+                    Text      = "ค้นหาฝ่าย/แผนก..."
+                };
+                txtSearch.GotFocus  += (s, e2) => {
+                    if (!isPlaceholder) return;
+                    isPlaceholder       = false;
+                    txtSearch.Text      = "";
+                    txtSearch.ForeColor = Color.Black;
+                };
+                txtSearch.LostFocus += (s, e2) => {
+                    if (!string.IsNullOrWhiteSpace(txtSearch.Text)) return;
+                    isPlaceholder       = true;
+                    txtSearch.Text      = "ค้นหาฝ่าย/แผนก...";
+                    txtSearch.ForeColor = Color.Gray;
+                };
+                pnlSearch.Controls.Add(txtSearch);
+
+                // ── TreeView ──────────────────────────────────────────────────
+                var tv = new TreeView {
+                    Dock          = DockStyle.Fill,
+                    CheckBoxes    = true,
+                    Font          = new Font("Segoe UI", 9.5f),
+                    ShowLines     = true,
+                    ShowPlusMinus = true,
+                    FullRowSelect = false
+                };
+
+                // สร้าง TreeNode สำหรับแต่ละ Division
+                foreach (var div in hrDivisions)
+                {
+                    bool divAlreadyExists = subCommitteeId.HasValue && _allUnits.Any(u =>
+                        u.IsActive && !u.IsDeleted &&
+                        u.Tier == OrgUnitTier.Division &&
+                        u.ParentId == subCommitteeId.Value &&
+                        string.Equals(u.OrgUnitCode, div.DivisionCode, StringComparison.OrdinalIgnoreCase));
+
+                    var divNode = new TreeNode(
+                        string.Format("{0}  {1}{2}",
+                            div.DivisionCode ?? "",
+                            div.DivisionName ?? "",
+                            divAlreadyExists ? "  ⚠ มีแล้ว" : ""))
+                    {
+                        Tag = new OrgUnitData {
+                            Type = "ฝ่าย",
+                            Code = div.DivisionCode,
+                            NameTh = div.DivisionName,
+                            AlreadyExistsInParent = divAlreadyExists,
+                            DivisionId = div.DivisionID
+                        }
+                    };
+                    if (divAlreadyExists)
+                        divNode.ForeColor = Color.DarkGray;
+
+                    // เพิ่ม Department child nodes
+                    List<HrDepartment> childDepts;
+                    if (deptsByDivId.TryGetValue(div.DivisionID, out childDepts))
+                    {
+                        foreach (var dept in childDepts)
+                        {
+                            var deptName = !string.IsNullOrEmpty(dept.DepartmentNameTh)
+                                ? dept.DepartmentNameTh
+                                : dept.DepartmentName;
+
+                            var deptNode = new TreeNode(
+                                string.Format("  {0}  {1}", dept.DepartmentCode ?? "", deptName ?? ""))
+                            {
+                                Tag = new OrgUnitData {
+                                    Type   = "แผนก",
+                                    Code   = dept.DepartmentCode,
+                                    NameTh = deptName,
+                                    AlreadyExistsInParent = false,
+                                    DivisionId = div.DivisionID
+                                }
+                            };
+                            divNode.Nodes.Add(deptNode);
+                        }
+                    }
+
+                    tv.Nodes.Add(divNode);
+                }
+
+                // ── TreeView check logic: single Division, cascade to Departments ──
+                bool suppressCheck = false;
+
+                Action updateSummary = () => {
+                    var sel = tv.Nodes.Cast<TreeNode>().FirstOrDefault(n => n.Checked);
+                    if (sel == null)
+                    {
+                        lblSummary.Text      = "ยังไม่ได้เลือกฝ่าย";
+                        lblSummary.ForeColor = Color.FromArgb(100, 100, 100);
+                        btnOk.Text           = "✔ สร้าง";
+                        btnOk.Enabled        = false;
+                        return;
+                    }
+                    int checkedDeptCount = sel.Nodes.Cast<TreeNode>().Count(n => n.Checked);
+                    int totalDeptCount   = sel.Nodes.Count;
+                    var selData = sel.Tag as OrgUnitData;
+
+                    lblSummary.Text = string.Format("{0} + {1}/{2} แผนก",
+                        selData?.Code ?? sel.Text,
+                        checkedDeptCount,
+                        totalDeptCount);
+                    lblSummary.ForeColor = Color.FromArgb(0, 100, 0);
+                    btnOk.Text = string.Format("✔ สร้าง {0} หน่วยงาน",
+                        1 + checkedDeptCount);
+                    btnOk.Enabled = true;
+                };
+
+                tv.AfterCheck += (s, e2) => {
+                    if (suppressCheck || e2.Action == TreeViewAction.Unknown) return;
+                    suppressCheck = true;
+                    try
+                    {
+                        if (e2.Node.Level == 0) // Division node
+                        {
+                            var divData = e2.Node.Tag as OrgUnitData;
+                            if (divData != null && divData.AlreadyExistsInParent && e2.Node.Checked)
+                            {
+                                e2.Node.Checked = false;
+                                MessageBox.Show(
+                                    string.Format("ฝ่าย {0} มีอยู่ในสังกัดนี้แล้ว", divData.Code),
+                                    "พบข้อมูลซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                            }
+
+                            // Single-Division enforcement: uncheck previous selection
+                            foreach (TreeNode other in tv.Nodes)
+                            {
+                                if (other == e2.Node || !other.Checked) continue;
+                                other.Checked = false;
+                                foreach (TreeNode child in other.Nodes)
+                                    child.Checked = false;
+                                other.Collapse();
+                            }
+
+                            // Cascade check/uncheck to all child Departments
+                            foreach (TreeNode child in e2.Node.Nodes)
+                                child.Checked = e2.Node.Checked;
+
+                            if (e2.Node.Checked)
+                                e2.Node.Expand();
+                            else
+                                e2.Node.Collapse();
+                        }
+                        // Department level: no cascade needed, just update summary
+                        updateSummary();
+                    }
+                    finally { suppressCheck = false; }
+                };
+
+                // Search: filter Division nodes (collapse/hide non-matching)
+                txtSearch.TextChanged += (s, e2) => {
+                    if (isPlaceholder) return;
+                    string kw = (txtSearch.Text ?? "").Trim().ToLower();
+                    tv.BeginUpdate();
+                    foreach (TreeNode divNode in tv.Nodes)
+                    {
+                        bool divMatch = string.IsNullOrEmpty(kw) ||
+                                        divNode.Text.ToLower().Contains(kw);
+                        bool anyChildMatch = divNode.Nodes.Cast<TreeNode>()
+                                                .Any(cn => cn.Text.ToLower().Contains(kw));
+                        divNode.ForeColor = divNode.Checked
+                            ? Color.FromArgb(0, 51, 102)
+                            : (divNode.Tag is OrgUnitData od && od.AlreadyExistsInParent)
+                                ? Color.DarkGray
+                                : Color.Black;
+                        // ซ่อน node ที่ไม่ match โดย set ForeColor = BackColor เป็น trick
+                        // (WinForms TreeView ไม่รองรับ hide node โดยตรง)
+                        // เปลี่ยนเป็น approach ที่ถูกต้อง: rebuild nodes
+                        divNode.ForeColor = (!divMatch && !anyChildMatch && !string.IsNullOrEmpty(kw))
+                            ? Color.LightGray
+                            : (divNode.Tag is OrgUnitData od2 && od2.AlreadyExistsInParent)
+                                ? Color.DarkGray
+                                : Color.Black;
+                    }
+                    tv.EndUpdate();
+                };
+
+                // ── Confirm action ────────────────────────────────────────────
+                Action confirm = () => {
+                    var selectedDivNode = tv.Nodes.Cast<TreeNode>().FirstOrDefault(n => n.Checked);
+                    if (selectedDivNode == null)
+                    {
+                        MessageBox.Show("กรุณาเลือกฝ่ายก่อน", "แจ้งเตือน",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    var divData = selectedDivNode.Tag as OrgUnitData;
+                    var checkedDepts = selectedDivNode.Nodes.Cast<TreeNode>()
+                        .Where(n => n.Checked)
+                        .Select(n => n.Tag as OrgUnitData)
+                        .Where(d => d != null)
+                        .ToList();
+
+                    _pendingDivision    = divData;
+                    _pendingDepartments = checkedDepts;
+
+                    // Update outer dialog UI
+                    txtCode.Text = divData?.Code   ?? string.Empty;
+                    txtName.Text = divData?.NameTh ?? string.Empty;
+                    _batchSelections = null;
+
+                    int deptCount = checkedDepts.Count;
+                    lblHeader.Text = string.Format(
+                        "สร้างหน่วยงานใหม่\n🏬  {0} — จะสร้างแผนก {1} รายการอัตโนมัติ",
+                        divData?.Code ?? "", deptCount);
+
+                    dlg.DialogResult = DialogResult.OK;
+                    dlg.Close();
+                };
+
+                btnOk.Click    += (s, e2) => confirm();
+                tv.DoubleClick += (s, e2) => {
+                    // Double-click Division node: toggle check and confirm if a Division is selected
+                    var node = tv.SelectedNode;
+                    if (node != null && node.Level == 0)
+                    {
+                        node.Checked = !node.Checked;
+                        if (node.Checked) confirm();
+                    }
+                };
+
+                dlg.Controls.Add(tv);
+                dlg.Controls.Add(pnlSearch);
+                dlg.Controls.Add(pnlFooter);
+                dlg.Controls.Add(pnlHdr);
+                dlg.Shown += (s, e2) => txtSearch.Focus();
+                dlg.ShowDialog(this);
+            }
+        }
+
+        // ── Department Flat Picker (unchanged behavior) ───────────────────────
+        private void ShowDepartmentFlatPicker()
+        {
+            if (_authorityOrgLookupController == null && _employeeDirectoryController == null)
+            {
+                MessageBox.Show("ไม่มีแหล่งข้อมูลแผนก กรุณาตรวจสอบการตั้งค่า",
+                    "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int selectedParentDivisionId = 0;
+            if (cboParent.SelectedItem is OrgUnitItem selParent && selParent.OrgUnit != null)
+                selectedParentDivisionId = selParent.OrgUnit.OrgUnitId;
+
+            var allItems = new List<ListViewItem>();
+
+            try
+            {
+                if (_authorityOrgLookupController != null)
+                {
+                    string selectedDivCode = null;
+                    string selectedDivName = null;
+                    if (cboParent.SelectedItem is OrgUnitItem parentItem && parentItem.OrgUnit != null)
+                    {
+                        selectedDivCode = parentItem.OrgUnit.OrgUnitCode;
+                        selectedDivName = parentItem.OrgUnit.OrgUnitNameTH;
+                    }
+
+                    var hrDivisions = _authorityOrgLookupController.GetDivisions();
+                    int divisionId  = 0;
+
+                    if (!string.IsNullOrEmpty(selectedDivCode))
+                    {
+                        var div = hrDivisions.FirstOrDefault(d =>
+                            string.Equals(d.DivisionCode, selectedDivCode, StringComparison.OrdinalIgnoreCase));
+                        if (div != null) divisionId = div.DivisionID;
+                    }
+                    if (divisionId == 0 && !string.IsNullOrEmpty(selectedDivName))
+                    {
+                        var div = hrDivisions.FirstOrDefault(d =>
+                            string.Equals((d.DivisionName ?? "").Trim(), selectedDivName.Trim(),
+                                StringComparison.OrdinalIgnoreCase));
+                        if (div != null) divisionId = div.DivisionID;
+                    }
+
+                    if (divisionId == 0)
+                    {
+                        MessageBox.Show("กรุณาเลือกฝ่าย (Division) ที่ผูกกับข้อมูล HR ก่อนค้นหาแผนก",
+                            "ไม่พบฝ่ายที่เลือก", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    var depts = _authorityOrgLookupController.GetDepartments()
+                        .Where(d => d.DivisionID == divisionId)
+                        .OrderBy(d => d.DepartmentCode);
+
+                    foreach (var d in depts)
+                    {
+                        bool alreadyExists = selectedParentDivisionId > 0 && _allUnits.Any(u =>
+                            u.IsActive && !u.IsDeleted &&
+                            u.Tier == OrgUnitTier.Department &&
+                            u.ParentId == selectedParentDivisionId &&
+                            string.Equals(u.OrgUnitCode, d.DepartmentCode, StringComparison.OrdinalIgnoreCase));
+
+                        var depName = !string.IsNullOrEmpty(d.DepartmentNameTh)
+                            ? d.DepartmentNameTh : d.DepartmentName;
+
+                        var row = new ListViewItem(d.DepartmentCode ?? "");
+                        row.SubItems.Add(alreadyExists
+                            ? string.Format("{0} (มีแล้วในสังกัดนี้)", depName ?? "")
+                            : depName ?? "");
+                        row.Tag = new OrgUnitData {
+                            Type   = "แผนก",
+                            Code   = d.DepartmentCode,
+                            NameTh = depName,
+                            AlreadyExistsInParent = alreadyExists
+                        };
+                        if (alreadyExists) row.ForeColor = Color.DarkGray;
+                        allItems.Add(row);
+                    }
+                }
+                else if (_employeeDirectoryController != null)
+                {
+                    foreach (var d in _employeeDirectoryController.GetDepartments().OrderBy(x => x.DepartmentCode))
+                    {
+                        var row = new ListViewItem(d.DepartmentCode ?? "");
+                        row.SubItems.Add(d.NameTh ?? "");
+                        row.Tag = new OrgUnitData { Type = "แผนก", Code = d.DepartmentCode, NameTh = d.NameTh };
+                        allItems.Add(row);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("โหลดข้อมูลไม่สำเร็จ: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = new Form())
+            {
+                dlg.Text            = "เลือกแผนก";
+                dlg.ClientSize      = new System.Drawing.Size(420, 380);
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.StartPosition   = FormStartPosition.CenterParent;
+                dlg.MaximizeBox     = false;
+                dlg.MinimizeBox     = false;
+
+                var pnlHdr = new Panel { Dock = DockStyle.Top, Height = 36,
+                    BackColor = Color.FromArgb(0, 51, 102) };
+                pnlHdr.Controls.Add(new Label {
+                    Text      = "🔍  เลือกแผนก",
+                    Dock      = DockStyle.Fill,
+                    ForeColor = Color.White,
+                    Font      = new Font("Segoe UI", 10f, FontStyle.Bold),
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding   = new Padding(10, 0, 0, 0)
+                });
+
+                var pnlFooter = new Panel { Dock = DockStyle.Bottom, Height = 44,
+                    BackColor = Color.FromArgb(243, 243, 243) };
+
+                var btnOk = new Button {
+                    Text      = "✔ เลือก",
+                    Size      = new System.Drawing.Size(90, 28),
+                    BackColor = Color.FromArgb(0, 51, 102),
+                    ForeColor = Color.White,
+                    FlatStyle = FlatStyle.Flat,
+                    Font      = new Font("Segoe UI", 9f, FontStyle.Bold)
+                };
+                btnOk.FlatAppearance.BorderSize = 0;
+
+                var btnCnl = new Button {
+                    Text         = "ยกเลิก",
+                    Size         = new System.Drawing.Size(80, 28),
+                    BackColor    = Color.White,
+                    ForeColor    = Color.FromArgb(80, 80, 80),
+                    FlatStyle    = FlatStyle.Flat,
+                    DialogResult = DialogResult.Cancel
                 };
                 btnCnl.FlatAppearance.BorderColor = Color.FromArgb(190, 190, 190);
 
@@ -287,17 +762,18 @@ namespace CMS.Presentation
                     btnOk.Top   = btnCnl.Top = (pnlFooter.Height - btnOk.Height) / 2;
                 };
 
-                // ── Search box ───────────────────────────────────────────────
                 var pnlSearch = new Panel { Dock = DockStyle.Top, Height = 36,
                     BackColor = Color.White, Padding = new Padding(6, 4, 6, 4) };
                 bool isPlaceholder = true;
                 var txtSearch = new TextBox {
-                    Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10f),
-                    ForeColor = Color.Gray, Text = "ค้นหารหัสหรือชื่อ..."
+                    Dock      = DockStyle.Fill,
+                    Font      = new Font("Segoe UI", 10f),
+                    ForeColor = Color.Gray,
+                    Text      = "ค้นหารหัสหรือชื่อ..."
                 };
                 txtSearch.GotFocus  += (s, e2) => {
                     if (!isPlaceholder) return;
-                    isPlaceholder = false;
+                    isPlaceholder       = false;
                     txtSearch.Text      = "";
                     txtSearch.ForeColor = Color.Black;
                 };
@@ -309,168 +785,40 @@ namespace CMS.Presentation
                 };
                 pnlSearch.Controls.Add(txtSearch);
 
-                // ── ListView ──────────────────────────────────────────────────
                 var lv = new ListView {
-                    Dock = DockStyle.Fill, View = View.Details,
-                    FullRowSelect = true, GridLines = true,
-                    MultiSelect = true, CheckBoxes = true,
-                    Font = new Font("Segoe UI", 9.5f)
+                    Dock          = DockStyle.Fill,
+                    View          = View.Details,
+                    FullRowSelect = true,
+                    GridLines     = true,
+                    MultiSelect   = true,
+                    CheckBoxes    = true,
+                    Font          = new Font("Segoe UI", 9.5f)
                 };
                 lv.Columns.Add("รหัส",     70);
                 lv.Columns.Add("ชื่อ (TH)", 295);
 
                 lv.ItemChecked += (s, e2) => {
                     int cnt = lv.CheckedItems.Count;
-                    lblSelCount.Text = cnt > 0
+                    lblSelCount.Text      = cnt > 0
                         ? string.Format("เลือกแล้ว: {0} รายการ", cnt)
                         : "เลือกแล้ว: 0 รายการ";
                     lblSelCount.ForeColor = cnt > 0 ? Color.FromArgb(0, 120, 0) : Color.FromArgb(0, 51, 102);
-                    btnOk.Text = cnt > 1
+                    btnOk.Text            = cnt > 1
                         ? string.Format("✔ เลือก ({0})", cnt)
                         : "✔ เลือก";
                 };
-
                 lv.ItemCheck += (s, e2) => {
                     if (e2.NewValue != CheckState.Checked) return;
-                    var item = lv.Items[e2.Index];
-                    var d = item.Tag as OrgUnitData;
+                    var d = lv.Items[e2.Index].Tag as OrgUnitData;
                     if (d == null || !d.AlreadyExistsInParent) return;
-
-                    // บล็อกรายการที่มีอยู่แล้วในสังกัดเดียวกัน
                     e2.NewValue = CheckState.Unchecked;
                     MessageBox.Show(
-                        string.Format("รหัส {0} มีอยู่แล้วในสังกัดนี้\nหากต้องการเลือกใหม่ กรุณาลบข้อมูลเดิมก่อน", d.Code),
+                        string.Format("รหัส {0} มีอยู่แล้วในสังกัดนี้", d.Code),
                         "พบข้อมูลซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 };
 
-                // Keep all items for filtering
-                var allItems = new List<ListViewItem>();
-
-                try
-                {
-                    if (isDivision)
-                    {
-                        // ดึงจาก authority lookup ถ้ามี controller, fallback ไป Employee API
-                        if (_authorityOrgLookupController != null)
-                        {
-                            foreach (var v in _authorityOrgLookupController.GetDivisions().OrderBy(x => x.DivisionCode))
-                            {
-                                var row = new ListViewItem(v.DivisionCode ?? "");
-                                row.SubItems.Add(v.DivisionName ?? "");
-                                row.Tag = new OrgUnitData { Type = "ฝ่าย", Code = v.DivisionCode, NameTh = v.DivisionName };
-                                allItems.Add(row);
-                            }
-                        }
-                        else if (_employeeDirectoryController != null)
-                        {
-                            foreach (var v in _employeeDirectoryController.GetDivisions().OrderBy(x => x.DivisionCode))
-                            {
-                                var row = new ListViewItem(v.DivisionCode ?? "");
-                                row.SubItems.Add(v.NameTh ?? "");
-                                row.Tag = new OrgUnitData { Type = "ฝ่าย", Code = v.DivisionCode, NameTh = v.NameTh };
-                                allItems.Add(row);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // หา DivisionID จาก Division ที่เลือกในช่องสังกัด
-                        int divisionId = 0;
-                        int selectedParentDivisionId = 0;
-                        if (cboParent.SelectedItem is OrgUnitItem selParent && selParent.OrgUnit != null)
-                            selectedParentDivisionId = selParent.OrgUnit.OrgUnitId;
-
-                        if (_authorityOrgLookupController != null)
-                        {
-                            // ดึง Division จาก cboParent แล้ว map ไปหา DivisionID ใน HR_Division
-                            string selectedDivCode = null;
-                            string selectedDivName = null;
-                            if (cboParent.SelectedItem is OrgUnitItem parentItem && parentItem.OrgUnit != null)
-                            {
-                                selectedDivCode = parentItem.OrgUnit.OrgUnitCode;
-                                selectedDivName = parentItem.OrgUnit.OrgUnitNameTH;
-                            }
-
-                            var hrDivisions = _authorityOrgLookupController.GetDivisions();
-
-                            if (!string.IsNullOrEmpty(selectedDivCode))
-                            {
-                                var div = hrDivisions
-                                    .FirstOrDefault(d => string.Equals(d.DivisionCode, selectedDivCode,
-                                        StringComparison.OrdinalIgnoreCase));
-                                if (div != null) divisionId = div.DivisionID;
-                            }
-
-                            // fallback: ถ้า code ไม่ match (เช่น code ถูก normalize ใน OrgUnit)
-                            if (divisionId == 0 && !string.IsNullOrEmpty(selectedDivName))
-                            {
-                                var divByName = hrDivisions.FirstOrDefault(d =>
-                                    string.Equals((d.DivisionName ?? string.Empty).Trim(),
-                                                  selectedDivName.Trim(),
-                                                  StringComparison.OrdinalIgnoreCase));
-                                if (divByName != null) divisionId = divByName.DivisionID;
-                            }
-
-                            if (divisionId == 0)
-                            {
-                                MessageBox.Show(
-                                    "กรุณาเลือกฝ่าย (Division) ที่ผูกกับข้อมูล HR ก่อนค้นหาแผนก",
-                                    "ไม่พบฝ่ายที่เลือก", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                return;
-                            }
-
-                            var allDepartments = _authorityOrgLookupController.GetDepartments();
-                            var depts = allDepartments.Where(d => d.DivisionID == divisionId);
-
-                            foreach (var d in depts.OrderBy(x => x.DepartmentCode))
-                            {
-                                bool alreadyExistsInParent = selectedParentDivisionId > 0 && _allUnits.Any(u =>
-                                    u.IsActive && !u.IsDeleted &&
-                                    u.Tier == OrgUnitTier.Department &&
-                                    u.ParentId == selectedParentDivisionId &&
-                                    string.Equals(u.OrgUnitCode, d.DepartmentCode, StringComparison.OrdinalIgnoreCase));
-
-                                var row = new ListViewItem(d.DepartmentCode ?? "");
-                                var depName = !string.IsNullOrEmpty(d.DepartmentNameTh)
-                                    ? d.DepartmentNameTh
-                                    : d.DepartmentName;
-                                row.SubItems.Add(alreadyExistsInParent
-                                    ? string.Format("{0} (มีแล้วในสังกัดนี้)", depName ?? "")
-                                    : depName ?? "");
-                                row.Tag = new OrgUnitData
-                                {
-                                    Type = "แผนก",
-                                    Code = d.DepartmentCode,
-                                    NameTh = depName,
-                                    AlreadyExistsInParent = alreadyExistsInParent
-                                };
-                                if (alreadyExistsInParent)
-                                    row.ForeColor = Color.DarkGray;
-                                allItems.Add(row);
-                            }
-                        }
-                        else if (_employeeDirectoryController != null)
-                        {
-                            foreach (var d in _employeeDirectoryController.GetDepartments().OrderBy(x => x.DepartmentCode))
-                            {
-                                var row = new ListViewItem(d.DepartmentCode ?? "");
-                                row.SubItems.Add(d.NameTh ?? "");
-                                row.Tag = new OrgUnitData { Type = "แผนก", Code = d.DepartmentCode, NameTh = d.NameTh };
-                                allItems.Add(row);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("โหลดข้อมูลไม่สำเร็จ: " + ex.Message, "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-
-                // Populate ListView initially
                 lv.Items.AddRange(allItems.ToArray());
 
-                // Filter on text change
                 txtSearch.TextChanged += (s, e2) => {
                     if (isPlaceholder) return;
                     string kw = txtSearch.Text.Trim().ToLower();
@@ -485,82 +833,64 @@ namespace CMS.Presentation
                     lv.EndUpdate();
                 };
 
-                // ── Confirm ───────────────────────────────────────────────────
                 Action confirm = () => {
-                    // Collect checked items; fall back to all selected rows when nothing checked
                     var checkedItems = lv.CheckedItems.Cast<ListViewItem>().ToList();
                     if (checkedItems.Count == 0 && lv.SelectedItems.Count > 0)
                         checkedItems = lv.SelectedItems.Cast<ListViewItem>().ToList();
                     if (checkedItems.Count == 0) return;
 
-                    // สร้างหน่วยงานใหม่แยกกันเสมอ (ไม่ link ข้าม SubCommittee)
-                    var existingCodes = new List<string>();
-                    var actionItems   = new List<OrgUnitData>();
+                    var existing = new List<string>();
+                    var toCreate = new List<OrgUnitData>();
 
                     foreach (var row in checkedItems)
                     {
                         var d = row.Tag as OrgUnitData;
                         if (d == null) continue;
 
-                        var existing = _allUnits.FirstOrDefault(u =>
-                            string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase)
-                            && u.IsActive && !u.IsDeleted);
-
-                        var selectedTierForCheck = cboTier.SelectedItem is OrgUnitTier t ? t : OrgUnitTier.Division;
                         int? parentId = null;
                         if (cboParent.SelectedItem is OrgUnitItem cpi && cpi.OrgUnit != null)
                             parentId = cpi.OrgUnit.OrgUnitId;
 
-                        bool duplicateInParent = parentId.HasValue && _allUnits.Any(u =>
-                            u.IsActive && !u.IsDeleted &&
-                            u.Tier == selectedTierForCheck &&
-                            u.ParentId == parentId.Value &&
-                            string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase));
+                        bool dup = (parentId.HasValue && _allUnits.Any(u =>
+                                u.IsActive && !u.IsDeleted &&
+                                u.Tier == OrgUnitTier.Department &&
+                                u.ParentId == parentId.Value &&
+                                string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase))) ||
+                            _allUnits.Any(u =>
+                                string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase)
+                                && u.IsActive && !u.IsDeleted);
 
-                        if (existing == null && !duplicateInParent)
-                        {
-                            // ยังไม่มีในระบบ — สร้างใหม่
-                            actionItems.Add(d);
-                        }
-                        else
-                        {
-                            existingCodes.Add(d.Code);
-                        }
+                        if (dup) existing.Add(d.Code);
+                        else     toCreate.Add(d);
                     }
 
-                    if (existingCodes.Count > 0)
-                    {
+                    if (existing.Count > 0)
                         MessageBox.Show(
-                            string.Format("พบรหัสที่มีอยู่แล้วในสังกัด/ระบบ:\n  • {0}\n\nรายการซ้ำจะไม่ถูกเลือก\nหากต้องการเลือกใหม่ กรุณาลบข้อมูลเดิมก่อน", 
-                                string.Join("\n  • ", existingCodes.Distinct())),
+                            string.Format("พบรหัสซ้ำ:\n  • {0}\n\nรายการซ้ำจะไม่ถูกเลือก",
+                                string.Join("\n  • ", existing.Distinct())),
                             "พบข้อมูลซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
 
-                    if (actionItems.Count == 0)
-                    {
-                        return;
-                    }
+                    if (toCreate.Count == 0) return;
 
-                    if (actionItems.Count == 1)
+                    if (toCreate.Count == 1)
                     {
-                        var data = actionItems[0];
-                        txtName.Text = data.NameTh ?? string.Empty;
-                        txtCode.Text = data.Code   ?? string.Empty;
+                        txtCode.Text     = toCreate[0].Code   ?? string.Empty;
+                        txtName.Text     = toCreate[0].NameTh ?? string.Empty;
                         _batchSelections = null;
                     }
                     else
                     {
-                        _batchSelections = actionItems;
-                        txtCode.Text = string.Format("({0} รายการ)", _batchSelections.Count);
-                        txtName.Text = string.Join(", ", _batchSelections.Take(3).Select(d => d.Code));
+                        _batchSelections = toCreate;
+                        txtCode.Text = string.Format("({0} รายการ)", toCreate.Count);
+                        txtName.Text = string.Join(", ", toCreate.Take(3).Select(d => d.Code));
                     }
                     dlg.DialogResult = DialogResult.OK;
                     dlg.Close();
                 };
+
                 btnOk.Click    += (s, e2) => confirm();
                 lv.DoubleClick += (s, e2) => confirm();
 
-                // ── Add controls: Fill ก่อน → Bottom → Top ────────────────────
                 dlg.Controls.Add(lv);
                 dlg.Controls.Add(pnlSearch);
                 dlg.Controls.Add(pnlFooter);
@@ -572,15 +902,44 @@ namespace CMS.Presentation
 
         private class OrgUnitData
         {
-            public string Type   { get; set; }
-            public string Code   { get; set; }
-            public string NameTh { get; set; }
+            public string Type                 { get; set; }
+            public string Code                 { get; set; }
+            public string NameTh               { get; set; }
             public bool   AlreadyExistsInParent { get; set; }
+            public int    DivisionId           { get; set; }
         }
 
         private void OnOkClick(object sender, EventArgs e)
         {
-            // Batch mode: multiple items selected from the picker dialog
+            // Hierarchical mode: Division + Departments selected from TreeView picker
+            if (_pendingDivision != null)
+            {
+                int? subCommitteeId = null;
+                if (cboParent.SelectedItem is OrgUnitItem hpi && hpi.OrgUnit != null)
+                    subCommitteeId = hpi.OrgUnit.OrgUnitId;
+
+                HierarchicalResult = new HierarchicalBatchResult
+                {
+                    DivisionRequest = new CreateOrgUnitRequest {
+                        OrgUnitCode     = _pendingDivision.Code,
+                        OrgUnitNameTH   = _pendingDivision.NameTh,
+                        OrgUnitNameEN   = _pendingDivision.NameTh,
+                        OrgUnitType     = (int)OrgUnitTier.Division,
+                        ParentOrgUnitID = subCommitteeId
+                    },
+                    DepartmentRequests = (_pendingDepartments ?? new List<OrgUnitData>())
+                        .Select(d => new CreateOrgUnitRequest {
+                            OrgUnitCode     = d.Code,
+                            OrgUnitNameTH   = d.NameTh,
+                            OrgUnitNameEN   = d.NameTh,
+                            OrgUnitType     = (int)OrgUnitTier.Department,
+                            ParentOrgUnitID = null  // Presenter fills this after Division is created
+                        }).ToList()
+                };
+                return;
+            }
+
+            // Batch mode: multiple items selected from the department flat picker
             if (_batchSelections != null && _batchSelections.Count > 0)
             {
                 var batchTier = cboTier.SelectedItem is OrgUnitTier bt ? bt : OrgUnitTier.Division;
@@ -589,11 +948,11 @@ namespace CMS.Presentation
                     batchParentId = batchSel.OrgUnit.OrgUnitId;
 
                 BatchResults = _batchSelections.Select(d => new CreateOrgUnitRequest {
-                    OrgUnitNameTH        = d.NameTh,
-                    OrgUnitNameEN        = d.NameTh,
-                    OrgUnitCode          = d.Code,
-                    OrgUnitType          = (int)batchTier,
-                    ParentOrgUnitID      = batchParentId
+                    OrgUnitNameTH   = d.NameTh,
+                    OrgUnitNameEN   = d.NameTh,
+                    OrgUnitCode     = d.Code,
+                    OrgUnitType     = (int)batchTier,
+                    ParentOrgUnitID = batchParentId
                 }).ToList();
                 return;
             }

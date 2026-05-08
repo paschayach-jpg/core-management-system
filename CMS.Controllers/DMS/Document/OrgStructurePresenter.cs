@@ -143,7 +143,6 @@ namespace CMS.Controllers.DMS.Document
                 try
                 {
                     _service.CreateOrgUnit(req, _user);
-
                     saved.Add(req.OrgUnitNameTH ?? req.OrgUnitCode);
                 }
                 catch (Exception ex)
@@ -167,6 +166,63 @@ namespace CMS.Controllers.DMS.Document
                 _view.ShowInfo(sb.ToString());
             else if (failed.Count > 0)
                 _view.ShowError(sb.ToString());
+
+            RefreshCurrentView();
+        }
+
+        // สร้าง Division ก่อน ได้ ID จริง แล้วค่อยสร้าง Departments ที่ผูกกับ Division นั้น
+        public void CreateDivisionWithDepartments(
+            CreateOrgUnitRequest divisionRequest,
+            IList<CreateOrgUnitRequest> departmentRequests)
+        {
+            if (divisionRequest == null) return;
+
+            OrgUnit newDivision;
+            try
+            {
+                newDivision = _service.CreateOrgUnit(divisionRequest, _user);
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError(string.Format("ไม่สามารถสร้างฝ่าย '{0}': {1}",
+                    divisionRequest.OrgUnitNameTH, ex.Message));
+                return;
+            }
+
+            var saved  = new List<string> { divisionRequest.OrgUnitNameTH ?? divisionRequest.OrgUnitCode };
+            var failed = new List<string>();
+
+            var depts = departmentRequests?.Where(r => r != null).ToList()
+                        ?? new List<CreateOrgUnitRequest>();
+
+            foreach (var deptReq in depts)
+            {
+                deptReq.ParentOrgUnitID = newDivision.OrgUnitId;
+                try
+                {
+                    _service.CreateOrgUnit(deptReq, _user);
+                    saved.Add(deptReq.OrgUnitNameTH ?? deptReq.OrgUnitCode);
+                }
+                catch (Exception ex)
+                {
+                    failed.Add(string.Format("{0}: {1}", deptReq.OrgUnitCode ?? deptReq.OrgUnitNameTH, ex.Message));
+                }
+            }
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendFormat("สร้างสำเร็จ {0} หน่วยงาน:\n  • {1}\n",
+                saved.Count, string.Join("\n  • ", saved));
+            if (failed.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendFormat("ล้มเหลว {0} รายการ:\n  • {1}",
+                    failed.Count, string.Join("\n  • ", failed));
+                _view.ShowError(sb.ToString());
+            }
+            else
+            {
+                _view.ShowInfo(sb.ToString());
+            }
 
             RefreshCurrentView();
         }

@@ -9,7 +9,7 @@ namespace CMS.Presentation
 {
     internal partial class DuplicateFileChoiceDialog : Form
     {
-        public enum Choice { SaveCopy, SkipDuplicates, Cancel }
+        public enum Choice { SaveCopy, Replace, SkipDuplicates, Cancel }
 
         public Choice SelectedChoice { get; private set; } = Choice.Cancel;
 
@@ -42,9 +42,11 @@ namespace CMS.Presentation
         private void PnlFooter_Resize(object sender, EventArgs e)
         {
             _btnCancel.Left = _pnlFooter.ClientSize.Width - _btnCancel.Width - 12;
-            _btnOk.Left = _btnCancel.Left - _btnOk.Width - 8;
-            _btnOk.Top = _btnCancel.Top = (_pnlFooter.Height - _btnOk.Height) / 2 + 1;
+            _btnOk.Left     = _btnCancel.Left - _btnOk.Width - 8;
+            _btnOk.Top      = _btnCancel.Top = (_pnlFooter.Height - _btnOk.Height) / 2 + 1;
         }
+
+        // ── SaveCopy card ─────────────────────────────────────────────────────
 
         private void PnlSaveCopy_Paint(object sender, PaintEventArgs e)
         {
@@ -72,6 +74,36 @@ namespace CMS.Presentation
             Confirm();
         }
 
+        // ── Replace card ──────────────────────────────────────────────────────
+
+        private void PnlReplace_Paint(object sender, PaintEventArgs e)
+        {
+            DrawCardBorder(e.Graphics, _pnlReplace, Choice.Replace);
+        }
+
+        private void PnlReplace_MouseEnter(object sender, EventArgs e)
+        {
+            OnCardHover(_pnlReplace, Choice.Replace, true);
+        }
+
+        private void PnlReplace_MouseLeave(object sender, EventArgs e)
+        {
+            OnCardHover(_pnlReplace, Choice.Replace, false);
+        }
+
+        private void PnlReplace_Click(object sender, EventArgs e)
+        {
+            SelectCard(Choice.Replace);
+        }
+
+        private void PnlReplace_DoubleClick(object sender, EventArgs e)
+        {
+            SelectCard(Choice.Replace);
+            Confirm();
+        }
+
+        // ── Skip card ─────────────────────────────────────────────────────────
+
         private void PnlSkip_Paint(object sender, PaintEventArgs e)
         {
             DrawCardBorder(e.Graphics, _pnlSkip, Choice.SkipDuplicates);
@@ -98,11 +130,13 @@ namespace CMS.Presentation
             Confirm();
         }
 
+        // ── Drawing helpers ───────────────────────────────────────────────────
+
         private void DrawCardBorder(Graphics g, Panel panel, Choice choice)
         {
-            bool isSelected = _hoveredOrSelected == choice && _btnOk.Enabled && _hoveredOrSelected != Choice.Cancel;
+            bool isSelected = _btnOk.Enabled && _hoveredOrSelected == choice && _hoveredOrSelected != Choice.Cancel;
             Color borderColor = isSelected ? Color.FromArgb(0, 120, 215) : Color.FromArgb(210, 210, 210);
-            int width = isSelected ? 2 : 1;
+            int   width       = isSelected ? 2 : 1;
 
             using (var pen = new Pen(borderColor, width))
             {
@@ -121,10 +155,10 @@ namespace CMS.Presentation
         {
             var path = new GraphicsPath();
             int d = radius * 2;
-            path.AddArc(bounds.X, bounds.Y, d, d, 180, 90);
-            path.AddArc(bounds.Right - d, bounds.Y, d, d, 270, 90);
-            path.AddArc(bounds.Right - d, bounds.Bottom - d, d, d, 0, 90);
-            path.AddArc(bounds.X, bounds.Bottom - d, d, d, 90, 90);
+            path.AddArc(bounds.X,           bounds.Y,            d, d, 180, 90);
+            path.AddArc(bounds.Right - d,   bounds.Y,            d, d, 270, 90);
+            path.AddArc(bounds.Right - d,   bounds.Bottom - d,   d, d,   0, 90);
+            path.AddArc(bounds.X,           bounds.Bottom - d,   d, d,  90, 90);
             path.CloseFigure();
             return path;
         }
@@ -144,11 +178,14 @@ namespace CMS.Presentation
         {
             _hoveredOrSelected = choice;
 
-            foreach (var entry in new[]
+            var cards = new[]
             {
                 new KeyValuePair<Panel, Choice>(_pnlSaveCopy, Choice.SaveCopy),
-                new KeyValuePair<Panel, Choice>(_pnlSkip, Choice.SkipDuplicates)
-            })
+                new KeyValuePair<Panel, Choice>(_pnlReplace,  Choice.Replace),
+                new KeyValuePair<Panel, Choice>(_pnlSkip,     Choice.SkipDuplicates),
+            };
+
+            foreach (var entry in cards)
             {
                 bool selected = entry.Value == choice;
                 entry.Key.BackColor = selected ? Color.FromArgb(235, 245, 255) : Color.White;
@@ -164,7 +201,7 @@ namespace CMS.Presentation
         {
             if (!_btnOk.Enabled) return;
             SelectedChoice = _hoveredOrSelected;
-            DialogResult = DialogResult.OK;
+            DialogResult   = DialogResult.OK;
             Close();
         }
     }

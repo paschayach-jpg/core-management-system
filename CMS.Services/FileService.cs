@@ -151,6 +151,30 @@ namespace CMS.Services
                 throw new UnauthorizedAccessException(string.Format(
                     "User {0} does not have Read permission on folder {1}.", user.UserID, doc.FolderID));
 
+            if (string.IsNullOrEmpty(doc.PhysicalPath))
+            {
+                _loggingService.Error(string.Format(
+                    "FileService: PhysicalPath is null/empty for file ID {0} ('{1}').", fileId, doc.OriginalFileName), null);
+                return new FileDownloadResult
+                {
+                    FileName = doc.OriginalFileName,
+                    Success = false,
+                    ErrorMessage = "ไม่พบที่จัดเก็บไฟล์ในระบบ กรุณาติดต่อผู้ดูแลระบบ"
+                };
+            }
+
+            if (!_networkDriveHelper.FileExists(doc.PhysicalPath))
+            {
+                _loggingService.Error(string.Format(
+                    "FileService: File not found at path '{0}' for file ID {1}.", doc.PhysicalPath, fileId), null);
+                return new FileDownloadResult
+                {
+                    FileName = doc.OriginalFileName,
+                    Success = false,
+                    ErrorMessage = string.Format("ไม่พบไฟล์ในพื้นที่จัดเก็บ ({0})", System.IO.Path.GetFileName(doc.PhysicalPath))
+                };
+            }
+
             Stream fileStream;
             try
             {
@@ -159,12 +183,12 @@ namespace CMS.Services
             catch (Exception ex)
             {
                 _loggingService.Error(string.Format(
-                    "FileService: Failed to read file '{0}' from network drive.", doc.PhysicalPath), ex);
+                    "FileService: Failed to read file '{0}' from network drive. Error: {1}", doc.PhysicalPath, ex.Message), ex);
                 return new FileDownloadResult
                 {
                     FileName = doc.OriginalFileName,
                     Success = false,
-                    ErrorMessage = "The file could not be read from storage."
+                    ErrorMessage = string.Format("เปิดไฟล์ไม่ได้: {0}", ex.Message)
                 };
             }
 

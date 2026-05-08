@@ -380,6 +380,12 @@ namespace CMS.Presentation
                         return;
                     }
                 }
+                else if (choice == DuplicateFileChoiceDialog.Choice.Replace)
+                {
+                    // แทนที่ไฟล์เดิม — ตั้ง flag ให้ FileService เขียนทับ
+                    foreach (var req in _pendingFiles)
+                        req.OverwriteExisting = true;
+                }
                 // SaveCopy → ดำเนินการต่อโดย FileService จะตั้งชื่อ copy อัตโนมัติ
             }
 

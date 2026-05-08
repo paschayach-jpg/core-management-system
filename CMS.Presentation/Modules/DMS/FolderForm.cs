@@ -451,6 +451,27 @@ namespace CMS.Presentation
                 int level = hasFolder ? SelectedFolder.ConfidentialityLevel : 0;
                 bool isPrivileged = _user.AppRole >= 3;
 
+                // ถ้า selected folder เป็น Auto4 root folder (1HC/2SC/3NC/4PC) → ปิดเมนูแก้ไขทั้งหมด (BR-001-07)
+                bool isAuto4Root = hasFolder && IsAuto4Folder(SelectedFolder)
+                    && (!SelectedFolder.ParentFolderID.HasValue || SelectedFolder.ParentFolderID == 0);
+                if (isAuto4Root)
+                {
+                    mnuNewFolder.Enabled = false;
+                    mnuOpen.Enabled = true;
+                    mnuDownload.Enabled = false;
+                    mnuRename.Enabled = false;
+                    mnuMove.Enabled = false;
+                    mnuDelete.Enabled = false;
+                    mnuArchive.Enabled = false;
+                    mnuShare.Enabled = false;
+                    mnuPermission.Enabled = isPrivileged;
+                    mnuMyPermission.Enabled = true;
+                    mnuSharedWithMe.Enabled = true;
+                    mnuProperties.Enabled = true;
+                    mnuAddQuickAccess.Enabled = hasFolder && _quickAccessController != null;
+                    return;
+                }
+
                 bool canView = isPrivileged || (hasFolder && _user.CanViewFolder(level));
                 bool canAdd = isPrivileged || (hasFolder && _user.CanAddToFolder(level));
                 bool canEdit = isPrivileged || (hasFolder && _user.CanEditFolder(level));
@@ -464,7 +485,8 @@ namespace CMS.Presentation
                 mnuMove.Enabled = hasFolder && canEdit && _folderCommandController != null;
                 mnuDelete.Enabled = canDeleteFolder;
                 mnuArchive.Enabled = hasFolder && canEdit;
-                mnuShare.Enabled = hasFolder && canView && _shareCommandController != null;
+                mnuShare.Enabled = hasFolder && canView && _shareCommandController != null
+                    && SelectedFolder.ConfidentialityLevel != 1;
                 mnuPermission.Enabled = hasFolder && isPrivileged;
                 mnuMyPermission.Enabled = true;
                 mnuSharedWithMe.Enabled = true;
@@ -550,6 +572,29 @@ namespace CMS.Presentation
                 bool isAtRoot = !_currentNavFolderId.HasValue;
                 bool hasFolder = !isAtRoot && (_currentNavFolderId.HasValue || SelectedFolder != null);
 
+                // อยู่ที่ org level (มองเห็น 4 folder หลักเป็น content) → ยกเลิก menu ทั้งหมด
+                // upload/create folder ต้องอยู่ใน 4 folder หลักเท่านั้น
+                if (isAtRoot)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
+                // right-click บน Auto4 root folder ใน content list → ยกเลิก menu (ห้ามแก้ไข root folder)
+                var clickedFolders = contentsListView.SelectedItems
+                    .Cast<ListViewItem>()
+                    .Select(item => item.Tag as Folder)
+                    .Where(f => f != null)
+                    .ToList();
+                bool clickedOnAuto4Root = !hasFileSelection
+                    && clickedFolders.Count > 0
+                    && clickedFolders.All(f => IsAuto4Folder(f) && (!f.ParentFolderID.HasValue || f.ParentFolderID == 0));
+                if (clickedOnAuto4Root)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
                 // level ของ folder ที่กำลังดูอยู่
                 int level = _lastSelectedFolder != null ? _lastSelectedFolder.ConfidentialityLevel : 0;
                 bool isPrivileged = _user.AppRole >= 3;
@@ -598,7 +643,9 @@ namespace CMS.Presentation
                 mnuArchive.Enabled = singleFileSelected && canEdit;
                 mnuHide.Enabled = hasFileSelection && !hasFolderSelection && canEdit && _fileCommandController != null;
                 mnuUnhide.Enabled = hasFileSelection && !hasFolderSelection && canEdit && _fileCommandController != null;
-                mnuShare.Enabled = singleFileSelected && canView && _shareCommandController != null;
+                bool singleFolderInContent = contentFolder != null && selectedFoldersInContent.Count == 1
+                    && !hasFileSelection && contentFolder.ConfidentialityLevel != 1;
+                mnuShare.Enabled = ((hasFileSelection && !hasFolderSelection) || singleFolderInContent) && canView && _shareCommandController != null;
                 mnuPermission.Enabled = isPrivileged;
                 mnuMyPermission.Enabled = true;
                 mnuSharedWithMe.Enabled = true;
@@ -1016,6 +1063,11 @@ namespace CMS.Presentation
                             return;
                         }
                     }
+                    else if (dlg.SelectedChoice == DuplicateFileChoiceDialog.Choice.Replace)
+                    {
+                        // แทนที่ไฟล์เดิม — ส่ง flag ไปยัง FileCopyProgressForm
+                        // (FileCopyProgressForm / FileCommandController จะ handle overwrite)
+                    }
                     // Choice.SaveCopy → copy ทุกไฟล์ โดย service จะ rename อัตโนมัติ
                 }
             }
@@ -1190,8 +1242,8 @@ namespace CMS.Presentation
 
             _btnConfView = new Button
             {
-                Text = "🔒 ความลับ",
-                Width = btnWidth,
+                Text = "🔒 ตามชั้นความลับ",
+                Width = 120,
                 Height = 28,
                 Location = new Point(5 + (btnWidth * 2) + 4, 5),
                 FlatStyle = FlatStyle.Flat,
@@ -1987,8 +2039,11 @@ namespace CMS.Presentation
                 Owner = this,
                 User = _user,
                 MenuText = menuText,
-                SelectedFolder = SelectedFolder,
+                SelectedFolder = (contentsListView.SelectedItems.Count > 0
+                    ? contentsListView.SelectedItems[0].Tag as Folder
+                    : null) ?? SelectedFolder,
                 SelectedFile = SelectedFile,
+                SelectedFiles = GetSelectedFilesFromContents(),
                 FolderService = null,
                 OrgStructureService = null,
                 OrgLookupController = _orgLookupController,
@@ -2759,7 +2814,7 @@ namespace CMS.Presentation
                             : "Folder");
                         item.SubItems.Add(ConfidentialityShort(f.ConfidentialityLevel));
                         item.SubItems.Add(FormatBytes(f.FolderSizeBytes));
-                        item.SubItems.Add(f.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm"));
+                        item.SubItems.Add(f.CreatedAt.ToString("dd/MM/yy HH:mm"));
                         item.SubItems.Add("—");
                         item.SubItems.Add("—");
                         item.SubItems.Add(ouName);
@@ -3190,16 +3245,16 @@ namespace CMS.Presentation
             listImageList.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
             contentsListView.SmallImageList = listImageList;
 
-            // ── LargeImageList (64×64) for Large Icon view ────────────────────
-            var largeImageList = new ImageList { ImageSize = new Size(64, 64), ColorDepth = ColorDepth.Depth32Bit };
-            largeImageList.Images.Add("folder", new Bitmap(Properties.Resources.folder, 64, 64));
-            try { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.lightning_bolt1, 64, 64)); }
-            catch { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.book_red1.ToBitmap(), 64, 64)); }
-            largeImageList.Images.Add("book_red", new Bitmap(Properties.Resources.lightning_bolt1, 64, 64));
-            largeImageList.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange, 64, 64));
-            largeImageList.Images.Add("book_bule", new Bitmap(Properties.Resources.book_bule, 64, 64));
-            largeImageList.Images.Add("book_green", new Bitmap(Properties.Resources.book_green, 64, 64));
-            largeImageList.Images.Add("file_docs", new Bitmap(Properties.Resources.File_docs.ToBitmap(), 64, 64));
+            // ── LargeImageList (48×48) for Large Icon view ────────────────────
+            var largeImageList = new ImageList { ImageSize = new Size(48, 48), ColorDepth = ColorDepth.Depth32Bit };
+            largeImageList.Images.Add("folder", new Bitmap(Properties.Resources.folder, 48, 48));
+            try { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.lightning_bolt1, 48, 48)); }
+            catch { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.book_red1.ToBitmap(), 48, 48)); }
+            largeImageList.Images.Add("book_red", new Bitmap(Properties.Resources.lightning_bolt1, 48, 48));
+            largeImageList.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange, 48, 48));
+            largeImageList.Images.Add("book_bule", new Bitmap(Properties.Resources.book_bule, 48, 48));
+            largeImageList.Images.Add("book_green", new Bitmap(Properties.Resources.book_green, 48, 48));
+            largeImageList.Images.Add("file_docs", new Bitmap(Properties.Resources.File_docs.ToBitmap(), 48, 48));
             contentsListView.LargeImageList = largeImageList;
 
             // ── View toggle buttons (Details / Tile / Large Icons) ───────────
@@ -3526,7 +3581,7 @@ namespace CMS.Presentation
                     : "Folder");                                          // ประเภท
                 item.SubItems.Add(ConfidentialityShort(folder.ConfidentialityLevel)); // ระดับ
                 item.SubItems.Add(FormatBytes(folder.FolderSizeBytes));              // ขนาด
-                item.SubItems.Add(folder.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")); // วันที่
+                item.SubItems.Add(folder.CreatedAt.ToString("dd/MM/yy HH:mm")); // วันที่
                 item.SubItems.Add(folder.CreatedByName ?? "—");                      // โดย
                 item.SubItems.Add("—");                                              // Ver
                 item.SubItems.Add(folder.OrgUnitName ?? "—");                        // หน่วยงาน
@@ -3573,7 +3628,7 @@ namespace CMS.Presentation
                 item.SubItems.Add(file.FileExtension.TrimStart('.').ToUpper()); // ประเภท
                 item.SubItems.Add(ConfidentialityShort(file.ConfidentialityLevel)); // ระดับ
                 item.SubItems.Add(FormatBytes(file.FileSizeBytes));              // ขนาด
-                item.SubItems.Add(file.UploadedAt.ToLocalTime().ToString("dd/MM/yy HH:mm")); // วันที่
+                item.SubItems.Add(file.UploadedAt.ToString("dd/MM/yy HH:mm")); // วันที่
                 item.SubItems.Add(file.UploadedByName ?? "—");                  // โดย
                 item.SubItems.Add(file.Version.ToString());                      // Ver
                 item.SubItems.Add(file.OrgUnitName ?? "—");                      // หน่วยงาน
@@ -3801,6 +3856,16 @@ namespace CMS.Presentation
             return null;
         }
 
+        public Folder SelectedFolderInContents
+        {
+            get
+            {
+                if (contentsListView.SelectedItems.Count > 0)
+                    return contentsListView.SelectedItems[0].Tag as Folder;
+                return null;
+            }
+        }
+
         public Folder SelectedRecycleBinFolder => null;  // Recycle bin moved to RecycleBinForm
 
         public FileDocument SelectedFile
@@ -3811,6 +3876,8 @@ namespace CMS.Presentation
                 return contentsListView.SelectedItems[0].Tag as FileDocument;
             }
         }
+
+        public List<FileDocument> SelectedFiles => GetSelectedFilesFromContents();
 
         // -----------------------------------------------------------------------
         // Mouse event handlers for better ListView interaction
@@ -4057,7 +4124,7 @@ namespace CMS.Presentation
                 new { Label = "ชนิด",  Value = file.FileExtension.TrimStart('.').ToUpper() },
                 new { Label = "ระดับ", Value = ConfidentialityShort(file.ConfidentialityLevel) },
                 new { Label = "ขนาด",  Value = FormatBytes(file.FileSizeBytes) },
-                new { Label = "วันที่", Value = file.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy") }
+                new { Label = "วันที่", Value = file.UploadedAt.ToString("dd/MM/yyyy") }
             };
 
             int rowH = 22;
@@ -8603,7 +8670,7 @@ namespace CMS.Presentation
                 item.SubItems.Add(file.FileExtension.TrimStart('.').ToUpper());
                 item.SubItems.Add(ConfidentialityShort(file.ConfidentialityLevel));
                 item.SubItems.Add(FormatBytes(file.FileSizeBytes));
-                item.SubItems.Add(file.UploadedAt.ToLocalTime().ToString("dd/MM/yy HH:mm"));
+                item.SubItems.Add(file.UploadedAt.ToString("dd/MM/yy HH:mm"));
                 item.SubItems.Add(file.UploadedByName ?? "—");
                 item.SubItems.Add(file.Version.ToString());
                 item.SubItems.Add(file.OrgUnitName ?? "—");

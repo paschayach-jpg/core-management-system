@@ -81,11 +81,11 @@ namespace CMS.Presentation.Modules.ImportFile
             Controls.Add(pnlHeader);
             Controls.Add(pnlFooter);
 
-            // Resize: ขยาย grid และ cards ตาม form
+            // Resize: จัดความกว้าง card ให้เท่ากัน (TableLayoutPanel จัดการ Y อัตโนมัติแล้ว)
             Resize += (s, e) =>
             {
-                if (pnlCards != null)
-                    DistributeCards(pnlCards, pnlBody.ClientSize.Width - 2);
+                if (pnlCards != null && pnlCards.Width > 0)
+                    DistributeCards(pnlCards, pnlCards.Width);
             };
         }
 
@@ -154,16 +154,6 @@ namespace CMS.Presentation.Modules.ImportFile
         // ── Body ────────────────────────────────────────────────────────────
         private Panel BuildBody(out DataGridView gridOut, out FlowLayoutPanel cardsOut, out DataGridView shareGridOut)
         {
-            // ── Layout constants ─────────────────────────────────────────────
-            const int SEC1_Y    = 8;
-            const int CARDS_Y   = 40;
-            const int CARDS_H   = 170;
-            const int SEC2_Y    = CARDS_Y + CARDS_H + 12;   // 222
-            const int GRID2_Y   = SEC2_Y + 26 + 6;          // 254
-            const int GRID2_H   = 140;                       // fixed
-            const int SEC3_Y    = GRID2_Y + GRID2_H + 8;    // 402
-            const int GRID3_Y   = SEC3_Y + 26 + 6;          // 434
-
             var pnl = new Panel
             {
                 Dock    = DockStyle.Fill,
@@ -172,12 +162,11 @@ namespace CMS.Presentation.Modules.ImportFile
 
             // ── Section 1: FolderAuthorityConfig ────────────────────────────
             var sec1 = MakeSectionBar("เงื่อนไขที่ 1  —  สิทธิ์ตาม FolderAuthorityConfig  (ตำแหน่ง / แผนก / ฝ่าย / LevelCode)");
-            sec1.Location = new Point(1, SEC1_Y);
+            sec1.Dock = DockStyle.Fill;
 
             var pnlCards = new FlowLayoutPanel
             {
-                Location      = new Point(1, CARDS_Y),
-                Height        = CARDS_H,
+                Dock          = DockStyle.Fill,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents  = false,
                 AutoScroll    = false,
@@ -188,38 +177,49 @@ namespace CMS.Presentation.Modules.ImportFile
 
             // ── Section 2: FolderPermission ACL ─────────────────────────────
             var sec2 = MakeSectionBar("เงื่อนไขที่ 2  —  สิทธิ์เฉพาะ Folder  (FolderPermission / ACL)");
-            sec2.Location = new Point(1, SEC2_Y);
+            sec2.Dock = DockStyle.Fill;
 
             var grid2 = BuildAclGrid();
-            grid2.Location = new Point(1, GRID2_Y);
-            grid2.Height   = GRID2_H;
+            grid2.Dock = DockStyle.Fill;
 
             // ── Section 3: Share (FilePermission) ────────────────────────────
             var sec3 = MakeSectionBar("เงื่อนไขที่ 3  —  สิทธิ์จากการแบ่งปัน  (File / Folder Share)");
-            sec3.Location = new Point(1, SEC3_Y);
-            sec3.BackColor = Color.FromArgb(200, 230, 215);    // สีเขียวอ่อนแยกจาก sec1/sec2
+            sec3.Dock      = DockStyle.Fill;
+            sec3.BackColor = Color.FromArgb(200, 230, 215);
 
             var grid3 = BuildShareGrid();
-            grid3.Location = new Point(1, GRID3_Y);
+            grid3.Dock = DockStyle.Fill;
 
-            pnl.Controls.AddRange(new Control[] { sec1, pnlCards, sec2, grid2, sec3, grid3 });
+            // TableLayoutPanel — จัดแถวให้ถูกต้องทั้งแนวตั้งและแนวนอนเมื่อ resize
+            var table = new TableLayoutPanel
+            {
+                Dock        = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount    = 6,
+                BackColor   = Color.Transparent,
+                Padding     = new Padding(0),
+                Margin      = new Padding(0),
+            };
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec1
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 170));   // cards
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec2
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 140));   // grid2
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec3
+            table.RowStyles.Add(new RowStyle(SizeType.Percent,  100));   // grid3 fills remaining
+
+            table.Controls.Add(sec1,     0, 0);
+            table.Controls.Add(pnlCards, 0, 1);
+            table.Controls.Add(sec2,     0, 2);
+            table.Controls.Add(grid2,    0, 3);
+            table.Controls.Add(sec3,     0, 4);
+            table.Controls.Add(grid3,    0, 5);
+
+            pnl.Controls.Add(table);
+
             gridOut      = grid2;
             cardsOut     = pnlCards;
             shareGridOut = grid3;
-
-            // Initial sizing
-            pnl.Layout += (s, e) =>
-            {
-                int w = pnl.ClientSize.Width - 2;
-                sec1.Width     = w;
-                sec2.Width     = w;
-                sec3.Width     = w;
-                pnlCards.Width = w;
-                grid2.Width    = w;
-                grid3.Width    = w;
-                grid3.Height   = Math.Max(80, pnl.ClientSize.Height - GRID3_Y - 4);
-            };
-
             return pnl;
         }
 

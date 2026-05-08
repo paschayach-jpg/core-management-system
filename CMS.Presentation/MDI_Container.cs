@@ -1324,21 +1324,27 @@ namespace CMS.Presentation
             }
 
             // Get selected file/folder from active FolderForm
-            FileDocument selectedFile = null;
+            List<FileDocument> selectedFiles = null;
             Folder selectedFolder = null;
+            Folder parentFolder = null;
 
             foreach (Form child in MdiChildren)
             {
                 var ff = child as FolderForm;
                 if (ff != null)
                 {
-                    selectedFile = ff.SelectedFile;
-                    selectedFolder = ff.SelectedFolder;
+                    selectedFiles = ff.SelectedFiles;
+                    var contentFolder = ff.SelectedFolderInContents;
+                    var treeFolder    = ff.SelectedFolder;
+                    selectedFolder    = contentFolder ?? treeFolder;
+                    // parent context: shown in dialog as "4PC › Process02"
+                    if (contentFolder != null && treeFolder != null && contentFolder.FolderID != treeFolder.FolderID)
+                        parentFolder = treeFolder;
                     break;
                 }
             }
 
-            if (selectedFile == null && selectedFolder == null)
+            if ((selectedFiles == null || selectedFiles.Count == 0) && selectedFolder == null)
             {
                 MessageBox.Show(
                     "Please select a file or folder in Folder Explorer first.",
@@ -1430,17 +1436,18 @@ namespace CMS.Presentation
                         _shareCommandController,
                             _userAccountLookupController, _userAccessOrgLookupController, _currentUser,
                             _folderReadLookupController,
-                        selectedFile, selectedFolder))
+                        selectedFiles, selectedFolder, parentFolder))
                     {
                         shareDialog.ShowDialog(this);
                     }
                 }
                 else
                 {
-                    // External share
+                    // External share — single file only (BR-004-08 restriction applies)
+                    var singleFile = selectedFiles?.Count > 0 ? selectedFiles[0] : null;
                     using (var shareDialog = new ShareDialogExternal(
                         _shareCommandController, _currentUser,
-                        selectedFile, selectedFolder))
+                        singleFile, selectedFolder))
                     {
                         shareDialog.ShowDialog(this);
                     }

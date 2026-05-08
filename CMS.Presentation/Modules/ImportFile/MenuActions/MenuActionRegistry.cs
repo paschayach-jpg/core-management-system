@@ -1,9 +1,11 @@
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Modules.KMS;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document;
+using CMS.Domain.Models;
 
 namespace CMS.Presentation
 {
@@ -241,7 +243,11 @@ namespace CMS.Presentation
 
         private static bool ExecuteShareDialog(MenuActionContext context)
         {
-            if (context.SelectedFile == null && context.SelectedFolder == null)
+            var selectedFiles = (context.SelectedFiles != null && context.SelectedFiles.Count > 0)
+                ? context.SelectedFiles
+                : (context.SelectedFile != null ? new List<FileDocument> { context.SelectedFile } : null);
+
+            if ((selectedFiles == null || selectedFiles.Count == 0) && context.SelectedFolder == null)
             {
                 MessageBox.Show("กรุณาเลือกไฟล์หรือโฟลเดอร์ก่อนแชร์", "Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return true;
@@ -299,7 +305,7 @@ namespace CMS.Presentation
                             context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService),
                             context.User,
                             context.FolderReadLookupController,
-                            context.SelectedFile,
+                            selectedFiles,
                             context.SelectedFolder))
                         {
                             dlg.ShowDialog(context.Owner);

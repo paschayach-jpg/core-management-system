@@ -360,7 +360,11 @@ namespace CMS.Presentation
             {
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
-                if (dlg.BatchResults != null && dlg.BatchResults.Count > 0)
+                if (dlg.HierarchicalResult != null)
+                    _presenter.CreateDivisionWithDepartments(
+                        dlg.HierarchicalResult.DivisionRequest,
+                        dlg.HierarchicalResult.DepartmentRequests);
+                else if (dlg.BatchResults != null && dlg.BatchResults.Count > 0)
                     _presenter.CreateOrgUnitBatch(dlg.BatchResults);
                 else if (dlg.Result != null)
                     _presenter.CreateOrgUnitBatch(new[] { dlg.Result });

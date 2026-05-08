@@ -31,5 +31,6 @@ namespace CMS.Services.Interfaces
         void CopyFolderStructure(int sourceFolderId, int destinationParentFolderId, UserContext user);
         void MoveFolder(MoveFolderRequest request, UserContext user);
         IEnumerable<Folder> GetDescendants(int folderId);
+        void InvalidateFolderCache(int? orgUnitId = null);
     }
 }

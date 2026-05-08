@@ -87,8 +87,11 @@ namespace CMS.Services
             if (request == null) throw new ArgumentNullException("request");
             if (user == null) throw new ArgumentNullException("user");
 
-            // Validate user has Read permission on file
-            if (!_permissionService.CheckPermission(user.UserID, request.FileID, "Read"))
+            // Validate user has Read permission on the file's parent folder
+            var fileToShare = _fileDocumentRepository.GetById(request.FileID);
+            if (fileToShare == null)
+                throw new InvalidOperationException(string.Format("File with ID {0} not found.", request.FileID));
+            if (!_permissionService.CheckPermission(user.UserID, fileToShare.FolderID, "Read"))
                 throw new UnauthorizedAccessException("Insufficient permissions to share this file.");
 
             // Create FilePermission record

@@ -11,264 +11,192 @@ using CMS.Services.DTOs;
 
 namespace CMS.Presentation
 {
-    /// <summary>
-    /// Dialog for creating internal shares with specific users, departments, roles, or groups.
-    /// Satisfies Requirements 1.1, 1.2, 1.3
-    /// </summary>
     public partial class ShareDialogInternal : Form
     {
         private readonly IShareCommandController _shareCommandController;
         private readonly IUserAccountLookupController _userAccountLookupController;
         private readonly IUserAccessOrgLookupController _orgLookupController;
-            private readonly IFolderReadLookupController _folderReadLookupController;
-            private readonly UserContext _currentUser;
+        private readonly IFolderReadLookupController _folderReadLookupController;
+        private readonly UserContext _currentUser;
 
-        private FileDocument _selectedFile;
+        private List<FileDocument> _selectedFiles;
         private Folder _selectedFolder;
+        private Folder _parentFolder;
         private Dictionary<string, object> _controls;
+        private List<PrincipalItem> _allPrincipals = new List<PrincipalItem>();
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int Msg, int wParam, string lParam);
+        private const int EM_SETCUEBANNER = 0x1501;
 
         public ShareDialogInternal(
             IShareCommandController shareCommandController,
             IUserAccountLookupController userAccountLookupController,
             IUserAccessOrgLookupController orgLookupController,
             UserContext currentUser,
-                IFolderReadLookupController folderReadLookupController = null,
-            FileDocument file = null,
-            Folder folder = null)
+            IFolderReadLookupController folderReadLookupController = null,
+            List<FileDocument> files = null,
+            Folder folder = null,
+            Folder parentFolder = null)
         {
             InitializeComponent();
             _shareCommandController = shareCommandController;
             _userAccountLookupController = userAccountLookupController;
             _orgLookupController = orgLookupController;
-                _folderReadLookupController = folderReadLookupController;
+            _folderReadLookupController = folderReadLookupController;
             _currentUser = currentUser;
-            _selectedFile = file;
+            _selectedFiles = files ?? new List<FileDocument>();
             _selectedFolder = folder;
+            _parentFolder = parentFolder;
 
             InitializeControls();
         }
 
         private void InitializeComponent()
         {
-            // ── Palette (ใช้แบบเดียวกับ UserPermissionSummaryForm) ───────────
-            Color navyDark    = Color.FromArgb(25,  55,  105);
-            Color navyMid     = Color.FromArgb(50,  90,  150);
-            Color navyLight   = Color.FromArgb(215, 228, 248);
-            Color bodyBg      = Color.FromArgb(243, 246, 251);
-            Color footerBg    = Color.FromArgb(228, 234, 245);
-            Color borderGray  = Color.FromArgb(210, 218, 232);
-            var   uiFont      = new Font("Segoe UI", 9f);
-            var   labelFont   = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            Color navyDark   = Color.FromArgb(25,  55,  105);
+            Color navyMid    = Color.FromArgb(50,  90,  150);
+            Color navyLight  = Color.FromArgb(215, 228, 248);
+            Color bodyBg     = Color.FromArgb(243, 246, 251);
+            Color footerBg   = Color.FromArgb(228, 234, 245);
+            Color borderGray = Color.FromArgb(210, 218, 232);
+            var uiFont    = new Font("Segoe UI", 9f);
+            var labelFont = new Font("Segoe UI", 8.5f, FontStyle.Bold);
 
             this.SuspendLayout();
             this.Text            = "แบ่งปัน File / Folder — ภายใน";
             this.Font            = uiFont;
-            this.ClientSize      = new Size(520, 480);
-            this.MinimumSize     = new Size(520, 480);
+            this.ClientSize      = new Size(520, 560);
+            this.MinimumSize     = new Size(520, 560);
             this.StartPosition   = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox     = false;
             this.MinimizeBox     = false;
             this.BackColor       = bodyBg;
 
-            // ════════════════════════════════════════════════════════════════
-            // Header — dark blue bar
-            // ════════════════════════════════════════════════════════════════
-            var pnlHeader = new Panel
-            {
-                Dock      = DockStyle.Top,
-                Height    = 60,
-                BackColor = navyDark,
-            };
-
-            // icon circle
-            var pnlIcon = new Panel { Size = new Size(36, 36), Location = new Point(14, 12), BackColor = navyMid };
+            // ── Header ───────────────────────────────────────────────────────
+            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = navyDark };
+            var pnlIcon   = new Panel { Size = new Size(36, 36), Location = new Point(14, 12), BackColor = navyMid };
             pnlIcon.Paint += (s, e) =>
             {
                 e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 e.Graphics.FillEllipse(new SolidBrush(navyMid), 0, 0, 35, 35);
-                using (var f = new Font("Segoe UI", 15f, FontStyle.Bold))
+                using (var f  = new Font("Segoe UI", 15f, FontStyle.Bold))
                 using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
                     e.Graphics.DrawString("🔗", f, Brushes.White, new RectangleF(0, 0, 36, 36), sf);
             };
-
             var lblTitle = new Label
             {
                 Text      = "แบ่งปัน File / Folder — ภายใน",
                 Font      = new Font("Segoe UI", 12f, FontStyle.Bold),
-                ForeColor = Color.White,
-                AutoSize  = true,
-                Location  = new Point(58, 10),
+                ForeColor = Color.White, AutoSize = true, Location = new Point(58, 10),
             };
             var lblSub = new Label
             {
                 Text      = "กำหนดสิทธิ์การเข้าถึงให้ผู้ใช้ / แผนก / บทบาทในองค์กร",
                 Font      = new Font("Segoe UI", 8f),
-                ForeColor = Color.FromArgb(170, 200, 240),
-                AutoSize  = true,
-                Location  = new Point(59, 34),
+                ForeColor = Color.FromArgb(170, 200, 240), AutoSize = true, Location = new Point(59, 34),
             };
             pnlHeader.Controls.AddRange(new Control[] { pnlIcon, lblTitle, lblSub });
 
-            // ════════════════════════════════════════════════════════════════
-            // Footer — buttons
-            // ════════════════════════════════════════════════════════════════
+            // ── Footer ───────────────────────────────────────────────────────
             var pnlFooter = new Panel
             {
-                Dock      = DockStyle.Bottom,
-                Height    = 52,
-                BackColor = footerBg,
-                Padding   = new Padding(10, 10, 14, 10),
+                Dock = DockStyle.Bottom, Height = 52, BackColor = footerBg,
+                Padding = new Padding(10, 10, 14, 10),
             };
-
             var lblStatus = new Label
             {
-                Text      = "",
-                Font      = new Font("Segoe UI", 8.5f),
-                ForeColor = Color.FromArgb(180, 30, 30),
-                AutoSize  = false,
-                Size      = new Size(290, 32),
-                Location  = new Point(12, 10),
+                Text = "", Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(180, 30, 30),
+                AutoSize = false, Size = new Size(290, 32), Location = new Point(12, 10),
                 TextAlign = ContentAlignment.MiddleLeft,
             };
-
             var btnOK = new Button
             {
-                Text      = "✔  ตกลง",
-                Size      = new Size(96, 32),
-                Anchor    = AnchorStyles.Right | AnchorStyles.Top,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = navyDark,
-                ForeColor = Color.White,
-                Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Text = "✔  ตกลง", Size = new Size(96, 32),
+                Anchor = AnchorStyles.Right | AnchorStyles.Top,
+                FlatStyle = FlatStyle.Flat, BackColor = navyDark, ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
             };
             btnOK.FlatAppearance.BorderSize = 0;
             btnOK.Location = new Point(pnlFooter.Width - 210, 10);
-
             var btnCancel = new Button
             {
-                Text         = "✕  ยกเลิก",
-                Size         = new Size(96, 32),
-                Anchor       = AnchorStyles.Right | AnchorStyles.Top,
-                FlatStyle    = FlatStyle.Flat,
-                BackColor    = Color.FromArgb(220, 225, 235),
-                ForeColor    = Color.FromArgb(50, 60, 80),
-                Font         = new Font("Segoe UI", 9f),
+                Text = "✕  ยกเลิก", Size = new Size(96, 32),
+                Anchor = AnchorStyles.Right | AnchorStyles.Top,
+                FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(220, 225, 235),
+                ForeColor = Color.FromArgb(50, 60, 80), Font = new Font("Segoe UI", 9f),
                 DialogResult = DialogResult.Cancel,
             };
             btnCancel.FlatAppearance.BorderColor = borderGray;
             btnCancel.FlatAppearance.BorderSize  = 1;
             btnCancel.Location = new Point(pnlFooter.Width - 108, 10);
-
             pnlFooter.Controls.AddRange(new Control[] { lblStatus, btnOK, btnCancel });
 
-            // ════════════════════════════════════════════════════════════════
-            // Body — content area
-            // ════════════════════════════════════════════════════════════════
-            var pnlBody = new Panel
-            {
-                Dock      = DockStyle.Fill,
-                Padding   = new Padding(16, 12, 16, 0),
-                BackColor = bodyBg,
-            };
+            // ── Body ─────────────────────────────────────────────────────────
+            var pnlBody = new Panel { Dock = DockStyle.Fill, Padding = new Padding(16, 12, 16, 0), BackColor = bodyBg };
 
-            // helper: section bar
             Func<string, Label> mkBar = txt => new Label
             {
-                Text      = "  " + txt,
-                Font      = labelFont,
-                ForeColor = navyDark,
-                BackColor = navyLight,
-                Dock      = DockStyle.Top,
-                Height    = 26,
-                TextAlign = ContentAlignment.MiddleLeft,
+                Text = "  " + txt, Font = labelFont, ForeColor = navyDark, BackColor = navyLight,
+                Dock = DockStyle.Top, Height = 26, TextAlign = ContentAlignment.MiddleLeft,
             };
-
-            // helper: row label
             Func<string, Label> mkLbl = txt => new Label
             {
-                Text      = txt,
-                Font      = uiFont,
-                ForeColor = Color.FromArgb(55, 65, 85),
-                AutoSize  = false,
-                Width     = 108,
-                Height    = 22,
-                TextAlign = ContentAlignment.MiddleRight,
+                Text = txt, Font = uiFont, ForeColor = Color.FromArgb(55, 65, 85),
+                AutoSize = false, Width = 108, Height = 22, TextAlign = ContentAlignment.MiddleRight,
             };
 
-            // ── Section: เป้าหมาย ────────────────────────────────────────────
-            int bodyW = 520 - 16 - 16;   // ความกว้างใช้งานได้ใน body
+            int bodyW = 520 - 32;
 
-            // File/Folder row
-            var pnlFileRow = new Panel { Height = 36, Dock = DockStyle.Top, BackColor = Color.Transparent, Padding = new Padding(0, 6, 0, 0) };
-            var lblFile    = mkLbl("File / Folder :");
-            lblFile.Location = new Point(0, 7);
-            var btnSelectFile = new Button
+            // ── Row: File / Folder ────────────────────────────────────────────
+            var pnlFileRow = new Panel { Height = 66, Dock = DockStyle.Top, BackColor = Color.Transparent, Padding = new Padding(0, 4, 0, 0) };
+            var lblFile = mkLbl("File / Folder :");
+            lblFile.Location = new Point(0, 4);
+            lblFile.Height = 56;
+            lblFile.TextAlign = ContentAlignment.TopRight;
+            var txtFiles = new TextBox
             {
-                Text      = "เลือก...",
-                Size      = new Size(76, 26),
-                Location  = new Point(114, 5),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(235, 240, 252),
-                ForeColor = navyDark,
-                Font      = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ReadOnly = true, Multiline = true,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = navyDark, BackColor = Color.FromArgb(243, 246, 251),
+                BorderStyle = BorderStyle.None,
+                ScrollBars = ScrollBars.Vertical,
+                Location = new Point(114, 4), Width = bodyW - 114, Height = 56,
             };
-            btnSelectFile.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-            btnSelectFile.Click += (s, e) => SelectFileOrFolder();
+            pnlFileRow.Controls.AddRange(new Control[] { lblFile, txtFiles });
 
-            var lblSelectedFile = new Label
-            {
-                Text      = "(ยังไม่ได้เลือก)",
-                Font      = new Font("Segoe UI", 9f, FontStyle.Italic),
-                ForeColor = Color.FromArgb(100, 110, 140),
-                AutoSize  = false,
-                Location  = new Point(196, 7),
-                Width     = bodyW - 196,
-                Height    = 22,
-                TextAlign = ContentAlignment.MiddleLeft,
-            };
-            pnlFileRow.Controls.AddRange(new Control[] { lblFile, btnSelectFile, lblSelectedFile });
-
-            // Share With row
+            // ── Row: แบ่งปันให้ + ช่องค้นหา ──────────────────────────────────
             var pnlShareRow = new Panel { Height = 36, Dock = DockStyle.Top, BackColor = Color.Transparent };
             var lblWith = mkLbl("แบ่งปันให้ :");
             lblWith.Location = new Point(0, 7);
             var cboPrincipalType = new ComboBox
             {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Font          = uiFont,
-                Location      = new Point(114, 6),
-                Width         = 200,
-                FlatStyle     = FlatStyle.Flat,
-                BackColor     = Color.White,
+                DropDownStyle = ComboBoxStyle.DropDownList, Font = uiFont,
+                Location = new Point(114, 6), Width = 142, FlatStyle = FlatStyle.Flat, BackColor = Color.White,
             };
             cboPrincipalType.Items.AddRange(new[] { "User", "Department", "Role", "Group" });
             cboPrincipalType.SelectedIndex = 0;
-            pnlShareRow.Controls.AddRange(new Control[] { lblWith, cboPrincipalType });
 
-            // ── Section bar: เลือกเป้าหมาย ─────────────────────────────────
-            var barTarget = mkBar("เลือกเป้าหมาย");
+            // ช่องค้นหา — รองรับการพิมพ์ค้นหาเอง
+            var txtSearch = new TextBox
+            {
+                Font = uiFont, Location = new Point(262, 6), Width = 188,
+                BorderStyle = BorderStyle.FixedSingle, BackColor = Color.White,
+            };
+            pnlShareRow.Controls.AddRange(new Control[] { lblWith, cboPrincipalType, txtSearch });
+
+            // ── Section: เลือกเป้าหมาย ────────────────────────────────────────
+            var barTarget = mkBar("เลือกเป้าหมาย   (เลือกได้หลายรายการ: Ctrl+คลิก)");
             barTarget.Dock = DockStyle.None;
 
-            // ListBox — custom draw
             var lstPrincipal = new ListBox
             {
-                Font             = uiFont,
-                IntegralHeight   = false,
-                Height           = 110,
-                Dock             = DockStyle.None,
-                SelectionMode    = SelectionMode.MultiExtended,
-                BorderStyle      = BorderStyle.None,
-                BackColor        = Color.White,
-                ItemHeight       = 24,
+                Font = uiFont, IntegralHeight = false, Height = 108,
+                Dock = DockStyle.None, SelectionMode = SelectionMode.MultiExtended,
+                BorderStyle = BorderStyle.None, BackColor = Color.White, ItemHeight = 24,
             };
-            var pnlListBorder = new Panel
-            {
-                Height      = 112,
-                Dock        = DockStyle.None,
-                BackColor   = Color.White,
-                Padding     = new Padding(1),
-            };
+            var pnlListBorder = new Panel { Height = 110, Dock = DockStyle.None, BackColor = Color.White, Padding = new Padding(1) };
             pnlListBorder.Paint += (s, e) =>
             {
                 using (var pen = new Pen(borderGray, 1))
@@ -277,41 +205,54 @@ namespace CMS.Presentation
             lstPrincipal.Dock = DockStyle.Fill;
             pnlListBorder.Controls.Add(lstPrincipal);
 
-            // ── Section bar: สิทธิ์ ──────────────────────────────────────────
+            // ── ช่องแสดงรายชื่อที่เลือก ──────────────────────────────────────
+            var txtSelectedNames = new TextBox
+            {
+                Font = uiFont, ReadOnly = true, Multiline = true,
+                BackColor = Color.FromArgb(248, 250, 255),
+                BorderStyle = BorderStyle.None,
+                Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical,
+                ForeColor = navyDark,
+            };
+            var pnlSelectedBorder = new Panel
+            {
+                Height = 58, Dock = DockStyle.None,
+                BackColor = Color.FromArgb(248, 250, 255), Padding = new Padding(4, 2, 2, 2),
+            };
+            pnlSelectedBorder.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(160, 195, 240), 1))
+                    e.Graphics.DrawRectangle(pen, 0, 0, pnlSelectedBorder.Width - 1, pnlSelectedBorder.Height - 1);
+            };
+            txtSelectedNames.Dock = DockStyle.Fill;
+            pnlSelectedBorder.Controls.Add(txtSelectedNames);
+
+            // ── Section: สิทธิ์ ───────────────────────────────────────────────
             var barPerm = mkBar("สิทธิ์การเข้าถึง");
             barPerm.Dock = DockStyle.None;
-
-            // Permission chips
             var chkRead   = MakePermChip("👁  ดู",    navyLight, navyDark, true);
             var chkWrite  = MakePermChip("✏  แก้ไข", navyLight, navyDark, false);
             var chkDelete = MakePermChip("🗑  ลบ",    navyLight, navyDark, false);
             var pnlPerms  = new FlowLayoutPanel
             {
-                Dock          = DockStyle.None,
-                Height        = 36,
-                FlowDirection = FlowDirection.LeftToRight,
-                BackColor     = Color.Transparent,
-                WrapContents  = false,
+                Dock = DockStyle.None, Height = 36, FlowDirection = FlowDirection.LeftToRight,
+                BackColor = Color.Transparent, WrapContents = false,
             };
             pnlPerms.Controls.AddRange(new Control[] { chkRead, chkWrite, chkDelete });
 
-            // ── Section bar: วันหมดอายุ ──────────────────────────────────────
+            // ── Section: วันหมดอายุ ───────────────────────────────────────────
             var barExpiry = mkBar("วันหมดอายุ");
             barExpiry.Dock = DockStyle.None;
-
             var dtpExpiry = new DateTimePicker
             {
-                Format    = DateTimePickerFormat.Short,
-                Font      = uiFont,
-                Width     = 160,
-                CalendarForeColor = navyDark,
+                Format = DateTimePickerFormat.Short, Font = uiFont,
+                Width = 160, CalendarForeColor = navyDark,
             };
             dtpExpiry.Value   = DateTime.Now.AddDays(30);
             dtpExpiry.Enabled = false;
-
             var chkNoExpiry = new CheckBox
             {
-                Text      = "ไม่มีกำหนด",
+                Text      = "ไม่มีกำหนดอายุ",
                 Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 120, 50),
                 Checked   = true,
@@ -319,24 +260,21 @@ namespace CMS.Presentation
             };
             chkNoExpiry.CheckedChanged += (s, e) => dtpExpiry.Enabled = !chkNoExpiry.Checked;
 
-            var pnlExpiryRow = new Panel { Dock = DockStyle.None, Height = 36, BackColor = Color.Transparent };
-            dtpExpiry.Location    = new Point(0, 7);
-            chkNoExpiry.Location  = new Point(170, 9);
+            // ใช้ Dock=Fill เพื่อให้ panel กว้างเต็ม cell — ป้องกันข้อความถูกตัด
+            var pnlExpiryRow = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+            dtpExpiry.Location   = new Point(0, 7);
+            chkNoExpiry.Location = new Point(170, 9);
             pnlExpiryRow.Controls.AddRange(new Control[] { dtpExpiry, chkNoExpiry });
 
-            // ── Layout tiling (top-down stacking) ───────────────────────────
-            // ใช้ TableLayoutPanel ควบคุม layout ให้ไม่ overlap
+            // ── TableLayoutPanel ──────────────────────────────────────────────
             var table = new TableLayoutPanel
             {
-                Dock        = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount    = 9,
-                BackColor   = Color.Transparent,
-                Padding     = new Padding(0),
+                Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 10,
+                BackColor = Color.Transparent, Padding = new Padding(0),
             };
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            // rows: fileRow, shareRow, sep, barTarget, listBorder, barPerm, permsRow, barExpiry, expiryRow
-            int[] heights = { 36, 36, 6, 28, 116, 28, 40, 28, 40 };
+            // rows: fileRow, shareRow, sep, barTarget, listBorder, selectedBorder, barPerm, permsRow, barExpiry, expiryRow
+            int[] heights = { 68, 36, 6, 28, 114, 60, 28, 40, 28, 40 };
             foreach (int h in heights)
                 table.RowStyles.Add(new RowStyle(SizeType.Absolute, h));
 
@@ -345,64 +283,70 @@ namespace CMS.Presentation
             table.Controls.Add(new Panel { BackColor = borderGray, Height = 1, Dock = DockStyle.Bottom }, 0, 2);
             table.Controls.Add(barTarget,      0, 3);
             table.Controls.Add(pnlListBorder,  0, 4);
-            table.Controls.Add(barPerm,        0, 5);
-            table.Controls.Add(pnlPerms,       0, 6);
-            table.Controls.Add(barExpiry,      0, 7);
-            table.Controls.Add(pnlExpiryRow,   0, 8);
+            table.Controls.Add(pnlSelectedBorder, 0, 5);
+            table.Controls.Add(barPerm,        0, 6);
+            table.Controls.Add(pnlPerms,       0, 7);
+            table.Controls.Add(barExpiry,      0, 8);
+            table.Controls.Add(pnlExpiryRow,   0, 9);
 
             pnlBody.Controls.Add(table);
-
-            // ── Add to form ─────────────────────────────────────────────────
             this.Controls.Add(pnlBody);
             this.Controls.Add(pnlHeader);
             this.Controls.Add(pnlFooter);
 
-            // Store references
             _controls = new Dictionary<string, object>
             {
-                { "lblSelectedFile",  lblSelectedFile  },
-                { "cboPrincipalType", cboPrincipalType },
-                { "lstPrincipal",     lstPrincipal     },
-                { "chkRead",          chkRead          },
-                { "chkWrite",         chkWrite         },
-                { "chkDelete",        chkDelete        },
-                { "dtpExpiry",        dtpExpiry        },
-                { "chkNoExpiry",      chkNoExpiry      },
-                { "lblStatus",        lblStatus        },
+                { "txtFiles",          txtFiles          },
+                { "cboPrincipalType",  cboPrincipalType  },
+                { "txtSearch",         txtSearch         },
+                { "lstPrincipal",      lstPrincipal      },
+                { "txtSelectedNames",  txtSelectedNames  },
+                { "chkRead",           chkRead           },
+                { "chkWrite",          chkWrite          },
+                { "chkDelete",         chkDelete         },
+                { "dtpExpiry",         dtpExpiry         },
+                { "chkNoExpiry",       chkNoExpiry       },
+                { "lblStatus",         lblStatus         },
             };
 
             btnOK.Click += (s, e) => HandleOK();
-            cboPrincipalType.SelectedIndexChanged += (s, e) => LoadPrincipals();
 
-            // Anchor footer buttons dynamically
+            cboPrincipalType.SelectedIndexChanged += (s, e) =>
+            {
+                _allPrincipals.Clear();
+                LoadPrincipals();
+                UpdateSelectedDisplay();
+            };
+
+            txtSearch.TextChanged += (s, e) => FilterPrincipals(((TextBox)_controls["txtSearch"]).Text);
+
+            lstPrincipal.SelectedIndexChanged += (s, e) => UpdateSelectedDisplay();
+
             pnlFooter.Resize += (s, e) =>
             {
                 btnOK.Left     = pnlFooter.Width - 210;
                 btnCancel.Left = pnlFooter.Width - 108;
             };
 
+            this.Load += (s, e) => SendMessage(txtSearch.Handle, EM_SETCUEBANNER, 1, "ค้นหาชื่อ...");
+
             this.ResumeLayout();
         }
 
-        /// <summary>สร้าง CheckBox แบบ chip style สำหรับ permission</summary>
         private static CheckBox MakePermChip(string text, Color bgChecked, Color fg, bool isChecked)
         {
-            Color bgOff  = Color.FromArgb(240, 240, 245);
-            Color fgOff  = Color.FromArgb(140, 145, 160);
-
+            Color bgOff = Color.FromArgb(240, 240, 245);
+            Color fgOff = Color.FromArgb(140, 145, 160);
             var chk = new CheckBox
             {
-                Text      = text,
-                Checked   = isChecked,
-                Font      = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Text = text, Checked = isChecked,
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 ForeColor = isChecked ? fg : fgOff,
-                AutoSize  = false,
-                Size      = new Size(96, 30),
-                Margin    = new Padding(0, 4, 10, 0),
-                Appearance = Appearance.Button,
-                FlatStyle  = FlatStyle.Flat,
-                BackColor  = isChecked ? bgChecked : bgOff,
-                TextAlign  = ContentAlignment.MiddleCenter,
+                AutoSize = false, Size = new Size(96, 30),
+                Margin = new Padding(0, 4, 10, 0),
+                Appearance = Appearance.Button, FlatStyle = FlatStyle.Flat,
+                BackColor = isChecked ? bgChecked : bgOff,
+                TextAlign = ContentAlignment.MiddleCenter,
             };
             chk.FlatAppearance.BorderColor        = Color.FromArgb(180, 200, 235);
             chk.FlatAppearance.CheckedBackColor   = bgChecked;
@@ -417,184 +361,172 @@ namespace CMS.Presentation
 
         private void InitializeControls()
         {
-            var lblSelectedFile = (Label)_controls["lblSelectedFile"];
-
-            if (_selectedFile != null)
-                lblSelectedFile.Text = string.Format("File: {0}", _selectedFile.OriginalFileName);
+            var txtFiles = (TextBox)_controls["txtFiles"];
+            if (_selectedFiles.Count > 0)
+            {
+                txtFiles.Text = string.Join(Environment.NewLine,
+                    _selectedFiles.Select(f => "📄  " + f.OriginalFileName));
+            }
             else if (_selectedFolder != null)
-                lblSelectedFile.Text = string.Format("Folder: {0}", _selectedFolder.FolderName);
+            {
+                txtFiles.Text = _parentFolder != null
+                    ? "📁  " + _parentFolder.FolderName + "  ›  " + _selectedFolder.FolderName
+                    : "📁  " + _selectedFolder.FolderName;
+            }
+            else
+            {
+                txtFiles.Text = "(ไม่ระบุ)";
+            }
 
             LoadPrincipals();
-        }
-
-        private void SelectFileOrFolder()
-        {
-                // Show folder picker with accessible folders only
-                if (_folderReadLookupController == null)
-                {
-                    MessageBox.Show("Folder service ไม่พร้อมใช้งาน", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                using (var picker = new FolderPickerDialog())
-                {
-                    // Load only folders that user has permission to access
-                    var accessibleFolders = _folderReadLookupController.GetAccessibleFolders(null, _currentUser);
-                    picker.LoadFolders(accessibleFolders, new HashSet<int>());
-
-                    if (picker.ShowDialog(this) == DialogResult.OK && picker.SelectedFolderId.HasValue)
-                    {
-                        try
-                        {
-                            var folder = _folderReadLookupController.GetFolder(picker.SelectedFolderId.Value, _currentUser);
-                            if (folder != null)
-                            {
-                                _selectedFolder = folder;
-                                _selectedFile = null;
-                                var lblSelectedFile = (Label)_controls["lblSelectedFile"];
-                                lblSelectedFile.Text = string.Format("Folder: {0}", folder.FolderName);
-                            }
-                        }
-                        catch (UnauthorizedAccessException ex)
-                        {
-                            MessageBox.Show("ไม่มีสิทธิ์เข้าถึง Folder นี้: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                }
         }
 
         private void LoadPrincipals()
         {
             var cboPrincipalType = (ComboBox)_controls["cboPrincipalType"];
-            var lstPrincipal = (ListBox)_controls["lstPrincipal"];
-
-            lstPrincipal.Items.Clear();
-
             string principalType = cboPrincipalType.SelectedItem?.ToString();
 
-            try
+            if (_allPrincipals.Count == 0)
             {
-                if (principalType == "User")
+                try
                 {
-                    var users = _userAccountLookupController?.GetAllUsers() ?? Enumerable.Empty<UserAccount>();
-                    foreach (var user in users)
+                    if (principalType == "User")
                     {
-                        lstPrincipal.Items.Add(new PrincipalItem { Id = user.UserID, Name = user.DisplayName ?? user.ADUserName, Data = user });
+                        var users = _userAccountLookupController?.GetAllUsers() ?? Enumerable.Empty<UserAccount>();
+                        foreach (var u in users)
+                            _allPrincipals.Add(new PrincipalItem { Id = u.UserID, Name = u.DisplayName ?? u.ADUserName, Data = u });
+                    }
+                    else if (principalType == "Department")
+                    {
+                        var depts = (_orgLookupController != null ? _orgLookupController.GetHierarchy() : Enumerable.Empty<OrgUnit>())
+                            .Where(o => o.Tier == OrgUnitTier.Department).ToList();
+                        foreach (var d in depts)
+                            _allPrincipals.Add(new PrincipalItem { Id = d.OrgUnitID, Name = d.Name, Data = d });
+                    }
+                    else if (principalType == "Role")
+                    {
+                        _allPrincipals.Add(new PrincipalItem { Id = 4, Name = "Admin" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 3, Name = "Manager" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 2, Name = "Sr. Officer" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 1, Name = "Officer" });
+                    }
+                    else if (principalType == "Group")
+                    {
+                        _allPrincipals.Add(new PrincipalItem { Id = 1, Name = "Finance Team" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 2, Name = "HR Team" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 3, Name = "IT Team" });
                     }
                 }
-                else if (principalType == "Department")
+                catch (Exception ex)
                 {
-                    var depts = (_orgLookupController != null ? _orgLookupController.GetHierarchy() : Enumerable.Empty<OrgUnit>())
-                        .Where(o => o.Tier == OrgUnitTier.Department)
-                        .ToList();
-                    foreach (var dept in depts)
-                    {
-                        lstPrincipal.Items.Add(new PrincipalItem { Id = dept.OrgUnitID, Name = dept.Name, Data = dept });
-                    }
+                    MessageBox.Show("Error loading principals: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-                else if (principalType == "Role")
-                {
-                    // Load roles - simplified for now
-                    lstPrincipal.Items.Add(new PrincipalItem { Id = 1, Name = "Admin", Data = null });
-                    lstPrincipal.Items.Add(new PrincipalItem { Id = 2, Name = "Manager", Data = null });
-                    lstPrincipal.Items.Add(new PrincipalItem { Id = 3, Name = "Officer", Data = null });
-                }
-                else if (principalType == "Group")
-                {
-                    // Load groups - simplified for now
-                    lstPrincipal.Items.Add(new PrincipalItem { Id = 1, Name = "Finance Team", Data = null });
-                    lstPrincipal.Items.Add(new PrincipalItem { Id = 2, Name = "HR Team", Data = null });
-                    lstPrincipal.Items.Add(new PrincipalItem { Id = 3, Name = "IT Team", Data = null });
-                }
+            }
 
-                lstPrincipal.DisplayMember = "Name";
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading principals: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            FilterPrincipals(((TextBox)_controls["txtSearch"]).Text);
+        }
+
+        private void FilterPrincipals(string filter)
+        {
+            var lst = (ListBox)_controls["lstPrincipal"];
+            lst.BeginUpdate();
+            lst.Items.Clear();
+            var items = string.IsNullOrWhiteSpace(filter)
+                ? _allPrincipals
+                : _allPrincipals.Where(p => p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            foreach (var item in items)
+                lst.Items.Add(item);
+            lst.DisplayMember = "Name";
+            lst.EndUpdate();
+        }
+
+        private void UpdateSelectedDisplay()
+        {
+            var lst  = (ListBox)_controls["lstPrincipal"];
+            var txt  = (TextBox)_controls["txtSelectedNames"];
+            var names = lst.SelectedItems.Cast<PrincipalItem>().Select(p => p.Name);
+            txt.Text = string.Join(Environment.NewLine, names);
         }
 
         private void HandleOK()
         {
-            var lstPrincipal = (ListBox)_controls["lstPrincipal"];
-            var chkRead = (CheckBox)_controls["chkRead"];
-            var chkWrite = (CheckBox)_controls["chkWrite"];
-            var chkDelete = (CheckBox)_controls["chkDelete"];
-            var dtpExpiry = (DateTimePicker)_controls["dtpExpiry"];
-            var chkNoExpiry = (CheckBox)_controls["chkNoExpiry"];
-            var lblStatus = (Label)_controls["lblStatus"];
+            var lstPrincipal     = (ListBox)_controls["lstPrincipal"];
+            var chkRead          = (CheckBox)_controls["chkRead"];
+            var chkWrite         = (CheckBox)_controls["chkWrite"];
+            var chkDelete        = (CheckBox)_controls["chkDelete"];
+            var dtpExpiry        = (DateTimePicker)_controls["dtpExpiry"];
+            var chkNoExpiry      = (CheckBox)_controls["chkNoExpiry"];
+            var lblStatus        = (Label)_controls["lblStatus"];
             var cboPrincipalType = (ComboBox)_controls["cboPrincipalType"];
 
-            // Validation
-            if (_selectedFile == null && _selectedFolder == null)
+            if (_selectedFiles.Count == 0 && _selectedFolder == null)
             {
-                lblStatus.Text = "Error: Please select a file or folder.";
+                lblStatus.Text = "ไม่พบไฟล์หรือโฟลเดอร์ที่ต้องการแบ่งปัน";
                 return;
             }
 
-            if (lstPrincipal.SelectedItem == null)
+            if (lstPrincipal.SelectedItems.Count == 0)
             {
-                lblStatus.Text = "Error: Please select a target.";
+                lblStatus.Text = "กรุณาเลือกผู้รับสิทธิ์อย่างน้อย 1 รายการ";
                 return;
             }
 
             if (!chkRead.Checked && !chkWrite.Checked && !chkDelete.Checked)
             {
-                lblStatus.Text = "Error: Please select at least one permission.";
+                lblStatus.Text = "กรุณาเลือกสิทธิ์การเข้าถึงอย่างน้อย 1 รายการ";
                 return;
             }
 
+            string principalType   = cboPrincipalType.SelectedItem?.ToString() ?? "User";
+            int    principalTypeId = GetPrincipalTypeId(principalType);
+            DateTime? expiry       = chkNoExpiry.Checked ? (DateTime?)null : dtpExpiry.Value;
+
             try
             {
-                var selectedPrincipal = (PrincipalItem)lstPrincipal.SelectedItem;
-                string principalType = cboPrincipalType.SelectedItem?.ToString() ?? "User";
-                int principalTypeId = GetPrincipalTypeId(principalType);
-
-                if (_selectedFile != null)
+                foreach (PrincipalItem principal in lstPrincipal.SelectedItems)
                 {
-                    // Share ไฟล์ → ใช้ FilePermission
-                    var request = new CreateInternalShareRequest
+                    if (_selectedFiles.Count > 0)
                     {
-                        FileID        = _selectedFile.FileID,
-                        PrincipalType = principalTypeId,
-                        PrincipalID   = selectedPrincipal.Id,
-                        CanRead       = chkRead.Checked,
-                        CanWrite      = chkWrite.Checked,
-                        CanDelete     = chkDelete.Checked,
-                        ExpiryDate    = chkNoExpiry.Checked ? (DateTime?)null : dtpExpiry.Value
-                    };
-                    _shareCommandController.CreateInternalShare(request, _currentUser);
-                }
-                else if (_selectedFolder != null)
-                {
-                    // Share Folder → ใช้ FolderPermission ผ่าน IPermissionService
-                    var setReq = new CMS.Services.DTOs.SetPermissionRequest
+                        foreach (var file in _selectedFiles)
+                        {
+                            _shareCommandController.CreateInternalShare(new CreateInternalShareRequest
+                            {
+                                FileID        = file.FileID,
+                                PrincipalType = principalTypeId,
+                                PrincipalID   = principal.Id,
+                                CanRead       = chkRead.Checked,
+                                CanWrite      = chkWrite.Checked,
+                                CanDelete     = chkDelete.Checked,
+                                ExpiryDate    = expiry,
+                            }, _currentUser);
+                        }
+                    }
+                    else
                     {
-                        FolderID       = _selectedFolder.FolderID,
-                        PrincipalType  = (CMS.Domain.Enums.PrincipalType)principalTypeId,
-                        PrincipalID    = selectedPrincipal.Id,
-                        CanRead        = chkRead.Checked,
-                        CanWrite       = chkWrite.Checked,
-                        CanDelete      = chkDelete.Checked,
-                        CanModify      = false,
-                        CanFullControl = false,
-                        IsDeny         = false
-                    };
-                    _shareCommandController.SetFolderPermission(setReq, _currentUser);
+                        _shareCommandController.SetFolderPermission(new SetPermissionRequest
+                        {
+                            FolderID       = _selectedFolder.FolderID,
+                            PrincipalType  = (PrincipalType)principalTypeId,
+                            PrincipalID    = principal.Id,
+                            CanRead        = chkRead.Checked,
+                            CanWrite       = chkWrite.Checked,
+                            CanDelete      = chkDelete.Checked,
+                            CanModify      = false,
+                            CanFullControl = false,
+                            IsDeny         = false,
+                        }, _currentUser);
+                    }
                 }
 
-                lblStatus.Text = "Success: Share created.";
+                lblStatus.Text = _selectedFiles.Count > 1
+                    ? $"แบ่งปันเรียบร้อยแล้ว ({_selectedFiles.Count} ไฟล์, {lstPrincipal.SelectedItems.Count} ผู้รับ)"
+                    : $"แบ่งปันเรียบร้อยแล้ว ({lstPrincipal.SelectedItems.Count} รายการ)";
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
             catch (Exception ex)
             {
-                lblStatus.Text = $"Error: {ex.Message}";
+                lblStatus.Text = "เกิดข้อผิดพลาด: " + ex.Message;
             }
         }
 
@@ -612,10 +544,9 @@ namespace CMS.Presentation
 
         private class PrincipalItem
         {
-            public int Id { get; set; }
+            public int    Id   { get; set; }
             public string Name { get; set; }
             public object Data { get; set; }
-
             public override string ToString() => Name;
         }
     }
