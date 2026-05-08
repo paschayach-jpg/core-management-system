@@ -1,5 +1,4 @@
 using CMS.Controllers.KMS.KB.Interfaces;
-using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
@@ -17,13 +16,11 @@ namespace CMS.Controllers.KMS.KB
     /// </summary>
     public class KBEditorController
     {
-        private readonly IKBEditorController     _view;
-        private readonly IKBCategoryService _categoryService;
-        private readonly IKBArticleService  _articleService;
-        private readonly IKBArticleLinkRepository _articleLinkRepository;
-        private readonly IKBVersionRepository _versionRepository;
-        private readonly UserContext        _user;
-        private KBArticle         _editingArticle;  // Changed from readonly to allow updates
+        private readonly IKBEditorController _view;
+        private readonly IKBCategoryService  _categoryService;
+        private readonly IKBArticleService   _articleService;
+        private readonly UserContext         _user;
+        private KBArticle                   _editingArticle;  // Changed from readonly to allow updates
 
         /// <summary>
         /// Expose the editing article for search exclusion
@@ -31,26 +28,20 @@ namespace CMS.Controllers.KMS.KB
         public KBArticle EditingArticle => _editingArticle;
 
         public KBEditorController(
-            IKBEditorController     view,
-            IKBCategoryService categoryService,
-            IKBArticleService  articleService,
-            IKBArticleLinkRepository articleLinkRepository,
-            IKBVersionRepository versionRepository,
-            UserContext        user,
-            KBArticle          article)   // null = create new
+            IKBEditorController view,
+            IKBCategoryService  categoryService,
+            IKBArticleService   articleService,
+            UserContext         user,
+            KBArticle           article)   // null = create new
         {
             if (view            == null) throw new ArgumentNullException("view");
             if (categoryService == null) throw new ArgumentNullException("categoryService");
             if (articleService  == null) throw new ArgumentNullException("articleService");
-            if (articleLinkRepository == null) throw new ArgumentNullException("articleLinkRepository");
-            if (versionRepository == null) throw new ArgumentNullException("versionRepository");
             if (user            == null) throw new ArgumentNullException("user");
 
             _view            = view;
             _categoryService = categoryService;
             _articleService  = articleService;
-            _articleLinkRepository = articleLinkRepository;
-            _versionRepository = versionRepository;
             _user            = user;
             _editingArticle  = article;
         }
@@ -66,7 +57,7 @@ namespace CMS.Controllers.KMS.KB
             {
                 // Create mode - Generate next article code
                 string nextCode = GenerateArticleCode();
-                
+
                 _view.HeaderText           = "  ✏️ เพิ่มบทความใหม่";
                 _view.ArticleCode          = nextCode;
                 _view.SelectedStatus       = 1;  // Default to Draft status
@@ -137,31 +128,23 @@ namespace CMS.Controllers.KMS.KB
 
             _view.ViewCountText  = string.Format("👁  ดู {0} ครั้ง", a.ViewCount);
             _view.LikeCountText  = string.Format("👍  {0} Like", a.LikeCount);
-            
-            // Get latest version from KMS.t_KBVersion table
+
+            // Get latest version from KMS.t_KBVersion table via service
             string versionText = "v1.0";
             try
             {
-                var latestVersion = _versionRepository.GetLatestByArticle(a.ArticleID);
-                if (latestVersion != null)
-                {
-                    versionText = string.Format("v{0}.0", latestVersion.VersionNumber);
-                }
+                int latestVer = _articleService.GetLatestVersionNumber(a.ArticleID);
+                if (latestVer > 0)
+                    versionText = string.Format("v{0}.0", latestVer);
                 else if (a.CurrentVersion > 0)
-                {
-                    // Fallback to article's CurrentVersion if no version history exists
                     versionText = string.Format("v{0}.0", a.CurrentVersion);
-                }
             }
             catch
             {
-                // Fallback to article's CurrentVersion on error
                 if (a.CurrentVersion > 0)
-                {
                     versionText = string.Format("v{0}.0", a.CurrentVersion);
-                }
             }
-            
+
             _view.VersionText    = string.Format("Version: {0}", versionText);
             _view.CurVersionText = versionText;
             _view.AuthorText     = string.Format("สร้างโดย: {0}", a.CreatedBy ?? "—");
@@ -229,11 +212,11 @@ namespace CMS.Controllers.KMS.KB
                 {
                     // Create new article
                     articleId = _articleService.Create(article);
-                    
+
                     // Update _editingArticle so subsequent saves will update instead of create
                     article.ArticleID = articleId;
                     _editingArticle = article;
-                    
+
                     // Update view to reflect we're now editing an existing article
                     _view.HeaderText = string.Format("  ✏️ แก้ไขบทความ: {0}", article.Title ?? "");
                 }
@@ -243,7 +226,7 @@ namespace CMS.Controllers.KMS.KB
                     article.ArticleID = _editingArticle.ArticleID;
                     _articleService.Update(article, changeDesc);
                     articleId = _editingArticle.ArticleID;
-                    
+
                     // Update _editingArticle with latest data
                     _editingArticle = article;
                 }
@@ -286,7 +269,7 @@ namespace CMS.Controllers.KMS.KB
                 {
                     // Create new article with Status = 2
                     articleId = _articleService.Create(article);
-                    
+
                     // Update _editingArticle
                     article.ArticleID = articleId;
                     _editingArticle = article;
@@ -297,7 +280,7 @@ namespace CMS.Controllers.KMS.KB
                     article.ArticleID = _editingArticle.ArticleID;
                     _articleService.Update(article, "ส่งขอ Review");
                     articleId = _editingArticle.ArticleID;
-                    
+
                     // Update _editingArticle
                     _editingArticle = article;
                 }
@@ -330,7 +313,7 @@ namespace CMS.Controllers.KMS.KB
                 // Change status to Published
                 _articleService.ChangeStatus(_editingArticle.ArticleID, 3, _user.AdIdentity);
                 _editingArticle.Status = 3;
-                
+
                 _view.ShowInfo("เผยแพร่บทความเรียบร้อยแล้ว");
                 _view.CloseOk();
             }
@@ -416,12 +399,12 @@ namespace CMS.Controllers.KMS.KB
             try
             {
                 // Get article-to-article links (EntityType = Law, matching ArticleViewerController)
-                var links = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Law);
+                var links = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Law);
                 var linkedIds = links.Select(l => l.EntityID).ToList();
-                
+
                 if (!linkedIds.Any())
                     return Enumerable.Empty<KBArticle>();
-                
+
                 // Retrieve full article details for each linked article
                 var linkedArticles = new List<KBArticle>();
                 foreach (var id in linkedIds)
@@ -430,7 +413,7 @@ namespace CMS.Controllers.KMS.KB
                     if (article != null)
                         linkedArticles.Add(article);
                 }
-                
+
                 return linkedArticles;
             }
             catch
@@ -449,13 +432,12 @@ namespace CMS.Controllers.KMS.KB
 
             try
             {
-                // Insert article-to-article link (EntityType = Law, matching ArticleViewerController)
-                _articleLinkRepository.Insert(new KBArticleLink
+                _articleService.AddArticleLink(new KBArticleLink
                 {
-                    ArticleID = _editingArticle.ArticleID,
-                    EntityType = (byte)KBEntityType.Law,
-                    EntityID = relatedArticleId,
-                    CreatedBy = _user.AdIdentity,
+                    ArticleID   = _editingArticle.ArticleID,
+                    EntityType  = (byte)KBEntityType.Law,
+                    EntityID    = relatedArticleId,
+                    CreatedBy   = _user.AdIdentity,
                     CreatedDate = DateTime.Now
                 });
             }
@@ -475,14 +457,8 @@ namespace CMS.Controllers.KMS.KB
 
             try
             {
-                // Find and delete the article-to-article link (EntityType = Law, matching ArticleViewerController)
-                var link = _articleLinkRepository.GetLinksForArticle(_editingArticle.ArticleID, (byte)KBEntityType.Law)
-                    .FirstOrDefault(l => l.EntityID == relatedArticleId);
-                
-                if (link != null)
-                {
-                    _articleLinkRepository.Delete(link.LinkID);
-                }
+                _articleService.RemoveArticleLink(
+                    _editingArticle.ArticleID, relatedArticleId, (byte)KBEntityType.Law);
             }
             catch (Exception ex)
             {
@@ -497,80 +473,65 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                // Delete all existing links for this article
-                _articleLinkRepository.DeleteAllForArticle(articleId);
+                var links = new List<KBArticleLink>();
 
-                // Insert links for Related Articles (EntityType = Law, matching ArticleViewerController)
+                // Related Articles (EntityType = Law, matching ArticleViewerController)
                 var dgvRelated = _view.GetRelatedDataGridView();
                 foreach (System.Windows.Forms.DataGridViewRow row in dgvRelated.Rows)
                 {
                     if (row.Tag != null && row.Tag is int)
-                    {
-                        int entityId = (int)row.Tag;
-                        _articleLinkRepository.Insert(new KBArticleLink
+                        links.Add(new KBArticleLink
                         {
-                            ArticleID = articleId,
-                            EntityType = (byte)KBEntityType.Law,
-                            EntityID = entityId,
-                            CreatedBy = _user.AdIdentity,
+                            EntityType  = (byte)KBEntityType.Law,
+                            EntityID    = (int)row.Tag,
+                            CreatedBy   = _user.AdIdentity,
                             CreatedDate = DateTime.Now
                         });
-                    }
                 }
 
-                // Insert links for Workflows (EntityType = Task)
+                // Workflows (EntityType = Task)
                 var dgvWorkflow = _view.GetWorkflowLinkedDataGridView();
                 foreach (System.Windows.Forms.DataGridViewRow row in dgvWorkflow.Rows)
                 {
                     if (row.Tag != null && row.Tag is int)
-                    {
-                        int entityId = (int)row.Tag;
-                        _articleLinkRepository.Insert(new KBArticleLink
+                        links.Add(new KBArticleLink
                         {
-                            ArticleID = articleId,
-                            EntityType = (byte)KBEntityType.Task,
-                            EntityID = entityId,
-                            CreatedBy = _user.AdIdentity,
+                            EntityType  = (byte)KBEntityType.Task,
+                            EntityID    = (int)row.Tag,
+                            CreatedBy   = _user.AdIdentity,
                             CreatedDate = DateTime.Now
                         });
-                    }
                 }
 
-                // Insert links for Programs (EntityType = Program)
+                // Programs (EntityType = Program)
                 var dgvPrograms = _view.GetProgramsLinkedDataGridView();
                 foreach (System.Windows.Forms.DataGridViewRow row in dgvPrograms.Rows)
                 {
                     if (row.Tag != null && row.Tag is int)
-                    {
-                        int entityId = (int)row.Tag;
-                        _articleLinkRepository.Insert(new KBArticleLink
+                        links.Add(new KBArticleLink
                         {
-                            ArticleID = articleId,
-                            EntityType = (byte)KBEntityType.Program,
-                            EntityID = entityId,
-                            CreatedBy = _user.AdIdentity,
+                            EntityType  = (byte)KBEntityType.Program,
+                            EntityID    = (int)row.Tag,
+                            CreatedBy   = _user.AdIdentity,
                             CreatedDate = DateTime.Now
                         });
-                    }
                 }
 
-                // Insert links for Documents (EntityType = Law)
+                // Documents (EntityType = Law)
                 var dgvDocs = _view.GetDocsLinkedDataGridView();
                 foreach (System.Windows.Forms.DataGridViewRow row in dgvDocs.Rows)
                 {
                     if (row.Tag != null && row.Tag is int)
-                    {
-                        int entityId = (int)row.Tag;
-                        _articleLinkRepository.Insert(new KBArticleLink
+                        links.Add(new KBArticleLink
                         {
-                            ArticleID = articleId,
-                            EntityType = (byte)KBEntityType.Law,
-                            EntityID = entityId,
-                            CreatedBy = _user.AdIdentity,
+                            EntityType  = (byte)KBEntityType.Law,
+                            EntityID    = (int)row.Tag,
+                            CreatedBy   = _user.AdIdentity,
                             CreatedDate = DateTime.Now
                         });
-                    }
                 }
+
+                _articleService.SaveArticleLinks(articleId, links);
             }
             catch (Exception ex)
             {
@@ -586,7 +547,7 @@ namespace CMS.Controllers.KMS.KB
             try
             {
                 // Load Related Articles (EntityType = Law, matching ArticleViewerController)
-                var articleLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Law);
+                var articleLinks = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Law);
                 var dgvRelated = _view.GetRelatedDataGridView();
                 dgvRelated.Rows.Clear();
 
@@ -595,7 +556,7 @@ namespace CMS.Controllers.KMS.KB
                 {
                     // Retrieve the full article details including Title using ArticleID (EntityID)
                     var linkedArticle = _articleService.GetById(link.EntityID);
-                    
+
                     if (linkedArticle != null)
                     {
                         int rowIndex = dgvRelated.Rows.Add(
@@ -604,16 +565,16 @@ namespace CMS.Controllers.KMS.KB
                             linkedArticle.Title ?? "-",
                             linkedArticle.ArticleTypeName ?? "-"
                         );
-                        
+
                         dgvRelated.Rows[rowIndex].Tag = linkedArticle.ArticleID;
-                        dgvRelated.Rows[rowIndex].DefaultCellStyle.BackColor = 
+                        dgvRelated.Rows[rowIndex].DefaultCellStyle.BackColor =
                             index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
                         index++;
                     }
                 }
 
                 // Load Workflow links (EntityType = Task)
-                var taskLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Task);
+                var taskLinks = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Task);
                 var dgvWorkflow = _view.GetWorkflowLinkedDataGridView();
                 dgvWorkflow.Rows.Clear();
 
@@ -636,7 +597,7 @@ namespace CMS.Controllers.KMS.KB
                 }
 
                 // Load Program links (EntityType = Program)
-                var programLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Program);
+                var programLinks = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Program);
                 var dgvPrograms = _view.GetProgramsLinkedDataGridView();
                 dgvPrograms.Rows.Clear();
 
@@ -659,7 +620,7 @@ namespace CMS.Controllers.KMS.KB
                 }
 
                 // Load Document/Law links (EntityType = Law)
-                var lawLinks = _articleLinkRepository.GetLinksForArticle(articleId, (byte)KBEntityType.Law);
+                var lawLinks = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Law);
                 var dgvDocs = _view.GetDocsLinkedDataGridView();
                 dgvDocs.Rows.Clear();
 

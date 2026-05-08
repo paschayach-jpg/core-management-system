@@ -39,6 +39,22 @@ namespace CMS.Services.Interfaces
         // ── Version History ───────────────────────────────────────────────────
         IEnumerable<KBVersion> GetVersionHistory(int articleId);
 
+        /// <summary>คืน VersionNumber ล่าสุดจาก t_KBVersion (0 ถ้ายังไม่มีประวัติ)</summary>
+        int GetLatestVersionNumber(int articleId);
+
+        // ── Article Links ─────────────────────────────────────────────────────
+        /// <summary>ดึง links ของบทความ optionally กรองด้วย entityType</summary>
+        IEnumerable<KBArticleLink> GetArticleLinks(int articleId, byte? entityType = null);
+
+        /// <summary>ลบ links ทั้งหมดแล้ว insert รายการใหม่ทั้งหมด (atomic replace)</summary>
+        void SaveArticleLinks(int articleId, IEnumerable<KBArticleLink> links);
+
+        /// <summary>เพิ่ม link เดียว</summary>
+        void AddArticleLink(KBArticleLink link);
+
+        /// <summary>ลบ link ที่ตรงกับ articleId + entityId + entityType</summary>
+        void RemoveArticleLink(int articleId, int entityId, byte entityType);
+
         // ── Engagement ────────────────────────────────────────────────────────
         void IncrementViewCount(int articleId);
         void IncrementLikeCount(int articleId);

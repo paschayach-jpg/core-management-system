@@ -30,7 +30,7 @@ All `new` for repos/services/controllers happens here. No `new` inside forms.
 
 ## 2. Creating a New Form — Full Checklist
 
-Follow the KBImportWizard (`KBImportWizardForm`) as the canonical example.
+Follow `KBCategoryForm` / `KBCategoryController` as the canonical example.
 
 ### Step 1 — Domain (CMS.Domain)
 
@@ -105,49 +105,54 @@ public class KBImportProcessor {
 
 ### Step 4 — Controllers (CMS.Controllers)
 
-**Two interfaces per feature:**
+**One interface per feature only:**
 
-**View contract** → `CMS.Controllers/<Module>/Interfaces/I<Feature>View.cs`
-(Properties the form exposes, methods the presenter calls)
+**View contract** → `CMS.Controllers/<Module>/Interfaces/I<Feature>Controller.cs`
+This interface defines properties the form exposes AND methods the presenter calls on the form.
+**Do NOT create `I<Feature>View.cs`** — the single `I<Feature>Controller.cs` is the view contract.
+
 ```csharp
-public interface IKBImportWizardView {
-    string SelectedFilePath { get; }
-    bool OptSkipWarning { get; }
-    void ShowValidationResult(KBImportValidationResult result);
-    void ShowImportComplete(KBImportValidationResult summary);
+public interface IKBCategoryController {
+    // Properties the form exposes (presenter reads/writes these)
+    string CategoryName { get; set; }
+    int? EditingId { get; set; }
+    bool DeleteEnabled { set; }
+    // Methods the presenter calls on the form
+    void BindCategories(IEnumerable<KBCategory> categories);
     void ShowError(string message);
-    void SetStatus(string text);
-}
-```
-
-**Controller contract** → `CMS.Controllers/<Module>/Interfaces/I<Feature>Controller.cs`
-(Methods the form calls on user action)
-```csharp
-public interface IKBImportWizardController {
-    void ValidateFile();
-    void ExecuteImport();
-    void Cancel();
+    void ShowSuccess(string message);
+    void ClearForm();
 }
 ```
 
 **Presenter** → `CMS.Controllers/<Module>/<Feature>Controller.cs`
+The controller does **NOT** implement `I<Feature>Controller`. It accepts it as a constructor parameter named `view`.
+
 ```csharp
-public class KBImportWizardController : IKBImportWizardController {
-    private readonly IKBImportWizardView _view;
-    private readonly IKBArticleService _articleService;
-    private readonly KBImportProcessor _processor;
+public class KBCategoryController {
+    private readonly IKBCategoryController _view;
+    private readonly IKBCategoryService    _service;
 
-    public KBImportWizardController(
-        IKBImportWizardView view,
-        IKBArticleService articleService,
-        KBImportProcessor processor) { ... }
+    public KBCategoryController(
+        IKBCategoryController view,
+        IKBCategoryService    service,
+        UserContext           user) {
+        _view    = view;
+        _service = service;
+    }
 
-    public void ValidateFile() {
-        var result = _processor.ValidateRows(...);
-        _view.ShowValidationResult(result);
+    public void Initialize() {
+        try { _view.BindCategories(_service.GetAll()); }
+        catch (Exception ex) { _view.ShowError(ex.Message); }
     }
 }
 ```
+
+**Rules:**
+- `Interfaces/` folder contains `I<Feature>Controller.cs` **only** — never `I<Feature>View.cs`
+- `<Feature>Controller` must **not** implement `I<Feature>Controller`
+- The view interface (`I<Feature>Controller`) is injected through the controller constructor only
+- The form is the concrete implementation of `I<Feature>Controller`
 
 ---
 
@@ -156,38 +161,45 @@ public class KBImportWizardController : IKBImportWizardController {
 **Two files per form (mandatory):**
 
 #### `<FeatureForm>.cs` — Code-behind (event handlers ONLY)
+
+The form implements `I<Feature>Controller` (the view contract) and exposes an `AttachPresenter` method.
+The constructor receives **only** `UserContext` (and other lightweight params); services are never passed to the form constructor.
+
 ```csharp
-public partial class KBImportWizardForm : Form,
-    IKBImportWizardView       // View contract
+public partial class KBCategoryForm : Form,
+    IKBCategoryController     // View contract — exposes properties/methods the presenter calls
 {
-    private KBImportWizardController _presenter;
+    private KBCategoryController _presenter;
+    private readonly UserContext _user;
 
-    // ctor: accept dependencies, set up form state
-    public KBImportWizardForm(IKBArticleService articleService,
-                               IKBCategoryService categoryService,
-                               KBImportProcessor processor,
-                               UserContext user) {
+    public KBCategoryForm(UserContext user) {
+        if (user == null) throw new ArgumentNullException("user");
+        _user = user;
         InitializeComponent();
-        _presenter = new KBImportWizardController(this, articleService, processor);
     }
 
-    // --- IKBImportWizardView properties ---
-    public string SelectedFilePath => txtFilePath.Text.Trim();
-    public bool OptSkipWarning => chkSkipWarning.Checked;
-
-    // --- IKBImportWizardView methods ---
-    public void ShowValidationResult(KBImportValidationResult r) {
-        lblSummary.Text = $"Valid: {r.ValidRecords} / Total: {r.TotalRecords}";
-        previewControl.BindRows(r.Rows);
+    // Called by MDI_Container (composition root) after the presenter is wired.
+    // Must be called before the form is shown.
+    public void AttachPresenter(KBCategoryController presenter) {
+        if (presenter == null) throw new ArgumentNullException("presenter");
+        _presenter = presenter;
     }
-    public void ShowError(string msg) => MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-    public void SetStatus(string text) => lblStatus.Text = text;
+
+    // --- IKBCategoryController properties (form exposes control values) ---
+    public string CategoryName {
+        get { return txtName.Text.Trim(); }
+        set { txtName.Text = value; }
+    }
+
+    // --- IKBCategoryController methods (presenter pushes data to form) ---
+    public void BindCategories(IEnumerable<KBCategory> categories) { ... }
+    public void ShowError(string msg) =>
+        MessageBox.Show(msg, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
     // --- Event handlers (ONLY thing allowed here) ---
-    private void btnBrowse_Click(object sender, EventArgs e) => _presenter.BrowseFile();
-    private void btnValidate_Click(object sender, EventArgs e) => _presenter.ValidateFile();
-    private void btnImport_Click(object sender, EventArgs e) => _presenter.ExecuteImport();
-    private void btnCancel_Click(object sender, EventArgs e) => Close();
+    private void Form_Load(object sender, EventArgs e)       => _presenter.Initialize();
+    private void btnSave_Click(object sender, EventArgs e)   => _presenter.Save();
+    private void btnDelete_Click(object sender, EventArgs e) => _presenter.Deactivate();
 }
 ```
 
@@ -205,36 +217,64 @@ public partial class KBImportWizardForm : Form,
 
 ---
 
-### Step 6 — Wire up in Program.cs
+### Step 6 — Wire up in MDI_Container (composition root for forms)
 
+`Program.cs` wires repos → services and injects services into `MDI_Container`.
+`MDI_Container` creates forms and their controllers using the two-step injection pattern.
+
+**Program.cs** — repos and services only, pass to MDI_Container:
 ```csharp
-// 1. Repos
-var kbArticleRepo     = new KBArticleRepository(connectionString);
-var kbCategoryRepo    = new KBCategoryRepository(connectionString);
-
-// 2. Services
-var kbArticleService  = new KBArticleService(kbArticleRepo, auditService);
+var kbCategoryRepo    = new KBCategoryRepository(configManager);
 var kbCategoryService = new KBCategoryService(kbCategoryRepo, auditService);
+var kbArticleService  = new KBArticleService(kbArticleRepo, kbVersionRepo, auditService);
 
-// 3. Helpers
-var kbImportProcessor = new KBImportProcessor(kbCategoryRepo, kbArticleRepo, kbVersionRepo);
-
-// 4. Inject into MDI_Container (or form factory)
-var mdi = new MDI_Container(..., kbArticleService, kbCategoryService, kbImportProcessor, ...);
+var mdi = new MDI_Container(...,
+    kbCategoryService: kbCategoryService,
+    kbArticleService:  kbArticleService, ...);
 ```
+
+**MDI_Container** — two-step injection for every form/presenter pair:
+```csharp
+// Step 1: create form with minimal params (UserContext only, no services)
+var form      = new KBCategoryForm(_currentUser);
+// Step 2: create presenter, passing the form as the view (IKBCategoryController)
+var presenter = new KBCategoryController(form, _kbCategoryService, _kbArticleService, _currentUser);
+// Step 3: inject controller reference back into the form
+form.AttachPresenter(presenter);
+// Step 4: show
+OpenChildForm(form);
+```
+
+**Rule:** Never create a presenter inside a form constructor. Forms never hold service references.
 
 ---
 
 ## 3. Opening a Form from MDI_Container
 
+Always use the two-step injection pattern — form knows nothing about services:
+
 ```csharp
 // Inside MDI_Container — open as MDI child
-private void OpenKBImportWizard() {
-    var form = new KBImportWizardForm(
-        _kbArticleService, _kbCategoryService, _kbImportProcessor, _user);
+private void OpenKBCategoryForm() {
+    var form      = new KBCategoryForm(_currentUser);
+    var presenter = new KBCategoryController(
+        form, _kbCategoryService, _kbArticleService, _currentUser);
+    form.AttachPresenter(presenter);
     form.MdiParent = this;
     form.Show();
 }
+```
+
+For factory patterns (forms created on demand inside another form):
+```csharp
+form.AttachFactories(
+    categoryFormFactory: () => {
+        var catForm      = new KBCategoryForm(_currentUser);
+        var catPresenter = new KBCategoryController(
+            catForm, _kbCategoryService, _kbArticleService, _currentUser);
+        catForm.AttachPresenter(catPresenter);
+        return catForm;
+    });
 ```
 
 ---
@@ -270,10 +310,9 @@ Never skip a layer. A compile error in any layer means the fix is incomplete.
 
 | Artifact | Convention | Example |
 |---|---|---|
-| Form class | `<Feature>Form` | `KBImportWizardForm` |
-| View interface | `I<Feature>View` | `IKBImportWizardView` |
-| Controller interface | `I<Feature>Controller` | `IKBImportWizardController` |
-| Presenter class | `<Feature>Controller` | `KBImportWizardController` |
+| Form class | `<Feature>Form` | `KBCategoryForm` |
+| View contract (interface) | `I<Feature>Controller` | `IKBCategoryController` |
+| Presenter class | `<Feature>Controller` | `KBCategoryController` |
 | Service interface | `I<Entity>Service` | `IKBArticleService` |
 | Repository interface | `I<Entity>Repository` | `IKBArticleRepository` |
 | Repository implementation | `<Entity>Repository` | `KBArticleRepository` |
@@ -301,8 +340,8 @@ CMS.Services/
 
 CMS.Controllers/
   <Module>/
-    Interfaces/    ← I<Feature>View.cs + I<Feature>Controller.cs
-    <Feature>Controller.cs
+    Interfaces/    ← I<Feature>Controller.cs ONLY (view contract — no I<Feature>View.cs)
+    <Feature>Controller.cs  (does NOT implement I<Feature>Controller)
 
 CMS.Presentation/
   Modules/<Module>/
@@ -361,3 +400,39 @@ The form **only** bridges user gestures → presenter calls, and presenter calls
 
 **Violation example (from KBImportWizardForm history):**
 A method `EnsureErrorDetailPanel()` was added to code-behind that called `new Panel()`, `new DataGridView()`, set styles, and called `Controls.Add()`. This violated the Designer/Code-Behind separation rule. The fix was to move ALL of this to `Designer.cs` and remove `EnsureErrorDetailPanel()` entirely from code-behind.
+
+---
+
+## 8. Project File (.csproj) and Build Rules
+
+### Adding new files — always register in .csproj
+
+Every new `.cs` file (form, class, interface, designer) **must** be added to the `.csproj` of its project immediately. A file that exists on disk but is missing from `.csproj` will be silently ignored by the compiler.
+
+**WinForms form files** require three linked entries:
+```xml
+<Compile Include="Modules\KMS\KBCategoryForm.cs">
+  <SubType>Form</SubType>
+</Compile>
+<Compile Include="Modules\KMS\KBCategoryForm.Designer.cs">
+  <DependentUpon>KBCategoryForm.cs</DependentUpon>
+</Compile>
+<EmbeddedResource Include="Modules\KMS\KBCategoryForm.resx">
+  <DependentUpon>KBCategoryForm.cs</DependentUpon>
+</EmbeddedResource>
+```
+
+**Plain class / interface files** require a single entry:
+```xml
+<Compile Include="KMS\KB\Interfaces\IKBCategoryController.cs" />
+```
+
+### Build after every modification
+
+After every code change, run a build to catch compile errors immediately:
+```
+msbuild CMS.sln /t:Build /p:Configuration=Debug
+```
+or use the VS keyboard shortcut **Ctrl+Shift+B**.
+
+**Never** leave compile errors unresolved and move on to the next step. Fix cascade order: Domain → Data → Services → Controllers → Presentation → Program.cs.

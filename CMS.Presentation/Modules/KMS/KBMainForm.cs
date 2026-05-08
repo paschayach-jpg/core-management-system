@@ -209,6 +209,7 @@ namespace CMS.Presentation.Modules.KMS
                     //a.ArticleCode,
                     a.Title,
                     a.Summary,
+                    //a.ContentHTML,
                     a.ArticleTypeName,
                     a.StatusName,
                     a.CategoryName,
@@ -804,9 +805,22 @@ namespace CMS.Presentation.Modules.KMS
                 ReadOnly = true,
                 DefaultCellStyle = lft
             });
-            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
-                Name = "colType", HeaderText = "ประเภท", Width = 78, ReadOnly = true,
-                DefaultCellStyle = ctr });
+            //dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            //{
+            //    Name = "colContentHtml",
+            //    HeaderText = "รายละเอียด",
+            //    ReadOnly = true,
+            //    Width = 150,
+            //    DefaultCellStyle = lft
+            //});
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colType",
+                HeaderText = "ประเภท",
+                Width = 78,
+                ReadOnly = true,
+                DefaultCellStyle = ctr
+            });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
                 Name = "colStatus", HeaderText = "สถานะ", Width = 90, ReadOnly = true,
                 DefaultCellStyle = ctr });

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
@@ -15,18 +16,22 @@ namespace CMS.Services
     {
         private readonly IKBArticleRepository     _articleRepo;
         private readonly IKBVersionRepository     _versionRepo;
+        private readonly IKBArticleLinkRepository _linkRepo;
         private readonly IAuditService            _auditService;
 
         public KBArticleService(
-            IKBArticleRepository  articleRepo,
-            IKBVersionRepository  versionRepo,
-            IAuditService         auditService)
+            IKBArticleRepository     articleRepo,
+            IKBVersionRepository     versionRepo,
+            IKBArticleLinkRepository linkRepo,
+            IAuditService            auditService)
         {
             if (articleRepo  == null) throw new ArgumentNullException("articleRepo");
             if (versionRepo  == null) throw new ArgumentNullException("versionRepo");
+            if (linkRepo     == null) throw new ArgumentNullException("linkRepo");
             if (auditService == null) throw new ArgumentNullException("auditService");
             _articleRepo  = articleRepo;
             _versionRepo  = versionRepo;
+            _linkRepo     = linkRepo;
             _auditService = auditService;
         }
 
@@ -193,6 +198,50 @@ namespace CMS.Services
         public IEnumerable<KBVersion> GetVersionHistory(int articleId)
         {
             return _versionRepo.GetByArticle(articleId);
+        }
+
+        // ── Version (latest number) ───────────────────────────────────────────
+
+        public int GetLatestVersionNumber(int articleId)
+        {
+            try
+            {
+                var latest = _versionRepo.GetLatestByArticle(articleId);
+                return latest != null ? latest.VersionNumber : 0;
+            }
+            catch { return 0; }
+        }
+
+        // ── Article Links ─────────────────────────────────────────────────────
+
+        public IEnumerable<KBArticleLink> GetArticleLinks(int articleId, byte? entityType = null)
+        {
+            return _linkRepo.GetLinksForArticle(articleId, entityType);
+        }
+
+        public void SaveArticleLinks(int articleId, IEnumerable<KBArticleLink> links)
+        {
+            _linkRepo.DeleteAllForArticle(articleId);
+            if (links == null) return;
+            foreach (var link in links)
+            {
+                link.ArticleID = articleId;
+                _linkRepo.Insert(link);
+            }
+        }
+
+        public void AddArticleLink(KBArticleLink link)
+        {
+            if (link == null) throw new ArgumentNullException("link");
+            _linkRepo.Insert(link);
+        }
+
+        public void RemoveArticleLink(int articleId, int entityId, byte entityType)
+        {
+            var link = _linkRepo.GetLinksForArticle(articleId, entityType)
+                                .FirstOrDefault(l => l.EntityID == entityId);
+            if (link != null)
+                _linkRepo.Delete(link.LinkID);
         }
 
         // ── Engagement ────────────────────────────────────────────────────────

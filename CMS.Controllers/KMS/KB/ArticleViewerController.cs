@@ -1,5 +1,4 @@
 using CMS.Controllers.KMS.KB.Interfaces;
-using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
@@ -13,29 +12,23 @@ namespace CMS.Controllers.KMS.KB
     {
         private readonly IArticleViewerController _view;
         private readonly IKBArticleService        _articleService;
-        private readonly IKBVersionRepository     _versionRepository;
-        private readonly IKBArticleLinkRepository _articleLinkRepository;
         private readonly UserContext              _user;
         private KBArticle                        _article;
 
         public ArticleViewerController(
             IArticleViewerController view,
             IKBArticleService        articleService,
-            IKBVersionRepository     versionRepository,
-            IKBArticleLinkRepository articleLinkRepository,
             UserContext              user,
             KBArticle                article)
         {
-            if (view                 == null) throw new ArgumentNullException("view");
-            if (articleService       == null) throw new ArgumentNullException("articleService");
-            if (versionRepository    == null) throw new ArgumentNullException("versionRepository");
-            if (articleLinkRepository == null) throw new ArgumentNullException("articleLinkRepository");
-            if (user                 == null) throw new ArgumentNullException("user");
-            if (article              == null) throw new ArgumentNullException("article");
-            _view = view; _articleService = articleService;
-            _versionRepository = versionRepository;
-            _articleLinkRepository = articleLinkRepository;
-            _user = user; _article = article;
+            if (view           == null) throw new ArgumentNullException("view");
+            if (articleService == null) throw new ArgumentNullException("articleService");
+            if (user           == null) throw new ArgumentNullException("user");
+            if (article        == null) throw new ArgumentNullException("article");
+            _view           = view;
+            _articleService = articleService;
+            _user           = user;
+            _article        = article;
         }
 
         /// <summary>Push initial data into the view.</summary>
@@ -87,8 +80,7 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                var links = _articleLinkRepository.GetLinksForArticle(
-                    articleId, (byte)KBEntityType.Law);
+                var links = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Law);
 
                 var related = new List<KBArticle>();
                 foreach (var link in links)
@@ -111,9 +103,9 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                var latest = _versionRepository.GetLatestByArticle(article.ArticleID);
-                if (latest != null)
-                    article.CurrentVersion = latest.VersionNumber;
+                int latest = _articleService.GetLatestVersionNumber(article.ArticleID);
+                if (latest > 0)
+                    article.CurrentVersion = latest;
             }
             catch { /* non-critical — keep whatever CurrentVersion was already set */ }
         }

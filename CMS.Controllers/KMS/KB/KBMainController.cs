@@ -1,5 +1,4 @@
 using CMS.Controllers.KMS.KB.Interfaces;
-using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
@@ -11,28 +10,27 @@ namespace CMS.Controllers.KMS.KB
     public class KBMainController
     {
         private readonly IKBMainController  _view;
-        private readonly IKBCategoryService  _categoryService;
-        private readonly IKBArticleService   _articleService;
-        private readonly IKBVersionRepository _versionRepository;
-        private readonly UserContext         _user;
+        private readonly IKBCategoryService _categoryService;
+        private readonly IKBArticleService  _articleService;
+        private readonly UserContext        _user;
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
         private int _currentPage = 1;
 
         public KBMainController(
             IKBMainController  view,
-            IKBCategoryService  categoryService,
-            IKBArticleService   articleService,
-            IKBVersionRepository versionRepository,
-            UserContext         user)
+            IKBCategoryService categoryService,
+            IKBArticleService  articleService,
+            UserContext        user)
         {
             if (view            == null) throw new ArgumentNullException("view");
             if (categoryService == null) throw new ArgumentNullException("categoryService");
             if (articleService  == null) throw new ArgumentNullException("articleService");
-            if (versionRepository == null) throw new ArgumentNullException("versionRepository");
             if (user            == null) throw new ArgumentNullException("user");
-            _view = view; _categoryService = categoryService;
-            _articleService = articleService; _versionRepository = versionRepository; _user = user;
+            _view            = view;
+            _categoryService = categoryService;
+            _articleService  = articleService;
+            _user            = user;
         }
 
         public void Initialize() { LoadCategoryTree(); }
@@ -184,9 +182,9 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                var latest = _versionRepository.GetLatestByArticle(article.ArticleID);
-                if (latest != null)
-                    article.CurrentVersion = latest.VersionNumber;
+                int latest = _articleService.GetLatestVersionNumber(article.ArticleID);
+                if (latest > 0)
+                    article.CurrentVersion = latest;
             }
             catch { /* non-critical — keep whatever CurrentVersion was already set */ }
         }

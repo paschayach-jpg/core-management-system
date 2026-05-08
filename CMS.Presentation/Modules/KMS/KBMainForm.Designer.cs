@@ -287,6 +287,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvArticles.AllowUserToAddRows = false;
             this.dgvArticles.AllowUserToDeleteRows = false;
             this.dgvArticles.AllowUserToResizeRows = false;
+            this.dgvArticles.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvArticles.BackgroundColor = System.Drawing.Color.White;
             this.dgvArticles.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvArticles.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
