@@ -18,9 +18,9 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle16 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle17 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle18 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlErrorDetail = new System.Windows.Forms.Panel();
             this.dgvFailedRows = new System.Windows.Forms.DataGridView();
             this.colFRow = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -262,12 +262,12 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvFailedRows.AllowUserToDeleteRows = false;
             this.dgvFailedRows.BackgroundColor = System.Drawing.Color.White;
             this.dgvFailedRows.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvFailedRows.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle16.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle16.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            dataGridViewCellStyle16.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle16.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle16.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvFailedRows.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle16;
             this.dgvFailedRows.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvFailedRows.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colFRow,
@@ -276,14 +276,14 @@ namespace CMS.Presentation.Modules.KMS
             this.colFTitle,
             this.colFRaw,
             this.colFReason});
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvFailedRows.DefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle17.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle17.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle17.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle17.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle17.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle17.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle17.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvFailedRows.DefaultCellStyle = dataGridViewCellStyle17;
             this.dgvFailedRows.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvFailedRows.EnableHeadersVisualStyles = false;
             this.dgvFailedRows.Font = new System.Drawing.Font("Segoe UI", 8F);
@@ -291,14 +291,14 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvFailedRows.Location = new System.Drawing.Point(0, 42);
             this.dgvFailedRows.Name = "dgvFailedRows";
             this.dgvFailedRows.ReadOnly = true;
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle3.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle3.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvFailedRows.RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle18.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle18.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle18.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle18.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle18.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle18.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle18.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvFailedRows.RowHeadersDefaultCellStyle = dataGridViewCellStyle18;
             this.dgvFailedRows.RowHeadersVisible = false;
             this.dgvFailedRows.RowHeadersWidth = 51;
             this.dgvFailedRows.RowTemplate.Height = 26;
@@ -927,8 +927,8 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlActStep2.Controls.Add(this.btnCancel2);
             this.pnlActStep2.Controls.Add(this.btnBack);
             this.pnlActStep2.Controls.Add(this.btnImport);
-            this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlActStep2.Location = new System.Drawing.Point(310, 704);
+            this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlActStep2.Location = new System.Drawing.Point(310, 708);
             this.pnlActStep2.Name = "pnlActStep2";
             this.pnlActStep2.Size = new System.Drawing.Size(837, 45);
             this.pnlActStep2.TabIndex = 1;
@@ -1044,6 +1044,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlImportOptions.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
             this.pnlImportOptions.Size = new System.Drawing.Size(837, 120);
             this.pnlImportOptions.TabIndex = 1;
+            this.pnlImportOptions.Visible = false;
             // 
             // chkSkipWarning
             // 
@@ -1397,8 +1398,6 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // lblValItem6Detail
             // 
-            this.lblValItem6Detail.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblValItem6Detail.Font = new System.Drawing.Font("Segoe UI", 7.5F);
             this.lblValItem6Detail.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
             this.lblValItem6Detail.Location = new System.Drawing.Point(38, 28);

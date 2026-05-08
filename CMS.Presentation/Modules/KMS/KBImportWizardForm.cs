@@ -631,7 +631,7 @@ namespace CMS.Presentation.Modules.KMS
             SetValItem(6,
                 noErrors ? "✅" : "❌",
                 noErrors ? "ข้อผิดพลาด: ไม่พบ"
-                         : string.Format("❌  ข้อผิดพลาด: {0} แถว (ดูรายละเอียดใน Preview)", errorCount),
+                         : string.Format("❌  ข้อผิดพลาด: {0} แถว (ดูรายละเอียดใน Gridview)", errorCount),
                 errorDetail,
                 noErrors);
         }
