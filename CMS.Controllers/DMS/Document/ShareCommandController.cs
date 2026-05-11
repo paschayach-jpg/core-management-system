@@ -39,5 +39,13 @@ namespace CMS.Controllers.DMS.Document
 
             _permissionService.SetFolderPermission(request, user);
         }
+
+        public void RequestFolderShareApproval(SetPermissionRequest request, UserContext user)
+        {
+            if (_shareService == null)
+                return;
+
+            _shareService.RequestFolderShareApproval(request, user);
+        }
     }
 }

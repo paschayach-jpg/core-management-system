@@ -99,8 +99,8 @@ namespace CMS.Presentation
         string password;
         private async void btnLogin_Click(object sender, EventArgs e)
          {
-            //string username = txtUsername.Text.Trim();
-            //string password = txtPassword.Text;
+            string username = txtUsername.Text.Trim();
+            string password = txtPassword.Text;
 
             //string username = "pitakpong";
             //string password = "P@takpong01714";
@@ -113,7 +113,7 @@ namespace CMS.Presentation
             else
             {
                 username = "pitakpong";
-                password = "P@takpong01714";
+                password = "P@takpong0132";
             }
 
             if (username.Length == 0)

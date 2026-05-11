@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -50,6 +50,9 @@ namespace CMS.Presentation
         private BackgroundWorker _uploadWorker;
         private int _currentUploadRow = -1;
 
+        // Files to pre-load when form opens (supplied via drag-drop from FolderForm)
+        private string[] _initialFiles;
+
         // ── Row geometry ─────────────────────────────────────────────────────
         private const int ROW_HEIGHT   = 62;
         private const int ICON_X       = 12;
@@ -64,7 +67,8 @@ namespace CMS.Presentation
             UserContext    user,
             Folder         targetFolder,
             IUploadCheckpointController checkpointController = null,
-            IAuditLogController auditLogController = null)
+            IAuditLogController auditLogController = null,
+            string[] initialFiles = null)
         {
             if (fileUploadController == null) throw new ArgumentNullException("fileUploadController");
             if (user          == null) throw new ArgumentNullException("user");
@@ -76,6 +80,7 @@ namespace CMS.Presentation
             _folderId          = targetFolder.FolderID;
             _checkpointController = checkpointController;
             _auditLogController = auditLogController;
+            _initialFiles      = initialFiles;
 
             InitializeComponent();
 
@@ -110,6 +115,14 @@ namespace CMS.Presentation
                 ApplyFolderContext(_selectedFolder);
             else
                 UpdateCurrentFolderDisplay(null);
+
+            // Pre-load files dropped from FolderForm drag-drop
+            if (_initialFiles != null && _initialFiles.Length > 0)
+            {
+                string[] validated;
+                if (TryValidateMaxFilesPerUpload(_initialFiles, "DragDrop", out validated))
+                    LoadFilesIntoList(validated);
+            }
         }
 
         // ── Apply folder context ──────────────────────────────────────────────
@@ -119,7 +132,7 @@ namespace CMS.Presentation
             _selectedFolder = folder;
             _folderId       = folder.FolderID;
 
-            Text = "อัพโหลดไฟล์";
+            Text = "อัปโหลดไฟล์";
 
             UpdateCurrentFolderDisplay(folder);
         }
@@ -152,7 +165,7 @@ namespace CMS.Presentation
 
         public void SetDestinationLabel(string folderName)
         {
-            Text = "อัพโหลดไฟล์";
+            Text = "อัปโหลดไฟล์";
         }
 
         // ── Drop zone paint (dashed border) ───────────────────────────────────
@@ -179,7 +192,28 @@ namespace CMS.Presentation
         private void PnlUploadZone_DragDrop(object sender, DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
-            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            string[] dropped = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+            var folders = dropped.Where(p => Directory.Exists(p)).ToArray();
+            var files   = dropped.Where(p => File.Exists(p)).ToArray();
+
+            if (folders.Length > 0)
+            {
+                string folderNames = string.Join(", ", folders.Select(f => Path.GetFileName(f)));
+                string msg = folders.Length == dropped.Length
+                    ? string.Format(
+                        "ไม่รองรับการลากโฟลเดอร์เข้ามาโดยตรง\n\nโฟลเดอร์ที่ลากมา: {0}\n\nกรุณาเปิดโฟลเดอร์และเลือกเฉพาะไฟล์ที่ต้องการอัปโหลด",
+                        folderNames)
+                    : string.Format(
+                        "ข้ามโฟลเดอร์ที่ไม่รองรับ: {0}\n\nระบบจะดำเนินการเฉพาะไฟล์ที่เลือกมาเท่านั้น",
+                        folderNames);
+
+                MessageBox.Show(msg, "ไม่รองรับการลากโฟลเดอร์",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                if (files.Length == 0) return;
+            }
+
             string[] validated;
             if (!TryValidateMaxFilesPerUpload(files, "DragDrop", out validated))
                 return;
@@ -255,7 +289,7 @@ namespace CMS.Presentation
         {
             using (var dlg = new OpenFileDialog())
             {
-                dlg.Title       = string.Format("เลือกไฟล์ที่ต้องการอัพโหลด (สูงสุด {0} ไฟล์)", MAX_FILES_PER_UPLOAD);
+                dlg.Title       = string.Format("เลือกไฟล์ที่ต้องการอัปโหลด (สูงสุด {0} ไฟล์)", MAX_FILES_PER_UPLOAD);
                 dlg.Multiselect = true;
                 dlg.Filter      =
                     "Permitted files|*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.ppt;*.pptx;" +
@@ -340,8 +374,8 @@ namespace CMS.Presentation
         private void StartUpload()
         {
             if (_folderId <= 0 || _selectedFolder == null) { ShowError("ไม่พบข้อมูล Folder ปลายทาง"); return; }
-            if (_pendingFiles.Count == 0)                  { ShowError("กรุณาเลือกไฟล์ที่ต้องการอัพโหลด"); return; }
-            if (_fileUploadController == null)             { ShowError("บริการอัพโหลดไม่พร้อม"); return; }
+            if (_pendingFiles.Count == 0)                  { ShowError("กรุณาเลือกไฟล์ที่ต้องการอัปโหลด"); return; }
+            if (_fileUploadController == null)             { ShowError("บริการอัปโหลดไม่พร้อม"); return; }
 
             // ── ตรวจสอบไฟล์ซ้ำก่อนเริ่ม upload ─────────────────────────────
             var fileNames  = _pendingFiles.Select(f => f.FileName);
@@ -367,14 +401,14 @@ namespace CMS.Presentation
 
                 if (choice == DuplicateFileChoiceDialog.Choice.SkipDuplicates)
                 {
-                    // ข้ามไฟล์ซ้ำออก — อัพโหลดเฉพาะไฟล์ที่ไม่ซ้ำ
+                    // ข้ามไฟล์ซ้ำออก — อัปโหลดเฉพาะไฟล์ที่ไม่ซ้ำ
                     var dupSet = new System.Collections.Generic.HashSet<string>(
                         duplicates, StringComparer.OrdinalIgnoreCase);
                     _pendingFiles.RemoveAll(f => dupSet.Contains(f.FileName));
 
                     if (_pendingFiles.Count == 0)
                     {
-                        ShowError("ไม่มีไฟล์ที่จะอัพโหลด (ทุกไฟล์ซ้ำกับไฟล์ในโฟลเดอร์)");
+                        ShowError("ไม่มีไฟล์ที่จะอัปโหลด (ทุกไฟล์ซ้ำกับไฟล์ในโฟลเดอร์)");
                         return;
                     }
                 }
@@ -424,7 +458,7 @@ namespace CMS.Presentation
             if (_fileUploadController == null) { ShowError("Download service is not available."); return; }
 
             int? docId = SelectedFileDocumentId;
-            if (!docId.HasValue) { ShowError("กรุณาเลือกไฟล์ที่อัพโหลดสำเร็จก่อนดาวน์โหลด"); return; }
+            if (!docId.HasValue) { ShowError("กรุณาเลือกไฟล์ที่อัปโหลดสำเร็จก่อนดาวน์โหลด"); return; }
 
             _fileUploadController.DownloadFile(this, docId.Value, _user, suggestedName =>
             {
@@ -443,7 +477,7 @@ namespace CMS.Presentation
         {
             if (_uploadWorker != null && _uploadWorker.IsBusy)
             {
-                ShowInfo("ไม่สามารถ Clear ขณะกำลังอัพโหลด กรุณารอให้เสร็จก่อน");
+                ShowInfo("ไม่สามารถ Clear ขณะกำลังอัปโหลด กรุณารอให้เสร็จก่อน");
                 return;
             }
 
@@ -538,8 +572,8 @@ namespace CMS.Presentation
             if (InvokeRequired) { Invoke(new Action<int>(SetProgress), percent); return; }
             progressBar.Value    = Math.Min(Math.Max(percent, 0), 100);
             lblProgressText.Text = percent > 0 && percent < 100
-                ? string.Format("กำลังอัพโหลด... {0}%", percent)
-                : percent >= 100 ? "อัพโหลดเสร็จสิ้น" : string.Empty;
+                ? string.Format("กำลังอัปโหลด... {0}%", percent)
+                : percent >= 100 ? "อัปโหลดเสร็จสิ้น" : string.Empty;
 
             if (_currentUploadRow >= 0 && _currentUploadRow < _fileRows.Count)
             {
@@ -618,6 +652,7 @@ namespace CMS.Presentation
             int y = 0;
             for (int i = 0; i < paths.Length; i++)
             {
+                if (Directory.Exists(paths[i])) continue;
                 var info    = new FileInfo(paths[i]);
                 var request = new FileUploadRequest
                 {
@@ -687,9 +722,9 @@ namespace CMS.Presentation
 
                 var answer = MessageBox.Show(
                     string.Format(
-                        "พบการอัพโหลดที่ค้างไว้สำหรับไฟล์ \"{0}\"\n" +
-                        "อัพโหลดไปแล้ว: {1} / {2}\n\n" +
-                        "ต้องการอัพโหลดต่อจากจุดที่ค้างไว้หรือไม่?",
+                        "พบการอัปโหลดที่ค้างไว้สำหรับไฟล์ \"{0}\"\n" +
+                        "อัปโหลดไปแล้ว: {1} / {2}\n\n" +
+                        "ต้องการอัปโหลดต่อจากจุดที่ค้างไว้หรือไม่?",
                         req.FileName,
                         FormatBytes(cp.BytesUploaded),
                         FormatBytes(cp.FileSizeBytes)),
@@ -837,7 +872,7 @@ namespace CMS.Presentation
         {
             if (_uploadWorker != null && _uploadWorker.IsBusy)
             {
-                ShowInfo("ไม่สามารถลบไฟล์ขณะกำลังอัพโหลด กรุณารอให้อัพโหลดเสร็จก่อน");
+                ShowInfo("ไม่สามารถลบไฟล์ขณะกำลังอัปโหลด กรุณารอให้อัปโหลดเสร็จก่อน");
                 return;
             }
 

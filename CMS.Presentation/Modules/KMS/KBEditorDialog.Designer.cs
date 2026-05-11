@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace CMS.Presentation.Modules.KMS
 {
@@ -495,7 +495,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colAttDate
             // 
-            this.colAttDate.Text = "วันที่อัพโหลด";
+            this.colAttDate.Text = "วันที่อัปโหลด";
             this.colAttDate.Width = 140;
             // 
             // tabRelated

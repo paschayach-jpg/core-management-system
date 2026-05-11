@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -233,6 +233,10 @@ namespace CMS.Presentation
             _approvalFolderController = approvalFolderController ?? new ApprovalFolderController(_approvalService);
             _permissionCheckController = permissionCheckController ?? new PermissionCheckController(_permissionService);
             _auditLogController = auditLogController ?? new AuditLogController(_auditService);
+
+            // Pre-warm permission cache จาก session ACL ที่โหลดตอน login ครั้งเดียว
+            if (currentUser != null && currentUser.SessionAcl != null)
+                _permissionCheckController.PreloadAcl(currentUser.SessionAcl);
             _folderReadLookupController = folderReadLookupController ?? new FolderReadLookupController(folderRepository, _folderService);
             _fileDocumentLookupController = fileDocumentLookupController;
             _filePermissionAclController = filePermissionAclController;
@@ -1242,7 +1246,7 @@ namespace CMS.Presentation
                 return;
             }
 
-            using (var dlg = new ApprovalInboxForm(_approvalInboxController, _currentUser))
+            using (var dlg = new ApprovalInboxForm(_approvalInboxController, _currentUser, _userAccountLookupController))
             {
                 dlg.ShowDialog(this);
 
@@ -1493,10 +1497,10 @@ namespace CMS.Presentation
                     {
                         ff.Activate();
                         MessageBox.Show(
-                            "กรุณาเลือก Folder ปลายทางใน Folder Explorer ก่อนอัพโหลด\n\n" +
+                            "กรุณาเลือก Folder ปลายทางใน Folder Explorer ก่อนอัปโหลด\n\n" +
                             "1. กด 🏢 เลือกหน่วยงาน เพื่อกรอง\n" +
                             "2. คลิก Folder ใน tree ด้านซ้าย\n" +
-                            "3. กด 📤 ปุ่มอัพโหลด อีกครั้ง",
+                            "3. กด 📤 ปุ่มอัปโหลด อีกครั้ง",
                             "เลือก Folder ก่อน",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information);
@@ -1618,6 +1622,9 @@ namespace CMS.Presentation
                     return true;
                 case "ShareManagement":
                     OpenShareManagement();
+                    return true;
+                case "RecycleBin":
+                    OpenRecycleBin();
                     return true;
                 default:
                     return false;
@@ -3927,7 +3934,7 @@ namespace CMS.Presentation
             var mnuSeparator2 = new ToolStripSeparator();
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxDash_Permission_Click);
             var mnuSeparator3 = new ToolStripSeparator();
-            var mnuProperties = new ToolStripMenuItem("ℹ️  คุณสมบัติ", null, CtxDash_Properties_Click);
+            var mnuProperties = new ToolStripMenuItem("ℹ️  รายละเอียด", null, CtxDash_Properties_Click);
 
             ctx.Items.AddRange(new ToolStripItem[]
             {
@@ -4197,13 +4204,13 @@ namespace CMS.Presentation
             if (file != null)
             {
                 MessageBox.Show(
-                    string.Format("ชื่อ: {0}\nประเภท: {1}\nขนาด: {2}\nอัพโหลด: {3}\nVersion: {4}",
+                    string.Format("ชื่อ: {0}\nประเภท: {1}\nขนาด: {2}\nอัปโหลด: {3}\nVersion: {4}",
                         file.OriginalFileName,
                         file.FileExtension.TrimStart('.').ToUpper(),
                         FormatFileSize(file.FileSizeBytes),
                         file.UploadedDate.ToString("dd/MM/yyyy HH:mm"),
                         file.Version),
-                    string.Format("คุณสมบัติ — {0}", file.OriginalFileName),
+                    string.Format("รายละเอียด — {0}", file.OriginalFileName),
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else if (folder != null)
@@ -4214,7 +4221,7 @@ namespace CMS.Presentation
                         ConfidentialityBadge(folder.ConfidentialityLevel),
                         folder.FileCount,
                         FormatFileSize(folder.FolderSizeBytes)),
-                    string.Format("คุณสมบัติ — {0}", folder.FolderName),
+                    string.Format("รายละเอียด — {0}", folder.FolderName),
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }

@@ -23,6 +23,9 @@ namespace CMS.Data.Interfaces
         /// <summary>Returns true when an active (non-deleted) file with the given original name already exists in the folder.</summary>
         bool ExistsWithName(string fileName, int folderId);
 
+        /// <summary>Returns the active (non-deleted) FileDocument with the given original name in the folder, or null if not found.</summary>
+        FileDocument GetByOriginalName(string fileName, int folderId);
+
         /// <summary>Returns the number of active files whose name starts with <paramref name="namePrefix"/> in the folder (used for copy-counter naming).</summary>
         int CountByNamePrefix(string namePrefix, int folderId);
 
@@ -31,5 +34,8 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Restores a soft-deleted file back to active (FileStatus=1).</summary>
         void RestoreFile(int fileId);
+
+        /// <summary>Updates the Version column directly (used after Replace-upload to bump version past SP default of 1).</summary>
+        void UpdateVersion(int fileId, int version);
     }
 }

@@ -238,6 +238,26 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public FileDocument GetByOriginalName(string fileName, int folderId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT TOP 1 * FROM storage.FileDocument " +
+                    "WHERE FolderID = @FolderID AND OriginalFileName = @OriginalFileName AND FileStatus <> 3", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@FolderID",         folderId);
+                    cmd.Parameters.AddWithValue("@OriginalFileName", fileName);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        return reader.Read() ? MapFileDocument(reader) : null;
+                    }
+                }
+            }
+        }
+
         public int CountByNamePrefix(string namePrefix, int folderId)
         {
             using (var conn = new SqlConnection(_connectionString))
@@ -313,6 +333,21 @@ namespace CMS.Data.Repositories
                     "WHERE FileID = @FileID", conn))
                 {
                     cmd.Parameters.AddWithValue("@FileID", fileId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void UpdateVersion(int fileId, int version)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "UPDATE storage.FileDocument SET Version = @Version WHERE FileID = @FileID", conn))
+                {
+                    cmd.Parameters.AddWithValue("@FileID",  fileId);
+                    cmd.Parameters.AddWithValue("@Version", version);
                     cmd.ExecuteNonQuery();
                 }
             }

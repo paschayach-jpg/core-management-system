@@ -15,6 +15,16 @@ namespace CMS.Services.Interfaces
     public interface IShareService
     {
         // =====================================================================
+        // Folder Share Approval (regular users)
+        // =====================================================================
+
+        /// <summary>
+        /// Submits a folder share permission request for approval by Manager/Admin.
+        /// Called when a regular user (AppRole &lt; 3) wants to share a folder.
+        /// </summary>
+        void RequestFolderShareApproval(SetPermissionRequest request, UserContext user);
+
+        // =====================================================================
         // Internal Sharing Methods
         // =====================================================================
 

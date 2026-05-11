@@ -1,4 +1,4 @@
-namespace CMS.Presentation
+﻿namespace CMS.Presentation
 {
     partial class FileUploadForm
     {
@@ -273,7 +273,7 @@ namespace CMS.Presentation
             this.MinimizeBox = false;
             this.Name = "FileUploadForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "อัพโหลดไฟล์";
+            this.Text = "อัปโหลดไฟล์";
             this.Load += new System.EventHandler(this.FileUploadForm_Load);
             this.pnlFolderPath.ResumeLayout(false);
             this.pnlFolderPath.PerformLayout();

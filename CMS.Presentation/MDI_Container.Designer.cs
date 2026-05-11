@@ -1,4 +1,4 @@
-namespace CMS.Presentation
+﻿namespace CMS.Presentation
 {
     partial class MDI_Container
     {
@@ -194,7 +194,7 @@ namespace CMS.Presentation
             this.lblRecentFiles.Name = "lblRecentFiles";
             this.lblRecentFiles.Size = new System.Drawing.Size(160, 20);
             this.lblRecentFiles.TabIndex = 8;
-            this.lblRecentFiles.Text = "📄 ไฟล์ที่อัพโหลดล่าสุด";
+            this.lblRecentFiles.Text = "📄 ไฟล์ที่อัปโหลดล่าสุด";
             // 
             // lblStats
             // 
@@ -266,7 +266,7 @@ namespace CMS.Presentation
             this.btnDashUpload.Name = "btnDashUpload";
             this.btnDashUpload.Size = new System.Drawing.Size(140, 60);
             this.btnDashUpload.TabIndex = 2;
-            this.btnDashUpload.Text = "📤 อัพโหลดไฟล์";
+            this.btnDashUpload.Text = "📤 อัปโหลดไฟล์";
             this.btnDashUpload.UseVisualStyleBackColor = false;
             // 
             // btnDashApproval
@@ -475,7 +475,7 @@ namespace CMS.Presentation
             // 
             this.menuItemUpload.Name = "menuItemUpload";
             this.menuItemUpload.Size = new System.Drawing.Size(149, 22);
-            this.menuItemUpload.Text = "📤 อัพโหลด";
+            this.menuItemUpload.Text = "📤 อัปโหลด";
             // 
             // menuItemNewFolder
             // 
@@ -707,8 +707,8 @@ namespace CMS.Presentation
             // 
             this.btnRibbonUpload.Name = "btnRibbonUpload";
             this.btnRibbonUpload.Size = new System.Drawing.Size(80, 24);
-            this.btnRibbonUpload.Text = "📤 อัพโหลด";
-            this.btnRibbonUpload.ToolTipText = "อัพโหลดไฟล์ไปยัง Folder ที่เลือก";
+            this.btnRibbonUpload.Text = "📤 อัปโหลด";
+            this.btnRibbonUpload.ToolTipText = "อัปโหลดไฟล์ไปยัง Folder ที่เลือก";
             this.btnRibbonUpload.Visible = false;
             // 
             // btnRibbonNewFolder

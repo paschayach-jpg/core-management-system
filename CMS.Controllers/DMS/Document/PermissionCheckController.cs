@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
@@ -28,6 +29,11 @@ namespace CMS.Controllers.DMS.Document
                 return false;
 
             return _permissionService.CheckPermission(userId, folderId, permissionType);
+        }
+
+        public void PreloadAcl(Dictionary<int, List<FolderPermission>> sessionAcl)
+        {
+            _permissionService?.PreloadAcl(sessionAcl);
         }
     }
 }

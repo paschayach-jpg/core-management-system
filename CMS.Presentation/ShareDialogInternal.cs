@@ -248,7 +248,9 @@ namespace CMS.Presentation
                 Format = DateTimePickerFormat.Short, Font = uiFont,
                 Width = 160, CalendarForeColor = navyDark,
             };
-            dtpExpiry.Value   = DateTime.Now.AddDays(30);
+            dtpExpiry.Value   = DateTime.Today.AddDays(30);
+            dtpExpiry.MinDate = DateTime.Today;
+            dtpExpiry.MaxDate = DateTime.Today.AddYears(1);
             dtpExpiry.Enabled = false;
             var chkNoExpiry = new CheckBox
             {
@@ -477,6 +479,20 @@ namespace CMS.Presentation
                 return;
             }
 
+            if (!chkNoExpiry.Checked)
+            {
+                if (dtpExpiry.Value.Date < DateTime.Today)
+                {
+                    lblStatus.Text = "ไม่สามารถกำหนดวันหมดอายุย้อนหลังได้";
+                    return;
+                }
+                if (dtpExpiry.Value.Date > DateTime.Today.AddYears(1))
+                {
+                    lblStatus.Text = "ไม่สามารถกำหนดอายุเกิน 1 ปีได้";
+                    return;
+                }
+            }
+
             string principalType   = cboPrincipalType.SelectedItem?.ToString() ?? "User";
             int    principalTypeId = GetPrincipalTypeId(principalType);
             DateTime? expiry       = chkNoExpiry.Checked ? (DateTime?)null : dtpExpiry.Value;
@@ -503,7 +519,7 @@ namespace CMS.Presentation
                     }
                     else
                     {
-                        _shareCommandController.SetFolderPermission(new SetPermissionRequest
+                        var folderPermReq = new SetPermissionRequest
                         {
                             FolderID       = _selectedFolder.FolderID,
                             PrincipalType  = (PrincipalType)principalTypeId,
@@ -514,13 +530,28 @@ namespace CMS.Presentation
                             CanModify      = false,
                             CanFullControl = false,
                             IsDeny         = false,
-                        }, _currentUser);
+                        };
+
+                        if (_currentUser.AppRole < 3)
+                            _shareCommandController.RequestFolderShareApproval(folderPermReq, _currentUser);
+                        else
+                            _shareCommandController.SetFolderPermission(folderPermReq, _currentUser);
                     }
                 }
 
-                lblStatus.Text = _selectedFiles.Count > 1
-                    ? $"แบ่งปันเรียบร้อยแล้ว ({_selectedFiles.Count} ไฟล์, {lstPrincipal.SelectedItems.Count} ผู้รับ)"
-                    : $"แบ่งปันเรียบร้อยแล้ว ({lstPrincipal.SelectedItems.Count} รายการ)";
+                bool needsApproval = _currentUser.AppRole < 3;
+                if (needsApproval)
+                {
+                    lblStatus.Text = string.Format(
+                        "ส่งคำขออนุมัติเรียบร้อยแล้ว ({0} รายการ) — รอผู้มีอำนาจอนุมัติ",
+                        lstPrincipal.SelectedItems.Count);
+                }
+                else
+                {
+                    lblStatus.Text = _selectedFiles.Count > 1
+                        ? string.Format("แบ่งปันเรียบร้อยแล้ว ({0} ไฟล์, {1} ผู้รับ)", _selectedFiles.Count, lstPrincipal.SelectedItems.Count)
+                        : string.Format("แบ่งปันเรียบร้อยแล้ว ({0} รายการ)", lstPrincipal.SelectedItems.Count);
+                }
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

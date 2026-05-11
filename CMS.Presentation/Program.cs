@@ -97,7 +97,8 @@ namespace CMS.Presentation
                     auditService,
                     loggingService,
                     externalShareRepository,
-                    shareTokenRepository);
+                    shareTokenRepository,
+                    filePermissionRepository);
 
                 var fileService = new FileService(
                     fileDocumentRepository,
@@ -377,8 +378,12 @@ namespace CMS.Presentation
                     PositionName = account.PositionName,
                     DepartmentCode = account.DepartmentCode,
                     DepartmentName = account.DepartmentName,
+                    DepartmentId = account.DepartmentId,
+                    DivisionId   = account.DivisionId,
                     // Resolve Authority จาก ตำแหน่ง/แผนก/ฝ่าย ของพนักงาน
-                    Authority = TryResolveAuthority(folderAuthorityService, account, loggingService)
+                    Authority = TryResolveAuthority(folderAuthorityService, account, loggingService),
+                    // Pre-load ACL entries ครั้งเดียวตอน login เพื่อลด DB call ตลอด session
+                    SessionAcl = TryPreloadSessionAcl(permissionRepository, account, loggingService)
                 };
 
                 // ── Audit LOGIN ───────────────────────────────────────────────
@@ -638,6 +643,40 @@ namespace CMS.Presentation
             {
                 log.Error("FolderAuthority resolve failed — stored procedures may not be deployed yet.", ex);
                 return new System.Collections.Generic.Dictionary<int, CMS.Domain.Models.FolderAuthorityConfig>();
+            }
+        }
+
+        private static System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<CMS.Domain.Models.FolderPermission>>
+            TryPreloadSessionAcl(
+                CMS.Data.Interfaces.IPermissionRepository permRepo,
+                UserAccount account,
+                LoggingService log)
+        {
+            try
+            {
+                var entries = permRepo.GetAllForUser(
+                    account.UserID,
+                    account.AppRole,
+                    account.DepartmentId,
+                    account.DivisionId);
+
+                var dict = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<CMS.Domain.Models.FolderPermission>>();
+                foreach (var e in entries)
+                {
+                    System.Collections.Generic.List<CMS.Domain.Models.FolderPermission> list;
+                    if (!dict.TryGetValue(e.FolderID, out list))
+                    {
+                        list = new System.Collections.Generic.List<CMS.Domain.Models.FolderPermission>();
+                        dict[e.FolderID] = list;
+                    }
+                    list.Add(e);
+                }
+                return dict;
+            }
+            catch (Exception ex)
+            {
+                log.Error("SessionAcl pre-load failed — falling back to on-demand permission checks.", ex);
+                return new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<CMS.Domain.Models.FolderPermission>>();
             }
         }
 

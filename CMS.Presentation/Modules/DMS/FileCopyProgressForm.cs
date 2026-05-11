@@ -13,6 +13,7 @@ namespace CMS.Presentation
     {
         public int FileId;
         public string FileName;
+        public bool Overwrite;
     }
 
     internal sealed class FileCopyProgressForm : Form
@@ -21,6 +22,7 @@ namespace CMS.Presentation
         {
             public int FileId;
             public string FileName;
+            public bool Overwrite;
         }
 
         private enum CopyStatus { Waiting, Copying, Success, Error }
@@ -61,7 +63,7 @@ namespace CMS.Presentation
             IFileCommandController controller,
             UserContext user)
         {
-            _files = files.Select(f => new FileCopyItem { FileId = f.FileId, FileName = f.FileName }).ToList();
+            _files = files.Select(f => new FileCopyItem { FileId = f.FileId, FileName = f.FileName, Overwrite = f.Overwrite }).ToList();
             _destinationFolderId = destinationFolderId;
             _controller = controller;
             _user = user;
@@ -256,7 +258,7 @@ namespace CMS.Presentation
                 var result = new CopyProgress { Index = i };
                 try
                 {
-                    _controller.CopyFile(file.FileId, _destinationFolderId, _user);
+                    _controller.CopyFile(file.FileId, _destinationFolderId, _user, file.Overwrite);
                     result.Status = CopyStatus.Success;
                 }
                 catch (Exception ex)

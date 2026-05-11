@@ -14,5 +14,12 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Alias for GetByFolder — returns active ACL entries for the folder.</summary>
         IEnumerable<FolderPermission> GetAclEntries(int folderId);
+
+        /// <summary>
+        /// Pre-load: returns all active ACL entries for every folder where the user (by UserID,
+        /// Role, DepartmentId, or DivisionId) has at least one explicit entry.
+        /// Used once at login to populate PermissionService._aclCache.
+        /// </summary>
+        IEnumerable<FolderPermission> GetAllForUser(int userId, int roleId, int? deptId, int? divId);
     }
 }

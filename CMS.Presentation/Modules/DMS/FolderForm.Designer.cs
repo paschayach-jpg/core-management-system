@@ -1,4 +1,4 @@
-namespace CMS.Presentation
+﻿namespace CMS.Presentation
 {
     partial class FolderForm
     {
@@ -201,9 +201,9 @@ namespace CMS.Presentation
             this.lblFilterUploader.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.lblFilterUploader.Location = new System.Drawing.Point(496, 8);
             this.lblFilterUploader.Name = "lblFilterUploader";
-            this.lblFilterUploader.Size = new System.Drawing.Size(56, 15);
+            this.lblFilterUploader.Size = new System.Drawing.Size(55, 15);
             this.lblFilterUploader.TabIndex = 6;
-            this.lblFilterUploader.Text = "ผู้อัพโหลด:";
+            this.lblFilterUploader.Text = "ผู้อัปโหลด:";
             // 
             // dtpTo
             // 
@@ -355,9 +355,9 @@ namespace CMS.Presentation
             this.btnUploadFile.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.btnUploadFile.ForeColor = System.Drawing.Color.White;
             this.btnUploadFile.Name = "btnUploadFile";
-            this.btnUploadFile.Size = new System.Drawing.Size(101, 23);
-            this.btnUploadFile.Text = "📤 อัพโหลดไฟล์";
-            this.btnUploadFile.ToolTipText = "อัพโหลดไฟล์ไปยัง Folder ที่เลือก";
+            this.btnUploadFile.Size = new System.Drawing.Size(102, 23);
+            this.btnUploadFile.Text = "📤 อัปโหลดไฟล์";
+            this.btnUploadFile.ToolTipText = "อัปโหลดไฟล์ไปยัง Folder ที่เลือก";
             this.btnUploadFile.Click += new System.EventHandler(this.btnUploadFile_Click);
             // 
             // btnMove

@@ -1,4 +1,4 @@
-namespace CMS.Presentation
+﻿namespace CMS.Presentation
 {
     partial class DuplicateFileChoiceDialog
     {
@@ -243,7 +243,7 @@ namespace CMS.Presentation
             this._lblSkipDesc.ForeColor = System.Drawing.Color.FromArgb(90, 90, 90);
             this._lblSkipDesc.Location  = new System.Drawing.Point(12, 88);
             this._lblSkipDesc.Size      = new System.Drawing.Size(154, 34);
-            this._lblSkipDesc.Text      = "ข้ามไฟล์ที่ซ้ำ\nอัพโหลดเฉพาะไฟล์ใหม่";
+            this._lblSkipDesc.Text      = "ข้ามไฟล์ที่ซ้ำ\nอัปโหลดเฉพาะไฟล์ใหม่";
             this._lblSkipDesc.Click       += new System.EventHandler(this.PnlSkip_Click);
             this._lblSkipDesc.DoubleClick  += new System.EventHandler(this.PnlSkip_DoubleClick);
             this._lblSkipDesc.MouseEnter   += new System.EventHandler(this.PnlSkip_MouseEnter);

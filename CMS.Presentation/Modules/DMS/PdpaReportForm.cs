@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -28,7 +28,7 @@ namespace CMS.Presentation
             gridFiles.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "ชื่อไฟล์",          DataPropertyName = "OriginalFileName", Width = 220 });
             gridFiles.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Folder ID",        DataPropertyName = "FolderId",         Width = 70 });
             gridFiles.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "ขนาด (bytes)",     DataPropertyName = "FileSizeBytes",    Width = 100 });
-            gridFiles.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "อัพโหลดเมื่อ",     DataPropertyName = "UploadedAt",       Width = 130 });
+            gridFiles.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "อัปโหลดเมื่อ",     DataPropertyName = "UploadedAt",       Width = 130 });
             gridFiles.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "ลบแล้ว",           DataPropertyName = "IsDeleted",        Width = 60 });
             gridFiles.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Retention Flagged", DataPropertyName = "RetentionFlagged", Width = 120 });
 

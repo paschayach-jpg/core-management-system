@@ -28,6 +28,10 @@ namespace CMS.Services
         private readonly Dictionary<string, bool> _permCache = new Dictionary<string, bool>();
         // ACL entries cache: key = folderId
         private readonly Dictionary<int, List<FolderPermission>> _aclCache = new Dictionary<int, List<FolderPermission>>();
+        // Folder object cache: key = folderId — ใช้ระหว่าง recursion traversal
+        private readonly Dictionary<int, Folder> _folderCache = new Dictionary<int, Folder>();
+        // User account cache: key = userId
+        private readonly Dictionary<int, UserAccount> _userAccountCache = new Dictionary<int, UserAccount>();
 
         public PermissionService(
             IPermissionRepository     permissionRepository,
@@ -208,7 +212,7 @@ namespace CMS.Services
 
         private bool CheckPermissionInternal(int userId, int folderId, string permissionType)
         {
-            var account = _userAccountRepository.GetById(userId);
+            var account = GetCachedUserAccount(userId);
 
             // Admin (4) and Manager (3): check only for explicit DENY (one DB call), then bypass
             if (account != null && account.AppRole >= 3)
@@ -228,8 +232,30 @@ namespace CMS.Services
                 return true; // Admin/Manager bypass (no explicit deny found)
             }
 
-            // Regular users: EvaluatePermission handles DENY + ALLOW + inheritance (one DB call)
+            // Regular users: EvaluatePermission handles DENY + ALLOW + inheritance
             return EvaluatePermission(userId, folderId, permissionType);
+        }
+
+        private UserAccount GetCachedUserAccount(int userId)
+        {
+            UserAccount account;
+            if (!_userAccountCache.TryGetValue(userId, out account))
+            {
+                account = _userAccountRepository.GetById(userId);
+                _userAccountCache[userId] = account;
+            }
+            return account;
+        }
+
+        private Folder GetCachedFolder(int folderId)
+        {
+            Folder folder;
+            if (!_folderCache.TryGetValue(folderId, out folder))
+            {
+                folder = _folderRepository.GetById(folderId);
+                _folderCache[folderId] = folder;
+            }
+            return folder;
         }
 
         /// <summary>Cache ACL entries per folder to avoid repeated DB calls in N+1 scenarios.</summary>
@@ -244,12 +270,34 @@ namespace CMS.Services
             return entries;
         }
 
+        /// <summary>
+        /// Pre-warm _aclCache จาก data ที่โหลดตอน login ครั้งเดียว
+        /// ทำให้ทุก CheckPermission ใน session นี้เป็น dictionary lookup ไม่มี DB call
+        /// </summary>
+        public void PreloadAcl(Dictionary<int, List<FolderPermission>> sessionAcl)
+        {
+            if (sessionAcl == null) return;
+            foreach (var kv in sessionAcl)
+                _aclCache[kv.Key] = kv.Value;
+        }
+
         /// <summary>Invalidate cache for a folder (call after permission changes).</summary>
         public void InvalidateCache(int folderId)
         {
             _aclCache.Remove(folderId);
+            _folderCache.Remove(folderId);
             var keysToRemove = _permCache.Keys
                 .Where(k => k.StartsWith(":" + folderId + ":") || k.Contains(":" + folderId + ":"))
+                .ToList();
+            foreach (var k in keysToRemove) _permCache.Remove(k);
+        }
+
+        /// <summary>Invalidate user account cache (call after user data changes).</summary>
+        public void InvalidateUserCache(int userId)
+        {
+            _userAccountCache.Remove(userId);
+            var keysToRemove = _permCache.Keys
+                .Where(k => k.StartsWith(userId + ":"))
                 .ToList();
             foreach (var k in keysToRemove) _permCache.Remove(k);
         }
@@ -266,30 +314,29 @@ namespace CMS.Services
 
         private bool EvaluatePermission(int userId, int folderId, string permissionType)
         {
+            var userAccount = GetCachedUserAccount(userId);
             var visited = new HashSet<int>();
-            return EvaluatePermissionRecursive(userId, folderId, permissionType, visited);
+            return EvaluatePermissionRecursive(userId, folderId, permissionType, visited, userAccount);
         }
 
         private bool EvaluatePermissionRecursive(
-            int userId, int folderId, string permissionType, HashSet<int> visited)
+            int userId, int folderId, string permissionType, HashSet<int> visited, UserAccount userAccount)
         {
             if (visited.Contains(folderId)) return false;
             visited.Add(folderId);
 
-            var folder = _folderRepository.GetById(folderId);
+            var folder = GetCachedFolder(folderId);
             if (folder == null) return false;
 
             var allEntries = GetCachedAclEntries(folderId);
 
-            var userAccount = _userAccountRepository.GetById(userId);
             int? userRole = userAccount != null ? (int?)userAccount.AppRole : null;
 
             // Entries applicable to this user:
-            //   เงื่อนไขที่ 2 — ตรวจ FolderPermission/FilePermission โดยใช้ข้อมูล UserAccount:
-            //     • User     : ตรงกับ UserID โดยตรง
-            //     • Role     : ตรงกับ AppRole (1=Officer, 2=SrOfficer, 3=Manager, 4=Admin)
-            //     • Department: ตรงกับ DepartmentId ของ user (จาก Employee API)
-            //     • Division  : ตรงกับ DivisionId  ของ user (จาก Employee API)
+            //   • User     : ตรงกับ UserID โดยตรง
+            //   • Role     : ตรงกับ AppRole (1=Officer, 2=SrOfficer, 3=Manager, 4=Admin)
+            //   • Department: ตรงกับ DepartmentId ของ user (จาก Employee API)
+            //   • Division  : ตรงกับ DivisionId  ของ user (จาก Employee API)
             var applicable = allEntries.Where(e =>
                 (e.PrincipalType == PrincipalType.User       && e.PrincipalID == userId) ||
                 (e.PrincipalType == PrincipalType.Role       && userRole.HasValue && e.PrincipalID == userRole.Value) ||
@@ -308,7 +355,7 @@ namespace CMS.Services
             // Inherit from parent unless any ACL entry has InheritanceBroken = true
             bool inheritanceBroken = allEntries.Any(e => e.InheritanceBroken);
             if (!inheritanceBroken && folder.ParentFolderID.HasValue)
-                return EvaluatePermissionRecursive(userId, folder.ParentFolderID.Value, permissionType, visited);
+                return EvaluatePermissionRecursive(userId, folder.ParentFolderID.Value, permissionType, visited, userAccount);
 
             return false; // default deny
         }

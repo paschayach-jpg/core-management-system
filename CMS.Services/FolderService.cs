@@ -145,13 +145,14 @@ namespace CMS.Services
         /// <summary>Invalidate folder cache (เรียกหลัง create/rename/delete/move)</summary>
         public void InvalidateFolderCache(int? orgUnitId = null)
         {
+            // _allFoldersCache ครอบคลุมทุก OrgUnit ดังนั้นต้อง clear เสมอ
+            // ไม่ว่าจะ invalidate OrgUnit ใดก็ตาม
+            _allFoldersCache = null;
+
             if (orgUnitId.HasValue)
                 _folderCacheByOrg.Remove(orgUnitId.Value);
             else
-            {
                 _folderCacheByOrg.Clear();
-                _allFoldersCache = null;
-            }
         }
 
         public FolderService(

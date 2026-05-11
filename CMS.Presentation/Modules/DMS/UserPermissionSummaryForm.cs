@@ -202,7 +202,7 @@ namespace CMS.Presentation.Modules.ImportFile
             };
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec1
-            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 170));   // cards
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 198));   // cards (190 + 8px margin)
             table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec2
             table.RowStyles.Add(new RowStyle(SizeType.Absolute, 140));   // grid2
             table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec3
@@ -301,7 +301,7 @@ namespace CMS.Presentation.Modules.ImportFile
             var card = new Panel
             {
                 Margin    = new Padding(0, 0, 8, 0),
-                Height    = 162,
+                Height    = 190,
                 BackColor = cardBg,
             };
 
@@ -353,19 +353,22 @@ namespace CMS.Presentation.Modules.ImportFile
                 TextAlign = ContentAlignment.TopLeft,
             };
 
-            // Permission matrix (2×2 grid) — ใช้ FlowLayoutPanel ป้องกันล้นขอบ
+            // Permission matrix (3×2 grid) — 6 badges: ดู, เพิ่ม, แก้ไข, ลบ*, แชร์*, อนุมัติ
+            // * ลบ และ แชร์ derives from canEdit (Edit = delete + share per permission model)
             var perms = new[]
             {
                 new KeyValuePair<string, bool>("ดู",      canView),
                 new KeyValuePair<string, bool>("เพิ่ม",   canAdd),
                 new KeyValuePair<string, bool>("แก้ไข",   canEdit),
+                new KeyValuePair<string, bool>("ลบ",      canEdit),
+                new KeyValuePair<string, bool>("แชร์",    canEdit),
                 new KeyValuePair<string, bool>("อนุมัติ", canApprove),
             };
 
             var pnlBadges = new FlowLayoutPanel
             {
                 Location      = new Point(8, 104),
-                Size          = new Size(card.Width - 16, 50),
+                Size          = new Size(card.Width - 16, 78),
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents  = true,
                 BackColor     = Color.Transparent,
@@ -392,13 +395,18 @@ namespace CMS.Presentation.Modules.ImportFile
             }
 
             // อัพเดตความกว้าง badge เมื่อ card ขยาย/หดตาม DistributeCards
+            // 6 badges (เลขคู่) — ทุก badge ใช้ half-width สมมาตร 3 แถว × 2 คอลัมน์
             card.Resize += (s, e) =>
             {
                 int availW  = card.Width - 16;
-                int badgeW  = Math.Max((availW - 4) / 2, 70); // 2 คอลัมน์ กันเกิน
+                int halfW   = Math.Max((availW - 4) / 2, 70);
                 pnlBadges.Width = availW;
-                foreach (Control b in pnlBadges.Controls)
-                    b.Width = badgeW;
+                int total = pnlBadges.Controls.Count;
+                for (int idx = 0; idx < total; idx++)
+                {
+                    bool isLastOdd = (idx == total - 1) && (total % 2 != 0);
+                    pnlBadges.Controls[idx].Width = isLastOdd ? availW : halfW;
+                }
             };
 
             // Border paint
@@ -467,12 +475,13 @@ namespace CMS.Presentation.Modules.ImportFile
                 new DataGridViewTextBoxColumn { Name = "colWrite",    HeaderText = "เพิ่ม",           Width = 52 },
                 new DataGridViewTextBoxColumn { Name = "colDelete",   HeaderText = "ลบ",              Width = 44 },
                 new DataGridViewTextBoxColumn { Name = "colModify",   HeaderText = "แก้ไข",           Width = 60 },
+                new DataGridViewTextBoxColumn { Name = "colShare",    HeaderText = "แชร์",            Width = 56 },
                 new DataGridViewTextBoxColumn { Name = "colExpiry",   HeaderText = "หมดอายุ",         Width = 90 },
                 new DataGridViewTextBoxColumn { Name = "colStatus",   HeaderText = "สถานะ",           Width = 90 },
             });
 
             // Center check columns
-            foreach (var col in new[] { "colRead", "colWrite", "colDelete", "colModify" })
+            foreach (var col in new[] { "colRead", "colWrite", "colDelete", "colModify", "colShare" })
                 grid.Columns[col].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
             PopulateAclGrid(grid);
@@ -536,6 +545,7 @@ namespace CMS.Presentation.Modules.ImportFile
                                : isExpired ? "⚠ หมดอายุ"
                                : "✔ ใช้งาน";
 
+                bool canShare = p.CanWrite || p.CanModify || p.CanFullControl;
                 int idx = grid.Rows.Add(
                     isDeny ? "⊘ " + folderName : folderName,
                     levelCode,
@@ -544,6 +554,7 @@ namespace CMS.Presentation.Modules.ImportFile
                     p.CanWrite   ? "✓" : "—",
                     p.CanDelete  ? "✓" : "—",
                     p.CanModify  ? "✓" : "—",
+                    canShare     ? "✓" : "—",
                     isExpired ? "⚠ " + expiry : expiry,
                     status
                 );

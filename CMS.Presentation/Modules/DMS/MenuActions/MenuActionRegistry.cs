@@ -101,7 +101,7 @@ namespace CMS.Presentation
                             MessageBox.Show("Approval inbox controller is not available.", "Approval Inbox", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return true;
                         }
-                        return ShowTargetForm(context, new ApprovalInboxForm(context.ApprovalInboxController, context.User));
+                        return ShowTargetForm(context, new ApprovalInboxForm(context.ApprovalInboxController, context.User, context.UserAccountLookupController));
 
                     case "AccessLog":
                         if (context.ShareManagementController == null)
