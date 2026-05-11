@@ -1002,6 +1002,7 @@ namespace CMS.Presentation.Modules.KMS
                     int rowIndex = dgvRelatedSearch.Rows.Add(
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
+                        article.Summary ?? "-",
                         article.ArticleTypeName ?? "-",
                         article.ViewCount.ToString()
                     );
@@ -1102,6 +1103,7 @@ namespace CMS.Presentation.Modules.KMS
                     int rowIndex = dgvRelatedSearch.Rows.Add(
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
+                        article.Summary ?? "-",
                         article.ArticleTypeName ?? "-",
                         article.ViewCount.ToString()
                     );
@@ -2044,6 +2046,7 @@ namespace CMS.Presentation.Modules.KMS
                         index.ToString(),
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
+                        article.Summary ?? "-",
                         article.ArticleTypeName ?? "-"
                     );
                     
@@ -2175,6 +2178,7 @@ namespace CMS.Presentation.Modules.KMS
                     int rowIndex = dgvRelatedSearch.Rows.Add(
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
+                        article.Summary ?? "-",
                         article.ArticleTypeName ?? "-",
                         article.ViewCount.ToString()
                     );
@@ -2232,6 +2236,7 @@ namespace CMS.Presentation.Modules.KMS
                 newIndex.ToString(),
                 dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchCode"].Value,
                 dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchTitle"].Value,
+                dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSummary"].Value,
                 dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchType"].Value
             );
 

@@ -966,6 +966,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlLeftFooter.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
             this.pnlLeftFooter.Size = new System.Drawing.Size(370, 44);
             this.pnlLeftFooter.TabIndex = 1;
+            this.pnlLeftFooter.Visible = false;
             // 
             // btnNewSub
             // 

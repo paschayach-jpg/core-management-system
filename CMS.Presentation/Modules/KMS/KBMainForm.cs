@@ -346,8 +346,11 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             if (_editorFactory == null) return;
-            if (_editorFactory(null) == DialogResult.OK)
+            if (_editorFactory(null) != DialogResult.OK)
+            {
+                _presenter.LoadCategoryTree();
                 _presenter.LoadArticles();
+            }
         }
 
         private void BtnNewCategory_Click(object sender, EventArgs e)

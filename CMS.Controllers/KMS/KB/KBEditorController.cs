@@ -563,6 +563,7 @@ namespace CMS.Controllers.KMS.KB
                             index.ToString(),
                             linkedArticle.ArticleCode ?? "-",
                             linkedArticle.Title ?? "-",
+                            linkedArticle.Summary ?? "-",
                             linkedArticle.ArticleTypeName ?? "-"
                         );
 
