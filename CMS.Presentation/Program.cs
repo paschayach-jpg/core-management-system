@@ -504,7 +504,8 @@ namespace CMS.Presentation
                     kbVersionRepository: kbVersionRepository,
                     kbDashboardService: kbDashboardService,
                     kbCategoryRepository: kbCategoryRepository,
-                    kbArticleRepository: kbArticleRepository);
+                    kbArticleRepository: kbArticleRepository,
+                    kbArticleLinkRepository : kbArticleLinkRepository);
 
                 Application.Run(mainForm);
 

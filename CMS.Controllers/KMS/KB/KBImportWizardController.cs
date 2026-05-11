@@ -19,8 +19,8 @@ namespace CMS.Controllers.KMS.KB
         private readonly IKBImportWizardController _view;
         private readonly IKBArticleService         _articleService;
         private readonly IKBCategoryService        _categoryService;
-        private readonly KBExcelReader             _excelReader;
-        private readonly KBImportProcessor         _processor;
+        private readonly IKBExcelReaderService            _excelReader;
+        private readonly IKBImportProcessorService        _processor;
         private readonly UserContext               _user;
 
         /// <summary>Retained between ValidateFile() and ExecuteImport().</summary>
@@ -32,8 +32,8 @@ namespace CMS.Controllers.KMS.KB
             IKBImportWizardController view,
             IKBArticleService         articleService,
             IKBCategoryService        categoryService,
-            KBExcelReader             excelReader,
-            KBImportProcessor         processor,
+            IKBExcelReaderService            excelReader,
+            IKBImportProcessorService        processor,
             UserContext               user)
         {
             if (view            == null) throw new ArgumentNullException("view");

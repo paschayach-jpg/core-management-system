@@ -85,7 +85,7 @@ namespace CMS.Controllers.KMS.KB
                 var related = new List<KBArticle>();
                 foreach (var link in links)
                 {
-                    var a = _articleService.GetById(link.EntityID);
+                    var a = _articleService.GetById(Convert.ToInt32(link.EntityID));
                     if (a != null)
                         related.Add(a);
                 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using CMS.Domain.Models;
+using CMS.Services.Interfaces;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 
@@ -14,7 +15,7 @@ namespace CMS.Services
     /// Uses NPOI 2.5.6. No validation logic is performed here — that is the
     /// responsibility of <see cref="KBImportProcessor"/>.
     /// </summary>
-    public class KBExcelReader
+    public class KBExcelReader : IKBExcelReaderService
     {
         // ── Supported text-date formats (InvariantCulture) ───────────────────
         private static readonly string[] DateFormats =

@@ -400,16 +400,16 @@ namespace CMS.Controllers.KMS.KB
             {
                 // Get article-to-article links (EntityType = Law, matching ArticleViewerController)
                 var links = _articleService.GetArticleLinks(articleId, (byte)KBEntityType.Law);
-                var linkedIds = links.Select(l => l.EntityID).ToList();
+                var linkeds = links.Select(l => l.EntityID.ToString()).ToList();
 
-                if (!linkedIds.Any())
+                if (!linkeds.Any())
                     return Enumerable.Empty<KBArticle>();
 
                 // Retrieve full article details for each linked article
                 var linkedArticles = new List<KBArticle>();
-                foreach (var id in linkedIds)
+                foreach (var id in linkeds)
                 {
-                    var article = _articleService.GetById(id);
+                    var article = _articleService.GetById(Convert.ToInt32(id));
                     if (article != null)
                         linkedArticles.Add(article);
                 }
@@ -436,7 +436,7 @@ namespace CMS.Controllers.KMS.KB
                 {
                     ArticleID   = _editingArticle.ArticleID,
                     EntityType  = (byte)KBEntityType.Law,
-                    EntityID    = relatedArticleId,
+                    EntityID    = relatedArticleId.ToString(),
                     CreatedBy   = _user.AdIdentity,
                     CreatedDate = DateTime.Now
                 });
@@ -483,7 +483,7 @@ namespace CMS.Controllers.KMS.KB
                         links.Add(new KBArticleLink
                         {
                             EntityType  = (byte)KBEntityType.Law,
-                            EntityID    = (int)row.Tag,
+                            EntityID    = row.Tag.ToString(),
                             CreatedBy   = _user.AdIdentity,
                             CreatedDate = DateTime.Now
                         });
@@ -497,7 +497,7 @@ namespace CMS.Controllers.KMS.KB
                         links.Add(new KBArticleLink
                         {
                             EntityType  = (byte)KBEntityType.Task,
-                            EntityID    = (int)row.Tag,
+                            EntityID    = row.Tag.ToString(),
                             CreatedBy   = _user.AdIdentity,
                             CreatedDate = DateTime.Now
                         });
@@ -511,7 +511,7 @@ namespace CMS.Controllers.KMS.KB
                         links.Add(new KBArticleLink
                         {
                             EntityType  = (byte)KBEntityType.Program,
-                            EntityID    = (int)row.Tag,
+                            EntityID    = row.Tag.ToString(),
                             CreatedBy   = _user.AdIdentity,
                             CreatedDate = DateTime.Now
                         });
@@ -525,7 +525,7 @@ namespace CMS.Controllers.KMS.KB
                         links.Add(new KBArticleLink
                         {
                             EntityType  = (byte)KBEntityType.Law,
-                            EntityID    = (int)row.Tag,
+                            EntityID    = row.Tag.ToString(),
                             CreatedBy   = _user.AdIdentity,
                             CreatedDate = DateTime.Now
                         });
@@ -555,7 +555,7 @@ namespace CMS.Controllers.KMS.KB
                 foreach (var link in articleLinks)
                 {
                     // Retrieve the full article details including Title using ArticleID (EntityID)
-                    var linkedArticle = _articleService.GetById(link.EntityID);
+                    var linkedArticle = _articleService.GetById(Convert.ToInt32(link.EntityID));
 
                     if (linkedArticle != null)
                     {

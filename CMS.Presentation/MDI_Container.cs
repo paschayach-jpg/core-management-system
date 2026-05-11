@@ -1,20 +1,21 @@
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Data.Interfaces;
+using CMS.Data.Repositories;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Modules.KMS;
-using CMS.Presentation.Services;
 using CMS.Presentation.Modules.Workflow;
+using CMS.Presentation.Services;
 using CMS.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace CMS.Presentation
 {
@@ -77,6 +78,7 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
         private readonly CMS.Data.Interfaces.IKBCategoryRepository _kbCategoryRepository;
         private readonly CMS.Data.Interfaces.IKBArticleRepository  _kbArticleRepository;
+        private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;        
         private readonly IWorkflowService _workflowService;
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
@@ -197,7 +199,8 @@ namespace CMS.Presentation
             CMS.Data.Interfaces.IKBVersionRepository kbVersionRepository = null,
             CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null,
             CMS.Data.Interfaces.IKBCategoryRepository kbCategoryRepository = null,
-            CMS.Data.Interfaces.IKBArticleRepository  kbArticleRepository  = null)
+            CMS.Data.Interfaces.IKBArticleRepository  kbArticleRepository  = null,
+            CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -259,7 +262,7 @@ namespace CMS.Presentation
             _kbDashboardService = kbDashboardService;
             _kbCategoryRepository = kbCategoryRepository;
             _kbArticleRepository  = kbArticleRepository;
-
+            _kbArticleLinkRepository = kbArticleLinkRepository;
             InitializeComponent();
             BuildFileDetailPanel();
             WireMenuHandlers();
@@ -1426,7 +1429,7 @@ namespace CMS.Presentation
                 var wizard          = new KBImportWizardForm(_currentUser);
                 var excelReader     = new CMS.Services.KBExcelReader();
                 var processor       = new CMS.Services.KBImportProcessor(
-                    _kbCategoryRepository, _kbArticleRepository, _kbVersionRepository);
+                    _kbCategoryRepository, _kbArticleRepository, _kbArticleLinkRepository, _kbVersionRepository);
                 var wizardPresenter = new KBImportWizardController(
                     wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
                 wizard.AttachPresenter(wizardPresenter);

@@ -1,6 +1,7 @@
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
+using CMS.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,23 +17,27 @@ namespace CMS.Services
     /// Phase 2 — category upsert (<c>KMS.m_KBCategory</c>),
     /// Phase 3 — article + version insert (<c>KMS.t_KBArticle</c>, <c>KMS.t_KBVersion</c>).
     /// </summary>
-    public class KBImportProcessor
+    public class KBImportProcessor : IKBImportProcessorService
     {
         private readonly IKBCategoryRepository _categoryRepo;
         private readonly IKBArticleRepository  _articleRepo;
+        private readonly IKBArticleLinkRepository _linkRepo;
         private readonly IKBVersionRepository  _versionRepo;
 
         public KBImportProcessor(
             IKBCategoryRepository categoryRepo,
             IKBArticleRepository  articleRepo,
+            IKBArticleLinkRepository linkRepo,
             IKBVersionRepository  versionRepo)
         {
             if (categoryRepo == null) throw new ArgumentNullException("categoryRepo");
             if (articleRepo  == null) throw new ArgumentNullException("articleRepo");
+            if (linkRepo == null) throw new ArgumentNullException("linkRepo");
             if (versionRepo  == null) throw new ArgumentNullException("versionRepo");
 
             _categoryRepo = categoryRepo;
             _articleRepo  = articleRepo;
+            _linkRepo = linkRepo;
             _versionRepo  = versionRepo;
         }
 
@@ -136,7 +141,7 @@ namespace CMS.Services
             successCount = 0;
             errorCount   = 0;
             int total    = rows.Count;
-
+            int x = 0;
             for (int i = 0; i < total; i++)
             {
                 var row = rows[i];
@@ -175,6 +180,23 @@ namespace CMS.Services
                     };
 
                     _versionRepo.Insert(version);
+
+                    string[] devision_department = row.ColAA.Split(',');
+                    foreach (string item in devision_department)
+                    {
+                        var links = new KBArticleLink
+                        {
+                            ArticleID = articleId,
+                            EntityType = (byte)KBEntityType.Department,
+                            EntityID = item,
+                            CreatedBy = createdBy,
+                            CreatedDate = DateTime.Now
+                        };
+
+                        _linkRepo.Insert(links);
+                        x++;
+                    }
+                    
 
                     successCount++;
                 }

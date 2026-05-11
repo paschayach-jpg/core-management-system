@@ -239,7 +239,7 @@ namespace CMS.Services
         public void RemoveArticleLink(int articleId, int entityId, byte entityType)
         {
             var link = _linkRepo.GetLinksForArticle(articleId, entityType)
-                                .FirstOrDefault(l => l.EntityID == entityId);
+                                .FirstOrDefault(l => Convert.ToInt32(l.EntityID) == entityId);
             if (link != null)
                 _linkRepo.Delete(link.LinkID);
         }
