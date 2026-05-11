@@ -257,10 +257,10 @@ namespace CMS.Presentation.Modules.KMS
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (files == null || files.Length == 0) return;
             string ext = Path.GetExtension(files[0]).ToLower();
-            if (ext == ".xlsx" || ext == ".xls")
+            if (ext == ".xlsx" || ext == ".xls" || ext == ".xlsm")
                 HandleFileSelection(files[0]);
             else
-                MessageBox.Show("กรุณาเลือกไฟล์ Excel (.xlsx หรือ .xls) เท่านั้น",
+                MessageBox.Show("กรุณาเลือกไฟล์ Excel (.xlsx หรือ .xls หรือ .xlsm) เท่านั้น",
                     "ไฟล์ไม่ถูกต้อง", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
@@ -270,7 +270,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             using (var ofd = new OpenFileDialog())
             {
-                ofd.Filter = "Excel Files|*.xlsx;*.xls";
+                ofd.Filter = "Excel Files|*.xlsx;*.xls;*.xlsm";
                 ofd.Title  = "เลือกไฟล์ Excel สำหรับนำเข้า";
                 if (ofd.ShowDialog() == DialogResult.OK)
                     HandleFileSelection(ofd.FileName);

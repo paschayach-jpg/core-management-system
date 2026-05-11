@@ -113,7 +113,7 @@ namespace CMS.Presentation
             else
             {
                 username = "pitakpong";
-                password = "P@takpong01714";
+                password = "P@takpong0132";
             }
 
 

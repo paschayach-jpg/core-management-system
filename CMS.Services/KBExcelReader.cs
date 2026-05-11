@@ -124,6 +124,8 @@ namespace CMS.Services
                         ColT = GetCellText(excelRow.GetCell(19)),
                         ColU = GetCellText(excelRow.GetCell(20)),
                         ColV = GetCellText(excelRow.GetCell(21)),
+                        ColAA = GetCellText(excelRow.GetCell(26)),
+
                     };
 
                     row.Title    = row.ColE;

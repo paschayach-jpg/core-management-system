@@ -83,6 +83,7 @@ namespace CMS.Domain.Models
         public string ColT  { get; set; }   // ContentHTML
         public string ColU  { get; set; }   // คณะอนุกรรมการ
         public string ColV  { get; set; }   // ฝ่ายที่รับผิดชอบ
+        public string ColAA  { get; set; }   // ฝ่ายที่รับผิดชอบ
 
         // ── Computed / resolved fields (set by processor) ───────────────────
         public string    ArticleCode         { get; set; }
