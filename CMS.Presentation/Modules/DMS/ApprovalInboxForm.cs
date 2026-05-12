@@ -131,10 +131,21 @@ namespace CMS.Presentation
             var targets = GetTargetRequests();
             if (targets.Count == 0) return;
 
+            if (string.IsNullOrWhiteSpace(txtRemark.Text))
+            {
+                SetRemarkError(true);
+                MessageBox.Show("กรุณากรอกเหตุผลในการอนุมัติ", "ข้อมูลไม่ครบ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtRemark.Focus();
+                return;
+            }
+            SetRemarkError(false);
+
             string msg = targets.Count == 1
-                ? string.Format("ยืนยันการอนุมัติคำขอ:\n\n{0}\n{1}",
-                    RequestTypeLabel(targets[0].RequestType), targets[0].Subject)
-                : string.Format("ยืนยันการอนุมัติ {0} รายการที่เลือก?", targets.Count);
+                ? string.Format("ยืนยันการอนุมัติคำขอ:\n\n{0}\n{1}\n\nเหตุผล: {2}",
+                    RequestTypeLabel(targets[0].RequestType), targets[0].Subject, txtRemark.Text)
+                : string.Format("ยืนยันการอนุมัติ {0} รายการที่เลือก?\n\nเหตุผล: {1}",
+                    targets.Count, txtRemark.Text);
 
             if (MessageBox.Show(msg, "ยืนยันการอนุมัติ",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
@@ -183,8 +194,6 @@ namespace CMS.Presentation
             int success = 0, failed = 0;
             int stillPending = 0;
             string remark = txtRemark.Text.Trim();
-            if (string.IsNullOrEmpty(remark))
-                remark = approve ? "อนุมัติ" : "ปฏิเสธ";
 
             SetStatus(approve ? "กำลังอนุมัติ..." : "กำลังปฏิเสธ...", Color.RoyalBlue);
 

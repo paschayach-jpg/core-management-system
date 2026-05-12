@@ -360,6 +360,41 @@ END";
             return results;
         }
 
+        // ── m_SubCommittee ─────────────────────────────────────────────────────
+
+        public void InsertSubCommitteeRecord(int orgUnitId, string code, string nameTH, string nameEN, string createdByADUser)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("dbo.sp_InsertSubCommittee", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@OrgUnitID",          orgUnitId);
+                    cmd.Parameters.AddWithValue("@SubCommitteeCode",   code);
+                    cmd.Parameters.AddWithValue("@SubCommitteeNameTH", nameTH);
+                    cmd.Parameters.AddWithValue("@SubCommitteeNameEN", (object)nameEN ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CreatedBy",          createdByADUser);
+                    cmd.ExecuteScalar();
+                }
+            }
+        }
+
+        public void SoftDeleteSubCommitteeRecord(int orgUnitId, string deletedByADUser)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("dbo.sp_SoftDeleteSubCommittee", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@OrgUnitID",  orgUnitId);
+                    cmd.Parameters.AddWithValue("@DeletedBy",  deletedByADUser);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         private static OrgUnit MapOrgUnit(SqlDataReader reader)
         {
             return new OrgUnit

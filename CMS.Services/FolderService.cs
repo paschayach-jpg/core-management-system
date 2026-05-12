@@ -1312,23 +1312,31 @@ namespace CMS.Services
         }
 
         /// <summary>
-        /// ค้นหา Folder ทั้งหมดที่ user มีสิทธิ์เข้าถึง (filter ตาม permission)
+        /// ค้นหา Folder ทั้งหมดที่ user มีสิทธิ์เข้าถึง (filter ตาม OrgUnit visibility + permission)
         /// ใช้สำหรับ FolderPickerDialog และ ShareDialog เพื่อแสดงเฉพาะ folder ที่มีสิทธิ์
-        /// 
-        /// Filtering logic:
-        /// - Admin/Manager: pass ผ่าน CheckPermission (default Allow + Explicit Deny check)
-        /// - Officer/SrOfficer: อนุญาตเมื่อผ่าน Authority model หรือ ACL
+        ///
+        /// Filtering logic (เหมือน GetRootFolders):
+        /// 1. OrgUnit Visibility — Admin เห็นทั้งหมด, Manager เห็น subtree, Officer เห็น own unit
+        /// 2. Permission — Admin/Manager: CheckPermission, Officer: Authority model หรือ ACL
         /// </summary>
         public IEnumerable<Folder> GetAccessibleFolders(int? orgUnitId, UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");
 
-            // Get all folders (with cache)
+            // Resolve visible OrgUnit IDs (same pattern as GetRootFolders)
+            HashSet<int> visibleOrgIds = null;
+            if (_visibilityService != null)
+            {
+                visibleOrgIds = new HashSet<int>(
+                    _visibilityService.GetVisibleOrgUnits(user.UserID, user)
+                                      .Select(o => o.OrgUnitID));
+            }
+
             var allFolders = GetAllFolders(orgUnitId, user);
 
-            // Filter by visibility + permission
             return allFolders
                 .Where(f => !f.IsDeleted && !f.IsArchived)
+                .Where(f => visibleOrgIds == null || visibleOrgIds.Contains(f.OrgUnitID))
                 .Where(f =>
                 {
                     bool isPrivileged = user.AppRole >= 3;
