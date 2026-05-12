@@ -111,5 +111,11 @@ namespace CMS.Controllers.DMS.Document
 
             return _folderService.GetAccessibleFolders(orgUnitId, user).ToList();
         }
+
+        public void InvalidateFolderCache(int? orgUnitId = null)
+        {
+            if (_folderService != null)
+                _folderService.InvalidateFolderCache(orgUnitId);
+        }
     }
 }

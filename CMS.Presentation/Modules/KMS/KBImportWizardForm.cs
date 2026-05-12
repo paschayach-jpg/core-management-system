@@ -1,4 +1,4 @@
-// ✅ Allowed usings: CMS.Controllers, CMS.Domain
+﻿// ✅ Allowed usings: CMS.Controllers, CMS.Domain
 // ❌ Forbidden usings: CMS.Services, CMS.Data
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ namespace CMS.Presentation.Modules.KMS
     /// <summary>
     /// KMS Import Wizard — นำเข้าข้อมูล Knowledge Base จาก Excel (MOD-006)
     /// 3-Step Wizard:
-    ///   Step 1 — อัพโหลดไฟล์ Excel + เลือก Template
+    ///   Step 1 — อัปโหลดไฟล์ Excel + เลือก Template
     ///   Step 2 — ตรวจสอบข้อมูล + Preview + ตัวเลือกการนำเข้า
     ///   Step 3 — สรุปผลการนำเข้า
     /// Layout ตาม MOD-006/kms_import.html
@@ -418,7 +418,7 @@ namespace CMS.Presentation.Modules.KMS
             UpdateStepIndicators();
 
             lblStepStatus.Text = string.Format("📋  Step {0}/3: {1}", step,
-                step == 1 ? "อัพโหลดไฟล์" :
+                step == 1 ? "อัปโหลดไฟล์" :
                 step == 2 ? "ตรวจสอบข้อมูล" : "นำเข้าเสร็จสิ้น");
 
             // Scroll to top when changing steps
@@ -547,13 +547,13 @@ namespace CMS.Presentation.Modules.KMS
 
             lblUploadedFileName.Text = _uploadedFileName;
             lblUploadedFileMeta.Text = string.Format(
-                "Excel Workbook  •  {0}  •  อัพโหลดเมื่อ {1} น.",
+                "Excel Workbook  •  {0}  •  อัปโหลดเมื่อ {1} น.",
                 FormatFileSize(_uploadedFileSize),
                 _uploadedTime.ToString("HH:mm"));
 
             btnNext.Enabled     = true;
             lblFileHint.Visible = false;
-            SetStatus(string.Format("✅  อัพโหลดไฟล์ \"{0}\" สำเร็จ", _uploadedFileName));
+            SetStatus(string.Format("✅  อัปโหลดไฟล์ \"{0}\" สำเร็จ", _uploadedFileName));
         }
 
         private void BtnRemoveFile_Click(object sender, EventArgs e)
@@ -582,7 +582,7 @@ namespace CMS.Presentation.Modules.KMS
             _uploadedTime     = DateTime.Now;
             ShowUploadedFile();
             lblUploadedFileMeta.Text = string.Format(
-                "Excel Workbook  •  1.2 MB  •  อัพโหลดเมื่อ {0} น.  (ไฟล์ Demo)",
+                "Excel Workbook  •  1.2 MB  •  อัปโหลดเมื่อ {0} น.  (ไฟล์ Demo)",
                 _uploadedTime.ToString("HH:mm"));
         }
 

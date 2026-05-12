@@ -127,6 +127,7 @@ namespace CMS.Presentation
                     AllowUserToDeleteRows     = false,
                     ReadOnly                  = true,
                     SelectionMode             = DataGridViewSelectionMode.FullRowSelect,
+                    MultiSelect               = true,
                     RowHeadersVisible         = false,
                     BackgroundColor           = Color.White,
                     BorderStyle               = BorderStyle.None,
@@ -186,9 +187,32 @@ namespace CMS.Presentation
             var btnRevokeInternal = mkBtn("🚫  ยกเลิกสิทธิ์", Color.FromArgb(250, 235, 235), Color.FromArgb(160, 30, 30));
             btnRevokeInternal.Click += (s, e) => RevokeInternalShare();
 
+            var lblIntHint = new Label
+            {
+                Text      = "Ctrl+Click เพื่อเลือกหลายรายการ",
+                Font      = new Font("Segoe UI", 8f),
+                ForeColor = Color.FromArgb(100, 120, 160),
+                AutoSize  = true,
+                Location  = new Point(116, 15),
+            };
+
+            var lblIntSelCount = new Label
+            {
+                Text      = "",
+                Font      = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(160, 30, 30),
+                AutoSize  = true,
+                Location  = new Point(340, 15),
+            };
+            _dgvInternalShares.SelectionChanged += (s, e) =>
+            {
+                int cnt = _dgvInternalShares.SelectedRows.Count;
+                lblIntSelCount.Text = cnt > 1 ? string.Format("เลือกอยู่ {0} รายการ", cnt) : "";
+            };
+
             var pnlIntBar = new Panel { Dock = DockStyle.Bottom, Height = 46, BackColor = Color.FromArgb(235, 240, 250), Padding = new Padding(8, 7, 8, 7) };
             btnRevokeInternal.Location = new Point(8, 8);
-            pnlIntBar.Controls.Add(btnRevokeInternal);
+            pnlIntBar.Controls.AddRange(new Control[] { btnRevokeInternal, lblIntHint, lblIntSelCount });
 
             var tabInternal = new TabPage { Text = "  📋 Internal Shares  ", BackColor = bodyBg, UseVisualStyleBackColor = false };
             tabInternal.Controls.Add(_dgvInternalShares);
@@ -382,33 +406,68 @@ namespace CMS.Presentation
 
         private void RevokeInternalShare()
         {
-            if (_dgvInternalShares.SelectedRows.Count == 0)
+            int selectedCount = _dgvInternalShares.SelectedRows.Count;
+            if (selectedCount == 0)
             {
-                MessageBox.Show("Please select a share to revoke.", "Info");
+                MessageBox.Show("กรุณาเลือกรายการที่ต้องการยกเลิกสิทธิ์", "แจ้งเตือน");
                 return;
             }
 
-            if (MessageBox.Show("Are you sure you want to revoke this share?", "Confirm",
+            string confirmMsg = selectedCount == 1
+                ? "ต้องการยกเลิกสิทธิ์การแชร์รายการที่เลือกใช่หรือไม่?"
+                : string.Format("ต้องการยกเลิกสิทธิ์การแชร์ทั้งหมด {0} รายการที่เลือกใช่หรือไม่?", selectedCount);
+
+            if (MessageBox.Show(confirmMsg, "ยืนยันการยกเลิกสิทธิ์",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
-            try
+            // Collect all valid IDs before processing (avoid mutation during iteration)
+            var toRevoke = new List<int>();
+            var invalidRows = new List<int>();
+            foreach (DataGridViewRow row in _dgvInternalShares.SelectedRows)
             {
-                int rowIndex = _dgvInternalShares.SelectedRows[0].Index;
-                if (!_internalShareIdMap.TryGetValue(rowIndex, out int filePermissionId))
-                {
-                    MessageBox.Show("Unable to identify the selected share.", "Error");
-                    return;
-                }
+                if (_internalShareIdMap.TryGetValue(row.Index, out int id))
+                    toRevoke.Add(id);
+                else
+                    invalidRows.Add(row.Index + 1);
+            }
 
-                _shareManagementController.RevokeInternalShare(filePermissionId, _currentUser);
-                MessageBox.Show("Internal share revoked.", "Success");
-                LoadShares();
-            }
-            catch (Exception ex)
+            if (toRevoke.Count == 0)
             {
-                MessageBox.Show(string.Format("Error: {0}", ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("ไม่พบข้อมูลการแชร์ที่เลือก", "Error");
+                return;
             }
+
+            int successCount = 0;
+            var errors = new List<string>();
+            foreach (int filePermissionId in toRevoke)
+            {
+                try
+                {
+                    _shareManagementController.RevokeInternalShare(filePermissionId, _currentUser);
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(string.Format("ID {0}: {1}", filePermissionId, ex.Message));
+                }
+            }
+
+            if (errors.Count == 0)
+            {
+                MessageBox.Show(
+                    string.Format("ยกเลิกสิทธิ์เรียบร้อยแล้ว {0} รายการ", successCount),
+                    "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                string errDetail = string.Join("\n", errors);
+                MessageBox.Show(
+                    string.Format("สำเร็จ {0} รายการ\nล้มเหลว {1} รายการ:\n{2}", successCount, errors.Count, errDetail),
+                    "เสร็จสิ้นบางส่วน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
+            LoadShares();
         }
 
         private void ToggleExternalShare()
@@ -509,32 +568,63 @@ namespace CMS.Presentation
 
         private void RevokeExternalShare()
         {
-            if (_dgvExternalShares.SelectedRows.Count == 0)
+            int selectedCount = _dgvExternalShares.SelectedRows.Count;
+            if (selectedCount == 0)
             {
-                MessageBox.Show("Please select a share to revoke.", "Info");
+                MessageBox.Show("กรุณาเลือกรายการที่ต้องการยกเลิก", "แจ้งเตือน");
                 return;
             }
 
-            var reason = PromptForReason("Enter revocation reason:");
+            string promptLabel = selectedCount == 1
+                ? "ระบุเหตุผลในการยกเลิก:"
+                : string.Format("ระบุเหตุผลในการยกเลิก (จะใช้กับทั้ง {0} รายการที่เลือก):", selectedCount);
+
+            var reason = PromptForReason(promptLabel);
             if (reason == null) return;
 
-            try
+            var toRevoke = new List<int>();
+            foreach (DataGridViewRow row in _dgvExternalShares.SelectedRows)
             {
-                int rowIndex = _dgvExternalShares.SelectedRows[0].Index;
-                if (!_externalShareIdMap.TryGetValue(rowIndex, out int externalShareId))
-                {
-                    MessageBox.Show("Unable to identify the selected share.", "Error");
-                    return;
-                }
+                if (_externalShareIdMap.TryGetValue(row.Index, out int id))
+                    toRevoke.Add(id);
+            }
 
-                _shareManagementController.RevokeExternalShare(externalShareId, reason, _currentUser);
-                MessageBox.Show("External share revoked.", "Success");
-                LoadShares();
-            }
-            catch (Exception ex)
+            if (toRevoke.Count == 0)
             {
-                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("ไม่พบข้อมูลการแชร์ที่เลือก", "Error");
+                return;
             }
+
+            int successCount = 0;
+            var errors = new List<string>();
+            foreach (int externalShareId in toRevoke)
+            {
+                try
+                {
+                    _shareManagementController.RevokeExternalShare(externalShareId, reason, _currentUser);
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(string.Format("ID {0}: {1}", externalShareId, ex.Message));
+                }
+            }
+
+            if (errors.Count == 0)
+            {
+                MessageBox.Show(
+                    string.Format("ยกเลิกเรียบร้อยแล้ว {0} รายการ", successCount),
+                    "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                string errDetail = string.Join("\n", errors);
+                MessageBox.Show(
+                    string.Format("สำเร็จ {0} รายการ\nล้มเหลว {1} รายการ:\n{2}", successCount, errors.Count, errDetail),
+                    "เสร็จสิ้นบางส่วน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
+            LoadShares();
         }
 
         private void ModifyExternalShare()

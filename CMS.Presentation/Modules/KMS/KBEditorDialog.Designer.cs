@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace CMS.Presentation.Modules.KMS
 {
@@ -628,6 +628,8 @@ namespace CMS.Presentation.Modules.KMS
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tlpGenInfo.Size = new System.Drawing.Size(1162, 303);
             this.tlpGenInfo.TabIndex = 1;
+            this.colAttDate.Text = "วันที่อัปโหลด";
+            this.colAttDate.Width = 140;
             // 
             // flpTags
             // 

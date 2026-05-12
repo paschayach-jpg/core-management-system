@@ -151,6 +151,30 @@ namespace CMS.Services
                 throw new UnauthorizedAccessException(string.Format(
                     "User {0} does not have Read permission on folder {1}.", user.UserID, doc.FolderID));
 
+            if (string.IsNullOrEmpty(doc.PhysicalPath))
+            {
+                _loggingService.Error(string.Format(
+                    "FileService: PhysicalPath is null/empty for file ID {0} ('{1}').", fileId, doc.OriginalFileName), null);
+                return new FileDownloadResult
+                {
+                    FileName = doc.OriginalFileName,
+                    Success = false,
+                    ErrorMessage = "ไม่พบที่จัดเก็บไฟล์ในระบบ กรุณาติดต่อผู้ดูแลระบบ"
+                };
+            }
+
+            if (!_networkDriveHelper.FileExists(doc.PhysicalPath))
+            {
+                _loggingService.Error(string.Format(
+                    "FileService: File not found at path '{0}' for file ID {1}.", doc.PhysicalPath, fileId), null);
+                return new FileDownloadResult
+                {
+                    FileName = doc.OriginalFileName,
+                    Success = false,
+                    ErrorMessage = string.Format("ไม่พบไฟล์ในพื้นที่จัดเก็บ ({0})", System.IO.Path.GetFileName(doc.PhysicalPath))
+                };
+            }
+
             Stream fileStream;
             try
             {
@@ -159,12 +183,12 @@ namespace CMS.Services
             catch (Exception ex)
             {
                 _loggingService.Error(string.Format(
-                    "FileService: Failed to read file '{0}' from network drive.", doc.PhysicalPath), ex);
+                    "FileService: Failed to read file '{0}' from network drive. Error: {1}", doc.PhysicalPath, ex.Message), ex);
                 return new FileDownloadResult
                 {
                     FileName = doc.OriginalFileName,
                     Success = false,
-                    ErrorMessage = "The file could not be read from storage."
+                    ErrorMessage = string.Format("เปิดไฟล์ไม่ได้: {0}", ex.Message)
                 };
             }
 
@@ -286,6 +310,54 @@ namespace CMS.Services
 
             Log(user, "File", "DELETE", "storage.FileDocument", fileId, 1,
                 string.Format("Soft-deleted file '{0}'.", doc.OriginalFileName));
+        }
+
+        // -----------------------------------------------------------------------
+        // Hide/Unhide Files (MOD-003)
+        // -----------------------------------------------------------------------
+
+        public void HideFiles(List<int> fileIds, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (fileIds == null) throw new ArgumentNullException("fileIds");
+
+            foreach (var fileId in fileIds)
+            {
+                var doc = _fileDocumentRepository.GetById(fileId);
+                if (doc == null || doc.IsDeleted)
+                    continue;
+
+                doc.IsHidden = true;
+                doc.HiddenBy = user.ADUserName;
+                doc.HiddenDate = DateTime.Now;
+
+                _fileDocumentRepository.Update(doc);
+
+                Log(user, "File", "HIDE", "storage.FileDocument", fileId, 1,
+                    string.Format("Hid file '{0}'.", doc.OriginalFileName));
+            }
+        }
+
+        public void UnhideFiles(List<int> fileIds, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            if (fileIds == null) throw new ArgumentNullException("fileIds");
+
+            foreach (var fileId in fileIds)
+            {
+                var doc = _fileDocumentRepository.GetById(fileId);
+                if (doc == null || doc.IsDeleted)
+                    continue;
+
+                doc.IsHidden = false;
+                doc.HiddenBy = null;
+                doc.HiddenDate = null;
+
+                _fileDocumentRepository.Update(doc);
+
+                Log(user, "File", "UNHIDE", "storage.FileDocument", fileId, 1,
+                    string.Format("Unhid file '{0}'.", doc.OriginalFileName));
+            }
         }
 
         // -----------------------------------------------------------------------
@@ -527,7 +599,7 @@ namespace CMS.Services
         // CopyFile
         // -----------------------------------------------------------------------
 
-        public int CopyFile(int fileId, int destinationFolderId, UserContext user)
+        public int CopyFile(int fileId, int destinationFolderId, UserContext user, bool overwrite = false)
         {
             if (user == null) throw new ArgumentNullException("user");
 
@@ -549,19 +621,51 @@ namespace CMS.Services
                         string.Format("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง '{0}'", destFolder.FolderName));
             }
 
-            // Build a unique stored filename in destination (append copy index if collision)
-            string baseName = Path.GetFileNameWithoutExtension(source.StoredFileName ?? source.OriginalFileName);
             string ext = source.FileExtension ?? Path.GetExtension(source.OriginalFileName ?? "");
             if (!ext.StartsWith(".")) ext = "." + ext;
 
-            string storedName = baseName + "_copy" + ext;
-            string destPath = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
+            string storedName;
+            string destPath;
+            string uniqueOriginalName;
+            string auditAction;
 
-            int suffix = 1;
-            while (_networkDriveHelper.FileExists(destPath))
+            if (overwrite)
             {
-                storedName = string.Format("{0}_copy({1}){2}", baseName, suffix++, ext);
+                // Replace mode: soft-delete existing record, keep original display name
+                var existing = _fileDocumentRepository.GetByOriginalName(source.OriginalFileName, destinationFolderId);
+                if (existing != null)
+                    _fileDocumentRepository.SoftDelete(existing.FileID, user.UserID);
+
+                uniqueOriginalName = source.OriginalFileName;
+                // Use timestamp-based stored name to guarantee uniqueness — avoids self-copy
+                // when pasting to the same folder the source file lives in
+                string origBase = Path.GetFileNameWithoutExtension(source.StoredFileName ?? source.OriginalFileName);
+                storedName = string.Format("{0}_{1:yyyyMMddHHmmssfff}{2}", origBase, DateTime.Now, ext);
                 destPath = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
+                auditAction = "CopyFile_Replace";
+            }
+            else
+            {
+                // SaveCopy mode: always create a new file with unique _copy suffix
+                string baseName = Path.GetFileNameWithoutExtension(source.StoredFileName ?? source.OriginalFileName);
+                storedName = baseName + "_copy" + ext;
+                destPath = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
+                int suffix = 1;
+                while (_networkDriveHelper.FileExists(destPath))
+                {
+                    storedName = string.Format("{0}_copy({1}){2}", baseName, suffix++, ext);
+                    destPath = _networkDriveHelper.BuildPath(destFolder.OrgUnitID, destinationFolderId, storedName);
+                }
+
+                string origBase = Path.GetFileNameWithoutExtension(source.OriginalFileName ?? "");
+                string origExt = Path.GetExtension(source.OriginalFileName ?? "");
+                uniqueOriginalName = source.OriginalFileName;
+                int origSuffix = 1;
+                while (_fileDocumentRepository.ExistsWithName(uniqueOriginalName, destinationFolderId))
+                {
+                    uniqueOriginalName = string.Format("{0} ({1}){2}", origBase, origSuffix++, origExt);
+                }
+                auditAction = "CopyFile";
             }
 
             // Copy physical file
@@ -578,7 +682,7 @@ namespace CMS.Services
             var newDoc = new FileDocument
             {
                 FolderID = destinationFolderId,
-                OriginalFileName = source.OriginalFileName,
+                OriginalFileName = uniqueOriginalName,
                 StoredFileName = storedName,
                 FileExtension = source.FileExtension,
                 MimeType = source.MimeType,
@@ -599,7 +703,7 @@ namespace CMS.Services
             _auditService.Log(new AuditEntry
             {
                 Module = "File",
-                Action = "CopyFile",
+                Action = auditAction,
                 UserID = user.UserID,
                 UserName = user.ADUserName ?? string.Empty,
                 UserRole = user.AppRole,
@@ -640,17 +744,40 @@ namespace CMS.Services
                 if (request.FileStream == null)
                     return Fail(request.FileName, "File stream is null.");
 
-                // Resolve duplicate file name — append " copy", " copy(2)", " copy(3)", …
-                string resolvedName = ResolveFileName(request.FileName, folder.FolderID);
+                // ── Resolve display name, physical stored name, and version ──────────
+                FileDocument existingDoc = null;
+                int newVersion = 1;
+                string resolvedName;   // OriginalFileName shown to users
+                string physicalName;   // actual file name written to network drive
+
+                if (request.OverwriteExisting)
+                {
+                    // Replace mode: keep original display name; use timestamp-based stored name
+                    // so the new physical file does not collide with the old one (soft-delete only)
+                    existingDoc = _fileDocumentRepository.GetByOriginalName(request.FileName, folder.FolderID);
+                    if (existingDoc != null)
+                        newVersion = existingDoc.Version + 1;
+
+                    resolvedName = request.FileName;
+                    string origBase = Path.GetFileNameWithoutExtension(request.FileName);
+                    physicalName = string.Format("{0}_{1:yyyyMMddHHmmssfff}{2}", origBase, DateTime.Now, ext);
+                }
+                else
+                {
+                    resolvedName = ResolveFileName(request.FileName, folder.FolderID);
+                    physicalName = resolvedName;
+                }
+
                 bool isDuplicate = !string.Equals(resolvedName, request.FileName, StringComparison.OrdinalIgnoreCase);
 
-                // Check quota before proceeding
+                // Check quota before proceeding (deduct old file size when replacing)
                 if (folder.QuotaBytes.HasValue)
                 {
-                    long projectedUsage = folder.FolderSizeBytes + request.FileSizeBytes;
+                    long existingSize = existingDoc != null ? existingDoc.FileSizeBytes : 0;
+                    long projectedUsage = folder.FolderSizeBytes - existingSize + request.FileSizeBytes;
                     if (projectedUsage > folder.QuotaBytes.Value)
                     {
-                        long remainingQuota = folder.QuotaBytes.Value - folder.FolderSizeBytes;
+                        long remainingQuota = folder.QuotaBytes.Value - (folder.FolderSizeBytes - existingSize);
                         return Fail(request.FileName, string.Format(
                             "Upload would exceed folder quota. Current usage: {0:N0} bytes, Quota: {1:N0} bytes, Remaining: {2:N0} bytes.",
                             folder.FolderSizeBytes, folder.QuotaBytes.Value, remainingQuota));
@@ -665,7 +792,7 @@ namespace CMS.Services
                 ScanResult scanResult = new ScanResult { IsClean = true, ScannerError = false };
 
                 // Write to network drive
-                writtenPath = _networkDriveHelper.BuildPath(folder.OrgUnitID, folder.FolderID, resolvedName);
+                writtenPath = _networkDriveHelper.BuildPath(folder.OrgUnitID, folder.FolderID, physicalName);
                 _networkDriveHelper.WriteFile(writtenPath, request.FileStream);
 
                 string storedFileName = Path.GetFileName(writtenPath);
@@ -688,10 +815,17 @@ namespace CMS.Services
                     FileStatus = 1, // 1=Active
                     UploadedBy = user.UserID,
                     UploadedDate = DateTime.Now,
-                    Version = 1
+                    Version = newVersion
                 };
 
                 insertedId = _fileDocumentRepository.Insert(doc);
+
+                // Replace: bump version and soft-delete old record only after new record is inserted
+                if (existingDoc != null)
+                {
+                    _fileDocumentRepository.UpdateVersion(insertedId.Value, newVersion);
+                    _fileDocumentRepository.SoftDelete(existingDoc.FileID, user.UserID);
+                }
 
                 // Auto-propagate folder permissions to the new file
                 if (_permissionRepository != null && _filePermissionRepository != null)
@@ -737,8 +871,16 @@ namespace CMS.Services
                 }
 
                 // Update folder size and file count
-                folder.FolderSizeBytes += request.FileSizeBytes;
-                folder.FileCount += 1;
+                if (existingDoc != null)
+                {
+                    // Replace: adjust size delta; count stays the same
+                    folder.FolderSizeBytes = Math.Max(0, folder.FolderSizeBytes - existingDoc.FileSizeBytes) + request.FileSizeBytes;
+                }
+                else
+                {
+                    folder.FolderSizeBytes += request.FileSizeBytes;
+                    folder.FileCount += 1;
+                }
                 _folderRepository.Update(folder);
 
                 // Try to ensure FileCount is accurate by calling stored procedure (if available)

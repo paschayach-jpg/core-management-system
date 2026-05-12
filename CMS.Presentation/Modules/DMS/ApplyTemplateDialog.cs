@@ -15,6 +15,7 @@ namespace CMS.Presentation
         private readonly IUserAccessOrgLookupController _orgLookupController;
         private readonly UserContext               _currentUser;
         private readonly Folder                    _parentFolder;  // folder ที่เข้ามาสร้าง
+        private readonly string                    _parentFolderPath; // full breadcrumb path จาก FolderForm
 
         private List<FolderTemplate> _templates = new List<FolderTemplate>();
         private List<OrgUnit>        _orgUnits  = new List<OrgUnit>();
@@ -25,16 +26,18 @@ namespace CMS.Presentation
             IFolderTemplateController templateController,
             IUserAccessOrgLookupController orgLookupController,
             UserContext               currentUser,
-            Folder                    parentFolder = null)
+            Folder                    parentFolder = null,
+            string                    parentFolderPath = null)
         {
             if (templateController  == null) throw new ArgumentNullException("templateController");
             if (orgLookupController == null) throw new ArgumentNullException("orgLookupController");
             if (currentUser         == null) throw new ArgumentNullException("currentUser");
 
-            _templateController  = templateController;
+            _templateController   = templateController;
             _orgLookupController  = orgLookupController;
-            _currentUser         = currentUser;
-            _parentFolder        = parentFolder;
+            _currentUser          = currentUser;
+            _parentFolder         = parentFolder;
+            _parentFolderPath     = parentFolderPath ?? string.Empty;
 
             InitializeComponent();
         }
@@ -65,6 +68,9 @@ namespace CMS.Presentation
                 if (string.IsNullOrWhiteSpace(txtRootName.Text))
                     txtRootName.Text = _parentFolder.FolderName;
             }
+
+            // แสดง full path breadcrumb ให้ผู้ใช้เห็นตำแหน่งที่จะสร้าง
+            UpdatePathBreadcrumb();
         }
 
         // ── Data loading ──────────────────────────────────────────────────────
@@ -169,6 +175,9 @@ namespace CMS.Presentation
                 treePreview.Nodes.Add(root);
                 treePreview.ExpandAll();
                 treePreview.EndUpdate();
+
+                // อัปเดต path breadcrumb เมื่อเลือก template
+                UpdatePathBreadcrumb();
 
                 // แสดง summary ใน lblStatus แทน confirmation dialog
                 if (_parentFolder != null)
@@ -307,6 +316,29 @@ namespace CMS.Presentation
         {
             int idx = lstTemplates.SelectedIndex;
             return (idx >= 0 && idx < _templates.Count) ? _templates[idx] : null;
+        }
+
+        /// <summary>
+        /// อัปเดต lblPathBreadcrumb ให้แสดง full path ของตำแหน่งที่จะสร้าง folder
+        /// เช่น "📍 🏠 PC  ›  ฝ่ายผู้บริหาร  ›  4PC - (Public Confidential)"
+        /// </summary>
+        private void UpdatePathBreadcrumb()
+        {
+            if (!string.IsNullOrEmpty(_parentFolderPath))
+            {
+                lblPathBreadcrumb.Text    = "📍 " + _parentFolderPath;
+                lblPathBreadcrumb.Visible = true;
+                return;
+            }
+
+            if (_parentFolder != null)
+            {
+                lblPathBreadcrumb.Text    = "📍 " + _parentFolder.FolderName;
+                lblPathBreadcrumb.Visible = true;
+                return;
+            }
+
+            lblPathBreadcrumb.Visible = false;
         }
     }
 }

@@ -27,6 +27,7 @@ namespace CMS.Services
         private readonly ILoggingService         _loggingService;
         private readonly IExternalShareRepository  _externalShareRepository;
         private readonly IShareTokenRepository     _shareTokenRepository;
+        private readonly IFilePermissionRepository _filePermissionRepository;
 
         public ApprovalService(
             IApprovalRepository     approvalRepository,
@@ -37,8 +38,9 @@ namespace CMS.Services
             IUserAccountRepository  userAccountRepository,
             IAuditService           auditService,
             ILoggingService         loggingService,
-            IExternalShareRepository externalShareRepository = null,
-            IShareTokenRepository    shareTokenRepository    = null)
+            IExternalShareRepository  externalShareRepository   = null,
+            IShareTokenRepository     shareTokenRepository      = null,
+            IFilePermissionRepository filePermissionRepository  = null)
         {
             if (approvalRepository     == null) throw new ArgumentNullException("approvalRepository");
             if (folderRepository       == null) throw new ArgumentNullException("folderRepository");
@@ -57,8 +59,9 @@ namespace CMS.Services
             _userAccountRepository  = userAccountRepository;
             _auditService           = auditService;
             _loggingService         = loggingService;
-            _externalShareRepository = externalShareRepository;
-            _shareTokenRepository    = shareTokenRepository;
+            _externalShareRepository   = externalShareRepository;
+            _shareTokenRepository      = shareTokenRepository;
+            _filePermissionRepository  = filePermissionRepository;
         }
 
         // -----------------------------------------------------------------------
@@ -325,10 +328,41 @@ namespace CMS.Services
                     }
                 }
 
+                bool isInternalShareFile =
+                    string.Equals(approvalRequest.RequestType, "INTERNAL_SHARE", StringComparison.OrdinalIgnoreCase)
+                    || (approvalRequest.Remark != null &&
+                        approvalRequest.Remark.StartsWith("InternalShareFile", StringComparison.OrdinalIgnoreCase));
+
+                if (isInternalShareFile && _filePermissionRepository != null)
+                {
+                    try
+                    {
+                        var fp = ParseInternalShareRemark(approvalRequest.Remark);
+                        if (fp != null && fp.FileID > 0)
+                        {
+                            fp.GrantedBy   = approvalRequest.RequestedBy;
+                            fp.GrantedDate = DateTime.Now;
+                            _filePermissionRepository.Insert(fp);
+                            Log(user, "FileSharing", "APPROVE_INTERNAL_SHARE",
+                                "storage.FilePermission", fp.FileID, 1,
+                                string.Format("FilePermission created for FileID:{0} after approval of request {1}.",
+                                    fp.FileID, step.RequestID));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _loggingService.Error(string.Format(
+                            "ApprovalService.ApproveStep: Failed to create FilePermission for INTERNAL_SHARE request {0}. {1}",
+                            step.RequestID, ex.Message), ex);
+                    }
+                }
+
                 string approvedMessage = isCreateHc
                     ? string.Format("คำขอสร้าง 1HC Folder (ID {0}) ได้รับการอนุมัติและสร้างโฟลเดอร์เรียบร้อยแล้ว", step.RequestID)
                     : isExternalShareRequest
                         ? string.Format("คำขอแชร์ภายนอก (ID {0}) ได้รับการอนุมัติและเปิดใช้งานลิงก์แล้ว", step.RequestID)
+                    : isInternalShareFile
+                        ? string.Format("คำขอแชร์ไฟล์ภายใน (ID {0}) ได้รับการอนุมัติและมีผลแล้ว", step.RequestID)
                         : string.Format("คำขอเปลี่ยนสิทธิ์ (ID {0}) ได้รับการอนุมัติและมีผลแล้ว", step.RequestID);
 
                 NotifyUser(approvalRequest.RequestedBy, "ApprovalRequestApproved",
@@ -748,6 +782,43 @@ namespace CMS.Services
             string v;
             int result;
             return parts.TryGetValue(key, out v) && int.TryParse(v, out result) ? result : 0;
+        }
+
+        private static DateTime? RemarkGetDate(System.Collections.Generic.Dictionary<string, string> parts, string key)
+        {
+            string v;
+            if (!parts.TryGetValue(key, out v) || string.IsNullOrEmpty(v)) return null;
+            DateTime d;
+            return DateTime.TryParse(v, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out d) ? (DateTime?)d : null;
+        }
+
+        private static Domain.Models.FilePermission ParseInternalShareRemark(string remark)
+        {
+            if (string.IsNullOrEmpty(remark)) return null;
+            if (!remark.StartsWith("InternalShareFile", StringComparison.OrdinalIgnoreCase)) return null;
+
+            var parts = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var token in remark.Split(' '))
+            {
+                var idx = token.IndexOf(':');
+                if (idx > 0)
+                    parts[token.Substring(0, idx)] = token.Substring(idx + 1);
+            }
+
+            return new Domain.Models.FilePermission
+            {
+                FileID         = RemarkGetInt(parts, "FileID"),
+                PrincipalType  = RemarkGetInt(parts, "PrincipalType"),
+                PrincipalID    = RemarkGetInt(parts, "PrincipalID"),
+                CanRead        = RemarkGetBool(parts, "Read"),
+                CanWrite       = RemarkGetBool(parts, "Write"),
+                CanDelete      = RemarkGetBool(parts, "Delete"),
+                CanModify      = false,
+                CanFullControl = false,
+                IsDeny         = false,
+                ExpiryDate     = RemarkGetDate(parts, "Expiry"),
+            };
         }
 
         private void NotifyUser(int userId, string eventType, string relatedEntityId, string message)

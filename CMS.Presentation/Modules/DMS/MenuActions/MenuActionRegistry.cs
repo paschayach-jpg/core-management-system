@@ -1,9 +1,11 @@
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Modules.KMS;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document;
+using CMS.Domain.Models;
 
 namespace CMS.Presentation
 {
@@ -99,7 +101,7 @@ namespace CMS.Presentation
                             MessageBox.Show("Approval inbox controller is not available.", "Approval Inbox", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return true;
                         }
-                        return ShowTargetForm(context, new ApprovalInboxForm(context.ApprovalInboxController, context.User));
+                        return ShowTargetForm(context, new ApprovalInboxForm(context.ApprovalInboxController, context.User, context.UserAccountLookupController));
 
                     case "AccessLog":
                         if (context.ShareManagementController == null)
@@ -246,9 +248,24 @@ namespace CMS.Presentation
 
         private static bool ExecuteShareDialog(MenuActionContext context)
         {
-            if (context.SelectedFile == null && context.SelectedFolder == null)
+            var selectedFiles = (context.SelectedFiles != null && context.SelectedFiles.Count > 0)
+                ? context.SelectedFiles
+                : (context.SelectedFile != null ? new List<FileDocument> { context.SelectedFile } : null);
+
+            if ((selectedFiles == null || selectedFiles.Count == 0) && context.SelectedFolder == null)
             {
                 MessageBox.Show("กรุณาเลือกไฟล์หรือโฟลเดอร์ก่อนแชร์", "Share", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return true;
+            }
+
+            // BR-004-08: 1HC folders cannot be shared
+            if (context.SelectedFolder != null && context.SelectedFolder.ConfidentialityLevel == 1)
+            {
+                MessageBox.Show(
+                    "โฟลเดอร์ระดับ 1HC (High Confidential) ไม่สามารถแชร์ข้อมูลได้",
+                    "ไม่สามารถแชร์ได้",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
                 return true;
             }
 
@@ -304,7 +321,7 @@ namespace CMS.Presentation
                             context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService),
                             context.User,
                             context.FolderReadLookupController,
-                            context.SelectedFile,
+                            selectedFiles,
                             context.SelectedFolder))
                         {
                             dlg.ShowDialog(context.Owner);

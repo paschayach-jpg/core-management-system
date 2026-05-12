@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -81,6 +81,7 @@ namespace CMS.Presentation
         private readonly IWorkflowService _workflowService;
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
+        public CMS.Services.Interfaces.IWorkflowTemplateService WorkflowTemplateService => _workflowTemplateService;
 
         // Notification inbox controls (built programmatically)
         private Panel _notificationPanel;
@@ -118,8 +119,8 @@ namespace CMS.Presentation
         // Admin-only sub-items inside _grpPermission
         private ToolStripMenuItem _mnuUserAccess;
         private ToolStripMenuItem _mnuUserMgmt;
-        // Ribbon collapse toggle
-        private ToolStripMenuItem _mnuToggleRibbon;
+        // Persistent logout button in ribbonStrip
+        private ToolStripButton _btnLogout;
         private bool _ribbonCollapsed = false;
         private bool _adminTabActive = false;
 
@@ -243,6 +244,10 @@ namespace CMS.Presentation
             _approvalFolderController = approvalFolderController ?? new ApprovalFolderController(_approvalService);
             _permissionCheckController = permissionCheckController ?? new PermissionCheckController(_permissionService);
             _auditLogController = auditLogController ?? new AuditLogController(_auditService);
+
+            // Pre-warm permission cache จาก session ACL ที่โหลดตอน login ครั้งเดียว
+            if (currentUser != null && currentUser.SessionAcl != null)
+                _permissionCheckController.PreloadAcl(currentUser.SessionAcl);
             _folderReadLookupController = folderReadLookupController ?? new FolderReadLookupController(folderRepository, _folderService);
             _fileDocumentLookupController = fileDocumentLookupController;
             _filePermissionAclController = filePermissionAclController;
@@ -284,6 +289,8 @@ namespace CMS.Presentation
                 this.WindowState = FormWindowState.Maximized;
 
                 Text = string.Format("CMS — {0}", _currentUser.AdIdentity);
+                menuStrip.Visible = false;
+
                 BuildGroupedAdminToolbar();
                 ApplyRoleBasedMenuVisibility();
                 WireRibbonHandlers();
@@ -317,7 +324,10 @@ namespace CMS.Presentation
                 clockTimer.Tick += (s, ev) => UpdateStatusBarDateTime();
                 clockTimer.Start();
 
-                // Handle MDI child activation to show/hide dashboard
+                // Dashboard is permanently hidden — FolderForm is the home view
+                pnlDashboard.Visible = false;
+
+                // Handle MDI child activation
                 this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
 
                 // Auto-open FolderForm first — must appear before dashboard data loads
@@ -341,19 +351,12 @@ namespace CMS.Presentation
                     }
                 }));
 
-                // Load dashboard data after FolderForm is open — runs after FolderForm BeginInvoke
                 this.BeginInvoke(new Action(() =>
                 {
-                    try
-                    {
-                        LoadDashboardFolderTree();
-                        LoadRecentFiles();
-                        UpdateStatusBar();
-                        LoadDashboardStats();
-                    }
+                    try { UpdateStatusBar(); }
                     catch (Exception ex)
                     {
-                        _logger.Error($"Error loading dashboard data: {ex.Message}", ex);
+                        _logger.Error($"Error updating status bar: {ex.Message}", ex);
                     }
                 }));
             }
@@ -454,15 +457,21 @@ namespace CMS.Presentation
 
         private void OnMdiChildActivate()
         {
-            bool showDashboard = (this.ActiveMdiChild == null);
-            pnlDashboard.Visible = showDashboard;
+            // Dashboard is permanently hidden — FolderForm is always the home view
+            pnlDashboard.Visible = false;
+
+            // Re-open FolderForm when all MDI children are closed
+            if (this.ActiveMdiChild == null)
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    try { OpenFolderStructure(); }
+                    catch { }
+                }));
+            }
 
             ApplyAdminSectionVisibilityForActiveChild();
             SetTopMenuVisibilityForAuthorityConfig(HasOpenAuthorityConfigForm());
-
-            // Reload lvRecentFiles ทุกครั้งที่ dashboard กลับมาแสดง
-            if (showDashboard)
-                RefreshDashboardFiles();
 
             // Update move controls enabled state based on active child (Req 9.4)
             UpdateMoveControlsState();
@@ -897,44 +906,18 @@ namespace CMS.Presentation
                 _grpSystem,
             });
 
-            // ── ปุ่มซ่อน/แสดงแถบ ribbon (ชิดขวาของ menuStrip) ──────────────
-            // ลบปุ่มเดิมออกก่อน (กรณี BuildGroupedAdminToolbar ถูกเรียกซ้ำ)
-            if (_mnuToggleRibbon != null)
-                menuStrip.Items.Remove(_mnuToggleRibbon);
+            // ── ปุ่ม Logout (ชิดขวาของ ribbonStrip — แสดงตลอด) ─────────────
+            if (_btnLogout != null)
+                ribbonStrip.Items.Remove(_btnLogout);
 
-            _mnuToggleRibbon = new ToolStripMenuItem("▲ ซ่อนแถบ");
-            _mnuToggleRibbon.Alignment = ToolStripItemAlignment.Right;
-            _mnuToggleRibbon.ForeColor = System.Drawing.Color.FromArgb(180, 200, 230);
-            _mnuToggleRibbon.BackColor = System.Drawing.Color.Transparent;
-            _mnuToggleRibbon.AutoToolTip = false;
-            _mnuToggleRibbon.ToolTipText = "ซ่อน/แสดงแถบเครื่องมือ";
-            _mnuToggleRibbon.Click += (s, e) =>
-            {
-                _ribbonCollapsed = !_ribbonCollapsed;
-                if (_adminTabActive)
-                {
-                    ribbonStrip.Visible = false;
-                    ribbonStripAdmin.Visible = !_ribbonCollapsed;
-                }
-                else
-                {
-                    ribbonStrip.Visible = !_ribbonCollapsed;
-                    ribbonStripAdmin.Visible = false;
-                }
-                _mnuToggleRibbon.Text = _ribbonCollapsed ? "▼ แสดงแถบ" : "▲ ซ่อนแถบ";
-            };
-            menuStrip.Items.Add(_mnuToggleRibbon);
-
-            // ── ปุ่ม Logout (ชิดขวา ถัดจาก toggle ribbon) ───────────────────
-            var mnuLogout = new ToolStripMenuItem(
+            _btnLogout = new ToolStripButton(
                 string.Format("🚪 ออกจากระบบ ({0})", _currentUser.ADUserName ?? _currentUser.AdIdentity));
-            mnuLogout.Alignment = ToolStripItemAlignment.Right;
-            mnuLogout.ForeColor = System.Drawing.Color.FromArgb(255, 180, 180);
-            mnuLogout.BackColor = System.Drawing.Color.Transparent;
-            mnuLogout.AutoToolTip = false;
-            mnuLogout.ToolTipText = "ออกจากระบบและ Login ด้วยผู้ใช้อื่น";
-            mnuLogout.Click += (s, e) => PerformLogout();
-            menuStrip.Items.Add(mnuLogout);
+            _btnLogout.Alignment = ToolStripItemAlignment.Right;
+            _btnLogout.ForeColor = System.Drawing.Color.FromArgb(180, 50, 50);
+            _btnLogout.AutoToolTip = false;
+            _btnLogout.ToolTipText = "ออกจากระบบและ Login ด้วยผู้ใช้อื่น";
+            _btnLogout.Click += (s, e) => PerformLogout();
+            ribbonStrip.Items.Add(_btnLogout);
         }
 
         /// <summary>Logout: audit → ปิด form → Program.cs จะแสดง LoginForm ใหม่</summary>
@@ -1371,7 +1354,7 @@ namespace CMS.Presentation
                 return;
             }
 
-            using (var dlg = new ApprovalInboxForm(_approvalInboxController, _currentUser))
+            using (var dlg = new ApprovalInboxForm(_approvalInboxController, _currentUser, _userAccountLookupController))
             {
                 dlg.ShowDialog(this);
 
@@ -1472,21 +1455,27 @@ namespace CMS.Presentation
             }
 
             // Get selected file/folder from active FolderForm
-            FileDocument selectedFile = null;
+            List<FileDocument> selectedFiles = null;
             Folder selectedFolder = null;
+            Folder parentFolder = null;
 
             foreach (Form child in MdiChildren)
             {
                 var ff = child as FolderForm;
                 if (ff != null)
                 {
-                    selectedFile = ff.SelectedFile;
-                    selectedFolder = ff.SelectedFolder;
+                    selectedFiles = ff.SelectedFiles;
+                    var contentFolder = ff.SelectedFolderInContents;
+                    var treeFolder    = ff.SelectedFolder;
+                    selectedFolder    = contentFolder ?? treeFolder;
+                    // parent context: shown in dialog as "4PC › Process02"
+                    if (contentFolder != null && treeFolder != null && contentFolder.FolderID != treeFolder.FolderID)
+                        parentFolder = treeFolder;
                     break;
                 }
             }
 
-            if (selectedFile == null && selectedFolder == null)
+            if ((selectedFiles == null || selectedFiles.Count == 0) && selectedFolder == null)
             {
                 MessageBox.Show(
                     "Please select a file or folder in Folder Explorer first.",
@@ -1578,17 +1567,18 @@ namespace CMS.Presentation
                         _shareCommandController,
                             _userAccountLookupController, _userAccessOrgLookupController, _currentUser,
                             _folderReadLookupController,
-                        selectedFile, selectedFolder))
+                        selectedFiles, selectedFolder, parentFolder))
                     {
                         shareDialog.ShowDialog(this);
                     }
                 }
                 else
                 {
-                    // External share
+                    // External share — single file only (BR-004-08 restriction applies)
+                    var singleFile = selectedFiles?.Count > 0 ? selectedFiles[0] : null;
                     using (var shareDialog = new ShareDialogExternal(
                         _shareCommandController, _currentUser,
-                        selectedFile, selectedFolder))
+                        singleFile, selectedFolder))
                     {
                         shareDialog.ShowDialog(this);
                     }
@@ -1634,10 +1624,10 @@ namespace CMS.Presentation
                     {
                         ff.Activate();
                         MessageBox.Show(
-                            "กรุณาเลือก Folder ปลายทางใน Folder Explorer ก่อนอัพโหลด\n\n" +
+                            "กรุณาเลือก Folder ปลายทางใน Folder Explorer ก่อนอัปโหลด\n\n" +
                             "1. กด 🏢 เลือกหน่วยงาน เพื่อกรอง\n" +
                             "2. คลิก Folder ใน tree ด้านซ้าย\n" +
-                            "3. กด 📤 ปุ่มอัพโหลด อีกครั้ง",
+                            "3. กด 📤 ปุ่มอัปโหลด อีกครั้ง",
                             "เลือก Folder ก่อน",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information);
@@ -1760,6 +1750,9 @@ namespace CMS.Presentation
                 case "ShareManagement":
                     OpenShareManagement();
                     return true;
+                case "RecycleBin":
+                    OpenRecycleBin();
+                    return true;
                 default:
                     return false;
             }
@@ -1783,29 +1776,28 @@ namespace CMS.Presentation
                 _workflowService,
                 _slaCalculator,
                 _logger,
-                _currentUser));
+                _currentUser,
+                _workflowTemplateService));
         }
 
         public void OpenWorkflowDetail()
         {
-            // Open with mock-friendly constructor so it can be previewed from menu immediately.
-            OpenChildForm(new WorkflowDetailFormNew());
+            OpenChildForm(new WorkflowDetailFormNew(
+                0,
+                _workflowService,
+                _workflowTemplateService,
+                _logger,
+                _currentUser));
         }
 
         public void OpenWorkflowTemplateList()
         {
-            if (_workflowTemplateService == null)
-            {
-                MessageBox.Show("Workflow Template service is not available.", "Workflow Template",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowTemplateListForm(
                 _workflowTemplateService,
                 _auditService,
                 _logger,
                 _currentUser));
+
         }
 
         public void OpenWorkflowDesigner(int? templateId = null)
@@ -4071,7 +4063,7 @@ namespace CMS.Presentation
             var mnuSeparator2 = new ToolStripSeparator();
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxDash_Permission_Click);
             var mnuSeparator3 = new ToolStripSeparator();
-            var mnuProperties = new ToolStripMenuItem("ℹ️  คุณสมบัติ", null, CtxDash_Properties_Click);
+            var mnuProperties = new ToolStripMenuItem("ℹ️  รายละเอียด", null, CtxDash_Properties_Click);
 
             ctx.Items.AddRange(new ToolStripItem[]
             {
@@ -4341,13 +4333,13 @@ namespace CMS.Presentation
             if (file != null)
             {
                 MessageBox.Show(
-                    string.Format("ชื่อ: {0}\nประเภท: {1}\nขนาด: {2}\nอัพโหลด: {3}\nVersion: {4}",
+                    string.Format("ชื่อ: {0}\nประเภท: {1}\nขนาด: {2}\nอัปโหลด: {3}\nVersion: {4}",
                         file.OriginalFileName,
                         file.FileExtension.TrimStart('.').ToUpper(),
                         FormatFileSize(file.FileSizeBytes),
                         file.UploadedDate.ToString("dd/MM/yyyy HH:mm"),
                         file.Version),
-                    string.Format("คุณสมบัติ — {0}", file.OriginalFileName),
+                    string.Format("รายละเอียด — {0}", file.OriginalFileName),
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else if (folder != null)
@@ -4358,7 +4350,7 @@ namespace CMS.Presentation
                         ConfidentialityBadge(folder.ConfidentialityLevel),
                         folder.FileCount,
                         FormatFileSize(folder.FolderSizeBytes)),
-                    string.Format("คุณสมบัติ — {0}", folder.FolderName),
+                    string.Format("รายละเอียด — {0}", folder.FolderName),
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }

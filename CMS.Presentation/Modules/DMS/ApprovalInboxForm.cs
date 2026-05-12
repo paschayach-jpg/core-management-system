@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -10,19 +10,24 @@ namespace CMS.Presentation
 {
     public partial class ApprovalInboxForm : Form
     {
-        private readonly IApprovalInboxController _approvalInboxController;
-        private readonly UserContext      _currentUser;
-        private List<ApprovalRequest>     _pendingRequests = new List<ApprovalRequest>();
+        private readonly IApprovalInboxController    _approvalInboxController;
+        private readonly UserContext                _currentUser;
+        private readonly IUserAccountLookupController _userLookup;
+        private List<ApprovalRequest>               _pendingRequests = new List<ApprovalRequest>();
 
         // ── Constructor ──────────────────────────────────────────────────────
 
-        public ApprovalInboxForm(IApprovalInboxController approvalInboxController, UserContext currentUser)
+        public ApprovalInboxForm(
+            IApprovalInboxController approvalInboxController,
+            UserContext currentUser,
+            IUserAccountLookupController userLookup = null)
         {
             if (approvalInboxController == null) throw new ArgumentNullException("approvalInboxController");
             if (currentUser     == null) throw new ArgumentNullException("currentUser");
 
             _approvalInboxController = approvalInboxController;
-            _currentUser     = currentUser;
+            _currentUser             = currentUser;
+            _userLookup              = userLookup;
 
             InitializeComponent();
             LoadPendingRequests();
@@ -47,7 +52,7 @@ namespace CMS.Presentation
                     var item = new ListViewItem(req.RequestID.ToString());
                     item.SubItems.Add(RequestTypeLabel(req.RequestType));
                     item.SubItems.Add(req.Subject ?? "—");
-                    item.SubItems.Add("—");   // requester name — wire to UserAccount if needed
+                    item.SubItems.Add(ResolveRequesterName(req.RequestedBy));
                     item.SubItems.Add(req.RequestedDate.ToString("dd/MM/yy HH:mm"));
                     item.SubItems.Add(req.ExpiryDate.HasValue
                         ? req.ExpiryDate.Value.ToString("dd/MM/yy")
@@ -126,10 +131,21 @@ namespace CMS.Presentation
             var targets = GetTargetRequests();
             if (targets.Count == 0) return;
 
+            if (string.IsNullOrWhiteSpace(txtRemark.Text))
+            {
+                SetRemarkError(true);
+                MessageBox.Show("กรุณากรอกเหตุผลในการอนุมัติ", "ข้อมูลไม่ครบ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtRemark.Focus();
+                return;
+            }
+            SetRemarkError(false);
+
             string msg = targets.Count == 1
-                ? string.Format("ยืนยันการอนุมัติคำขอ:\n\n{0}\n{1}",
-                    RequestTypeLabel(targets[0].RequestType), targets[0].Subject)
-                : string.Format("ยืนยันการอนุมัติ {0} รายการที่เลือก?", targets.Count);
+                ? string.Format("ยืนยันการอนุมัติคำขอ:\n\n{0}\n{1}\n\nเหตุผล: {2}",
+                    RequestTypeLabel(targets[0].RequestType), targets[0].Subject, txtRemark.Text)
+                : string.Format("ยืนยันการอนุมัติ {0} รายการที่เลือก?\n\nเหตุผล: {1}",
+                    targets.Count, txtRemark.Text);
 
             if (MessageBox.Show(msg, "ยืนยันการอนุมัติ",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
@@ -145,11 +161,13 @@ namespace CMS.Presentation
 
             if (string.IsNullOrWhiteSpace(txtRemark.Text))
             {
+                SetRemarkError(true);
                 MessageBox.Show("กรุณากรอกเหตุผลในการปฏิเสธ", "ข้อมูลไม่ครบ",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtRemark.Focus();
                 return;
             }
+            SetRemarkError(false);
 
             string msg = targets.Count == 1
                 ? string.Format("ยืนยันการปฏิเสธคำขอ:\n\n{0}\n{1}\n\nเหตุผล: {2}",
@@ -176,8 +194,6 @@ namespace CMS.Presentation
             int success = 0, failed = 0;
             int stillPending = 0;
             string remark = txtRemark.Text.Trim();
-            if (string.IsNullOrEmpty(remark))
-                remark = approve ? "อนุมัติ" : "ปฏิเสธ";
 
             SetStatus(approve ? "กำลังอนุมัติ..." : "กำลังปฏิเสธ...", Color.RoyalBlue);
 
@@ -246,6 +262,7 @@ namespace CMS.Presentation
 
             SetStatus(resultMsg, success > 0 ? (approve ? Color.Green : Color.OrangeRed) : Color.Red);
             txtRemark.Clear();
+            SetRemarkError(false);
             chkSelectAll.Checked = false;
             LoadPendingRequests();
         }
@@ -270,26 +287,57 @@ namespace CMS.Presentation
                 .ToList();
         }
 
+        private void txtRemark_TextChanged(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(txtRemark.Text))
+                SetRemarkError(false);
+        }
+
+        private void SetRemarkError(bool hasError)
+        {
+            txtRemark.BackColor = hasError
+                ? Color.FromArgb(255, 230, 230)
+                : SystemColors.Window;
+        }
+
         private void SetStatus(string text, Color color)
         {
             lblStatus.Text      = text;
             lblStatus.ForeColor = color;
         }
 
+        private string ResolveRequesterName(int userId)
+        {
+            if (_userLookup == null) return string.Format("UserID:{0}", userId);
+            try
+            {
+                var account = _userLookup.GetUserById(userId);
+                if (account == null) return string.Format("UserID:{0}", userId);
+                return !string.IsNullOrEmpty(account.DisplayName)
+                    ? account.DisplayName
+                    : account.ADUserName ?? string.Format("UserID:{0}", userId);
+            }
+            catch
+            {
+                return string.Format("UserID:{0}", userId);
+            }
+        }
+
         private static string RequestTypeLabel(string t)
         {
             switch ((t ?? "").ToUpper())
             {
-                case "CREATE_HC":        return "🔐 สร้าง Folder 1HC";
-                case "PERMISSION":        return "🔐 สิทธิ์ Folder";
+                case "CREATE_HC":         return "🔐 สร้าง Folder 1HC";
+                case "PERMISSION":
                 case "CHANGE_PERMISSION": return "🔐 สิทธิ์ Folder";
-                case "UPLOAD":            return "📤 อัพโหลดไฟล์";
-                case "DELETE":            return "🗑 ลบไฟล์";
-                case "DELETE_FILE":       return "🗑 ลบไฟล์";
+                case "INTERNAL_SHARE":    return "🔗 แชร์ไฟล์ภายใน";
+                case "EXTERNAL_SHARE":    return "🌐 แชร์ภายนอก";
+                case "UPLOAD":            return "📤 อัปโหลดไฟล์";
+                case "DELETE":
+                case "DELETE_FILE":
                 case "FILE_DELETE":       return "🗑 ลบไฟล์";
                 case "DELETE_FOLDER":     return "🗑 ลบ Folder";
                 case "FOLDER":            return "📁 จัดการ Folder";
-                case "EXTERNAL_SHARE":    return "🌐 แชร์ภายนอก";
                 default:                  return t ?? "—";
             }
         }

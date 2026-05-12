@@ -66,7 +66,8 @@ namespace CMS.Presentation
 
                 var orgStructureService = new OrgStructureService(orgUnitRepository, auditService, userOrgVisibilityService);
 
-                var networkDriveHelper = new NetworkDriveHelper(configManager);
+                var networkShareConnector = new NetworkShareConnector(configManager);
+                var networkDriveHelper = new NetworkDriveHelper(configManager, networkShareConnector);
                 var clamAvAdapter = new ClamAVAdapter(configManager);
                 var virusScanService = new VirusScanService(
                     clamAvAdapter,
@@ -98,7 +99,8 @@ namespace CMS.Presentation
                     auditService,
                     loggingService,
                     externalShareRepository,
-                    shareTokenRepository);
+                    shareTokenRepository,
+                    filePermissionRepository);
 
                 var fileService = new FileService(
                     fileDocumentRepository,
@@ -179,11 +181,26 @@ namespace CMS.Presentation
                     auditService,
                     loggingService);
 
-                var workflowTemplateService = new WorkflowTemplateService(
-                    workflowTemplateRepository,
-                    workflowRepository,
-                    auditService,
-                    loggingService);
+                IWorkflowTemplateService workflowTemplateService = null;
+                try
+                {
+                    workflowTemplateService = new WorkflowTemplateService(
+                        workflowTemplateRepository,
+                        workflowRepository,
+                        auditService,
+                        loggingService);
+                    loggingService.Info("workflowTemplateService created successfully");
+                }
+                catch (Exception ex)
+                {
+                    loggingService.Error($"ERROR creating workflowTemplateService: {ex.Message}\n{ex.StackTrace}", ex);
+                    MessageBox.Show(
+                        $"WARNING: Cannot create WorkflowTemplateService\n\n{ex.GetType().Name}\n{ex.Message}\n\nWorkflow features will be unavailable.\n\nDetails:\n{ex.StackTrace}",
+                        "WARNING",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    // Don't throw - allow app to continue with workflowTemplateService = null
+                }
 
                 // ── AD Auth Service ───────────────────────────────────────────
                 var adAuthService = new AdAuthService(configManager);
@@ -262,8 +279,7 @@ namespace CMS.Presentation
                     return;
                 }
 
-                // Optional: establish authenticated SMB session from config to prevent credential prompts.
-                var networkShareConnector = new NetworkShareConnector(configManager);
+                // Establish authenticated SMB session (connector already injected into networkDriveHelper).
                 string networkShareMessage;
                 if (!networkShareConnector.TryEnsureConnected(out networkShareMessage))
                 {
@@ -365,8 +381,12 @@ namespace CMS.Presentation
                     PositionName = account.PositionName,
                     DepartmentCode = account.DepartmentCode,
                     DepartmentName = account.DepartmentName,
+                    DepartmentId = account.DepartmentId,
+                    DivisionId   = account.DivisionId,
                     // Resolve Authority จาก ตำแหน่ง/แผนก/ฝ่าย ของพนักงาน
-                    Authority = TryResolveAuthority(folderAuthorityService, account, loggingService)
+                    Authority = TryResolveAuthority(folderAuthorityService, account, loggingService),
+                    // Pre-load ACL entries ครั้งเดียวตอน login เพื่อลด DB call ตลอด session
+                    SessionAcl = TryPreloadSessionAcl(permissionRepository, account, loggingService)
                 };
 
                 // ── Audit LOGIN ───────────────────────────────────────────────
@@ -632,6 +652,40 @@ namespace CMS.Presentation
             {
                 log.Error("FolderAuthority resolve failed — stored procedures may not be deployed yet.", ex);
                 return new System.Collections.Generic.Dictionary<int, CMS.Domain.Models.FolderAuthorityConfig>();
+            }
+        }
+
+        private static System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<CMS.Domain.Models.FolderPermission>>
+            TryPreloadSessionAcl(
+                CMS.Data.Interfaces.IPermissionRepository permRepo,
+                UserAccount account,
+                LoggingService log)
+        {
+            try
+            {
+                var entries = permRepo.GetAllForUser(
+                    account.UserID,
+                    account.AppRole,
+                    account.DepartmentId,
+                    account.DivisionId);
+
+                var dict = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<CMS.Domain.Models.FolderPermission>>();
+                foreach (var e in entries)
+                {
+                    System.Collections.Generic.List<CMS.Domain.Models.FolderPermission> list;
+                    if (!dict.TryGetValue(e.FolderID, out list))
+                    {
+                        list = new System.Collections.Generic.List<CMS.Domain.Models.FolderPermission>();
+                        dict[e.FolderID] = list;
+                    }
+                    list.Add(e);
+                }
+                return dict;
+            }
+            catch (Exception ex)
+            {
+                log.Error("SessionAcl pre-load failed — falling back to on-demand permission checks.", ex);
+                return new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<CMS.Domain.Models.FolderPermission>>();
             }
         }
 

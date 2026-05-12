@@ -40,6 +40,7 @@ namespace CMS.Presentation
             this.txtRootName = new System.Windows.Forms.TextBox();
             this.lblRootName = new System.Windows.Forms.Label();
             this.lblPreview = new System.Windows.Forms.Label();
+            this.lblPathBreadcrumb = new System.Windows.Forms.Label();
             this.pnlHeader.SuspendLayout();
             this.pnlStatus.SuspendLayout();
             this.pnlFooter.SuspendLayout();
@@ -277,6 +278,7 @@ namespace CMS.Presentation
             // 
             this.pnlRight.Controls.Add(this.pnlTree);
             this.pnlRight.Controls.Add(this.pnlOptions);
+            this.pnlRight.Controls.Add(this.lblPathBreadcrumb);
             this.pnlRight.Controls.Add(this.lblPreview);
             this.pnlRight.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlRight.Location = new System.Drawing.Point(0, 0);
@@ -376,9 +378,23 @@ namespace CMS.Presentation
             this.lblRootName.Size = new System.Drawing.Size(276, 24);
             this.lblRootName.TabIndex = 6;
             this.lblRootName.Text = "📝  ชื่อ Root Folder";
-            // 
+            //
+            // lblPathBreadcrumb
+            //
+            this.lblPathBreadcrumb.AutoEllipsis = true;
+            this.lblPathBreadcrumb.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(236)))), ((int)(((byte)(248)))));
+            this.lblPathBreadcrumb.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblPathBreadcrumb.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblPathBreadcrumb.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(80)))), ((int)(((byte)(120)))));
+            this.lblPathBreadcrumb.Name = "lblPathBreadcrumb";
+            this.lblPathBreadcrumb.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.lblPathBreadcrumb.Size = new System.Drawing.Size(276, 22);
+            this.lblPathBreadcrumb.TabIndex = 3;
+            this.lblPathBreadcrumb.Text = "";
+            this.lblPathBreadcrumb.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
             // lblPreview
-            // 
+            //
             this.lblPreview.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblPreview.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.lblPreview.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
@@ -444,6 +460,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.Label          lblTemplateDesc;
         private System.Windows.Forms.Panel          pnlRight;
         private System.Windows.Forms.Label          lblPreview;
+        private System.Windows.Forms.Label          lblPathBreadcrumb;
         private System.Windows.Forms.Panel          pnlTree;
         private System.Windows.Forms.TreeView       treePreview;
         private System.Windows.Forms.Panel          pnlOptions;

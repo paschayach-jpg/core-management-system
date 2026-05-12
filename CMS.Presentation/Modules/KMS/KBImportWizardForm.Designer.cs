@@ -1,4 +1,4 @@
-namespace CMS.Presentation.Modules.KMS
+﻿namespace CMS.Presentation.Modules.KMS
 {
     partial class KBImportWizardForm
     {
@@ -287,7 +287,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStep1Label.Name = "lblStep1Label";
             this.lblStep1Label.Size = new System.Drawing.Size(140, 16);
             this.lblStep1Label.TabIndex = 1;
-            this.lblStep1Label.Text = "อัพโหลดไฟล์";
+            this.lblStep1Label.Text = "อัปโหลดไฟล์";
             this.lblStep1Label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // pnlLine12
@@ -727,6 +727,15 @@ namespace CMS.Presentation.Modules.KMS
             this.lblCompleteHdr.TabIndex = 0;
             this.lblCompleteHdr.Text = "✅  ผลการนำเข้าข้อมูล";
             this.lblCompleteHdr.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblUploadSectionHdr.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblUploadSectionHdr.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Bold);
+            this.lblUploadSectionHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblUploadSectionHdr.Location = new System.Drawing.Point(0, 0);
+            this.lblUploadSectionHdr.Name = "lblUploadSectionHdr";
+            this.lblUploadSectionHdr.Size = new System.Drawing.Size(420, 36);
+            this.lblUploadSectionHdr.TabIndex = 0;
+            this.lblUploadSectionHdr.Text = "📁  Step 1 — อัปโหลดไฟล์ Excel";
+            this.lblUploadSectionHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlStep2
             // 
@@ -1992,7 +2001,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStepStatus.Name = "lblStepStatus";
             this.lblStepStatus.Size = new System.Drawing.Size(220, 26);
             this.lblStepStatus.TabIndex = 1;
-            this.lblStepStatus.Text = "📋  Step 1/3: อัพโหลดไฟล์";
+            this.lblStepStatus.Text = "📋  Step 1/3: อัปโหลดไฟล์";
             this.lblStepStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblStatusUser

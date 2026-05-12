@@ -1,4 +1,4 @@
-namespace CMS.Presentation
+﻿namespace CMS.Presentation
 {
     partial class FolderForm
     {
@@ -37,6 +37,9 @@ namespace CMS.Presentation
             this.btnMove = new System.Windows.Forms.ToolStripButton();
             this.sep4 = new System.Windows.Forms.ToolStripSeparator();
             this.btnApplyTemplate = new System.Windows.Forms.ToolStripButton();
+            this.sep5 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnHideFile = new System.Windows.Forms.ToolStripButton();
+            this.btnUnhideFile = new System.Windows.Forms.ToolStripButton();
             this.sep3 = new System.Windows.Forms.ToolStripSeparator();
             this.btnChangeLevel = new System.Windows.Forms.ToolStripButton();
             this.btnCopyStructure = new System.Windows.Forms.ToolStripButton();
@@ -59,6 +62,7 @@ namespace CMS.Presentation
             this.chk4PC = new System.Windows.Forms.CheckBox();
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.splitLR = new System.Windows.Forms.SplitContainer();
+            this.btnToggleSidebar = new System.Windows.Forms.Button();
             this.pnlExplorer = new System.Windows.Forms.Panel();
             this.folderTreeView = new System.Windows.Forms.TreeView();
             this.txtFolderSearch = new System.Windows.Forms.TextBox();
@@ -139,10 +143,10 @@ namespace CMS.Presentation
             this.pnlFilter.Controls.Add(this.cmbExtension);
             this.pnlFilter.Controls.Add(this.lblFilterExt);
             this.pnlFilter.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlFilter.Location = new System.Drawing.Point(0, 26);
+            this.pnlFilter.Location = new System.Drawing.Point(0, 0);
             this.pnlFilter.Name = "pnlFilter";
             this.pnlFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlFilter.Size = new System.Drawing.Size(890, 32);
+            this.pnlFilter.Size = new System.Drawing.Size(925, 32);
             this.pnlFilter.TabIndex = 6;
             // 
             // lblFilterStatus
@@ -150,7 +154,7 @@ namespace CMS.Presentation
             this.lblFilterStatus.AutoSize = true;
             this.lblFilterStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.lblFilterStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.lblFilterStatus.Location = new System.Drawing.Point(836, 8);
+            this.lblFilterStatus.Location = new System.Drawing.Point(862, 8);
             this.lblFilterStatus.Name = "lblFilterStatus";
             this.lblFilterStatus.Size = new System.Drawing.Size(0, 15);
             this.lblFilterStatus.TabIndex = 10;
@@ -161,7 +165,7 @@ namespace CMS.Presentation
             this.btnClearFilter.FlatAppearance.BorderSize = 0;
             this.btnClearFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClearFilter.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.btnClearFilter.Location = new System.Drawing.Point(758, 4);
+            this.btnClearFilter.Location = new System.Drawing.Point(784, 4);
             this.btnClearFilter.Name = "btnClearFilter";
             this.btnClearFilter.Size = new System.Drawing.Size(70, 23);
             this.btnClearFilter.TabIndex = 9;
@@ -175,18 +179,18 @@ namespace CMS.Presentation
             this.btnApplyFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnApplyFilter.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold);
             this.btnApplyFilter.ForeColor = System.Drawing.Color.White;
-            this.btnApplyFilter.Location = new System.Drawing.Point(672, 4);
+            this.btnApplyFilter.Location = new System.Drawing.Point(698, 4);
             this.btnApplyFilter.Name = "btnApplyFilter";
             this.btnApplyFilter.Size = new System.Drawing.Size(80, 23);
             this.btnApplyFilter.TabIndex = 8;
-            this.btnApplyFilter.Text = "🔍 กรอง";
+            this.btnApplyFilter.Text = "🔍 ค้นหา";
             this.btnApplyFilter.UseVisualStyleBackColor = false;
             this.btnApplyFilter.Click += new System.EventHandler(this.btnApplyFilter_Click);
             // 
             // txtUploadedBy
             // 
             this.txtUploadedBy.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.txtUploadedBy.Location = new System.Drawing.Point(534, 5);
+            this.txtUploadedBy.Location = new System.Drawing.Point(560, 5);
             this.txtUploadedBy.Name = "txtUploadedBy";
             this.txtUploadedBy.Size = new System.Drawing.Size(130, 21);
             this.txtUploadedBy.TabIndex = 7;
@@ -195,18 +199,18 @@ namespace CMS.Presentation
             // 
             this.lblFilterUploader.AutoSize = true;
             this.lblFilterUploader.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterUploader.Location = new System.Drawing.Point(470, 8);
+            this.lblFilterUploader.Location = new System.Drawing.Point(496, 8);
             this.lblFilterUploader.Name = "lblFilterUploader";
-            this.lblFilterUploader.Size = new System.Drawing.Size(56, 15);
+            this.lblFilterUploader.Size = new System.Drawing.Size(55, 15);
             this.lblFilterUploader.TabIndex = 6;
-            this.lblFilterUploader.Text = "ผู้อัพโหลด:";
+            this.lblFilterUploader.Text = "ผู้อัปโหลด:";
             // 
             // dtpTo
             // 
             this.dtpTo.Checked = false;
             this.dtpTo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.dtpTo.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpTo.Location = new System.Drawing.Point(352, 5);
+            this.dtpTo.Location = new System.Drawing.Point(378, 5);
             this.dtpTo.Name = "dtpTo";
             this.dtpTo.ShowCheckBox = true;
             this.dtpTo.Size = new System.Drawing.Size(110, 21);
@@ -216,7 +220,7 @@ namespace CMS.Presentation
             // 
             this.lblFilterTo.AutoSize = true;
             this.lblFilterTo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterTo.Location = new System.Drawing.Point(318, 8);
+            this.lblFilterTo.Location = new System.Drawing.Point(344, 8);
             this.lblFilterTo.Name = "lblFilterTo";
             this.lblFilterTo.Size = new System.Drawing.Size(22, 15);
             this.lblFilterTo.TabIndex = 4;
@@ -227,7 +231,7 @@ namespace CMS.Presentation
             this.dtpFrom.Checked = false;
             this.dtpFrom.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.dtpFrom.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpFrom.Location = new System.Drawing.Point(200, 5);
+            this.dtpFrom.Location = new System.Drawing.Point(226, 5);
             this.dtpFrom.Name = "dtpFrom";
             this.dtpFrom.ShowCheckBox = true;
             this.dtpFrom.Size = new System.Drawing.Size(110, 21);
@@ -237,7 +241,7 @@ namespace CMS.Presentation
             // 
             this.lblFilterFrom.AutoSize = true;
             this.lblFilterFrom.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.lblFilterFrom.Location = new System.Drawing.Point(156, 8);
+            this.lblFilterFrom.Location = new System.Drawing.Point(182, 8);
             this.lblFilterFrom.Name = "lblFilterFrom";
             this.lblFilterFrom.Size = new System.Drawing.Size(37, 15);
             this.lblFilterFrom.TabIndex = 2;
@@ -246,7 +250,7 @@ namespace CMS.Presentation
             // cmbExtension
             // 
             this.cmbExtension.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
-            this.cmbExtension.Location = new System.Drawing.Point(58, 5);
+            this.cmbExtension.Location = new System.Drawing.Point(84, 5);
             this.cmbExtension.Name = "cmbExtension";
             this.cmbExtension.Size = new System.Drawing.Size(90, 23);
             this.cmbExtension.TabIndex = 1;
@@ -257,9 +261,9 @@ namespace CMS.Presentation
             this.lblFilterExt.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.lblFilterExt.Location = new System.Drawing.Point(4, 8);
             this.lblFilterExt.Name = "lblFilterExt";
-            this.lblFilterExt.Size = new System.Drawing.Size(49, 15);
+            this.lblFilterExt.Size = new System.Drawing.Size(69, 15);
             this.lblFilterExt.TabIndex = 0;
-            this.lblFilterExt.Text = "นามสกุล:";
+            this.lblFilterExt.Text = "นามสกุลไฟล์:";
             // 
             // toolStrip
             // 
@@ -279,6 +283,9 @@ namespace CMS.Presentation
             this.btnMove,
             this.sep4,
             this.btnApplyTemplate,
+            this.sep5,
+            this.btnHideFile,
+            this.btnUnhideFile,
             this.sep3,
             this.btnChangeLevel,
             this.btnCopyStructure,
@@ -348,9 +355,9 @@ namespace CMS.Presentation
             this.btnUploadFile.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.btnUploadFile.ForeColor = System.Drawing.Color.White;
             this.btnUploadFile.Name = "btnUploadFile";
-            this.btnUploadFile.Size = new System.Drawing.Size(101, 23);
-            this.btnUploadFile.Text = "📤 อัพโหลดไฟล์";
-            this.btnUploadFile.ToolTipText = "อัพโหลดไฟล์ไปยัง Folder ที่เลือก";
+            this.btnUploadFile.Size = new System.Drawing.Size(102, 23);
+            this.btnUploadFile.Text = "📤 อัปโหลดไฟล์";
+            this.btnUploadFile.ToolTipText = "อัปโหลดไฟล์ไปยัง Folder ที่เลือก";
             this.btnUploadFile.Click += new System.EventHandler(this.btnUploadFile_Click);
             // 
             // btnMove
@@ -374,6 +381,27 @@ namespace CMS.Presentation
             this.btnApplyTemplate.Text = "📋 Template";
             this.btnApplyTemplate.ToolTipText = "Apply Template Folder";
             this.btnApplyTemplate.Click += new System.EventHandler(this.btnApplyTemplate_Click);
+            // 
+            // sep5
+            // 
+            this.sep5.Name = "sep5";
+            this.sep5.Size = new System.Drawing.Size(6, 26);
+            // 
+            // btnHideFile
+            // 
+            this.btnHideFile.Name = "btnHideFile";
+            this.btnHideFile.Size = new System.Drawing.Size(57, 23);
+            this.btnHideFile.Text = "🔒 ซ่อน";
+            this.btnHideFile.ToolTipText = "ซ่อนไฟล์ที่เลือก";
+            this.btnHideFile.Click += new System.EventHandler(this.btnHideFile_Click);
+            // 
+            // btnUnhideFile
+            // 
+            this.btnUnhideFile.Name = "btnUnhideFile";
+            this.btnUnhideFile.Size = new System.Drawing.Size(64, 23);
+            this.btnUnhideFile.Text = "👁️ แสดง";
+            this.btnUnhideFile.ToolTipText = "แสดงไฟล์ที่ซ่อนไว้";
+            this.btnUnhideFile.Click += new System.EventHandler(this.btnUnhideFile_Click);
             // 
             // sep3
             // 
@@ -421,8 +449,8 @@ namespace CMS.Presentation
             this.pnlNavBar.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pnlNavBar.Location = new System.Drawing.Point(0, 0);
             this.pnlNavBar.Name = "pnlNavBar";
-            this.pnlNavBar.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.pnlNavBar.Size = new System.Drawing.Size(1197, 40);
+            this.pnlNavBar.Padding = new System.Windows.Forms.Padding(4);
+            this.pnlNavBar.Size = new System.Drawing.Size(1197, 44);
             this.pnlNavBar.TabIndex = 5;
             // 
             // btnNavBack
@@ -478,55 +506,72 @@ namespace CMS.Presentation
             this.txtBreadcrumb.Multiline = true;
             this.txtBreadcrumb.Name = "txtBreadcrumb";
             this.txtBreadcrumb.ReadOnly = true;
-            this.txtBreadcrumb.Size = new System.Drawing.Size(800, 28);
+            this.txtBreadcrumb.Size = new System.Drawing.Size(798, 28);
             this.txtBreadcrumb.TabIndex = 4;
             this.txtBreadcrumb.Text = "🏠 ราก";
             // 
             // btnViewList
             // 
             this.btnViewList.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnViewList.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.btnViewList.FlatAppearance.BorderSize = 0;
             this.btnViewList.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewList.Location = new System.Drawing.Point(-83, 0);
+            this.btnViewList.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.btnViewList.ForeColor = System.Drawing.Color.White;
+            this.btnViewList.Location = new System.Drawing.Point(924, 7);
             this.btnViewList.Name = "btnViewList";
-            this.btnViewList.Size = new System.Drawing.Size(26, 24);
+            this.btnViewList.Size = new System.Drawing.Size(36, 26);
             this.btnViewList.TabIndex = 5;
             this.btnViewList.Text = "☰";
+            this.btnViewList.UseVisualStyleBackColor = false;
             this.btnViewList.Visible = false;
+            this.btnViewList.Click += new System.EventHandler(this.btnViewList_Click);
             // 
             // btnViewGrid
             // 
             this.btnViewGrid.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnViewGrid.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(228)))), ((int)(((byte)(242)))));
+            this.btnViewGrid.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.btnViewGrid.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnViewGrid.Location = new System.Drawing.Point(-83, 0);
+            this.btnViewGrid.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.btnViewGrid.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
+            this.btnViewGrid.Location = new System.Drawing.Point(964, 7);
             this.btnViewGrid.Name = "btnViewGrid";
-            this.btnViewGrid.Size = new System.Drawing.Size(26, 24);
+            this.btnViewGrid.Size = new System.Drawing.Size(36, 26);
             this.btnViewGrid.TabIndex = 6;
             this.btnViewGrid.Text = "⊞";
+            this.btnViewGrid.UseVisualStyleBackColor = false;
             this.btnViewGrid.Visible = false;
+            this.btnViewGrid.Click += new System.EventHandler(this.btnViewGrid_Click);
             // 
             // lblSearch
             // 
             this.lblSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblSearch.AutoSize = true;
-            this.lblSearch.Location = new System.Drawing.Point(-83, 0);
+            this.lblSearch.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
+            this.lblSearch.Location = new System.Drawing.Point(1008, 11);
             this.lblSearch.Name = "lblSearch";
-            this.lblSearch.Size = new System.Drawing.Size(24, 17);
+            this.lblSearch.Size = new System.Drawing.Size(22, 20);
             this.lblSearch.TabIndex = 7;
             this.lblSearch.Text = "🔍";
+            this.lblSearch.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.lblSearch.Visible = false;
             // 
             // txtSearch
             // 
             this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.txtSearch.BackColor = System.Drawing.Color.White;
+            this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtSearch.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.5F);
             this.txtSearch.ForeColor = System.Drawing.Color.Gray;
-            this.txtSearch.Location = new System.Drawing.Point(-83, 0);
+            this.txtSearch.Location = new System.Drawing.Point(1034, 9);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(160, 16);
+            this.txtSearch.Size = new System.Drawing.Size(155, 22);
             this.txtSearch.TabIndex = 8;
             this.txtSearch.Text = "ค้นหาใน Folder...";
             this.txtSearch.Visible = false;
+            this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
+            this.txtSearch.Enter += new System.EventHandler(this.txtSearch_Enter);
+            this.txtSearch.Leave += new System.EventHandler(this.txtSearch_Leave);
             // 
             // pnlFilterBar
             // 
@@ -537,7 +582,7 @@ namespace CMS.Presentation
             this.pnlFilterBar.Controls.Add(this.chk3NC);
             this.pnlFilterBar.Controls.Add(this.chk4PC);
             this.pnlFilterBar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlFilterBar.Location = new System.Drawing.Point(0, 40);
+            this.pnlFilterBar.Location = new System.Drawing.Point(0, 44);
             this.pnlFilterBar.Name = "pnlFilterBar";
             this.pnlFilterBar.Padding = new System.Windows.Forms.Padding(4, 4, 4, 2);
             this.pnlFilterBar.Size = new System.Drawing.Size(1197, 28);
@@ -614,7 +659,7 @@ namespace CMS.Presentation
             // splitMain
             // 
             this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitMain.Location = new System.Drawing.Point(0, 68);
+            this.splitMain.Location = new System.Drawing.Point(0, 72);
             this.splitMain.Name = "splitMain";
             this.splitMain.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -627,28 +672,44 @@ namespace CMS.Presentation
             this.splitMain.Panel2.Controls.Add(this.recycleBinGroupBox);
             this.splitMain.Panel2Collapsed = true;
             this.splitMain.Panel2MinSize = 0;
-            this.splitMain.Size = new System.Drawing.Size(1197, 734);
+            this.splitMain.Size = new System.Drawing.Size(1197, 730);
             this.splitMain.SplitterDistance = 533;
             this.splitMain.TabIndex = 3;
             // 
             // splitLR
             // 
             this.splitLR.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitLR.IsSplitterFixed = true;
             this.splitLR.Location = new System.Drawing.Point(0, 0);
             this.splitLR.Name = "splitLR";
             // 
             // splitLR.Panel1
             // 
+            this.splitLR.Panel1.Controls.Add(this.btnToggleSidebar);
             this.splitLR.Panel1.Controls.Add(this.pnlExplorer);
-            this.splitLR.Panel1MinSize = 200;
+            this.splitLR.Panel1MinSize = 20;
             // 
             // splitLR.Panel2
             // 
             this.splitLR.Panel2.Controls.Add(this.splitContent);
-            this.splitLR.Size = new System.Drawing.Size(1197, 734);
-            this.splitLR.SplitterDistance = 303;
+            this.splitLR.Size = new System.Drawing.Size(1197, 730);
+            this.splitLR.SplitterDistance = 268;
             this.splitLR.TabIndex = 0;
+            // 
+            // btnToggleSidebar
+            // 
+            this.btnToggleSidebar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(238)))), ((int)(((byte)(242)))), ((int)(((byte)(248)))));
+            this.btnToggleSidebar.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnToggleSidebar.FlatAppearance.BorderColor = System.Drawing.Color.LightGray;
+            this.btnToggleSidebar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnToggleSidebar.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.btnToggleSidebar.ForeColor = System.Drawing.Color.Gray;
+            this.btnToggleSidebar.Location = new System.Drawing.Point(248, 0);
+            this.btnToggleSidebar.Name = "btnToggleSidebar";
+            this.btnToggleSidebar.Size = new System.Drawing.Size(20, 730);
+            this.btnToggleSidebar.TabIndex = 1;
+            this.btnToggleSidebar.Text = "◀";
+            this.btnToggleSidebar.UseVisualStyleBackColor = false;
+            this.btnToggleSidebar.Click += new System.EventHandler(this.btnToggleSidebar_Click);
             // 
             // pnlExplorer
             // 
@@ -662,7 +723,7 @@ namespace CMS.Presentation
             this.pnlExplorer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlExplorer.Location = new System.Drawing.Point(0, 0);
             this.pnlExplorer.Name = "pnlExplorer";
-            this.pnlExplorer.Size = new System.Drawing.Size(303, 734);
+            this.pnlExplorer.Size = new System.Drawing.Size(268, 730);
             this.pnlExplorer.TabIndex = 0;
             // 
             // folderTreeView
@@ -672,7 +733,7 @@ namespace CMS.Presentation
             this.folderTreeView.HotTracking = true;
             this.folderTreeView.Location = new System.Drawing.Point(0, 412);
             this.folderTreeView.Name = "folderTreeView";
-            this.folderTreeView.Size = new System.Drawing.Size(303, 294);
+            this.folderTreeView.Size = new System.Drawing.Size(268, 290);
             this.folderTreeView.TabIndex = 0;
             this.folderTreeView.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.folderTreeView_AfterSelect);
             // 
@@ -682,7 +743,7 @@ namespace CMS.Presentation
             this.txtFolderSearch.ForeColor = System.Drawing.Color.Gray;
             this.txtFolderSearch.Location = new System.Drawing.Point(0, 392);
             this.txtFolderSearch.Name = "txtFolderSearch";
-            this.txtFolderSearch.Size = new System.Drawing.Size(303, 20);
+            this.txtFolderSearch.Size = new System.Drawing.Size(268, 20);
             this.txtFolderSearch.TabIndex = 1;
             this.txtFolderSearch.Text = "ค้นหา Folder...";
             // 
@@ -695,7 +756,7 @@ namespace CMS.Presentation
             this.lblOrgUnitStatus.Location = new System.Drawing.Point(0, 372);
             this.lblOrgUnitStatus.Name = "lblOrgUnitStatus";
             this.lblOrgUnitStatus.Padding = new System.Windows.Forms.Padding(6, 0, 0, 0);
-            this.lblOrgUnitStatus.Size = new System.Drawing.Size(303, 20);
+            this.lblOrgUnitStatus.Size = new System.Drawing.Size(268, 20);
             this.lblOrgUnitStatus.TabIndex = 5;
             this.lblOrgUnitStatus.Text = "📂 กำลังดู: — ทั้งหมด —";
             this.lblOrgUnitStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -708,7 +769,7 @@ namespace CMS.Presentation
             this.pnlOrgFilter.Location = new System.Drawing.Point(0, 26);
             this.pnlOrgFilter.Name = "pnlOrgFilter";
             this.pnlOrgFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.pnlOrgFilter.Size = new System.Drawing.Size(303, 346);
+            this.pnlOrgFilter.Size = new System.Drawing.Size(268, 346);
             this.pnlOrgFilter.TabIndex = 2;
             // 
             // treeOrgUnit
@@ -733,7 +794,7 @@ namespace CMS.Presentation
             this.lblExplorerHeader.ForeColor = System.Drawing.Color.White;
             this.lblExplorerHeader.Location = new System.Drawing.Point(0, 0);
             this.lblExplorerHeader.Name = "lblExplorerHeader";
-            this.lblExplorerHeader.Size = new System.Drawing.Size(303, 26);
+            this.lblExplorerHeader.Size = new System.Drawing.Size(268, 26);
             this.lblExplorerHeader.TabIndex = 3;
             this.lblExplorerHeader.Text = "  📁 Folder Explorer";
             this.lblExplorerHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -744,10 +805,10 @@ namespace CMS.Presentation
             this.pnlRecycleBinNode.Controls.Add(this.lblRecycleBin);
             this.pnlRecycleBinNode.Controls.Add(this.lblRecycleBinCount);
             this.pnlRecycleBinNode.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlRecycleBinNode.Location = new System.Drawing.Point(0, 706);
+            this.pnlRecycleBinNode.Location = new System.Drawing.Point(0, 702);
             this.pnlRecycleBinNode.Name = "pnlRecycleBinNode";
             this.pnlRecycleBinNode.Padding = new System.Windows.Forms.Padding(8, 4, 4, 4);
-            this.pnlRecycleBinNode.Size = new System.Drawing.Size(303, 28);
+            this.pnlRecycleBinNode.Size = new System.Drawing.Size(268, 28);
             this.pnlRecycleBinNode.TabIndex = 4;
             // 
             // lblRecycleBin
@@ -790,18 +851,18 @@ namespace CMS.Presentation
             this.splitContent.Panel2.Controls.Add(this.pnlDetail);
             this.splitContent.Panel2Collapsed = true;
             this.splitContent.Panel2MinSize = 100;
-            this.splitContent.Size = new System.Drawing.Size(890, 734);
+            this.splitContent.Size = new System.Drawing.Size(925, 730);
             this.splitContent.SplitterDistance = 25;
             this.splitContent.TabIndex = 0;
             // 
             // pnlContent
-            //
+            // 
             this.pnlContent.Controls.Add(this.contentsListView);
             this.pnlContent.Controls.Add(this.pnlFilter);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlContent.Location = new System.Drawing.Point(0, 0);
+            this.pnlContent.Location = new System.Drawing.Point(0, 34);
             this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Size = new System.Drawing.Size(890, 734);
+            this.pnlContent.Size = new System.Drawing.Size(925, 696);
             this.pnlContent.TabIndex = 0;
             // 
             // contentsListView
@@ -820,9 +881,9 @@ namespace CMS.Presentation
             this.contentsListView.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.contentsListView.FullRowSelect = true;
             this.contentsListView.HideSelection = false;
-            this.contentsListView.Location = new System.Drawing.Point(0, 58);
+            this.contentsListView.Location = new System.Drawing.Point(0, 32);
             this.contentsListView.Name = "contentsListView";
-            this.contentsListView.Size = new System.Drawing.Size(890, 676);
+            this.contentsListView.Size = new System.Drawing.Size(925, 664);
             this.contentsListView.TabIndex = 1;
             this.contentsListView.UseCompatibleStateImageBehavior = false;
             this.contentsListView.View = System.Windows.Forms.View.Details;
@@ -879,17 +940,17 @@ namespace CMS.Presentation
             this.pnlContentHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlContentHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlContentHeader.Name = "pnlContentHeader";
-            this.pnlContentHeader.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.pnlContentHeader.Size = new System.Drawing.Size(890, 26);
+            this.pnlContentHeader.Padding = new System.Windows.Forms.Padding(8, 5, 8, 5);
+            this.pnlContentHeader.Size = new System.Drawing.Size(925, 34);
             this.pnlContentHeader.TabIndex = 2;
             // 
             // lblContentInfo
             // 
             this.lblContentInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblContentInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblContentInfo.Location = new System.Drawing.Point(4, 3);
+            this.lblContentInfo.Location = new System.Drawing.Point(8, 5);
             this.lblContentInfo.Name = "lblContentInfo";
-            this.lblContentInfo.Size = new System.Drawing.Size(882, 20);
+            this.lblContentInfo.Size = new System.Drawing.Size(909, 24);
             this.lblContentInfo.TabIndex = 0;
             this.lblContentInfo.Text = "— | — | ไม่มีรายการที่เลือก";
             this.lblContentInfo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -929,7 +990,7 @@ namespace CMS.Presentation
             this.lblDetailHeader.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
             this.lblDetailHeader.Size = new System.Drawing.Size(80, 26);
             this.lblDetailHeader.TabIndex = 1;
-            this.lblDetailHeader.Text = "📋 ตัวอย่าง";
+            this.lblDetailHeader.Text = "📄 รายละเอียด";
             this.lblDetailHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // recycleBinGroupBox
@@ -1090,99 +1151,103 @@ namespace CMS.Presentation
         }
 
         // ── Field declarations ────────────────────────────────────────────────
-        private System.Windows.Forms.ToolStrip          toolStrip;
-        private System.Windows.Forms.ToolStripButton    btnNewFolder;
-        private System.Windows.Forms.ToolStripButton    btnAuto4Folders;
-        private System.Windows.Forms.ToolStripButton    btnRename;
+        private System.Windows.Forms.ToolStrip toolStrip;
+        private System.Windows.Forms.ToolStripButton btnNewFolder;
+        private System.Windows.Forms.ToolStripButton btnAuto4Folders;
+        private System.Windows.Forms.ToolStripButton btnRename;
         private System.Windows.Forms.ToolStripSeparator sep1;
-        private System.Windows.Forms.ToolStripButton    btnArchive;
-        private System.Windows.Forms.ToolStripButton    btnDelete;
+        private System.Windows.Forms.ToolStripButton btnArchive;
+        private System.Windows.Forms.ToolStripButton btnDelete;
         private System.Windows.Forms.ToolStripSeparator sep2;
-        private System.Windows.Forms.ToolStripButton    btnUploadFile;
-        private System.Windows.Forms.ToolStripButton    btnMove;
+        private System.Windows.Forms.ToolStripButton btnUploadFile;
+        private System.Windows.Forms.ToolStripButton btnMove;
         private System.Windows.Forms.ToolStripSeparator sep4;
-        private System.Windows.Forms.ToolStripButton    btnApplyTemplate;
+        private System.Windows.Forms.ToolStripButton btnApplyTemplate;
+        private System.Windows.Forms.ToolStripSeparator sep5;
+        private System.Windows.Forms.ToolStripButton btnHideFile;
+        private System.Windows.Forms.ToolStripButton btnUnhideFile;
         private System.Windows.Forms.ToolStripSeparator sep3;
-        private System.Windows.Forms.ToolStripButton    btnChangeLevel;
-        private System.Windows.Forms.ToolStripButton    btnCopyStructure;
-        private System.Windows.Forms.ToolStripLabel     lblConfidentialityBadge;
+        private System.Windows.Forms.ToolStripButton btnChangeLevel;
+        private System.Windows.Forms.ToolStripButton btnCopyStructure;
+        private System.Windows.Forms.ToolStripLabel lblConfidentialityBadge;
 
-        private System.Windows.Forms.Panel              pnlNavBar;
-        private System.Windows.Forms.TextBox            txtBreadcrumb;
-        private System.Windows.Forms.Button             btnNavBack;
-        private System.Windows.Forms.Button             btnNavForward;
-        private System.Windows.Forms.Button             btnNavUp;
-        private System.Windows.Forms.Button             btnNavRefresh;
-        private System.Windows.Forms.Button             btnViewList;
-        private System.Windows.Forms.Button             btnViewGrid;
-        private System.Windows.Forms.TextBox            txtSearch;
-        private System.Windows.Forms.Label              lblSearch;
+        private System.Windows.Forms.Panel pnlNavBar;
+        private System.Windows.Forms.TextBox txtBreadcrumb;
+        private System.Windows.Forms.Button btnNavBack;
+        private System.Windows.Forms.Button btnNavForward;
+        private System.Windows.Forms.Button btnNavUp;
+        private System.Windows.Forms.Button btnNavRefresh;
+        private System.Windows.Forms.Button btnViewList;
+        private System.Windows.Forms.Button btnViewGrid;
+        private System.Windows.Forms.TextBox txtSearch;
+        private System.Windows.Forms.Label lblSearch;
 
-        private System.Windows.Forms.Panel              pnlFilterBar;
-        private System.Windows.Forms.Label              lblFilterInfo;
-        private System.Windows.Forms.CheckBox           chk1HC;
-        private System.Windows.Forms.CheckBox           chk2SC;
-        private System.Windows.Forms.CheckBox           chk3NC;
-        private System.Windows.Forms.CheckBox           chk4PC;
+        private System.Windows.Forms.Panel pnlFilterBar;
+        private System.Windows.Forms.Label lblFilterInfo;
+        private System.Windows.Forms.CheckBox chk1HC;
+        private System.Windows.Forms.CheckBox chk2SC;
+        private System.Windows.Forms.CheckBox chk3NC;
+        private System.Windows.Forms.CheckBox chk4PC;
 
-        private System.Windows.Forms.SplitContainer     splitMain;
+        private System.Windows.Forms.SplitContainer splitMain;
 
-        private System.Windows.Forms.Panel              pnlExplorer;
-        private System.Windows.Forms.Label              lblExplorerHeader;
-        private System.Windows.Forms.Panel              pnlOrgFilter;
-        private System.Windows.Forms.TreeView           treeOrgUnit;
-        private System.Windows.Forms.Label              lblOrgUnitStatus;
-        private System.Windows.Forms.TextBox            txtFolderSearch;
-        private System.Windows.Forms.TreeView           folderTreeView;
-        private System.Windows.Forms.Panel              pnlRecycleBinNode;
-        private System.Windows.Forms.Label              lblRecycleBin;
-        private System.Windows.Forms.Label              lblRecycleBinCount;
+        private System.Windows.Forms.Panel pnlExplorer;
+        private System.Windows.Forms.Label lblExplorerHeader;
+        private System.Windows.Forms.Button btnToggleSidebar;
+        private System.Windows.Forms.Panel pnlOrgFilter;
+        private System.Windows.Forms.TreeView treeOrgUnit;
+        private System.Windows.Forms.Label lblOrgUnitStatus;
+        private System.Windows.Forms.TextBox txtFolderSearch;
+        private System.Windows.Forms.TreeView folderTreeView;
+        private System.Windows.Forms.Panel pnlRecycleBinNode;
+        private System.Windows.Forms.Label lblRecycleBin;
+        private System.Windows.Forms.Label lblRecycleBinCount;
 
-        private System.Windows.Forms.Panel              pnlContent;
-        private System.Windows.Forms.Panel              pnlContentHeader;
-        private System.Windows.Forms.Label              lblContentInfo;
-        private System.Windows.Forms.ListView           contentsListView;
-        private System.Windows.Forms.ColumnHeader       colName;
-        private System.Windows.Forms.ColumnHeader       colType;
-        private System.Windows.Forms.ColumnHeader       colConfidentiality;
-        private System.Windows.Forms.ColumnHeader       colSize;
-        private System.Windows.Forms.ColumnHeader       colDate;
-        private System.Windows.Forms.ColumnHeader       colUploadedBy;
-        private System.Windows.Forms.ColumnHeader       colVersion;
-        private System.Windows.Forms.ColumnHeader       colOrgUnit;
-        private System.Windows.Forms.ColumnHeader       colPermissions;
+        private System.Windows.Forms.Panel pnlContent;
+        private System.Windows.Forms.Panel pnlContentHeader;
+        private System.Windows.Forms.Label lblContentInfo;
+        private System.Windows.Forms.ListView contentsListView;
+        private System.Windows.Forms.ColumnHeader colName;
+        private System.Windows.Forms.ColumnHeader colType;
+        private System.Windows.Forms.ColumnHeader colConfidentiality;
+        private System.Windows.Forms.ColumnHeader colSize;
+        private System.Windows.Forms.ColumnHeader colDate;
+        private System.Windows.Forms.ColumnHeader colUploadedBy;
+        private System.Windows.Forms.ColumnHeader colVersion;
+        private System.Windows.Forms.ColumnHeader colOrgUnit;
+        private System.Windows.Forms.ColumnHeader colPermissions;
 
-        private System.Windows.Forms.Panel              pnlDetail;
-        private System.Windows.Forms.Label              lblDetailHeader;
-        private System.Windows.Forms.Label              lblDetailContent;
+        private System.Windows.Forms.Panel pnlDetail;
+        private System.Windows.Forms.Label lblDetailHeader;
+        private System.Windows.Forms.Label lblDetailContent;
 
-        private System.Windows.Forms.GroupBox           recycleBinGroupBox;
-        private System.Windows.Forms.ToolStrip          recycleBinToolStrip;
-        private System.Windows.Forms.ToolStripButton    btnRbSelectAll;
-        private System.Windows.Forms.ToolStripLabel     lblRbSelCount;
+        private System.Windows.Forms.GroupBox recycleBinGroupBox;
+        private System.Windows.Forms.ToolStrip recycleBinToolStrip;
+        private System.Windows.Forms.ToolStripButton btnRbSelectAll;
+        private System.Windows.Forms.ToolStripLabel lblRbSelCount;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolStripButton    btnRestore;
-        private System.Windows.Forms.ToolStripButton    btnRestoreToParent;
-        private System.Windows.Forms.ToolStripButton    btnPermanentDelete;
-        private System.Windows.Forms.ListView           recycleBinListView;
-        private System.Windows.Forms.ColumnHeader       colRbName;
-        private System.Windows.Forms.ColumnHeader       colRbConfidentiality;
-        private System.Windows.Forms.ColumnHeader       colRbDeletedAt;
+        private System.Windows.Forms.ToolStripButton btnRestore;
+        private System.Windows.Forms.ToolStripButton btnRestoreToParent;
+        private System.Windows.Forms.ToolStripButton btnPermanentDelete;
+        private System.Windows.Forms.ListView recycleBinListView;
+        private System.Windows.Forms.ColumnHeader colRbName;
+        private System.Windows.Forms.ColumnHeader colRbConfidentiality;
+        private System.Windows.Forms.ColumnHeader colRbDeletedAt;
         private System.Windows.Forms.SplitContainer splitLR;
         private System.Windows.Forms.SplitContainer splitContent;
 
         // Filter panel controls (Req 6.1)
-        private System.Windows.Forms.Panel              pnlFilter;
-        private System.Windows.Forms.Label              lblFilterExt;
-        private System.Windows.Forms.ComboBox           cmbExtension;
-        private System.Windows.Forms.Label              lblFilterFrom;
-        private System.Windows.Forms.DateTimePicker     dtpFrom;
-        private System.Windows.Forms.Label              lblFilterTo;
-        private System.Windows.Forms.DateTimePicker     dtpTo;
-        private System.Windows.Forms.Label              lblFilterUploader;
-        private System.Windows.Forms.TextBox            txtUploadedBy;
-        private System.Windows.Forms.Button             btnApplyFilter;
-        private System.Windows.Forms.Button             btnClearFilter;
-        private System.Windows.Forms.Label              lblFilterStatus;
+        private System.Windows.Forms.Panel pnlFilter;
+        private System.Windows.Forms.Label lblFilterExt;
+        private System.Windows.Forms.ComboBox cmbExtension;
+        private System.Windows.Forms.Label lblFilterFrom;
+        private System.Windows.Forms.DateTimePicker dtpFrom;
+        private System.Windows.Forms.Label lblFilterTo;
+        private System.Windows.Forms.DateTimePicker dtpTo;
+        private System.Windows.Forms.Label lblFilterUploader;
+        private System.Windows.Forms.TextBox txtUploadedBy;
+        private System.Windows.Forms.Button btnApplyFilter;
+        private System.Windows.Forms.Button btnClearFilter;
+        private System.Windows.Forms.Label lblFilterStatus;
     }
 }

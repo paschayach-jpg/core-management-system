@@ -11,5 +11,11 @@ namespace CMS.Services.DTOs
         public Stream FileStream { get; set; }
         public long FileSizeBytes { get; set; }
         public string MimeType { get; set; }
+
+        /// <summary>
+        /// When true the upload service will overwrite (replace) an existing file
+        /// with the same name in the target folder instead of creating a copy.
+        /// </summary>
+        public bool OverwriteExisting { get; set; }
     }
 }

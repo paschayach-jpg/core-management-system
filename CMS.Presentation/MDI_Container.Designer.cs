@@ -1,4 +1,4 @@
-namespace CMS.Presentation
+﻿namespace CMS.Presentation
 {
     partial class MDI_Container
     {
@@ -199,7 +199,7 @@ namespace CMS.Presentation
             this.lblRecentFiles.Name = "lblRecentFiles";
             this.lblRecentFiles.Size = new System.Drawing.Size(198, 25);
             this.lblRecentFiles.TabIndex = 8;
-            this.lblRecentFiles.Text = "📄 ไฟล์ที่อัพโหลดล่าสุด";
+            this.lblRecentFiles.Text = "📄 ไฟล์ที่อัปโหลดล่าสุด";
             // 
             // lblStats
             // 
@@ -277,7 +277,7 @@ namespace CMS.Presentation
             this.btnDashUpload.Name = "btnDashUpload";
             this.btnDashUpload.Size = new System.Drawing.Size(187, 74);
             this.btnDashUpload.TabIndex = 2;
-            this.btnDashUpload.Text = "📤 อัพโหลดไฟล์";
+            this.btnDashUpload.Text = "📤 อัปโหลดไฟล์";
             this.btnDashUpload.UseVisualStyleBackColor = false;
             // 
             // btnDashApproval
@@ -497,7 +497,7 @@ namespace CMS.Presentation
             // 
             this.menuItemUpload.Name = "menuItemUpload";
             this.menuItemUpload.Size = new System.Drawing.Size(149, 22);
-            this.menuItemUpload.Text = "📤 อัพโหลด";
+            this.menuItemUpload.Text = "📤 อัปโหลด";
             // 
             // menuItemNewFolder
             // 
@@ -1107,120 +1107,120 @@ namespace CMS.Presentation
         }
 
         // ── Field declarations ────────────────────────────────────────────────
-        private System.Windows.Forms.MenuStrip              menuStrip;
+        private System.Windows.Forms.MenuStrip menuStrip;
         // หน้าหลัก
-        private System.Windows.Forms.ToolStripMenuItem      menuItemHome;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemUpload;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemNewFolder;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemDownload;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemRename;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemMove;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemDelete;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemTemplate;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemFavorites;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemFolderSettings;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemPermission;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemAuditLog;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemApproval;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemShare;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemManageShares;
+        private System.Windows.Forms.ToolStripMenuItem menuItemHome;
+        private System.Windows.Forms.ToolStripMenuItem menuItemUpload;
+        private System.Windows.Forms.ToolStripMenuItem menuItemNewFolder;
+        private System.Windows.Forms.ToolStripMenuItem menuItemDownload;
+        private System.Windows.Forms.ToolStripMenuItem menuItemRename;
+        private System.Windows.Forms.ToolStripMenuItem menuItemMove;
+        private System.Windows.Forms.ToolStripMenuItem menuItemDelete;
+        private System.Windows.Forms.ToolStripMenuItem menuItemTemplate;
+        private System.Windows.Forms.ToolStripMenuItem menuItemFavorites;
+        private System.Windows.Forms.ToolStripMenuItem menuItemFolderSettings;
+        private System.Windows.Forms.ToolStripMenuItem menuItemPermission;
+        private System.Windows.Forms.ToolStripMenuItem menuItemAuditLog;
+        private System.Windows.Forms.ToolStripMenuItem menuItemApproval;
+        private System.Windows.Forms.ToolStripMenuItem menuItemShare;
+        private System.Windows.Forms.ToolStripMenuItem menuItemManageShares;
         // แทรก
-        private System.Windows.Forms.ToolStripMenuItem      menuItemInsert;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemInsertDoc;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemInsertImage;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemInsertZip;
+        private System.Windows.Forms.ToolStripMenuItem menuItemInsert;
+        private System.Windows.Forms.ToolStripMenuItem menuItemInsertDoc;
+        private System.Windows.Forms.ToolStripMenuItem menuItemInsertImage;
+        private System.Windows.Forms.ToolStripMenuItem menuItemInsertZip;
         // มุมมอง
-        private System.Windows.Forms.ToolStripMenuItem      menuItemView;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemViewList;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemViewGrid;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemViewOrg;
+        private System.Windows.Forms.ToolStripMenuItem menuItemView;
+        private System.Windows.Forms.ToolStripMenuItem menuItemViewList;
+        private System.Windows.Forms.ToolStripMenuItem menuItemViewGrid;
+        private System.Windows.Forms.ToolStripMenuItem menuItemViewOrg;
         // เครื่องมือ
-        private System.Windows.Forms.ToolStripMenuItem      menuItemTools;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemVirusScan;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemChecksum;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemRecycleBin;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemArchive;
+        private System.Windows.Forms.ToolStripMenuItem menuItemTools;
+        private System.Windows.Forms.ToolStripMenuItem menuItemVirusScan;
+        private System.Windows.Forms.ToolStripMenuItem menuItemChecksum;
+        private System.Windows.Forms.ToolStripMenuItem menuItemRecycleBin;
+        private System.Windows.Forms.ToolStripMenuItem menuItemArchive;
         // ผู้ดูแล
-        private System.Windows.Forms.ToolStripMenuItem      menuItemAdmin;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemConfig;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemOrgAdmin;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemReportExcel;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemPDPA;
+        private System.Windows.Forms.ToolStripMenuItem menuItemAdmin;
+        private System.Windows.Forms.ToolStripMenuItem menuItemConfig;
+        private System.Windows.Forms.ToolStripMenuItem menuItemOrgAdmin;
+        private System.Windows.Forms.ToolStripMenuItem menuItemReportExcel;
+        private System.Windows.Forms.ToolStripMenuItem menuItemPDPA;
         // legacy (hidden, kept for role-visibility wiring)
-        private System.Windows.Forms.ToolStripMenuItem      menuItemMod001;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemMod002;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemMod003;
-        private System.Windows.Forms.ToolStripMenuItem      menuItemMod004;
+        private System.Windows.Forms.ToolStripMenuItem menuItemMod001;
+        private System.Windows.Forms.ToolStripMenuItem menuItemMod002;
+        private System.Windows.Forms.ToolStripMenuItem menuItemMod003;
+        private System.Windows.Forms.ToolStripMenuItem menuItemMod004;
 
         // Ribbon
-        private System.Windows.Forms.ToolStrip              ribbonStrip;
-        private System.Windows.Forms.ToolStrip              ribbonStripAdmin;
-        private System.Windows.Forms.ToolStripButton        btnRibbonUpload;
-        private System.Windows.Forms.ToolStripButton        btnRibbonNewFolder;
-        private System.Windows.Forms.ToolStripButton        btnRibbonDownload;
-        private System.Windows.Forms.ToolStripButton        btnRibbonRename;
-        private System.Windows.Forms.ToolStripButton        btnRibbonMove;
-        private System.Windows.Forms.ToolStripButton        btnRibbonDelete;
-        private System.Windows.Forms.ToolStripButton        btnRibbonTemplate;
-        private System.Windows.Forms.ToolStripButton        btnRibbonFavorites;
-        private System.Windows.Forms.ToolStripSeparator     sepRibbon1;
-        private System.Windows.Forms.ToolStripButton        btnRibbonFolderSettings;
-        private System.Windows.Forms.ToolStripButton        btnRibbonPermission;
-        private System.Windows.Forms.ToolStripButton        btnRibbonAuditLog;
-        private System.Windows.Forms.ToolStripButton        btnRibbonApproval;
-        private System.Windows.Forms.ToolStripLabel         lblApprovalBadge;
-        private System.Windows.Forms.ToolStripSeparator     sepRibbon2;
-        private System.Windows.Forms.ToolStripButton        btnRibbonViewList;
-        private System.Windows.Forms.ToolStripButton        btnRibbonViewGrid;
-        private System.Windows.Forms.ToolStripButton        btnRibbonViewOrg;
-        private System.Windows.Forms.ToolStripSeparator     sepRibbon3;
-        private System.Windows.Forms.ToolStripButton        btnRibbonVirusScan;
-        private System.Windows.Forms.ToolStripButton        btnRibbonChecksum;
-        private System.Windows.Forms.ToolStripButton        btnRibbonRecycleBin;
-        private System.Windows.Forms.ToolStripButton        btnRibbonArchive;
-        private System.Windows.Forms.ToolStripSeparator     sepRibbon4;
-        private System.Windows.Forms.ToolStripButton        btnRibbonFolderArchive;
-        private System.Windows.Forms.ToolStripButton        btnRibbonChangeLevel;
-        private System.Windows.Forms.ToolStripButton        btnRibbonCopyStructure;
-        private System.Windows.Forms.ToolStripSeparator     sepRibbon5;
-        private System.Windows.Forms.ToolStripButton        btnRibbonSysConfig;
-        private System.Windows.Forms.ToolStripButton        btnRibbonOrgAdmin;
-        private System.Windows.Forms.ToolStripButton        btnRibbonUserAccess;
-        private System.Windows.Forms.ToolStripButton        btnRibbonUserMgmt;
-        private System.Windows.Forms.ToolStripButton        btnRibbonReportExcel;
-        private System.Windows.Forms.ToolStripButton        btnRibbonPDPA;
+        private System.Windows.Forms.ToolStrip ribbonStrip;
+        private System.Windows.Forms.ToolStrip ribbonStripAdmin;
+        private System.Windows.Forms.ToolStripButton btnRibbonUpload;
+        private System.Windows.Forms.ToolStripButton btnRibbonNewFolder;
+        private System.Windows.Forms.ToolStripButton btnRibbonDownload;
+        private System.Windows.Forms.ToolStripButton btnRibbonRename;
+        private System.Windows.Forms.ToolStripButton btnRibbonMove;
+        private System.Windows.Forms.ToolStripButton btnRibbonDelete;
+        private System.Windows.Forms.ToolStripButton btnRibbonTemplate;
+        private System.Windows.Forms.ToolStripButton btnRibbonFavorites;
+        private System.Windows.Forms.ToolStripSeparator sepRibbon1;
+        private System.Windows.Forms.ToolStripButton btnRibbonFolderSettings;
+        private System.Windows.Forms.ToolStripButton btnRibbonPermission;
+        private System.Windows.Forms.ToolStripButton btnRibbonAuditLog;
+        private System.Windows.Forms.ToolStripButton btnRibbonApproval;
+        private System.Windows.Forms.ToolStripLabel lblApprovalBadge;
+        private System.Windows.Forms.ToolStripSeparator sepRibbon2;
+        private System.Windows.Forms.ToolStripButton btnRibbonViewList;
+        private System.Windows.Forms.ToolStripButton btnRibbonViewGrid;
+        private System.Windows.Forms.ToolStripButton btnRibbonViewOrg;
+        private System.Windows.Forms.ToolStripSeparator sepRibbon3;
+        private System.Windows.Forms.ToolStripButton btnRibbonVirusScan;
+        private System.Windows.Forms.ToolStripButton btnRibbonChecksum;
+        private System.Windows.Forms.ToolStripButton btnRibbonRecycleBin;
+        private System.Windows.Forms.ToolStripButton btnRibbonArchive;
+        private System.Windows.Forms.ToolStripSeparator sepRibbon4;
+        private System.Windows.Forms.ToolStripButton btnRibbonFolderArchive;
+        private System.Windows.Forms.ToolStripButton btnRibbonChangeLevel;
+        private System.Windows.Forms.ToolStripButton btnRibbonCopyStructure;
+        private System.Windows.Forms.ToolStripSeparator sepRibbon5;
+        private System.Windows.Forms.ToolStripButton btnRibbonSysConfig;
+        private System.Windows.Forms.ToolStripButton btnRibbonOrgAdmin;
+        private System.Windows.Forms.ToolStripButton btnRibbonUserAccess;
+        private System.Windows.Forms.ToolStripButton btnRibbonUserMgmt;
+        private System.Windows.Forms.ToolStripButton btnRibbonReportExcel;
+        private System.Windows.Forms.ToolStripButton btnRibbonPDPA;
 
         // StatusStrip
-        private System.Windows.Forms.StatusStrip            statusStrip;
-        private System.Windows.Forms.ToolStripStatusLabel   lblStatusReady;
-        private System.Windows.Forms.ToolStripStatusLabel   lblStatusUser;
-        private System.Windows.Forms.ToolStripStatusLabel   lblStatusDept;
-        private System.Windows.Forms.ToolStripStatusLabel   lblStatusFolder;
-        private System.Windows.Forms.ToolStripStatusLabel   lblStatusPath;
-        private System.Windows.Forms.ToolStripStatusLabel   lblStatusDateTime;
+        private System.Windows.Forms.StatusStrip statusStrip;
+        private System.Windows.Forms.ToolStripStatusLabel lblStatusReady;
+        private System.Windows.Forms.ToolStripStatusLabel lblStatusUser;
+        private System.Windows.Forms.ToolStripStatusLabel lblStatusDept;
+        private System.Windows.Forms.ToolStripStatusLabel lblStatusFolder;
+        private System.Windows.Forms.ToolStripStatusLabel lblStatusPath;
+        private System.Windows.Forms.ToolStripStatusLabel lblStatusDateTime;
 
         // Dashboard
-        private System.Windows.Forms.Panel                  pnlDashboard;
-        private System.Windows.Forms.Label                  lblDashTitle;
-        private System.Windows.Forms.Panel                  pnlDashLeft;
-        private System.Windows.Forms.Label                  lblTreeTitle;
-        private System.Windows.Forms.TextBox                txtSearchFolder;
-        private System.Windows.Forms.TreeView               treeViewFolders;
-        private System.Windows.Forms.Panel                  pnlTreeViewToggle;
-        private System.Windows.Forms.Button                 btnToggleByOrg;
-        private System.Windows.Forms.Button                 btnToggleByConfidentiality;
-        private System.Windows.Forms.Splitter               splitterDash;
-        private System.Windows.Forms.Panel                  pnlDashContent;
-        private System.Windows.Forms.Label                  lblWelcome;
-        private System.Windows.Forms.Label                  lblQuickAccess;
-        private System.Windows.Forms.Button                 btnDashUpload;
-        private System.Windows.Forms.Button                 btnDashFolder;
-        private System.Windows.Forms.Button                 btnDashApproval;
-        private System.Windows.Forms.Button                 btnDashOrgUnit;
-        private System.Windows.Forms.Label                  lblStats;
-        private System.Windows.Forms.Label                  lblStatsContent;
-        private System.Windows.Forms.Label                  lblRecentFiles;
-        private System.Windows.Forms.ListView               lvRecentFiles;
+        private System.Windows.Forms.Panel pnlDashboard;
+        private System.Windows.Forms.Label lblDashTitle;
+        private System.Windows.Forms.Panel pnlDashLeft;
+        private System.Windows.Forms.Label lblTreeTitle;
+        private System.Windows.Forms.TextBox txtSearchFolder;
+        private System.Windows.Forms.TreeView treeViewFolders;
+        private System.Windows.Forms.Panel pnlTreeViewToggle;
+        private System.Windows.Forms.Button btnToggleByOrg;
+        private System.Windows.Forms.Button btnToggleByConfidentiality;
+        private System.Windows.Forms.Splitter splitterDash;
+        private System.Windows.Forms.Panel pnlDashContent;
+        private System.Windows.Forms.Label lblWelcome;
+        private System.Windows.Forms.Label lblQuickAccess;
+        private System.Windows.Forms.Button btnDashUpload;
+        private System.Windows.Forms.Button btnDashFolder;
+        private System.Windows.Forms.Button btnDashApproval;
+        private System.Windows.Forms.Button btnDashOrgUnit;
+        private System.Windows.Forms.Label lblStats;
+        private System.Windows.Forms.Label lblStatsContent;
+        private System.Windows.Forms.Label lblRecentFiles;
+        private System.Windows.Forms.ListView lvRecentFiles;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.ToolStripButton toolStripButton1;
     }

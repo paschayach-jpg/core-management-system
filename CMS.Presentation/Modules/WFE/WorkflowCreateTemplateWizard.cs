@@ -17,6 +17,7 @@ namespace CMS.Presentation.Modules.Workflow
         private readonly ILoggingService _loggingService;
         private readonly UserContext _userContext;
         private readonly Form _parentForm;
+        private readonly Form _dialogOwner;
         private WorkflowWizardState _wizardState;
 
         private WorkflowCreateTemplateForm _step1Form;
@@ -34,21 +35,65 @@ namespace CMS.Presentation.Modules.Workflow
             _loggingService = loggingService;
             _userContext = userContext;
             _parentForm = parentForm;
+            // Use top-level owner so dialogs appear correctly above MDI child forms
+            _dialogOwner = parentForm.MdiParent ?? parentForm;
             _wizardState = new WorkflowWizardState();
         }
 
         public void ShowWizard()
         {
-            ShowStep1();
+            try
+            {
+                _loggingService?.Info("ShowWizard: Starting workflow template wizard");
+                ShowStep1();
+                _loggingService?.Info("ShowWizard: Workflow template wizard completed");
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error($"ShowWizard Exception: {ex.GetType().Name} - {ex.Message}\nStackTrace: {ex.StackTrace}", ex);
+                MessageBox.Show(
+                    $"เกิดข้อผิดพลาดในการสร้าง Template Wizard:\n\n{ex.GetType().Name}\n{ex.Message}\n\nกรุณาดูรายละเอียดจาก Log File",
+                    "ข้อผิดพลาด",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
         private void ShowStep1()
         {
-            _step1Form = new WorkflowCreateTemplateForm(_templateService, _loggingService, _userContext, _wizardState);
-
-            if (_step1Form.ShowDialog(_parentForm) == DialogResult.OK)
+            try
             {
-                ShowStep2();
+                _loggingService?.Info("ShowStep1: Creating WorkflowCreateTemplateForm");
+                _step1Form = new WorkflowCreateTemplateForm(_templateService, _loggingService, _userContext, _wizardState);
+                _loggingService?.Info("ShowStep1: Form created successfully, about to show dialog");
+
+                // Verify form controls
+                if (_step1Form.Controls.Count == 0)
+                {
+                    _loggingService?.Warn("ShowStep1: Form has no controls! InitializeComponent may have failed.");
+                }
+
+                _loggingService?.Info($"ShowStep1: Form size = {_step1Form.Width}x{_step1Form.Height}, Controls count = {_step1Form.Controls.Count}");
+                _loggingService?.Info("ShowStep1: Calling ShowDialog");
+
+                if (_step1Form.ShowDialog(_dialogOwner) == DialogResult.OK)
+                {
+                    _loggingService?.Info("ShowStep1: Dialog returned OK, proceeding to Step 2");
+                    ShowStep2();
+                }
+                else
+                {
+                    _loggingService?.Info("ShowStep1: Dialog was cancelled or returned non-OK result");
+                }
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error($"ShowStep1 Exception: {ex.GetType().Name} - {ex.Message}\nStackTrace: {ex.StackTrace}", ex);
+                MessageBox.Show(
+                    $"เกิดข้อผิดพลาดในขั้นตอนที่ 1 (ข้อมูลพื้นฐาน):\n\n{ex.GetType().Name}\n{ex.Message}\n\nกรุณาดูรายละเอียดจาก Log File",
+                    "ข้อผิดพลาด",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
@@ -56,7 +101,7 @@ namespace CMS.Presentation.Modules.Workflow
         {
             _step2Form = new WorkflowCreateTemplateStep2Form(_templateService, _loggingService, _userContext, _wizardState);
 
-            var result = _step2Form.ShowDialog(_parentForm);
+            var result = _step2Form.ShowDialog(_dialogOwner);
             if (result == DialogResult.OK)
             {
                 ShowStep3();
@@ -71,7 +116,7 @@ namespace CMS.Presentation.Modules.Workflow
         {
             _step3Form = new WorkflowCreateTemplateStep3Form(_templateService, _loggingService, _userContext, _wizardState);
 
-            var result = _step3Form.ShowDialog(_parentForm);
+            var result = _step3Form.ShowDialog(_dialogOwner);
             if (result == DialogResult.OK)
             {
                 ShowStep4();
@@ -86,7 +131,7 @@ namespace CMS.Presentation.Modules.Workflow
         {
             _step4Form = new WorkflowCreateTemplateStep4Form(_templateService, _loggingService, _userContext, _wizardState);
 
-            var result = _step4Form.ShowDialog(_parentForm);
+            var result = _step4Form.ShowDialog(_dialogOwner);
             if (result == DialogResult.OK)
             {
                 OnWizardComplete();
@@ -101,6 +146,16 @@ namespace CMS.Presentation.Modules.Workflow
         {
             try
             {
+                if (_templateService == null)
+                {
+                    MessageBox.Show(
+                        "เปิดหน้าสร้าง Template ได้แล้ว แต่ระบบบันทึก Template ยังไม่พร้อมใช้งาน\n\nกรุณาตรวจสอบ WorkflowTemplateService ในขั้นตอน Startup อีกครั้ง",
+                        "Workflow Template Service ไม่พร้อมใช้งาน",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
+
                 var request = new CreateTemplateRequest
                 {
                     Name = _wizardState.TemplateName,

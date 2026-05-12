@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -165,8 +165,8 @@ namespace CMS.Presentation
             {
                 string.Format("ชื่อไฟล์:    {0}", file.OriginalFileName ?? file.StoredFileName),
                 string.Format("ขนาด:        {0}", FormatFileSize(file.FileSizeBytes)),
-                string.Format("อัพโหลดโดย: {0}", file.UploadedByName ?? "-"),
-                string.Format("วันที่อัพโหลด: {0}", file.UploadedDate.ToString("dd/MM/yyyy HH:mm"))
+                string.Format("อัปโหลดโดย: {0}", file.UploadedByName ?? "-"),
+                string.Format("วันที่อัปโหลด: {0}", file.UploadedDate.ToString("dd/MM/yyyy HH:mm"))
             };
 
             _metaPanel.Controls.Add(iconBox);

@@ -18,6 +18,8 @@ namespace CMS.Presentation.Modules.ImportFile
     {
         private readonly UserContext               _user;
         private readonly IShareLookupController   _shareLookupController;
+        private DataGridView _aclGrid;
+        private DataGridView _shareGrid;
 
         private sealed class LevelDefinition
         {
@@ -70,18 +72,20 @@ namespace CMS.Presentation.Modules.ImportFile
             Icon            = SystemIcons.Shield;
 
             var pnlHeader = BuildHeader();
-            var pnlBody   = BuildBody(out var grid, out var pnlCards);
+            var pnlBody   = BuildBody(out var grid, out var pnlCards, out var shareGrid);
+            _aclGrid      = grid;
+            _shareGrid    = shareGrid;
             var pnlFooter = BuildFooter();
 
             Controls.Add(pnlBody);
             Controls.Add(pnlHeader);
             Controls.Add(pnlFooter);
 
-            // Resize: ขยาย grid และ cards ตาม form
+            // Resize: จัดความกว้าง card ให้เท่ากัน (TableLayoutPanel จัดการ Y อัตโนมัติแล้ว)
             Resize += (s, e) =>
             {
-                if (pnlCards != null)
-                    DistributeCards(pnlCards, pnlBody.ClientSize.Width - 2);
+                if (pnlCards != null && pnlCards.Width > 0)
+                    DistributeCards(pnlCards, pnlCards.Width);
             };
         }
 
@@ -148,18 +152,8 @@ namespace CMS.Presentation.Modules.ImportFile
         }
 
         // ── Body ────────────────────────────────────────────────────────────
-        private Panel BuildBody(out DataGridView gridOut, out FlowLayoutPanel cardsOut)
+        private Panel BuildBody(out DataGridView gridOut, out FlowLayoutPanel cardsOut, out DataGridView shareGridOut)
         {
-            // ── Layout constants ─────────────────────────────────────────────
-            const int SEC1_Y    = 8;
-            const int CARDS_Y   = 40;
-            const int CARDS_H   = 170;
-            const int SEC2_Y    = CARDS_Y + CARDS_H + 12;   // 222
-            const int GRID2_Y   = SEC2_Y + 26 + 6;          // 254
-            const int GRID2_H   = 140;                       // fixed
-            const int SEC3_Y    = GRID2_Y + GRID2_H + 8;    // 402
-            const int GRID3_Y   = SEC3_Y + 26 + 6;          // 434
-
             var pnl = new Panel
             {
                 Dock    = DockStyle.Fill,
@@ -168,12 +162,11 @@ namespace CMS.Presentation.Modules.ImportFile
 
             // ── Section 1: FolderAuthorityConfig ────────────────────────────
             var sec1 = MakeSectionBar("เงื่อนไขที่ 1  —  สิทธิ์ตาม FolderAuthorityConfig  (ตำแหน่ง / แผนก / ฝ่าย / LevelCode)");
-            sec1.Location = new Point(1, SEC1_Y);
+            sec1.Dock = DockStyle.Fill;
 
             var pnlCards = new FlowLayoutPanel
             {
-                Location      = new Point(1, CARDS_Y),
-                Height        = CARDS_H,
+                Dock          = DockStyle.Fill,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents  = false,
                 AutoScroll    = false,
@@ -184,37 +177,49 @@ namespace CMS.Presentation.Modules.ImportFile
 
             // ── Section 2: FolderPermission ACL ─────────────────────────────
             var sec2 = MakeSectionBar("เงื่อนไขที่ 2  —  สิทธิ์เฉพาะ Folder  (FolderPermission / ACL)");
-            sec2.Location = new Point(1, SEC2_Y);
+            sec2.Dock = DockStyle.Fill;
 
             var grid2 = BuildAclGrid();
-            grid2.Location = new Point(1, GRID2_Y);
-            grid2.Height   = GRID2_H;
+            grid2.Dock = DockStyle.Fill;
 
             // ── Section 3: Share (FilePermission) ────────────────────────────
             var sec3 = MakeSectionBar("เงื่อนไขที่ 3  —  สิทธิ์จากการแบ่งปัน  (File / Folder Share)");
-            sec3.Location = new Point(1, SEC3_Y);
-            sec3.BackColor = Color.FromArgb(200, 230, 215);    // สีเขียวอ่อนแยกจาก sec1/sec2
+            sec3.Dock      = DockStyle.Fill;
+            sec3.BackColor = Color.FromArgb(200, 230, 215);
 
             var grid3 = BuildShareGrid();
-            grid3.Location = new Point(1, GRID3_Y);
+            grid3.Dock = DockStyle.Fill;
 
-            pnl.Controls.AddRange(new Control[] { sec1, pnlCards, sec2, grid2, sec3, grid3 });
-            gridOut  = grid2;
-            cardsOut = pnlCards;
-
-            // Initial sizing
-            pnl.Layout += (s, e) =>
+            // TableLayoutPanel — จัดแถวให้ถูกต้องทั้งแนวตั้งและแนวนอนเมื่อ resize
+            var table = new TableLayoutPanel
             {
-                int w = pnl.ClientSize.Width - 2;
-                sec1.Width     = w;
-                sec2.Width     = w;
-                sec3.Width     = w;
-                pnlCards.Width = w;
-                grid2.Width    = w;
-                grid3.Width    = w;
-                grid3.Height   = Math.Max(80, pnl.ClientSize.Height - GRID3_Y - 4);
+                Dock        = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount    = 6,
+                BackColor   = Color.Transparent,
+                Padding     = new Padding(0),
+                Margin      = new Padding(0),
             };
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec1
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 198));   // cards (190 + 8px margin)
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec2
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute, 140));   // grid2
+            table.RowStyles.Add(new RowStyle(SizeType.Absolute,  26));   // sec3
+            table.RowStyles.Add(new RowStyle(SizeType.Percent,  100));   // grid3 fills remaining
 
+            table.Controls.Add(sec1,     0, 0);
+            table.Controls.Add(pnlCards, 0, 1);
+            table.Controls.Add(sec2,     0, 2);
+            table.Controls.Add(grid2,    0, 3);
+            table.Controls.Add(sec3,     0, 4);
+            table.Controls.Add(grid3,    0, 5);
+
+            pnl.Controls.Add(table);
+
+            gridOut      = grid2;
+            cardsOut     = pnlCards;
+            shareGridOut = grid3;
             return pnl;
         }
 
@@ -250,7 +255,11 @@ namespace CMS.Presentation.Modules.ImportFile
                 Font      = new Font("Segoe UI", 8.5f),
             };
             btnRefresh.FlatAppearance.BorderSize = 0;
-            btnRefresh.Click += (s, e) => Close(); // ปิดแล้วเปิดใหม่
+            btnRefresh.Click += (s, e) =>
+            {
+                if (_aclGrid != null)   PopulateAclGrid(_aclGrid);
+                if (_shareGrid != null) PopulateShareGrid(_shareGrid);
+            };
 
             var btnClose = new Button
             {
@@ -292,7 +301,7 @@ namespace CMS.Presentation.Modules.ImportFile
             var card = new Panel
             {
                 Margin    = new Padding(0, 0, 8, 0),
-                Height    = 162,
+                Height    = 190,
                 BackColor = cardBg,
             };
 
@@ -344,19 +353,22 @@ namespace CMS.Presentation.Modules.ImportFile
                 TextAlign = ContentAlignment.TopLeft,
             };
 
-            // Permission matrix (2×2 grid) — ใช้ FlowLayoutPanel ป้องกันล้นขอบ
+            // Permission matrix (3×2 grid) — 6 badges: ดู, เพิ่ม, แก้ไข, ลบ*, แชร์*, อนุมัติ
+            // * ลบ และ แชร์ derives from canEdit (Edit = delete + share per permission model)
             var perms = new[]
             {
                 new KeyValuePair<string, bool>("ดู",      canView),
                 new KeyValuePair<string, bool>("เพิ่ม",   canAdd),
                 new KeyValuePair<string, bool>("แก้ไข",   canEdit),
+                new KeyValuePair<string, bool>("ลบ",      canEdit),
+                new KeyValuePair<string, bool>("แชร์",    canEdit),
                 new KeyValuePair<string, bool>("อนุมัติ", canApprove),
             };
 
             var pnlBadges = new FlowLayoutPanel
             {
                 Location      = new Point(8, 104),
-                Size          = new Size(card.Width - 16, 50),
+                Size          = new Size(card.Width - 16, 78),
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents  = true,
                 BackColor     = Color.Transparent,
@@ -383,13 +395,18 @@ namespace CMS.Presentation.Modules.ImportFile
             }
 
             // อัพเดตความกว้าง badge เมื่อ card ขยาย/หดตาม DistributeCards
+            // 6 badges (เลขคู่) — ทุก badge ใช้ half-width สมมาตร 3 แถว × 2 คอลัมน์
             card.Resize += (s, e) =>
             {
                 int availW  = card.Width - 16;
-                int badgeW  = Math.Max((availW - 4) / 2, 70); // 2 คอลัมน์ กันเกิน
+                int halfW   = Math.Max((availW - 4) / 2, 70);
                 pnlBadges.Width = availW;
-                foreach (Control b in pnlBadges.Controls)
-                    b.Width = badgeW;
+                int total = pnlBadges.Controls.Count;
+                for (int idx = 0; idx < total; idx++)
+                {
+                    bool isLastOdd = (idx == total - 1) && (total % 2 != 0);
+                    pnlBadges.Controls[idx].Width = isLastOdd ? availW : halfW;
+                }
             };
 
             // Border paint
@@ -458,12 +475,13 @@ namespace CMS.Presentation.Modules.ImportFile
                 new DataGridViewTextBoxColumn { Name = "colWrite",    HeaderText = "เพิ่ม",           Width = 52 },
                 new DataGridViewTextBoxColumn { Name = "colDelete",   HeaderText = "ลบ",              Width = 44 },
                 new DataGridViewTextBoxColumn { Name = "colModify",   HeaderText = "แก้ไข",           Width = 60 },
+                new DataGridViewTextBoxColumn { Name = "colShare",    HeaderText = "แชร์",            Width = 56 },
                 new DataGridViewTextBoxColumn { Name = "colExpiry",   HeaderText = "หมดอายุ",         Width = 90 },
                 new DataGridViewTextBoxColumn { Name = "colStatus",   HeaderText = "สถานะ",           Width = 90 },
             });
 
             // Center check columns
-            foreach (var col in new[] { "colRead", "colWrite", "colDelete", "colModify" })
+            foreach (var col in new[] { "colRead", "colWrite", "colDelete", "colModify", "colShare" })
                 grid.Columns[col].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
             PopulateAclGrid(grid);
@@ -527,6 +545,7 @@ namespace CMS.Presentation.Modules.ImportFile
                                : isExpired ? "⚠ หมดอายุ"
                                : "✔ ใช้งาน";
 
+                bool canShare = p.CanWrite || p.CanModify || p.CanFullControl;
                 int idx = grid.Rows.Add(
                     isDeny ? "⊘ " + folderName : folderName,
                     levelCode,
@@ -535,6 +554,7 @@ namespace CMS.Presentation.Modules.ImportFile
                     p.CanWrite   ? "✓" : "—",
                     p.CanDelete  ? "✓" : "—",
                     p.CanModify  ? "✓" : "—",
+                    canShare     ? "✓" : "—",
                     isExpired ? "⚠ " + expiry : expiry,
                     status
                 );

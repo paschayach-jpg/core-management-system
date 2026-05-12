@@ -82,6 +82,16 @@ namespace CMS.Services
                     int newId = _orgUnitRepository.Insert(orgUnit);
                     orgUnit.OrgUnitID = newId;
 
+                    if (orgUnit.OrgUnitType == (int)OrgUnitTier.SubCommittee)
+                    {
+                        _orgUnitRepository.InsertSubCommitteeRecord(
+                            newId,
+                            orgUnit.OrgUnitCode,
+                            orgUnit.OrgUnitNameTH,
+                            orgUnit.OrgUnitNameEN,
+                            user.ADUserName);
+                    }
+
                     Log(user, "OrgStructure", "CREATE", "core.OrgUnit", newId, 1,
                         string.Format("Created OrgUnit '{0}' (type {1}).", orgUnit.OrgUnitNameTH, orgUnit.OrgUnitType));
 

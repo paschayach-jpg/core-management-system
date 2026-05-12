@@ -11,11 +11,20 @@ namespace CMS.Infrastructure
     public class NetworkDriveHelper : INetworkDriveHelper
     {
         private readonly IConfigManager _configManager;
+        private readonly NetworkShareConnector _shareConnector;
 
-        public NetworkDriveHelper(IConfigManager configManager)
+        public NetworkDriveHelper(IConfigManager configManager, NetworkShareConnector shareConnector = null)
         {
             if (configManager == null) throw new ArgumentNullException("configManager");
             _configManager = configManager;
+            _shareConnector = shareConnector;
+        }
+
+        private void EnsureConnected()
+        {
+            if (_shareConnector == null) return;
+            string msg;
+            _shareConnector.TryEnsureConnected(out msg);
         }
 
         /// <summary>
@@ -34,6 +43,7 @@ namespace CMS.Infrastructure
         {
             if (path == null) throw new ArgumentNullException("path");
             if (content == null) throw new ArgumentNullException("content");
+            EnsureConnected();
 
             string directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
@@ -51,6 +61,7 @@ namespace CMS.Infrastructure
         public Stream ReadFile(string path)
         {
             if (path == null) throw new ArgumentNullException("path");
+            EnsureConnected();
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
 

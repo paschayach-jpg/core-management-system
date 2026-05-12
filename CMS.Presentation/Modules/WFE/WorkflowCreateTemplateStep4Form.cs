@@ -100,7 +100,8 @@ namespace CMS.Presentation.Modules.Workflow
                 if (ctrl.Name == name)
                     return ctrl;
 
-                if (ctrl is Panel || ctrl is GroupBox || ctrl is TabPage)
+                // Recursively search in containers (Panel, GroupBox, TabPage, and any control with child controls)
+                if (ctrl.HasChildren)
                 {
                     var found = FindControl(ctrl.Controls, name);
                     if (found != null)
@@ -114,12 +115,6 @@ namespace CMS.Presentation.Modules.Workflow
         {
             var rdoPublish = FindControl(this.Controls, "rdoPublish") as RadioButton;
             _wizardState.IsPublished = rdoPublish?.Checked ?? true;
-
-            MessageBox.Show(
-                $"✓ Template {_wizardState.TemplateName} สร้างสำเร็จ!\n\nสถานะ: {(_wizardState.IsPublished ? "เผยแพร่" : "Draft")}\n\nสามารถใช้งาน workflow template นี้ได้ทันที",
-                "สร้างสำเร็จ",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
 
             this.DialogResult = DialogResult.OK;
             this.Close();

@@ -82,15 +82,142 @@ namespace CMS.Services
         // Internal Sharing Methods
         // =====================================================================
 
+        public void RequestFolderShareApproval(SetPermissionRequest request, UserContext user)
+        {
+            if (request == null) throw new ArgumentNullException("request");
+            if (user    == null) throw new ArgumentNullException("user");
+
+            if (_approvalRepository == null || _userAccountRepository == null)
+                throw new InvalidOperationException("ระบบขออนุมัติไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+
+            var folder = _folderRepository.GetById(request.FolderID);
+            if (folder == null)
+                throw new InvalidOperationException(string.Format("ไม่พบ Folder ID {0}", request.FolderID));
+
+            // Remark format must match ParsePermissionRemark in ApprovalService
+            string remark = string.Format(
+                "FolderID:{0} PrincipalType:{1} PrincipalID:{2} Read:{3} Write:{4} Delete:{5} Modify:{6} FullControl:{7} IsDeny:{8}",
+                request.FolderID, (int)request.PrincipalType, request.PrincipalID,
+                request.CanRead, request.CanWrite, request.CanDelete,
+                request.CanModify, request.CanFullControl, request.IsDeny);
+
+            var approvalReq = new Domain.Models.ApprovalRequest
+            {
+                RequestType   = "CHANGE_PERMISSION",
+                FolderID      = request.FolderID,
+                RequestedBy   = user.UserID,
+                RequestedDate = DateTime.Now,
+                RequestStatus = 1, // Pending
+                Subject       = string.Format("ขออนุมัติแชร์โฟลเดอร์ภายใน: {0}", folder.FolderName),
+                Remark        = remark,
+                ExpiryDate    = DateTime.Now.AddDays(PendingApprovalExpiryDays)
+            };
+
+            int approvalId = _approvalRepository.InsertRequest(approvalReq);
+
+            var approvers = _userAccountRepository.GetByRole(3) // Manager
+                .Where(a => a.IsActive && a.UserID != user.UserID)
+                .ToList();
+            if (!approvers.Any())
+                approvers = _userAccountRepository.GetByRole(4) // Admin fallback
+                    .Where(a => a.IsActive).ToList();
+
+            int stepOrder = 1;
+            foreach (var approver in approvers)
+            {
+                _approvalRepository.InsertStep(new Domain.Models.ApprovalStep
+                {
+                    RequestID  = approvalId,
+                    StepOrder  = stepOrder++,
+                    ApproverID = approver.UserID,
+                    StepStatus = 1 // Pending
+                });
+            }
+
+            _auditService.Log(new AuditEntry
+            {
+                Module    = "FileSharing",
+                Action    = "RequestFolderShare",
+                UserID    = user.UserID,
+                UserName  = user.ADUserName ?? string.Empty,
+                TableName = "security.FolderPermission",
+                RecordID  = request.FolderID,
+                NewValue  = remark,
+                Result    = 1,
+                AuditDate = DateTime.Now
+            });
+
+            foreach (var approver in approvers)
+            {
+                _notificationService.Send(new NotificationRequest
+                {
+                    RecipientUserId = approver.UserID,
+                    EventType       = "FolderShareApprovalRequested",
+                    RelatedEntityId = approvalId.ToString(),
+                    MessageText     = string.Format(
+                        "{0} ขออนุมัติแชร์โฟลเดอร์ '{1}' ให้ผู้รับ (RequestID:{2})",
+                        user.ADUserName, folder.FolderName, approvalId)
+                });
+            }
+        }
+
         public FilePermission CreateInternalShare(CreateInternalShareRequest request, UserContext user)
         {
             if (request == null) throw new ArgumentNullException("request");
             if (user == null) throw new ArgumentNullException("user");
 
-            // Validate user has Read permission on file
-            if (!_permissionService.CheckPermission(user.UserID, request.FileID, "Read"))
-                throw new UnauthorizedAccessException("Insufficient permissions to share this file.");
+            // Validate user has access to the file's parent folder (Read OR Write is sufficient to share)
+            var fileToShare = _fileDocumentRepository.GetById(request.FileID);
+            if (fileToShare == null)
+                throw new InvalidOperationException(string.Format("File with ID {0} not found.", request.FileID));
+            bool hasAccess = _permissionService.CheckPermission(user.UserID, fileToShare.FolderID, "Read")
+                          || _permissionService.CheckPermission(user.UserID, fileToShare.FolderID, "Write");
 
+            // File uploader always retains the right to share their own file
+            if (!hasAccess && fileToShare.UploadedBy == user.UserID)
+                hasAccess = true;
+
+            // Fallback: user may have been granted direct file-level access via a prior share
+            if (!hasAccess)
+            {
+                var filePerms = _filePermissionRepository.GetByFile(request.FileID);
+                hasAccess = filePerms.Any(fp =>
+                    fp.PrincipalType == 1 &&
+                    fp.PrincipalID   == user.UserID &&
+                    !fp.IsDeny &&
+                    (fp.CanRead || fp.CanWrite) &&
+                    (!fp.ExpiryDate.HasValue || fp.ExpiryDate.Value.Date >= DateTime.Today));
+            }
+
+            // 4PC (Public Confidential, level 4) is the open tier — no explicit ACL entries needed.
+            // ConfidentialityLevel on FileDocument is transient; read it from the folder instead.
+            if (!hasAccess)
+            {
+                var parentFolder = _folderRepository.GetById(fileToShare.FolderID);
+                if (parentFolder != null && parentFolder.ConfidentialityLevel == 4)
+                    hasAccess = true;
+            }
+
+            if (!hasAccess)
+                throw new UnauthorizedAccessException("ไม่มีสิทธิ์เพียงพอในการแชร์ไฟล์นี้");
+
+            // Validate expiry date
+            if (request.ExpiryDate.HasValue)
+            {
+                if (request.ExpiryDate.Value.Date < DateTime.Today)
+                    throw new InvalidOperationException("ไม่สามารถกำหนดวันหมดอายุย้อนหลังได้");
+                if (request.ExpiryDate.Value.Date > DateTime.Today.AddYears(1))
+                    throw new InvalidOperationException("ไม่สามารถกำหนดอายุเกิน 1 ปีได้");
+            }
+
+            // Regular users (Officer/SrOfficer) must go through approval before share takes effect
+            if (user.AppRole < 3 && _approvalRepository != null && _userAccountRepository != null)
+            {
+                SubmitInternalShareForApproval(request, user, fileToShare);
+                return null;
+            }
+
+            // Manager/Admin: create permission immediately
             // Create FilePermission record
             var filePermission = new FilePermission
             {
@@ -138,6 +265,89 @@ namespace CMS.Services
             });
 
             return filePermission;
+        }
+
+        private void SubmitInternalShareForApproval(CreateInternalShareRequest request, UserContext user, FileDocument file)
+        {
+            string expiryStr = request.ExpiryDate.HasValue
+                ? request.ExpiryDate.Value.ToString("yyyy-MM-dd")
+                : "";
+            string remark = string.Format(
+                "InternalShareFile FileID:{0} PrincipalType:{1} PrincipalID:{2} Read:{3} Write:{4} Delete:{5} Expiry:{6}",
+                request.FileID, request.PrincipalType, request.PrincipalID,
+                request.CanRead, request.CanWrite, request.CanDelete, expiryStr);
+
+            var approvalReq = new Domain.Models.ApprovalRequest
+            {
+                RequestType   = "INTERNAL_SHARE",
+                FileID        = request.FileID,
+                RequestedBy   = user.UserID,
+                RequestedDate = DateTime.Now,
+                RequestStatus = 1, // Pending
+                Subject       = string.Format("ขออนุมัติแชร์ไฟล์ภายใน: {0}",
+                    file.OriginalFileName ?? "File #" + request.FileID),
+                Remark        = remark,
+                ExpiryDate    = DateTime.Now.AddDays(PendingApprovalExpiryDays)
+            };
+
+            int approvalId;
+            try
+            {
+                approvalId = _approvalRepository.InsertRequest(approvalReq);
+            }
+            catch (Exception ex)
+            {
+                bool isTypeConstraint = ex.Message != null &&
+                    ex.Message.IndexOf("CK_wf_ApprovalRequest_Type", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (!isTypeConstraint) throw;
+                approvalReq.RequestType = "CHANGE_PERMISSION";
+                approvalId = _approvalRepository.InsertRequest(approvalReq);
+            }
+
+            var approvers = _userAccountRepository.GetByRole(3) // Manager
+                .Where(a => a.IsActive && a.UserID != user.UserID)
+                .ToList();
+            if (!approvers.Any())
+                approvers = _userAccountRepository.GetByRole(4) // Admin fallback
+                    .Where(a => a.IsActive).ToList();
+
+            int stepOrder = 1;
+            foreach (var approver in approvers)
+            {
+                _approvalRepository.InsertStep(new Domain.Models.ApprovalStep
+                {
+                    RequestID  = approvalId,
+                    StepOrder  = stepOrder++,
+                    ApproverID = approver.UserID,
+                    StepStatus = 1 // Pending
+                });
+            }
+
+            _auditService.Log(new AuditEntry
+            {
+                Module    = "FileSharing",
+                Action    = "RequestInternalShare",
+                UserID    = user.UserID,
+                UserName  = user.ADUserName ?? string.Empty,
+                TableName = "storage.FilePermission",
+                RecordID  = request.FileID,
+                NewValue  = remark,
+                Result    = 1,
+                AuditDate = DateTime.Now
+            });
+
+            foreach (var approver in approvers)
+            {
+                _notificationService.Send(new NotificationRequest
+                {
+                    RecipientUserId = approver.UserID,
+                    EventType       = "InternalShareApprovalRequested",
+                    RelatedEntityId = approvalId.ToString(),
+                    MessageText     = string.Format(
+                        "{0} ขออนุมัติแชร์ไฟล์ '{1}' ให้ผู้รับ (RequestID:{2})",
+                        user.ADUserName, file.OriginalFileName ?? "File #" + request.FileID, approvalId)
+                });
+            }
         }
 
         public void RevokeInternalShare(int filePermissionId, UserContext user)

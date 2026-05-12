@@ -19,5 +19,6 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         IList<Folder> GetAccessibleFolders(int? orgUnitId, UserContext user);
         Folder GetFolder(int folderId, UserContext user);
         IList<Folder> GetDescendantsByUser(int folderId);
+        void InvalidateFolderCache(int? orgUnitId = null);
     }
 }

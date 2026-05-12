@@ -20,6 +20,7 @@ namespace CMS.Presentation.Modules.Workflow
     {
         // ── Dependencies ────────────────────────────────────────────────────────
         private readonly IWorkflowService _workflowService;
+        private readonly IWorkflowTemplateService _templateService;
         private readonly ISLACalculator _slaCalculator;
         private readonly ILoggingService _loggingService;
         private readonly UserContext _userContext;
@@ -40,12 +41,14 @@ namespace CMS.Presentation.Modules.Workflow
             IWorkflowService workflowService = null,
             ISLACalculator slaCalculator = null,
             ILoggingService loggingService = null,
-            UserContext userContext = null)
+            UserContext userContext = null,
+            IWorkflowTemplateService templateService = null)
         {
             _workflowService = workflowService;
             _slaCalculator = slaCalculator;
             _loggingService = loggingService;
             _userContext = userContext;
+            _templateService = templateService;
             InitializeComponent();
         }
 
@@ -294,7 +297,7 @@ namespace CMS.Presentation.Modules.Workflow
                 tag,
                 this,
                 _workflowService,
-                null, // templateService
+                _templateService,
                 _slaCalculator,
                 _loggingService,
                 _userContext);

@@ -197,6 +197,48 @@ namespace CMS.Data.Repositories
             return GetByFolder(folderId);
         }
 
+        /// <summary>
+        /// Pre-load: returns ALL active ACL entries for every folder where the user has
+        /// at least one applicable entry (by UserID / Role / Department / Division).
+        /// Single round-trip used once at login to pre-warm PermissionService._aclCache.
+        /// </summary>
+        public IEnumerable<FolderPermission> GetAllForUser(int userId, int roleId, int? deptId, int? divId)
+        {
+            var results = new List<FolderPermission>();
+            const string sql =
+                @"SELECT p.PermissionID, p.FolderID, p.PrincipalType, p.PrincipalID,
+                         p.CanRead, p.CanWrite, p.CanDelete, p.CanModify, p.CanFullControl,
+                         p.IsDeny, p.InheritanceBroken,
+                         p.ExpiryDate, p.GrantedBy, p.GrantedDate, p.RevokedBy, p.RevokedDate, p.RevokeReason
+                  FROM   security.FolderPermission p
+                  WHERE  p.RevokedDate IS NULL
+                    AND  p.FolderID IN (
+                             SELECT DISTINCT FolderID FROM security.FolderPermission
+                             WHERE  RevokedDate IS NULL
+                               AND  (  (PrincipalType = 1 AND PrincipalID = @UserId)
+                                    OR (PrincipalType = 2 AND PrincipalID = @RoleId)
+                                    OR (@DeptId IS NOT NULL AND PrincipalType = 3 AND PrincipalID = @DeptId)
+                                    OR (@DivId  IS NOT NULL AND PrincipalType = 4 AND PrincipalID = @DivId)
+                                    )
+                         )";
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.AddWithValue("@RoleId", roleId);
+                    cmd.Parameters.AddWithValue("@DeptId", (object)deptId ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DivId",  (object)divId  ?? DBNull.Value);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read()) results.Add(MapPermissionFull(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
         private static FolderPermission MapPermission(SqlDataReader reader)
         {
             return new FolderPermission
@@ -218,6 +260,13 @@ namespace CMS.Data.Repositories
                 RevokedDate    = reader["RevokedDate"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["RevokedDate"],
                 RevokeReason   = reader["RevokeReason"] == DBNull.Value ? null : (string)reader["RevokeReason"]
             };
+        }
+
+        private static FolderPermission MapPermissionFull(SqlDataReader reader)
+        {
+            var p = MapPermission(reader);
+            p.InheritanceBroken = reader["InheritanceBroken"] != DBNull.Value && (bool)reader["InheritanceBroken"];
+            return p;
         }
     }
 }

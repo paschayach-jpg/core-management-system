@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Enums;
@@ -36,26 +37,87 @@ namespace CMS.Presentation
             _user = user;
 
             InitializeComponent();
-            LoadOrgUnits();
-            LoadData();
+            // ไม่โหลด DB ที่นี่ — โหลดใน Shown event เพื่อให้ form เปิดทันที
+        }
+
+        // ── Async initial load ────────────────────────────────────────────────────
+
+        private async void RecycleBinForm_Shown(object sender, EventArgs e)
+        {
+            await LoadAllAsync(rebuildFilter: true);
+        }
+
+        private async Task LoadAllAsync(bool rebuildFilter = false)
+        {
+            SetLoadingState(true);
+
+            var orgUnits = rebuildFilter ? new List<OrgUnit>() : _orgUnits;
+            var folders  = new List<Folder>();
+            var files    = new List<FileDocument>();
+
+            await Task.Run(() =>
+            {
+                if (rebuildFilter)
+                {
+                    try { orgUnits = _recycleBinController.GetOrgHierarchy().ToList(); }
+                    catch { }
+                }
+                try { folders = _recycleBinController.GetDeletedFolders(_filterOrgUnit, _user).ToList(); }
+                catch { }
+                try { files = _recycleBinController.GetDeletedFiles(_filterOrgUnit, _user).ToList(); }
+                catch { }
+            });
+
+            if (rebuildFilter) _orgUnits = orgUnits;
+            _folders = folders;
+            _files   = files;
+
+            PopulateList();
+            if (rebuildFilter) BuildOrgUnitFilter();
+            SetLoadingState(false);
+        }
+
+        private void SetLoadingState(bool loading)
+        {
+            _loadingPanel.Visible = loading;
+            _toolbar.Enabled = !loading;
+            if (loading)
+            {
+                _listView.Visible   = false;
+                _emptyPanel.Visible = false;
+            }
         }
 
         // ── Data Loading ─────────────────────────────────────────────────────────
 
-        private void LoadOrgUnits()
+        private void BuildOrgUnitFilter()
         {
+            // Show only departments that actually have deleted items — no empty entries, no duplicates
+            var distinctIds = _folders
+                .Select(f => f.OrgUnitID)
+                .Distinct()
+                .OrderBy(id => GetOrgUnitName(id))
+                .ToList();
+
+            _cmbOrgUnit.SelectedIndexChanged -= CmbOrgUnit_SelectedIndexChanged;
             _cmbOrgUnit.Items.Clear();
             _cmbOrgUnit.Items.Add(new OrgUnitItem { Id = null, Name = "— ทั้งหมด —" });
 
-            try
-            {
-                _orgUnits = _recycleBinController.GetOrgHierarchy().ToList();
-                foreach (var ou in _orgUnits.OrderBy(o => o.Name))
-                    _cmbOrgUnit.Items.Add(new OrgUnitItem { Id = ou.OrgUnitId, Name = ou.Name });
-            }
-            catch { /* ignore */ }
+            foreach (var id in distinctIds)
+                _cmbOrgUnit.Items.Add(new OrgUnitItem { Id = id, Name = GetOrgUnitName(id) });
 
-            _cmbOrgUnit.SelectedIndex = 0;
+            // Restore previous selection if still available
+            int selIdx = 0;
+            if (_filterOrgUnit.HasValue)
+            {
+                for (int i = 1; i < _cmbOrgUnit.Items.Count; i++)
+                {
+                    var item = _cmbOrgUnit.Items[i] as OrgUnitItem;
+                    if (item != null && item.Id == _filterOrgUnit) { selIdx = i; break; }
+                }
+            }
+            _cmbOrgUnit.SelectedIndex = selIdx;
+            _cmbOrgUnit.SelectedIndexChanged += CmbOrgUnit_SelectedIndexChanged;
         }
 
         private void LoadData()
@@ -166,8 +228,9 @@ namespace CMS.Presentation
 
             int totalCount  = _listView.Items.Count;
             bool isEmpty    = totalCount == 0;
-            _listView.Visible   = !isEmpty;
-            _emptyPanel.Visible = isEmpty;
+            _loadingPanel.Visible = false;
+            _listView.Visible     = !isEmpty;
+            _emptyPanel.Visible   = isEmpty;
 
             _btnEmptyBin.Enabled = !isEmpty;
             UpdateActionButtons();
@@ -185,9 +248,15 @@ namespace CMS.Presentation
 
         // ── Event Handlers ───────────────────────────────────────────────────────
 
-        private void BtnRefresh_Click(object sender, EventArgs e)
+        private async void BtnRefresh_Click(object sender, EventArgs e)
         {
-            LoadData();
+            _filterOrgUnit = null;
+            await LoadAllAsync(rebuildFilter: true);
+        }
+
+        private void BtnClose_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
 
         private void ListView_DrawColumnHeader(object sender, DrawListViewColumnHeaderEventArgs e)
@@ -211,6 +280,22 @@ namespace CMS.Presentation
                 ConfirmRestore(new[] { _listView.SelectedItems[0].Tag as RecycleBinItem });
         }
 
+        private void ListView_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right) return;
+
+            var hit = _listView.HitTest(e.X, e.Y);
+            if (hit.Item == null) return;
+
+            // Select the right-clicked item if it's not part of the current multi-selection
+            if (!hit.Item.Selected)
+            {
+                _listView.SelectedItems.Clear();
+                hit.Item.Selected = true;
+                hit.Item.Focused  = true;
+            }
+        }
+
         private void ListView_ColumnClick(object sender, ColumnClickEventArgs e)
         {
             var sorter = (ListViewColumnSorter)_listView.ListViewItemSorter;
@@ -224,11 +309,11 @@ namespace CMS.Presentation
             _listView.Sort();
         }
 
-        private void CmbOrgUnit_SelectedIndexChanged(object sender, EventArgs e)
+        private async void CmbOrgUnit_SelectedIndexChanged(object sender, EventArgs e)
         {
             var sel = _cmbOrgUnit.SelectedItem as OrgUnitItem;
             _filterOrgUnit = sel?.Id;
-            LoadData();
+            await LoadAllAsync(rebuildFilter: false);
         }
 
         private void BtnRestore_Click(object sender, EventArgs e)
@@ -276,6 +361,44 @@ namespace CMS.Presentation
             MessageBox.Show(msg, "เสร็จสิ้น", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             LoadData();
+        }
+
+        // ── Context Menu ─────────────────────────────────────────────────────────
+
+        private void ContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            bool canManage = _user.Role == UserRole.Manager || _user.Role == UserRole.Admin;
+            int  selCount  = _listView.SelectedItems.Count;
+            int  total     = _folders.Count + _files.Count;
+
+            // ลบถาวร: แสดงเฉพาะ Manager/Admin เท่านั้น
+            _ctxDelete.Visible  = canManage;
+            _ctxSep1.Visible    = canManage;
+
+            _ctxRestore.Enabled   = selCount > 0;
+            _ctxDelete.Enabled    = selCount > 0 && canManage;
+            _ctxSelectAll.Enabled = total > 0;
+
+            // อัปเดต label ให้แสดงจำนวนที่เลือกด้วย
+            _ctxRestore.Text = selCount > 1
+                ? string.Format("♻️   คืนค่า {0} รายการ", selCount)
+                : "♻️   คืนค่า (Restore)";
+
+            _ctxDelete.Text = selCount > 1
+                ? string.Format("🗑️   ลบถาวร {0} รายการ", selCount)
+                : "🗑️   ลบถาวร";
+        }
+
+        private void CtxRestore_Click(object sender, EventArgs e)   { BtnRestore_Click(sender, e); }
+        private void CtxDelete_Click(object sender, EventArgs e)    { BtnDelete_Click(sender, e); }
+        private void CtxRefresh_Click(object sender, EventArgs e)   { BtnRefresh_Click(sender, e); }
+
+        private void CtxSelectAll_Click(object sender, EventArgs e)
+        {
+            _listView.BeginUpdate();
+            foreach (ListViewItem item in _listView.Items)
+                item.Selected = true;
+            _listView.EndUpdate();
         }
 
         // ── Actions ──────────────────────────────────────────────────────────────
@@ -436,7 +559,7 @@ namespace CMS.Presentation
             var flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
                         TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine;
             TextRenderer.DrawText(e.Graphics, e.SubItem.Text, e.Item.ListView.Font,
-                Rectangle.Inflate(e.Bounds, -2, 0), fore, flags);
+                Rectangle.Inflate(e.Bounds, -5, -1), fore, flags);
         }
 
         // ── Inner classes ────────────────────────────────────────────────────────

@@ -131,7 +131,8 @@ namespace CMS.Presentation
             this.txtRemark.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtRemark.Size = new System.Drawing.Size(440, 64);
             this.txtRemark.TabIndex = 1;
-            // 
+            this.txtRemark.TextChanged += new System.EventHandler(this.txtRemark_TextChanged);
+            //
             // btnApprove
             // 
             this.btnApprove.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(140)))), ((int)(((byte)(0)))));

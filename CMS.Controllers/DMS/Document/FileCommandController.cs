@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.DTOs;
@@ -39,12 +40,28 @@ namespace CMS.Controllers.DMS.Document
             _fileService.MoveFiles(request, user);
         }
 
-        public int CopyFile(int fileId, int destinationFolderId, UserContext user)
+        public int CopyFile(int fileId, int destinationFolderId, UserContext user, bool overwrite = false)
         {
             if (_fileService == null)
                 throw new InvalidOperationException("File service is not available.");
 
-            return _fileService.CopyFile(fileId, destinationFolderId, user);
+            return _fileService.CopyFile(fileId, destinationFolderId, user, overwrite);
+        }
+
+        public void HideFiles(List<int> fileIds, UserContext user)
+        {
+            if (_fileService == null)
+                throw new InvalidOperationException("File service is not available.");
+
+            _fileService.HideFiles(fileIds, user);
+        }
+
+        public void UnhideFiles(List<int> fileIds, UserContext user)
+        {
+            if (_fileService == null)
+                throw new InvalidOperationException("File service is not available.");
+
+            _fileService.UnhideFiles(fileIds, user);
         }
     }
 }

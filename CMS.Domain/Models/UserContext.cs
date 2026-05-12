@@ -39,6 +39,19 @@ namespace CMS.Domain.Models
         /// </summary>
         public Dictionary<int, FolderAuthorityConfig> Authority { get; set; }
 
+        /// <summary>รหัสแผนก (int) — ใช้ match กับ s_FolderPermission.PrincipalID</summary>
+        public int? DepartmentId { get; set; }
+
+        /// <summary>รหัสฝ่าย (int) — ใช้ match กับ s_FolderPermission.PrincipalID</summary>
+        public int? DivisionId { get; set; }
+
+        /// <summary>
+        /// ACL pre-loaded ตอน login — key = FolderID, value = ACL entries ทั้งหมดของ folder นั้น
+        /// ใช้ pre-warm PermissionService._aclCache ก่อน request แรก
+        /// เปลี่ยนสิทธิ์ใหม่ต้อง re-login เพื่อรับ cache ใหม่
+        /// </summary>
+        public Dictionary<int, List<FolderPermission>> SessionAcl { get; set; }
+
         private FolderAuthorityConfig GetAuthority(int level)
         {
             if (Authority == null) return null;

@@ -57,6 +57,8 @@ namespace CMS.Controllers.DMS.Document
             _currentOrgUnitId = orgUnitId;
             try
             {
+                // invalidate cache ก่อนทุกครั้งเพื่อให้ tree แสดงข้อมูลล่าสุดจาก DB เสมอ
+                _folderReadLookupController.InvalidateFolderCache(orgUnitId);
                 var allFolders = _folderReadLookupController.GetAllFolders(orgUnitId, _user);
                 _view.ShowFolderTree(allFolders);
             }

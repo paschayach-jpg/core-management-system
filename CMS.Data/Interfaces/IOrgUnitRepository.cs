@@ -43,5 +43,16 @@ namespace CMS.Data.Interfaces
         /// then soft-deletes the OrgUnit itself — bypasses the active-dependents guard.
         /// </summary>
         void ForceDeleteWithDependents(int orgUnitId, int deletedBy);
+
+        // ── m_SubCommittee ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Insert ข้อมูล SubCommittee เข้า m_SubCommittee (เรียกหลัง Insert core.OrgUnit สำเร็จ)
+        /// createdByADUser ใช้ ADUserName (string snapshot) ตาม Audit Stamp rule
+        /// </summary>
+        void InsertSubCommitteeRecord(int orgUnitId, string code, string nameTH, string nameEN, string createdByADUser);
+
+        /// <summary>Sync soft-delete ของ m_SubCommittee ให้ตรงกับ core.OrgUnit</summary>
+        void SoftDeleteSubCommitteeRecord(int orgUnitId, string deletedByADUser);
     }
 }

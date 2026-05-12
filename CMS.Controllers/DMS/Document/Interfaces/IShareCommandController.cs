@@ -8,5 +8,6 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         FilePermission CreateInternalShare(CreateInternalShareRequest request, UserContext user);
         ExternalShare CreateExternalShare(CreateExternalShareRequest request, UserContext user);
         void SetFolderPermission(SetPermissionRequest request, UserContext user);
+        void RequestFolderShareApproval(SetPermissionRequest request, UserContext user);
     }
 }

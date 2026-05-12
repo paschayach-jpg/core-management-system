@@ -1,4 +1,4 @@
-namespace CMS.Presentation
+﻿namespace CMS.Presentation
 {
     partial class FilesByFolderForm
     {
@@ -85,7 +85,7 @@ namespace CMS.Presentation
             this.colName.Text = "ชื่อไฟล์";  this.colName.Width = 360;
             this.colSize.Text = "ขนาด";      this.colSize.Width = 90;
             this.colExt.Text  = "ประเภท";    this.colExt.Width  = 70;
-            this.colDate.Text = "วันที่อัพโหลด"; this.colDate.Width = 130;
+            this.colDate.Text = "วันที่อัปโหลด"; this.colDate.Width = 130;
             this.colScan.Text = "Virus Scan"; this.colScan.Width = 110;
             this.colVer.Text  = "Ver";        this.colVer.Width  = 40;
             this.splitter.Panel2.Controls.Add(this.listView);

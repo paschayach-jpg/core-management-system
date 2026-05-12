@@ -25,10 +25,17 @@ namespace CMS.Services.Interfaces
 
         /// <summary>
         /// คัดลอกไฟล์ไปยัง Folder ปลายทาง (สร้าง record ใหม่ พร้อม copy physical file)
+        /// เมื่อ overwrite = true ระบบจะ soft-delete ไฟล์เดิมที่มีชื่อซ้ำ แล้วเขียนทับด้วยไฟล์ใหม่
         /// </summary>
-        int CopyFile(int fileId, int destinationFolderId, UserContext user);
+        int CopyFile(int fileId, int destinationFolderId, UserContext user, bool overwrite = false);
 
         /// <summary>Returns the subset of <paramref name="fileNames"/> that already exist (active) in the folder.</summary>
         IEnumerable<string> FindDuplicateNames(IEnumerable<string> fileNames, int folderId, UserContext user);
+
+        /// <summary>Hide the specified files (IsHidden = true).</summary>
+        void HideFiles(List<int> fileIds, UserContext user);
+
+        /// <summary>Unhide the specified files (IsHidden = false).</summary>
+        void UnhideFiles(List<int> fileIds, UserContext user);
     }
 }
