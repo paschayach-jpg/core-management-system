@@ -31,6 +31,7 @@ namespace CMS.Presentation
             this.colReqId = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colSubject = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colPrincipalType = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colRequester = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colDate = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colExpiry = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -198,6 +199,7 @@ namespace CMS.Presentation
             this.colReqId,
             this.colType,
             this.colSubject,
+            this.colPrincipalType,
             this.colRequester,
             this.colDate,
             this.colExpiry});
@@ -217,34 +219,39 @@ namespace CMS.Presentation
             this.lvRequests.ItemChecked += new System.Windows.Forms.ItemCheckedEventHandler(this.lvRequests_ItemChecked);
             // 
             // colReqId
-            // 
+            //
             this.colReqId.Text = "Request ID";
-            this.colReqId.Width = 90;
-            // 
+            this.colReqId.Width = 80;
+            //
             // colType
-            // 
+            //
             this.colType.Text = "ประเภท";
-            this.colType.Width = 140;
-            // 
+            this.colType.Width = 130;
+            //
             // colSubject
-            // 
+            //
             this.colSubject.Text = "เรื่อง";
-            this.colSubject.Width = 320;
-            // 
+            this.colSubject.Width = 260;
+            //
+            // colPrincipalType
+            //
+            this.colPrincipalType.Text = "ผู้รับสิทธิ์";
+            this.colPrincipalType.Width = 110;
+            //
             // colRequester
-            // 
+            //
             this.colRequester.Text = "ผู้ขอ";
-            this.colRequester.Width = 160;
-            // 
+            this.colRequester.Width = 140;
+            //
             // colDate
-            // 
+            //
             this.colDate.Text = "วันที่ขอ";
-            this.colDate.Width = 130;
-            // 
+            this.colDate.Width = 120;
+            //
             // colExpiry
-            // 
+            //
             this.colExpiry.Text = "หมดอายุ";
-            this.colExpiry.Width = 100;
+            this.colExpiry.Width = 90;
             // 
             // ApprovalInboxForm
             // 
@@ -291,6 +298,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ColumnHeader colReqId;
         private System.Windows.Forms.ColumnHeader colType;
         private System.Windows.Forms.ColumnHeader colSubject;
+        private System.Windows.Forms.ColumnHeader colPrincipalType;
         private System.Windows.Forms.ColumnHeader colRequester;
         private System.Windows.Forms.ColumnHeader colDate;
         private System.Windows.Forms.ColumnHeader colExpiry;

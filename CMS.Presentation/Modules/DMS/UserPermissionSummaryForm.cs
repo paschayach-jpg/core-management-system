@@ -63,12 +63,12 @@ namespace CMS.Presentation.Modules.ImportFile
         {
             Text            = "สิทธิ์การเข้าใช้งานของฉัน";
             Size            = new Size(960, 780);
-            MinimumSize     = new Size(780, 640);
             StartPosition   = FormStartPosition.CenterParent;
             Font            = new Font("Segoe UI", 9f);
             BackColor       = Color.FromArgb(243, 246, 251);
-            FormBorderStyle = FormBorderStyle.Sizable;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox     = false;
+            MinimizeBox     = false;
             Icon            = SystemIcons.Shield;
 
             var pnlHeader = BuildHeader();
@@ -799,6 +799,19 @@ namespace CMS.Presentation.Modules.ImportFile
                 case 4: return "4PC";
                 default: return "—";
             }
+        }
+
+        private void InitializeComponent()
+        {
+            this.SuspendLayout();
+            // 
+            // UserPermissionSummaryForm
+            // 
+            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Name = "UserPermissionSummaryForm";
+            this.ResumeLayout(false);
+
         }
     }
 }

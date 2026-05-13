@@ -17,8 +17,10 @@ namespace CMS.Presentation
         private readonly Folder                    _parentFolder;  // folder ที่เข้ามาสร้าง
         private readonly string                    _parentFolderPath; // full breadcrumb path จาก FolderForm
 
-        private List<FolderTemplate> _templates = new List<FolderTemplate>();
-        private List<OrgUnit>        _orgUnits  = new List<OrgUnit>();
+        private List<FolderTemplate>     _templates         = new List<FolderTemplate>();
+        private List<FolderTemplate>     _filteredTemplates = new List<FolderTemplate>();
+        private IList<FolderTemplateItem> _currentItems     = null;
+        private List<OrgUnit>            _orgUnits          = new List<OrgUnit>();
 
         public int? SelectedOrgUnitId { get; private set; }
 
@@ -47,7 +49,8 @@ namespace CMS.Presentation
         {
             BeginInvoke(new Action(() => {
                 if (splitMain.Width > splitMain.Panel1MinSize + splitMain.Panel2MinSize)
-                    splitMain.SplitterDistance = 280;
+                    splitMain.SplitterDistance = Math.Max(splitMain.Panel1MinSize, splitMain.Width / 2);
+                AutoSizeFormWidth();
             }));
 
             LoadData();
@@ -94,7 +97,7 @@ namespace CMS.Presentation
 
                 foreach (var sc in subCommittees)
                 {
-                    var scNode = new TreeNode(string.Format("🏢 {0}", sc.Name)) { Tag = sc };
+                    var scNode = new TreeNode(string.Format("🏢 {0}", sc.Name)) { Tag = sc, ToolTipText = sc.Name };
                     scNode.ForeColor = Color.FromArgb(31, 56, 100);
 
                     var divisions = _orgUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Division
@@ -102,7 +105,7 @@ namespace CMS.Presentation
                                             .OrderBy(u => u.Name).ToList();
                     foreach (var div in divisions)
                     {
-                        var divNode = new TreeNode(string.Format("📁 {0}", div.Name)) { Tag = div };
+                        var divNode = new TreeNode(string.Format("📁 {0}", div.Name)) { Tag = div, ToolTipText = div.Name };
                         divNode.ForeColor = Color.FromArgb(0, 80, 160);
 
                         var depts = _orgUnits.Where(u => u.Tier == CMS.Domain.Enums.OrgUnitTier.Department
@@ -110,7 +113,7 @@ namespace CMS.Presentation
                                             .OrderBy(u => u.Name).ToList();
                         foreach (var dept in depts)
                         {
-                            var deptNode = new TreeNode(string.Format("📋 {0}", dept.Name)) { Tag = dept };
+                            var deptNode = new TreeNode(string.Format("📋 {0}", dept.Name)) { Tag = dept, ToolTipText = dept.Name };
                             deptNode.ForeColor = Color.FromArgb(60, 60, 60);
                             divNode.Nodes.Add(deptNode);
                         }
@@ -119,7 +122,7 @@ namespace CMS.Presentation
                     treeOrgUnit.Nodes.Add(scNode);
                 }
 
-                treeOrgUnit.ExpandAll();
+                treeOrgUnit.CollapseAll();
                 treeOrgUnit.EndUpdate();
 
                 _templates = _templateController.GetAll()
@@ -127,10 +130,7 @@ namespace CMS.Presentation
                     .OrderBy(t => t.TemplateName)
                     .ToList();
 
-                lstTemplates.Items.Clear();
-                foreach (var t in _templates)
-                    lstTemplates.Items.Add(string.Format("  {0}  [{1}]", t.TemplateName, t.TargetType));
-                if (lstTemplates.Items.Count > 0) lstTemplates.SelectedIndex = 0;
+                FilterAndShowTemplates(null);
 
                 lblStatus.Text = string.Format("✔ โหลดสำเร็จ — {0} หน่วยงาน, {1} Template",
                     _orgUnits.Count, _templates.Count);
@@ -142,68 +142,112 @@ namespace CMS.Presentation
             }
         }
 
+        private void BtnExpandAll_Click(object sender, EventArgs e)
+        {
+            treeOrgUnit.ExpandAll();
+        }
+
+        private void BtnCollapseAll_Click(object sender, EventArgs e)
+        {
+            treeOrgUnit.CollapseAll();
+        }
+
         private void TreeOrgUnit_AfterSelect(object sender, TreeViewEventArgs e)
         {
             var ou = e.Node?.Tag as OrgUnit;
-            if (ou != null && string.IsNullOrWhiteSpace(txtRootName.Text))
-                txtRootName.Text = ou.Name;
+            FilterAndShowTemplates(ou);
+        }
+
+        private void FilterAndShowTemplates(OrgUnit selectedOU)
+        {
+            IEnumerable<FolderTemplate> query = _templates;
+
+            if (selectedOU != null)
+            {
+                string tierName = selectedOU.Tier.ToString(); // "SubCommittee" | "Division" | "Department"
+                query = _templates.Where(t =>
+                    (t.OrgUnitID.HasValue && t.OrgUnitID.Value == selectedOU.OrgUnitId) ||
+                    (!t.OrgUnitID.HasValue && (t.TargetType == "Any" || t.TargetType == tierName)));
+            }
+
+            _filteredTemplates = query.ToList();
+
+            lstTemplates.Items.Clear();
+            foreach (var t in _filteredTemplates)
+                lstTemplates.Items.Add(string.Format("  {0}  [{1}]", t.TemplateName, t.TargetType));
+
+            if (lstTemplates.Items.Count > 0)
+                lstTemplates.SelectedIndex = 0;
+            else
+            {
+                _currentItems = null;
+                treePreview.Nodes.Clear();
+                lblTemplateDesc.Text = string.Empty;
+            }
         }
 
         private void LstTemplates_Changed(object sender, EventArgs e)
         {
             var tmpl = GetSelectedTemplate();
-            if (tmpl == null) { treePreview.Nodes.Clear(); lblTemplateDesc.Text = ""; return; }
+            if (tmpl == null) { treePreview.Nodes.Clear(); lblTemplateDesc.Text = string.Empty; return; }
 
-            lblTemplateDesc.Text = string.IsNullOrEmpty(tmpl.Description) ? "" : "ℹ  " + tmpl.Description;
-
-            if (string.IsNullOrWhiteSpace(txtRootName.Text))
-            {
-                var ou = GetSelectedOrgUnit();
-                txtRootName.Text = ou != null ? ou.Name : tmpl.TemplateName;
-            }
+            lblTemplateDesc.Text = string.IsNullOrEmpty(tmpl.Description) ? string.Empty : "ℹ  " + tmpl.Description;
+            txtRootName.Text = tmpl.TemplateName;
 
             try
             {
-                var items = _templateController.GetItems(tmpl.TemplateID).ToList();
-                treePreview.BeginUpdate();
-                treePreview.Nodes.Clear();
-
-                var root = new TreeNode(string.Format("📁  {0}", txtRootName.Text.Trim()));
-                root.ForeColor = Color.FromArgb(31, 56, 100);
-                root.NodeFont  = new Font("Segoe UI", 9.5f, FontStyle.Bold);
-                BuildPreviewNodes(root.Nodes, items, null);
-                treePreview.Nodes.Add(root);
-                treePreview.ExpandAll();
-                treePreview.EndUpdate();
-
-                // อัปเดต path breadcrumb เมื่อเลือก template
+                _currentItems = _templateController.GetItems(tmpl.TemplateID).ToList();
+                RefreshPreview();
                 UpdatePathBreadcrumb();
 
-                // แสดง summary ใน lblStatus แทน confirmation dialog
                 if (_parentFolder != null)
                 {
                     lblStatus.Text = string.Format(
                         "จะสร้างใต้: {0}  |  Template: {1}  |  {2} folder(s)  — กด \"สร้าง Folder\" เพื่อดำเนินการ",
-                        _parentFolder.FolderName, tmpl.TemplateName, items.Count);
+                        _parentFolder.FolderName, tmpl.TemplateName, _currentItems.Count);
                 }
                 else
                 {
-                    var ou2 = GetSelectedOrgUnit();
+                    var ou = GetSelectedOrgUnit();
                     lblStatus.Text = string.Format(
                         "Template: {0}  |  {1} folder(s){2}  — กด \"สร้าง Folder\" เพื่อดำเนินการ",
-                        tmpl.TemplateName, items.Count,
-                        ou2 != null ? "  |  หน่วยงาน: " + ou2.Name : "");
+                        tmpl.TemplateName, _currentItems.Count,
+                        ou != null ? "  |  หน่วยงาน: " + ou.Name : string.Empty);
                 }
                 lblStatus.ForeColor = Color.FromArgb(0, 100, 180);
             }
             catch { }
         }
 
+        private void TxtRootName_TextChanged(object sender, EventArgs e)
+        {
+            RefreshPreview();
+        }
+
+        private void RefreshPreview()
+        {
+            if (_currentItems == null) return;
+
+            string rootName = string.IsNullOrWhiteSpace(txtRootName.Text)
+                ? "Root Folder"
+                : txtRootName.Text.Trim();
+
+            treePreview.BeginUpdate();
+            treePreview.Nodes.Clear();
+            var root = new TreeNode(string.Format("📁  {0}", rootName));
+            root.ForeColor = Color.FromArgb(31, 56, 100);
+            root.NodeFont  = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            BuildPreviewNodes(root.Nodes, _currentItems, null);
+            treePreview.Nodes.Add(root);
+            treePreview.ExpandAll();
+            treePreview.EndUpdate();
+        }
+
         private void BuildPreviewNodes(TreeNodeCollection nodes, IList<FolderTemplateItem> items, int? parentId)
         {
             foreach (var item in items.Where(i => i.ParentItemID == parentId).OrderBy(i => i.SortOrder))
             {
-                var node = new TreeNode(string.Format("📂  {0}", item.FolderName));
+                var node = new TreeNode(string.Format("📂  {0}", item.FolderName)) { ToolTipText = item.FolderName };
                 BuildPreviewNodes(node.Nodes, items, item.ItemID);
                 nodes.Add(node);
             }
@@ -315,7 +359,7 @@ namespace CMS.Presentation
         private FolderTemplate GetSelectedTemplate()
         {
             int idx = lstTemplates.SelectedIndex;
-            return (idx >= 0 && idx < _templates.Count) ? _templates[idx] : null;
+            return (idx >= 0 && idx < _filteredTemplates.Count) ? _filteredTemplates[idx] : null;
         }
 
         /// <summary>
@@ -328,6 +372,7 @@ namespace CMS.Presentation
             {
                 lblPathBreadcrumb.Text    = "📍 " + _parentFolderPath;
                 lblPathBreadcrumb.Visible = true;
+                toolTipMain.SetToolTip(lblPathBreadcrumb, _parentFolderPath);
                 return;
             }
 
@@ -335,10 +380,42 @@ namespace CMS.Presentation
             {
                 lblPathBreadcrumb.Text    = "📍 " + _parentFolder.FolderName;
                 lblPathBreadcrumb.Visible = true;
+                toolTipMain.SetToolTip(lblPathBreadcrumb, _parentFolder.FolderName);
                 return;
             }
 
             lblPathBreadcrumb.Visible = false;
+        }
+
+        // ── Auto-resize to fit widest org-unit name ────────────────────────────
+        private void AutoSizeFormWidth()
+        {
+            if (treeOrgUnit.Nodes.Count == 0) return;
+
+            int maxWidth = 0;
+            using (var g = treeOrgUnit.CreateGraphics())
+                MeasureMaxNodeWidth(treeOrgUnit.Nodes, g, treeOrgUnit.Indent, 1, ref maxWidth);
+
+            // account for expand icon (~20px), scrollbar (~20px), left panel padding (24px)
+            int leftNeeded = maxWidth + 60;
+            int currentLeft = splitMain.Panel1.ClientSize.Width;
+            if (leftNeeded <= currentLeft) return;
+
+            int extra = leftNeeded - currentLeft;
+            var workArea = Screen.FromControl(this).WorkingArea;
+            int newWidth = Math.Min(this.Width + extra, workArea.Width - 40);
+            if (newWidth > this.Width)
+                this.Width = newWidth;
+        }
+
+        private void MeasureMaxNodeWidth(TreeNodeCollection nodes, System.Drawing.Graphics g, int indent, int depth, ref int maxWidth)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                int w = (int)g.MeasureString(node.Text, treeOrgUnit.Font).Width + depth * indent;
+                if (w > maxWidth) maxWidth = w;
+                MeasureMaxNodeWidth(node.Nodes, g, indent, depth + 1, ref maxWidth);
+            }
         }
     }
 }

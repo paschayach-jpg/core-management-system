@@ -21,5 +21,8 @@ namespace CMS.Data.Interfaces
 
         /// <summary>ลบ pending CREATE_HC requests (และ steps) ทั้งหมดของ OrgUnit ที่กำหนด เพื่อเคลียร์ข้อมูลเก่าก่อนสร้างคำขอใหม่</summary>
         void DeletePendingHCRequestsForOrgUnit(int orgUnitId);
+
+        /// <summary>Returns the most recent DOWNLOAD_FILE request for fileId+userId that is Approved (status=2) and not yet consumed (status≠5).</summary>
+        ApprovalRequest GetApprovedDownloadRequest(int fileId, int userId);
     }
 }

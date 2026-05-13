@@ -90,7 +90,22 @@ namespace CMS.Presentation
                             MessageBox.Show("Org lookup is not available.", "Folder Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return true;
                         }
-                        return ShowTargetForm(context, new PermissionForm(context.PermissionService, context.ApprovalService, context.FolderService, context.FolderPermissionLookupController, context.User, context.SelectedFolder, context.UserAccountLookupController, context.FolderSettingsController, context.EmployeeApiService, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), null, null));
+                        {
+                            // Resolve parent folder for conf-level edit enforcement.
+                            CMS.Domain.Models.Folder parentFolderCtx = null;
+                            if (context.SelectedFolder?.ParentFolderID.HasValue == true && context.FolderReadLookupController != null)
+                            {
+                                try { parentFolderCtx = context.FolderReadLookupController.GetById(context.SelectedFolder.ParentFolderID.Value); }
+                                catch { }
+                            }
+                            return ShowTargetForm(context, new PermissionForm(
+                                context.PermissionService, context.ApprovalService, context.FolderService,
+                                context.FolderPermissionLookupController, context.User, context.SelectedFolder,
+                                context.UserAccountLookupController, context.FolderSettingsController,
+                                context.EmployeeApiService,
+                                context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService),
+                                null, null, parentFolderCtx));
+                        }
 
                     case "UserPermissionSummary":
                         return ShowTargetForm(context, new UserPermissionSummaryForm(context.User, context.ShareLookupController));
@@ -329,7 +344,7 @@ namespace CMS.Presentation
                     }
                     else
                     {
-                        using (var dlg = new ShareDialogExternal(context.ShareCommandController, context.User, context.SelectedFile, context.SelectedFolder))
+                        using (var dlg = new ShareDialogExternal(context.ShareCommandController, context.User, selectedFiles, context.SelectedFolder))
                             dlg.ShowDialog(context.Owner);
                     }
                 }

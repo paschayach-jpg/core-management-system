@@ -223,6 +223,11 @@ namespace CMS.Presentation
             SearchRequested?.Invoke(this, EventArgs.Empty);
         }
 
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
         public string PromptSaveFilePath(string defaultFileName)
         {
             using (var dlg = new SaveFileDialog())

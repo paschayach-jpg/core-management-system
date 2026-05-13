@@ -13,6 +13,11 @@ namespace CMS.Presentation
 
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
+            this.toolTipMain = new System.Windows.Forms.ToolTip(this.components);
+            this.toolTipMain.AutoPopDelay = 8000;
+            this.toolTipMain.InitialDelay = 400;
+            this.toolTipMain.ReshowDelay = 100;
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblHeader = new System.Windows.Forms.Label();
             this.pnlStatus = new System.Windows.Forms.Panel();
@@ -41,6 +46,9 @@ namespace CMS.Presentation
             this.lblRootName = new System.Windows.Forms.Label();
             this.lblPreview = new System.Windows.Forms.Label();
             this.lblPathBreadcrumb = new System.Windows.Forms.Label();
+            this.pnlOrgToolbar = new System.Windows.Forms.Panel();
+            this.btnExpandAll = new System.Windows.Forms.Button();
+            this.btnCollapseAll = new System.Windows.Forms.Button();
             this.pnlHeader.SuspendLayout();
             this.pnlStatus.SuspendLayout();
             this.pnlFooter.SuspendLayout();
@@ -49,6 +57,7 @@ namespace CMS.Presentation
             this.splitMain.Panel2.SuspendLayout();
             this.splitMain.SuspendLayout();
             this.pnlLeft.SuspendLayout();
+            this.pnlOrgToolbar.SuspendLayout();
             this.pnlListBox.SuspendLayout();
             this.pnlRight.SuspendLayout();
             this.pnlTree.SuspendLayout();
@@ -186,6 +195,7 @@ namespace CMS.Presentation
             this.pnlLeft.Controls.Add(this.lblTemplate);
             this.pnlLeft.Controls.Add(this.sepOrgTemplate);
             this.pnlLeft.Controls.Add(this.treeOrgUnit);
+            this.pnlLeft.Controls.Add(this.pnlOrgToolbar);
             this.pnlLeft.Controls.Add(this.lblOrgUnit);
             this.pnlLeft.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlLeft.Location = new System.Drawing.Point(0, 0);
@@ -251,20 +261,67 @@ namespace CMS.Presentation
             // 
             // treeOrgUnit
             // 
-            this.treeOrgUnit.Dock         = System.Windows.Forms.DockStyle.Top;
-            this.treeOrgUnit.Font         = new System.Drawing.Font("Segoe UI", 9.5f);
-            this.treeOrgUnit.Height       = 200;
-            this.treeOrgUnit.HideSelection = false;
-            this.treeOrgUnit.FullRowSelect = true;
-            this.treeOrgUnit.ShowLines    = true;
-            this.treeOrgUnit.ShowPlusMinus = true;
-            this.treeOrgUnit.BorderStyle  = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.treeOrgUnit.Name         = "treeOrgUnit";
-            this.treeOrgUnit.TabIndex     = 0;
-            this.treeOrgUnit.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeOrgUnit_AfterSelect);
-            // 
+            this.treeOrgUnit.Dock            = System.Windows.Forms.DockStyle.Top;
+            this.treeOrgUnit.Font            = new System.Drawing.Font("Segoe UI", 9.5f);
+            this.treeOrgUnit.Height          = 200;
+            this.treeOrgUnit.HideSelection   = false;
+            this.treeOrgUnit.FullRowSelect   = true;
+            this.treeOrgUnit.ShowLines       = true;
+            this.treeOrgUnit.ShowPlusMinus   = true;
+            this.treeOrgUnit.Scrollable      = true;
+            this.treeOrgUnit.ShowNodeToolTips = true;
+            this.treeOrgUnit.BorderStyle     = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.treeOrgUnit.Name            = "treeOrgUnit";
+            this.treeOrgUnit.TabIndex        = 0;
+            this.treeOrgUnit.AfterSelect    += new System.Windows.Forms.TreeViewEventHandler(this.TreeOrgUnit_AfterSelect);
+            //
+            // pnlOrgToolbar
+            //
+            this.pnlOrgToolbar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(243)))), ((int)(((byte)(250)))));
+            this.pnlOrgToolbar.Controls.Add(this.btnCollapseAll);
+            this.pnlOrgToolbar.Controls.Add(this.btnExpandAll);
+            this.pnlOrgToolbar.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlOrgToolbar.Height = 28;
+            this.pnlOrgToolbar.Name = "pnlOrgToolbar";
+            this.pnlOrgToolbar.Padding = new System.Windows.Forms.Padding(0, 3, 0, 3);
+            this.pnlOrgToolbar.TabIndex = 5;
+            //
+            // btnExpandAll
+            //
+            this.btnExpandAll.BackColor = System.Drawing.Color.White;
+            this.btnExpandAll.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnExpandAll.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(190)))), ((int)(((byte)(215)))));
+            this.btnExpandAll.FlatAppearance.BorderSize = 1;
+            this.btnExpandAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnExpandAll.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.btnExpandAll.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.btnExpandAll.Location = new System.Drawing.Point(0, 3);
+            this.btnExpandAll.Name = "btnExpandAll";
+            this.btnExpandAll.Size = new System.Drawing.Size(90, 22);
+            this.btnExpandAll.TabIndex = 0;
+            this.btnExpandAll.Text = "⊞ ขยายทั้งหมด";
+            this.btnExpandAll.UseVisualStyleBackColor = false;
+            this.btnExpandAll.Click += new System.EventHandler(this.BtnExpandAll_Click);
+            //
+            // btnCollapseAll
+            //
+            this.btnCollapseAll.BackColor = System.Drawing.Color.White;
+            this.btnCollapseAll.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCollapseAll.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(190)))), ((int)(((byte)(215)))));
+            this.btnCollapseAll.FlatAppearance.BorderSize = 1;
+            this.btnCollapseAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCollapseAll.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.btnCollapseAll.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
+            this.btnCollapseAll.Location = new System.Drawing.Point(94, 3);
+            this.btnCollapseAll.Name = "btnCollapseAll";
+            this.btnCollapseAll.Size = new System.Drawing.Size(80, 22);
+            this.btnCollapseAll.TabIndex = 1;
+            this.btnCollapseAll.Text = "⊟ ยุบทั้งหมด";
+            this.btnCollapseAll.UseVisualStyleBackColor = false;
+            this.btnCollapseAll.Click += new System.EventHandler(this.BtnCollapseAll_Click);
+            //
             // lblOrgUnit
-            // 
+            //
             this.lblOrgUnit.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblOrgUnit.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.lblOrgUnit.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(31)))), ((int)(((byte)(56)))), ((int)(((byte)(100)))));
@@ -300,14 +357,16 @@ namespace CMS.Presentation
             // 
             // treePreview
             // 
-            this.treePreview.BackColor = System.Drawing.Color.White;
-            this.treePreview.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.treePreview.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.treePreview.Font = new System.Drawing.Font("Segoe UI", 9.5F);
-            this.treePreview.Location = new System.Drawing.Point(0, 0);
-            this.treePreview.Name = "treePreview";
-            this.treePreview.Size = new System.Drawing.Size(274, 254);
-            this.treePreview.TabIndex = 0;
+            this.treePreview.BackColor       = System.Drawing.Color.White;
+            this.treePreview.BorderStyle     = System.Windows.Forms.BorderStyle.None;
+            this.treePreview.Dock            = System.Windows.Forms.DockStyle.Fill;
+            this.treePreview.Font            = new System.Drawing.Font("Segoe UI", 9.5F);
+            this.treePreview.Location        = new System.Drawing.Point(0, 0);
+            this.treePreview.Name            = "treePreview";
+            this.treePreview.Scrollable      = true;
+            this.treePreview.ShowNodeToolTips = true;
+            this.treePreview.Size            = new System.Drawing.Size(274, 254);
+            this.treePreview.TabIndex        = 0;
             // 
             // pnlOptions
             // 
@@ -367,6 +426,7 @@ namespace CMS.Presentation
             this.txtRootName.Name = "txtRootName";
             this.txtRootName.Size = new System.Drawing.Size(276, 24);
             this.txtRootName.TabIndex = 2;
+            this.txtRootName.TextChanged += new System.EventHandler(this.TxtRootName_TextChanged);
             // 
             // lblRootName
             // 
@@ -410,13 +470,14 @@ namespace CMS.Presentation
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(803, 544);
+            this.ClientSize = new System.Drawing.Size(903, 580);
+            this.MinimumSize = new System.Drawing.Size(700, 520);
             this.Controls.Add(this.splitMain);
             this.Controls.Add(this.pnlStatus);
             this.Controls.Add(this.pnlFooter);
             this.Controls.Add(this.pnlHeader);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "ApplyTemplateDialog";
@@ -431,6 +492,7 @@ namespace CMS.Presentation
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).EndInit();
             this.splitMain.ResumeLayout(false);
             this.pnlLeft.ResumeLayout(false);
+            this.pnlOrgToolbar.ResumeLayout(false);
             this.pnlListBox.ResumeLayout(false);
             this.pnlRight.ResumeLayout(false);
             this.pnlTree.ResumeLayout(false);
@@ -441,6 +503,10 @@ namespace CMS.Presentation
         }
 
         // ── Designer fields ───────────────────────────────────────────────────
+        private System.Windows.Forms.ToolTip        toolTipMain;
+        private System.Windows.Forms.Panel          pnlOrgToolbar;
+        private System.Windows.Forms.Button         btnExpandAll;
+        private System.Windows.Forms.Button         btnCollapseAll;
         private System.Windows.Forms.Panel          pnlHeader;
         private System.Windows.Forms.Label          lblHeader;
         private System.Windows.Forms.Panel          pnlStatus;

@@ -37,6 +37,9 @@ namespace CMS.Presentation
         private Dictionary<int, string> _divisionNameMap = new Dictionary<int, string>();   // DivisionId -> Name (Employee API)
         private Dictionary<int, string> _orgUnitNameMap = new Dictionary<int, string>();    // OrgUnitID -> Name (DB)
 
+        // Parent folder — used to determine whether the conf-level dropdown is editable.
+        private readonly Folder _parentFolder;
+
         // ── Constructor ──────────────────────────────────────────────────────
 
         public PermissionForm(
@@ -51,7 +54,8 @@ namespace CMS.Presentation
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
             IUserAccessOrgLookupController orgLookupController = null,
             IFileDocumentLookupController fileDocumentLookupController = null,
-            IAuditService auditService = null)
+            IAuditService auditService = null,
+            Folder parentFolder = null)
         {
             if (permissionService == null) throw new ArgumentNullException("permissionService");
             if (approvalService == null) throw new ArgumentNullException("approvalService");
@@ -60,6 +64,7 @@ namespace CMS.Presentation
             if (user == null) throw new ArgumentNullException("user");
 
             _folder = folder;
+            _parentFolder = parentFolder;
             _auditLogController = new AuditLogController(auditService);
             _currentUser = user;
             _userAccountController = userAccountLookupController;
@@ -148,6 +153,25 @@ namespace CMS.Presentation
                 // Color swatch + text
                 pnlColorSwatch.BackColor = ConfidentialityColor(lvl);
                 lblColorText.Text = ConfidentialityColorLabel(lvl);
+
+                // ── Confidentiality-level edit rules ─────────────────────────
+                // Rule: เปลี่ยนระดับความลับได้เฉพาะ Folder ที่อยู่ภายใต้ Conf-Root โดยตรง
+                //  - Conf-Root เอง (ParentFolderID = null) → Lock
+                //  - Sub-folder ลึกกว่า 1 ชั้น (parent ไม่ใช่ Conf-Root) → Lock
+                bool isConfRoot = _folder.ParentFolderID == null;
+                bool parentIsConfRoot = _parentFolder != null && _parentFolder.ParentFolderID == null;
+                bool canChangeLevel = !isConfRoot && (_parentFolder == null || parentIsConfRoot);
+                if (!canChangeLevel)
+                {
+                    cboConfLevel.Enabled = false;
+                    cboConfLevel.BackColor = System.Drawing.SystemColors.Control;
+                    string reason = isConfRoot
+                        ? "Conf-Root Folder ระดับความลับถูก Lock ไม่สามารถเปลี่ยนได้"
+                        : "เปลี่ยนระดับความลับได้เฉพาะ Folder ที่อยู่ภายใต้ Conf-Root โดยตรงเท่านั้น";
+                    var tip = new ToolTip();
+                    tip.SetToolTip(cboConfLevel, reason);
+                    tip.SetToolTip(lblLevelLabel, reason);
+                }
 
                 txtFolderName.Text = _folder.FolderName ?? string.Empty;
                 txtPhysicalPath.Text = _folder.PhysicalPath ?? string.Empty;
@@ -1515,12 +1539,21 @@ namespace CMS.Presentation
                     changed = true;
                 }
 
-                // Save confidentiality level
-                if (cboConfLevel.SelectedIndex >= 0)
+                // Save confidentiality level — only when the dropdown is enabled (hierarchy allows change)
+                if (cboConfLevel.Enabled && cboConfLevel.SelectedIndex >= 0)
                 {
                     int newLevel = cboConfLevel.SelectedIndex + 1;
                     if (_folder.ConfidentialityLevel != newLevel)
                     {
+                        // Guard: conf-root folders and deep sub-folders cannot change level.
+                        bool isConfRoot = _folder.ParentFolderID == null;
+                        bool parentIsConfRoot = _parentFolder != null && _parentFolder.ParentFolderID == null;
+                        if (isConfRoot || (_parentFolder != null && !parentIsConfRoot))
+                        {
+                            ShowError("เปลี่ยนระดับความลับได้เฉพาะ Folder ที่อยู่ภายใต้ Conf-Root โดยตรงเท่านั้น");
+                            return;
+                        }
+
                         _presenter.ChangeConfidentialityLevel(_folder.FolderId, newLevel);
                         _folder.ConfidentialityLevel = newLevel;
                         changed = true;

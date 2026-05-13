@@ -130,8 +130,8 @@ namespace CMS.Presentation
             // 
             this.btnDeactivate.Name = "btnDeactivate";
             this.btnDeactivate.Size = new System.Drawing.Size(91, 24);
-            this.btnDeactivate.Text = "⏸️ ปิดใช้งาน";
-            this.btnDeactivate.ToolTipText = "ปิดใช้งานหน่วยงาน";
+            this.btnDeactivate.Text = "❌ ปิดใช้งาน";
+            this.btnDeactivate.ToolTipText = "ปิดหน้าต่างนี้";
             this.btnDeactivate.Click += new System.EventHandler(this.btnDeactivate_Click);
             // 
             // splitterMain

@@ -50,8 +50,10 @@ namespace CMS.Presentation
                 foreach (var req in _pendingRequests)
                 {
                     var item = new ListViewItem(req.RequestID.ToString());
-                    item.SubItems.Add(RequestTypeLabel(req.RequestType));
+                    string effectiveType = EffectiveRequestType(req.RequestType, req.Remark);
+                    item.SubItems.Add(RequestTypeLabel(effectiveType));
                     item.SubItems.Add(req.Subject ?? "—");
+                    item.SubItems.Add(PrincipalTypeLabel(effectiveType, req.Remark));
                     item.SubItems.Add(ResolveRequesterName(req.RequestedBy));
                     item.SubItems.Add(req.RequestedDate.ToString("dd/MM/yy HH:mm"));
                     item.SubItems.Add(req.ExpiryDate.HasValue
@@ -323,22 +325,77 @@ namespace CMS.Presentation
             }
         }
 
-        private static string RequestTypeLabel(string t)
+        /// <summary>
+        /// Resolves the true semantic type of a request.
+        /// CHANGE_PERMISSION stored as a fallback for INTERNAL_SHARE (when DB constraint
+        /// didn't include INTERNAL_SHARE yet) is detected via the Remark prefix.
+        /// </summary>
+        private static string EffectiveRequestType(string requestType, string remark)
         {
-            switch ((t ?? "").ToUpper())
+            string rt = (requestType ?? "").Trim().ToUpperInvariant();
+            if ((rt == "CHANGE_PERMISSION" || rt == "PERMISSION") &&
+                !string.IsNullOrEmpty(remark) &&
+                remark.StartsWith("InternalShareFile", StringComparison.OrdinalIgnoreCase))
+                return "INTERNAL_SHARE";
+            return rt;
+        }
+
+        private static string RequestTypeLabel(string effectiveType)
+        {
+            switch ((effectiveType ?? "").ToUpperInvariant())
             {
                 case "CREATE_HC":         return "🔐 สร้าง Folder 1HC";
                 case "PERMISSION":
                 case "CHANGE_PERMISSION": return "🔐 สิทธิ์ Folder";
                 case "INTERNAL_SHARE":    return "🔗 แชร์ไฟล์ภายใน";
                 case "EXTERNAL_SHARE":    return "🌐 แชร์ภายนอก";
+                case "UPLOAD_HC":
                 case "UPLOAD":            return "📤 อัปโหลดไฟล์";
+                case "DOWNLOAD_FILE":      return "⬇️ ดาวน์โหลดไฟล์";
                 case "DELETE":
                 case "DELETE_FILE":
                 case "FILE_DELETE":       return "🗑 ลบไฟล์";
                 case "DELETE_FOLDER":     return "🗑 ลบ Folder";
                 case "FOLDER":            return "📁 จัดการ Folder";
-                default:                  return t ?? "—";
+                default:                  return effectiveType ?? "—";
+            }
+        }
+
+        private static string PrincipalTypeLabel(string effectiveType, string remark)
+        {
+            // Only share-type requests have a meaningful recipient group.
+            // All other types (delete, create-HC, upload, external-share, folder-mgmt) show "—".
+            switch ((effectiveType ?? "").ToUpperInvariant())
+            {
+                case "INTERNAL_SHARE":
+                case "CHANGE_PERMISSION":
+                case "PERMISSION":
+                    break; // fall through to parse
+                default:
+                    return "—";
+            }
+
+            if (string.IsNullOrEmpty(remark))
+                return "—";
+
+            // Parse "PrincipalType:N" token from the Remark string
+            int principalTypeId = -1;
+            foreach (string token in remark.Split(' '))
+            {
+                if (token.StartsWith("PrincipalType:", StringComparison.OrdinalIgnoreCase))
+                {
+                    int.TryParse(token.Substring("PrincipalType:".Length), out principalTypeId);
+                    break;
+                }
+            }
+
+            switch (principalTypeId)
+            {
+                case 1: return "👤 User";
+                case 2: return "🎭 Role";
+                case 3: return "🏢 Department";
+                case 4: return "👥 Group";
+                default: return "—";
             }
         }
 
@@ -351,6 +408,7 @@ namespace CMS.Presentation
                 case "DELETE_FILE":
                 case "FILE_DELETE":
                 case "DELETE_FOLDER":
+                case "DOWNLOAD_FILE":
                     return true;
                 default:
                     return false;

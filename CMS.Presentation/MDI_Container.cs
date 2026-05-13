@@ -1156,18 +1156,23 @@ namespace CMS.Presentation
 
         private void OpenFolderSettings()
         {
-            // Get selected folder from active FolderForm
+            // Get selected folder from active FolderForm.
+            // Priority: content-panel selection (e.g. user clicked Folder01 inside the list)
+            // then tree selection, then first folder in tree as a last resort.
             Folder selectedFolder = null;
             FolderForm activeFolderForm = null;
             foreach (Form child in MdiChildren)
             {
                 var ff = child as FolderForm;
-                if (ff != null) { activeFolderForm = ff; selectedFolder = ff.SelectedFolder; break; }
+                if (ff != null) { activeFolderForm = ff; break; }
             }
 
-            // Fallback: use first folder in tree when none is explicitly selected
-            if (selectedFolder == null && activeFolderForm != null)
-                selectedFolder = activeFolderForm.FirstFolderInTree;
+            if (activeFolderForm != null)
+            {
+                selectedFolder = activeFolderForm.SelectedFolderInContents
+                              ?? activeFolderForm.SelectedFolder
+                              ?? activeFolderForm.FirstFolderInTree;
+            }
 
             if (selectedFolder == null)
             {
@@ -1195,6 +1200,14 @@ namespace CMS.Presentation
                 return;
             }
 
+            // Look up parent folder so PermissionForm can enforce conf-level edit rules.
+            Folder parentFolder = null;
+            if (selectedFolder.ParentFolderID.HasValue && _folderReadLookupController != null)
+            {
+                try { parentFolder = _folderReadLookupController.GetById(selectedFolder.ParentFolderID.Value); }
+                catch { }
+            }
+
             using (var dlg = new PermissionForm(
                 permissionService: _permissionService,
                 approvalService: _approvalService,
@@ -1207,7 +1220,8 @@ namespace CMS.Presentation
                 employeeApiService: null,
                 orgLookupController: _userAccessOrgLookupController,
                 fileDocumentLookupController: _fileDocumentLookupController,
-                auditService: _auditService))
+                auditService: _auditService,
+                parentFolder: parentFolder))
             {
                 dlg.ShowDialog(this);
             }
@@ -1447,11 +1461,9 @@ namespace CMS.Presentation
                 }
                 else
                 {
-                    // External share — single file only (BR-004-08 restriction applies)
-                    var singleFile = selectedFiles?.Count > 0 ? selectedFiles[0] : null;
                     using (var shareDialog = new ShareDialogExternal(
                         _shareCommandController, _currentUser,
-                        singleFile, selectedFolder))
+                        selectedFiles, selectedFolder))
                     {
                         shareDialog.ShowDialog(this);
                     }

@@ -16,5 +16,14 @@ namespace CMS.Services.Interfaces
         IEnumerable<ApprovalRequest> GetApprovalsByFolder(int folderId);
         IEnumerable<ApprovalRequest> GetAllApprovalsByFolder(int folderId);
         ApprovalRequest RequestFolderDelete(int folderId, string reason, UserContext user);
+
+        /// <summary>ส่งคำขออนุมัติดาวน์โหลดไฟล์ — ทุก role ส่งได้</summary>
+        ApprovalRequest SubmitDownloadRequest(int fileId, string reason, int approverId, UserContext user);
+
+        /// <summary>หา approved download request ที่ยังไม่ได้ใช้งาน (status=2) สำหรับ fileId + userId</summary>
+        ApprovalRequest GetApprovedDownloadRequest(int fileId, int userId);
+
+        /// <summary>บันทึกว่า approval ถูกใช้งานแล้ว (status=2→5=Downloaded)</summary>
+        void ConsumeDownloadApproval(int requestId, UserContext user);
     }
 }

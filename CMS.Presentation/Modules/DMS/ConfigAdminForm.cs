@@ -153,5 +153,10 @@ namespace CMS.Presentation
             if (GeneratePdpaReportRequested != null)
                 GeneratePdpaReportRequested(this, EventArgs.Empty);
         }
+
+        private void OnCloseClick(object sender, EventArgs e)
+        {
+            this.Close();
+        }
     }
 }

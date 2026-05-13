@@ -249,6 +249,34 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public ApprovalRequest GetApprovedDownloadRequest(int fileId, int userId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT TOP 1 RequestID, RequestType, FolderID, FileID, PermissionID, RequestedBy, " +
+                    "RequestedDate, RequestStatus, Subject, Remark, ExpiryDate, " +
+                    "ResolvedBy, ResolvedDate, ResolveRemark " +
+                    "FROM workflow.ApprovalRequest " +
+                    "WHERE RequestType = 'DOWNLOAD_FILE' " +
+                    "  AND FileID = @FileID " +
+                    "  AND RequestedBy = @RequestedBy " +
+                    "  AND RequestStatus = 2 " +  // 2=Approved
+                    "ORDER BY RequestedDate DESC", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@FileID",      fileId);
+                    cmd.Parameters.AddWithValue("@RequestedBy", userId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read()) return MapRequest(reader);
+                        return null;
+                    }
+                }
+            }
+        }
+
         public void DeletePendingHCRequestsForOrgUnit(int orgUnitId)
         {
             using (var conn = new SqlConnection(_connectionString))

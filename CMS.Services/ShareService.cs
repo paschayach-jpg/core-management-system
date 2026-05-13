@@ -210,15 +210,17 @@ namespace CMS.Services
                     throw new InvalidOperationException("ไม่สามารถกำหนดอายุเกิน 1 ปีได้");
             }
 
-            // Regular users (Officer/SrOfficer) must go through approval before share takes effect
-            if (user.AppRole < 3 && _approvalRepository != null && _userAccountRepository != null)
+            // Department shares (PrincipalType == 3) always require Manager approval because
+            // they grant visibility to an entire org unit — the blast radius is too large to bypass.
+            // Officer/SrOfficer (AppRole < 3) always need approval regardless of principal type.
+            bool requiresApproval = request.PrincipalType == 3 || user.AppRole < 3;
+            if (requiresApproval && _approvalRepository != null && _userAccountRepository != null)
             {
                 SubmitInternalShareForApproval(request, user, fileToShare);
                 return null;
             }
 
-            // Manager/Admin: create permission immediately
-            // Create FilePermission record
+            // Manager/Admin sharing with a specific User, Role, or Group: create permission immediately
             var filePermission = new FilePermission
             {
                 FileID = request.FileID,
@@ -238,7 +240,6 @@ namespace CMS.Services
             int permissionId = _filePermissionRepository.Insert(filePermission);
             filePermission.FilePermissionID = permissionId;
 
-            // Log audit entry
             _auditService.Log(new AuditEntry
             {
                 Module = "FileSharing",
@@ -253,16 +254,20 @@ namespace CMS.Services
                 AuditDate = DateTime.Now
             });
 
-            // Send notification
-            var file = _fileDocumentRepository.GetById(request.FileID);
-            _notificationService.Send(new NotificationRequest
+            // Only notify when PrincipalType == 1 (User): PrincipalID is a valid UserID.
+            // For Role/Group the recipient is not a single user; skip individual notification.
+            if (request.PrincipalType == 1)
             {
-                RecipientUserId = request.PrincipalID,
-                EventType = "InternalShareCreated",
-                RelatedEntityId = permissionId.ToString(),
-                MessageText = string.Format("File '{0}' has been shared with you by {1}. Access level: Read={2}, Write={3}, Delete={4}",
-                    file?.OriginalFileName ?? "Unknown", user.ADUserName, request.CanRead, request.CanWrite, request.CanDelete)
-            });
+                var file = _fileDocumentRepository.GetById(request.FileID);
+                _notificationService.Send(new NotificationRequest
+                {
+                    RecipientUserId = request.PrincipalID,
+                    EventType = "InternalShareCreated",
+                    RelatedEntityId = permissionId.ToString(),
+                    MessageText = string.Format("File '{0}' has been shared with you by {1}. Access level: Read={2}, Write={3}, Delete={4}",
+                        file?.OriginalFileName ?? "Unknown", user.ADUserName, request.CanRead, request.CanWrite, request.CanDelete)
+                });
+            }
 
             return filePermission;
         }

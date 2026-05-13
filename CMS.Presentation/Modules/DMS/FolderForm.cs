@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
+using CMS.Presentation.Modules.DMS;
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
@@ -1040,16 +1041,38 @@ namespace CMS.Presentation
                 return;
             }
 
-            // ให้ user เลือก folder ปลายทาง
+            // ─── ขั้นที่ 1: ตรวจสอบว่ามี approved download request อยู่แล้วหรือไม่ ───
+            ApprovalRequest approved = null;
+            if (_approvalFolderController != null)
+            {
+                try { approved = _approvalFolderController.GetApprovedDownloadRequest(file.FileID, _user.UserID); }
+                catch { /* ถ้า query fail ให้ผ่านไปขั้นส่งคำขอแทน */ }
+            }
+
+            if (approved == null)
+            {
+                // ─── ขั้นที่ 2: ยังไม่มี approval → ให้ส่งคำขอก่อน ───────────────
+                using (var dlg = new DownloadApprovalRequestDialog(
+                    file, _user, _approvalFolderController, _userAccountLookupController))
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        ShowInfo(string.Format(
+                            "ส่งคำขอดาวน์โหลด '{0}' เรียบร้อยแล้ว\r\nกรุณารอการอนุมัติจาก Manager",
+                            file.OriginalFileName));
+                    }
+                }
+                return;
+            }
+
+            // ─── ขั้นที่ 3: มี approved → ให้ดาวน์โหลดได้ทันที ──────────────────
             using (var sfd = new SaveFileDialog())
             {
-                sfd.Title = "บันทึกไฟล์";
+                sfd.Title    = "บันทึกไฟล์";
                 sfd.FileName = file.OriginalFileName;
 
-                // กำหนด filter ตาม extension
                 string ext = (file.FileExtension ?? "").TrimStart('.').ToLower();
-                sfd.Filter = string.Format("{0} files (*.{1})|*.{1}|All files (*.*)|*.*",
-                    ext.ToUpper(), ext);
+                sfd.Filter     = string.Format("{0} files (*.{1})|*.{1}|All files (*.*)|*.*", ext.ToUpper(), ext);
                 sfd.DefaultExt = ext;
 
                 if (sfd.ShowDialog(this) != DialogResult.OK) return;
@@ -1071,6 +1094,11 @@ namespace CMS.Presentation
                     {
                         result.FileStream.CopyTo(fs);
                     }
+
+                    // บันทึกว่า approval ถูก consume แล้ว (status 2→5)
+                    if (_approvalFolderController != null)
+                        try { _approvalFolderController.ConsumeDownloadApproval(approved.RequestID, _user); }
+                        catch { /* consume ล้มเหลวไม่ block การ download */ }
 
                     ShowInfo(string.Format("ดาวน์โหลด '{0}' เรียบร้อยแล้ว", file.OriginalFileName));
                 }
@@ -1582,6 +1610,9 @@ namespace CMS.Presentation
 
         private void LoadMainMenuTree()
         {
+            var expandedTexts = new HashSet<string>();
+            CollectConfExpandedTexts(_treeMainMenu.Nodes, expandedTexts);
+
             _treeMainMenu.Nodes.Clear();
             _treeMainMenu.BeginUpdate();
 
@@ -1593,6 +1624,9 @@ namespace CMS.Presentation
             {
                 _treeMainMenu.EndUpdate();
             }
+
+            if (expandedTexts.Count > 0)
+                RestoreConfExpandedTexts(_treeMainMenu.Nodes, expandedTexts);
         }
 
         private bool TryLoadMainMenuFromManagement()
@@ -2259,6 +2293,11 @@ namespace CMS.Presentation
 
         private void MainMenuTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
+            // PlusMinus (+/-) click: let TreeView handle expand/collapse natively, never execute action
+            var hit = _treeMainMenu.HitTest(e.Location);
+            if ((hit.Location & TreeViewHitTestLocations.PlusMinus) == TreeViewHitTestLocations.PlusMinus)
+                return;
+
             string tag = MapConfiguredActionToTag(e.Node.Tag as string);
 
             // Try to map MenuItem if Tag is not a direct action string.
@@ -2267,9 +2306,7 @@ namespace CMS.Presentation
 
             if (string.IsNullOrWhiteSpace(tag))
             {
-                // Group node — expand/collapse only when clicking the label text,
-                // NOT the +/- icon (TreeView already handles that natively to avoid double-toggle)
-                var hit = _treeMainMenu.HitTest(e.Location);
+                // Group node — expand/collapse only when clicking the label text or icon
                 if (hit.Location == TreeViewHitTestLocations.Label ||
                     hit.Location == TreeViewHitTestLocations.Image ||
                     hit.Location == TreeViewHitTestLocations.StateImage)
@@ -2286,14 +2323,16 @@ namespace CMS.Presentation
             lblOrgUnitStatus.Text = "☰ " + e.Node.Text;
 
             string errorMessage;
-            if (MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(e.Node.Text), out errorMessage))
-                return;
+            MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(e.Node.Text), out errorMessage);
 
             if (!string.IsNullOrWhiteSpace(errorMessage))
             {
                 MessageBox.Show("ไม่สามารถเปิดหน้าจอ " + e.Node.Text + " ได้ในขณะนี้\nเนื่องจาก: " + errorMessage,
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+
+            // Refresh menu tree after every action to pick up latest data
+            LoadMainMenuTree();
         }
 
         private MenuActionContext BuildMenuActionContext(string menuText)
@@ -2421,8 +2460,9 @@ namespace CMS.Presentation
         {
             if (_showingMainMenuView)
             {
-                ToggleFolderExplorerControlsVisibility();
-                SetMainMenuTreeFullHeight(!_folderExplorerControlsVisible);
+                // Always keep folder explorer hidden and refresh menu data
+                SetFolderExplorerControlsVisibility(false);
+                LoadMainMenuTree();
                 return;
             }
 
@@ -2431,7 +2471,6 @@ namespace CMS.Presentation
             SetFolderExplorerControlsVisibility(false);
             SetMainMenuTreeFullHeight(true);
 
-            // Load menu tree — stays collapsed at Level 0; user expands as needed.
             LoadMainMenuTree();
 
             treeOrgUnit.Visible = false;

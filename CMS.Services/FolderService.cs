@@ -793,10 +793,32 @@ namespace CMS.Services
             if (user.AppRole < 3)
                 throw new UnauthorizedAccessException("Changing confidentiality level requires Manager or Admin role.");
 
+            if (newLevel < 1 || newLevel > 4)
+                throw new ArgumentOutOfRangeException("newLevel", "Confidentiality level must be between 1 and 4.");
+
             var folder = _folderRepository.GetById(folderId);
             if (folder == null)
                 throw new InvalidOperationException(string.Format("Folder with ID {0} was not found.", folderId));
 
+            // BR-001-07: Conf-Root folders are locked — cannot change their confidentiality level.
+            if (folder.ParentFolderID == null)
+                throw new InvalidOperationException("Conf-Root folder ระดับความลับถูก Lock ไม่สามารถเปลี่ยนได้");
+
+            // Business Rule: Only direct children of a conf-root may change level.
+            // Deeper sub-folders must follow their parent (cannot change independently).
+            var parent = _folderRepository.GetById(folder.ParentFolderID.Value);
+            if (parent == null || parent.ParentFolderID != null)
+                throw new InvalidOperationException(
+                    "เปลี่ยนระดับความลับได้เฉพาะ Folder ที่อยู่ภายใต้ Conf-Root โดยตรงเท่านั้น");
+
+            // Move folder to the conf-root of the requested level within the same OrgUnit.
+            var confRoots = _folderRepository.GetRootFoldersByOrgUnit(folder.OrgUnitID);
+            var newRoot = confRoots.FirstOrDefault(r => r.ConfidentialityLevel == newLevel);
+            if (newRoot == null)
+                throw new InvalidOperationException(
+                    string.Format("ไม่พบ Conf-Root ระดับ {0} ใน OrgUnit นี้", newLevel));
+
+            folder.ParentFolderID = newRoot.FolderID;
             folder.ConfidentialityLevel = newLevel;
             folder.InheritPermission = false;
             _folderRepository.Update(folder);
@@ -811,7 +833,8 @@ namespace CMS.Services
             }
 
             Log(user, "Folder", "UPDATE", "storage.Folder", folderId, 1,
-                string.Format("Changed confidentiality level of folder '{0}' to {1}.", folder.FolderName, newLevel));
+                string.Format("Changed confidentiality level of folder '{0}' to {1}, moved under root '{2}'.",
+                    folder.FolderName, newLevel, newRoot.FolderName));
         }
 
         public IEnumerable<Folder> GetRootFolders(int? orgUnitId, UserContext user)

@@ -588,21 +588,7 @@ namespace CMS.Presentation
 
         private void btnDeactivate_Click(object sender, EventArgs e)
         {
-            var selected = SelectedOrgUnit;
-            if (selected == null)
-            {
-                ShowError("Please select an OrgUnit to deactivate.");
-                return;
-            }
-
-            var confirm = MessageBox.Show(
-                string.Format("Deactivate '{0}'? This cannot be undone.", selected.Name),
-                "Confirm Deactivation",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-
-            if (confirm == DialogResult.Yes)
-                _presenter.DeactivateOrgUnit(selected.OrgUnitId);
+            this.Close();
         }
 
         private void btnDelete_Click(object sender, EventArgs e)
