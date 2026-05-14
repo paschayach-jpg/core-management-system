@@ -1,5 +1,4 @@
 using CMS.Controllers.KMS.KB.Interfaces;
-using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
@@ -11,27 +10,27 @@ namespace CMS.Controllers.KMS.KB
     public class KBMainController
     {
         private readonly IKBMainController  _view;
-        private readonly IKBCategoryService  _categoryService;
-        private readonly IKBArticleService   _articleService;
-        private readonly IKBVersionRepository _versionRepository;
-        private readonly UserContext         _user;
+        private readonly IKBCategoryService _categoryService;
+        private readonly IKBArticleService  _articleService;
+        private readonly UserContext        _user;
 
         private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
+        private int _currentPage = 1;
 
         public KBMainController(
             IKBMainController  view,
-            IKBCategoryService  categoryService,
-            IKBArticleService   articleService,
-            IKBVersionRepository versionRepository,
-            UserContext         user)
+            IKBCategoryService categoryService,
+            IKBArticleService  articleService,
+            UserContext        user)
         {
             if (view            == null) throw new ArgumentNullException("view");
             if (categoryService == null) throw new ArgumentNullException("categoryService");
             if (articleService  == null) throw new ArgumentNullException("articleService");
-            if (versionRepository == null) throw new ArgumentNullException("versionRepository");
             if (user            == null) throw new ArgumentNullException("user");
-            _view = view; _categoryService = categoryService;
-            _articleService = articleService; _versionRepository = versionRepository; _user = user;
+            _view            = view;
+            _categoryService = categoryService;
+            _articleService  = articleService;
+            _user            = user;
         }
 
         public void Initialize() { LoadCategoryTree(); }
@@ -70,16 +69,29 @@ namespace CMS.Controllers.KMS.KB
 
         public void LoadArticles()
         {
+            _currentPage = 1;
+            LoadArticlesAtPage();
+        }
+
+        public void GoToPage(int page)
+        {
+            _currentPage = page;
+            LoadArticlesAtPage();
+        }
+
+        private void LoadArticlesAtPage()
+        {
             try
             {
                 string keyword      = _view.SearchKeyword;
                 byte?  statusFilter = GetStatusFilter(_view.StatusFilterIndex);
                 int?   catId        = _view.SelectedCategoryId;
+                int    pageSize     = _view.PageSize;
+
+                if (!catId.HasValue) return;   // require a specific category selection
 
                 IEnumerable<KBArticle> articles;
-                if (string.IsNullOrEmpty(keyword) && !catId.HasValue && !statusFilter.HasValue)
-                    articles = _articleService.GetAll();
-                else if (string.IsNullOrEmpty(keyword) && !statusFilter.HasValue && catId.HasValue)
+                if (string.IsNullOrEmpty(keyword) && !statusFilter.HasValue)
                     articles = _articleService.GetByCategory(catId.Value);
                 else
                     articles = _articleService.Search(
@@ -87,15 +99,19 @@ namespace CMS.Controllers.KMS.KB
                         catId, statusFilter, null);
 
                 var list = articles.ToList();
-                
-                // Resolve latest version from KMS.t_KBVersion for each article
                 foreach (var article in list)
-                {
                     ResolveLatestVersion(article);
-                }
-                
-                _view.RenderArticles(list);
-                _view.ArticleCountText = string.Format("{0} บทความ", list.Count);
+
+                int totalCount = list.Count;
+                int totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling((double)totalCount / pageSize);
+                if (_currentPage > totalPages) _currentPage = totalPages;
+                if (_currentPage < 1)          _currentPage = 1;
+
+                var pageItems = list.Skip((_currentPage - 1) * pageSize).Take(pageSize).ToList();
+
+                _view.RenderArticles(pageItems);
+                _view.ArticleCountText = string.Format("{0} บทความ", totalCount);
+                _view.RenderPagination(totalCount, _currentPage, pageSize);
             }
             catch (Exception ex) { _view.ShowError("Load articles failed: " + ex.Message); }
         }
@@ -166,9 +182,9 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                var latest = _versionRepository.GetLatestByArticle(article.ArticleID);
-                if (latest != null)
-                    article.CurrentVersion = latest.VersionNumber;
+                int latest = _articleService.GetLatestVersionNumber(article.ArticleID);
+                if (latest > 0)
+                    article.CurrentVersion = latest;
             }
             catch { /* non-critical — keep whatever CurrentVersion was already set */ }
         }

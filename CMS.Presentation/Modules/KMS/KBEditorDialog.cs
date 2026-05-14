@@ -93,6 +93,46 @@ namespace CMS.Presentation.Modules.KMS
             try
             {
                 _presenter.Save(txtChangeDesc.Text.Trim());
+
+
+                //int articleId = (int)dgvRelatedSearch.Rows.Cast<DataGridViewRow>.wh (x => x.)// [e.RowIndex].Tag;
+
+                //foreach (DataGridViewRow row in dgvRelatedSearch.Rows)
+                //{
+                //    // ข้าม NewRow
+                //    if (row.IsNewRow)
+                //        continue;
+
+                //    // เช็ค null ก่อน
+                //    if (row.Tag != null)
+                //    {
+                //        int articleId = (int)row.Tag;
+
+                //        // process
+                //        MessageBox.Show(articleId.ToString());
+                //    }
+                //}
+
+
+                // Check if already linked
+                foreach (DataGridViewRow row in dgvRelatedLinked.Rows)
+                {
+                    try
+                    {
+                        _presenter.AddRelatedArticleLink((int)row.Tag);
+                        //if ((int)row.Tag == articleId)
+                        //{
+                        //    ShowInfo("บทความนี้ถูก Link อยู่แล้ว");
+                        //    return;
+                        //}
+                    }
+                    catch (Exception)
+                    {
+
+                        continue;
+                    }
+                    
+                }
             }
             catch (Exception ex)
             {
@@ -962,6 +1002,7 @@ namespace CMS.Presentation.Modules.KMS
                     int rowIndex = dgvRelatedSearch.Rows.Add(
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
+                        article.Summary ?? "-",
                         article.ArticleTypeName ?? "-",
                         article.ViewCount.ToString()
                     );
@@ -1062,6 +1103,7 @@ namespace CMS.Presentation.Modules.KMS
                     int rowIndex = dgvRelatedSearch.Rows.Add(
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
+                        article.Summary ?? "-",
                         article.ArticleTypeName ?? "-",
                         article.ViewCount.ToString()
                     );
@@ -2004,6 +2046,7 @@ namespace CMS.Presentation.Modules.KMS
                         index.ToString(),
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
+                        article.Summary ?? "-",
                         article.ArticleTypeName ?? "-"
                     );
                     
@@ -2135,6 +2178,7 @@ namespace CMS.Presentation.Modules.KMS
                     int rowIndex = dgvRelatedSearch.Rows.Add(
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
+                        article.Summary ?? "-",
                         article.ArticleTypeName ?? "-",
                         article.ViewCount.ToString()
                     );
@@ -2180,37 +2224,38 @@ namespace CMS.Presentation.Modules.KMS
                     return;
                 }
             }
-            
-            try
-            {
-                // Add link
-                _presenter.AddRelatedArticleLink(articleId);
-                
-                // Add to linked grid
-                int newIndex = dgvRelatedLinked.Rows.Count + 1;
-                int rowIndex = dgvRelatedLinked.Rows.Add(
-                    newIndex.ToString(),
-                    dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchCode"].Value,
-                    dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchTitle"].Value,
-                    dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchType"].Value
-                );
-                
-                dgvRelatedLinked.Rows[rowIndex].Tag = articleId;
-                dgvRelatedLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
-                    newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                
-                // Remove from search results
-                dgvRelatedSearch.Rows.RemoveAt(e.RowIndex);
-                
-                UpdateRelatedLinkedCount();
-                lblRelatedSearch.Text = string.Format("ผลการค้นหา ({0} รายการ) — ดับเบิลคลิกเพื่อเพิ่ม", dgvRelatedSearch.Rows.Count);
-                
-                ShowInfo("เพิ่มความเชื่อมโยงเรียบร้อยแล้ว");
-            }
-            catch (Exception ex)
-            {
-                ShowError("เพิ่มความเชื่อมโยงไม่สำเร็จ: " + ex.Message);
-            }
+
+            //try
+            //{
+            //    // Add link
+            //    _presenter.AddRelatedArticleLink(articleId);
+
+            //    // Add to linked grid
+            int newIndex = dgvRelatedLinked.Rows.Count + 1;
+            int rowIndex = dgvRelatedLinked.Rows.Add(
+                newIndex.ToString(),
+                dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchCode"].Value,
+                dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchTitle"].Value,
+                dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSummary"].Value,
+                dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchType"].Value
+            );
+
+            dgvRelatedLinked.Rows[rowIndex].Tag = articleId;
+            dgvRelatedLinked.Rows[rowIndex].DefaultCellStyle.BackColor =
+                newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+
+            // Remove from search results
+            dgvRelatedSearch.Rows.RemoveAt(e.RowIndex);
+
+            UpdateRelatedLinkedCount();
+            lblRelatedSearch.Text = string.Format("ผลการค้นหา ({0} รายการ) — ดับเบิลคลิกเพื่อเพิ่ม", dgvRelatedSearch.Rows.Count);
+
+            //    ShowInfo("เพิ่มความเชื่อมโยงเรียบร้อยแล้ว");
+            //}
+            //catch (Exception ex)
+            //{
+            //    ShowError("เพิ่มความเชื่อมโยงไม่สำเร็จ: " + ex.Message);
+            //}
         }
 
         private void TxtSearchRelatedNew_Enter(object sender, EventArgs e)

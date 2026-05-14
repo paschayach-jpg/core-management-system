@@ -33,6 +33,15 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private readonly Stack<ArticleViewerForm> _viewerHistory = new Stack<ArticleViewerForm>();
 
+        private int _currentPage = 1;
+
+        // ── Article cache for grid / card dual-render ────────────────────────────
+        private List<KBArticle> _cachedArticles    = new List<KBArticle>();
+        private bool            _tab2NeedsRefresh  = true;
+
+        // ── Suppress AfterSelect during programmatic tree population ─────────────
+        private bool _suppressCategorySelect = false;
+
         // ── Category settings embedded panel state ───────────────────────────────
         private KBCategoryForm _activeCategoryForm = null;
 
@@ -53,6 +62,7 @@ namespace CMS.Presentation.Modules.KMS
         public KBMainForm()
         {
             InitializeComponent();
+            InitializeArticleGrid();
 
             // pnlViewerHost is created here so the designer stays free of a Dock=Fill panel
             // that would block adding other controls. Runtime behaviour is identical.
@@ -138,16 +148,27 @@ namespace CMS.Presentation.Modules.KMS
             }
             InitFilterCombo();
             _presenter.Initialize();
-            // Ensure ArticleCardControl widths are properly calculated after form layout is complete
-            BeginInvoke(new Action(ResizeArticleCards));
         }
 
         private void KBMainForm_Resize(object sender, EventArgs e) { ResizeArticleCards(); }
 
         // ── IKBMainView ───────────────────────────────────────────────────
 
-        public string SearchKeyword      { get { return txtToolbarSearch.Text.Trim(); } }
+        public string SearchKeyword      { get { return new string(txtToolbarSearch.Text.Where(c => !char.IsWhiteSpace(c)).ToArray()); } }
         public int    StatusFilterIndex  { get { return cboStatus.SelectedIndex; } }
+
+        public int PageSize
+        {
+            get
+            {
+                switch (cboPageSize.SelectedIndex)
+                {
+                    case 1:  return 50;
+                    case 2:  return 100;
+                    default: return 20;
+                }
+            }
+        }
 
         public int? SelectedCategoryId  { get; set; }
 
@@ -162,6 +183,49 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         public void RenderArticles(IEnumerable<KBArticle> articles)
+        {
+            _cachedArticles = articles.ToList();
+
+            // Tab1 (grid) always renders immediately
+            PopulateGrid(_cachedArticles);
+
+            // Tab2 (cards) renders only when it is the active tab — otherwise mark dirty
+            if (tabArticles.SelectedTab == tabPage2)
+                PopulateCards(_cachedArticles);
+            else
+                _tab2NeedsRefresh = true;
+        }
+
+        private void PopulateGrid(List<KBArticle> articles)
+        {
+            dgvArticles.SuspendLayout();
+            dgvArticles.Rows.Clear();
+
+            for (int i = 0; i < articles.Count; i++)
+            {
+                var a = articles[i];
+                dgvArticles.Rows.Add(
+                    i + 1,
+                    //a.ArticleCode,
+                    a.Title,
+                    a.Summary,
+                    //a.ContentHTML,
+                    a.ArticleTypeName,
+                    a.StatusName,
+                    a.CategoryName,
+                    a.CurrentVersion > 0 ? "v" + a.CurrentVersion : "-",
+                    a.ViewCount,
+                    "👁️ Read",
+                    "✏️ Edit",
+                    "🔗 Share",
+                    a.Status == 1 ? "📤 Review" : ""
+                );
+            }
+
+            dgvArticles.ResumeLayout();
+        }
+
+        private void PopulateCards(List<KBArticle> articles)
         {
             flpArticles.SuspendLayout();
             flpArticles.Controls.Clear();
@@ -179,6 +243,7 @@ namespace CMS.Presentation.Modules.KMS
             }
             flpArticles.ResumeLayout();
             ResizeArticleCards();
+            _tab2NeedsRefresh = false;
         }
 
         public void ShowError(string message)
@@ -190,6 +255,57 @@ namespace CMS.Presentation.Modules.KMS
         {
             MessageBox.Show(reportText, "รายงาน Knowledge Base",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        public void RenderPagination(int totalCount, int currentPage, int pageSize)
+        {
+            _currentPage = currentPage;
+            int totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling((double)totalCount / pageSize);
+
+            int from = totalCount == 0 ? 0 : (currentPage - 1) * pageSize + 1;
+            int to   = Math.Min(currentPage * pageSize, totalCount);
+            lblPageInfo.Text = totalCount == 0
+                ? "ไม่มีรายการ"
+                : string.Format("แสดง {0}-{1} จาก {2} รายการ", from, to, totalCount);
+
+            btnPrevPage.Enabled = currentPage > 1;
+            btnNextPage.Enabled = currentPage < totalPages;
+
+            int startPage = Math.Max(1, currentPage - 1);
+            if (startPage + 2 > totalPages) startPage = Math.Max(1, totalPages - 2);
+
+            var pageBtns = new Button[] { btnPage1, btnPage2, btnPage3 };
+            for (int i = 0; i < pageBtns.Length; i++)
+            {
+                int pageNum = startPage + i;
+                if (pageNum <= totalPages)
+                {
+                    pageBtns[i].Visible   = true;
+                    pageBtns[i].Text      = pageNum.ToString();
+                    pageBtns[i].Tag       = pageNum;
+                    bool isCurrent        = pageNum == currentPage;
+                    pageBtns[i].BackColor = isCurrent
+                        ? Color.FromArgb(46, 116, 181)
+                        : Color.White;
+                    pageBtns[i].ForeColor = isCurrent
+                        ? Color.White
+                        : Color.FromArgb(26, 35, 50);
+                }
+                else
+                {
+                    pageBtns[i].Visible = false;
+                }
+            }
+
+            pnlPaginationButtons.Visible = totalPages > 1;
+        }
+
+        // ── Tab selection ────────────────────────────────────────────────────────
+
+        private void TabArticles_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tabArticles.SelectedTab == tabPage2 && _tab2NeedsRefresh)
+                PopulateCards(_cachedArticles);
         }
 
         // ── Search / filter handlers ─────────────────────────────────────────────
@@ -210,10 +326,10 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TreeCategories_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            if (_presenter == null) return;
-            if (e.Node == null) return;
+            if (_presenter == null || e.Node == null || _suppressCategorySelect) return;
             var cat = e.Node.Tag as KBCategory;
-            _presenter.OnCategorySelected(cat?.CategoryID, cat?.CategoryName);
+            if (cat == null) return;  // root node — no specific category selected
+            _presenter.OnCategorySelected(cat.CategoryID, cat.CategoryName);
         }
 
         // ── Article card click ───────────────────────────────────────────────────
@@ -230,8 +346,11 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             if (_editorFactory == null) return;
-            if (_editorFactory(null) == DialogResult.OK)
+            if (_editorFactory(null) != DialogResult.OK)
+            {
+                _presenter.LoadCategoryTree();
                 _presenter.LoadArticles();
+            }
         }
 
         private void BtnNewCategory_Click(object sender, EventArgs e)
@@ -257,12 +376,26 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             if (_importWizardFactory == null) return;
-            if (_importWizardFactory() == DialogResult.OK)
+            
+            try
             {
-                // Refresh the article list after successful import
-                _presenter.LoadArticles();
-                MessageBox.Show("นำเข้าข้อมูลเรียบร้อยแล้ว", "สำเร็จ",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                DialogResult result = _importWizardFactory();
+                switch (result)
+                {
+                    case DialogResult.OK :
+                    case DialogResult.Cancel :
+                        _presenter.LoadCategoryTree();
+                        _presenter.LoadArticles();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "เกิดข้อผิดพลาดในการนำเข้าข้อมูล:\n" + ex.Message,
+                    "ข้อผิดพลาด",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
@@ -482,10 +615,19 @@ namespace CMS.Presentation.Modules.KMS
             cboStatus.Items.Add("📦 Archived");
             cboStatus.SelectedIndex = 0;
 
-            cboType.SelectedIndex = 0;
+            cboType.SelectedIndex       = 0;
             cboDepartment.SelectedIndex = 0;
-            cboSortBy.SelectedIndex = 0;
-            cboPageSize.SelectedIndex = 0;
+            cboSortBy.SelectedIndex     = 0;
+            cboPageSize.SelectedIndex   = 0;
+
+            // Wire up after initial values are set to avoid spurious loads
+            btnPrevPage.Click  += BtnPrevPage_Click;
+            btnNextPage.Click  += BtnNextPage_Click;
+            btnPage1.Click     += BtnPageNumber_Click;
+            btnPage2.Click     += BtnPageNumber_Click;
+            btnPage3.Click     += BtnPageNumber_Click;
+            cboPageSize.SelectedIndexChanged += CboPageSize_SelectedIndexChanged;
+            btnClearFilter.Click += BtnClearFilter_Click;
         }
 
         private void BuildCategoryTree(
@@ -513,7 +655,10 @@ namespace CMS.Presentation.Modules.KMS
 
             treeCategories.EndUpdate();
             treeCategories.ExpandAll();
+
+            _suppressCategorySelect  = true;
             treeCategories.SelectedNode = rootNode;
+            _suppressCategorySelect  = false;
         }
 
         private TreeNode BuildCategoryNode(
@@ -579,12 +724,189 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private void BtnPrevPage_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null || _currentPage <= 1) return;
+            _presenter.GoToPage(_currentPage - 1);
+        }
+
+        private void BtnNextPage_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            _presenter.GoToPage(_currentPage + 1);
+        }
+
+        private void BtnPageNumber_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            var btn = sender as Button;
+            if (btn != null && btn.Tag != null)
+                _presenter.GoToPage((int)btn.Tag);
+        }
+
+        private void CboPageSize_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            _presenter.LoadArticles();
+        }
+
+        private void BtnClearFilter_Click(object sender, EventArgs e)
+        {
+            cboStatus.SelectedIndex     = 0;
+            cboType.SelectedIndex       = 0;
+            cboDepartment.SelectedIndex = 0;
+            cboSortBy.SelectedIndex     = 0;
+            txtToolbarSearch.Text       = string.Empty;
+            if (_presenter != null) _presenter.LoadArticles();
+        }
+
         private void ResizeArticleCards()
         {
             int cardWidth = flpArticles.ClientSize.Width - 16;
             if (cardWidth < 200) return;
             foreach (Control c in flpArticles.Controls)
                 if (c is ArticleCardControl) c.Width = cardWidth;
+        }
+
+        // ── DataGridView setup ────────────────────────────────────────────────────
+
+        private void InitializeArticleGrid()
+        {
+            dgvArticles.AutoGenerateColumns = false;
+            dgvArticles.EnableHeadersVisualStyles = false;
+            dgvArticles.ColumnHeadersHeight = 32;
+            dgvArticles.RowTemplate.Height = 36;
+
+            var hdrStyle = dgvArticles.ColumnHeadersDefaultCellStyle;
+            hdrStyle.BackColor        = Color.FromArgb(240, 244, 249);
+            hdrStyle.ForeColor        = Color.FromArgb(30, 58, 95);
+            hdrStyle.Font             = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            hdrStyle.SelectionBackColor = Color.FromArgb(240, 244, 249);
+
+            dgvArticles.DefaultCellStyle.Font                = new Font("Segoe UI", 8.5f);
+            dgvArticles.DefaultCellStyle.SelectionBackColor  = Color.FromArgb(214, 228, 240);
+            dgvArticles.DefaultCellStyle.SelectionForeColor  = Color.FromArgb(26, 35, 50);
+
+            var ctr = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter };
+            var lft = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleLeft,
+                                                   Padding  = new Padding(4, 0, 0, 0) };
+
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
+                Name = "colRowNum", HeaderText = "#", Width = 40, ReadOnly = true,
+                DefaultCellStyle = ctr });
+            //dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
+            //    Name = "colCode", HeaderText = "รหัส", Width = 105, ReadOnly = true,
+            //    DefaultCellStyle = lft });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
+                Name = "colTitle", HeaderText = "ชื่อบทความ", MinimumWidth = 105, ReadOnly = true,
+                DefaultCellStyle = lft });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colCode",
+                HeaderText = "summary",
+                Width = 105,
+                ReadOnly = true,
+                DefaultCellStyle = lft
+            });
+            //dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            //{
+            //    Name = "colContentHtml",
+            //    HeaderText = "รายละเอียด",
+            //    ReadOnly = true,
+            //    Width = 150,
+            //    DefaultCellStyle = lft
+            //});
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colType",
+                HeaderText = "ประเภท",
+                Width = 78,
+                ReadOnly = true,
+                DefaultCellStyle = ctr
+            });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
+                Name = "colStatus", HeaderText = "สถานะ", Width = 90, ReadOnly = true,
+                DefaultCellStyle = ctr });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
+                Name = "colCategory", HeaderText = "หมวดหมู่", Width = 130, ReadOnly = true,
+                DefaultCellStyle = lft });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
+                Name = "colVersion", HeaderText = "Ver.", Width = 50, ReadOnly = true,
+                DefaultCellStyle = ctr });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
+                Name = "colViews", HeaderText = "👁", Width = 48, ReadOnly = true,
+                DefaultCellStyle = ctr });
+
+            dgvArticles.Columns.Add(new DataGridViewButtonColumn {
+                Name = "colBtnRead", HeaderText = "", Width = 74, FlatStyle = FlatStyle.Flat,
+                UseColumnTextForButtonValue = false,
+                DefaultCellStyle = new DataGridViewCellStyle {
+                    BackColor = Color.FromArgb(46, 116, 181), ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 8f),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvArticles.Columns.Add(new DataGridViewButtonColumn {
+                Name = "colBtnEdit", HeaderText = "", Width = 74, FlatStyle = FlatStyle.Flat,
+                UseColumnTextForButtonValue = false,
+                DefaultCellStyle = new DataGridViewCellStyle {
+                    BackColor = Color.FromArgb(204, 92, 30), ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 8f),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvArticles.Columns.Add(new DataGridViewButtonColumn {
+                Name = "colBtnShare", HeaderText = "", Width = 74, FlatStyle = FlatStyle.Flat,
+                UseColumnTextForButtonValue = false,
+                DefaultCellStyle = new DataGridViewCellStyle {
+                    BackColor = Color.FromArgb(40, 140, 210), ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 8f),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter } });
+            dgvArticles.Columns.Add(new DataGridViewButtonColumn {
+                Name = "colBtnReview", HeaderText = "", Width = 84, FlatStyle = FlatStyle.Flat,
+                UseColumnTextForButtonValue = false,
+                DefaultCellStyle = new DataGridViewCellStyle {
+                    BackColor = Color.FromArgb(39, 174, 96), ForeColor = Color.White,
+                    Font = new Font("Segoe UI", 8f),
+                    Alignment = DataGridViewContentAlignment.MiddleCenter } });
+
+            dgvArticles.CellClick      += DgvArticles_CellClick;
+            dgvArticles.CellFormatting += DgvArticles_CellFormatting;
+        }
+
+        // ── DataGridView events ───────────────────────────────────────────────────
+
+        private void DgvArticles_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= _cachedArticles.Count) return;
+            var article = _cachedArticles[e.RowIndex];
+            string col  = dgvArticles.Columns[e.ColumnIndex].Name;
+
+            if      (col == "colBtnRead")                          OnArticleCardClick(article);
+            else if (col == "colBtnEdit")                          OnEditClick(article);
+            else if (col == "colBtnShare")                         OnShareClick(article);
+            else if (col == "colBtnReview" && article.Status == 1) OnSendReviewClick(article);
+        }
+
+        private void DgvArticles_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= _cachedArticles.Count) return;
+            var article = _cachedArticles[e.RowIndex];
+            string col  = dgvArticles.Columns[e.ColumnIndex].Name;
+
+            if (col == "colStatus")
+            {
+                switch (article.Status)
+                {
+                    case 1: e.CellStyle.ForeColor = Color.FromArgb(100, 100, 100); break; // Draft
+                    case 2: e.CellStyle.ForeColor = Color.FromArgb(180, 90, 0);    break; // Review
+                    case 3: e.CellStyle.ForeColor = Color.FromArgb(0, 128, 64);    break; // Published
+                    case 4: e.CellStyle.ForeColor = Color.FromArgb(139, 0, 0);     break; // Archived
+                }
+                e.FormattingApplied = true;
+            }
+            else if (col == "colBtnReview" && article.Status != 1)
+            {
+                e.CellStyle.BackColor = Color.FromArgb(235, 237, 240);
+                e.CellStyle.ForeColor = Color.FromArgb(180, 180, 180);
+                e.FormattingApplied   = true;
+            }
         }
     }
 }

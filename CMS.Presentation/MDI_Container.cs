@@ -1,20 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
-using CMS.Controllers.DMS.Document;
+﻿using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Data.Interfaces;
+using CMS.Data.Repositories;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Modules.KMS;
-using CMS.Presentation.Services;
 using CMS.Presentation.Modules.Workflow;
+using CMS.Presentation.Services;
 using CMS.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace CMS.Presentation
 {
@@ -73,11 +74,11 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
-        private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;
         private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
         private readonly CMS.Data.Interfaces.IKBCategoryRepository _kbCategoryRepository;
         private readonly CMS.Data.Interfaces.IKBArticleRepository  _kbArticleRepository;
+        private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;        
         private readonly IWorkflowService _workflowService;
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
@@ -196,11 +197,11 @@ namespace CMS.Presentation
             IWorkflowService workflowService = null,
             ISLACalculator slaCalculator = null,
             CMS.Services.Interfaces.IWorkflowTemplateService workflowTemplateService = null,
-            CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null,
             CMS.Data.Interfaces.IKBVersionRepository kbVersionRepository = null,
             CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null,
             CMS.Data.Interfaces.IKBCategoryRepository kbCategoryRepository = null,
-            CMS.Data.Interfaces.IKBArticleRepository  kbArticleRepository  = null)
+            CMS.Data.Interfaces.IKBArticleRepository  kbArticleRepository  = null,
+            CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -262,12 +263,11 @@ namespace CMS.Presentation
             _workflowService = workflowService;
             _slaCalculator = slaCalculator;
             _workflowTemplateService = workflowTemplateService;
-            _kbArticleLinkRepository = kbArticleLinkRepository;
             _kbVersionRepository = kbVersionRepository;
             _kbDashboardService = kbDashboardService;
             _kbCategoryRepository = kbCategoryRepository;
             _kbArticleRepository  = kbArticleRepository;
-
+            _kbArticleLinkRepository = kbArticleLinkRepository;
             InitializeComponent();
             BuildFileDetailPanel();
             WireMenuHandlers();
@@ -1381,7 +1381,7 @@ namespace CMS.Presentation
 
             var form = new KBMainForm();
             var presenter = new KBMainController(
-                form, _kbCategoryService, _kbArticleService, _kbVersionRepository, _currentUser);
+                form, _kbCategoryService, _kbArticleService, _currentUser);
 
             form.AttachPresenter(presenter, _currentUser);
             form.AttachFactories(
@@ -1390,7 +1390,7 @@ namespace CMS.Presentation
                 {
                     var viewer = new ArticleViewerForm();
                     var viewerPresenter = new ArticleViewerController(
-                        viewer, _kbArticleService, _kbVersionRepository, _kbArticleLinkRepository, _currentUser, article);
+                        viewer, _kbArticleService, _currentUser, article);
                     viewer.AttachPresenter(viewerPresenter);
                     viewer.AttachEditorFactory(a => OpenKBEditorDialog(a));
                     return viewer;
@@ -1412,7 +1412,7 @@ namespace CMS.Presentation
                 var wizard          = new KBImportWizardForm(_currentUser);
                 var excelReader     = new CMS.Services.KBExcelReader();
                 var processor       = new CMS.Services.KBImportProcessor(
-                    _kbCategoryRepository, _kbArticleRepository, _kbVersionRepository);
+                    _kbCategoryRepository, _kbArticleRepository, _kbArticleLinkRepository, _kbVersionRepository);
                 var wizardPresenter = new KBImportWizardController(
                     wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
                 wizard.AttachPresenter(wizardPresenter);
@@ -1440,7 +1440,7 @@ namespace CMS.Presentation
         {
             var dlg = new KBEditorDialog(_currentUser);
             var presenter = new KBEditorController(
-                dlg, _kbCategoryService, _kbArticleService, _kbArticleLinkRepository, _kbVersionRepository, _currentUser, article);
+                dlg, _kbCategoryService, _kbArticleService, _currentUser, article);
             dlg.AttachPresenter(presenter);
             return dlg.ShowDialog(this);
         }

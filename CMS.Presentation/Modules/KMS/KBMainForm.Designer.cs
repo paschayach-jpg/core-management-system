@@ -25,6 +25,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlLeftHeader = new System.Windows.Forms.Panel();
             this.lblCategoryHeader = new System.Windows.Forms.Label();
             this.panelMainRight = new System.Windows.Forms.Panel();
+            this.tabArticles = new System.Windows.Forms.TabControl();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.dgvArticles = new System.Windows.Forms.DataGridView();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
             this.pnlArticleList = new System.Windows.Forms.Panel();
             this.flpArticles = new System.Windows.Forms.FlowLayoutPanel();
             this.pnlFilterBar = new System.Windows.Forms.Panel();
@@ -64,6 +68,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlLeftFooter.SuspendLayout();
             this.pnlLeftHeader.SuspendLayout();
             this.panelMainRight.SuspendLayout();
+            this.tabArticles.SuspendLayout();
+            this.tabPage1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvArticles)).BeginInit();
+            this.tabPage2.SuspendLayout();
             this.pnlArticleList.SuspendLayout();
             this.pnlFilterBar.SuspendLayout();
             this.pnlFilterRight.SuspendLayout();
@@ -239,7 +247,7 @@ namespace CMS.Presentation.Modules.KMS
             // panelMainRight
             // 
             this.panelMainRight.BackColor = System.Drawing.Color.White;
-            this.panelMainRight.Controls.Add(this.pnlArticleList);
+            this.panelMainRight.Controls.Add(this.tabArticles);
             this.panelMainRight.Controls.Add(this.pnlFilterBar);
             this.panelMainRight.Controls.Add(this.pnlToolbar);
             this.panelMainRight.Controls.Add(this.pnlRightTop);
@@ -250,16 +258,73 @@ namespace CMS.Presentation.Modules.KMS
             this.panelMainRight.Size = new System.Drawing.Size(886, 648);
             this.panelMainRight.TabIndex = 0;
             // 
+            // tabArticles
+            // 
+            this.tabArticles.Controls.Add(this.tabPage1);
+            this.tabArticles.Controls.Add(this.tabPage2);
+            this.tabArticles.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabArticles.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.tabArticles.Location = new System.Drawing.Point(0, 104);
+            this.tabArticles.Name = "tabArticles";
+            this.tabArticles.SelectedIndex = 0;
+            this.tabArticles.Size = new System.Drawing.Size(886, 504);
+            this.tabArticles.TabIndex = 4;
+            this.tabArticles.SelectedIndexChanged += new System.EventHandler(this.TabArticles_SelectedIndexChanged);
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.BackColor = System.Drawing.Color.White;
+            this.tabPage1.Controls.Add(this.dgvArticles);
+            this.tabPage1.Location = new System.Drawing.Point(4, 28);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(878, 472);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "📋 ตารางบทความ";
+            // 
+            // dgvArticles
+            // 
+            this.dgvArticles.AllowUserToAddRows = false;
+            this.dgvArticles.AllowUserToDeleteRows = false;
+            this.dgvArticles.AllowUserToResizeRows = false;
+            this.dgvArticles.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvArticles.BackgroundColor = System.Drawing.Color.White;
+            this.dgvArticles.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.dgvArticles.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
+            this.dgvArticles.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Single;
+            this.dgvArticles.ColumnHeadersHeight = 29;
+            this.dgvArticles.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvArticles.GridColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(225)))), ((int)(((byte)(232)))));
+            this.dgvArticles.Location = new System.Drawing.Point(3, 3);
+            this.dgvArticles.MultiSelect = false;
+            this.dgvArticles.Name = "dgvArticles";
+            this.dgvArticles.RowHeadersVisible = false;
+            this.dgvArticles.RowHeadersWidth = 51;
+            this.dgvArticles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvArticles.Size = new System.Drawing.Size(872, 466);
+            this.dgvArticles.TabIndex = 0;
+            // 
+            // tabPage2
+            // 
+            this.tabPage2.BackColor = System.Drawing.Color.White;
+            this.tabPage2.Controls.Add(this.pnlArticleList);
+            this.tabPage2.Location = new System.Drawing.Point(4, 28);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(878, 472);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "🃏 การ์ดบทความ";
+            // 
             // pnlArticleList
             // 
             this.pnlArticleList.AutoScroll = true;
             this.pnlArticleList.BackColor = System.Drawing.Color.White;
             this.pnlArticleList.Controls.Add(this.flpArticles);
             this.pnlArticleList.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlArticleList.Location = new System.Drawing.Point(0, 104);
+            this.pnlArticleList.Location = new System.Drawing.Point(3, 3);
             this.pnlArticleList.Name = "pnlArticleList";
             this.pnlArticleList.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.pnlArticleList.Size = new System.Drawing.Size(886, 504);
+            this.pnlArticleList.Size = new System.Drawing.Size(872, 466);
             this.pnlArticleList.TabIndex = 0;
             // 
             // flpArticles
@@ -270,7 +335,7 @@ namespace CMS.Presentation.Modules.KMS
             this.flpArticles.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpArticles.Location = new System.Drawing.Point(10, 8);
             this.flpArticles.Name = "flpArticles";
-            this.flpArticles.Size = new System.Drawing.Size(866, 488);
+            this.flpArticles.Size = new System.Drawing.Size(852, 450);
             this.flpArticles.TabIndex = 0;
             this.flpArticles.WrapContents = false;
             // 
@@ -713,6 +778,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlLeftFooter.ResumeLayout(false);
             this.pnlLeftHeader.ResumeLayout(false);
             this.panelMainRight.ResumeLayout(false);
+            this.tabArticles.ResumeLayout(false);
+            this.tabPage1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvArticles)).EndInit();
+            this.tabPage2.ResumeLayout(false);
             this.pnlArticleList.ResumeLayout(false);
             this.pnlFilterBar.ResumeLayout(false);
             this.pnlFilterRight.ResumeLayout(false);
@@ -760,6 +829,10 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ComboBox        cboStatus;
         private System.Windows.Forms.ComboBox        cboType;
         private System.Windows.Forms.Label           lblFilterLabel;
+        private System.Windows.Forms.TabControl      tabArticles;
+        private System.Windows.Forms.TabPage         tabPage1;
+        private System.Windows.Forms.DataGridView    dgvArticles;
+        private System.Windows.Forms.TabPage         tabPage2;
         private System.Windows.Forms.Panel           pnlArticleList;
         private System.Windows.Forms.FlowLayoutPanel flpArticles;
         private System.Windows.Forms.Panel           pnlPagination;

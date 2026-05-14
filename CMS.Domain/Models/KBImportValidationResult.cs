@@ -23,9 +23,23 @@ namespace CMS.Domain.Models
 
         public IList<KBImportRow> Rows { get; set; }
 
+        /// <summary>
+        /// Rows excluded before the import attempt — pre-validation errors and
+        /// warn-skipped rows (when OptSkipWarning is true).
+        /// </summary>
+        public IList<KBImportRow> SkippedRows { get; set; }
+
+        /// <summary>
+        /// Rows that were attempted during import but failed (category resolution or DB insert).
+        /// Does NOT include rows skipped before the import started.
+        /// </summary>
+        public IList<KBImportRow> ImportFailedRows { get; set; }
+
         public KBImportValidationResult()
         {
-            Rows = new List<KBImportRow>();
+            Rows             = new List<KBImportRow>();
+            SkippedRows      = new List<KBImportRow>();
+            ImportFailedRows = new List<KBImportRow>();
         }
     }
 
@@ -67,6 +81,9 @@ namespace CMS.Domain.Models
         public string ColR  { get; set; }   // PublishedDate raw text
         public string ColS  { get; set; }   // ExpiryDate raw text
         public string ColT  { get; set; }   // ContentHTML
+        public string ColU  { get; set; }   // คณะอนุกรรมการ
+        public string ColV  { get; set; }   // ฝ่ายที่รับผิดชอบ
+        public string ColAA  { get; set; }   // ฝ่ายที่รับผิดชอบ
 
         // ── Computed / resolved fields (set by processor) ───────────────────
         public string    ArticleCode         { get; set; }

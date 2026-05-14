@@ -7,23 +7,18 @@ using CMS.Domain.Models;
 namespace CMS.Presentation.Modules.KMS
 {
     /// <summary>
-    /// UserControl that hosts a two-tab preview of imported KB rows:
-    ///   Tab 1 — Grid view  (DataGridView + paging)
-    ///   Tab 2 — Card view  (FlowLayoutPanel of <see cref="KBImportRowCardControl"/> + paging)
-    ///
-    /// Call <see cref="BindRows"/> to populate both views.
+    /// UserControl that hosts a grid preview of imported KB rows with paging.
+    /// Call <see cref="BindRows"/> to populate the view.
     /// Layout is defined in <c>KBImportPreviewControl.Designer.cs</c>.
     /// </summary>
     public partial class KBImportPreviewControl : UserControl
     {
         // ── Paging constants ─────────────────────────────────────────────────────
         private const int GridPageSize = 50;
-        private const int CardPageSize = 20;
 
         // ── Paging state ─────────────────────────────────────────────────────────
         private IList<KBImportRow> _allRows = new List<KBImportRow>();
         private int _gridPage = 0;   // 0-based
-        private int _cardPage = 0;
 
         // ── Constructor ──────────────────────────────────────────────────────────
 
@@ -35,26 +30,22 @@ namespace CMS.Presentation.Modules.KMS
         // ── Public API ───────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Populates both the Grid and Card views with <paramref name="rows"/>.
+        /// Populates the grid view with <paramref name="rows"/>.
         /// Resets paging to page 1.
         /// </summary>
         public void BindRows(IList<KBImportRow> rows)
         {
             _allRows  = rows ?? new List<KBImportRow>();
             _gridPage = 0;
-            _cardPage = 0;
             RefreshGridPage();
-            RefreshCardPage();
         }
 
-        /// <summary>Clears both views and resets paging.</summary>
+        /// <summary>Clears the grid and resets paging.</summary>
         public void Clear()
         {
             _allRows  = new List<KBImportRow>();
             _gridPage = 0;
-            _cardPage = 0;
             dgvPreview.Rows.Clear();
-            flowCards.Controls.Clear();
             UpdatePagerLabels();
         }
 
@@ -71,17 +62,6 @@ namespace CMS.Presentation.Modules.KMS
             if (_gridPage < maxPage) { _gridPage++; RefreshGridPage(); }
         }
 
-        private void btnCardPrev_Click(object sender, EventArgs e)
-        {
-            if (_cardPage > 0) { _cardPage--; RefreshCardPage(); }
-        }
-
-        private void btnCardNext_Click(object sender, EventArgs e)
-        {
-            int maxPage = MaxPage(_allRows.Count, CardPageSize);
-            if (_cardPage < maxPage) { _cardPage++; RefreshCardPage(); }
-        }
-
         // ── Private — grid paging ────────────────────────────────────────────────
 
         private void RefreshGridPage()
@@ -89,57 +69,75 @@ namespace CMS.Presentation.Modules.KMS
             dgvPreview.SuspendLayout();
             dgvPreview.Rows.Clear();
 
-            int start = _gridPage * GridPageSize;
-            int end   = Math.Min(start + GridPageSize, _allRows.Count);
-
-            for (int i = start; i < end; i++)
+            try
             {
-                var r   = _allRows[i];
-                int idx = dgvPreview.Rows.Add(
-                    r.RowNumber.ToString(),
-                    r.ArticleCode,
-                    r.ColC,
-                    r.Title ?? r.ColE,
-                    r.Summary,
-                    r.ColT,
-                    string.Format("{0}, {1}", r.ColC, r.ColE),
-                    r.ColR,
-                    r.ColS,
-                    StatusLabel(r.Status),
-                    r.StatusNote ?? string.Empty);
+                int start = _gridPage * GridPageSize;
+                int end   = Math.Min(start + GridPageSize, _allRows.Count);
 
-                var row = dgvPreview.Rows[idx];
-                if (r.Status == "Error")
-                    row.DefaultCellStyle.BackColor = Color.FromArgb(253, 237, 236);
-                else if (r.Status == "Warn")
-                    row.DefaultCellStyle.BackColor = Color.FromArgb(254, 249, 231);
-                else if ((i - start) % 2 == 1)
-                    row.DefaultCellStyle.BackColor = Color.FromArgb(248, 250, 253);
+                for (int i = start; i < end; i++)
+                {
+                    var r = _allRows[i];
+                    try
+                    {
+                        int idx = dgvPreview.Rows.Add(
+                            r.RowNumber.ToString(),         // colNo
+                            S(r.ArticleCode),               // colArticleCode
+                            S(r.ColA),                      // colColA
+                            S(r.ColB),                      // colColB
+                            S(r.ColC),                      // colCatName
+                            S(r.ColD),                      // colColD
+                            S(r.ColE),                      // colTitle
+                            S(r.ColF),                      // colColF
+                            S(r.ColG),                      // colColG
+                            S(r.ColH),                      // colColH
+                            S(r.ColI),                      // colColI
+                            S(r.ColJ),                      // colColJ
+                            S(r.ColK),                      // colColK
+                            S(r.ColL),                      // colColL
+                            S(r.ColM),                      // colColM
+                            S(r.ColN),                      // colColN
+                            S(r.ColO),                      // colColO
+                            S(r.ColP),                      // colColP
+                            S(r.ColQ),                      // colColQ
+                            S(r.ColR),                      // colPublished
+                            S(r.ColS),                      // colExpiry
+                            S(r.ColT, 300),                 // colContentHtml — truncate long HTML
+                            S(r.ColU),                      // colColU
+                            S(r.ColV),                      // colColV
+                            S(r.Summary),                   // colSummary
+                            StatusLabel(r.Status),          // colStatus
+                            S(r.StatusNote));               // colNote
+
+                        var dgvRow = dgvPreview.Rows[idx];
+                        if (r.Status == "Error")
+                            dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(253, 237, 236);
+                        else if (r.Status == "Warn")
+                            dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 249, 231);
+                        else if ((i - start) % 2 == 1)
+                            dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(248, 250, 253);
+                    }
+                    catch
+                    {
+                        // One row that fails to render must not stop subsequent rows from
+                        // being added. Continue the loop — the grid skips this row silently.
+                    }
+                }
+            }
+            finally
+            {
+                // Always resume layout even when a row throws, so the grid repaints correctly.
+                dgvPreview.ResumeLayout();
             }
 
-            dgvPreview.ResumeLayout();
             UpdatePagerLabels();
         }
 
-        // ── Private — card paging ────────────────────────────────────────────────
-
-        private void RefreshCardPage()
+        // Coalesces null to empty string and clips to maxLen to prevent DataGridView
+        // rendering issues caused by very long cell values (ColT ContentHTML can be MB-sized).
+        private static string S(string value, int maxLen = 500)
         {
-            flowCards.SuspendLayout();
-            flowCards.Controls.Clear();
-
-            int start = _cardPage * CardPageSize;
-            int end   = Math.Min(start + CardPageSize, _allRows.Count);
-
-            for (int i = start; i < end; i++)
-            {
-                var card = new KBImportRowCardControl();
-                card.BindRow(_allRows[i]);
-                flowCards.Controls.Add(card);
-            }
-
-            flowCards.ResumeLayout();
-            UpdatePagerLabels();
+            if (value == null) return string.Empty;
+            return value.Length <= maxLen ? value : value.Substring(0, maxLen) + "…";
         }
 
         // ── Private — pager state ────────────────────────────────────────────────
@@ -147,17 +145,12 @@ namespace CMS.Presentation.Modules.KMS
         private void UpdatePagerLabels()
         {
             int gridTotal = TotalPages(_allRows.Count, GridPageSize);
-            int cardTotal = TotalPages(_allRows.Count, CardPageSize);
 
             lblGridPage.Text = string.Format("หน้า {0} / {1}  ({2} รายการ)",
                 _gridPage + 1, gridTotal, _allRows.Count);
-            lblCardPage.Text = string.Format("หน้า {0} / {1}  ({2} รายการ)",
-                _cardPage + 1, cardTotal, _allRows.Count);
 
             btnGridPrev.Enabled = _gridPage > 0;
             btnGridNext.Enabled = _gridPage < gridTotal - 1;
-            btnCardPrev.Enabled = _cardPage > 0;
-            btnCardNext.Enabled = _cardPage < cardTotal - 1;
         }
 
         // ── Static helpers ───────────────────────────────────────────────────────

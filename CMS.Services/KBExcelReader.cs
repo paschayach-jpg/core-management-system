@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using CMS.Domain.Models;
+using CMS.Services.Interfaces;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 
@@ -14,7 +15,7 @@ namespace CMS.Services
     /// Uses NPOI 2.5.6. No validation logic is performed here — that is the
     /// responsibility of <see cref="KBImportProcessor"/>.
     /// </summary>
-    public class KBExcelReader
+    public class KBExcelReader : IKBExcelReaderService
     {
         // ── Supported text-date formats (InvariantCulture) ───────────────────
         private static readonly string[] DateFormats =
@@ -97,56 +98,70 @@ namespace CMS.Services
                 if (IsRowBlank(excelRow))
                     continue;
 
-                var row = new KBImportRow
+                KBImportRow row;
+                try
                 {
-                    RowNumber = rowIdx + 1,   // 1-based: row index 3 → RowNumber 4
+                    row = new KBImportRow
+                    {
+                        RowNumber = rowIdx + 1,   // 1-based: row index 3 → RowNumber 4
 
-                    ColA = GetCellText(excelRow.GetCell(0)),
-                    ColB = GetCellText(excelRow.GetCell(1)),
-                    ColC = GetCellText(excelRow.GetCell(2)),
-                    ColD = GetCellText(excelRow.GetCell(3)),
-                    ColE = GetCellText(excelRow.GetCell(4)),
-                    ColF = GetCellText(excelRow.GetCell(5)),
-                    ColG = GetCellText(excelRow.GetCell(6)),
-                    ColH = GetCellText(excelRow.GetCell(7)),
-                    ColI = GetCellText(excelRow.GetCell(8)),
-                    ColJ = GetCellText(excelRow.GetCell(9)),
-                    ColK = GetCellText(excelRow.GetCell(10)),
-                    ColL = GetCellText(excelRow.GetCell(11)),
-                    ColM = GetCellText(excelRow.GetCell(12)),
-                    ColN = GetCellText(excelRow.GetCell(13)),
-                    ColO = GetCellText(excelRow.GetCell(14)),
-                    ColP = GetCellText(excelRow.GetCell(15)),
-                    ColQ = GetCellText(excelRow.GetCell(16)),
-                    ColT = GetCellText(excelRow.GetCell(19)),
-                };
+                        ColA = GetCellText(excelRow.GetCell(0)),
+                        ColB = GetCellText(excelRow.GetCell(1)),
+                        ColC = GetCellText(excelRow.GetCell(2)),
+                        ColD = GetCellText(excelRow.GetCell(3)),
+                        ColE = GetCellText(excelRow.GetCell(4)),
+                        ColF = GetCellText(excelRow.GetCell(5)),
+                        ColG = GetCellText(excelRow.GetCell(6)),
+                        ColH = GetCellText(excelRow.GetCell(7)),
+                        ColI = GetCellText(excelRow.GetCell(8)),
+                        ColJ = GetCellText(excelRow.GetCell(9)),
+                        ColK = GetCellText(excelRow.GetCell(10)),
+                        ColL = GetCellText(excelRow.GetCell(11)),
+                        ColM = GetCellText(excelRow.GetCell(12)),
+                        ColN = GetCellText(excelRow.GetCell(13)),
+                        ColO = GetCellText(excelRow.GetCell(14)),
+                        ColP = GetCellText(excelRow.GetCell(15)),
+                        ColQ = GetCellText(excelRow.GetCell(16)),
+                        ColT = GetCellText(excelRow.GetCell(19)),
+                        ColU = GetCellText(excelRow.GetCell(20)),
+                        ColV = GetCellText(excelRow.GetCell(21)),
+                        ColAA = GetCellText(excelRow.GetCell(26)),
 
-                // ── UI display fields ────────────────────────────────────────
-                row.Title    = row.ColE;
-                row.Tags     = string.Format("{0}, {1}", row.ColC, row.ColE);
-                row.Category = string.Format("{0} > {1}", row.ColA, row.ColB);
+                    };
 
-                // ── Column R — PublishedDate ─────────────────────────────────
-                ICell cellR = excelRow.GetCell(17);
-                string rError;
-                DateTime? publishedDate = TryParseDateCell(cellR, out rError);
-                row.PublishedDateParsed = publishedDate;
-                // Store raw text for display / error reporting
-                row.ColR = publishedDate.HasValue
-                    ? publishedDate.Value.ToString("dd/MM/yyyy")
-                    : GetCellText(cellR);
+                    row.Title    = row.ColE;
+                    row.Tags     = string.Format("{0}, {1}", row.ColC, row.ColE);
+                    row.Category = string.Format("{0} > {1}", row.ColA, row.ColB);
 
-                // ── Column S — ExpiryDate ────────────────────────────────────
-                ICell cellS = excelRow.GetCell(18);
-                string sError;
-                DateTime? expiryDate = TryParseDateCell(cellS, out sError);
-                row.ExpiryDateParsed = expiryDate;
-                row.ColS = expiryDate.HasValue
-                    ? expiryDate.Value.ToString("dd/MM/yyyy")
-                    : GetCellText(cellS);
+                    // ── Column R — PublishedDate ─────────────────────────────
+                    ICell cellR = excelRow.GetCell(17);
+                    string rError;
+                    DateTime? publishedDate = TryParseDateCell(cellR, out rError);
+                    row.PublishedDateParsed = publishedDate;
+                    row.ColR = publishedDate.HasValue
+                        ? publishedDate.Value.ToString("dd/MM/yyyy")
+                        : GetCellText(cellR);
 
-                // Keep ExpiryDate display string in sync (used by UI grid)
-                row.ExpiryDate = row.ColS;
+                    // ── Column S — ExpiryDate ────────────────────────────────
+                    ICell cellS = excelRow.GetCell(18);
+                    string sError;
+                    DateTime? expiryDate = TryParseDateCell(cellS, out sError);
+                    row.ExpiryDateParsed = expiryDate;
+                    row.ColS = expiryDate.HasValue
+                        ? expiryDate.Value.ToString("dd/MM/yyyy")
+                        : GetCellText(cellS);
+                    row.ExpiryDate = row.ColS;
+                }
+                catch (Exception ex)
+                {
+                    // One unreadable row must not abort the entire file read.
+                    row = new KBImportRow
+                    {
+                        RowNumber  = rowIdx + 1,
+                        Status     = "Error",
+                        StatusNote = SafeTruncate("อ่านข้อมูล Excel ไม่สำเร็จ: " + ex.Message, 200),
+                    };
+                }
 
                 rows.Add(row);
             }
@@ -343,6 +358,12 @@ namespace CMS.Services
             // Thai B.E. years are ~543 years ahead of A.D.
             // e.g. B.E. 2567 → A.D. 2024
             return dt.Year > 2400 ? dt.AddYears(-543) : dt;
+        }
+
+        private static string SafeTruncate(string s, int max)
+        {
+            if (s == null) return string.Empty;
+            return s.Length <= max ? s : s.Substring(0, max);
         }
 
         /// <summary>

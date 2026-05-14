@@ -142,7 +142,7 @@ namespace CMS.Data.Repositories
                 LinkID      = r.GetInt32(r.GetOrdinal("LinkID")),
                 ArticleID   = r.GetInt32(r.GetOrdinal("ArticleID")),
                 EntityType  = r.GetByte(r.GetOrdinal("EntityType")),
-                EntityID    = r.GetInt32(r.GetOrdinal("EntityID")),
+                EntityID    = r.GetString(r.GetOrdinal("EntityID")),
                 CreatedBy   = r["CreatedBy"] as string,
                 CreatedDate = r.IsDBNull(r.GetOrdinal("CreatedDate")) ? DateTime.MinValue : r.GetDateTime(r.GetOrdinal("CreatedDate"))
             };

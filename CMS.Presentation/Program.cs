@@ -153,7 +153,7 @@ namespace CMS.Presentation
 
                 // ── KB Services (MOD-006) ─────────────────────────────────────
                 var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);
-                var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, auditService);
+                var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, kbArticleLinkRepository, auditService);
                 var kbDashboardService = new KBDashboardService(kbDashboardRepository, loggingService);
 
                 // ── Workflow Engine Services (MOD-008) ────────────────────────
@@ -521,11 +521,11 @@ namespace CMS.Presentation
                     workflowService: workflowService,
                     slaCalculator: slaCalculator,
                     workflowTemplateService: workflowTemplateService,
-                    kbArticleLinkRepository: kbArticleLinkRepository,
                     kbVersionRepository: kbVersionRepository,
                     kbDashboardService: kbDashboardService,
                     kbCategoryRepository: kbCategoryRepository,
-                    kbArticleRepository: kbArticleRepository);
+                    kbArticleRepository: kbArticleRepository,
+                    kbArticleLinkRepository : kbArticleLinkRepository);
 
                 Application.Run(mainForm);
 

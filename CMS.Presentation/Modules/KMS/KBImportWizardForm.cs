@@ -22,23 +22,37 @@ namespace CMS.Presentation.Modules.KMS
     /// </summary>
     public partial class KBImportWizardForm : Form, IKBImportWizardController
     {
+        #region Fields
+
         private KBImportWizardController _presenter;
         private readonly UserContext    _user;
         private int      _currentStep = 1;
 
-        // ── File state ──────────────────────────────────────────────────────────
+        // File state
         private string   _uploadedFilePath;
         private string   _uploadedFileName;
         private long     _uploadedFileSize;
         private DateTime _uploadedTime;
 
-        // ── Constructor ─────────────────────────────────────────────────────────
+        // Step 3 — skipped/failed grid paging
+        private IList<KBImportRow> _errAllRows;
+        private int                _errCurrentPage;
+        private const int          ErrPageSize = 20;
+
+        #endregion
+
+        #region Constructor
+
         public KBImportWizardForm(UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");
             _user = user;
             InitializeComponent();
         }
+
+        #endregion
+
+        #region Public Methods
 
         /// <summary>
         /// Called by the composition root after the presenter is fully wired.
@@ -50,7 +64,10 @@ namespace CMS.Presentation.Modules.KMS
             _presenter = presenter;
         }
 
-        // ── Form Load ───────────────────────────────────────────────────────────
+        #endregion
+
+        #region Form Events
+
         private void KBImportWizardForm_Load(object sender, EventArgs e)
         {
             if (_presenter == null)
@@ -89,7 +106,11 @@ namespace CMS.Presentation.Modules.KMS
             ShowStep(1);
         }
 
-        // ── IKBImportWizardView — properties (View → Presenter) ─────────────────
+        #endregion
+
+        #region IKBImportWizardController Implementation
+
+        // Properties
 
         public string SelectedFilePath { get { return _uploadedFilePath; } }
         public string SelectedTemplate
@@ -108,7 +129,7 @@ namespace CMS.Presentation.Modules.KMS
         public bool OptCreateDraft  { get { return chkCreateDraft.Checked;  } }
         public bool OptAuditLog     { get { return chkAuditLog.Checked;     } }
 
-        // ── IKBImportWizardView — methods (Presenter → View) ────────────────────
+        // Methods
 
         /// <summary>
         /// Receives validation results from the presenter, updates summary pills and
@@ -140,14 +161,42 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (summary == null) return;
 
-            // TotalRecords  = total rows in the file
-            // ValidRecords  = successfully inserted rows
-            // WarningRecords = rows that had warnings (imported or skipped depending on option)
-            // ErrorRecords  = rows that failed or were skipped (pre-filter errors + insert errors)
             lblCompleteTotalNum.Text   = summary.TotalRecords.ToString();
             lblCompleteSuccessNum.Text = summary.ValidRecords.ToString();
             lblCompleteWarnNum.Text    = summary.WarningRecords.ToString();
             lblCompleteSkipNum.Text    = summary.ErrorRecords.ToString();
+
+            var skipped = summary.SkippedRows      ?? new List<KBImportRow>();
+            var failed  = summary.ImportFailedRows ?? new List<KBImportRow>();
+
+            var allProblemRows = new List<KBImportRow>(skipped);
+            allProblemRows.AddRange(failed);
+
+            bool hasProblemRows = allProblemRows.Count > 0;
+
+            if (hasProblemRows)
+            {
+                lblCompleteIcon.Text  = "⚠️";
+                lblCompleteTitle.Text = string.Format(
+                    "นำเข้าสำเร็จ {0} รายการ  /  ข้าม (ก่อนนำเข้า) {1} รายการ  /  ล้มเหลวระหว่างนำเข้า {2} รายการ",
+                    summary.ValidRecords, skipped.Count, failed.Count);
+                lblCompleteTitle.ForeColor = Color.FromArgb(192, 57, 43);
+                lblCompleteSub.Text        = "รายการด้านล่างถูกข้ามหรือล้มเหลว — ตรวจสอบสาเหตุและแก้ไขไฟล์ก่อนนำเข้าใหม่";
+
+                PopulateErrorGrid(allProblemRows);
+                pnlErrorDetail.Visible = true;
+                pnlStep3.Height        = 800;
+            }
+            else
+            {
+                lblCompleteIcon.Text       = "✅";
+                lblCompleteTitle.Text      = "นำเข้าข้อมูลสำเร็จ!";
+                lblCompleteTitle.ForeColor = Color.FromArgb(30, 132, 73);
+                lblCompleteSub.Text        = "บทความทั้งหมดได้ถูกนำเข้าไปยัง Knowledge Base เรียบร้อยแล้ว";
+
+                pnlErrorDetail.Visible = false;
+                pnlStep3.Height        = 460;
+            }
 
             ShowStep(3);
         }
@@ -167,9 +216,241 @@ namespace CMS.Presentation.Modules.KMS
             lblStatusMessage.Text = message;
         }
 
-        // ── (removed — vertical scroll layout uses DockStyle.Top, no resize needed) ──
+        public void SetProgress(int percent, string message)
+        {
+            progressBar.Value    = Math.Max(0, Math.Min(100, percent));
+            lblProgressText.Text = string.Format("{0}  ({1}%)", message, percent);
+            Application.DoEvents();
+        }
 
-        // ── Template combo ──────────────────────────────────────────────────────
+        #endregion
+
+        #region Event Handlers
+
+        // Upload Zone Events
+
+        private void PnlUploadZone_Paint(object sender, PaintEventArgs e)
+        {
+            using (var pen = new Pen(Color.FromArgb(180, 195, 215), 2f))
+            {
+                pen.DashStyle = DashStyle.Dash;
+                e.Graphics.DrawRectangle(pen, 1, 1,
+                    pnlUploadZone.Width - 3, pnlUploadZone.Height - 3);
+            }
+        }
+
+        private void PnlUploadZone_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+                pnlUploadZone.BackColor = Color.FromArgb(214, 228, 240);
+                pnlUploadZone.Invalidate();
+            }
+        }
+
+        private void PnlUploadZone_DragDrop(object sender, DragEventArgs e)
+        {
+            pnlUploadZone.BackColor = Color.FromArgb(245, 247, 250);
+            pnlUploadZone.Invalidate();
+
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files == null || files.Length == 0) return;
+            string ext = Path.GetExtension(files[0]).ToLower();
+            if (ext == ".xlsx" || ext == ".xls" || ext == ".xlsm")
+                HandleFileSelection(files[0]);
+            else
+                MessageBox.Show("กรุณาเลือกไฟล์ Excel (.xlsx หรือ .xls หรือ .xlsm) เท่านั้น",
+                    "ไฟล์ไม่ถูกต้อง", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        // File Selection Events
+
+        private void BtnSelectFile_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Excel Files|*.xlsx;*.xls;*.xlsm";
+                ofd.Title  = "เลือกไฟล์ Excel สำหรับนำเข้า";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                    HandleFileSelection(ofd.FileName);
+            }
+        }
+
+        private void BtnRemoveFile_Click(object sender, EventArgs e)
+        {
+            _uploadedFilePath = null;
+            _uploadedFileName = null;
+            _uploadedFileSize = 0;
+
+            pnlUploadedFile.Visible = false;
+            pnlUploadZone.Visible   = true;
+            btnNext.Enabled         = false;
+            lblFileHint.Visible     = true;
+            SetStatus("ลบไฟล์แล้ว");
+        }
+
+        private void BtnDownloadTemplate_Click(object sender, EventArgs e)
+        {
+            SetStatus("กำลังดาวน์โหลด Template... (ฟีเจอร์อยู่ระหว่างพัฒนา)");
+        }
+
+        private void BtnDemo_Click(object sender, EventArgs e)
+        {
+            _uploadedFilePath = @"C:\Demo\KnowledgeBase_Import_Demo.xlsx";
+            _uploadedFileName = "KnowledgeBase_Import_Demo.xlsx";
+            _uploadedFileSize = 1258291L;
+            _uploadedTime     = DateTime.Now;
+            ShowUploadedFile();
+            lblUploadedFileMeta.Text = string.Format(
+                "Excel Workbook  •  1.2 MB  •  อัพโหลดเมื่อ {0} น.  (ไฟล์ Demo)",
+                _uploadedTime.ToString("HH:mm"));
+        }
+
+        // Navigation Events
+
+        private void BtnNext_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            if (string.IsNullOrEmpty(_uploadedFilePath))
+            {
+                MessageBox.Show("กรุณาเลือกไฟล์ Excel ก่อน",
+                    "กรุณาเลือกไฟล์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            // Presenter validates file; calls ShowValidationResult() on success
+            _presenter.ValidateFile();
+        }
+
+        private void BtnBack_Click(object sender, EventArgs e)
+        {
+            // Navigate back to previous step
+            if (_currentStep == 2)
+            {
+                // From Step 2 back to Step 1
+                ShowStep(1);
+            }
+            else if (_currentStep == 3)
+            {
+                // From Step 3 back to Step 2
+                ShowStep(2);
+            }
+        }
+
+        private void BtnImport_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+
+            var confirm = MessageBox.Show(
+                string.Format(
+                    "ต้องการนำเข้าข้อมูล {0} รายการ ใช่หรือไม่?\n\n" +
+                    "✅  พร้อมนำเข้า :  {1} รายการ\n" +
+                    "⚠️  มีคำเตือน  :  {2} รายการ\n" +
+                    "⛔  ข้อผิดพลาด :  {3} รายการ (จะข้าม)",
+                    lblTotalCount.Text, lblValidCount.Text,
+                    lblWarnCount.Text,  lblErrorCount.Text),
+                "ยืนยันการนำเข้า", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm != DialogResult.Yes) return;
+
+            StartImport();
+        }
+
+        private void BtnClose_Click(object sender, EventArgs e)
+        {
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+
+        private void BtnCancel_Click(object sender, EventArgs e)
+        {
+            var confirm = MessageBox.Show(
+                "ต้องการยกเลิกการนำเข้าข้อมูลใช่หรือไม่?",
+                "ยืนยันการยกเลิก", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm == DialogResult.Yes)
+            {
+                DialogResult = DialogResult.Cancel;
+                Close();
+            }
+        }
+
+        private void BtnImportNew_Click(object sender, EventArgs e)
+        {
+            // Reset wizard back to Step 1
+            _uploadedFilePath = null;
+            _uploadedFileName = null;
+            _uploadedFileSize = 0;
+
+            pnlUploadedFile.Visible = false;
+            pnlUploadZone.Visible   = true;
+            btnNext.Enabled         = false;
+            lblFileHint.Visible     = true;
+            previewControl.Clear();
+
+            pnlStep3.Height        = 460;
+            pnlErrorDetail.Visible = false;
+            _errAllRows            = null;
+            _errCurrentPage        = 0;
+
+            ShowStep(1);
+        }
+
+        // Step 3 — error grid pager events
+
+        private void BtnErrPrev_Click(object sender, EventArgs e)
+        {
+            ShowErrorPage(_errCurrentPage - 1);
+        }
+
+        private void BtnErrNext_Click(object sender, EventArgs e)
+        {
+            ShowErrorPage(_errCurrentPage + 1);
+        }
+
+        // Step Progress Paint Event
+
+        private void PnlStepProgress_Paint(object sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            // bottom separator
+            using (var pen = new Pen(Color.FromArgb(208, 215, 222), 1))
+                g.DrawLine(pen, 0, pnlStepProgress.Height - 1,
+                    pnlStepProgress.Width, pnlStepProgress.Height - 1);
+
+            // draw rounded circles over each badge label
+            foreach (var (lbl, active, done) in new[]
+            {
+                (lblStep1Circle, _currentStep == 1, _currentStep > 1),
+                (lblStep2Circle, _currentStep == 2, _currentStep > 2),
+                (lblStep3Circle, _currentStep == 3, _currentStep > 3),
+            })
+            {
+                var r = new Rectangle(
+                    lbl.Parent.Left + lbl.Left,
+                    lbl.Parent.Top  + lbl.Top,
+                    lbl.Width, lbl.Height);
+
+                Color fill = done   ? Color.FromArgb(39, 174, 96)  :
+                             active ? Color.FromArgb(46, 116, 181) :
+                                      Color.FromArgb(230, 236, 245);
+
+                using (var brush = new System.Drawing.SolidBrush(fill))
+                    g.FillEllipse(brush, r);
+
+                // subtle ring for inactive
+                if (!active && !done)
+                    using (var pen = new Pen(Color.FromArgb(189, 195, 199), 1.5f))
+                        g.DrawEllipse(pen, r);
+            }
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        // Template Initialization
+
         private void InitTemplateCombo()
         {
             cboTemplate.Items.Clear();
@@ -180,7 +461,8 @@ namespace CMS.Presentation.Modules.KMS
             cboTemplate.SelectedIndex = 0;
         }
 
-        // ── Column reference ListView ────────────────────────────────────────────
+        // Column Reference Population
+
         private void PopulateColumnReference()
         {
             lvColumnRef.Items.Clear();
@@ -226,7 +508,8 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        // ── Validation items (Step 2) — driven by dgvPreview data ──────────────
+        // Validation Items Management
+
         private void BuildValidationItems()
         {
             // Called on form load with placeholder text; real data arrives via BindValidationItems().
@@ -348,7 +631,7 @@ namespace CMS.Presentation.Modules.KMS
             SetValItem(6,
                 noErrors ? "✅" : "❌",
                 noErrors ? "ข้อผิดพลาด: ไม่พบ"
-                         : string.Format("❌  ข้อผิดพลาด: {0} แถว (ดูรายละเอียดใน Preview)", errorCount),
+                         : string.Format("❌  ข้อผิดพลาด: {0} แถว (ดูรายละเอียดใน Gridview)", errorCount),
                 errorDetail,
                 noErrors);
         }
@@ -394,7 +677,8 @@ namespace CMS.Presentation.Modules.KMS
             else                   pnl.BackColor = Color.FromArgb(248, 250, 253);
         }
 
-        // ── Step navigation ──────────────────────────────────────────────────────
+        // Step Navigation
+
         /// <summary>
         /// Shows only the current step panel and hides others.
         /// Step 1: Show pnlStep1 only
@@ -467,54 +751,7 @@ namespace CMS.Presentation.Modules.KMS
             pnlStepProgress.Invalidate();
         }
 
-        // ── Upload Zone — dashed border paint ───────────────────────────────────
-        private void PnlUploadZone_Paint(object sender, PaintEventArgs e)
-        {
-            using (var pen = new Pen(Color.FromArgb(180, 195, 215), 2f))
-            {
-                pen.DashStyle = DashStyle.Dash;
-                e.Graphics.DrawRectangle(pen, 1, 1,
-                    pnlUploadZone.Width - 3, pnlUploadZone.Height - 3);
-            }
-        }
-
-        // ── Drag & Drop ──────────────────────────────────────────────────────────
-        private void PnlUploadZone_DragEnter(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                e.Effect = DragDropEffects.Copy;
-                pnlUploadZone.BackColor = Color.FromArgb(214, 228, 240);
-                pnlUploadZone.Invalidate();
-            }
-        }
-
-        private void PnlUploadZone_DragDrop(object sender, DragEventArgs e)
-        {
-            pnlUploadZone.BackColor = Color.FromArgb(245, 247, 250);
-            pnlUploadZone.Invalidate();
-
-            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            if (files == null || files.Length == 0) return;
-            string ext = Path.GetExtension(files[0]).ToLower();
-            if (ext == ".xlsx" || ext == ".xls")
-                HandleFileSelection(files[0]);
-            else
-                MessageBox.Show("กรุณาเลือกไฟล์ Excel (.xlsx หรือ .xls) เท่านั้น",
-                    "ไฟล์ไม่ถูกต้อง", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
-
-        // ── File selection handlers ──────────────────────────────────────────────
-        private void BtnSelectFile_Click(object sender, EventArgs e)
-        {
-            using (var ofd = new OpenFileDialog())
-            {
-                ofd.Filter = "Excel Files|*.xlsx;*.xls";
-                ofd.Title  = "เลือกไฟล์ Excel สำหรับนำเข้า";
-                if (ofd.ShowDialog() == DialogResult.OK)
-                    HandleFileSelection(ofd.FileName);
-            }
-        }
+        // File Selection Handling
 
         private void HandleFileSelection(string filePath)
         {
@@ -556,163 +793,36 @@ namespace CMS.Presentation.Modules.KMS
             SetStatus(string.Format("✅  อัปโหลดไฟล์ \"{0}\" สำเร็จ", _uploadedFileName));
         }
 
-        private void BtnRemoveFile_Click(object sender, EventArgs e)
-        {
-            _uploadedFilePath = null;
-            _uploadedFileName = null;
-            _uploadedFileSize = 0;
+        // Import
 
-            pnlUploadedFile.Visible = false;
-            pnlUploadZone.Visible   = true;
-            btnNext.Enabled         = false;
-            lblFileHint.Visible     = true;
-            SetStatus("ลบไฟล์แล้ว");
-        }
-
-        private void BtnDownloadTemplate_Click(object sender, EventArgs e)
-        {
-            SetStatus("กำลังดาวน์โหลด Template... (ฟีเจอร์อยู่ระหว่างพัฒนา)");
-        }
-
-        private void BtnDemo_Click(object sender, EventArgs e)
-        {
-            _uploadedFilePath = @"C:\Demo\KnowledgeBase_Import_Demo.xlsx";
-            _uploadedFileName = "KnowledgeBase_Import_Demo.xlsx";
-            _uploadedFileSize = 1258291L;
-            _uploadedTime     = DateTime.Now;
-            ShowUploadedFile();
-            lblUploadedFileMeta.Text = string.Format(
-                "Excel Workbook  •  1.2 MB  •  อัปโหลดเมื่อ {0} น.  (ไฟล์ Demo)",
-                _uploadedTime.ToString("HH:mm"));
-        }
-
-        // ── Step 1 → Step 2 (delegates to presenter) ─────────────────────────────
-        private void BtnNext_Click(object sender, EventArgs e)
-        {
-            if (_presenter == null) return;
-            if (string.IsNullOrEmpty(_uploadedFilePath))
-            {
-                MessageBox.Show("กรุณาเลือกไฟล์ Excel ก่อน",
-                    "กรุณาเลือกไฟล์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            // Presenter validates file; calls ShowValidationResult() on success
-            _presenter.ValidateFile();
-        }
-
-        private void BtnBack_Click(object sender, EventArgs e)
-        {
-            // Navigate back to previous step
-            if (_currentStep == 2)
-            {
-                // From Step 2 back to Step 1
-                ShowStep(1);
-            }
-            else if (_currentStep == 3)
-            {
-                // From Step 3 back to Step 2
-                ShowStep(2);
-            }
-        }
-
-        // ── Import (delegates to presenter after animation) ───────────────────────
-        private void BtnImport_Click(object sender, EventArgs e)
-        {
-            if (_presenter == null) return;
-
-            var confirm = MessageBox.Show(
-                string.Format(
-                    "ต้องการนำเข้าข้อมูล {0} รายการ ใช่หรือไม่?\n\n" +
-                    "✅  พร้อมนำเข้า :  {1} รายการ\n" +
-                    "⚠️  มีคำเตือน  :  {2} รายการ\n" +
-                    "⛔  ข้อผิดพลาด :  {3} รายการ (จะข้าม)",
-                    lblTotalCount.Text, lblValidCount.Text,
-                    lblWarnCount.Text,  lblErrorCount.Text),
-                "ยืนยันการนำเข้า", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirm != DialogResult.Yes) return;
-
-            StartImportAnimation();
-        }
-
-        /// <summary>
-        /// Plays the progress-bar animation (UI-only), then asks the presenter to
-        /// execute the actual import. The presenter calls ShowImportComplete() when done.
-        /// </summary>
-        private void StartImportAnimation()
+        private void StartImport()
         {
             pnlProgress.Visible  = true;
             progressBar.Value    = 0;
-            lblProgressText.Text = "กำลังเตรียมข้อมูล...";
+            lblProgressText.Text = "กำลังเตรียมข้อมูล...  (0%)";
             btnImport.Enabled    = false;
             btnBack.Enabled      = false;
+            Application.DoEvents();
 
-            var timer    = new Timer { Interval = 80 };
-            int progress = 0;
-            timer.Tick += (s, ev) =>
-            {
-                progress         += 5;
-                progressBar.Value = Math.Min(progress, 100);
-                lblProgressText.Text = string.Format(
-                    "กำลังนำเข้าข้อมูล... {0}%", progressBar.Value);
+            // Presenter reports real progress via SetProgress(); calls ShowImportComplete() on success.
+            _presenter.ExecuteImport();
 
-                if (progress >= 100)
-                {
-                    timer.Stop();
-                    timer.Dispose();
-                    pnlProgress.Visible = false;
-                    btnImport.Enabled   = true;
-                    btnBack.Enabled     = true;
-
-                    // Hand off to presenter — calls ShowImportComplete() on success
-                    _presenter.ExecuteImport();
-                }
-            };
-            timer.Start();
+            // ExecuteImport calls ShowImportComplete → ShowStep(3) which hides pnlStep2.
+            // Reset buttons in case an error occurred and we stayed on Step 2.
+            pnlProgress.Visible = false;
+            btnImport.Enabled   = true;
+            btnBack.Enabled     = true;
         }
 
-        // ── Preview grid ────────────────────────────────────────────────────────
+        // Preview Grid Population
+
         private void PopulatePreviewGrid(IList<KBImportRow> rows)
         {
             previewControl.BindRows(rows);
         }
 
-        // ── Step 3 buttons ───────────────────────────────────────────────────────
-        private void BtnClose_Click(object sender, EventArgs e)
-        {
-            DialogResult = DialogResult.OK;
-            Close();
-        }
+        // Utility Methods
 
-        private void BtnCancel_Click(object sender, EventArgs e)
-        {
-            var confirm = MessageBox.Show(
-                "ต้องการยกเลิกการนำเข้าข้อมูลใช่หรือไม่?",
-                "ยืนยันการยกเลิก", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (confirm == DialogResult.Yes)
-            {
-                DialogResult = DialogResult.Cancel;
-                Close();
-            }
-        }
-
-        private void BtnImportNew_Click(object sender, EventArgs e)
-        {
-            // Reset wizard back to Step 1
-            _uploadedFilePath = null;
-            _uploadedFileName = null;
-            _uploadedFileSize = 0;
-
-            pnlUploadedFile.Visible = false;
-            pnlUploadZone.Visible   = true;
-            btnNext.Enabled         = false;
-            lblFileHint.Visible     = true;
-            previewControl.Clear();
-
-            // Show Step 1, hide Step 2 and Step 3
-            ShowStep(1);
-        }
-
-        // ── Helpers ──────────────────────────────────────────────────────────────
         private static string FormatFileSize(long bytes)
         {
             if (bytes < 1024L)        return bytes + " B";
@@ -759,42 +869,135 @@ namespace CMS.Presentation.Modules.KMS
             pnlStatSkip.Width    = quarter + remainder;
         }
 
-        // ── Step progress bottom border ──────────────────────────────────────────
-        private void PnlStepProgress_Paint(object sender, PaintEventArgs e)
+        // Step 3 — skipped/failed row grid with paging
+
+        private void PopulateErrorGrid(IList<KBImportRow> rows)
         {
-            var g = e.Graphics;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
-            // bottom separator
-            using (var pen = new Pen(Color.FromArgb(208, 215, 222), 1))
-                g.DrawLine(pen, 0, pnlStepProgress.Height - 1,
-                    pnlStepProgress.Width, pnlStepProgress.Height - 1);
-
-            // draw rounded circles over each badge label
-            foreach (var (lbl, active, done) in new[]
-            {
-                (lblStep1Circle, _currentStep == 1, _currentStep > 1),
-                (lblStep2Circle, _currentStep == 2, _currentStep > 2),
-                (lblStep3Circle, _currentStep == 3, _currentStep > 3),
-            })
-            {
-                var r = new Rectangle(
-                    lbl.Parent.Left + lbl.Left,
-                    lbl.Parent.Top  + lbl.Top,
-                    lbl.Width, lbl.Height);
-
-                Color fill = done   ? Color.FromArgb(39, 174, 96)  :
-                             active ? Color.FromArgb(46, 116, 181) :
-                                      Color.FromArgb(230, 236, 245);
-
-                using (var brush = new System.Drawing.SolidBrush(fill))
-                    g.FillEllipse(brush, r);
-
-                // subtle ring for inactive
-                if (!active && !done)
-                    using (var pen = new Pen(Color.FromArgb(189, 195, 199), 1.5f))
-                        g.DrawEllipse(pen, r);
-            }
+            _errAllRows     = rows;
+            _errCurrentPage = 0;
+            ShowErrorPage(0);
         }
+
+        private void ShowErrorPage(int page)
+        {
+            int total     = _errAllRows == null ? 0 : _errAllRows.Count;
+            int pageCount = total == 0 ? 1 : (total + ErrPageSize - 1) / ErrPageSize;
+            page = Math.Max(0, Math.Min(page, pageCount - 1));
+            _errCurrentPage = page;
+
+            dgvFailedRows.Rows.Clear();
+
+            int start = page * ErrPageSize;
+            int end   = Math.Min(start + ErrPageSize, total);
+
+            for (int i = start; i < end; i++)
+            {
+                var row = _errAllRows[i];
+                string reason, relatedData;
+
+                if (row.Status == "Warn")
+                {
+                    reason      = "⚠️ ข้ามตามตัวเลือก";
+                    relatedData = row.StatusNote ?? string.Empty;
+                }
+                else
+                {
+                    ClassifyError(row.StatusNote ?? string.Empty, out reason, out relatedData);
+                }
+
+                int idx = dgvFailedRows.Rows.Add(
+                    row.RowNumber,
+                    row.ArticleCode ?? string.Empty,
+                    string.Format("{0} > {1}", row.ColA, row.ColB),
+                    row.ColE ?? string.Empty,
+                    relatedData,
+                    reason);
+
+                Color rowColor = row.Status == "Warn"
+                    ? Color.FromArgb(254, 249, 231)
+                    : Color.FromArgb(253, 237, 236);
+                dgvFailedRows.Rows[idx].DefaultCellStyle.BackColor = rowColor;
+            }
+
+            lblErrPage.Text    = string.Format("หน้า {0} / {1}  ({2} รายการ)", page + 1, pageCount, total);
+            btnErrPrev.Enabled = page > 0;
+            btnErrNext.Enabled = page < pageCount - 1;
+        }
+
+        /// <summary>
+        /// Maps a raw exception / StatusNote string to a short Thai reason label and
+        /// a "related data" snippet extracted from the message where possible.
+        /// </summary>
+        private static void ClassifyError(string note, out string reason, out string relatedData)
+        {
+            relatedData = string.Empty;
+
+            if (string.IsNullOrEmpty(note))
+            {
+                reason = "ข้อผิดพลาดไม่ระบุ";
+                return;
+            }
+
+            // Duplicate / unique key
+            if (note.IndexOf("duplicate key", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("Violation of UNIQUE KEY", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("Cannot insert duplicate", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason = "❌ Duplicate key — ข้อมูลซ้ำในฐานข้อมูล";
+                // Extract the duplicate value from "The duplicate key value is (…)"
+                int p = note.IndexOf("(", StringComparison.Ordinal);
+                int q = note.IndexOf(")", StringComparison.Ordinal);
+                if (p >= 0 && q > p)
+                    relatedData = "ค่าซ้ำ: " + note.Substring(p, q - p + 1);
+                return;
+            }
+
+            // String truncation
+            if (note.IndexOf("String or binary data would be truncated", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("truncated", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ ค่าในคอลัมน์ยาวเกินขนาดที่กำหนด";
+                relatedData = "ตรวจสอบคอลัมน์ที่มีข้อความยาว (E, C, T)";
+                return;
+            }
+
+            // NULL constraint
+            if (note.IndexOf("Cannot insert the value NULL", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("null value", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason = "❌ ค่า NULL ในคอลัมน์บังคับ";
+                int col = note.IndexOf("column '", StringComparison.OrdinalIgnoreCase);
+                if (col >= 0)
+                {
+                    int end = note.IndexOf("'", col + 8, StringComparison.Ordinal);
+                    if (end > col + 8)
+                        relatedData = "คอลัมน์: " + note.Substring(col + 8, end - col - 8);
+                }
+                return;
+            }
+
+            // Foreign key
+            if (note.IndexOf("FOREIGN KEY", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("conflicted with the", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ Foreign key — ค่าอ้างอิงไม่มีในตาราง";
+                relatedData = "ตรวจสอบ CategoryID หรือ ArticleType";
+                return;
+            }
+
+            // Category code not found (from ResolveCategories)
+            if (note.IndexOf("ไม่พบรหัสหมวดหมู่", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ รหัสหมวดหมู่ไม่ถูกต้อง";
+                relatedData = note;
+                return;
+            }
+
+            // Generic — return raw note, truncated
+            reason      = "❌ ข้อผิดพลาดทั่วไป";
+            relatedData = note.Length > 200 ? note.Substring(0, 200) + "…" : note;
+        }
+
+        #endregion
     }
 }

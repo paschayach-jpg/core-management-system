@@ -52,5 +52,6 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         void ShowError(string message);
         void ShowInfo(string message);
         void SetStatus(string message);
+        void SetProgress(int percent, string message);
     }
 }
