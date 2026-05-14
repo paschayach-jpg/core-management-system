@@ -121,6 +121,10 @@ namespace CMS.Presentation
         // ── "Shared With Me" badge (Home ribbon) ────────────────────────────
         private ToolStripLabel _lblSharedBadge;
 
+        // ── Persistent left navigation panel ────────────────────────────────
+        private Panel _pnlMainNav;
+        private TreeView _navTree;
+
         // File detail panel controls
         private Panel _fileDetailPanel;
         private Label _lblDetailFileName;
@@ -314,6 +318,9 @@ namespace CMS.Presentation
                 // Handle MDI child activation
                 this.MdiChildActivate += (s, ev) => OnMdiChildActivate();
 
+                // Persistent left navigation panel (always visible)
+                InitializeMainNavPanel();
+
                 // Auto-open FolderForm on startup
                 this.BeginInvoke(new Action(() =>
                 {
@@ -367,6 +374,273 @@ namespace CMS.Presentation
 
             // Update move controls enabled state based on active child (Req 9.4)
             UpdateMoveControlsState();
+        }
+
+        // -----------------------------------------------------------------------
+        // Left Navigation Panel
+        // -----------------------------------------------------------------------
+
+        private void InitializeMainNavPanel()
+        {
+            var accent = Color.FromArgb(31, 56, 100);
+
+            var lblNavTitle = new Label
+            {
+                Text = "☰  เมนูหลัก",
+                Dock = DockStyle.Top,
+                Height = 30,
+                BackColor = accent,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                Padding = new Padding(8, 0, 0, 0)
+            };
+
+            _navTree = new TreeView
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.None,
+                Font = new Font("Segoe UI", 10f),
+                HotTracking = true,
+                Indent = 14,
+                HideSelection = false,
+                ShowLines = true
+            };
+            _navTree.NodeMouseClick += NavTree_NodeMouseClick;
+
+            var pnlNavActions = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 26,
+                BackColor = Color.FromArgb(240, 244, 250),
+                Padding = new Padding(4, 3, 4, 3)
+            };
+
+            var btnExpandAll = new Button
+            {
+                Text = "ขยายโหนด",
+                Dock = DockStyle.Left,
+                Width = 82,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(31, 56, 100),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 8f),
+                Cursor = Cursors.Hand,
+                TabStop = false
+            };
+            btnExpandAll.FlatAppearance.BorderSize = 0;
+            btnExpandAll.Click += (s, e) => _navTree.ExpandAll();
+
+            var btnCollapseAll = new Button
+            {
+                Text = "ย่อโหนด",
+                Dock = DockStyle.Left,
+                Width = 70,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(90, 110, 140),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 8f),
+                Cursor = Cursors.Hand,
+                TabStop = false,
+                Margin = new Padding(0, 0, 4, 0)
+            };
+            btnCollapseAll.FlatAppearance.BorderSize = 0;
+            btnCollapseAll.Click += (s, e) => _navTree.CollapseAll();
+
+            pnlNavActions.Controls.Add(btnCollapseAll);
+            pnlNavActions.Controls.Add(btnExpandAll);
+
+            var sep = new Panel
+            {
+                Dock = DockStyle.Right,
+                Width = 1,
+                BackColor = Color.FromArgb(180, 200, 230)
+            };
+
+            _pnlMainNav = new Panel
+            {
+                Dock = DockStyle.Left,
+                Width = 185,
+                BackColor = Color.White
+            };
+            _pnlMainNav.Controls.Add(_navTree);
+            _pnlMainNav.Controls.Add(pnlNavActions);
+            _pnlMainNav.Controls.Add(sep);
+            _pnlMainNav.Controls.Add(lblNavTitle);
+
+            this.Controls.Add(_pnlMainNav);
+
+            LoadMainNavTree();
+        }
+
+        private void LoadMainNavTree()
+        {
+            _navTree.BeginUpdate();
+            _navTree.Nodes.Clear();
+            try
+            {
+                if (_menuManagementController != null)
+                {
+                    var roots = _menuManagementController.GetRootMenus(_currentUser)
+                                    ?.Where(m => m.IsActive && CanUserSeeMenu(m))
+                                    .OrderBy(m => m.DisplayOrder).ToList()
+                                ?? new List<CMS.Domain.Models.MenuItem>();
+                    if (roots.Count > 0)
+                    {
+                        foreach (var root in roots)
+                            PopulateNavChildrenRecursive(root);
+                        // Remove root nodes that ended up with no visible children AND no action of their own
+                        roots = roots.Where(r => HasActionableContent(r)).ToList();
+                        foreach (var root in roots)
+                            _navTree.Nodes.Add(BuildNavNode(root));
+                        _navTree.EndUpdate();
+                        return;
+                    }
+                }
+                BuildDefaultNavTree();
+            }
+            catch
+            {
+                _navTree.Nodes.Clear();
+                BuildDefaultNavTree();
+            }
+            finally
+            {
+                _navTree.EndUpdate();
+            }
+        }
+
+        private bool CanUserSeeMenu(CMS.Domain.Models.MenuItem menu)
+        {
+            if (_currentUser == null) return false;
+            // RequiredAppRole == null means visible to all users
+            // RequiredAppRole set means user's role must be >= the required level
+            return !menu.RequiredAppRole.HasValue
+                   || _currentUser.AppRole >= menu.RequiredAppRole.Value;
+        }
+
+        private bool HasActionableContent(CMS.Domain.Models.MenuItem menu)
+        {
+            // A group node with no children after role-filtering should be hidden
+            if (!string.IsNullOrWhiteSpace(menu.FormClassName))
+                return true;
+            return menu.ChildMenuItems != null && menu.ChildMenuItems.Count > 0;
+        }
+
+        private void PopulateNavChildrenRecursive(CMS.Domain.Models.MenuItem parent)
+        {
+            var children = _menuManagementController
+                               .GetChildMenus(parent.MenuItemID, _currentUser)
+                               ?.Where(m => m.IsActive && CanUserSeeMenu(m))
+                               .OrderBy(m => m.DisplayOrder).ToList()
+                           ?? new List<CMS.Domain.Models.MenuItem>();
+            parent.ChildMenuItems = children;
+            foreach (var child in children)
+                PopulateNavChildrenRecursive(child);
+        }
+
+        private static TreeNode BuildNavNode(CMS.Domain.Models.MenuItem menu)
+        {
+            // Store the full MenuItem object as Tag so DispatchNavAction(MenuItem) can use
+            // FormClassName → MenuKey → MenuName resolution (same as FolderForm's ResolveMenuActionTag).
+            var node = new TreeNode(menu.MenuName)
+            {
+                Tag = menu,
+                ToolTipText = menu.Description ?? string.Empty
+            };
+            foreach (var child in menu.ChildMenuItems ?? new List<CMS.Domain.Models.MenuItem>())
+                node.Nodes.Add(BuildNavNode(child));
+            return node;
+        }
+
+        private void BuildDefaultNavTree()
+        {
+            var dms = new TreeNode("📁 จัดการเอกสาร");
+            dms.Nodes.Add(new TreeNode("🏠 หน้าแรก") { Tag = "Home" });
+            dms.Nodes.Add(new TreeNode("🔗 แชร์กับฉัน") { Tag = "SharedWithMe" });
+            dms.Nodes.Add(new TreeNode("📤 จัดการการแชร์") { Tag = "ShareManagement" });
+            dms.Nodes.Add(new TreeNode("✅ รออนุมัติ") { Tag = "ApprovalInbox" });
+            dms.Nodes.Add(new TreeNode("🗑️ ถังขยะ") { Tag = "RecycleBin" });
+
+            var admin = new TreeNode("⚙️ ผู้ดูแลระบบ");
+            admin.Nodes.Add(new TreeNode("🏢 โครงสร้างองค์กร") { Tag = "OrgStructure" });
+            admin.Nodes.Add(new TreeNode("👤 จัดการผู้ใช้") { Tag = "UserManagement" });
+            admin.Nodes.Add(new TreeNode("🔒 สิทธิ์ Folder") { Tag = "PermissionAdmin" });
+            admin.Nodes.Add(new TreeNode("📋 Folder Template") { Tag = "FolderTemplate" });
+            admin.Nodes.Add(new TreeNode("📊 Audit Log") { Tag = "AuditLog" });
+            admin.Nodes.Add(new TreeNode("⚙️ ตั้งค่าระบบ") { Tag = "ConfigAdmin" });
+            admin.Nodes.Add(new TreeNode("📜 จัดการเมนู") { Tag = "MenuManagement" });
+
+            _navTree.Nodes.Add(dms);
+            _navTree.Nodes.Add(admin);
+            dms.Expand();
+        }
+
+        private void CenterDialogOnMdiContent(Form dialog)
+        {
+            MdiClient mdiClient = null;
+            foreach (Control c in this.Controls)
+            {
+                if (c is MdiClient mc) { mdiClient = mc; break; }
+            }
+            if (mdiClient == null) return;
+
+            Point clientScreenPos = this.PointToScreen(mdiClient.Location);
+            int x = clientScreenPos.X + (mdiClient.Width  - dialog.Width)  / 2;
+            int y = clientScreenPos.Y + (mdiClient.Height - dialog.Height) / 2;
+
+            Rectangle workArea = Screen.FromControl(this).WorkingArea;
+            x = Math.Max(workArea.Left, Math.Min(x, workArea.Right  - dialog.Width));
+            y = Math.Max(workArea.Top,  Math.Min(y, workArea.Bottom - dialog.Height));
+
+            dialog.StartPosition = FormStartPosition.Manual;
+            dialog.Location      = new System.Drawing.Point(x, y);
+        }
+
+        private void NavTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            // PlusMinus click: let tree expand/collapse natively
+            var hit = _navTree.HitTest(e.Location);
+            if ((hit.Location & TreeViewHitTestLocations.PlusMinus) == TreeViewHitTestLocations.PlusMinus)
+                return;
+
+            // Nodes from DB carry the full MenuItem object; default-tree nodes carry a string tag.
+            var menuItem = e.Node.Tag as CMS.Domain.Models.MenuItem;
+            var tagStr = (e.Node.Tag as string ?? string.Empty).Trim();
+
+            // Group node (no tag, no MenuItem, or MenuItem with no actionable key/class)
+            if (menuItem == null && string.IsNullOrEmpty(tagStr))
+            {
+                if (e.Node.IsExpanded) e.Node.Collapse();
+                else e.Node.Expand();
+                return;
+            }
+
+            // Ensure FolderForm is open and active
+            var ff = MdiChildren.OfType<FolderForm>().FirstOrDefault();
+            if (ff == null)
+            {
+                OpenFolderStructure();
+                ff = MdiChildren.OfType<FolderForm>().FirstOrDefault();
+            }
+
+            if (ff != null)
+            {
+                if (ff.WindowState == FormWindowState.Minimized)
+                    ff.WindowState = FormWindowState.Maximized;
+                ff.Activate();
+
+                if (menuItem != null)
+                    ff.DispatchNavAction(menuItem);      // Full resolution: FormClassName → MenuKey → MenuName
+                else
+                    ff.DispatchNavAction(tagStr, e.Node.Text); // Default-tree string tags
+                return;
+            }
+
+            // Fallback: FolderForm could not be opened
+            if (!string.IsNullOrEmpty(tagStr))
+                HandleFolderMenuActionRequested(this, tagStr);
         }
 
         /// <summary>
@@ -1081,7 +1355,10 @@ namespace CMS.Presentation
                 return;
             }
             using (var dlg = new FolderTemplateForm(_folderTemplateController, _userAccessOrgLookupController, _currentUser))
+            {
+                CenterDialogOnMdiContent(dlg);
                 dlg.ShowDialog(this);
+            }
         }
 
         private void OpenOrgStructure()

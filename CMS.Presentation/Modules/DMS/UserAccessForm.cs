@@ -83,7 +83,7 @@ namespace CMS.Presentation
                 FullRowSelect = true,
                 GridLines = true,
                 HideSelection = false,
-                MultiSelect = false
+                MultiSelect = true
             };
             _lvVisibility.Columns.Add("หน่วยงาน", 280);
             _lvVisibility.Columns.Add("รหัสหน่วยงาน", 120);
@@ -159,9 +159,9 @@ namespace CMS.Presentation
             // Tab 3
             _lvVisibility.SelectedIndexChanged += (s, e) =>
             {
-                bool hasSel = _lvVisibility.SelectedItems.Count > 0;
-                _btnRevokeVisibility.Enabled = hasSel
-                    && _lvVisibility.SelectedItems[0].Name != "own_org";
+                bool hasRevocable = _lvVisibility.SelectedItems.Cast<ListViewItem>()
+                    .Any(item => item.Name != "own_org" && item.Tag is OrgUnit);
+                _btnRevokeVisibility.Enabled = hasRevocable;
             };
             _btnGrantVisibility.Click += BtnGrantVisibility_Click;
             _btnRevokeVisibility.Click += BtnRevokeVisibility_Click;
@@ -471,8 +471,11 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    // Get explicit grants with GrantedBy and GrantedDate information
-                    var grants = _visibilityController.GetExplicitGrantsForUser(user.UserID, _currentUser).ToList();
+                    // Get explicit grants — deduplicate by OrgUnitID (keep latest by GrantedDate)
+                    var grants = _visibilityController.GetExplicitGrantsForUser(user.UserID, _currentUser)
+                        .GroupBy(g => g.OrgUnitID)
+                        .Select(g => g.OrderByDescending(x => x.GrantedDate).First())
+                        .ToList();
 
                     // Build lookup for user names (GrantedBy)
                     var grantedByIds = grants.Select(g => g.GrantedBy).Distinct().ToList();
@@ -480,29 +483,47 @@ namespace CMS.Presentation
                         .Where(u => grantedByIds.Contains(u.UserID))
                         .ToDictionary(u => u.UserID, u => u.DisplayName ?? u.ADUserName);
 
-                    foreach (var grant in grants)
+                    // Build sort path: traverse parent chain to get "SC-006/DIV-009/DEPT-011"
+                    Func<OrgUnit, string> getSortPath = null;
+                    getSortPath = (o) =>
                     {
-                        // Get OrgUnit info
-                        OrgUnit org = null;
-                        if (!activeOrgLookup.TryGetValue(grant.OrgUnitID, out org))
-                            continue;
+                        if (o == null) return "";
+                        string self = o.OrgUnitCode ?? o.OrgUnitNameTH ?? "";
+                        if (!o.ParentOrgUnitID.HasValue || o.ParentOrgUnitID == 0) return self;
+                        OrgUnit parent;
+                        if (!activeOrgLookup.TryGetValue(o.ParentOrgUnitID.Value, out parent)) return self;
+                        return getSortPath(parent) + "/" + self;
+                    };
 
-                        string orgName = org.OrgUnitNameTH ?? org.OrgUnitCode;
+                    // Resolve + sort grants in hierarchy order (SC → DIV → DEPT)
+                    var resolvedGrants = grants
+                        .Select(g => { OrgUnit o; activeOrgLookup.TryGetValue(g.OrgUnitID, out o); return new { grant = g, org = o }; })
+                        .Where(x => x.org != null)
+                        .OrderBy(x => getSortPath(x.org))
+                        .ToList();
+
+                    foreach (var entry in resolvedGrants)
+                    {
+                        var grant = entry.grant;
+                        var org = entry.org;
+
+                        // Visual indent + prefix by org level
+                        string indent = org.OrgUnitType == 1 ? ""
+                                      : org.OrgUnitType == 2 ? "   "
+                                      : "      ";
+                        string typePrefix = org.OrgUnitType == 1 ? "🏢 "
+                                         : org.OrgUnitType == 2 ? "◆ "
+                                         : "• ";
+                        string orgName = indent + typePrefix + (org.OrgUnitNameTH ?? org.OrgUnitCode);
                         string orgCode = org.OrgUnitCode ?? "";
 
                         // Get GrantedBy user name
                         string grantedByName = "";
-                        if (userLookup.TryGetValue(grant.GrantedBy, out grantedByName))
+                        if (!userLookup.TryGetValue(grant.GrantedBy, out grantedByName))
                         {
-                            // Found in user list
-                        }
-                        else if (grant.GrantedBy == _currentUser.UserID)
-                        {
-                            grantedByName = _currentUser.ADUserName ?? string.Format("UserID:{0}", _currentUser.UserID);
-                        }
-                        else
-                        {
-                            grantedByName = string.Format("UserID:{0}", grant.GrantedBy);
+                            grantedByName = grant.GrantedBy == _currentUser.UserID
+                                ? (_currentUser.ADUserName ?? string.Format("UserID:{0}", _currentUser.UserID))
+                                : string.Format("UserID:{0}", grant.GrantedBy);
                         }
 
                         var item = new ListViewItem(orgName);
@@ -510,6 +531,13 @@ namespace CMS.Presentation
                         item.SubItems.Add(grantedByName);
                         item.SubItems.Add(grant.GrantedDate.ToString("dd/MM/yyyy HH:mm"));
                         item.Tag = org;
+
+                        // Color by org type for visual clarity
+                        if (org.OrgUnitType == 1)
+                            item.ForeColor = Color.FromArgb(25, 55, 105);
+                        else if (org.OrgUnitType == 2)
+                            item.ForeColor = Color.FromArgb(50, 90, 150);
+
                         _lvVisibility.Items.Add(item);
                     }
 
@@ -605,43 +633,72 @@ namespace CMS.Presentation
         {
             var user = GetSelectedUser();
             if (user == null || _visibilityController == null) return;
-            if (_lvVisibility.SelectedItems.Count == 0) return;
 
-            var org = _lvVisibility.SelectedItems[0].Tag as OrgUnit;
-            if (org == null) return;
+            var toRevoke = _lvVisibility.SelectedItems.Cast<ListViewItem>()
+                .Where(item => item.Name != "own_org" && item.Tag is OrgUnit)
+                .Select(item => item.Tag as OrgUnit)
+                .ToList();
 
-            try
+            if (toRevoke.Count == 0) return;
+
+            string confirmMsg = toRevoke.Count == 1
+                ? string.Format("ลบสิทธิ์มองเห็น '{0}' ของ '{1}' ใช่หรือไม่?",
+                    toRevoke[0].OrgUnitNameTH ?? toRevoke[0].OrgUnitCode,
+                    user.DisplayName ?? user.ADUserName)
+                : string.Format("ลบสิทธิ์มองเห็น {0} หน่วยงาน ของ '{1}' ใช่หรือไม่?\n\n{2}",
+                    toRevoke.Count,
+                    user.DisplayName ?? user.ADUserName,
+                    string.Join("\n", toRevoke.Select(o => "• " + (o.OrgUnitNameTH ?? o.OrgUnitCode))));
+
+            if (MessageBox.Show(confirmMsg, "ยืนยันลบสิทธิ์",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+
+            var errors = new List<string>();
+            int successCount = 0;
+
+            foreach (var org in toRevoke)
             {
-                _visibilityController.RevokeVisibility(user.UserID, org.OrgUnitID, _currentUser);
-                if (_auditLogController != null)
-                    _auditLogController.Log(new AuditEntry
-                    {
-                        Module = "UserAccess",
-                        Action = "REVOKE_VISIBILITY",
-                        UserID = _currentUser.UserID,
-                        TableName = "UserOrgVisibility",
-                        RecordID = user.UserID,
-                        OldValue = string.Format("TargetUser:{0} OrgUnitID:{1} OrgName:{2}",
-                                         user.ADUserName, org.OrgUnitID, org.OrgUnitNameTH ?? org.OrgUnitCode),
-                        MachineName = _currentUser.MachineName,
-                        IPAddress = _currentUser.IPAddress,
-                        SessionID = _currentUser.SessionID,
-                        Result = 1,
-                        AuditDate = DateTime.Now
-                    });
-                LoadVisibilityList(user);
-                MessageBox.Show(
-                    string.Format("ลบสิทธิ์มองเห็น '{0}' ของ '{1}' เรียบร้อย",
-                        org.OrgUnitNameTH ?? org.OrgUnitCode,
-                        user.DisplayName ?? user.ADUserName),
-                    "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                SetStatus(_lblVisibilityStatus, "ลบสิทธิ์เรียบร้อย", Color.DarkGreen);
+                try
+                {
+                    _visibilityController.RevokeVisibility(user.UserID, org.OrgUnitID, _currentUser);
+                    if (_auditLogController != null)
+                        _auditLogController.Log(new AuditEntry
+                        {
+                            Module = "UserAccess",
+                            Action = "REVOKE_VISIBILITY",
+                            UserID = _currentUser.UserID,
+                            TableName = "UserOrgVisibility",
+                            RecordID = user.UserID,
+                            OldValue = string.Format("TargetUser:{0} OrgUnitID:{1} OrgName:{2}",
+                                             user.ADUserName, org.OrgUnitID, org.OrgUnitNameTH ?? org.OrgUnitCode),
+                            MachineName = _currentUser.MachineName,
+                            IPAddress = _currentUser.IPAddress,
+                            SessionID = _currentUser.SessionID,
+                            Result = 1,
+                            AuditDate = DateTime.Now
+                        });
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(string.Format("{0}: {1}", org.OrgUnitNameTH ?? org.OrgUnitCode, ex.Message));
+                }
             }
-            catch (Exception ex)
+
+            LoadVisibilityList(user);
+
+            if (errors.Count == 0)
             {
-                MessageBox.Show("ลบสิทธิ์ไม่สำเร็จ: " + ex.Message, "ข้อผิดพลาด",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-                SetStatus(_lblVisibilityStatus, "ลบสิทธิ์ไม่สำเร็จ: " + ex.Message, Color.Red);
+                SetStatus(_lblVisibilityStatus,
+                    string.Format("ลบสิทธิ์ {0} หน่วยงานเรียบร้อย", successCount), Color.DarkGreen);
+            }
+            else
+            {
+                MessageBox.Show("ลบสิทธิ์ไม่สำเร็จบางรายการ:\n" + string.Join("\n", errors),
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                SetStatus(_lblVisibilityStatus,
+                    string.Format("ลบสำเร็จ {0} รายการ, ไม่สำเร็จ {1} รายการ", successCount, errors.Count),
+                    Color.OrangeRed);
             }
         }
 
@@ -730,7 +787,8 @@ namespace CMS.Presentation
                 };
                 pnlCard.Controls.Add(tree);
 
-                // Recursively build TreeNodes
+                // Recursively build TreeNodes — visited set prevents duplicate/circular rendering
+                var visitedInTree = new HashSet<int>();
                 Func<OrgUnit, TreeNode> buildNode = null;
                 buildNode = (org) =>
                 {
@@ -742,13 +800,13 @@ namespace CMS.Presentation
                         Tag = org,
                         Checked = alreadyGrantedIds.Contains(org.OrgUnitID)
                     };
-                    // Gray out already-granted nodes via ForeColor
                     if (alreadyGrantedIds.Contains(org.OrgUnitID))
                         node.ForeColor = Color.Gray;
 
+                    visitedInTree.Add(org.OrgUnitID);
                     foreach (var child in allOrgs
-                        .Where(c => c.ParentOrgUnitID == org.OrgUnitID)
-                        .OrderBy(c => c.SortOrder).ThenBy(c => c.Name))
+                        .Where(c => c.ParentOrgUnitID == org.OrgUnitID && !visitedInTree.Contains(c.OrgUnitID))
+                        .OrderBy(c => c.OrgUnitType).ThenBy(c => c.SortOrder).ThenBy(c => c.Name))
                     {
                         node.Nodes.Add(buildNode(child));
                     }
@@ -757,10 +815,8 @@ namespace CMS.Presentation
 
                 tree.BeginUpdate();
                 foreach (var root in allOrgs
-                    .Where(o => !o.ParentOrgUnitID.HasValue
-                        || o.ParentOrgUnitID == 0
-                        || !activeOrgIds.Contains(o.ParentOrgUnitID.Value))
-                    .OrderBy(o => o.SortOrder).ThenBy(o => o.Name))
+                    .Where(o => !o.ParentOrgUnitID.HasValue || o.ParentOrgUnitID == 0)
+                    .OrderBy(o => o.OrgUnitType).ThenBy(o => o.SortOrder).ThenBy(o => o.Name))
                 {
                     tree.Nodes.Add(buildNode(root));
                 }

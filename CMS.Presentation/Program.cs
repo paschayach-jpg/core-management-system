@@ -683,7 +683,7 @@ namespace CMS.Presentation
         private static void SyncEmployeeInfoFromAuthResult(
             UserAccount account,
             CMS.Data.Interfaces.IUserAccountRepository userAccountRepo,
-            EmployeeInfo emp)
+            CMS.Services.DTOs.EmployeeInfo emp)
         {
             if (emp == null || account == null) return;
             try

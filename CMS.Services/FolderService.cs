@@ -1032,6 +1032,74 @@ namespace CMS.Services
                 string.Format("สร้าง Sub-Folders จาก Template ID {0} ภายใต้ Folder '{1}'", templateId, parentFolder.FolderName));
         }
 
+        public void ApplyTemplateToFolder(int parentFolderId, IList<FolderTemplateItem> items, int confidentialityLevel, UserContext user)
+        {
+            if (user  == null) throw new ArgumentNullException("user");
+            if (items == null || items.Count == 0)
+                throw new InvalidOperationException("ไม่มี Sub-Folder กำหนดไว้");
+
+            var parentFolder = _folderRepository.GetById(parentFolderId);
+            if (parentFolder == null)
+                throw new InvalidOperationException(string.Format("Parent folder with ID {0} was not found.", parentFolderId));
+            if (parentFolder.IsDeleted)
+                throw new InvalidOperationException("Cannot apply a template to a deleted folder.");
+
+            int targetLevel = (confidentialityLevel >= 1 && confidentialityLevel <= 4)
+                ? confidentialityLevel
+                : parentFolder.ConfidentialityLevel;
+            bool hasAuthority = user.CanAddToFolder(targetLevel);
+            bool hasAclWrite  = !hasAuthority && _permissionService.CheckPermission(user.UserID, parentFolderId, "Write");
+            if (!hasAuthority && !hasAclWrite)
+                throw new UnauthorizedAccessException(
+                    string.Format("ไม่มีสิทธิ์สร้าง Folder ใน '{0}' (ต้องการสิทธิ์ Add)", parentFolder.FolderName));
+
+            if (confidentialityLevel < 1 || confidentialityLevel > 4)
+                confidentialityLevel = parentFolder.ConfidentialityLevel;
+
+            CreateFoldersFromItems(items, null, parentFolderId, parentFolder.FolderDepth, parentFolder.OrgUnitID, confidentialityLevel, user);
+
+            Log(user, "Folder", "CREATE", "storage.Folder", parentFolderId, 1,
+                string.Format("สร้าง Sub-Folders จาก Custom Items ภายใต้ Folder '{0}'", parentFolder.FolderName));
+        }
+
+        public void ApplyTemplateToOrgUnit(int orgUnitId, IList<FolderTemplateItem> items, string rootFolderName, int confidentialityLevel, UserContext user)
+        {
+            if (user  == null) throw new ArgumentNullException("user");
+            if (items == null || items.Count == 0)
+                throw new InvalidOperationException("ไม่มี Sub-Folder กำหนดไว้");
+
+            int clampedLevel = (confidentialityLevel >= 1 && confidentialityLevel <= 4) ? confidentialityLevel : 4;
+            bool hasAuthority = user.CanAddToFolder(clampedLevel);
+            if (!hasAuthority)
+                throw new UnauthorizedAccessException(
+                    string.Format("ไม่มีสิทธิ์สร้าง Folder ระดับ {0} (ต้องการสิทธิ์ Add)", clampedLevel));
+
+            if (confidentialityLevel < 1 || confidentialityLevel > 4)
+                confidentialityLevel = 4;
+
+            EnsureRootCreationAllowed(rootFolderName.Trim(), orgUnitId, confidentialityLevel);
+
+            var rootFolder = new Folder
+            {
+                ParentFolderID      = null,
+                OrgUnitID           = orgUnitId,
+                FolderName          = rootFolderName.Trim(),
+                FolderDepth         = 1,
+                ConfidentialityLevel = confidentialityLevel,
+                InheritPermission   = false,
+                IsDeleted           = false,
+                IsArchived          = false,
+                CreatedBy           = user.UserID,
+                CreatedDate         = DateTime.Now
+            };
+            int rootId = _folderRepository.Insert(rootFolder);
+
+            CreateFoldersFromItems(items, null, rootId, 1, orgUnitId, confidentialityLevel, user);
+
+            Log(user, "Folder", "CREATE", "storage.Folder", rootId, 1,
+                string.Format("สร้าง Folder '{0}' จาก Custom Items สำหรับ OrgUnit {1}", rootFolderName, orgUnitId));
+        }
+
         private void CreateFoldersFromItems(
             IList<FolderTemplateItem> allItems,
             int? parentItemId,

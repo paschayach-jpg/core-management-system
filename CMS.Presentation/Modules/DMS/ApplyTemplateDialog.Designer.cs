@@ -38,6 +38,9 @@ namespace CMS.Presentation
             this.pnlRight = new System.Windows.Forms.Panel();
             this.pnlTree = new System.Windows.Forms.Panel();
             this.treePreview = new System.Windows.Forms.TreeView();
+            this.pnlPreviewToolbar = new System.Windows.Forms.Panel();
+            this.btnAddSubFolder = new System.Windows.Forms.Button();
+            this.btnRemovePreviewNode = new System.Windows.Forms.Button();
             this.pnlOptions = new System.Windows.Forms.Panel();
             this.cboConfidentiality = new System.Windows.Forms.ComboBox();
             this.lblConf = new System.Windows.Forms.Label();
@@ -61,6 +64,7 @@ namespace CMS.Presentation
             this.pnlListBox.SuspendLayout();
             this.pnlRight.SuspendLayout();
             this.pnlTree.SuspendLayout();
+            this.pnlPreviewToolbar.SuspendLayout();
             this.pnlOptions.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -335,6 +339,7 @@ namespace CMS.Presentation
             // 
             this.pnlRight.Controls.Add(this.pnlTree);
             this.pnlRight.Controls.Add(this.pnlOptions);
+            this.pnlRight.Controls.Add(this.pnlPreviewToolbar);
             this.pnlRight.Controls.Add(this.lblPathBreadcrumb);
             this.pnlRight.Controls.Add(this.lblPreview);
             this.pnlRight.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -367,9 +372,53 @@ namespace CMS.Presentation
             this.treePreview.ShowNodeToolTips = true;
             this.treePreview.Size            = new System.Drawing.Size(274, 254);
             this.treePreview.TabIndex        = 0;
-            // 
+            //
+            // pnlPreviewToolbar
+            //
+            this.pnlPreviewToolbar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(243)))), ((int)(((byte)(250)))));
+            this.pnlPreviewToolbar.Controls.Add(this.btnRemovePreviewNode);
+            this.pnlPreviewToolbar.Controls.Add(this.btnAddSubFolder);
+            this.pnlPreviewToolbar.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlPreviewToolbar.Height = 30;
+            this.pnlPreviewToolbar.Name = "pnlPreviewToolbar";
+            this.pnlPreviewToolbar.Padding = new System.Windows.Forms.Padding(0, 4, 4, 4);
+            this.pnlPreviewToolbar.TabIndex = 4;
+            //
+            // btnAddSubFolder
+            //
+            this.btnAddSubFolder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(120)))), ((int)(((byte)(60)))));
+            this.btnAddSubFolder.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnAddSubFolder.FlatAppearance.BorderSize = 0;
+            this.btnAddSubFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAddSubFolder.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.btnAddSubFolder.ForeColor = System.Drawing.Color.White;
+            this.btnAddSubFolder.Location = new System.Drawing.Point(0, 4);
+            this.btnAddSubFolder.Name = "btnAddSubFolder";
+            this.btnAddSubFolder.Size = new System.Drawing.Size(118, 22);
+            this.btnAddSubFolder.TabIndex = 0;
+            this.btnAddSubFolder.Text = "➕ เพิ่ม Sub-folder";
+            this.btnAddSubFolder.UseVisualStyleBackColor = false;
+            this.btnAddSubFolder.Click += new System.EventHandler(this.BtnAddSubFolder_Click);
+            //
+            // btnRemovePreviewNode
+            //
+            this.btnRemovePreviewNode.BackColor = System.Drawing.Color.White;
+            this.btnRemovePreviewNode.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRemovePreviewNode.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
+            this.btnRemovePreviewNode.FlatAppearance.BorderSize = 1;
+            this.btnRemovePreviewNode.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRemovePreviewNode.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.btnRemovePreviewNode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(160)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
+            this.btnRemovePreviewNode.Location = new System.Drawing.Point(122, 4);
+            this.btnRemovePreviewNode.Name = "btnRemovePreviewNode";
+            this.btnRemovePreviewNode.Size = new System.Drawing.Size(80, 22);
+            this.btnRemovePreviewNode.TabIndex = 1;
+            this.btnRemovePreviewNode.Text = "✕ ลบ";
+            this.btnRemovePreviewNode.UseVisualStyleBackColor = false;
+            this.btnRemovePreviewNode.Click += new System.EventHandler(this.BtnRemovePreviewNode_Click);
+            //
             // pnlOptions
-            // 
+            //
             this.pnlOptions.BackColor = System.Drawing.Color.Transparent;
             this.pnlOptions.Controls.Add(this.cboConfidentiality);
             this.pnlOptions.Controls.Add(this.lblConf);
@@ -496,6 +545,7 @@ namespace CMS.Presentation
             this.pnlListBox.ResumeLayout(false);
             this.pnlRight.ResumeLayout(false);
             this.pnlTree.ResumeLayout(false);
+            this.pnlPreviewToolbar.ResumeLayout(false);
             this.pnlOptions.ResumeLayout(false);
             this.pnlOptions.PerformLayout();
             this.ResumeLayout(false);
@@ -525,6 +575,9 @@ namespace CMS.Presentation
         private System.Windows.Forms.ListBox        lstTemplates;
         private System.Windows.Forms.Label          lblTemplateDesc;
         private System.Windows.Forms.Panel          pnlRight;
+        private System.Windows.Forms.Panel          pnlPreviewToolbar;
+        private System.Windows.Forms.Button         btnAddSubFolder;
+        private System.Windows.Forms.Button         btnRemovePreviewNode;
         private System.Windows.Forms.Label          lblPreview;
         private System.Windows.Forms.Label          lblPathBreadcrumb;
         private System.Windows.Forms.Panel          pnlTree;

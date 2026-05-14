@@ -1,13 +1,15 @@
+using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document.Interfaces;
+using CMS.Domain.Models;
+using CMS.Services.DTOs;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using CMS.Domain.Models;
-using CMS.Controllers.DMS.Document;
-using CMS.Controllers.DMS.Document.Interfaces;
-using CMS.Services.DTOs;
 
 namespace CMS.Presentation
 {
@@ -105,6 +107,7 @@ namespace CMS.Presentation
             //string username = "pitakpong";
             //string password = "P@takpong01714";
 
+
             if (checkBox1.Checked == true)
             {
                 username = "khanitthac";
@@ -128,9 +131,7 @@ namespace CMS.Presentation
                 txtPassword.Focus();
                 return;
             }
-
-
-           
+             
 
 
                 SetLoading(true);
@@ -138,13 +139,22 @@ namespace CMS.Presentation
 
             try
             {
+
+                MenuControl MenuControl = new MenuControl();
+               
+
                 AdAuthResult result = await _loginAuthController.LoginAsync(username, password);
+
+                var MenuList = await MenuControl.Request(result.AccessToken);
 
                 if (result.Success)
                 {
                     // เก็บ IP ตอน login สำเร็จ
                     if (_loginAccountController != null)
                     {
+                         
+                        var action_filter = GlobalData.MenuActions.ToList();
+
                         try
                         {
                             var account = _loginAccountController.GetUserByAdUserName(username);
@@ -167,6 +177,10 @@ namespace CMS.Presentation
                     txtPassword.Clear();
                     txtPassword.Focus();
                 }
+
+
+
+
             }
             catch (Exception ex)
             {

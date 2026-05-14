@@ -349,15 +349,7 @@ namespace CMS.Presentation
             // Add view switcher tabs to OrgUnit panel
             InitializeOrgFilterSwitcher();
 
-            // เมนูหลัก — Manager/Admin เท่านั้น (Officer/SrOfficer ไม่เห็น)
-            // ต้องเซ็ตหลัง InitializeOrgFilterSwitcher() เพราะ _btnMainMenu สร้างในนั้น
-            _btnMainMenu.Visible = canManage;
-            if (!canManage)
-            {
-                // ซ่อน เมนูหลัก → เลื่อน ตามองค์กร + ความลับ ชิดซ้าย (btnWidth=90, gap=2)
-                _btnOrgView.Location = new Point(5, 5);
-                _btnConfView.Location = new Point(5 + 90 + 2, 5);
-            }
+            // เมนูหลักย้ายไปอยู่ที่ MDI_Container left nav แล้ว — ไม่ต้องแสดงใน FolderForm
 
             // Wire navigation buttons
             btnNavBack.Click += BtnNavBack_Click;
@@ -1458,26 +1450,15 @@ namespace CMS.Presentation
 
             int btnWidth = 90;
 
-            _btnMainMenu = new Button
-            {
-                Text = "☰ เมนูหลัก",
-                Width = btnWidth,
-                Height = 28,
-                Location = new Point(5, 5),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = inactive,
-                ForeColor = accent,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
-            _btnMainMenu.FlatAppearance.BorderSize = 0;
+            // _btnMainMenu ย้ายไป MDI_Container left nav — ยังสร้างเพื่อป้องกัน null ref แต่ไม่แสดง
+            _btnMainMenu = new Button { Visible = false };
 
             _btnOrgView = new Button
             {
                 Text = "ตามองค์กร",
                 Width = btnWidth,
                 Height = 28,
-                Location = new Point(5 + btnWidth + 2, 5),
+                Location = new Point(5, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = accent,
                 ForeColor = Color.White,
@@ -1491,7 +1472,7 @@ namespace CMS.Presentation
                 Text = "🔒 ตามชั้นความลับ",
                 Width = 120,
                 Height = 28,
-                Location = new Point(5 + (btnWidth * 2) + 4, 5),
+                Location = new Point(5 + btnWidth + 2, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = inactive,
                 ForeColor = accent,
@@ -1500,7 +1481,6 @@ namespace CMS.Presentation
             };
             _btnConfView.FlatAppearance.BorderSize = 0;
 
-            _pnlViewButtons.Controls.Add(_btnMainMenu);
             _pnlViewButtons.Controls.Add(_btnOrgView);
             _pnlViewButtons.Controls.Add(_btnConfView);
 
@@ -1585,26 +1565,20 @@ namespace CMS.Presentation
 
             pnlOrgFilter.Controls.Add(treeOrgUnit);            // index 0 (front)
             pnlOrgFilter.Controls.Add(_treeConfidentiality);   // index 1
-            pnlOrgFilter.Controls.Add(_treeMainMenu);          // index 2
-            pnlOrgFilter.Controls.Add(pnlExpandCollapse);      // index 3 → row ใต้ tab buttons
-            pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 4 (back) → docked Top first
+            pnlOrgFilter.Controls.Add(pnlExpandCollapse);      // index 2 → row ใต้ tab buttons
+            pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 3 (back) → docked Top first
 
             // Wire events
             _btnOrgView.Click += (s, e) => SwitchToOrgView();
             _btnConfView.Click += (s, e) => SwitchToConfView();
-            _btnMainMenu.Click += (s, e) => SwitchToMainMenuView();
             _treeConfidentiality.BeforeSelect += ConfidentialityTree_BeforeSelect;
             _treeConfidentiality.NodeMouseClick += ConfTree_NodeMouseClick;
-            _treeMainMenu.NodeMouseClick += MainMenuTree_NodeMouseClick;
-            _treeMainMenu.CollapseAll();
-            LoadMainMenuTree();
         }
 
         private TreeView GetActiveOrgTree()
         {
             if (treeOrgUnit.Visible) return treeOrgUnit;
-            if (_treeConfidentiality.Visible) return _treeConfidentiality;
-            if (_treeMainMenu.Visible) return _treeMainMenu;
+            if (_treeConfidentiality != null && _treeConfidentiality.Visible) return _treeConfidentiality;
             return null;
         }
 
@@ -2376,6 +2350,43 @@ namespace CMS.Presentation
                 SetContentInfo = text => lblContentInfo.Text = "กำลังเปิด: " + text,
                 RequestMdiAction = OnMenuActionRequested
             };
+        }
+
+        /// <summary>
+        /// Called by MDI_Container left nav to dispatch a menu action into this form's context.
+        /// Uses the full MenuItem object so FormClassName/MenuKey/MenuName all participate in resolution.
+        /// </summary>
+        public void DispatchNavAction(CMS.Domain.Models.MenuItem menuItem)
+        {
+            if (menuItem == null) return;
+
+            string tag = ResolveMenuActionTag(menuItem);
+            if (string.IsNullOrWhiteSpace(tag)) return;
+
+            string errorMessage;
+            MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(menuItem.MenuName ?? string.Empty), out errorMessage);
+
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+                MessageBox.Show("ไม่สามารถเปิดหน้าจอ " + menuItem.MenuName + " ได้\nเนื่องจาก: " + errorMessage,
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        /// <summary>
+        /// Fallback overload for callers that only have a raw action key string (no MenuItem object).
+        /// </summary>
+        public void DispatchNavAction(string actionKey, string menuText = "")
+        {
+            if (string.IsNullOrWhiteSpace(actionKey)) return;
+
+            string tag = MapConfiguredActionToTag(actionKey);
+            if (string.IsNullOrWhiteSpace(tag)) tag = actionKey.Trim();
+
+            string errorMessage;
+            MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(menuText), out errorMessage);
+
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+                MessageBox.Show("ไม่สามารถเปิดหน้าจอ " + menuText + " ได้\nเนื่องจาก: " + errorMessage,
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         private void SetFolderExplorerControlsVisibility(bool isVisible)

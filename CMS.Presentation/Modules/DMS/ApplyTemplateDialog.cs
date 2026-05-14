@@ -19,8 +19,9 @@ namespace CMS.Presentation
 
         private List<FolderTemplate>     _templates         = new List<FolderTemplate>();
         private List<FolderTemplate>     _filteredTemplates = new List<FolderTemplate>();
-        private IList<FolderTemplateItem> _currentItems     = null;
+        private List<FolderTemplateItem> _currentItems      = null;
         private List<OrgUnit>            _orgUnits          = new List<OrgUnit>();
+        private int                      _nextTempId        = -1;
 
         public int? SelectedOrgUnitId { get; private set; }
 
@@ -197,6 +198,7 @@ namespace CMS.Presentation
             try
             {
                 _currentItems = _templateController.GetItems(tmpl.TemplateID).ToList();
+                _nextTempId   = -1;
                 RefreshPreview();
                 UpdatePathBreadcrumb();
 
@@ -247,9 +249,117 @@ namespace CMS.Presentation
         {
             foreach (var item in items.Where(i => i.ParentItemID == parentId).OrderBy(i => i.SortOrder))
             {
-                var node = new TreeNode(string.Format("📂  {0}", item.FolderName)) { ToolTipText = item.FolderName };
+                var node = new TreeNode(string.Format("📂  {0}", item.FolderName)) { Tag = item, ToolTipText = item.FolderName };
                 BuildPreviewNodes(node.Nodes, items, item.ItemID);
                 nodes.Add(node);
+            }
+        }
+
+        // ── Add / Remove sub-folder in preview ────────────────────────────────
+        private void BtnAddSubFolder_Click(object sender, EventArgs e)
+        {
+            if (_currentItems == null)
+            {
+                MessageBox.Show("กรุณาเลือก Template ก่อน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var selectedNode = treePreview.SelectedNode;
+            if (selectedNode == null)
+            {
+                MessageBox.Show("กรุณาเลือก Folder ที่ต้องการเพิ่ม Sub-folder", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string folderName = PromptFolderName();
+            if (string.IsNullOrWhiteSpace(folderName)) return;
+
+            var parentItem  = selectedNode.Tag as FolderTemplateItem;
+            int? parentItemId = parentItem != null ? parentItem.ItemID : (int?)null;
+            int  sortOrder    = _currentItems.Count(i => i.ParentItemID == parentItemId) + 1;
+            int  templateId   = _currentItems.Count > 0 ? _currentItems[0].TemplateID : 0;
+
+            _currentItems.Add(new FolderTemplateItem
+            {
+                ItemID               = _nextTempId--,
+                TemplateID           = templateId,
+                ParentItemID         = parentItemId,
+                FolderName           = folderName.Trim(),
+                ConfidentialityLevel = 0,
+                SortOrder            = sortOrder,
+                InheritPermission    = true
+            });
+
+            RefreshPreview();
+            lblStatus.ForeColor = Color.FromArgb(0, 100, 0);
+            lblStatus.Text      = string.Format("เพิ่ม Sub-folder \"{0}\" เรียบร้อย — กด \"สร้าง Folder\" เพื่อดำเนินการ", folderName.Trim());
+        }
+
+        private void BtnRemovePreviewNode_Click(object sender, EventArgs e)
+        {
+            var selectedNode = treePreview.SelectedNode;
+            if (selectedNode == null) return;
+
+            var item = selectedNode.Tag as FolderTemplateItem;
+            if (item == null)
+            {
+                MessageBox.Show("ไม่สามารถลบ Root Folder ได้", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                string.Format("ลบ \"{0}\" และ Sub-folder ทั้งหมดออกจาก Preview?\n\nTemplate เดิมใน Database จะไม่ถูกแก้ไข", item.FolderName),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm != DialogResult.Yes) return;
+
+            RemoveItemAndDescendants(item.ItemID);
+            RefreshPreview();
+            lblStatus.ForeColor = Color.FromArgb(80, 80, 80);
+            lblStatus.Text      = string.Format("ลบ \"{0}\" ออกจาก Preview เรียบร้อย", item.FolderName);
+        }
+
+        private void RemoveItemAndDescendants(int itemId)
+        {
+            var children = _currentItems.Where(i => i.ParentItemID == itemId).ToList();
+            foreach (var child in children)
+                RemoveItemAndDescendants(child.ItemID);
+            _currentItems.RemoveAll(i => i.ItemID == itemId);
+        }
+
+        // ── Prompt helper ─────────────────────────────────────────────────────
+        private string PromptFolderName()
+        {
+            using (var frm = new Form())
+            {
+                frm.Text            = "เพิ่ม Sub-folder";
+                frm.Size            = new Size(360, 130);
+                frm.StartPosition   = FormStartPosition.CenterParent;
+                frm.FormBorderStyle = FormBorderStyle.FixedDialog;
+                frm.MaximizeBox     = false;
+                frm.MinimizeBox     = false;
+                frm.Font            = new Font("Segoe UI", 9f);
+
+                var lbl    = new Label  { Text = "ชื่อ Folder ย่อย:", Dock = DockStyle.Top, Height = 26, Padding = new Padding(8, 6, 0, 0) };
+                var txt    = new TextBox { Dock = DockStyle.Top, Height = 24 };
+                var pnlBtn = new Panel  { Dock = DockStyle.Bottom, Height = 42 };
+                var btnOk  = new Button { Text = "ตกลง",   DialogResult = DialogResult.OK,     Size = new Size(80, 28), Location = new Point(186, 7) };
+                var btnCnl = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Size = new Size(80, 28), Location = new Point(270, 7) };
+
+                btnOk.FlatStyle  = FlatStyle.Flat;
+                btnCnl.FlatStyle = FlatStyle.Flat;
+                btnOk.BackColor  = Color.FromArgb(31, 56, 100);
+                btnOk.ForeColor  = Color.White;
+                btnOk.FlatAppearance.BorderSize = 0;
+
+                pnlBtn.Controls.Add(btnOk);
+                pnlBtn.Controls.Add(btnCnl);
+                frm.Controls.Add(txt);
+                frm.Controls.Add(lbl);
+                frm.Controls.Add(pnlBtn);
+                frm.AcceptButton = btnOk;
+                frm.CancelButton = btnCnl;
+
+                return frm.ShowDialog(this) == DialogResult.OK ? txt.Text : null;
             }
         }
 
@@ -264,11 +374,17 @@ namespace CMS.Presentation
                 return;
             }
 
+            if (_currentItems == null || _currentItems.Count == 0)
+            {
+                MessageBox.Show("Template นี้ไม่มี Sub-Folder กำหนดไว้", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             int conf = _parentFolder != null
                 ? _parentFolder.ConfidentialityLevel
                 : (cboConfidentiality.SelectedIndex >= 0 ? cboConfidentiality.SelectedIndex + 1 : 4);
 
-            // ถ้ามี parentFolder → สร้างภายใต้ folder นั้น (ไม่ต้องเลือก OrgUnit)
+            // ถ้ามี parentFolder → สร้างภายใต้ folder นั้น (ใช้ _currentItems โดยตรง ไม่ re-fetch DB)
             if (_parentFolder != null)
             {
                 try
@@ -278,10 +394,9 @@ namespace CMS.Presentation
                     lblStatus.Text   = "⏳ กำลังสร้าง Folder...";
                     Application.DoEvents();
 
-                    // สร้างภายใต้ parentFolder โดยตรง
                     _templateController.ApplyTemplateToFolder(
                         _parentFolder.FolderId,
-                        tmpl.TemplateID,
+                        _currentItems,
                         _parentFolder.ConfidentialityLevel,
                         _currentUser);
 
@@ -306,7 +421,7 @@ namespace CMS.Presentation
                 return;
             }
 
-            // ไม่มี parentFolder → ใช้ OrgUnit (legacy mode)
+            // ไม่มี parentFolder → ใช้ OrgUnit (ใช้ _currentItems โดยตรง ไม่ re-fetch DB)
             var ou = GetSelectedOrgUnit();
             if (ou == null)
             {
@@ -327,7 +442,7 @@ namespace CMS.Presentation
                 Application.DoEvents();
 
                 _templateController.ApplyTemplateToOrgUnit(
-                    ou.OrgUnitId, tmpl.TemplateID,
+                    ou.OrgUnitId, _currentItems,
                     txtRootName.Text.Trim(), conf, _currentUser);
 
                 SelectedOrgUnitId = ou.OrgUnitId;
