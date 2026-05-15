@@ -20,6 +20,7 @@ namespace CMS.Presentation
     {
         private readonly ILoginAuthController    _loginAuthController;
         private readonly ILoginAccountController  _loginAccountController;
+        private readonly IMenuController          _menuController;
 
         /// <summary>ผลลัพธ์หลัง login สำเร็จ — อ่านได้หลัง DialogResult.OK</summary>
         public AdAuthResult AuthResult { get; private set; }
@@ -44,10 +45,11 @@ namespace CMS.Presentation
             return "127.0.0.1";
         }
 
-        public LoginForm(ILoginAuthController loginAuthController, ILoginAccountController loginAccountController = null)
+        public LoginForm(ILoginAuthController loginAuthController, ILoginAccountController loginAccountController = null, IMenuController menuController = null)
         {
-            _loginAuthController = loginAuthController ?? throw new ArgumentNullException("loginAuthController");
+            _loginAuthController  = loginAuthController ?? throw new ArgumentNullException("loginAuthController");
             _loginAccountController = loginAccountController;
+            _menuController       = menuController;
             InitializeComponent();
 
             // ทำให้หน้าจอมน
@@ -140,12 +142,12 @@ namespace CMS.Presentation
             try
             {
 
-                MenuControl MenuControl = new MenuControl();
-               
+                var menuControl = new MenuControl(_menuController);
 
                 AdAuthResult result = await _loginAuthController.LoginAsync(username, password);
 
-                var MenuList = await MenuControl.Request(result.AccessToken);
+                var menuList = await menuControl.Request(result.AccessToken);
+                GlobalData.UserMenuModel = menuList;
 
                 if (result.Success)
                 {

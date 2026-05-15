@@ -47,6 +47,7 @@
     <Compile Include="DMS\Document\Interfaces\IConfigAdminView.cs" />
     <Compile Include="DMS\Document\Interfaces\IProjectView.cs" />
     <Compile Include="DMS\Document\Interfaces\ILoginAuthController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IMenuController.cs" />
     <Compile Include="DMS\Document\Interfaces\IShareLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IShareManagementController.cs" />
     <Compile Include="DMS\Document\Interfaces\IShareCommandController.cs" />
@@ -92,6 +93,7 @@
     <Compile Include="DMS\Document\ConfigAdminPresenter.cs" />
     <Compile Include="DMS\Document\ProjectPresenter.cs" />
     <Compile Include="DMS\Document\LoginAuthController.cs" />
+    <Compile Include="DMS\Document\MenuController.cs" />
     <Compile Include="DMS\Document\FolderSettingsController.cs" />
     <Compile Include="DMS\Document\FolderReadLookupController.cs" />
     <Compile Include="DMS\Document\ShareLookupController.cs" />

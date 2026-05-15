@@ -480,6 +480,16 @@ namespace CMS.Presentation
             _navTree.Nodes.Clear();
             try
             {
+                // Primary: MenuActions from login session (role-filtered by API)
+                var menuActions = GlobalData.MenuActions;
+                if (menuActions != null && menuActions.Count > 0)
+                {
+                    BuildNavTreeFromMenuActions(menuActions);
+                    _navTree.EndUpdate();
+                    return;
+                }
+
+                // Fallback: DB menus (when API data not available)
                 if (_menuManagementController != null)
                 {
                     var roots = _menuManagementController.GetRootMenus(_currentUser)
@@ -490,7 +500,6 @@ namespace CMS.Presentation
                     {
                         foreach (var root in roots)
                             PopulateNavChildrenRecursive(root);
-                        // Remove root nodes that ended up with no visible children AND no action of their own
                         roots = roots.Where(r => HasActionableContent(r)).ToList();
                         foreach (var root in roots)
                             _navTree.Nodes.Add(BuildNavNode(root));
@@ -498,6 +507,7 @@ namespace CMS.Presentation
                         return;
                     }
                 }
+
                 BuildDefaultNavTree();
             }
             catch
@@ -509,6 +519,44 @@ namespace CMS.Presentation
             {
                 _navTree.EndUpdate();
             }
+        }
+
+        private void BuildNavTreeFromMenuActions(List<MenuAction> actions)
+        {
+            var seen = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var action in actions)
+            {
+                string code = action.MenuCode ?? string.Empty;
+                if (seen.Contains(code)) continue;
+
+                seen.Add(code);
+                string desc  = action.MenuDesc ?? code;
+                string tag   = ResolveModuleActionTag(code, desc);
+                _navTree.Nodes.Add(new TreeNode(desc) { Tag = tag, ToolTipText = code });
+            }
+        }
+
+        private static string ResolveModuleActionTag(string code, string desc)
+        {
+            string c = (code ?? string.Empty).Trim().ToUpperInvariant();
+            string d = (desc ?? string.Empty).Trim().ToUpperInvariant();
+
+            // DMS — Document Management
+            if (c == "DMS" || c.StartsWith("DMS") || d == "DMS" || d.Contains("DOCUMENT") || d.Contains("เอกสาร"))
+                return "Home";
+
+            // KMS — Knowledge Management
+            if (c == "KMS" || c.StartsWith("KMS") || d == "KMS" || d.Contains("KNOWLEDGE") || d.Contains("ความรู้"))
+                return "KBMainForm";
+
+            // WFE / WKE — Workflow Engine
+            if (c == "WFE" || c == "WKE" || c.StartsWith("WFE") || c.StartsWith("WKE")
+                || d == "WFE" || d == "WKE" || d.Contains("WORKFLOW") || d.Contains("กระบวนการ"))
+                return "WorkflowDashboard";
+
+            // Fallback: pass MenuCode through — DispatchNavAction will try catalog resolution
+            return string.IsNullOrEmpty(code) ? null : code;
         }
 
         private bool CanUserSeeMenu(CMS.Domain.Models.MenuItem menu)

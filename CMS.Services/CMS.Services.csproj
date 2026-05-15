@@ -52,6 +52,8 @@
     <Compile Include="DTOs\AdAuthResult.cs" />
     <Compile Include="DTOs\AdLoginResponse.cs" />
     <Compile Include="Interfaces\IAdAuthService.cs" />
+    <Compile Include="Interfaces\IMenuApiService.cs" />
+    <Compile Include="MenuApiService.cs" />
     <Compile Include="AdAuthService.cs" />
     <Compile Include="Interfaces\IEmployeeApiService.cs" />
     <Compile Include="Interfaces\IApprovalService.cs" />

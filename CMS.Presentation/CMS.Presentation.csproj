@@ -60,9 +60,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Root: Shell -->
-    <Compile Include="LoginManager.cs" />
-    <Compile Include="MenuControl.cs" />
-    <Compile Include="MenuModel 1.cs" />
     <Compile Include="Modules\WFE\WorkflowDashboardFormNew.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -82,6 +79,9 @@
       <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
+    <Compile Include="Modules\DMS\LoginManager.cs" />
+    <Compile Include="Modules\DMS\MenuControl.cs" />
+    <Compile Include="Modules\DMS\MenuModel.cs" />
     <Compile Include="Modules\DMS\LoginForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -348,7 +348,7 @@
     <Compile Include="Modules\DMS\ParentMenuPickerDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="MenuTreeViewManager.cs" />
+    <Compile Include="Modules\DMS\MenuTreeViewManager.cs" />
     <!-- Module: Workflow — Forms -->
     <Compile Include="Modules\WFE\WorkflowDashboardForm.cs">
       <SubType>Form</SubType>

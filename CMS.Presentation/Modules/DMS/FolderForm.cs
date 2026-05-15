@@ -1450,15 +1450,26 @@ namespace CMS.Presentation
 
             int btnWidth = 90;
 
-            // _btnMainMenu ย้ายไป MDI_Container left nav — ยังสร้างเพื่อป้องกัน null ref แต่ไม่แสดง
-            _btnMainMenu = new Button { Visible = false };
+            _btnMainMenu = new Button
+            {
+                Text = "≡ เมนูหลัก",
+                Width = btnWidth,
+                Height = 28,
+                Location = new Point(5, 5),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = inactive,
+                ForeColor = accent,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            _btnMainMenu.FlatAppearance.BorderSize = 0;
 
             _btnOrgView = new Button
             {
                 Text = "ตามองค์กร",
                 Width = btnWidth,
                 Height = 28,
-                Location = new Point(5, 5),
+                Location = new Point(5 + btnWidth + 2, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = accent,
                 ForeColor = Color.White,
@@ -1472,7 +1483,7 @@ namespace CMS.Presentation
                 Text = "🔒 ตามชั้นความลับ",
                 Width = 120,
                 Height = 28,
-                Location = new Point(5 + btnWidth + 2, 5),
+                Location = new Point(5 + (btnWidth + 2) * 2, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = inactive,
                 ForeColor = accent,
@@ -1481,6 +1492,7 @@ namespace CMS.Presentation
             };
             _btnConfView.FlatAppearance.BorderSize = 0;
 
+            _pnlViewButtons.Controls.Add(_btnMainMenu);
             _pnlViewButtons.Controls.Add(_btnOrgView);
             _pnlViewButtons.Controls.Add(_btnConfView);
 
@@ -1509,8 +1521,8 @@ namespace CMS.Presentation
                 Indent = 16,
                 HideSelection = false,
                 ShowLines = true
-
             };
+            _treeMainMenu.NodeMouseClick += MainMenuTree_NodeMouseClick;
 
             // Re-parent treeOrgUnit into pnlOrgFilter alongside the conf tree
             // Both use DockStyle.Fill and overlap — only one is visible at a time
@@ -1565,10 +1577,12 @@ namespace CMS.Presentation
 
             pnlOrgFilter.Controls.Add(treeOrgUnit);            // index 0 (front)
             pnlOrgFilter.Controls.Add(_treeConfidentiality);   // index 1
-            pnlOrgFilter.Controls.Add(pnlExpandCollapse);      // index 2 → row ใต้ tab buttons
-            pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 3 (back) → docked Top first
+            pnlOrgFilter.Controls.Add(_treeMainMenu);          // index 2
+            pnlOrgFilter.Controls.Add(pnlExpandCollapse);      // index 3 → row ใต้ tab buttons
+            pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 4 (back) → docked Top first
 
             // Wire events
+            _btnMainMenu.Click += (s, e) => SwitchToMainMenuView();
             _btnOrgView.Click += (s, e) => SwitchToOrgView();
             _btnConfView.Click += (s, e) => SwitchToConfView();
             _treeConfidentiality.BeforeSelect += ConfidentialityTree_BeforeSelect;
@@ -1577,6 +1591,7 @@ namespace CMS.Presentation
 
         private TreeView GetActiveOrgTree()
         {
+            if (_treeMainMenu != null && _treeMainMenu.Visible) return _treeMainMenu;
             if (treeOrgUnit.Visible) return treeOrgUnit;
             if (_treeConfidentiality != null && _treeConfidentiality.Visible) return _treeConfidentiality;
             return null;

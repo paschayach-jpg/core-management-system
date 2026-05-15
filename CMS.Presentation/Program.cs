@@ -202,6 +202,10 @@ namespace CMS.Presentation
                 // ── AD Auth Service ───────────────────────────────────────────
                 var adAuthService = new AdAuthService(configManager);
 
+                // ── Menu API Service + Controller ─────────────────────────────
+                var menuApiService  = new MenuApiService(configManager);
+                var menuController  = new MenuController(menuApiService);
+
                 // ─────────────────────────────────────────────────────────────
                 // Parse command-line arguments
                 // รูปแบบ:
@@ -228,6 +232,14 @@ namespace CMS.Presentation
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
+
+                    // โหลด MenuActions เหมือน Manual login
+                    try
+                    {
+                        var mc = new MenuControl(menuController);
+                        GlobalData.UserMenuModel = mc.Request(authResult.AccessToken).GetAwaiter().GetResult();
+                    }
+                    catch (Exception ex) { loggingService.Error("MenuControl.Request failed (Credentials mode): " + ex.Message, ex); }
                 }
                 else if (startup.Mode == AuthMode.Token)
                 {
@@ -244,18 +256,27 @@ namespace CMS.Presentation
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
+
+                    // โหลด MenuActions เหมือน Manual login
+                    try
+                    {
+                        var mc = new MenuControl(menuController);
+                        GlobalData.UserMenuModel = mc.Request(authResult.AccessToken).GetAwaiter().GetResult();
+                    }
+                    catch (Exception ex) { loggingService.Error("MenuControl.Request failed (Token mode): " + ex.Message, ex); }
                 }
                 else
                 {
                     // เปิดตรง — แสดง LoginForm ให้กรอก
                     loggingService.Info("Startup mode: Manual login (no args)");
-                    using (var loginForm = new LoginForm(new LoginAuthController(adAuthService), new LoginAccountController(userAccountRepo)))
+                    using (var loginForm = new LoginForm(new LoginAuthController(adAuthService), new LoginAccountController(userAccountRepo), menuController))
                     {
                         if (loginForm.ShowDialog() != DialogResult.OK)
                             return; // ผู้ใช้ปิด form
 
                         authResult = loginForm.AuthResult;
                         startup.Username = loginForm.EnteredUsername;
+                        // GlobalData.MenuActions ถูก set แล้วใน LoginForm.btnLogin_Click
                     }
                 }
 
