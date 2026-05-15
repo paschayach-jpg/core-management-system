@@ -21,6 +21,7 @@ namespace CMS.Presentation
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
             var loggingService = new LoggingService();
 
@@ -491,6 +492,11 @@ namespace CMS.Presentation
                 var workflowDashboardController = new WorkflowDashboardController(workflowService, slaCalculator, loggingService);
                 var workflowDelegationController = new WorkflowDelegationController(workflowDelegationService, loggingService);
                 var workflowReportController = new WorkflowReportController(slaCalculator, loggingService);
+
+                // ── กรณีที่ 3: Global handler — catch UI-thread exceptions หลัง login ──
+                string _globalErrUser = account != null ? account.ADUserName : adUserName ?? string.Empty;
+                Application.ThreadException += (s, ev) =>
+                    GlobalErrorDialog.Show(ev.Exception, _globalErrUser);
 
                 // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(

@@ -192,7 +192,7 @@
             this.lblRecentFiles.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.lblRecentFiles.Location = new System.Drawing.Point(200, 217);
             this.lblRecentFiles.Name = "lblRecentFiles";
-            this.lblRecentFiles.Size = new System.Drawing.Size(160, 20);
+            this.lblRecentFiles.Size = new System.Drawing.Size(159, 20);
             this.lblRecentFiles.TabIndex = 8;
             this.lblRecentFiles.Text = "📄 ไฟล์ที่อัปโหลดล่าสุด";
             // 
@@ -706,7 +706,7 @@
             // btnRibbonUpload
             // 
             this.btnRibbonUpload.Name = "btnRibbonUpload";
-            this.btnRibbonUpload.Size = new System.Drawing.Size(80, 24);
+            this.btnRibbonUpload.Size = new System.Drawing.Size(81, 24);
             this.btnRibbonUpload.Text = "📤 อัปโหลด";
             this.btnRibbonUpload.ToolTipText = "อัปโหลดไฟล์ไปยัง Folder ที่เลือก";
             this.btnRibbonUpload.Visible = false;

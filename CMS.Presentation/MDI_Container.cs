@@ -523,16 +523,21 @@ namespace CMS.Presentation
 
         private void BuildNavTreeFromMenuActions(List<MenuAction> actions)
         {
-            var seen = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // จัดกลุ่มตาม MenuCode แล้วแสดงเฉพาะกลุ่มที่มี ActionDesc ที่มีคำว่า "View"
+            var groups = actions
+                .GroupBy(a => (a.MenuCode ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase);
 
-            foreach (var action in actions)
+            foreach (var group in groups)
             {
-                string code = action.MenuCode ?? string.Empty;
-                if (seen.Contains(code)) continue;
+                bool hasView = group.Any(a =>
+                    (a.ActionDesc ?? string.Empty).IndexOf("View", StringComparison.OrdinalIgnoreCase) >= 0);
 
-                seen.Add(code);
-                string desc  = action.MenuDesc ?? code;
-                string tag   = ResolveModuleActionTag(code, desc);
+                if (!hasView) continue;
+
+                var first   = group.First();
+                string code = first.MenuCode ?? string.Empty;
+                string desc = first.MenuDesc ?? code;
+                string tag  = ResolveModuleActionTag(code, desc);
                 _navTree.Nodes.Add(new TreeNode(desc) { Tag = tag, ToolTipText = code });
             }
         }

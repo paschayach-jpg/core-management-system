@@ -82,6 +82,15 @@
     <Compile Include="Modules\DMS\LoginManager.cs" />
     <Compile Include="Modules\DMS\MenuControl.cs" />
     <Compile Include="Modules\DMS\MenuModel.cs" />
+    <Compile Include="Modules\DMS\LoginErrorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\AccessErrorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\GlobalErrorDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\DMS\LoginForm.cs">
       <SubType>Form</SubType>
     </Compile>
