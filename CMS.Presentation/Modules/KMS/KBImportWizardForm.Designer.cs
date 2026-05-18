@@ -18,8 +18,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlErrorDetail = new System.Windows.Forms.Panel();
             this.dgvFailedRows = new System.Windows.Forms.DataGridView();
             this.colFRow = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -34,6 +34,7 @@
             this.btnErrPrev = new System.Windows.Forms.Button();
             this.lblErrorDetailHdr = new System.Windows.Forms.Label();
             this.pnlHeader = new System.Windows.Forms.Panel();
+            this.btnBackToMain = new System.Windows.Forms.Button();
             this.lblHeaderTitle = new System.Windows.Forms.Label();
             this.pnlStepProgress = new System.Windows.Forms.Panel();
             this.pnlStep1Indicator = new System.Windows.Forms.Panel();
@@ -82,6 +83,7 @@
             this.btnCancel2 = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
             this.btnImport = new System.Windows.Forms.Button();
+            this.previewControl = new CMS.Presentation.Modules.KMS.KBImportPreviewControl();
             this.pnlImportOptions = new System.Windows.Forms.Panel();
             this.chkSkipWarning = new System.Windows.Forms.CheckBox();
             this.chkAutoCategory = new System.Windows.Forms.CheckBox();
@@ -177,13 +179,11 @@
             this.lblFileHint = new System.Windows.Forms.Label();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnNext = new System.Windows.Forms.Button();
-            this.btnBackToMain = new System.Windows.Forms.Button();
             this.btnDemo = new System.Windows.Forms.Button();
             this.pnlStatusBar = new System.Windows.Forms.Panel();
             this.lblStatusMessage = new System.Windows.Forms.Label();
             this.lblStepStatus = new System.Windows.Forms.Label();
             this.lblStatusUser = new System.Windows.Forms.Label();
-            this.previewControl = new CMS.Presentation.Modules.KMS.KBImportPreviewControl();
             this.pnlErrorDetail.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvFailedRows)).BeginInit();
             this.pnlErrPager.SuspendLayout();
@@ -262,12 +262,12 @@
             this.dgvFailedRows.AllowUserToDeleteRows = false;
             this.dgvFailedRows.BackgroundColor = System.Drawing.Color.White;
             this.dgvFailedRows.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            dataGridViewCellStyle7.Font = new System.Drawing.Font("Segoe UI", 8F);
-            dataGridViewCellStyle7.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle7.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvFailedRows.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 8F);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvFailedRows.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvFailedRows.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvFailedRows.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colFRow,
@@ -283,14 +283,14 @@
             this.dgvFailedRows.Location = new System.Drawing.Point(0, 42);
             this.dgvFailedRows.Name = "dgvFailedRows";
             this.dgvFailedRows.ReadOnly = true;
-            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle8.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle8.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle8.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle8.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle8.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvFailedRows.RowHeadersDefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvFailedRows.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             this.dgvFailedRows.RowHeadersVisible = false;
             this.dgvFailedRows.RowHeadersWidth = 51;
             this.dgvFailedRows.RowTemplate.Height = 26;
@@ -413,8 +413,8 @@
             // pnlHeader
             // 
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.pnlHeader.Controls.Add(this.btnBackToMain);
             this.pnlHeader.Controls.Add(this.lblHeaderTitle);
+            this.pnlHeader.Controls.Add(this.btnBackToMain);
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlHeader.Name = "pnlHeader";
@@ -422,17 +422,34 @@
             this.pnlHeader.Size = new System.Drawing.Size(1200, 46);
             this.pnlHeader.TabIndex = 0;
             // 
+            // btnBackToMain
+            // 
+            this.btnBackToMain.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(75)))), ((int)(((byte)(130)))));
+            this.btnBackToMain.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnBackToMain.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnBackToMain.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
+            this.btnBackToMain.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBackToMain.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnBackToMain.ForeColor = System.Drawing.Color.White;
+            this.btnBackToMain.Location = new System.Drawing.Point(16, 0);
+            this.btnBackToMain.Name = "btnBackToMain";
+            this.btnBackToMain.Size = new System.Drawing.Size(110, 46);
+            this.btnBackToMain.TabIndex = 10;
+            this.btnBackToMain.Text = "← กลับ";
+            this.btnBackToMain.UseVisualStyleBackColor = false;
+            this.btnBackToMain.Click += new System.EventHandler(this.BtnBackToMain_Click);
+            // 
             // lblHeaderTitle
             // 
             this.lblHeaderTitle.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblHeaderTitle.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
             this.lblHeaderTitle.ForeColor = System.Drawing.Color.White;
-            this.lblHeaderTitle.Location = new System.Drawing.Point(16, 0);
+            this.lblHeaderTitle.Location = new System.Drawing.Point(126, 0);
             this.lblHeaderTitle.Name = "lblHeaderTitle";
-            this.lblHeaderTitle.Size = new System.Drawing.Size(1184, 46);
+            this.lblHeaderTitle.Size = new System.Drawing.Size(1074, 46);
             this.lblHeaderTitle.TabIndex = 0;
             this.lblHeaderTitle.Text = "📥  นำเข้าบทความรู้ Knowledge Base  (MOD-006)";
-            this.lblHeaderTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblHeaderTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlStepProgress
             // 
@@ -1011,6 +1028,15 @@
             this.btnImport.Text = "📥  เริ่มนำเข้าข้อมูล";
             this.btnImport.UseVisualStyleBackColor = false;
             this.btnImport.Click += new System.EventHandler(this.BtnImport_Click);
+            // 
+            // previewControl
+            // 
+            this.previewControl.BackColor = System.Drawing.Color.White;
+            this.previewControl.Dock = System.Windows.Forms.DockStyle.Top;
+            this.previewControl.Location = new System.Drawing.Point(310, 259);
+            this.previewControl.Name = "previewControl";
+            this.previewControl.Size = new System.Drawing.Size(837, 449);
+            this.previewControl.TabIndex = 2;
             // 
             // pnlImportOptions
             // 
@@ -2134,23 +2160,6 @@
             this.btnNext.UseVisualStyleBackColor = false;
             this.btnNext.Click += new System.EventHandler(this.BtnNext_Click);
             // 
-            // btnBackToMain
-            // 
-            this.btnBackToMain.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(75)))), ((int)(((byte)(130)))));
-            this.btnBackToMain.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnBackToMain.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnBackToMain.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
-            this.btnBackToMain.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBackToMain.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnBackToMain.ForeColor = System.Drawing.Color.White;
-            this.btnBackToMain.Location = new System.Drawing.Point(16, 0);
-            this.btnBackToMain.Name = "btnBackToMain";
-            this.btnBackToMain.Size = new System.Drawing.Size(110, 46);
-            this.btnBackToMain.TabIndex = 10;
-            this.btnBackToMain.Text = "← กลับ";
-            this.btnBackToMain.UseVisualStyleBackColor = false;
-            this.btnBackToMain.Click += new System.EventHandler(this.BtnBackToMain_Click);
-            // 
             // btnDemo
             // 
             this.btnDemo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
@@ -2215,15 +2224,6 @@
             this.lblStatusUser.TabIndex = 2;
             this.lblStatusUser.Text = "👤  ผู้ใช้งาน  |  📅  dd/MM/yyyy";
             this.lblStatusUser.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // previewControl
-            // 
-            this.previewControl.BackColor = System.Drawing.Color.White;
-            this.previewControl.Dock = System.Windows.Forms.DockStyle.Top;
-            this.previewControl.Location = new System.Drawing.Point(310, 259);
-            this.previewControl.Name = "previewControl";
-            this.previewControl.Size = new System.Drawing.Size(837, 449);
-            this.previewControl.TabIndex = 2;
             // 
             // KBImportWizardForm
             // 
