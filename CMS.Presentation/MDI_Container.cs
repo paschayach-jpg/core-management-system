@@ -78,7 +78,10 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
         private readonly CMS.Data.Interfaces.IKBCategoryRepository _kbCategoryRepository;
         private readonly CMS.Data.Interfaces.IKBArticleRepository  _kbArticleRepository;
-        private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;        
+        private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;
+        private readonly CMS.Data.Interfaces.ISubCommitteeRepository  _subCommitteeRepository;
+        private readonly CMS.Data.Interfaces.IHrDivisionRepository    _hrDivisionRepository;
+        private readonly CMS.Data.Interfaces.IHrDepartmentRepository  _hrDepartmentRepository;
         private readonly IWorkflowService _workflowService;
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
@@ -201,7 +204,10 @@ namespace CMS.Presentation
             CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null,
             CMS.Data.Interfaces.IKBCategoryRepository kbCategoryRepository = null,
             CMS.Data.Interfaces.IKBArticleRepository  kbArticleRepository  = null,
-            CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null)
+            CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null,
+            CMS.Data.Interfaces.ISubCommitteeRepository  subCommitteeRepository  = null,
+            CMS.Data.Interfaces.IHrDivisionRepository   hrDivisionRepository    = null,
+            CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepository  = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -265,9 +271,12 @@ namespace CMS.Presentation
             _workflowTemplateService = workflowTemplateService;
             _kbVersionRepository = kbVersionRepository;
             _kbDashboardService = kbDashboardService;
-            _kbCategoryRepository = kbCategoryRepository;
-            _kbArticleRepository  = kbArticleRepository;
+            _kbCategoryRepository    = kbCategoryRepository;
+            _kbArticleRepository     = kbArticleRepository;
             _kbArticleLinkRepository = kbArticleLinkRepository;
+            _subCommitteeRepository  = subCommitteeRepository;
+            _hrDivisionRepository    = hrDivisionRepository;
+            _hrDepartmentRepository  = hrDepartmentRepository;
             InitializeComponent();
             BuildFileDetailPanel();
             WireMenuHandlers();
@@ -1412,7 +1421,8 @@ namespace CMS.Presentation
                 var wizard          = new KBImportWizardForm(_currentUser);
                 var excelReader     = new CMS.Services.KBExcelReader();
                 var processor       = new CMS.Services.KBImportProcessor(
-                    _kbCategoryRepository, _kbArticleRepository, _kbArticleLinkRepository, _kbVersionRepository);
+                    _kbCategoryRepository, _kbArticleRepository, _kbArticleLinkRepository, _kbVersionRepository,
+                    _subCommitteeRepository, _hrDivisionRepository, _hrDepartmentRepository);
                 var wizardPresenter = new KBImportWizardController(
                     wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
                 wizard.AttachPresenter(wizardPresenter);

@@ -161,11 +161,11 @@ namespace CMS.Data.Repositories
                     INSERT INTO KMS.t_KBArticle
                         (ArticleCode, Title, ContentHTML, Summary, CategoryID, ArticleType,
                          Status, CurrentVersion, PublishedDate, ExpiryDate, ReviewDueDate, IsOfficialPolicy,
-                         Tags, CreatedBy, CreatedDate, ViewCount, LikeCount)
+                         Tags, ConfidentialityLevel, CreatedBy, CreatedDate, ViewCount, LikeCount)
                     VALUES
                         (@ArticleCode, @Title, @ContentHTML, @Summary, @CategoryID, @ArticleType,
                          @Status, 1, @PublishedDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
-                         @Tags, @CreatedBy, GETDATE(), 0, 0);
+                         @Tags, @ConfidentialityLevel, @CreatedBy, GETDATE(), 0, 0);
                     SELECT SCOPE_IDENTITY();";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -182,16 +182,17 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 const string sql = @"
                     UPDATE KMS.t_KBArticle SET
-                        Title            = @Title,
-                        ContentHTML      = @ContentHTML,
-                        Summary          = @Summary,
-                        CategoryID       = @CategoryID,
-                        ArticleType      = @ArticleType,
-                        Status           = @Status,
-                        ExpiryDate       = @ExpiryDate,
-                        ReviewDueDate    = @ReviewDueDate,
-                        IsOfficialPolicy = @IsOfficialPolicy,
-                        Tags             = @Tags
+                        Title                = @Title,
+                        ContentHTML          = @ContentHTML,
+                        Summary              = @Summary,
+                        CategoryID           = @CategoryID,
+                        ArticleType          = @ArticleType,
+                        Status               = @Status,
+                        ExpiryDate           = @ExpiryDate,
+                        ReviewDueDate        = @ReviewDueDate,
+                        IsOfficialPolicy     = @IsOfficialPolicy,
+                        Tags                 = @Tags,
+                        ConfidentialityLevel = @ConfidentialityLevel
                     WHERE ArticleID = @ArticleID";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -286,8 +287,9 @@ namespace CMS.Data.Repositories
             cmd.Parameters.AddWithValue("@ExpiryDate",       (object)a.ExpiryDate       ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ReviewDueDate",    (object)a.ReviewDueDate    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsOfficialPolicy", a.IsOfficialPolicy);
-            cmd.Parameters.AddWithValue("@Tags",             (object)a.Tags             ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@CreatedBy",        a.CreatedBy        ?? string.Empty);
+            cmd.Parameters.AddWithValue("@Tags",                 (object)a.Tags             ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ConfidentialityLevel", a.ConfidentialityLevel);
+            cmd.Parameters.AddWithValue("@CreatedBy",            a.CreatedBy        ?? string.Empty);
         }
 
         private static KBArticle Map(IDataReader r)
@@ -309,11 +311,12 @@ namespace CMS.Data.Repositories
                 ViewCount        = r.IsDBNull(r.GetOrdinal("ViewCount"))   ? 0 : r.GetInt32(r.GetOrdinal("ViewCount")),
                 LikeCount        = r.IsDBNull(r.GetOrdinal("LikeCount"))   ? 0 : r.GetInt32(r.GetOrdinal("LikeCount")),
                 IsOfficialPolicy = !r.IsDBNull(r.GetOrdinal("IsOfficialPolicy")) && r.GetBoolean(r.GetOrdinal("IsOfficialPolicy")),
-                Tags             = r["Tags"]          as string,
-                CreatedBy        = r["CreatedBy"]     as string,
-                CreatedDate      = r.IsDBNull(r.GetOrdinal("CreatedDate")) ? DateTime.MinValue : r.GetDateTime(r.GetOrdinal("CreatedDate")),
-                ReviewedBy       = r["ReviewedBy"]    as string,
-                CategoryName     = r["CategoryName"]  as string,
+                Tags                 = r["Tags"]          as string,
+                ConfidentialityLevel = r.IsDBNull(r.GetOrdinal("ConfidentialityLevel")) ? 0 : r.GetByte(r.GetOrdinal("ConfidentialityLevel")),
+                CreatedBy            = r["CreatedBy"]     as string,
+                CreatedDate          = r.IsDBNull(r.GetOrdinal("CreatedDate")) ? DateTime.MinValue : r.GetDateTime(r.GetOrdinal("CreatedDate")),
+                ReviewedBy           = r["ReviewedBy"]    as string,
+                CategoryName         = r["CategoryName"]  as string,
             };
         }
     }

@@ -51,10 +51,11 @@ namespace CMS.Presentation
                 var shareAccessLogRepository = new ShareAccessLogRepository(configManager);
                 var shareTokenRepository     = new ShareTokenRepository(configManager);
                 var kbDashboardRepository    = new KBDashboardRepository(configManager);
-                var kbCategoryRepository = new KBCategoryRepository(configManager);
-                var kbArticleRepository = new KBArticleRepository(configManager);
-                var kbVersionRepository = new KBVersionRepository(configManager);
+                var kbCategoryRepository    = new KBCategoryRepository(configManager);
+                var kbArticleRepository     = new KBArticleRepository(configManager);
+                var kbVersionRepository     = new KBVersionRepository(configManager);
                 var kbArticleLinkRepository = new KBArticleLinkRepository(configManager);
+                var subCommitteeRepository  = new SubCommitteeRepository(configManager);
 
                 var auditService = new AuditService(auditRepository, loggingService);
                 var notificationService = new NotificationService(notificationRepository, loggingService);
@@ -525,7 +526,10 @@ namespace CMS.Presentation
                     kbDashboardService: kbDashboardService,
                     kbCategoryRepository: kbCategoryRepository,
                     kbArticleRepository: kbArticleRepository,
-                    kbArticleLinkRepository : kbArticleLinkRepository);
+                    kbArticleLinkRepository: kbArticleLinkRepository,
+                    subCommitteeRepository: subCommitteeRepository,
+                    hrDivisionRepository: hrDivisionRepository,
+                    hrDepartmentRepository: hrDepartmentRepository);
 
                 Application.Run(mainForm);
 

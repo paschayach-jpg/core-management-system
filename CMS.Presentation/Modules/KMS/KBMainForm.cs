@@ -689,8 +689,27 @@ namespace CMS.Presentation.Modules.KMS
         private void OnEditClick(KBArticle article)
         {
             if (_editorFactory == null) return;
-            if (_editorFactory(article) == DialogResult.OK)
-                _presenter.LoadArticles();
+
+            try
+            {
+                DialogResult result = _editorFactory(article);
+                switch (result)
+                {
+                    case DialogResult.OK:
+                    case DialogResult.Cancel:
+                        _presenter.LoadCategoryTree();
+                        _presenter.LoadArticles();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "เกิดข้อผิดพลาดในการนำเข้าข้อมูล:\n" + ex.Message,
+                    "ข้อผิดพลาด",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
         private void OnShareClick(KBArticle article)

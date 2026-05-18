@@ -23,22 +23,34 @@ namespace CMS.Services
         private readonly IKBArticleRepository  _articleRepo;
         private readonly IKBArticleLinkRepository _linkRepo;
         private readonly IKBVersionRepository  _versionRepo;
+        private readonly ISubCommitteeRepository _subCommitteeRepo;
+        private readonly IHrDivisionRepository   _divisionRepo;
+        private readonly IHrDepartmentRepository _departmentRepo;
 
         public KBImportProcessor(
-            IKBCategoryRepository categoryRepo,
-            IKBArticleRepository  articleRepo,
+            IKBCategoryRepository    categoryRepo,
+            IKBArticleRepository     articleRepo,
             IKBArticleLinkRepository linkRepo,
-            IKBVersionRepository  versionRepo)
+            IKBVersionRepository     versionRepo,
+            ISubCommitteeRepository  subCommitteeRepo,
+            IHrDivisionRepository    divisionRepo,
+            IHrDepartmentRepository  departmentRepo)
         {
-            if (categoryRepo == null) throw new ArgumentNullException("categoryRepo");
-            if (articleRepo  == null) throw new ArgumentNullException("articleRepo");
-            if (linkRepo == null) throw new ArgumentNullException("linkRepo");
-            if (versionRepo  == null) throw new ArgumentNullException("versionRepo");
+            if (categoryRepo     == null) throw new ArgumentNullException("categoryRepo");
+            if (articleRepo      == null) throw new ArgumentNullException("articleRepo");
+            if (linkRepo         == null) throw new ArgumentNullException("linkRepo");
+            if (versionRepo      == null) throw new ArgumentNullException("versionRepo");
+            if (subCommitteeRepo == null) throw new ArgumentNullException("subCommitteeRepo");
+            if (divisionRepo     == null) throw new ArgumentNullException("divisionRepo");
+            if (departmentRepo   == null) throw new ArgumentNullException("departmentRepo");
 
-            _categoryRepo = categoryRepo;
-            _articleRepo  = articleRepo;
-            _linkRepo = linkRepo;
-            _versionRepo  = versionRepo;
+            _categoryRepo     = categoryRepo;
+            _articleRepo      = articleRepo;
+            _linkRepo         = linkRepo;
+            _versionRepo      = versionRepo;
+            _subCommitteeRepo = subCommitteeRepo;
+            _divisionRepo     = divisionRepo;
+            _departmentRepo   = departmentRepo;
         }
 
         // ── Phase 1: Validation ──────────────────────────────────────────────
@@ -141,12 +153,58 @@ namespace CMS.Services
             successCount = 0;
             errorCount   = 0;
             int total    = rows.Count;
-            int x = 0;
+
+            var allCodeMap = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            // ── Load reference data once before the loop ─────────────────────
+            //var subCommitteeMap = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var sc in _subCommitteeRepo.GetAll())
+                allCodeMap[sc.SubCommitteeNameTH.Replace(" ", "")] = sc.SubCommitteeCode;
+
+            //var divisionMap = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var div in _divisionRepo.GetAll())
+                allCodeMap[div.DivisionName.Replace(" ", "")] = div.DivisionCode;
+
+            //var departmentMap = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var dept in _departmentRepo.GetAll())
+                allCodeMap[dept.DepartmentName.Replace(" ", "")] = dept.DepartmentCode;
+
+            //var merged_division_department = divisionMap.Concat(departmentMap).ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
+
             for (int i = 0; i < total; i++)
             {
                 var row = rows[i];
                 try
                 {
+                    // ── Validate & resolve Sub-Committee (ColU) ─────────────────
+                    var listCode = new List<string>();
+                    if (!string.IsNullOrEmpty(row.ColU))
+                    {
+                        foreach (string rawName in row.ColU.Split('|'))
+                        {
+                            string nameNoSpace = rawName.Replace(" ", "");
+                            if (string.IsNullOrEmpty(nameNoSpace)) continue;
+                            string scCode;
+                            if (!allCodeMap.TryGetValue(nameNoSpace, out scCode))
+                                throw new InvalidOperationException("ไม่พบข้อมูล sub committee");
+                            listCode.Add(scCode);
+                        }
+                    }
+                    
+                    //var dvs_dept_codes = new List<string>();
+                    if (!string.IsNullOrEmpty(row.ColV))
+                    {
+                        foreach (string rawName in row.ColV.Split('|'))
+                        {
+                            string nameNoSpace = rawName.Replace(" ", "");
+                            if (string.IsNullOrEmpty(nameNoSpace)) continue;
+                            string divCode;
+                            if (!allCodeMap.TryGetValue(nameNoSpace, out divCode))
+                                throw new InvalidOperationException("ไม่พบข้อมูล ฝ่าย/แผนก");
+                            listCode.Add(divCode);
+                        }
+                    }
+
                     var article = new KBArticle
                     {
                         ArticleCode      = row.ArticleCode,
@@ -181,22 +239,9 @@ namespace CMS.Services
 
                     _versionRepo.Insert(version);
 
-                    string[] devision_department = row.ColAA.Split(',');
-                    foreach (string item in devision_department)
-                    {
-                        var links = new KBArticleLink
-                        {
-                            ArticleID = articleId,
-                            EntityType = (byte)KBEntityType.Department,
-                            EntityID = item,
-                            CreatedBy = createdBy,
-                            CreatedDate = DateTime.Now
-                        };
-
-                        _linkRepo.Insert(links);
-                        x++;
-                    }
-                    
+                    // ── Insert KBArticleLink records ─────────────────────────────
+                    foreach (string code in listCode)
+                        _linkRepo.Insert(new KBArticleLink { ArticleID = articleId, EntityType = (byte)KBEntityType.Department, EntityID = code, CreatedBy = createdBy, CreatedDate = DateTime.Now });
 
                     successCount++;
                 }
@@ -295,6 +340,8 @@ namespace CMS.Services
             CheckRequired(row.ColN, "N", errors);
             CheckRequired(row.ColP, "P", errors);
             CheckRequired(row.ColT, "T", errors);
+            CheckRequired(row.ColU, "U", errors);
+            CheckRequired(row.ColV, "V", errors);
 
             // ── Column R (PublishedDate) — required + parse check ─────────────
             if (string.IsNullOrEmpty(row.ColR))

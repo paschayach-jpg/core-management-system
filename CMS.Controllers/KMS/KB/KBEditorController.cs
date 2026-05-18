@@ -118,7 +118,7 @@ namespace CMS.Controllers.KMS.KB
             _view.Summary             = a.Summary     ?? string.Empty;
             _view.ContentHTML         = a.ContentHTML ?? string.Empty;
             _view.Tags                = a.Tags        ?? string.Empty;
-            _view.SelectedCrafLevel   = a.CrafLevel   ?? "1HC - (High Confidential)";
+            _view.SelectedCrafLevelCode = a.ConfidentialityLevel;
             _view.SelectedCategoryId  = a.CategoryID;
             _view.SelectedArticleType = (byte)a.ArticleType;
             _view.SelectedStatus      = a.Status;
@@ -194,17 +194,17 @@ namespace CMS.Controllers.KMS.KB
             {
                 var article = new KBArticle
                 {
-                    ArticleCode      = _view.ArticleCode,
-                    Title            = _view.Title,
-                    Summary          = _view.Summary,
-                    ContentHTML      = _view.ContentHTML,
-                    CategoryID       = _view.SelectedCategoryId,
-                    ArticleType      = _view.SelectedArticleType,
-                    Status           = 1,  // Always save as Draft
-                    CrafLevel        = _view.SelectedCrafLevel,
-                    Tags             = _view.Tags,
-                    ExpiryDate       = _view.ExpiryDate,
-                    CreatedBy        = _user.AdIdentity,
+                    ArticleCode          = _view.ArticleCode,
+                    Title                = _view.Title,
+                    Summary              = _view.Summary,
+                    ContentHTML          = _view.ContentHTML,
+                    CategoryID           = _view.SelectedCategoryId,
+                    ArticleType          = _view.SelectedArticleType,
+                    Status               = 1,  // Always save as Draft
+                    ConfidentialityLevel = _view.SelectedCrafLevelCode,
+                    Tags                 = _view.Tags,
+                    ExpiryDate           = _view.ExpiryDate,
+                    CreatedBy            = _user.AdIdentity,
                 };
 
                 int articleId;
@@ -258,7 +258,7 @@ namespace CMS.Controllers.KMS.KB
                     CategoryID       = _view.SelectedCategoryId,
                     ArticleType      = _view.SelectedArticleType,
                     Status           = 2,  // Send for Review
-                    CrafLevel        = _view.SelectedCrafLevel,
+                    ConfidentialityLevel = _view.SelectedCrafLevelCode,
                     Tags             = _view.Tags,
                     ExpiryDate       = _view.ExpiryDate,
                     CreatedBy        = _user.AdIdentity,

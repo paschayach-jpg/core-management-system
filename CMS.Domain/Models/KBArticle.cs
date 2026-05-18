@@ -25,7 +25,7 @@ namespace CMS.Domain.Models
         public int      LikeCount        { get; set; }
         public bool     IsOfficialPolicy { get; set; }
         public string   Tags             { get; set; }   // comma-separated
-        public string   CrafLevel        { get; set; }   // CRAF confidentiality: 1HC/2SC/3NC/4PC
+        public int      ConfidentialityLevel  { get; set; }   // FK → ConfidentialityLevel enum (1=HC,2=SC,3=NC,4=PC)
         public string   CreatedBy        { get; set; }
         public DateTime CreatedDate      { get; set; }
         public string   ReviewedBy       { get; set; }
