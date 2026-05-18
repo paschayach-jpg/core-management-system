@@ -174,7 +174,7 @@ namespace CMS.Presentation.Modules.Workflow
                 var filter = new WorkflowTemplateFilter { IsActive = true };
                 var result = _templateService.GetTemplates(filter, _userContext);
 
-                if (result?.Items != null && result.Items.Any())
+                if (result?.Items != null && result.Items.Any() && cmbCopyFrom != null)
                 {
                     cmbCopyFrom.DataSource = result.Items;
                     cmbCopyFrom.DisplayMember = "Name";
@@ -183,7 +183,7 @@ namespace CMS.Presentation.Modules.Workflow
             }
             catch (Exception ex)
             {
-                _loggingService.Error($"Error loading template list: {ex.Message}", ex);
+                _loggingService?.Error($"Error loading template list: {ex.Message}", ex);
             }
         }
 

@@ -86,6 +86,7 @@ namespace CMS.Presentation
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
         public CMS.Services.Interfaces.IWorkflowTemplateService WorkflowTemplateService => _workflowTemplateService;
+        public IAuditService AuditService => _auditService;
 
         // Notification inbox controls (built programmatically)
         private Panel _notificationPanel;
