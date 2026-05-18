@@ -32,7 +32,7 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
         {
             _view = view ?? throw new ArgumentNullException(nameof(view));
             _templateService = templateService ?? throw new ArgumentNullException(nameof(templateService));
-            _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+            _auditService = auditService;
             _loggingService = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
         }
@@ -186,7 +186,7 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 _view.ShowInfo("Template deleted successfully");
                 LoadTemplates();
 
-                _auditService.Log(new AuditEntry
+                _auditService?.Log(new AuditEntry
                 {
                     Action = "WorkflowTemplateDeletedFromUI",
                     TableName = "WorkflowDefinition",
@@ -249,7 +249,7 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 _view.ShowInfo("Template duplicated successfully");
                 LoadTemplates();
 
-                _auditService.Log(new AuditEntry
+                _auditService?.Log(new AuditEntry
                 {
                     Action = "WorkflowTemplateDuplicatedFromUI",
                     TableName = "WorkflowDefinition",

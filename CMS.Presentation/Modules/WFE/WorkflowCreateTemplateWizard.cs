@@ -175,7 +175,7 @@ namespace CMS.Presentation.Modules.Workflow
             }
             catch (Exception ex)
             {
-                _loggingService.Error($"Error creating workflow template: {ex.Message}", ex);
+                _loggingService?.Error($"Error creating workflow template: {ex.Message}", ex);
                 MessageBox.Show(
                     $"เกิดข้อผิดพลาด: {ex.Message}",
                     "ข้อผิดพลาด",

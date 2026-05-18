@@ -120,11 +120,15 @@ namespace CMS.Presentation.Modules.Workflow
             if (currentForm is WorkflowTemplateListForm)
                 return;
 
-            // Fallback: get service from MDI_Container if not passed by calling form
-            if (templateService == null && currentForm.MdiParent is MDI_Container mdi)
-                templateService = mdi.WorkflowTemplateService;
+            IAuditService auditService = null;
+            if (currentForm.MdiParent is MDI_Container mdi)
+            {
+                if (templateService == null)
+                    templateService = mdi.WorkflowTemplateService;
+                auditService = mdi.AuditService;
+            }
 
-            var form = new WorkflowTemplateListForm(templateService, null, loggingService, userContext);
+            var form = new WorkflowTemplateListForm(templateService, auditService, loggingService, userContext);
             OpenAsMdiChild(currentForm, form);
         }
 
