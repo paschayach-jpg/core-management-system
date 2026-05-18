@@ -34,8 +34,8 @@
             this.btnErrPrev = new System.Windows.Forms.Button();
             this.lblErrorDetailHdr = new System.Windows.Forms.Label();
             this.pnlHeader = new System.Windows.Forms.Panel();
-            this.btnBackToMain = new System.Windows.Forms.Button();
             this.lblHeaderTitle = new System.Windows.Forms.Label();
+            this.btnBackToMain = new System.Windows.Forms.Button();
             this.pnlStepProgress = new System.Windows.Forms.Panel();
             this.pnlStep1Indicator = new System.Windows.Forms.Panel();
             this.lblStep1Circle = new System.Windows.Forms.Label();
@@ -422,6 +422,18 @@
             this.pnlHeader.Size = new System.Drawing.Size(1200, 46);
             this.pnlHeader.TabIndex = 0;
             // 
+            // lblHeaderTitle
+            // 
+            this.lblHeaderTitle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblHeaderTitle.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
+            this.lblHeaderTitle.ForeColor = System.Drawing.Color.White;
+            this.lblHeaderTitle.Location = new System.Drawing.Point(126, 0);
+            this.lblHeaderTitle.Name = "lblHeaderTitle";
+            this.lblHeaderTitle.Size = new System.Drawing.Size(1074, 46);
+            this.lblHeaderTitle.TabIndex = 0;
+            this.lblHeaderTitle.Text = "📥  นำเข้าบทความรู้ Knowledge Base  (MOD-006)";
+            this.lblHeaderTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
             // btnBackToMain
             // 
             this.btnBackToMain.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(75)))), ((int)(((byte)(130)))));
@@ -438,18 +450,6 @@
             this.btnBackToMain.Text = "← กลับ";
             this.btnBackToMain.UseVisualStyleBackColor = false;
             this.btnBackToMain.Click += new System.EventHandler(this.BtnBackToMain_Click);
-            // 
-            // lblHeaderTitle
-            // 
-            this.lblHeaderTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblHeaderTitle.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
-            this.lblHeaderTitle.ForeColor = System.Drawing.Color.White;
-            this.lblHeaderTitle.Location = new System.Drawing.Point(126, 0);
-            this.lblHeaderTitle.Name = "lblHeaderTitle";
-            this.lblHeaderTitle.Size = new System.Drawing.Size(1074, 46);
-            this.lblHeaderTitle.TabIndex = 0;
-            this.lblHeaderTitle.Text = "📥  นำเข้าบทความรู้ Knowledge Base  (MOD-006)";
-            this.lblHeaderTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlStepProgress
             // 
