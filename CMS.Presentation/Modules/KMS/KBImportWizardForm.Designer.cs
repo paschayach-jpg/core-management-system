@@ -883,15 +883,6 @@
             this.lblCompleteHdr.TabIndex = 0;
             this.lblCompleteHdr.Text = "✅  ผลการนำเข้าข้อมูล";
             this.lblCompleteHdr.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.lblUploadSectionHdr.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblUploadSectionHdr.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Bold);
-            this.lblUploadSectionHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblUploadSectionHdr.Location = new System.Drawing.Point(0, 0);
-            this.lblUploadSectionHdr.Name = "lblUploadSectionHdr";
-            this.lblUploadSectionHdr.Size = new System.Drawing.Size(420, 36);
-            this.lblUploadSectionHdr.TabIndex = 0;
-            this.lblUploadSectionHdr.Text = "📁  Step 1 — อัปโหลดไฟล์ Excel";
-            this.lblUploadSectionHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlStep2
             // 
