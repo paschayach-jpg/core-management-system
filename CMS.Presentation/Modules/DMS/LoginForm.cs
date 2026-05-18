@@ -1,13 +1,15 @@
+using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document.Interfaces;
+using CMS.Domain.Models;
+using CMS.Services.DTOs;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using CMS.Domain.Models;
-using CMS.Controllers.DMS.Document;
-using CMS.Controllers.DMS.Document.Interfaces;
-using CMS.Services.DTOs;
 
 namespace CMS.Presentation
 {
@@ -16,8 +18,9 @@ namespace CMS.Presentation
     /// </summary>
     public partial class LoginForm : Form
     {
-        private readonly ILoginAuthController    _loginAuthController;
-        private readonly ILoginAccountController  _loginAccountController;
+        private readonly ILoginAuthController _loginAuthController;
+        private readonly ILoginAccountController _loginAccountController;
+        private readonly IMenuController _menuController;
 
         /// <summary>ผลลัพธ์หลัง login สำเร็จ — อ่านได้หลัง DialogResult.OK</summary>
         public AdAuthResult AuthResult { get; private set; }
@@ -42,15 +45,16 @@ namespace CMS.Presentation
             return "127.0.0.1";
         }
 
-        public LoginForm(ILoginAuthController loginAuthController, ILoginAccountController loginAccountController = null)
+        public LoginForm(ILoginAuthController loginAuthController, ILoginAccountController loginAccountController = null, IMenuController menuController = null)
         {
             _loginAuthController = loginAuthController ?? throw new ArgumentNullException("loginAuthController");
             _loginAccountController = loginAccountController;
+            _menuController = menuController;
             InitializeComponent();
 
             // ทำให้หน้าจอมน
             this.Load += (s, e) => ApplyRoundedRegion(15);
-            
+
             // ทำให้ลากหน้าจอได้โดยการคลิกที่ pnlHeader
             pnlHeader.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) ReleaseCaptureAndMove(); };
 
@@ -98,75 +102,94 @@ namespace CMS.Presentation
         string username;
         string password;
         private async void btnLogin_Click(object sender, EventArgs e)
-         {
+        {
+            // กำหนด username/password ตาม dev/test/prod
             string username = txtUsername.Text.Trim();
             string password = txtPassword.Text;
-
+            // Dev/Test block (ไม่ลบ)
             //string username = "pitakpong";
             //string password = "P@takpong01714";
-
-            if (checkBox1.Checked == true)
+            if (checkBox1.Checked)
             {
                 username = "khanitthac";
                 password = "KnidK@1412";
             }
-            else
-            {
-                username = "pitakpong";
-                password = "P@takpong0132";
-            }
+            //else
+            //{
+            //    username = "pitakpong";
+            //    password = "P@takpong0132";
+            //    //username = "athika";
+            //    //password = "Aple1712!";
+            //}
 
-            if (username.Length == 0)
+            if (string.IsNullOrWhiteSpace(username))
             {
-                lblStatus.Text = "กรุณาใส่ Username";
+                using (var dlg = new LoginErrorForm(LoginErrorType.EmptyCredentials))
+                    dlg.ShowDialog(this);
                 txtUsername.Focus();
                 return;
             }
-            if (password.Length == 0)
+            if (string.IsNullOrWhiteSpace(password))
             {
-                lblStatus.Text = "กรุณาใส่ Password";
+                using (var dlg = new LoginErrorForm(LoginErrorType.EmptyCredentials))
+                    dlg.ShowDialog(this);
                 txtPassword.Focus();
                 return;
             }
 
-
-           
-
-
-                SetLoading(true);
+            SetLoading(true);
             lblStatus.Text = "กำลังตรวจสอบ...";
-
             try
             {
-                AdAuthResult result = await _loginAuthController.LoginAsync(username, password);
+                var menuControl = new MenuControl(_menuController);
+                var result = await _loginAuthController.LoginAsync(username, password);
+                var menuList = await menuControl.Request(result.AccessToken);
+                GlobalData.UserMenuModel = menuList;
 
-                if (result.Success)
+                if (!result.Success)
                 {
-                    // เก็บ IP ตอน login สำเร็จ
-                    if (_loginAccountController != null)
-                    {
-                        try
-                        {
-                            var account = _loginAccountController.GetUserByAdUserName(username);
-                            if (account != null)
-                                _loginAccountController.UpdateLastLoginWithIP(account.UserID, GetLocalIP());
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine("Failed to update login IP: " + ex.Message);
-                        }
-                    }
-
-                    AuthResult      = result;
-                    EnteredUsername = username;
-                    DialogResult    = DialogResult.OK;
-                }
-                else
-                {
-                    lblStatus.Text = "Username หรือ Password ไม่ถูกต้อง";
+                    using (var dlg = new LoginErrorForm(LoginErrorType.InvalidCredentials))
+                        dlg.ShowDialog(this);
+                    lblStatus.Text = string.Empty;
                     txtPassword.Clear();
                     txtPassword.Focus();
+                    return;
                 }
+                if (menuList == null)
+                {
+                    using (var dlg = new AccessErrorForm(AccessErrorType.NoAccount, username))
+                        dlg.ShowDialog(this);
+                    lblStatus.Text = "ไม่พบ Account ในระบบ กรุณาติดต่อ HR";
+                    txtPassword.Clear();
+                    txtUsername.Focus();
+                    return;
+                }
+                if (GlobalData.MenuActions == null || GlobalData.MenuActions.Count == 0)
+                {
+                    using (var dlg = new AccessErrorForm(AccessErrorType.NoMenuPermission, username))
+                        dlg.ShowDialog(this);
+                    lblStatus.Text = "ไม่มีสิทธิ์ Menu กรุณาติดต่อ IT Helpdesk";
+                    txtPassword.Clear();
+                    txtUsername.Focus();
+                    return;
+                }
+                // เก็บ IP ตอน login สำเร็จ
+                if (_loginAccountController != null)
+                {
+                    try
+                    {
+                        var account = _loginAccountController.GetUserByAdUserName(username);
+                        if (account != null)
+                            _loginAccountController.UpdateLastLoginWithIP(account.UserID, GetLocalIP());
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Failed to update login IP: " + ex.Message);
+                    }
+                }
+                AuthResult = result;
+                EnteredUsername = username;
+                DialogResult = DialogResult.OK;
             }
             catch (Exception ex)
             {
@@ -186,13 +209,15 @@ namespace CMS.Presentation
 
             if (string.IsNullOrEmpty(username))
             {
-                lblStatus.Text = "กรุณาใส่ Username ก่อน Register";
+                using (var dlg = new LoginErrorForm(LoginErrorType.EmptyCredentials))
+                    dlg.ShowDialog(this);
                 txtUsername.Focus();
                 return;
             }
             if (string.IsNullOrEmpty(password))
             {
-                lblStatus.Text = "กรุณาใส่ Password ก่อน Register";
+                using (var dlg = new LoginErrorForm(LoginErrorType.EmptyCredentials))
+                    dlg.ShowDialog(this);
                 txtPassword.Focus();
                 return;
             }
@@ -206,7 +231,9 @@ namespace CMS.Presentation
                 AdAuthResult result = await _loginAuthController.LoginAsync(username, password);
                 if (!result.Success)
                 {
-                    lblStatus.Text = "Username หรือ Password ไม่ถูกต้อง";
+                    using (var dlg = new LoginErrorForm(LoginErrorType.InvalidCredentials))
+                        dlg.ShowDialog(this);
+                    lblStatus.Text = string.Empty;
                     txtPassword.Clear();
                     txtPassword.Focus();
                     return;
@@ -223,11 +250,11 @@ namespace CMS.Presentation
                 var emp = result.EmployeeInfo;
                 var account = new UserAccount
                 {
-                    ADUserName   = username,
-                    DisplayName  = emp != null ? (emp.FullNameTh ?? emp.FullNameEn ?? username) : username,
+                    ADUserName = username,
+                    DisplayName = emp != null ? (emp.FullNameTh ?? emp.FullNameEn ?? username) : username,
                     EmployeeCode = emp != null ? emp.EmployeeCode : null,
-                    AppRole      = 1,
-                    OrgUnitID    = 1
+                    AppRole = 1,
+                    OrgUnitID = 1
                 };
 
                 lblStatus.Text = "กำลังบันทึกข้อมูล...";
@@ -274,7 +301,7 @@ namespace CMS.Presentation
 
         private void SetLoading(bool loading)
         {
-            btnLogin.Enabled    = !loading;
+            btnLogin.Enabled = !loading;
             txtUsername.Enabled = !loading;
             txtPassword.Enabled = !loading;
         }
@@ -346,7 +373,7 @@ namespace CMS.Presentation
                 path.AddArc(btn.Width - radius, btn.Height - radius, radius, radius, 0, 90);
                 path.AddArc(0, btn.Height - radius, radius, radius, 90, 90);
                 path.CloseFigure();
-                
+
                 // ใช้ Region ตัดขอบให้ปุ่มมีความมน
                 btn.Region = new Region(path);
             }

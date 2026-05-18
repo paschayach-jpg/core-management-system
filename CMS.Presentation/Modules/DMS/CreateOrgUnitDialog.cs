@@ -291,6 +291,26 @@ namespace CMS.Presentation
             if (cboParent.SelectedItem is OrgUnitItem pi && pi.OrgUnit != null)
                 subCommitteeId = pi.OrgUnit.OrgUnitId;
 
+            // สร้าง lookup sets ของ code และ name ที่มีอยู่แล้วใต้ SubCommittee นี้
+            // (match ทั้ง OrgUnitCode และ OrgUnitNameTH เพื่อรองรับกรณีที่ code ไม่ตรงกับ HR)
+            var existingDivCodes = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var existingDivNames = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (subCommitteeId.HasValue)
+            {
+                foreach (var eu in _allUnits)
+                {
+                    if (!eu.IsActive || eu.IsDeleted) continue;
+                    if (eu.Tier != OrgUnitTier.Division) continue;
+                    if (eu.ParentId != subCommitteeId.Value) continue;
+                    if (!string.IsNullOrEmpty(eu.OrgUnitCode))
+                        existingDivCodes.Add(eu.OrgUnitCode.Trim());
+                    if (!string.IsNullOrEmpty(eu.OrgUnitNameTH))
+                        existingDivNames.Add(eu.OrgUnitNameTH.Trim());
+                    if (!string.IsNullOrEmpty(eu.OrgUnitNameEN))
+                        existingDivNames.Add(eu.OrgUnitNameEN.Trim());
+                }
+            }
+
             var deptsByDivId = hrDepartments
                 .GroupBy(d => d.DivisionID)
                 .ToDictionary(g => g.Key, g => g.ToList());
@@ -398,17 +418,15 @@ namespace CMS.Presentation
                 // สร้าง TreeNode สำหรับแต่ละ Division
                 foreach (var div in hrDivisions)
                 {
-                    bool divAlreadyExists = subCommitteeId.HasValue && _allUnits.Any(u =>
-                        u.IsActive && !u.IsDeleted &&
-                        u.Tier == OrgUnitTier.Division &&
-                        u.ParentId == subCommitteeId.Value &&
-                        string.Equals(u.OrgUnitCode, div.DivisionCode, StringComparison.OrdinalIgnoreCase));
+                    bool divAlreadyExists = subCommitteeId.HasValue && (
+                        (!string.IsNullOrEmpty(div.DivisionCode) && existingDivCodes.Contains(div.DivisionCode.Trim())) ||
+                        (!string.IsNullOrEmpty(div.DivisionName) && existingDivNames.Contains(div.DivisionName.Trim())));
 
                     var divNode = new TreeNode(
                         string.Format("{0}  {1}{2}",
                             div.DivisionCode ?? "",
                             div.DivisionName ?? "",
-                            divAlreadyExists ? "  ⚠ มีแล้ว" : ""))
+                            divAlreadyExists ? "  (มีอยู่แล้ว — เลือกไม่ได้)" : ""))
                     {
                         Tag = new OrgUnitData {
                             Type = "ฝ่าย",
@@ -419,7 +437,10 @@ namespace CMS.Presentation
                         }
                     };
                     if (divAlreadyExists)
-                        divNode.ForeColor = Color.DarkGray;
+                    {
+                        divNode.ForeColor = Color.FromArgb(150, 150, 150);
+                        divNode.BackColor = Color.FromArgb(245, 245, 245);
+                    }
 
                     // เพิ่ม Department child nodes
                     List<HrDepartment> childDepts;
@@ -448,6 +469,21 @@ namespace CMS.Presentation
 
                     tv.Nodes.Add(divNode);
                 }
+
+                // ── BeforeCheck: ป้องกันการเลือกรายการที่มีอยู่แล้ว (ก่อน AfterCheck) ──
+                tv.BeforeCheck += (s, e2) => {
+                    if (e2.Node.Level == 0)
+                    {
+                        var data = e2.Node.Tag as OrgUnitData;
+                        if (data != null && data.AlreadyExistsInParent && e2.Node.Checked == false)
+                        {
+                            e2.Cancel = true;
+                            MessageBox.Show(
+                                string.Format("ฝ่าย '{0}' มีอยู่ในสังกัดนี้แล้ว ไม่สามารถเลือกซ้ำได้", data.Code),
+                                "พบข้อมูลซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        }
+                    }
+                };
 
                 // ── TreeView check logic: single Division, cascade to Departments ──
                 bool suppressCheck = false;

@@ -878,5 +878,82 @@ namespace CMS.Services
                 AuditDate   = DateTime.Now
             });
         }
+
+        // -----------------------------------------------------------------------
+        // SubmitDownloadRequest — ทุก role ส่งคำขอได้
+        // -----------------------------------------------------------------------
+
+        public ApprovalRequest SubmitDownloadRequest(int fileId, string reason, int approverId, UserContext user)
+        {
+            if (user == null)   throw new ArgumentNullException("user");
+            if (approverId <= 0) throw new ArgumentException("approverId must be valid.", "approverId");
+            if (string.IsNullOrWhiteSpace(reason))
+                throw new ArgumentException("reason must not be empty.", "reason");
+
+            var approvalRequest = new ApprovalRequest
+            {
+                RequestType   = "DOWNLOAD_FILE",
+                FileID        = fileId,
+                RequestedBy   = user.UserID,
+                RequestedDate = DateTime.Now,
+                RequestStatus = 1, // Pending
+                Subject       = string.Format("ขออนุมัติดาวน์โหลดไฟล์ ID {0}", fileId),
+                Remark        = reason,
+                ExpiryDate    = DateTime.Now.AddDays(3)
+            };
+
+            int requestId = _approvalRepository.InsertRequest(approvalRequest);
+            approvalRequest.RequestID = requestId;
+
+            _approvalRepository.InsertStep(new ApprovalStep
+            {
+                RequestID  = requestId,
+                StepOrder  = 1,
+                ApproverID = approverId,
+                StepStatus = 1
+            });
+
+            Log(user, "Download", "CREATE", "workflow.ApprovalRequest", requestId, 1,
+                string.Format("DOWNLOAD_FILE request created. FileID:{0} Approver:{1}", fileId, approverId));
+
+            NotifyUser(approverId, "DownloadFileRequested", requestId.ToString(),
+                string.Format("มีคำขออนุมัติดาวน์โหลดไฟล์ (คำขอ ID {0}) รออนุมัติจากคุณ โดย {1}",
+                    requestId, user.ADUserName ?? user.UserID.ToString()));
+
+            return approvalRequest;
+        }
+
+        // -----------------------------------------------------------------------
+        // GetApprovedDownloadRequest
+        // -----------------------------------------------------------------------
+
+        public ApprovalRequest GetApprovedDownloadRequest(int fileId, int userId)
+        {
+            try
+            {
+                return _approvalRepository.GetApprovedDownloadRequest(fileId, userId);
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error(string.Format(
+                    "ApprovalService.GetApprovedDownloadRequest: Failed for FileID {0}, UserID {1}.", fileId, userId), ex);
+                return null;
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // ConsumeDownloadApproval — mark status=5 (Downloaded) after file is saved
+        // -----------------------------------------------------------------------
+
+        public void ConsumeDownloadApproval(int requestId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            // 5 = Downloaded (consumed — one approval = one download)
+            _approvalRepository.UpdateRequestStatus(requestId, 5, user.UserID, "ดาวน์โหลดเรียบร้อยแล้ว");
+
+            Log(user, "Download", "UPDATE", "workflow.ApprovalRequest", requestId, 1,
+                string.Format("DOWNLOAD_FILE approval {0} consumed by user {1}.", requestId, user.ADUserName));
+        }
     }
 }

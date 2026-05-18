@@ -22,6 +22,7 @@ namespace CMS.Presentation
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
             var loggingService = new LoggingService();
 
@@ -206,6 +207,10 @@ namespace CMS.Presentation
                 // ── AD Auth Service ───────────────────────────────────────────
                 var adAuthService = new AdAuthService(configManager);
 
+                // ── Menu API Service + Controller ─────────────────────────────
+                var menuApiService  = new MenuApiService(configManager);
+                var menuController  = new MenuController(menuApiService);
+
                 // ─────────────────────────────────────────────────────────────
                 // Parse command-line arguments
                 // รูปแบบ:
@@ -232,6 +237,14 @@ namespace CMS.Presentation
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
+
+                    // โหลด MenuActions เหมือน Manual login
+                    try
+                    {
+                        var mc = new MenuControl(menuController);
+                        GlobalData.UserMenuModel = mc.Request(authResult.AccessToken).GetAwaiter().GetResult();
+                    }
+                    catch (Exception ex) { loggingService.Error("MenuControl.Request failed (Credentials mode): " + ex.Message, ex); }
                 }
                 else if (startup.Mode == AuthMode.Token)
                 {
@@ -248,18 +261,27 @@ namespace CMS.Presentation
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
+
+                    // โหลด MenuActions เหมือน Manual login
+                    try
+                    {
+                        var mc = new MenuControl(menuController);
+                        GlobalData.UserMenuModel = mc.Request(authResult.AccessToken).GetAwaiter().GetResult();
+                    }
+                    catch (Exception ex) { loggingService.Error("MenuControl.Request failed (Token mode): " + ex.Message, ex); }
                 }
                 else
                 {
                     // เปิดตรง — แสดง LoginForm ให้กรอก
                     loggingService.Info("Startup mode: Manual login (no args)");
-                    using (var loginForm = new LoginForm(new LoginAuthController(adAuthService), new LoginAccountController(userAccountRepo)))
+                    using (var loginForm = new LoginForm(new LoginAuthController(adAuthService), new LoginAccountController(userAccountRepo), menuController))
                     {
                         if (loginForm.ShowDialog() != DialogResult.OK)
                             return; // ผู้ใช้ปิด form
 
                         authResult = loginForm.AuthResult;
                         startup.Username = loginForm.EnteredUsername;
+                        // GlobalData.MenuActions ถูก set แล้วใน LoginForm.btnLogin_Click
                     }
                 }
 
@@ -474,6 +496,11 @@ namespace CMS.Presentation
                 var workflowDashboardController = new WorkflowDashboardController(workflowService, slaCalculator, loggingService);
                 var workflowDelegationController = new WorkflowDelegationController(workflowDelegationService, loggingService);
                 var workflowReportController = new WorkflowReportController(slaCalculator, loggingService);
+
+                // ── กรณีที่ 3: Global handler — catch UI-thread exceptions หลัง login ──
+                string _globalErrUser = account != null ? account.ADUserName : adUserName ?? string.Empty;
+                Application.ThreadException += (s, ev) =>
+                    GlobalErrorDialog.Show(ev.Exception, _globalErrUser);
 
                 // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(
@@ -696,7 +723,7 @@ namespace CMS.Presentation
         private static void SyncEmployeeInfoFromAuthResult(
             UserAccount account,
             CMS.Data.Interfaces.IUserAccountRepository userAccountRepo,
-            EmployeeInfo emp)
+            CMS.Services.DTOs.EmployeeInfo emp)
         {
             if (emp == null || account == null) return;
             try

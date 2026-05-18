@@ -152,8 +152,8 @@ namespace CMS.Presentation
             // ── Row: File / Folder ────────────────────────────────────────────
             var pnlFileRow = new Panel { Height = 66, Dock = DockStyle.Top, BackColor = Color.Transparent, Padding = new Padding(0, 4, 0, 0) };
             var lblFile = mkLbl("File / Folder :");
-            lblFile.Location = new Point(0, 4);
-            lblFile.Height = 56;
+            lblFile.Location  = new Point(0, 4);
+            lblFile.Height    = 56;
             lblFile.TextAlign = ContentAlignment.TopRight;
             var txtFiles = new TextBox
             {
@@ -177,8 +177,6 @@ namespace CMS.Presentation
             };
             cboPrincipalType.Items.AddRange(new[] { "User", "Department", "Role", "Group" });
             cboPrincipalType.SelectedIndex = 0;
-
-            // ช่องค้นหา — รองรับการพิมพ์ค้นหาเอง
             var txtSearch = new TextBox
             {
                 Font = uiFont, Location = new Point(262, 6), Width = 188,
@@ -186,46 +184,80 @@ namespace CMS.Presentation
             };
             pnlShareRow.Controls.AddRange(new Control[] { lblWith, cboPrincipalType, txtSearch });
 
-            // ── Section: เลือกเป้าหมาย ────────────────────────────────────────
-            var barTarget = mkBar("เลือกเป้าหมาย   (เลือกได้หลายรายการ: Ctrl+คลิก)");
-            barTarget.Dock = DockStyle.None;
-
+            // ── Left: Source list ─────────────────────────────────────────────
             var lstPrincipal = new ListBox
             {
-                Font = uiFont, IntegralHeight = false, Height = 108,
-                Dock = DockStyle.None, SelectionMode = SelectionMode.MultiExtended,
+                Font = uiFont, IntegralHeight = false,
+                Dock = DockStyle.Fill, SelectionMode = SelectionMode.One,
                 BorderStyle = BorderStyle.None, BackColor = Color.White, ItemHeight = 24,
             };
-            var pnlListBorder = new Panel { Height = 110, Dock = DockStyle.None, BackColor = Color.White, Padding = new Padding(1) };
-            pnlListBorder.Paint += (s, e) =>
+            var pnlLeftBorder = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(1) };
+            pnlLeftBorder.Paint += (s, e) =>
             {
                 using (var pen = new Pen(borderGray, 1))
-                    e.Graphics.DrawRectangle(pen, 0, 0, pnlListBorder.Width - 1, pnlListBorder.Height - 1);
+                    e.Graphics.DrawRectangle(pen, 0, 0, pnlLeftBorder.Width - 1, pnlLeftBorder.Height - 1);
             };
             lstPrincipal.Dock = DockStyle.Fill;
-            pnlListBorder.Controls.Add(lstPrincipal);
+            pnlLeftBorder.Controls.Add(lstPrincipal);
 
-            // ── ช่องแสดงรายชื่อที่เลือก ──────────────────────────────────────
-            var txtSelectedNames = new TextBox
+            // ── Right: Selected basket ────────────────────────────────────────
+            var lstSelected = new ListBox
             {
-                Font = uiFont, ReadOnly = true, Multiline = true,
-                BackColor = Color.FromArgb(248, 250, 255),
-                BorderStyle = BorderStyle.None,
-                Dock = DockStyle.Fill, ScrollBars = ScrollBars.Vertical,
-                ForeColor = navyDark,
+                Font = uiFont, IntegralHeight = false,
+                Dock = DockStyle.Fill, SelectionMode = SelectionMode.MultiExtended,
+                BorderStyle = BorderStyle.None, BackColor = Color.FromArgb(248, 252, 255), ItemHeight = 24,
             };
-            var pnlSelectedBorder = new Panel
-            {
-                Height = 58, Dock = DockStyle.None,
-                BackColor = Color.FromArgb(248, 250, 255), Padding = new Padding(4, 2, 2, 2),
-            };
-            pnlSelectedBorder.Paint += (s, e) =>
+            var pnlRightBorder = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(248, 252, 255), Padding = new Padding(1) };
+            pnlRightBorder.Paint += (s, e) =>
             {
                 using (var pen = new Pen(Color.FromArgb(160, 195, 240), 1))
-                    e.Graphics.DrawRectangle(pen, 0, 0, pnlSelectedBorder.Width - 1, pnlSelectedBorder.Height - 1);
+                    e.Graphics.DrawRectangle(pen, 0, 0, pnlRightBorder.Width - 1, pnlRightBorder.Height - 1);
             };
-            txtSelectedNames.Dock = DockStyle.Fill;
-            pnlSelectedBorder.Controls.Add(txtSelectedNames);
+            lstSelected.Dock = DockStyle.Fill;
+            pnlRightBorder.Controls.Add(lstSelected);
+
+            var lblLeftHeader = new Label
+            {
+                Text = "  เลือกเป้าหมาย", Font = labelFont, ForeColor = navyDark, BackColor = navyLight,
+                Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
+            };
+            var lblRightHeader = new Label
+            {
+                Text = "  รายชื่อที่เลือก (0 คน)", Font = labelFont, ForeColor = navyDark,
+                BackColor = Color.FromArgb(220, 235, 255),
+                Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
+            };
+
+            var btnRemove = new Button
+            {
+                Text = "✕  ลบที่เลือก", Dock = DockStyle.Fill,
+                FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(255, 235, 235),
+                ForeColor = Color.FromArgb(180, 40, 40), Font = new Font("Segoe UI", 8.5f),
+            };
+            btnRemove.FlatAppearance.BorderColor = Color.FromArgb(220, 180, 180);
+            btnRemove.FlatAppearance.BorderSize  = 1;
+
+            // ── Inner 2-column table (source | basket) ────────────────────────
+            var innerTable = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 3,
+                BackColor = Color.Transparent, Padding = new Padding(0), Margin = new Padding(0),
+            };
+            innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            innerTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
+            innerTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            innerTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+
+            innerTable.Controls.Add(lblLeftHeader,  0, 0);
+            innerTable.Controls.Add(lblRightHeader, 1, 0);
+            innerTable.Controls.Add(pnlLeftBorder,  0, 1);
+            innerTable.Controls.Add(pnlRightBorder, 1, 1);
+            innerTable.Controls.Add(new Panel { BackColor = Color.Transparent, Dock = DockStyle.Fill }, 0, 2);
+            innerTable.Controls.Add(btnRemove,       1, 2);
+
+            var pnlDual = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = new Padding(0, 2, 0, 2) };
+            pnlDual.Controls.Add(innerTable);
 
             // ── Section: สิทธิ์ ───────────────────────────────────────────────
             var barPerm = mkBar("สิทธิ์การเข้าถึง");
@@ -262,34 +294,31 @@ namespace CMS.Presentation
             };
             chkNoExpiry.CheckedChanged += (s, e) => dtpExpiry.Enabled = !chkNoExpiry.Checked;
 
-            // ใช้ Dock=Fill เพื่อให้ panel กว้างเต็ม cell — ป้องกันข้อความถูกตัด
             var pnlExpiryRow = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
             dtpExpiry.Location   = new Point(0, 7);
             chkNoExpiry.Location = new Point(170, 9);
             pnlExpiryRow.Controls.AddRange(new Control[] { dtpExpiry, chkNoExpiry });
 
-            // ── TableLayoutPanel ──────────────────────────────────────────────
+            // ── Outer TableLayoutPanel ────────────────────────────────────────
             var table = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 10,
+                Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 8,
                 BackColor = Color.Transparent, Padding = new Padding(0),
             };
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            // rows: fileRow, shareRow, sep, barTarget, listBorder, selectedBorder, barPerm, permsRow, barExpiry, expiryRow
-            int[] heights = { 68, 36, 6, 28, 114, 60, 28, 40, 28, 40 };
+            // rows: fileRow, shareRow, sep, dualPanel, barPerm, permsRow, barExpiry, expiryRow
+            int[] heights = { 68, 36, 6, 190, 28, 40, 28, 40 };
             foreach (int h in heights)
                 table.RowStyles.Add(new RowStyle(SizeType.Absolute, h));
 
-            table.Controls.Add(pnlFileRow,     0, 0);
-            table.Controls.Add(pnlShareRow,    0, 1);
+            table.Controls.Add(pnlFileRow,   0, 0);
+            table.Controls.Add(pnlShareRow,  0, 1);
             table.Controls.Add(new Panel { BackColor = borderGray, Height = 1, Dock = DockStyle.Bottom }, 0, 2);
-            table.Controls.Add(barTarget,      0, 3);
-            table.Controls.Add(pnlListBorder,  0, 4);
-            table.Controls.Add(pnlSelectedBorder, 0, 5);
-            table.Controls.Add(barPerm,        0, 6);
-            table.Controls.Add(pnlPerms,       0, 7);
-            table.Controls.Add(barExpiry,      0, 8);
-            table.Controls.Add(pnlExpiryRow,   0, 9);
+            table.Controls.Add(pnlDual,      0, 3);
+            table.Controls.Add(barPerm,      0, 4);
+            table.Controls.Add(pnlPerms,     0, 5);
+            table.Controls.Add(barExpiry,    0, 6);
+            table.Controls.Add(pnlExpiryRow, 0, 7);
 
             pnlBody.Controls.Add(table);
             this.Controls.Add(pnlBody);
@@ -302,7 +331,8 @@ namespace CMS.Presentation
                 { "cboPrincipalType",  cboPrincipalType  },
                 { "txtSearch",         txtSearch         },
                 { "lstPrincipal",      lstPrincipal      },
-                { "txtSelectedNames",  txtSelectedNames  },
+                { "lstSelected",       lstSelected       },
+                { "lblRightHeader",    lblRightHeader    },
                 { "chkRead",           chkRead           },
                 { "chkWrite",          chkWrite          },
                 { "chkDelete",         chkDelete         },
@@ -316,13 +346,31 @@ namespace CMS.Presentation
             cboPrincipalType.SelectedIndexChanged += (s, e) =>
             {
                 _allPrincipals.Clear();
+                ((ListBox)_controls["lstSelected"]).Items.Clear();
+                UpdateSelectedCount();
                 LoadPrincipals();
-                UpdateSelectedDisplay();
             };
 
             txtSearch.TextChanged += (s, e) => FilterPrincipals(((TextBox)_controls["txtSearch"]).Text);
 
-            lstPrincipal.SelectedIndexChanged += (s, e) => UpdateSelectedDisplay();
+            // คลิกซ้ายครั้งเดียว → เพิ่มไปยัง basket ขวา
+            lstPrincipal.Click += (s, e) =>
+            {
+                if (lstPrincipal.SelectedItem is PrincipalItem item)
+                    AddToSelected(item);
+            };
+
+            lstSelected.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Delete)
+                    RemoveSelectedItems();
+            };
+
+            var ctxMenu = new ContextMenu();
+            ctxMenu.MenuItems.Add(new System.Windows.Forms.MenuItem("ลบออก", (s, e) => RemoveSelectedItems()));
+            lstSelected.ContextMenu = ctxMenu;
+
+            btnRemove.Click += (s, e) => RemoveSelectedItems();
 
             pnlFooter.Resize += (s, e) =>
             {
@@ -396,27 +444,32 @@ namespace CMS.Presentation
                     {
                         var users = _userAccountLookupController?.GetAllUsers() ?? Enumerable.Empty<UserAccount>();
                         foreach (var u in users)
-                            _allPrincipals.Add(new PrincipalItem { Id = u.UserID, Name = u.DisplayName ?? u.ADUserName, Data = u });
+                            _allPrincipals.Add(new PrincipalItem { Id = u.UserID, Name = u.DisplayName ?? u.ADUserName, PrincipalType = "User", Data = u });
                     }
                     else if (principalType == "Department")
                     {
                         var depts = (_orgLookupController != null ? _orgLookupController.GetHierarchy() : Enumerable.Empty<OrgUnit>())
-                            .Where(o => o.Tier == OrgUnitTier.Department).ToList();
+                            .Where(o => o.Tier == OrgUnitTier.Department)
+                            .GroupBy(o => o.OrgUnitID)
+                            .Select(g => g.First())
+                            .GroupBy(o => o.Name, StringComparer.OrdinalIgnoreCase)
+                            .Select(g => g.First())
+                            .ToList();
                         foreach (var d in depts)
-                            _allPrincipals.Add(new PrincipalItem { Id = d.OrgUnitID, Name = d.Name, Data = d });
+                            _allPrincipals.Add(new PrincipalItem { Id = d.OrgUnitID, Name = d.Name, PrincipalType = "Department", Data = d });
                     }
                     else if (principalType == "Role")
                     {
-                        _allPrincipals.Add(new PrincipalItem { Id = 4, Name = "Admin" });
-                        _allPrincipals.Add(new PrincipalItem { Id = 3, Name = "Manager" });
-                        _allPrincipals.Add(new PrincipalItem { Id = 2, Name = "Sr. Officer" });
-                        _allPrincipals.Add(new PrincipalItem { Id = 1, Name = "Officer" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 4, Name = "Admin",       PrincipalType = "Role" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 3, Name = "Manager",     PrincipalType = "Role" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 2, Name = "Sr. Officer", PrincipalType = "Role" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 1, Name = "Officer",     PrincipalType = "Role" });
                     }
                     else if (principalType == "Group")
                     {
-                        _allPrincipals.Add(new PrincipalItem { Id = 1, Name = "Finance Team" });
-                        _allPrincipals.Add(new PrincipalItem { Id = 2, Name = "HR Team" });
-                        _allPrincipals.Add(new PrincipalItem { Id = 3, Name = "IT Team" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 1, Name = "Finance Team", PrincipalType = "Group" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 2, Name = "HR Team",      PrincipalType = "Group" });
+                        _allPrincipals.Add(new PrincipalItem { Id = 3, Name = "IT Team",      PrincipalType = "Group" });
                     }
                 }
                 catch (Exception ex)
@@ -442,17 +495,34 @@ namespace CMS.Presentation
             lst.EndUpdate();
         }
 
-        private void UpdateSelectedDisplay()
+        private void AddToSelected(PrincipalItem item)
         {
-            var lst  = (ListBox)_controls["lstPrincipal"];
-            var txt  = (TextBox)_controls["txtSelectedNames"];
-            var names = lst.SelectedItems.Cast<PrincipalItem>().Select(p => p.Name);
-            txt.Text = string.Join(Environment.NewLine, names);
+            var lst = (ListBox)_controls["lstSelected"];
+            if (lst.Items.Cast<PrincipalItem>().Any(p => p.Id == item.Id && p.PrincipalType == item.PrincipalType))
+                return;
+            lst.Items.Add(item);
+            UpdateSelectedCount();
+        }
+
+        private void RemoveSelectedItems()
+        {
+            var lst      = (ListBox)_controls["lstSelected"];
+            var toRemove = lst.SelectedItems.Cast<PrincipalItem>().ToList();
+            foreach (var item in toRemove)
+                lst.Items.Remove(item);
+            UpdateSelectedCount();
+        }
+
+        private void UpdateSelectedCount()
+        {
+            var lst = (ListBox)_controls["lstSelected"];
+            var lbl = (Label)_controls["lblRightHeader"];
+            lbl.Text = string.Format("  รายชื่อที่เลือก ({0} คน)", lst.Items.Count);
         }
 
         private void HandleOK()
         {
-            var lstPrincipal     = (ListBox)_controls["lstPrincipal"];
+            var lstSelected      = (ListBox)_controls["lstSelected"];
             var chkRead          = (CheckBox)_controls["chkRead"];
             var chkWrite         = (CheckBox)_controls["chkWrite"];
             var chkDelete        = (CheckBox)_controls["chkDelete"];
@@ -467,7 +537,7 @@ namespace CMS.Presentation
                 return;
             }
 
-            if (lstPrincipal.SelectedItems.Count == 0)
+            if (lstSelected.Items.Count == 0)
             {
                 lblStatus.Text = "กรุณาเลือกผู้รับสิทธิ์อย่างน้อย 1 รายการ";
                 return;
@@ -499,7 +569,7 @@ namespace CMS.Presentation
 
             try
             {
-                foreach (PrincipalItem principal in lstPrincipal.SelectedItems)
+                foreach (PrincipalItem principal in lstSelected.Items)
                 {
                     if (_selectedFiles.Count > 0)
                     {
@@ -532,32 +602,95 @@ namespace CMS.Presentation
                             IsDeny         = false,
                         };
 
-                        if (_currentUser.AppRole < 3)
+                        // Department shares (principalTypeId == 3) need approval from all roles
+                        // because they grant visibility to an entire org unit.
+                        bool folderNeedsApproval = _currentUser.AppRole < 3 || principalTypeId == 3;
+                        if (folderNeedsApproval)
                             _shareCommandController.RequestFolderShareApproval(folderPermReq, _currentUser);
                         else
                             _shareCommandController.SetFolderPermission(folderPermReq, _currentUser);
                     }
                 }
 
-                bool needsApproval = _currentUser.AppRole < 3;
+                bool needsApproval = _currentUser.AppRole < 3 || principalTypeId == 3;
+
+                // Build target name for the message
+                string targetName = _selectedFiles.Count > 0
+                    ? (_selectedFiles.Count == 1
+                        ? _selectedFiles[0].OriginalFileName
+                        : string.Format("{0} ไฟล์", _selectedFiles.Count))
+                    : (_selectedFolder != null ? _selectedFolder.FolderName : "—");
+
+                // Build recipient summary
+                var recipientNames = lstSelected.Items.Cast<PrincipalItem>()
+                    .Select(p => p.Name).ToArray();
+                string recipientSummary = recipientNames.Length <= 3
+                    ? string.Join(", ", recipientNames)
+                    : string.Format("{0}, {1} และอีก {2} รายการ",
+                        recipientNames[0], recipientNames[1], recipientNames.Length - 2);
+
+                // Build permission summary
+                var perms = new System.Collections.Generic.List<string>();
+                if (chkRead.Checked)   perms.Add("ดู");
+                if (chkWrite.Checked)  perms.Add("แก้ไข");
+                if (chkDelete.Checked) perms.Add("ลบ");
+                string permSummary = string.Join(" / ", perms);
+
+                string expiryText = chkNoExpiry.Checked
+                    ? "ไม่มีกำหนดอายุ"
+                    : string.Format("หมดอายุ {0}", expiry.Value.ToString("dd/MM/yyyy"));
+
+                string msgTitle, msgBody;
+                MessageBoxIcon msgIcon;
+
                 if (needsApproval)
                 {
+                    msgTitle = "บันทึกคำขอแบ่งปันเรียบร้อยแล้ว";
+                    msgBody  = string.Format(
+                        "บันทึกคำขอแบ่งปันเรียบร้อยแล้ว และส่งให้ผู้มีอำนาจอนุมัติแล้ว\r\n\r\n" +
+                        "   รายการ    : {0}\r\n" +
+                        "   ผู้รับสิทธิ์ : {1}\r\n" +
+                        "   สิทธิ์      : {2}\r\n" +
+                        "   อายุสิทธิ์  : {3}\r\n\r\n" +
+                        "สถานะ: รอการอนุมัติจากผู้มีอำนาจ\r\n" +
+                        "ผู้รับจะสามารถเข้าถึงได้หลังจากได้รับการอนุมัติแล้ว",
+                        targetName, recipientSummary, permSummary, expiryText);
+                    msgIcon = MessageBoxIcon.Information;
+
                     lblStatus.Text = string.Format(
                         "ส่งคำขออนุมัติเรียบร้อยแล้ว ({0} รายการ) — รอผู้มีอำนาจอนุมัติ",
-                        lstPrincipal.SelectedItems.Count);
+                        lstSelected.Items.Count);
                 }
                 else
                 {
+                    msgTitle = "แบ่งปันเรียบร้อยแล้ว";
+                    msgBody  = string.Format(
+                        "บันทึกการแบ่งปันเรียบร้อยแล้ว ผู้รับสามารถเข้าถึงได้ทันที\r\n\r\n" +
+                        "   รายการ    : {0}\r\n" +
+                        "   ผู้รับสิทธิ์ : {1}\r\n" +
+                        "   สิทธิ์      : {2}\r\n" +
+                        "   อายุสิทธิ์  : {3}",
+                        targetName, recipientSummary, permSummary, expiryText);
+                    msgIcon = MessageBoxIcon.Information;
+
                     lblStatus.Text = _selectedFiles.Count > 1
-                        ? string.Format("แบ่งปันเรียบร้อยแล้ว ({0} ไฟล์, {1} ผู้รับ)", _selectedFiles.Count, lstPrincipal.SelectedItems.Count)
-                        : string.Format("แบ่งปันเรียบร้อยแล้ว ({0} รายการ)", lstPrincipal.SelectedItems.Count);
+                        ? string.Format("แบ่งปันเรียบร้อยแล้ว ({0} ไฟล์, {1} ผู้รับ)", _selectedFiles.Count, lstSelected.Items.Count)
+                        : string.Format("แบ่งปันเรียบร้อยแล้ว ({0} รายการ)", lstSelected.Items.Count);
                 }
+
+                MessageBox.Show(msgBody, msgTitle, MessageBoxButtons.OK, msgIcon);
+
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
             catch (Exception ex)
             {
                 lblStatus.Text = "เกิดข้อผิดพลาด: " + ex.Message;
+                MessageBox.Show(
+                    "เกิดข้อผิดพลาดในการบันทึก:\r\n\r\n" + ex.Message,
+                    "ไม่สามารถดำเนินการได้",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
 
@@ -575,9 +708,10 @@ namespace CMS.Presentation
 
         private class PrincipalItem
         {
-            public int    Id   { get; set; }
-            public string Name { get; set; }
-            public object Data { get; set; }
+            public int    Id            { get; set; }
+            public string Name          { get; set; }
+            public string PrincipalType { get; set; }
+            public object Data          { get; set; }
             public override string ToString() => Name;
         }
     }

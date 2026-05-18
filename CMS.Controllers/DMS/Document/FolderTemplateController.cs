@@ -111,12 +111,28 @@ namespace CMS.Controllers.DMS.Document
             _folderService.ApplyTemplateToFolder(parentFolderId, templateId, confidentialityLevel, currentUser);
         }
 
+        public void ApplyTemplateToFolder(int parentFolderId, IList<FolderTemplateItem> items, int confidentialityLevel, UserContext currentUser)
+        {
+            if (_folderService == null)
+                return;
+
+            _folderService.ApplyTemplateToFolder(parentFolderId, items, confidentialityLevel, currentUser);
+        }
+
         public void ApplyTemplateToOrgUnit(int orgUnitId, int templateId, string rootFolderName, int confidentialityLevel, UserContext currentUser)
         {
             if (_folderService == null)
                 return;
 
             _folderService.ApplyTemplateToOrgUnit(orgUnitId, templateId, rootFolderName, confidentialityLevel, currentUser);
+        }
+
+        public void ApplyTemplateToOrgUnit(int orgUnitId, IList<FolderTemplateItem> items, string rootFolderName, int confidentialityLevel, UserContext currentUser)
+        {
+            if (_folderService == null)
+                return;
+
+            _folderService.ApplyTemplateToOrgUnit(orgUnitId, items, rootFolderName, confidentialityLevel, currentUser);
         }
     }
 }

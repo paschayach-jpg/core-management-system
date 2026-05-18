@@ -10,6 +10,9 @@ namespace CMS.Presentation
 
         // ── Left panel ───────────────────────────────────────────────────────
         private System.Windows.Forms.Label       lblMenuTree;
+        private System.Windows.Forms.Panel       pnlTreeToolbar;
+        private System.Windows.Forms.Button      btnExpandAll;
+        private System.Windows.Forms.Button      btnCollapseAll;
         private System.Windows.Forms.TreeView    treeMenu;
 
         // ── Detail GroupBox ──────────────────────────────────────────────────
@@ -51,6 +54,9 @@ namespace CMS.Presentation
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.treeMenu = new System.Windows.Forms.TreeView();
             this.lblMenuTree = new System.Windows.Forms.Label();
+            this.pnlTreeToolbar = new System.Windows.Forms.Panel();
+            this.btnExpandAll = new System.Windows.Forms.Button();
+            this.btnCollapseAll = new System.Windows.Forms.Button();
             this.splitRight = new System.Windows.Forms.SplitContainer();
             this.grpDetails = new System.Windows.Forms.GroupBox();
             this.lblIDLabel = new System.Windows.Forms.Label();
@@ -75,6 +81,7 @@ namespace CMS.Presentation
             this.btnSave = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.lblStats = new System.Windows.Forms.Label();
+            this.pnlTreeToolbar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
             this.splitMain.Panel1.SuspendLayout();
             this.splitMain.Panel2.SuspendLayout();
@@ -93,10 +100,11 @@ namespace CMS.Presentation
             this.splitMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitMain.Location = new System.Drawing.Point(0, 0);
             this.splitMain.Name = "splitMain";
-            // 
+            //
             // splitMain.Panel1
-            // 
+            //
             this.splitMain.Panel1.Controls.Add(this.treeMenu);
+            this.splitMain.Panel1.Controls.Add(this.pnlTreeToolbar);
             this.splitMain.Panel1.Controls.Add(this.lblMenuTree);
             // 
             // splitMain.Panel2
@@ -117,9 +125,9 @@ namespace CMS.Presentation
             this.treeMenu.Size = new System.Drawing.Size(353, 631);
             this.treeMenu.TabIndex = 0;
             this.treeMenu.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeMenu_AfterSelect);
-            // 
+            //
             // lblMenuTree
-            // 
+            //
             this.lblMenuTree.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblMenuTree.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
             this.lblMenuTree.Location = new System.Drawing.Point(0, 0);
@@ -127,6 +135,35 @@ namespace CMS.Presentation
             this.lblMenuTree.Size = new System.Drawing.Size(353, 30);
             this.lblMenuTree.TabIndex = 1;
             this.lblMenuTree.Text = "📂 Menu Hierarchy";
+            //
+            // pnlTreeToolbar
+            //
+            this.pnlTreeToolbar.Controls.Add(this.btnCollapseAll);
+            this.pnlTreeToolbar.Controls.Add(this.btnExpandAll);
+            this.pnlTreeToolbar.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlTreeToolbar.Location = new System.Drawing.Point(0, 30);
+            this.pnlTreeToolbar.Name = "pnlTreeToolbar";
+            this.pnlTreeToolbar.Padding = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.pnlTreeToolbar.Size = new System.Drawing.Size(353, 30);
+            this.pnlTreeToolbar.TabIndex = 2;
+            //
+            // btnExpandAll
+            //
+            this.btnExpandAll.Location = new System.Drawing.Point(4, 3);
+            this.btnExpandAll.Name = "btnExpandAll";
+            this.btnExpandAll.Size = new System.Drawing.Size(110, 24);
+            this.btnExpandAll.TabIndex = 0;
+            this.btnExpandAll.Text = "⊞ ขยายทั้งหมด";
+            this.btnExpandAll.Click += new System.EventHandler(this.BtnExpandAll_Click);
+            //
+            // btnCollapseAll
+            //
+            this.btnCollapseAll.Location = new System.Drawing.Point(118, 3);
+            this.btnCollapseAll.Name = "btnCollapseAll";
+            this.btnCollapseAll.Size = new System.Drawing.Size(110, 24);
+            this.btnCollapseAll.TabIndex = 1;
+            this.btnCollapseAll.Text = "⊟ ย่อทั้งหมด";
+            this.btnCollapseAll.Click += new System.EventHandler(this.BtnCollapseAll_Click);
             // 
             // splitRight
             // 
@@ -385,6 +422,7 @@ namespace CMS.Presentation
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "📋 Menu Management — CMS";
             this.Load += new System.EventHandler(this.MenuManagementForm_Load);
+            this.pnlTreeToolbar.ResumeLayout(false);
             this.splitMain.Panel1.ResumeLayout(false);
             this.splitMain.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).EndInit();

@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
+using CMS.Presentation.Modules.DMS;
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
@@ -348,15 +349,7 @@ namespace CMS.Presentation
             // Add view switcher tabs to OrgUnit panel
             InitializeOrgFilterSwitcher();
 
-            // เมนูหลัก — Manager/Admin เท่านั้น (Officer/SrOfficer ไม่เห็น)
-            // ต้องเซ็ตหลัง InitializeOrgFilterSwitcher() เพราะ _btnMainMenu สร้างในนั้น
-            _btnMainMenu.Visible = canManage;
-            if (!canManage)
-            {
-                // ซ่อน เมนูหลัก → เลื่อน ตามองค์กร + ความลับ ชิดซ้าย (btnWidth=90, gap=2)
-                _btnOrgView.Location = new Point(5, 5);
-                _btnConfView.Location = new Point(5 + 90 + 2, 5);
-            }
+            // เมนูหลักย้ายไปอยู่ที่ MDI_Container left nav แล้ว — ไม่ต้องแสดงใน FolderForm
 
             // Wire navigation buttons
             btnNavBack.Click += BtnNavBack_Click;
@@ -1040,16 +1033,38 @@ namespace CMS.Presentation
                 return;
             }
 
-            // ให้ user เลือก folder ปลายทาง
+            // ─── ขั้นที่ 1: ตรวจสอบว่ามี approved download request อยู่แล้วหรือไม่ ───
+            ApprovalRequest approved = null;
+            if (_approvalFolderController != null)
+            {
+                try { approved = _approvalFolderController.GetApprovedDownloadRequest(file.FileID, _user.UserID); }
+                catch { /* ถ้า query fail ให้ผ่านไปขั้นส่งคำขอแทน */ }
+            }
+
+            if (approved == null)
+            {
+                // ─── ขั้นที่ 2: ยังไม่มี approval → ให้ส่งคำขอก่อน ───────────────
+                using (var dlg = new DownloadApprovalRequestDialog(
+                    file, _user, _approvalFolderController, _userAccountLookupController))
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        ShowInfo(string.Format(
+                            "ส่งคำขอดาวน์โหลด '{0}' เรียบร้อยแล้ว\r\nกรุณารอการอนุมัติจาก Manager",
+                            file.OriginalFileName));
+                    }
+                }
+                return;
+            }
+
+            // ─── ขั้นที่ 3: มี approved → ให้ดาวน์โหลดได้ทันที ──────────────────
             using (var sfd = new SaveFileDialog())
             {
-                sfd.Title = "บันทึกไฟล์";
+                sfd.Title    = "บันทึกไฟล์";
                 sfd.FileName = file.OriginalFileName;
 
-                // กำหนด filter ตาม extension
                 string ext = (file.FileExtension ?? "").TrimStart('.').ToLower();
-                sfd.Filter = string.Format("{0} files (*.{1})|*.{1}|All files (*.*)|*.*",
-                    ext.ToUpper(), ext);
+                sfd.Filter     = string.Format("{0} files (*.{1})|*.{1}|All files (*.*)|*.*", ext.ToUpper(), ext);
                 sfd.DefaultExt = ext;
 
                 if (sfd.ShowDialog(this) != DialogResult.OK) return;
@@ -1071,6 +1086,11 @@ namespace CMS.Presentation
                     {
                         result.FileStream.CopyTo(fs);
                     }
+
+                    // บันทึกว่า approval ถูก consume แล้ว (status 2→5)
+                    if (_approvalFolderController != null)
+                        try { _approvalFolderController.ConsumeDownloadApproval(approved.RequestID, _user); }
+                        catch { /* consume ล้มเหลวไม่ block การ download */ }
 
                     ShowInfo(string.Format("ดาวน์โหลด '{0}' เรียบร้อยแล้ว", file.OriginalFileName));
                 }
@@ -1432,7 +1452,7 @@ namespace CMS.Presentation
 
             _btnMainMenu = new Button
             {
-                Text = "☰ เมนูหลัก",
+                Text = "≡ เมนูหลัก",
                 Width = btnWidth,
                 Height = 28,
                 Location = new Point(5, 5),
@@ -1463,7 +1483,7 @@ namespace CMS.Presentation
                 Text = "🔒 ตามชั้นความลับ",
                 Width = 120,
                 Height = 28,
-                Location = new Point(5 + (btnWidth * 2) + 4, 5),
+                Location = new Point(5 + (btnWidth + 2) * 2, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = inactive,
                 ForeColor = accent,
@@ -1501,8 +1521,8 @@ namespace CMS.Presentation
                 Indent = 16,
                 HideSelection = false,
                 ShowLines = true
-
             };
+            _treeMainMenu.NodeMouseClick += MainMenuTree_NodeMouseClick;
 
             // Re-parent treeOrgUnit into pnlOrgFilter alongside the conf tree
             // Both use DockStyle.Fill and overlap — only one is visible at a time
@@ -1562,26 +1582,26 @@ namespace CMS.Presentation
             pnlOrgFilter.Controls.Add(_pnlViewButtons);        // index 4 (back) → docked Top first
 
             // Wire events
+            _btnMainMenu.Click += (s, e) => SwitchToMainMenuView();
             _btnOrgView.Click += (s, e) => SwitchToOrgView();
             _btnConfView.Click += (s, e) => SwitchToConfView();
-            _btnMainMenu.Click += (s, e) => SwitchToMainMenuView();
             _treeConfidentiality.BeforeSelect += ConfidentialityTree_BeforeSelect;
             _treeConfidentiality.NodeMouseClick += ConfTree_NodeMouseClick;
-            _treeMainMenu.NodeMouseClick += MainMenuTree_NodeMouseClick;
-            _treeMainMenu.CollapseAll();
-            LoadMainMenuTree();
         }
 
         private TreeView GetActiveOrgTree()
         {
+            if (_treeMainMenu != null && _treeMainMenu.Visible) return _treeMainMenu;
             if (treeOrgUnit.Visible) return treeOrgUnit;
-            if (_treeConfidentiality.Visible) return _treeConfidentiality;
-            if (_treeMainMenu.Visible) return _treeMainMenu;
+            if (_treeConfidentiality != null && _treeConfidentiality.Visible) return _treeConfidentiality;
             return null;
         }
 
         private void LoadMainMenuTree()
         {
+            var expandedTexts = new HashSet<string>();
+            CollectConfExpandedTexts(_treeMainMenu.Nodes, expandedTexts);
+
             _treeMainMenu.Nodes.Clear();
             _treeMainMenu.BeginUpdate();
 
@@ -1593,6 +1613,9 @@ namespace CMS.Presentation
             {
                 _treeMainMenu.EndUpdate();
             }
+
+            if (expandedTexts.Count > 0)
+                RestoreConfExpandedTexts(_treeMainMenu.Nodes, expandedTexts);
         }
 
         private bool TryLoadMainMenuFromManagement()
@@ -2259,6 +2282,11 @@ namespace CMS.Presentation
 
         private void MainMenuTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
+            // PlusMinus (+/-) click: let TreeView handle expand/collapse natively, never execute action
+            var hit = _treeMainMenu.HitTest(e.Location);
+            if ((hit.Location & TreeViewHitTestLocations.PlusMinus) == TreeViewHitTestLocations.PlusMinus)
+                return;
+
             string tag = MapConfiguredActionToTag(e.Node.Tag as string);
 
             // Try to map MenuItem if Tag is not a direct action string.
@@ -2267,9 +2295,7 @@ namespace CMS.Presentation
 
             if (string.IsNullOrWhiteSpace(tag))
             {
-                // Group node — expand/collapse only when clicking the label text,
-                // NOT the +/- icon (TreeView already handles that natively to avoid double-toggle)
-                var hit = _treeMainMenu.HitTest(e.Location);
+                // Group node — expand/collapse only when clicking the label text or icon
                 if (hit.Location == TreeViewHitTestLocations.Label ||
                     hit.Location == TreeViewHitTestLocations.Image ||
                     hit.Location == TreeViewHitTestLocations.StateImage)
@@ -2286,14 +2312,16 @@ namespace CMS.Presentation
             lblOrgUnitStatus.Text = "☰ " + e.Node.Text;
 
             string errorMessage;
-            if (MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(e.Node.Text), out errorMessage))
-                return;
+            MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(e.Node.Text), out errorMessage);
 
             if (!string.IsNullOrWhiteSpace(errorMessage))
             {
                 MessageBox.Show("ไม่สามารถเปิดหน้าจอ " + e.Node.Text + " ได้ในขณะนี้\nเนื่องจาก: " + errorMessage,
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+
+            // Refresh menu tree after every action to pick up latest data
+            LoadMainMenuTree();
         }
 
         private MenuActionContext BuildMenuActionContext(string menuText)
@@ -2337,6 +2365,43 @@ namespace CMS.Presentation
                 SetContentInfo = text => lblContentInfo.Text = "กำลังเปิด: " + text,
                 RequestMdiAction = OnMenuActionRequested
             };
+        }
+
+        /// <summary>
+        /// Called by MDI_Container left nav to dispatch a menu action into this form's context.
+        /// Uses the full MenuItem object so FormClassName/MenuKey/MenuName all participate in resolution.
+        /// </summary>
+        public void DispatchNavAction(CMS.Domain.Models.MenuItem menuItem)
+        {
+            if (menuItem == null) return;
+
+            string tag = ResolveMenuActionTag(menuItem);
+            if (string.IsNullOrWhiteSpace(tag)) return;
+
+            string errorMessage;
+            MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(menuItem.MenuName ?? string.Empty), out errorMessage);
+
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+                MessageBox.Show("ไม่สามารถเปิดหน้าจอ " + menuItem.MenuName + " ได้\nเนื่องจาก: " + errorMessage,
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        /// <summary>
+        /// Fallback overload for callers that only have a raw action key string (no MenuItem object).
+        /// </summary>
+        public void DispatchNavAction(string actionKey, string menuText = "")
+        {
+            if (string.IsNullOrWhiteSpace(actionKey)) return;
+
+            string tag = MapConfiguredActionToTag(actionKey);
+            if (string.IsNullOrWhiteSpace(tag)) tag = actionKey.Trim();
+
+            string errorMessage;
+            MenuActionRegistry.TryExecute(tag, BuildMenuActionContext(menuText), out errorMessage);
+
+            if (!string.IsNullOrWhiteSpace(errorMessage))
+                MessageBox.Show("ไม่สามารถเปิดหน้าจอ " + menuText + " ได้\nเนื่องจาก: " + errorMessage,
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         private void SetFolderExplorerControlsVisibility(bool isVisible)
@@ -2421,8 +2486,9 @@ namespace CMS.Presentation
         {
             if (_showingMainMenuView)
             {
-                ToggleFolderExplorerControlsVisibility();
-                SetMainMenuTreeFullHeight(!_folderExplorerControlsVisible);
+                // Always keep folder explorer hidden and refresh menu data
+                SetFolderExplorerControlsVisibility(false);
+                LoadMainMenuTree();
                 return;
             }
 
@@ -2431,7 +2497,6 @@ namespace CMS.Presentation
             SetFolderExplorerControlsVisibility(false);
             SetMainMenuTreeFullHeight(true);
 
-            // Load menu tree — stays collapsed at Level 0; user expands as needed.
             LoadMainMenuTree();
 
             treeOrgUnit.Visible = false;

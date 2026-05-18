@@ -63,6 +63,7 @@ namespace CMS.Presentation
             btnMove.Enabled       = isAdmin;
             btnDelete.Enabled     = isAdmin;
             btnDeactivate.Enabled = isAdmin;
+            btnClose.Enabled      = true;
 
             if (!isAdmin)
             {
@@ -591,18 +592,63 @@ namespace CMS.Presentation
             var selected = SelectedOrgUnit;
             if (selected == null)
             {
-                ShowError("Please select an OrgUnit to deactivate.");
+                ShowError("กรุณาเลือกหน่วยงานที่ต้องการปิดใช้งาน");
+                return;
+            }
+
+            string unitName = selected.OrgUnitNameTH ?? selected.Name;
+
+            if (_presenter.HasActiveDependents(selected.OrgUnitId))
+            {
+                MessageBox.Show(
+                    string.Format(
+                        "ไม่สามารถปิดใช้งานหน่วยงาน '{0}' ได้\n\n" +
+                        "เนื่องจากยังมีโฟลเดอร์หรือบัญชีผู้ใช้งานที่เชื่อมโยงกับหน่วยงานนี้อยู่\n\n" +
+                        "กรุณาดำเนินการต่อไปนี้ก่อน:\n" +
+                        "  • ย้ายหรือปิดใช้งานโฟลเดอร์ทั้งหมดในหน่วยงานนี้\n" +
+                        "  • ย้ายหรือปิดใช้งานบัญชีผู้ใช้งานที่สังกัดหน่วยงานนี้",
+                        unitName),
+                    "ไม่สามารถปิดใช้งานได้",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
                 return;
             }
 
             var confirm = MessageBox.Show(
-                string.Format("Deactivate '{0}'? This cannot be undone.", selected.Name),
-                "Confirm Deactivation",
+                string.Format(
+                    "คุณต้องการปิดใช้งานหน่วยงาน '{0}' หรือไม่?\n\n" +
+                    "หน่วยงานที่ปิดใช้งานจะไม่ปรากฏในระบบ\n" +
+                    "(สามารถเปิดใช้งานอีกครั้งได้ในภายหลัง)",
+                    unitName),
+                "ยืนยันการปิดใช้งาน",
                 MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
+                MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
 
-            if (confirm == DialogResult.Yes)
-                _presenter.DeactivateOrgUnit(selected.OrgUnitId);
+            if (confirm != DialogResult.Yes) return;
+
+            _presenter.DeactivateOrgUnit(selected.OrgUnitId);
+        }
+
+        private void btnExpandAll_Click(object sender, EventArgs e)
+        {
+            treeView.BeginUpdate();
+            treeView.ExpandAll();
+            treeView.EndUpdate();
+            if (treeView.Nodes.Count > 0)
+                treeView.Nodes[0].EnsureVisible();
+        }
+
+        private void btnCollapseAll_Click(object sender, EventArgs e)
+        {
+            treeView.BeginUpdate();
+            treeView.CollapseAll();
+            treeView.EndUpdate();
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
 
         private void btnDelete_Click(object sender, EventArgs e)
@@ -630,12 +676,13 @@ namespace CMS.Presentation
                 var forceConfirm = MessageBox.Show(
                     string.Format(
                         "หน่วยงาน '{0}' ยังมีโฟลเดอร์หรือผู้ใช้งานที่เชื่อมโยงอยู่\n\n" +
-                        "ต้องการลบพร้อมล้างข้อมูลที่เกี่ยวข้องทั้งหมดหรือไม่?\n" +
+                        "ต้องการลบหน่วยงานนี้หรือไม่?\n" +
                         "  • โฟลเดอร์ทั้งหมดจะถูกย้ายไปถังขยะ\n" +
-                        "  • ผู้ใช้งานจะถูกถอดออกจากหน่วยงานนี้ (บัญชียังคงใช้งานได้)\n\n" +
+                        "  • ผู้ใช้งานยังคงมีบัญชีและใช้งานได้ตามปกติ\n" +
+                        "    (แต่หน่วยงานจะไม่ปรากฏในระบบอีกต่อไป)\n\n" +
                         "การดำเนินการนี้ไม่สามารถยกเลิกได้",
                         unitName),
-                    "Force Delete — ยืนยันการลบพร้อมข้อมูลที่เกี่ยวข้อง",
+                    "ยืนยันการลบหน่วยงาน",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Warning,
                     MessageBoxDefaultButton.Button2);
@@ -888,9 +935,10 @@ namespace CMS.Presentation
             mnuDelete.ForeColor = isAdmin ? Color.Firebrick : SystemColors.GrayText;
             mnuDelete.Click  += (s, e) => btnDelete_Click(s, e);
 
-            var mnuDeactivate = new ToolStripMenuItem("⛔ ปิดใช้งาน");
-            mnuDeactivate.Enabled = isAdmin;
-            mnuDeactivate.Click  += (s, e) => btnDeactivate_Click(s, e);
+            var mnuDeactivate = new ToolStripMenuItem("⛔ ปิดใช้งานหน่วยงาน");
+            mnuDeactivate.Enabled   = isAdmin;
+            mnuDeactivate.ForeColor = isAdmin ? Color.Firebrick : SystemColors.GrayText;
+            mnuDeactivate.Click    += (s, e) => btnDeactivate_Click(s, e);
 
             ctx.Items.Add(mnuAdd);
             ctx.Items.Add(new ToolStripSeparator());

@@ -51,6 +51,7 @@ namespace CMS.Presentation
             this.btnPrev        = new System.Windows.Forms.Button();
             this.lblPageInfo    = new System.Windows.Forms.Label();
             this.btnNext        = new System.Windows.Forms.Button();
+            this.btnClose       = new System.Windows.Forms.Button();
 
             this.pnlHeader.SuspendLayout();
             this.pnlFilter.SuspendLayout();
@@ -64,6 +65,7 @@ namespace CMS.Presentation
 
             // ── pnlHeader ────────────────────────────────────────────────────
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(31, 56, 100);
+            this.pnlHeader.Controls.Add(this.btnClose);
             this.pnlHeader.Controls.Add(this.lblSubTitle);
             this.pnlHeader.Controls.Add(this.lblTitle);
             this.pnlHeader.Dock     = System.Windows.Forms.DockStyle.Top;
@@ -282,6 +284,20 @@ namespace CMS.Presentation
             this.btnNext.Text      = "ถัดไป ▶";
             this.btnNext.Click    += new System.EventHandler(this.btnNext_Click);
 
+            this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClose.Font      = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold);
+            this.btnClose.Size      = new System.Drawing.Size(80, 32);
+            this.btnClose.Location  = new System.Drawing.Point(0, 10);
+            this.btnClose.Dock      = System.Windows.Forms.DockStyle.Right;
+            this.btnClose.Text      = "✕ ปิด";
+            this.btnClose.BackColor = System.Drawing.Color.FromArgb(192, 57, 43);
+            this.btnClose.ForeColor = System.Drawing.Color.White;
+            this.btnClose.FlatAppearance.BorderSize      = 0;
+            this.btnClose.FlatAppearance.MouseOverBackColor  = System.Drawing.Color.FromArgb(231, 76, 60);
+            this.btnClose.FlatAppearance.MouseDownBackColor  = System.Drawing.Color.FromArgb(169, 50, 38);
+            this.btnClose.Cursor    = System.Windows.Forms.Cursors.Hand;
+            this.btnClose.Click    += new System.EventHandler(this.btnClose_Click);
+
             this.pnlFooter.Controls.Add(this.lblStatus);
             this.pnlFooter.Controls.Add(this.btnPrev);
             this.pnlFooter.Controls.Add(this.lblPageInfo);
@@ -349,5 +365,6 @@ namespace CMS.Presentation
         private System.Windows.Forms.Button          btnPrev;
         private System.Windows.Forms.Label           lblPageInfo;
         private System.Windows.Forms.Button          btnNext;
+        private System.Windows.Forms.Button          btnClose;
     }
 }

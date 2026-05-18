@@ -17,6 +17,9 @@ namespace CMS.Presentation
         private ComboBox _cmbLevel;
         private Label _lblLevel;
         private ComboBox _cmbActionKey;
+        private TextBox _txtParentDisplay;
+        private Button _btnPickParent;
+        private int? _selectedParentMenuID;
 
         public MenuManagementForm(IMenuManagementController menuManagementController, UserContext currentUser)
         {
@@ -40,6 +43,7 @@ namespace CMS.Presentation
             {
                 ConfigureActionKeySelector();
                 ConfigureLevelSelector();
+                ConfigureParentPicker();
                 ApplyOffice2022NavyTheme();
                 txtKey.ReadOnly = true;
                 txtKey.TabStop = false;
@@ -218,6 +222,83 @@ namespace CMS.Presentation
             chkActive.Top = 265;
         }
 
+        private void ConfigureParentPicker()
+        {
+            if (_txtParentDisplay != null || grpDetails == null) return;
+
+            cmbParent.Visible = false;
+            cmbParent.TabStop = false;
+
+            _txtParentDisplay = new TextBox
+            {
+                Name = "txtParentDisplay",
+                ReadOnly = true,
+                Cursor = Cursors.Hand,
+                Location = new Point(cmbParent.Left, cmbParent.Top),
+                Size = new Size(cmbParent.Width - 60, cmbParent.Height),
+                Text = "(ไม่มี — Root)",
+                BackColor = Color.White,
+                TabStop = false
+            };
+            _txtParentDisplay.Click += (s, e) => { if (_btnPickParent != null && _btnPickParent.Enabled) BtnPickParent_Click(s, e); };
+
+            _btnPickParent = new Button
+            {
+                Name = "btnPickParent",
+                Text = "📂 เลือก",
+                Location = new Point(cmbParent.Right - 58, cmbParent.Top - 1),
+                Size = new Size(58, cmbParent.Height + 2),
+                Cursor = Cursors.Hand
+            };
+            _btnPickParent.Click += BtnPickParent_Click;
+
+            grpDetails.Controls.Add(_txtParentDisplay);
+            grpDetails.Controls.Add(_btnPickParent);
+        }
+
+        private void BtnPickParent_Click(object sender, EventArgs e)
+        {
+            int? excludeID = null;
+            if (lblID.Text != "-" && lblID.Text != "(New)" && int.TryParse(lblID.Text, out int currentID))
+                excludeID = currentID;
+
+            using (var dlg = new ParentMenuPickerDialog(_allMenus, _selectedParentMenuID, excludeID))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    _selectedParentMenuID = dlg.SelectedMenuItemID;
+                    UpdateParentDisplay();
+                }
+            }
+        }
+
+        private void UpdateParentDisplay()
+        {
+            if (_txtParentDisplay == null) return;
+            if (!_selectedParentMenuID.HasValue)
+            {
+                _txtParentDisplay.Text = "(ไม่มี — Root)";
+                return;
+            }
+            _txtParentDisplay.Text = BuildParentPath(_selectedParentMenuID.Value);
+        }
+
+        private string BuildParentPath(int menuID)
+        {
+            var segments = new List<string>();
+            int? current = menuID;
+            int guard = 0;
+            while (current.HasValue && guard < 20)
+            {
+                var m = _allMenus.FirstOrDefault(x => x.MenuItemID == current.Value);
+                if (m == null) break;
+                segments.Insert(0, m.MenuName);
+                current = m.ParentMenuItemID;
+                guard++;
+            }
+            return segments.Count == 0 ? "(ไม่มี — Root)" : string.Join(" › ", segments);
+        }
+
         private void ApplyOffice2022NavyTheme()
         {
             var formBack = Color.FromArgb(236, 242, 250);
@@ -240,6 +321,10 @@ namespace CMS.Presentation
             lblMenuTree.BackColor = accentSoft;
             lblMenuTree.ForeColor = accent;
 
+            pnlTreeToolbar.BackColor = accentSoft;
+            StyleTreeToolbarButton(btnExpandAll, accent, accentSoft);
+            StyleTreeToolbarButton(btnCollapseAll, accent, accentSoft);
+
             treeMenu.BackColor = Color.White;
             treeMenu.ForeColor = textMain;
             treeMenu.BorderStyle = BorderStyle.FixedSingle;
@@ -258,6 +343,11 @@ namespace CMS.Presentation
                 StyleInput(_cmbLevel, border, textMain);
             if (_lblLevel != null)
                 _lblLevel.ForeColor = textMain;
+
+            if (_txtParentDisplay != null)
+                StyleInput(_txtParentDisplay, border, textMain);
+            if (_btnPickParent != null)
+                StyleTreeToolbarButton(_btnPickParent, accent, accentSoft);
 
             chkActive.ForeColor = accent;
 
@@ -312,6 +402,20 @@ namespace CMS.Presentation
             button.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Regular);
         }
 
+        private static void StyleTreeToolbarButton(Button button, Color foreColor, Color backColor)
+        {
+            if (button == null)
+                return;
+
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 1;
+            button.FlatAppearance.BorderColor = foreColor;
+            button.BackColor = backColor;
+            button.ForeColor = foreColor;
+            button.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
+            button.Cursor = Cursors.Hand;
+        }
+
         private void CmbLevel_SelectedIndexChanged(object sender, EventArgs e)
         {
             UpdateParentStateByLevel();
@@ -325,18 +429,19 @@ namespace CMS.Presentation
         private void UpdateParentStateByLevel()
         {
             bool isChild = IsChildLevelSelected();
-            cmbParent.Enabled = isChild;
             lblParentLabel.Text = isChild ? "Parent Menu:*" : "Parent Menu:";
 
-            if (isChild)
+            if (_btnPickParent != null) _btnPickParent.Enabled = isChild;
+            if (_txtParentDisplay != null)
             {
-                // Child level should point to an actual parent by default.
-                if (cmbParent.Items.Count > 1 && cmbParent.SelectedIndex <= 0)
-                    cmbParent.SelectedIndex = 1;
+                _txtParentDisplay.BackColor = isChild ? Color.White : SystemColors.Control;
+                _txtParentDisplay.Cursor = isChild ? Cursors.Hand : Cursors.Default;
             }
-            else if (cmbParent.Items.Count > 0)
+
+            if (!isChild)
             {
-                cmbParent.SelectedIndex = 0;
+                _selectedParentMenuID = null;
+                UpdateParentDisplay();
             }
         }
 
@@ -433,22 +538,11 @@ namespace CMS.Presentation
                 roleIndex = 0;
             cmbRole.SelectedIndex = roleIndex;
 
-            // Repopulate parent combo excluding this menu itself (prevent circular)
-            PopulateParentCombo(menu.MenuItemID);
-
             if (_cmbLevel != null)
                 _cmbLevel.SelectedIndex = menu.ParentMenuItemID.HasValue ? 1 : 0;
 
-            // Select parent in dropdown
-            for (int i = 0; i < cmbParent.Items.Count; i++)
-            {
-                var item = cmbParent.Items[i] as ParentMenuItem;
-                if (item != null && item.ID == menu.ParentMenuItemID)
-                {
-                    cmbParent.SelectedIndex = i;
-                    break;
-                }
-            }
+            _selectedParentMenuID = menu.ParentMenuItemID;
+            UpdateParentDisplay();
 
             chkActive.Checked = menu.IsActive;
             lblID.Text = menu.MenuItemID.ToString();
@@ -459,26 +553,15 @@ namespace CMS.Presentation
         {
             ClearForm();
             lblID.Text = "(New)";
-
-            // Prepare a key immediately when user clicks Add.
             txtKey.Text = GenerateInitialNewMenuKey();
-            
-            // Auto-set parent from selected tree node
+
             if (treeMenu.SelectedNode?.Tag is MenuItem selectedMenu)
             {
                 if (_cmbLevel != null)
                     _cmbLevel.SelectedIndex = 1;
 
-                // Set parent to the selected menu
-                for (int i = 0; i < cmbParent.Items.Count; i++)
-                {
-                    var item = cmbParent.Items[i] as ParentMenuItem;
-                    if (item != null && item.ID == selectedMenu.MenuItemID)
-                    {
-                        cmbParent.SelectedIndex = i;
-                        break;
-                    }
-                }
+                _selectedParentMenuID = selectedMenu.MenuItemID;
+                UpdateParentDisplay();
             }
             else if (_cmbLevel != null)
             {
@@ -486,7 +569,6 @@ namespace CMS.Presentation
             }
 
             UpdateParentStateByLevel();
-            
             txtName.Focus();
         }
 
@@ -547,7 +629,7 @@ namespace CMS.Presentation
                 int order = (int)numOrder.Value;
                 int? role = cmbRole.SelectedIndex > 0 ? cmbRole.SelectedIndex : (int?)null;
                 bool isActive = chkActive.Checked;
-                int? parentID = IsChildLevelSelected() ? (cmbParent.SelectedItem as ParentMenuItem)?.ID : (int?)null;
+                int? parentID = IsChildLevelSelected() ? _selectedParentMenuID : (int?)null;
                 int? savedMenuID = null;
 
                 if (IsChildLevelSelected() && !parentID.HasValue)
@@ -701,12 +783,13 @@ namespace CMS.Presentation
                 _cmbActionKey.Text = string.Empty;
             numOrder.Value = 0;
             cmbRole.SelectedIndex = 0;
-            if (cmbParent.Items.Count > 0) cmbParent.SelectedIndex = 0;
             chkActive.Checked = true;
 
             if (_cmbLevel != null)
                 _cmbLevel.SelectedIndex = 0;
 
+            _selectedParentMenuID = null;
+            UpdateParentDisplay();
             UpdateParentStateByLevel();
         }
 
@@ -726,6 +809,8 @@ namespace CMS.Presentation
         private void btnDelete_Click(object sender, EventArgs e) { DeleteMenu(); }
         private void btnSave_Click(object sender, EventArgs e) { SaveMenu(); }
         private void btnCancel_Click(object sender, EventArgs e) { ClearForm(); }
+        private void BtnExpandAll_Click(object sender, EventArgs e) { treeMenu.ExpandAll(); }
+        private void BtnCollapseAll_Click(object sender, EventArgs e) { treeMenu.CollapseAll(); }
 
         private void TxtName_TextChanged(object sender, EventArgs e)
         {

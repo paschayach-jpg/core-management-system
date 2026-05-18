@@ -22,6 +22,11 @@ namespace CMS.Presentation
             this.btnDelete = new System.Windows.Forms.ToolStripButton();
             this.separator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnDeactivate = new System.Windows.Forms.ToolStripButton();
+            this.separator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnExpandAll = new System.Windows.Forms.ToolStripButton();
+            this.btnCollapseAll = new System.Windows.Forms.ToolStripButton();
+            this.separator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnClose = new System.Windows.Forms.ToolStripButton();
             this.splitterMain = new System.Windows.Forms.Splitter();
             this.pnlLeft = new System.Windows.Forms.Panel();
             this.txtSearch = new System.Windows.Forms.TextBox();
@@ -82,7 +87,12 @@ namespace CMS.Presentation
             this.btnMove,
             this.btnDelete,
             this.separator1,
-            this.btnDeactivate});
+            this.btnDeactivate,
+            this.separator2,
+            this.btnExpandAll,
+            this.btnCollapseAll,
+            this.separator3,
+            this.btnClose});
             this.toolStrip.Location = new System.Drawing.Point(0, 43);
             this.toolStrip.Name = "toolStrip";
             this.toolStrip.Size = new System.Drawing.Size(1333, 27);
@@ -125,15 +135,50 @@ namespace CMS.Presentation
             // 
             this.separator1.Name = "separator1";
             this.separator1.Size = new System.Drawing.Size(6, 27);
-            // 
+            //
             // btnDeactivate
-            // 
+            //
+            this.btnDeactivate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(53)))), ((int)(((byte)(69)))));
             this.btnDeactivate.Name = "btnDeactivate";
             this.btnDeactivate.Size = new System.Drawing.Size(91, 24);
-            this.btnDeactivate.Text = "⏸️ ปิดใช้งาน";
-            this.btnDeactivate.ToolTipText = "ปิดใช้งานหน่วยงาน";
+            this.btnDeactivate.Text = "⛔ ปิดใช้งาน";
+            this.btnDeactivate.ToolTipText = "ปิดใช้งานหน่วยงานที่เลือก";
             this.btnDeactivate.Click += new System.EventHandler(this.btnDeactivate_Click);
-            // 
+            //
+            // separator2
+            //
+            this.separator2.Name = "separator2";
+            this.separator2.Size = new System.Drawing.Size(6, 27);
+            //
+            // btnExpandAll
+            //
+            this.btnExpandAll.Name = "btnExpandAll";
+            this.btnExpandAll.Size = new System.Drawing.Size(75, 24);
+            this.btnExpandAll.Text = "➕ ขยายทั้งหมด";
+            this.btnExpandAll.ToolTipText = "ขยายรายการทั้งหมด";
+            this.btnExpandAll.Click += new System.EventHandler(this.btnExpandAll_Click);
+            //
+            // btnCollapseAll
+            //
+            this.btnCollapseAll.Name = "btnCollapseAll";
+            this.btnCollapseAll.Size = new System.Drawing.Size(75, 24);
+            this.btnCollapseAll.Text = "➖ ย่อทั้งหมด";
+            this.btnCollapseAll.ToolTipText = "ย่อรายการทั้งหมด";
+            this.btnCollapseAll.Click += new System.EventHandler(this.btnCollapseAll_Click);
+            //
+            // separator3
+            //
+            this.separator3.Name = "separator3";
+            this.separator3.Size = new System.Drawing.Size(6, 27);
+            //
+            // btnClose
+            //
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(55, 24);
+            this.btnClose.Text = "✖ ปิด";
+            this.btnClose.ToolTipText = "ปิดหน้าต่างนี้";
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
+            //
             // splitterMain
             // 
             this.splitterMain.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
@@ -395,6 +440,11 @@ namespace CMS.Presentation
         private System.Windows.Forms.ToolStripButton    btnDelete;
         private System.Windows.Forms.ToolStripButton    btnDeactivate;
         private System.Windows.Forms.ToolStripSeparator separator1;
+        private System.Windows.Forms.ToolStripSeparator separator2;
+        private System.Windows.Forms.ToolStripButton    btnExpandAll;
+        private System.Windows.Forms.ToolStripButton    btnCollapseAll;
+        private System.Windows.Forms.ToolStripSeparator separator3;
+        private System.Windows.Forms.ToolStripButton    btnClose;
         private System.Windows.Forms.Splitter           splitterMain;
         private System.Windows.Forms.Panel              pnlLeft;
         private System.Windows.Forms.Label              lblViewMode;

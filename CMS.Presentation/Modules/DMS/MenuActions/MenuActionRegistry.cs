@@ -90,7 +90,22 @@ namespace CMS.Presentation
                             MessageBox.Show("Org lookup is not available.", "Folder Settings", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return true;
                         }
-                        return ShowTargetForm(context, new PermissionForm(context.PermissionService, context.ApprovalService, context.FolderService, context.FolderPermissionLookupController, context.User, context.SelectedFolder, context.UserAccountLookupController, context.FolderSettingsController, context.EmployeeApiService, context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService), null, null));
+                        {
+                            // Resolve parent folder for conf-level edit enforcement.
+                            CMS.Domain.Models.Folder parentFolderCtx = null;
+                            if (context.SelectedFolder?.ParentFolderID.HasValue == true && context.FolderReadLookupController != null)
+                            {
+                                try { parentFolderCtx = context.FolderReadLookupController.GetById(context.SelectedFolder.ParentFolderID.Value); }
+                                catch { }
+                            }
+                            return ShowTargetForm(context, new PermissionForm(
+                                context.PermissionService, context.ApprovalService, context.FolderService,
+                                context.FolderPermissionLookupController, context.User, context.SelectedFolder,
+                                context.UserAccountLookupController, context.FolderSettingsController,
+                                context.EmployeeApiService,
+                                context.OrgLookupController ?? new UserAccessOrgLookupController(context.OrgStructureService),
+                                null, null, parentFolderCtx));
+                        }
 
                     case "UserPermissionSummary":
                         return ShowTargetForm(context, new UserPermissionSummaryForm(context.User, context.ShareLookupController));
@@ -329,7 +344,7 @@ namespace CMS.Presentation
                     }
                     else
                     {
-                        using (var dlg = new ShareDialogExternal(context.ShareCommandController, context.User, context.SelectedFile, context.SelectedFolder))
+                        using (var dlg = new ShareDialogExternal(context.ShareCommandController, context.User, selectedFiles, context.SelectedFolder))
                             dlg.ShowDialog(context.Owner);
                     }
                 }
@@ -348,11 +363,45 @@ namespace CMS.Presentation
             if (context.SetContentInfo != null)
                 context.SetContentInfo(context.MenuText);
 
-            // Respect caller-defined size/state; only recover from a minimized window.
             if (targetForm.WindowState == FormWindowState.Minimized)
                 targetForm.WindowState = FormWindowState.Normal;
-            targetForm.ShowDialog(context.Owner);
+
+            Form owner = context.Owner;
+            if (owner?.MdiParent != null)
+                owner = owner.MdiParent;
+
+            CenterDialogOnMdiContentArea(targetForm, owner);
+            targetForm.ShowDialog(owner);
             return true;
+        }
+
+        private static void CenterDialogOnMdiContentArea(Form dialog, Form mdiOwner)
+        {
+            if (mdiOwner == null || !mdiOwner.IsMdiContainer)
+                return;
+
+            // Find the MdiClient — the actual content area sitting to the right of the nav panel
+            MdiClient mdiClient = null;
+            foreach (Control c in mdiOwner.Controls)
+            {
+                if (c is MdiClient mc) { mdiClient = mc; break; }
+            }
+            if (mdiClient == null)
+                return;
+
+            // Convert MdiClient top-left to screen coordinates
+            Point clientScreenPos = mdiOwner.PointToScreen(mdiClient.Location);
+
+            int x = clientScreenPos.X + (mdiClient.Width  - dialog.Width)  / 2;
+            int y = clientScreenPos.Y + (mdiClient.Height - dialog.Height) / 2;
+
+            // Clamp to working area so dialog never goes off-screen
+            Rectangle workArea = Screen.FromControl(mdiOwner).WorkingArea;
+            x = Math.Max(workArea.Left, Math.Min(x, workArea.Right  - dialog.Width));
+            y = Math.Max(workArea.Top,  Math.Min(y, workArea.Bottom - dialog.Height));
+
+            dialog.StartPosition = FormStartPosition.Manual;
+            dialog.Location      = new Point(x, y);
         }
 
         private static bool TryRequestMdiAction(MenuActionContext context, string actionKey)

@@ -16,6 +16,8 @@ namespace CMS.Services.Interfaces
         void ApplyTemplate(int parentFolderId, int templateId, UserContext user);
         void ApplyTemplateToOrgUnit(int orgUnitId, int templateId, string rootFolderName, int confidentialityLevel, UserContext user);
         void ApplyTemplateToFolder(int parentFolderId, int templateId, int confidentialityLevel, UserContext user);
+        void ApplyTemplateToFolder(int parentFolderId, IList<FolderTemplateItem> items, int confidentialityLevel, UserContext user);
+        void ApplyTemplateToOrgUnit(int orgUnitId, IList<FolderTemplateItem> items, string rootFolderName, int confidentialityLevel, UserContext user);
         IEnumerable<Folder> GetFolderContents(int folderId, UserContext user);
         Folder GetFolder(int folderId, UserContext user);
         void ChangeConfidentialityLevel(int folderId, int newLevel, UserContext user);

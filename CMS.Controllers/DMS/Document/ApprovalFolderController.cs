@@ -20,5 +20,29 @@ namespace CMS.Controllers.DMS.Document
 
             _approvalService.RequestFolderDelete(folderId, reason, user);
         }
+
+        public ApprovalRequest SubmitDownloadRequest(int fileId, string reason, int approverId, UserContext user)
+        {
+            if (_approvalService == null || user == null)
+                return null;
+
+            return _approvalService.SubmitDownloadRequest(fileId, reason, approverId, user);
+        }
+
+        public ApprovalRequest GetApprovedDownloadRequest(int fileId, int userId)
+        {
+            if (_approvalService == null)
+                return null;
+
+            return _approvalService.GetApprovedDownloadRequest(fileId, userId);
+        }
+
+        public void ConsumeDownloadApproval(int requestId, UserContext user)
+        {
+            if (_approvalService == null || user == null)
+                return;
+
+            _approvalService.ConsumeDownloadApproval(requestId, user);
+        }
     }
 }

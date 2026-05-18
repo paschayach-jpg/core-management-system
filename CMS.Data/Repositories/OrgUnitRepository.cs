@@ -231,13 +231,10 @@ namespace CMS.Data.Repositories
                         cmdFolders.Parameters.AddWithValue("@DeletedBy", deletedBy);
                         cmdFolders.ExecuteNonQuery();
 
-                        // 2. Detach users — clear OrgUnitID (do NOT deactivate their accounts)
-                        var cmdUsers = new SqlCommand(
-                            @"UPDATE core.UserAccount
-                              SET    OrgUnitID = NULL
-                              WHERE  OrgUnitID = @OrgUnitID", conn, tx);
-                        cmdUsers.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
-                        cmdUsers.ExecuteNonQuery();
+                        // 2. core.UserAccount.OrgUnitID เป็น NOT NULL — ไม่สามารถ set เป็น NULL ได้
+                        // ผู้ใช้งานยังคง reference ไปยัง OrgUnit นี้ แต่เนื่องจาก OrgUnit
+                        // จะถูก soft-delete (IsDeleted=1) ระบบจะ filter ออกเองเมื่อ query หน่วยงาน active
+                        // บัญชีผู้ใช้งานยังคงใช้งานได้ปกติ
 
                         // 3. Soft-delete the OrgUnit itself
                         var cmdOrg = new SqlCommand("core.sp_SoftDeleteOrgUnit", conn, tx);
