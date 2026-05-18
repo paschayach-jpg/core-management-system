@@ -1749,8 +1749,8 @@ namespace CMS.Presentation
                     viewer.AttachEditorFactory(a => OpenKBEditorDialog(a));
                     return viewer;
                 },
-                // editorFactory — เปิด KBEditorDialog พร้อม presenter
-                article => OpenKBEditorDialog(article),
+                // editorFactory — สร้าง KBEditorDialog พร้อม presenter สำหรับฝังใน KBMainForm
+                article => CreateKBEditorForm(article),
                 // categoryFormFactory — สร้าง KBCategoryForm พร้อม presenter สำหรับฝังใน KBMainForm
                 () =>
                 {
@@ -1760,19 +1760,8 @@ namespace CMS.Presentation
                     return catForm;
                 });
 
-            // importWizardFactory — สร้าง KBImportWizardForm พร้อม presenter
-            form.AttachImportWizardFactory(() =>
-            {
-                var wizard          = new KBImportWizardForm(_currentUser);
-                var excelReader     = new CMS.Services.KBExcelReader();
-                var processor       = new CMS.Services.KBImportProcessor(
-                    _kbCategoryRepository, _kbArticleRepository, _kbArticleLinkRepository, _kbVersionRepository,
-                    _subCommitteeRepository, _hrDivisionRepository, _hrDepartmentRepository);
-                var wizardPresenter = new KBImportWizardController(
-                    wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
-                wizard.AttachPresenter(wizardPresenter);
-                return wizard.ShowDialog(this);
-            });
+            // importWizardFactory — สร้าง KBImportWizardForm พร้อม presenter สำหรับฝังใน KBMainForm
+            form.AttachImportWizardFactory(() => CreateKBImportWizardForm());
 
             // dashboardFactory — สร้าง KBDashboardForm พร้อม presenter
             form.AttachDashboardFactory(() =>
@@ -1789,15 +1778,40 @@ namespace CMS.Presentation
 
         /// <summary>
         /// Composition-root helper: สร้าง KBEditorDialog พร้อม presenter ครบชุด
-        /// แล้ว ShowDialog() คืนค่า DialogResult กลับมา
+        /// โดยไม่ ShowDialog — ส่งคืนฟอร์มพร้อมฝังใน panel ของ KBMainForm
         /// </summary>
-        private DialogResult OpenKBEditorDialog(KBArticle article)
+        private KBEditorDialog CreateKBEditorForm(KBArticle article)
         {
             var dlg = new KBEditorDialog(_currentUser);
             var presenter = new KBEditorController(
                 dlg, _kbCategoryService, _kbArticleService, _currentUser, article);
             dlg.AttachPresenter(presenter);
-            return dlg.ShowDialog(this);
+            return dlg;
+        }
+
+        /// <summary>
+        /// เปิด KBEditorDialog แบบ modal dialog (ใช้จาก ArticleViewerForm)
+        /// </summary>
+        private DialogResult OpenKBEditorDialog(KBArticle article)
+        {
+            return CreateKBEditorForm(article).ShowDialog(this);
+        }
+
+        /// <summary>
+        /// Composition-root helper: สร้าง KBImportWizardForm พร้อม presenter ครบชุด
+        /// โดยไม่ ShowDialog — ส่งคืนฟอร์มพร้อมฝังใน panel ของ KBMainForm
+        /// </summary>
+        private KBImportWizardForm CreateKBImportWizardForm()
+        {
+            var wizard          = new KBImportWizardForm(_currentUser);
+            var excelReader     = new CMS.Services.KBExcelReader();
+            var processor       = new CMS.Services.KBImportProcessor(
+                _kbCategoryRepository, _kbArticleRepository, _kbArticleLinkRepository, _kbVersionRepository,
+                _subCommitteeRepository, _hrDivisionRepository, _hrDepartmentRepository);
+            var wizardPresenter = new KBImportWizardController(
+                wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
+            wizard.AttachPresenter(wizardPresenter);
+            return wizard;
         }
 
         private void OpenShareDialog()

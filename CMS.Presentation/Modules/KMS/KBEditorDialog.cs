@@ -20,6 +20,8 @@ namespace CMS.Presentation.Modules.KMS
     /// </summary>
     public partial class KBEditorDialog : Form, IKBEditorController
     {
+        public event EventHandler BackRequested;
+
         private KBEditorController _presenter;
         private readonly UserContext _user;
 
@@ -200,10 +202,21 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private void BtnBack_Click(object sender, EventArgs e)
+        {
+            if (BackRequested != null)
+                BackRequested(this, EventArgs.Empty);
+        }
+
         private void BtnCancel_Click(object sender, EventArgs e)
         {
-            DialogResult = DialogResult.Cancel;
-            Close();
+            if (BackRequested != null)
+                BackRequested(this, EventArgs.Empty);
+            else
+            {
+                DialogResult = DialogResult.Cancel;
+                Close();
+            }
         }
 
         // ── IKBEditorView Implementation ─────────────────────────────────────
@@ -449,14 +462,24 @@ namespace CMS.Presentation.Modules.KMS
 
         public void CloseOk()
         {
-            DialogResult = DialogResult.OK;
-            Close();
+            if (BackRequested != null)
+                BackRequested(this, EventArgs.Empty);
+            else
+            {
+                DialogResult = DialogResult.OK;
+                Close();
+            }
         }
 
         public void CloseCancel()
         {
-            DialogResult = DialogResult.Cancel;
-            Close();
+            if (BackRequested != null)
+                BackRequested(this, EventArgs.Empty);
+            else
+            {
+                DialogResult = DialogResult.Cancel;
+                Close();
+            }
         }
 
         public void ShowError(string message)

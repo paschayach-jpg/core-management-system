@@ -18,8 +18,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlErrorDetail = new System.Windows.Forms.Panel();
             this.dgvFailedRows = new System.Windows.Forms.DataGridView();
             this.colFRow = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -82,7 +82,6 @@
             this.btnCancel2 = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
             this.btnImport = new System.Windows.Forms.Button();
-            this.previewControl = new CMS.Presentation.Modules.KMS.KBImportPreviewControl();
             this.pnlImportOptions = new System.Windows.Forms.Panel();
             this.chkSkipWarning = new System.Windows.Forms.CheckBox();
             this.chkAutoCategory = new System.Windows.Forms.CheckBox();
@@ -178,11 +177,13 @@
             this.lblFileHint = new System.Windows.Forms.Label();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnNext = new System.Windows.Forms.Button();
+            this.btnBackToMain = new System.Windows.Forms.Button();
             this.btnDemo = new System.Windows.Forms.Button();
             this.pnlStatusBar = new System.Windows.Forms.Panel();
             this.lblStatusMessage = new System.Windows.Forms.Label();
             this.lblStepStatus = new System.Windows.Forms.Label();
             this.lblStatusUser = new System.Windows.Forms.Label();
+            this.previewControl = new CMS.Presentation.Modules.KMS.KBImportPreviewControl();
             this.pnlErrorDetail.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvFailedRows)).BeginInit();
             this.pnlErrPager.SuspendLayout();
@@ -261,12 +262,12 @@
             this.dgvFailedRows.AllowUserToDeleteRows = false;
             this.dgvFailedRows.BackgroundColor = System.Drawing.Color.White;
             this.dgvFailedRows.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 8F);
-            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvFailedRows.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            dataGridViewCellStyle7.Font = new System.Drawing.Font("Segoe UI", 8F);
+            dataGridViewCellStyle7.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle7.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvFailedRows.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
             this.dgvFailedRows.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvFailedRows.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colFRow,
@@ -282,14 +283,14 @@
             this.dgvFailedRows.Location = new System.Drawing.Point(0, 42);
             this.dgvFailedRows.Name = "dgvFailedRows";
             this.dgvFailedRows.ReadOnly = true;
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvFailedRows.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle8.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle8.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle8.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle8.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle8.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvFailedRows.RowHeadersDefaultCellStyle = dataGridViewCellStyle8;
             this.dgvFailedRows.RowHeadersVisible = false;
             this.dgvFailedRows.RowHeadersWidth = 51;
             this.dgvFailedRows.RowTemplate.Height = 26;
@@ -412,6 +413,7 @@
             // pnlHeader
             // 
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.pnlHeader.Controls.Add(this.btnBackToMain);
             this.pnlHeader.Controls.Add(this.lblHeaderTitle);
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlHeader.Location = new System.Drawing.Point(0, 0);
@@ -430,7 +432,7 @@
             this.lblHeaderTitle.Size = new System.Drawing.Size(1184, 46);
             this.lblHeaderTitle.TabIndex = 0;
             this.lblHeaderTitle.Text = "📥  นำเข้าบทความรู้ Knowledge Base  (MOD-006)";
-            this.lblHeaderTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.lblHeaderTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // pnlStepProgress
             // 
@@ -580,7 +582,7 @@
             this.pnlStep3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep3.Controls.Add(this.pnlStep3Inner);
             this.pnlStep3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep3.Location = new System.Drawing.Point(0, 1486);
+            this.pnlStep3.Location = new System.Drawing.Point(0, 1482);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Padding = new System.Windows.Forms.Padding(60, 20, 60, 20);
             this.pnlStep3.Size = new System.Drawing.Size(1179, 569);
@@ -889,7 +891,7 @@
             this.pnlStep2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep2.Controls.Add(this.pnlStep2Inner);
             this.pnlStep2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep2.Location = new System.Drawing.Point(0, 713);
+            this.pnlStep2.Location = new System.Drawing.Point(0, 709);
             this.pnlStep2.Name = "pnlStep2";
             this.pnlStep2.Padding = new System.Windows.Forms.Padding(16, 8, 16, 16);
             this.pnlStep2.Size = new System.Drawing.Size(1179, 773);
@@ -1009,15 +1011,6 @@
             this.btnImport.Text = "📥  เริ่มนำเข้าข้อมูล";
             this.btnImport.UseVisualStyleBackColor = false;
             this.btnImport.Click += new System.EventHandler(this.BtnImport_Click);
-            // 
-            // previewControl
-            // 
-            this.previewControl.BackColor = System.Drawing.Color.White;
-            this.previewControl.Dock = System.Windows.Forms.DockStyle.Top;
-            this.previewControl.Location = new System.Drawing.Point(310, 259);
-            this.previewControl.Name = "previewControl";
-            this.previewControl.Size = new System.Drawing.Size(837, 449);
-            this.previewControl.TabIndex = 2;
             // 
             // pnlImportOptions
             // 
@@ -1708,11 +1701,12 @@
             // 
             this.pnlStep1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep1.Controls.Add(this.pnlStep1Inner);
+            this.pnlStep1.Controls.Add(this.pnlActStep1);
             this.pnlStep1.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlStep1.Location = new System.Drawing.Point(0, 0);
             this.pnlStep1.Name = "pnlStep1";
             this.pnlStep1.Padding = new System.Windows.Forms.Padding(16);
-            this.pnlStep1.Size = new System.Drawing.Size(1179, 713);
+            this.pnlStep1.Size = new System.Drawing.Size(1179, 709);
             this.pnlStep1.TabIndex = 0;
             // 
             // pnlStep1Inner
@@ -1720,11 +1714,10 @@
             this.pnlStep1Inner.BackColor = System.Drawing.Color.Transparent;
             this.pnlStep1Inner.Controls.Add(this.pnlColumnRef);
             this.pnlStep1Inner.Controls.Add(this.pnlUploadSection);
-            this.pnlStep1Inner.Controls.Add(this.pnlActStep1);
             this.pnlStep1Inner.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlStep1Inner.Location = new System.Drawing.Point(16, 16);
+            this.pnlStep1Inner.Location = new System.Drawing.Point(16, 53);
             this.pnlStep1Inner.Name = "pnlStep1Inner";
-            this.pnlStep1Inner.Size = new System.Drawing.Size(1147, 681);
+            this.pnlStep1Inner.Size = new System.Drawing.Size(1147, 640);
             this.pnlStep1Inner.TabIndex = 0;
             // 
             // pnlColumnRef
@@ -1742,10 +1735,10 @@
             // 
             this.pnlColumnRefBody.BackColor = System.Drawing.Color.White;
             this.pnlColumnRefBody.Controls.Add(this.lvColumnRef);
-            this.pnlColumnRefBody.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlColumnRefBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlColumnRefBody.Location = new System.Drawing.Point(0, 36);
             this.pnlColumnRefBody.Name = "pnlColumnRefBody";
-            this.pnlColumnRefBody.Size = new System.Drawing.Size(1147, 281);
+            this.pnlColumnRefBody.Size = new System.Drawing.Size(1147, 278);
             this.pnlColumnRefBody.TabIndex = 0;
             // 
             // lvColumnRef
@@ -1764,7 +1757,7 @@
             this.lvColumnRef.HideSelection = false;
             this.lvColumnRef.Location = new System.Drawing.Point(0, 0);
             this.lvColumnRef.Name = "lvColumnRef";
-            this.lvColumnRef.Size = new System.Drawing.Size(1147, 281);
+            this.lvColumnRef.Size = new System.Drawing.Size(1147, 278);
             this.lvColumnRef.TabIndex = 0;
             this.lvColumnRef.UseCompatibleStateImageBehavior = false;
             this.lvColumnRef.View = System.Windows.Forms.View.Details;
@@ -2088,8 +2081,8 @@
             this.pnlActStep1.Controls.Add(this.btnCancel);
             this.pnlActStep1.Controls.Add(this.btnNext);
             this.pnlActStep1.Controls.Add(this.btnDemo);
-            this.pnlActStep1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlActStep1.Location = new System.Drawing.Point(0, 644);
+            this.pnlActStep1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlActStep1.Location = new System.Drawing.Point(16, 16);
             this.pnlActStep1.Name = "pnlActStep1";
             this.pnlActStep1.Size = new System.Drawing.Size(1147, 37);
             this.pnlActStep1.TabIndex = 0;
@@ -2140,6 +2133,23 @@
             this.btnNext.Text = "ถัดไป  ▶";
             this.btnNext.UseVisualStyleBackColor = false;
             this.btnNext.Click += new System.EventHandler(this.BtnNext_Click);
+            // 
+            // btnBackToMain
+            // 
+            this.btnBackToMain.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(75)))), ((int)(((byte)(130)))));
+            this.btnBackToMain.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnBackToMain.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnBackToMain.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
+            this.btnBackToMain.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBackToMain.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnBackToMain.ForeColor = System.Drawing.Color.White;
+            this.btnBackToMain.Location = new System.Drawing.Point(16, 0);
+            this.btnBackToMain.Name = "btnBackToMain";
+            this.btnBackToMain.Size = new System.Drawing.Size(110, 46);
+            this.btnBackToMain.TabIndex = 10;
+            this.btnBackToMain.Text = "← กลับ";
+            this.btnBackToMain.UseVisualStyleBackColor = false;
+            this.btnBackToMain.Click += new System.EventHandler(this.BtnBackToMain_Click);
             // 
             // btnDemo
             // 
@@ -2205,6 +2215,15 @@
             this.lblStatusUser.TabIndex = 2;
             this.lblStatusUser.Text = "👤  ผู้ใช้งาน  |  📅  dd/MM/yyyy";
             this.lblStatusUser.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // previewControl
+            // 
+            this.previewControl.BackColor = System.Drawing.Color.White;
+            this.previewControl.Dock = System.Windows.Forms.DockStyle.Top;
+            this.previewControl.Location = new System.Drawing.Point(310, 259);
+            this.previewControl.Name = "previewControl";
+            this.previewControl.Size = new System.Drawing.Size(837, 449);
+            this.previewControl.TabIndex = 2;
             // 
             // KBImportWizardForm
             // 
@@ -2391,6 +2410,7 @@
         private System.Windows.Forms.Panel    pnlActStep1;
         private System.Windows.Forms.Button   btnNext;
         private System.Windows.Forms.Button   btnCancel;
+        private System.Windows.Forms.Button   btnBackToMain;
         private System.Windows.Forms.Label    lblFileHint;
         private System.Windows.Forms.Button   btnDemo;
         private System.Windows.Forms.Panel    pnlActStep2;
