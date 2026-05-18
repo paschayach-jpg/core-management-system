@@ -300,7 +300,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvArticles.Name = "dgvArticles";
             this.dgvArticles.RowHeadersVisible = false;
             this.dgvArticles.RowHeadersWidth = 51;
-            this.dgvArticles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvArticles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
             this.dgvArticles.Size = new System.Drawing.Size(872, 466);
             this.dgvArticles.TabIndex = 0;
             // 
