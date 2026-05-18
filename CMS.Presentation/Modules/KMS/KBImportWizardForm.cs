@@ -22,6 +22,8 @@ namespace CMS.Presentation.Modules.KMS
     /// </summary>
     public partial class KBImportWizardForm : Form, IKBImportWizardController
     {
+        public event EventHandler BackRequested;
+
         #region Fields
 
         private KBImportWizardController _presenter;
@@ -355,14 +357,30 @@ namespace CMS.Presentation.Modules.KMS
             StartImport();
         }
 
+        private void BtnBackToMain_Click(object sender, EventArgs e)
+        {
+            if (BackRequested != null)
+                BackRequested(this, EventArgs.Empty);
+        }
+
         private void BtnClose_Click(object sender, EventArgs e)
         {
-            DialogResult = DialogResult.OK;
-            Close();
+            if (BackRequested != null)
+                BackRequested(this, EventArgs.Empty);
+            else
+            {
+                DialogResult = DialogResult.OK;
+                Close();
+            }
         }
 
         private void BtnCancel_Click(object sender, EventArgs e)
         {
+            if (BackRequested != null)
+            {
+                BackRequested(this, EventArgs.Empty);
+                return;
+            }
             var confirm = MessageBox.Show(
                 "ต้องการยกเลิกการนำเข้าข้อมูลใช่หรือไม่?",
                 "ยืนยันการยกเลิก", MessageBoxButtons.YesNo, MessageBoxIcon.Question);

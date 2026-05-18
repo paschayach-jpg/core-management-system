@@ -45,15 +45,21 @@ namespace CMS.Presentation.Modules.KMS
         // ── Category settings embedded panel state ───────────────────────────────
         private KBCategoryForm _activeCategoryForm = null;
 
+        // ── Editor embedded panel state ───────────────────────────────────────────
+        private KBEditorDialog _activeEditorForm = null;
+
+        // ── Import wizard embedded panel state ───────────────────────────────────
+        private KBImportWizardForm _activeImportForm = null;
+
         // ── Dialog / child-form factories (injected by composition root) ────────
         /// <summary>Creates and returns a pre-wired ArticleViewerForm for a given article.</summary>
         private Func<KBArticle, ArticleViewerForm> _viewerFactory;
-        /// <summary>Shows a pre-wired KBEditorDialog. Returns the dialog result.</summary>
-        private Func<KBArticle, DialogResult> _editorFactory;
+        /// <summary>Creates and returns a pre-wired KBEditorDialog ready to be embedded.</summary>
+        private Func<KBArticle, KBEditorDialog> _editorFactory;
         /// <summary>Creates and returns a pre-wired KBCategoryForm ready to be embedded.</summary>
         private Func<KBCategoryForm> _categoryFormFactory;
-        /// <summary>Creates, wires, and shows a pre-wired KBImportWizardForm. Returns DialogResult.</summary>
-        private Func<DialogResult> _importWizardFactory;
+        /// <summary>Creates and returns a pre-wired KBImportWizardForm ready to be embedded.</summary>
+        private Func<KBImportWizardForm> _importWizardFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBDashboardForm. Returns DialogResult.</summary>
         private Func<DialogResult> _dashboardFactory;
 
@@ -87,6 +93,28 @@ namespace CMS.Presentation.Modules.KMS
             Controls.Add(pnlCategoryHost);
             pnlCategoryHost.BringToFront();
 
+            // pnlEditorHost hosts the embedded KBEditorDialog (same pattern as pnlCategoryHost)
+            pnlEditorHost = new System.Windows.Forms.Panel
+            {
+                Name      = "pnlEditorHost",
+                BackColor = System.Drawing.Color.White,
+                Dock      = System.Windows.Forms.DockStyle.Fill,
+                Visible   = false,
+            };
+            Controls.Add(pnlEditorHost);
+            pnlEditorHost.BringToFront();
+
+            // pnlImportHost hosts the embedded KBImportWizardForm (same pattern as pnlCategoryHost)
+            pnlImportHost = new System.Windows.Forms.Panel
+            {
+                Name      = "pnlImportHost",
+                BackColor = System.Drawing.Color.White,
+                Dock      = System.Windows.Forms.DockStyle.Fill,
+                Visible   = false,
+            };
+            Controls.Add(pnlImportHost);
+            pnlImportHost.BringToFront();
+
             splitMain.BringToFront();          // restore splitMain as the visible default layer
         }
 
@@ -108,8 +136,8 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         public void AttachFactories(
             Func<KBArticle, ArticleViewerForm> viewerFactory,
-            Func<KBArticle, DialogResult>       editorFactory,
-            Func<KBCategoryForm>                categoryFormFactory)
+            Func<KBArticle, KBEditorDialog>    editorFactory,
+            Func<KBCategoryForm>               categoryFormFactory)
         {
             _viewerFactory       = viewerFactory;
             _editorFactory       = editorFactory;
@@ -120,7 +148,7 @@ namespace CMS.Presentation.Modules.KMS
         /// Inject the factory used to create and show the KB Import Wizard with its
         /// pre-wired presenter. Must be called before the form is shown.
         /// </summary>
-        public void AttachImportWizardFactory(Func<DialogResult> factory)
+        public void AttachImportWizardFactory(Func<KBImportWizardForm> factory)
         {
             _importWizardFactory = factory;
         }
@@ -345,12 +373,7 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnNewArticle_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            if (_editorFactory == null) return;
-            if (_editorFactory(null) != DialogResult.OK)
-            {
-                _presenter.LoadCategoryTree();
-                _presenter.LoadArticles();
-            }
+            ShowEditorEmbedded(null);
         }
 
         private void BtnNewCategory_Click(object sender, EventArgs e)
@@ -375,28 +398,7 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnImportExcel_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
-            if (_importWizardFactory == null) return;
-            
-            try
-            {
-                DialogResult result = _importWizardFactory();
-                switch (result)
-                {
-                    case DialogResult.OK :
-                    case DialogResult.Cancel :
-                        _presenter.LoadCategoryTree();
-                        _presenter.LoadArticles();
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "เกิดข้อผิดพลาดในการนำเข้าข้อมูล:\n" + ex.Message,
-                    "ข้อผิดพลาด",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
+            ShowImportWizardEmbedded();
         }
 
         private void BtnReports_Click(object sender, EventArgs e)
@@ -506,6 +508,98 @@ namespace CMS.Presentation.Modules.KMS
             pnlCategoryHost.Controls.Remove(_activeCategoryForm);
             _activeCategoryForm.Dispose();
             _activeCategoryForm = null;
+        }
+
+        // ── Editor embedded navigation (full-screen over splitMain) ──────────────
+
+        private void ShowEditorEmbedded(KBArticle article)
+        {
+            CloseActiveEditorForm();
+
+            var editorForm = _editorFactory != null ? _editorFactory(article) : null;
+            if (editorForm == null) return;
+
+            editorForm.BackRequested  += OnEditorBackRequested;
+            editorForm.TopLevel        = false;
+            editorForm.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            editorForm.Dock            = System.Windows.Forms.DockStyle.Fill;
+
+            splitMain.Visible = false;
+            pnlEditorHost.Controls.Add(editorForm);
+            pnlEditorHost.Visible = true;
+            pnlEditorHost.BringToFront();
+            editorForm.Show();
+
+            _activeEditorForm = editorForm;
+        }
+
+        private void OnEditorBackRequested(object sender, EventArgs e)
+        {
+            CloseActiveEditorForm();
+
+            pnlEditorHost.Visible = false;
+            splitMain.Visible     = true;
+
+            if (_presenter != null)
+            {
+                _presenter.LoadCategoryTree();
+                _presenter.LoadArticles();
+            }
+        }
+
+        private void CloseActiveEditorForm()
+        {
+            if (_activeEditorForm == null) return;
+            _activeEditorForm.BackRequested -= OnEditorBackRequested;
+            pnlEditorHost.Controls.Remove(_activeEditorForm);
+            _activeEditorForm.Dispose();
+            _activeEditorForm = null;
+        }
+
+        // ── Import wizard embedded navigation (full-screen over splitMain) ────────
+
+        private void ShowImportWizardEmbedded()
+        {
+            CloseActiveImportForm();
+
+            var importForm = _importWizardFactory != null ? _importWizardFactory() : null;
+            if (importForm == null) return;
+
+            importForm.BackRequested  += OnImportBackRequested;
+            importForm.TopLevel        = false;
+            importForm.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            importForm.Dock            = System.Windows.Forms.DockStyle.Fill;
+
+            splitMain.Visible = false;
+            pnlImportHost.Controls.Add(importForm);
+            pnlImportHost.Visible = true;
+            pnlImportHost.BringToFront();
+            importForm.Show();
+
+            _activeImportForm = importForm;
+        }
+
+        private void OnImportBackRequested(object sender, EventArgs e)
+        {
+            CloseActiveImportForm();
+
+            pnlImportHost.Visible = false;
+            splitMain.Visible     = true;
+
+            if (_presenter != null)
+            {
+                _presenter.LoadCategoryTree();
+                _presenter.LoadArticles();
+            }
+        }
+
+        private void CloseActiveImportForm()
+        {
+            if (_activeImportForm == null) return;
+            _activeImportForm.BackRequested -= OnImportBackRequested;
+            pnlImportHost.Controls.Remove(_activeImportForm);
+            _activeImportForm.Dispose();
+            _activeImportForm = null;
         }
 
         // ── Viewer navigation (full-screen over splitMain) ───────────────────────
@@ -688,28 +782,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void OnEditClick(KBArticle article)
         {
-            if (_editorFactory == null) return;
-
-            try
-            {
-                DialogResult result = _editorFactory(article);
-                switch (result)
-                {
-                    case DialogResult.OK:
-                    case DialogResult.Cancel:
-                        _presenter.LoadCategoryTree();
-                        _presenter.LoadArticles();
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "เกิดข้อผิดพลาดในการนำเข้าข้อมูล:\n" + ex.Message,
-                    "ข้อผิดพลาด",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
+            ShowEditorEmbedded(article);
         }
 
         private void OnShareClick(KBArticle article)
