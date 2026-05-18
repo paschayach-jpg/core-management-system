@@ -7,6 +7,7 @@ using System.Linq;
 using System.Windows.Forms;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 
 namespace CMS.Presentation.Modules.KMS
@@ -94,44 +95,18 @@ namespace CMS.Presentation.Modules.KMS
             {
                 _presenter.Save(txtChangeDesc.Text.Trim());
 
-
-                //int articleId = (int)dgvRelatedSearch.Rows.Cast<DataGridViewRow>.wh (x => x.)// [e.RowIndex].Tag;
-
-                //foreach (DataGridViewRow row in dgvRelatedSearch.Rows)
-                //{
-                //    // ข้าม NewRow
-                //    if (row.IsNewRow)
-                //        continue;
-
-                //    // เช็ค null ก่อน
-                //    if (row.Tag != null)
-                //    {
-                //        int articleId = (int)row.Tag;
-
-                //        // process
-                //        MessageBox.Show(articleId.ToString());
-                //    }
-                //}
-
-
                 // Check if already linked
                 foreach (DataGridViewRow row in dgvRelatedLinked.Rows)
                 {
                     try
                     {
                         _presenter.AddRelatedArticleLink((int)row.Tag);
-                        //if ((int)row.Tag == articleId)
-                        //{
-                        //    ShowInfo("บทความนี้ถูก Link อยู่แล้ว");
-                        //    return;
-                        //}
                     }
                     catch (Exception)
                     {
 
                         continue;
                     }
-                    
                 }
             }
             catch (Exception ex)
@@ -346,6 +321,16 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        public int SelectedCrafLevelCode
+        {
+            get
+            {
+                var item = cboCraf.SelectedItem as ComboItem;
+                return item != null ? item.Value : (int)ConfidentialityLevel.HC;
+            }
+            set { SelectComboByValue(cboCraf, value); }
+        }
+
         public int SelectedCategoryId
         {
             get
@@ -537,10 +522,11 @@ namespace CMS.Presentation.Modules.KMS
         private void InitCrafCombo()
         {
             cboCraf.Items.Clear();
-            cboCraf.Items.Add(new ComboItem("1HC - (High Confidential)",   1));
-            cboCraf.Items.Add(new ComboItem("2SC - (Semi Confidential)",   2));
-            cboCraf.Items.Add(new ComboItem("3NC - (Normal Confidential)", 3));
-            cboCraf.Items.Add(new ComboItem("4PC - (Public Confidential)", 4));
+            cboCraf.Items.Add(new ComboItem("--- เลือกระดับชั้นความลับ ---",   0));
+            cboCraf.Items.Add(new ComboItem(ConfidentialityLevel.HC.ToString() + " - (High Confidential)",   (int)ConfidentialityLevel.HC));
+            cboCraf.Items.Add(new ComboItem(ConfidentialityLevel.SC.ToString() + " - (Semi Confidential)",   (int)ConfidentialityLevel.SC));
+            cboCraf.Items.Add(new ComboItem(ConfidentialityLevel.NC.ToString() + " - (Normal Confidential)", (int)ConfidentialityLevel.NC));
+            cboCraf.Items.Add(new ComboItem(ConfidentialityLevel.PC.ToString() + " - (Public Confidential)", (int)ConfidentialityLevel.PC));
             cboCraf.SelectedIndex = 0;
         }
 

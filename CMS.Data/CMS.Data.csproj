@@ -45,6 +45,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Interfaces\ISubCommitteeRepository.cs" />
     <Compile Include="Interfaces\IUserAccountRepository.cs" />
     <Compile Include="Interfaces\IOrgUnitRepository.cs" />
     <Compile Include="Interfaces\IFolderRepository.cs" />
@@ -81,6 +82,7 @@
     <Compile Include="Interfaces\IWFReportRepository.cs" />
     <Compile Include="Models\AuditQuery.cs" />
     <Compile Include="Models\PagedResult.cs" />
+    <Compile Include="Repositories\SubCommitteeRepository.cs" />
     <Compile Include="Repositories\UserAccountRepository.cs" />
     <Compile Include="Repositories\OrgUnitRepository.cs" />
     <Compile Include="Repositories\FolderRepository.cs" />

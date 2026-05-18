@@ -30,22 +30,23 @@ namespace CMS.Data.Repositories
                     using (var reader = cmd.ExecuteReader())
                     {
                         while (reader.Read())
-                        {
-                            results.Add(new HrDivision
-                            {
-                                DivisionID   = Convert.ToInt32(reader["DivisionID"]),
-                                DivisionCode = reader["DivisionCode"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DivisionCode"]),
-                                DivisionName = reader["DivisionName"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DivisionName"]),
-                                IsActive     = reader["IsActive"] != DBNull.Value && Convert.ToBoolean(reader["IsActive"]),
-                                CreatedDate  = reader["CreatedDate"] == DBNull.Value
-                                                   ? DateTime.MinValue
-                                                   : Convert.ToDateTime(reader["CreatedDate"])
-                            });
-                        }
+                            results.Add(MapDivision(reader));
                     }
                 }
             }
             return results;
+        }
+
+        private static HrDivision MapDivision(SqlDataReader reader)
+        {
+            return new HrDivision
+            {
+                DivisionID   = Convert.ToInt32(reader["DivisionID"]),
+                DivisionCode = reader["DivisionCode"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DivisionCode"]),
+                DivisionName = reader["DivisionName"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DivisionName"]),
+                IsActive     = reader["IsActive"] != DBNull.Value && Convert.ToBoolean(reader["IsActive"]),
+                CreatedDate  = reader["CreatedDate"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader["CreatedDate"])
+            };
         }
     }
 }
