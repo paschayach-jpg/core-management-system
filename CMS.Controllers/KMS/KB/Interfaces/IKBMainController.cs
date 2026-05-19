@@ -5,8 +5,9 @@ namespace CMS.Controllers.KMS.KB.Interfaces
 {
     public interface IKBMainController
     {
-        string SearchKeyword { get; }
-        int StatusFilterIndex { get; }
+        string SearchKeyword  { get; }
+        int    StatusFilterIndex { get; }
+        int    SearchFieldId  { get; }
         int? SelectedCategoryId { get; set; }
         string ArticleTitleText { set; }
         string ArticleCountText { set; }

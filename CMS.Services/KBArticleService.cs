@@ -49,7 +49,19 @@ namespace CMS.Services
 
         public IEnumerable<KBArticle> Search(string keyword, int? categoryId, byte? status, byte? articleType)
         {
-            return _articleRepo.Search(keyword, categoryId, status, articleType);
+            var results = _articleRepo.Search(categoryId, status, articleType);
+            if (string.IsNullOrWhiteSpace(keyword)) return results;
+
+            var _keyword = new string(keyword.Where(c => !char.IsWhiteSpace(c)).ToArray());
+
+            return results.Where(a =>
+                (a.Title != null && a.Title.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.Summary != null && a.Summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+            ).ToList();
+
+            //return _articleRepo.Search(categoryId, status, articleType);
         }
 
         public KBArticle GetById(int articleId)
@@ -63,9 +75,42 @@ namespace CMS.Services
             if (string.IsNullOrWhiteSpace(searchText))
                 return new List<KBArticle>();
 
-            // Search only published articles (Status = 3)
-            // Filter by Article Code OR Title containing search text
-            return _articleRepo.Search(searchText, categoryId: null, status: null, articleType: null);
+            var results = _articleRepo.Search(categoryId: null, status: null, articleType: null);
+
+            string keyword = new string(searchText.Where(c => !char.IsWhiteSpace(c)).ToArray()); ;
+            return results.Where(a =>
+                (a.Title != null && a.Title.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.Summary != null && a.Summary.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.Tags != null && a.Tags.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+            ).ToList();
+        }
+        /// <summary>
+        /// Strips HTML tags from text and returns plain text content.
+        /// </summary>
+        private static string StripHtmlTags(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+                return string.Empty;
+
+            // Replace common block-level tags with spaces to preserve word boundaries
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"<br\s*/?>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?p>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?div>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?li>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?tr>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?td>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?th>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // Remove all remaining HTML tags
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"<[^>]+>", string.Empty);
+
+            // Decode HTML entities
+            html = System.Net.WebUtility.HtmlDecode(html);
+
+            // Clean up multiple spaces and trim
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"\s+", " ");
+            return new string(html.Where(c => !char.IsWhiteSpace(c)).ToArray());
         }
 
         // ── Write ─────────────────────────────────────────────────────────────

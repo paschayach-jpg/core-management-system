@@ -2167,7 +2167,7 @@ namespace CMS.Presentation.Modules.KMS
                         categoryId = selectedItem.Value;
                 }
                 
-                byte? status = 3; // Published
+                byte? status = null; // Published
                 if (cboRelatedStatus.SelectedIndex > 0)
                     status = (byte)cboRelatedStatus.SelectedIndex;
                 

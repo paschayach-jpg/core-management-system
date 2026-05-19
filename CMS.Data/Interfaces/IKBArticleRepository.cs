@@ -7,7 +7,7 @@ namespace CMS.Data.Interfaces
     {
         IEnumerable<KBArticle> GetAll();
         IEnumerable<KBArticle> GetByCategory(int categoryId);
-        IEnumerable<KBArticle> Search(string keyword, int? categoryId, byte? status, byte? articleType);
+        IEnumerable<KBArticle> Search(int? categoryId, byte? status, byte? articleType);
         KBArticle GetById(int articleId);
         int Insert(KBArticle article);
         void Update(KBArticle article);

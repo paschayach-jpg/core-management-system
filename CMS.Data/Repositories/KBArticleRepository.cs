@@ -25,7 +25,21 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 const string sql = @"
-                    SELECT a.*, c.CategoryName
+                    SELECT a.*, c.CategoryName,
+                           STUFF((
+                               SELECT '|' + ISNULL(lu._desc, l.EntityID)
+                               FROM   KMS.t_KBArticleLink l
+                               LEFT JOIN (
+                                   SELECT SubCommitteeCode AS code, SubCommitteeNameTH AS _desc FROM [core].[m_SubCommittee]
+                                   UNION ALL
+                                   SELECT DivisionCode,    DivisionName    FROM [core].[HR_Division]
+                                   UNION ALL
+                                   SELECT DepartmentCode,  DepartmentName  FROM [core].[HR_Department]
+                               ) lu ON lu.code = l.EntityID
+                               WHERE  l.ArticleID = a.ArticleID AND EntityType = 6
+                               ORDER BY l.CreatedDate DESC
+                               FOR XML PATH(''), TYPE
+                           ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') AS LinkedEntities
                     FROM   KMS.t_KBArticle a
                     LEFT JOIN KMS.m_KBCategory c ON c.CategoryID = a.CategoryID
                     ORDER BY a.CreatedDate DESC";
@@ -45,11 +59,25 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 const string sql = @"
-                    SELECT a.*, c.CategoryName
+                    SELECT a.*, c.CategoryName,
+                           STUFF((
+                               SELECT '|' + ISNULL(lu._desc, l.EntityID)
+                               FROM   KMS.t_KBArticleLink l
+                               LEFT JOIN (
+                                   SELECT SubCommitteeCode AS code, SubCommitteeNameTH AS _desc FROM [core].[m_SubCommittee]
+                                   UNION ALL
+                                   SELECT DivisionCode,    DivisionName    FROM [core].[HR_Division]
+                                   UNION ALL
+                                   SELECT DepartmentCode,  DepartmentName  FROM [core].[HR_Department]
+                               ) lu ON lu.code = l.EntityID
+                               WHERE  l.ArticleID = a.ArticleID AND EntityType = 6
+                               ORDER BY l.CreatedDate DESC
+                               FOR XML PATH(''), TYPE
+                           ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') AS LinkedEntities
                     FROM   KMS.t_KBArticle a
                     LEFT JOIN KMS.m_KBCategory c ON c.CategoryID = a.CategoryID
                     WHERE  a.CategoryID = @CategoryID
-                    ORDER BY a.CreatedDate DESC";
+                    ORDER BY a.ArticleCode ASC";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@CategoryID", categoryId);
@@ -62,20 +90,34 @@ namespace CMS.Data.Repositories
             return results;
         }
 
-        public IEnumerable<KBArticle> Search(string keyword, int? categoryId, byte? status, byte? articleType)
+        public IEnumerable<KBArticle> Search(int? categoryId, byte? status, byte? articleType)
         {
             var results = new List<KBArticle>();
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
                 const string sql = @"
-                    SELECT a.*, c.CategoryName
+                    SELECT a.*, c.CategoryName,
+                           STUFF((
+                               SELECT '|' + ISNULL(lu._desc, l.EntityID)
+                               FROM   KMS.t_KBArticleLink l
+                               LEFT JOIN (
+                                   SELECT SubCommitteeCode AS code, SubCommitteeNameTH AS _desc FROM [core].[m_SubCommittee]
+                                   UNION ALL
+                                   SELECT DivisionCode,    DivisionName    FROM [core].[HR_Division]
+                                   UNION ALL
+                                   SELECT DepartmentCode,  DepartmentName  FROM [core].[HR_Department]
+                               ) lu ON lu.code = l.EntityID
+                               WHERE  l.ArticleID = a.ArticleID
+                               ORDER BY l.CreatedDate DESC
+                               FOR XML PATH(''), TYPE
+                           ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') AS LinkedEntities
                     FROM   KMS.t_KBArticle a
                     LEFT JOIN KMS.m_KBCategory c ON c.CategoryID = a.CategoryID
                     WHERE  (@CategoryID  IS NULL OR a.CategoryID  = @CategoryID)
                       AND  (@Status      IS NULL OR a.Status      = @Status)
                       AND  (@ArticleType IS NULL OR a.ArticleType = @ArticleType)
-                    ORDER BY a.CreatedDate DESC";
+                    ORDER BY a.ArticleCode ASC";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@CategoryID",  (object)categoryId  ?? DBNull.Value);
@@ -89,45 +131,17 @@ namespace CMS.Data.Repositories
             }
 
             // If no keyword, return all results
-            if (string.IsNullOrWhiteSpace(keyword))
-                return results;
+            //if (string.IsNullOrWhiteSpace(keyword))
+            return results;
 
             // Filter by keyword in C# - search in Title, Summary, Tags, and extracted HTML text
-            keyword = keyword.Trim();
-            return results.Where(a =>
-                (a.Title != null && a.Title.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                (a.Summary != null && a.Summary.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                (a.Tags != null && a.Tags.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
-            ).ToList();
-        }
-
-        /// <summary>
-        /// Strips HTML tags from text and returns plain text content.
-        /// </summary>
-        private static string StripHtmlTags(string html)
-        {
-            if (string.IsNullOrWhiteSpace(html))
-                return string.Empty;
-
-            // Replace common block-level tags with spaces to preserve word boundaries
-            html = System.Text.RegularExpressions.Regex.Replace(html, @"<br\s*/?>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?p>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?div>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?li>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?tr>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?td>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?th>", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-            // Remove all remaining HTML tags
-            html = System.Text.RegularExpressions.Regex.Replace(html, @"<[^>]+>", string.Empty);
-
-            // Decode HTML entities
-            html = System.Net.WebUtility.HtmlDecode(html);
-
-            // Clean up multiple spaces and trim
-            html = System.Text.RegularExpressions.Regex.Replace(html, @"\s+", " ");
-            return html.Trim();
+            //keyword = keyword.Trim();
+            //return results.Where(a =>
+            //    (a.Title != null && string.Equals(a.Title, keyword, StringComparison.OrdinalIgnoreCase)) ||
+            //    (a.Summary != null && string.Equals(a.Summary,keyword, StringComparison.OrdinalIgnoreCase)) ||
+            //    (a.Tags != null && string.Equals(a.Tags, keyword, StringComparison.OrdinalIgnoreCase)) ||
+            //    (a.ContentHTML != null && string.Equals(StripHtmlTags(a.ContentHTML), keyword, StringComparison.OrdinalIgnoreCase))
+            //).ToList();
         }
 
         public KBArticle GetById(int articleId)
@@ -274,6 +288,13 @@ namespace CMS.Data.Repositories
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
+        private static bool HasColumn(IDataReader r, string name)
+        {
+            for (int i = 0; i < r.FieldCount; i++)
+                if (string.Equals(r.GetName(i), name, StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
         private static void AddParams(SqlCommand cmd, KBArticle a)
         {
             cmd.Parameters.AddWithValue("@ArticleCode",      a.ArticleCode      ?? string.Empty);
@@ -317,6 +338,7 @@ namespace CMS.Data.Repositories
                 CreatedDate          = r.IsDBNull(r.GetOrdinal("CreatedDate")) ? DateTime.MinValue : r.GetDateTime(r.GetOrdinal("CreatedDate")),
                 ReviewedBy           = r["ReviewedBy"]    as string,
                 CategoryName         = r["CategoryName"]  as string,
+                LinkedEntities       = HasColumn(r, "LinkedEntities") ? r["LinkedEntities"] as string : null,
             };
         }
     }
