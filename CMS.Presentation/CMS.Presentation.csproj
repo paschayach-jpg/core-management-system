@@ -443,6 +443,12 @@
     </Compile>
     <Compile Include="Modules\WFE\Presenters\TemplateApprovalPresenter.cs" />
     <Compile Include="Modules\WFE\Presenters\Interfaces\ITemplateApprovalView.cs" />
+    <Compile Include="Modules\WFE\UserProfileForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\UserProfileForm.Designer.cs">
+      <DependentUpon>UserProfileForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\WFE\WorkflowDelegationForm.cs">
       <SubType>Form</SubType>
     </Compile>

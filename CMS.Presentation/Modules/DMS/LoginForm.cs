@@ -114,13 +114,13 @@ namespace CMS.Presentation
                 username = "khanitthac";
                 password = "KnidK@1412";
             }
-            //else
-            //{
-            //    username = "pitakpong";
-            //    password = "P@takpong0132";
-            //    //username = "athika";
-            //    //password = "Aple1712!";
-            //}
+            else
+            {
+                username = "pitakpong";
+                password = "P@takpong0132";
+                //username = "athika";
+                //password = "Aple1712!";
+            }
 
             if (string.IsNullOrWhiteSpace(username))
             {

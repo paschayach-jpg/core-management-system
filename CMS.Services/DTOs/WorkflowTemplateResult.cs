@@ -84,14 +84,20 @@ namespace CMS.Services.DTOs
         public string OwnerDepartment { get; set; }
 
         /// <summary>
+        /// Explicit status: Active, Draft, Inactive, Deprecated.
+        /// When not set, derived from IsActive.
+        /// </summary>
+        public string Status { get; set; }
+
+        /// <summary>
         /// Status label: Active, Draft, Inactive, or Deprecated
         /// </summary>
         public string StatusLabel
         {
             get
             {
-                if (!IsActive) return "Inactive";
-                return "Active";
+                if (!string.IsNullOrWhiteSpace(Status)) return Status;
+                return IsActive ? "Active" : "Inactive";
             }
         }
     }

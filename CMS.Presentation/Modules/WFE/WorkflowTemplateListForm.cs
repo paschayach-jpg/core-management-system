@@ -95,11 +95,37 @@ namespace CMS.Presentation.Modules.Workflow
         {
             InitializeControls();
 
-            // Only load data if presenter is available
             if (_presenter != null)
             {
                 _presenter.LoadTemplates();
             }
+            else
+            {
+                LoadMockData();
+            }
+        }
+
+        private void LoadMockData()
+        {
+            var now = DateTime.Now;
+            var mock = new System.Collections.Generic.List<WorkflowTemplateResult>
+            {
+                new WorkflowTemplateResult { WorkflowDefinitionId=1,  Name="อนุมัติ KB Article",          Category="Knowledge", StepCount=3, Version=2, IsActive=true,  OwnerDepartment="IT",  CreatedBy="admin",    ModifiedDate=now.AddDays(-5),  ActiveInstanceCount=12 },
+                new WorkflowTemplateResult { WorkflowDefinitionId=2,  Name="ขออนุมัติ Upload ไฟล์",       Category="เอกสาร",    StepCount=2, Version=1, IsActive=true,  OwnerDepartment="HR",  CreatedBy="admin",    ModifiedDate=now.AddDays(-10), ActiveInstanceCount=8  },
+                new WorkflowTemplateResult { WorkflowDefinitionId=3,  Name="อนุมัติเปลี่ยน Permission",   Category="IT",        StepCount=3, Version=1, IsActive=false, Status="Draft",    OwnerDepartment="IT",  CreatedBy="admin",    ModifiedDate=now.AddDays(-2),  ActiveInstanceCount=0  },
+                new WorkflowTemplateResult { WorkflowDefinitionId=4,  Name="Review SOP Document",         Category="เอกสาร",    StepCount=2, Version=3, IsActive=true,  OwnerDepartment="QA",  CreatedBy="admin",    ModifiedDate=now.AddDays(-15), ActiveInstanceCount=5  },
+                new WorkflowTemplateResult { WorkflowDefinitionId=5,  Name="Work Instruction Approval",   Category="เอกสาร",    StepCount=4, Version=1, IsActive=false, OwnerDepartment="Ops", CreatedBy="admin",    ModifiedDate=now.AddDays(-30), ActiveInstanceCount=0  },
+                new WorkflowTemplateResult { WorkflowDefinitionId=6,  Name="อนุมัติแก้ไข Template",      Category="Knowledge", StepCount=2, Version=1, IsActive=false, Status="Draft",    OwnerDepartment="IT",  CreatedBy="admin",    ModifiedDate=now.AddDays(-1),  ActiveInstanceCount=0  },
+                new WorkflowTemplateResult { WorkflowDefinitionId=7,  Name="HR Onboarding Process",       Category="HR",        StepCount=5, Version=2, IsActive=true,  OwnerDepartment="HR",  CreatedBy="hr.admin", ModifiedDate=now.AddDays(-7),  ActiveInstanceCount=3  },
+            };
+
+            DisplayTemplates(new PagedResult<WorkflowTemplateResult>
+            {
+                Items = mock,
+                TotalCount = mock.Count,
+                PageNumber = 1,
+                PageSize = 50,
+            });
         }
 
         private void InitializeControls()
@@ -149,7 +175,7 @@ namespace CMS.Presentation.Modules.Workflow
             var items = templates?.Items?.ToList() ?? new List<WorkflowTemplateResult>();
             _currentTemplates.Clear();
             _currentTemplates.AddRange(items);
-            _totalCount = items.Count;
+            _totalCount = templates?.TotalCount > 0 ? templates.TotalCount : items.Count;
 
             var rows = items.Select(t => new WorkflowTemplateGridRow
             {

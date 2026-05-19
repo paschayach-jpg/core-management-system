@@ -67,8 +67,7 @@ namespace CMS.Presentation.Modules.Workflow
                     return true;
 
                 case "settings":
-                    MessageBox.Show("ตั้งค่า: อยู่ระหว่างพัฒนา", "ข้อมูล",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    OpenUserProfile(currentForm, userContext);
                     return true;
 
                 case "visualflow":
@@ -156,7 +155,14 @@ namespace CMS.Presentation.Modules.Workflow
             if (currentForm is TemplateApprovalForm)
                 return;
 
-            // Allow opening without services for preview/testing
+            if (currentForm.MdiParent is MDI_Container mdi)
+            {
+                if (templateService == null)
+                    templateService = mdi.WorkflowTemplateService;
+                if (auditService == null)
+                    auditService = mdi.AuditService;
+            }
+
             var form = new TemplateApprovalForm(templateService, auditService, loggingService, userContext);
             OpenAsMdiChild(currentForm, form);
         }
@@ -185,6 +191,17 @@ namespace CMS.Presentation.Modules.Workflow
             OpenAsMdiChild(currentForm, form);
         }
 
+        private static void OpenUserProfile(
+            Form currentForm,
+            UserContext userContext)
+        {
+            if (currentForm is UserProfileForm)
+                return;
+
+            var form = new UserProfileForm(userContext);
+            OpenAsMdiChild(currentForm, form);
+        }
+
         private static void OpenVisualFlow(
             Form currentForm,
             IWorkflowService workflowService,
@@ -203,16 +220,16 @@ namespace CMS.Presentation.Modules.Workflow
 
         private static void OpenAsMdiChild(Form currentForm, Form newForm)
         {
-            // If current form is MDI child, use same MDI parent
             if (currentForm.MdiParent != null)
             {
                 newForm.MdiParent = currentForm.MdiParent;
+                newForm.WindowState = FormWindowState.Normal;
                 newForm.Show();
+                newForm.Activate();
                 currentForm.Close();
             }
             else
             {
-                // Open as dialog if no MDI parent
                 newForm.ShowDialog(currentForm);
             }
         }
