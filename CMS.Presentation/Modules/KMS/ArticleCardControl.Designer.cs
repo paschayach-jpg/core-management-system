@@ -16,37 +16,46 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStripe = new System.Windows.Forms.Panel();
             this.pnlContent = new System.Windows.Forms.Panel();
             this.panelFooter = new System.Windows.Forms.Panel();
+            this.panelButton = new System.Windows.Forms.Panel();
             this.btnSendReview = new System.Windows.Forms.Button();
             this.btnShare = new System.Windows.Forms.Button();
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnRead = new System.Windows.Forms.Button();
+            this.pnlStats = new System.Windows.Forms.FlowLayoutPanel();
+            this.lblViewIcon = new System.Windows.Forms.Label();
+            this.lblViewCount = new System.Windows.Forms.Label();
+            this.btnLike = new System.Windows.Forms.Button();
+            this.lblLikeCount = new System.Windows.Forms.Label();
+            this.lblTagsIcon = new System.Windows.Forms.Label();
+            this.lblTags = new System.Windows.Forms.Label();
             this.pnlActions = new System.Windows.Forms.Panel();
             this.panelArticelItem = new System.Windows.Forms.Panel();
-            this.lblSummary = new System.Windows.Forms.Label();
+            this.lblContent = new System.Windows.Forms.Label();
             this.pnlMeta = new System.Windows.Forms.FlowLayoutPanel();
-            this.lblArticleType = new System.Windows.Forms.Label();
-            this.lblMetaSep1 = new System.Windows.Forms.Label();
             this.lblStatus = new System.Windows.Forms.Label();
+            this.lblMetaSep3 = new System.Windows.Forms.Label();
+            this.lblArticleType = new System.Windows.Forms.Label();
+            this.lblCategory = new System.Windows.Forms.Label();
             this.lblMetaSep2 = new System.Windows.Forms.Label();
             this.lblVersion = new System.Windows.Forms.Label();
-            this.lblMetaSep3 = new System.Windows.Forms.Label();
-            this.lblCategory = new System.Windows.Forms.Label();
+            this.lblMetaSep1 = new System.Windows.Forms.Label();
+            this.lblSummary = new System.Windows.Forms.Label();
+            this.pHeaderRight = new System.Windows.Forms.Panel();
             this.lblTitle = new System.Windows.Forms.Label();
-            this.lblTags = new System.Windows.Forms.Label();
-            this.lblTagsIcon = new System.Windows.Forms.Label();
-            this.lblLikeCount = new System.Windows.Forms.Label();
-            this.btnLike = new System.Windows.Forms.Button();
-            this.lblViewCount = new System.Windows.Forms.Label();
-            this.lblViewIcon = new System.Windows.Forms.Label();
-            this.pnlStats = new System.Windows.Forms.FlowLayoutPanel();
-            this.panelButton = new System.Windows.Forms.Panel();
+            this.label2 = new System.Windows.Forms.Label();
+            this.lblPublishedDate = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.lblExpiryDate = new System.Windows.Forms.Label();
+            this.lblShowEntity = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
             this.pnlContent.SuspendLayout();
             this.panelFooter.SuspendLayout();
+            this.panelButton.SuspendLayout();
+            this.pnlStats.SuspendLayout();
             this.pnlActions.SuspendLayout();
             this.panelArticelItem.SuspendLayout();
             this.pnlMeta.SuspendLayout();
-            this.pnlStats.SuspendLayout();
-            this.panelButton.SuspendLayout();
+            this.pHeaderRight.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlStripe
@@ -67,7 +76,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContent.Controls.Add(this.panelFooter);
             this.pnlContent.Controls.Add(this.pnlActions);
             this.pnlContent.Controls.Add(this.pnlMeta);
-            this.pnlContent.Controls.Add(this.lblTitle);
+            this.pnlContent.Controls.Add(this.pHeaderRight);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(5, 0);
             this.pnlContent.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
@@ -84,10 +93,22 @@ namespace CMS.Presentation.Modules.KMS
             this.panelFooter.Controls.Add(this.panelButton);
             this.panelFooter.Controls.Add(this.pnlStats);
             this.panelFooter.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panelFooter.Location = new System.Drawing.Point(12, 87);
+            this.panelFooter.Location = new System.Drawing.Point(12, 97);
             this.panelFooter.Name = "panelFooter";
             this.panelFooter.Size = new System.Drawing.Size(846, 39);
             this.panelFooter.TabIndex = 5;
+            // 
+            // panelButton
+            // 
+            this.panelButton.Controls.Add(this.btnSendReview);
+            this.panelButton.Controls.Add(this.btnShare);
+            this.panelButton.Controls.Add(this.btnEdit);
+            this.panelButton.Controls.Add(this.btnRead);
+            this.panelButton.Dock = System.Windows.Forms.DockStyle.Right;
+            this.panelButton.Location = new System.Drawing.Point(406, 0);
+            this.panelButton.Name = "panelButton";
+            this.panelButton.Size = new System.Drawing.Size(440, 39);
+            this.panelButton.TabIndex = 5;
             // 
             // btnSendReview
             // 
@@ -170,236 +191,62 @@ namespace CMS.Presentation.Modules.KMS
             this.btnRead.UseVisualStyleBackColor = false;
             this.btnRead.Click += new System.EventHandler(this.btnRead_Click);
             // 
-            // pnlActions
+            // pnlStats
             // 
-            this.pnlActions.Controls.Add(this.panelArticelItem);
-            this.pnlActions.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlActions.Location = new System.Drawing.Point(12, 54);
-            this.pnlActions.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.pnlActions.Name = "pnlActions";
-            this.pnlActions.Padding = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.pnlActions.Size = new System.Drawing.Size(846, 33);
-            this.pnlActions.TabIndex = 4;
+            this.pnlStats.Controls.Add(this.lblViewIcon);
+            this.pnlStats.Controls.Add(this.lblViewCount);
+            this.pnlStats.Controls.Add(this.btnLike);
+            this.pnlStats.Controls.Add(this.lblLikeCount);
+            this.pnlStats.Controls.Add(this.lblTagsIcon);
+            this.pnlStats.Controls.Add(this.lblTags);
+            this.pnlStats.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlStats.Location = new System.Drawing.Point(0, 0);
+            this.pnlStats.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.pnlStats.Name = "pnlStats";
+            this.pnlStats.Size = new System.Drawing.Size(846, 39);
+            this.pnlStats.TabIndex = 3;
+            this.pnlStats.WrapContents = false;
+            this.pnlStats.Click += new System.EventHandler(this.OnCardClick);
+            this.pnlStats.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.pnlStats.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             // 
-            // panelArticelItem
+            // lblViewIcon
             // 
-            this.panelArticelItem.Controls.Add(this.lblSummary);
-            this.panelArticelItem.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelArticelItem.Location = new System.Drawing.Point(0, 3);
-            this.panelArticelItem.Name = "panelArticelItem";
-            this.panelArticelItem.Size = new System.Drawing.Size(846, 30);
-            this.panelArticelItem.TabIndex = 6;
+            this.lblViewIcon.AutoSize = true;
+            this.lblViewIcon.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.lblViewIcon.Dock = System.Windows.Forms.DockStyle.Left;
+            this.lblViewIcon.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblViewIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
+            this.lblViewIcon.Location = new System.Drawing.Point(0, 0);
+            this.lblViewIcon.Margin = new System.Windows.Forms.Padding(0);
+            this.lblViewIcon.Name = "lblViewIcon";
+            this.lblViewIcon.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
+            this.lblViewIcon.Size = new System.Drawing.Size(41, 37);
+            this.lblViewIcon.TabIndex = 0;
+            this.lblViewIcon.Text = "👁";
+            this.lblViewIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblViewIcon.Click += new System.EventHandler(this.OnCardClick);
+            this.lblViewIcon.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblViewIcon.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             // 
-            // lblSummary
+            // lblViewCount
             // 
-            this.lblSummary.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblSummary.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(60)))), ((int)(((byte)(60)))), ((int)(((byte)(60)))));
-            this.lblSummary.Location = new System.Drawing.Point(0, 0);
-            this.lblSummary.Name = "lblSummary";
-            this.lblSummary.Size = new System.Drawing.Size(846, 30);
-            this.lblSummary.TabIndex = 2;
-            this.lblSummary.Text = "สรุปบทความ...";
-            this.lblSummary.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.lblSummary.Click += new System.EventHandler(this.OnCardClick);
-            this.lblSummary.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblSummary.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // pnlMeta
-            // 
-            this.pnlMeta.Controls.Add(this.lblArticleType);
-            this.pnlMeta.Controls.Add(this.lblMetaSep1);
-            this.pnlMeta.Controls.Add(this.lblStatus);
-            this.pnlMeta.Controls.Add(this.lblMetaSep2);
-            this.pnlMeta.Controls.Add(this.lblVersion);
-            this.pnlMeta.Controls.Add(this.lblMetaSep3);
-            this.pnlMeta.Controls.Add(this.lblCategory);
-            this.pnlMeta.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlMeta.Location = new System.Drawing.Point(12, 29);
-            this.pnlMeta.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.pnlMeta.Name = "pnlMeta";
-            this.pnlMeta.Size = new System.Drawing.Size(846, 25);
-            this.pnlMeta.TabIndex = 1;
-            this.pnlMeta.WrapContents = false;
-            this.pnlMeta.Click += new System.EventHandler(this.OnCardClick);
-            this.pnlMeta.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.pnlMeta.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblArticleType
-            // 
-            this.lblArticleType.AutoSize = true;
-            this.lblArticleType.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblArticleType.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblArticleType.Location = new System.Drawing.Point(0, 2);
-            this.lblArticleType.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.lblArticleType.Name = "lblArticleType";
-            this.lblArticleType.Size = new System.Drawing.Size(35, 19);
-            this.lblArticleType.TabIndex = 0;
-            this.lblArticleType.Text = "SOP";
-            this.lblArticleType.Click += new System.EventHandler(this.OnCardClick);
-            this.lblArticleType.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblArticleType.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblMetaSep1
-            // 
-            this.lblMetaSep1.AutoSize = true;
-            this.lblMetaSep1.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblMetaSep1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(195)))), ((int)(((byte)(205)))));
-            this.lblMetaSep1.Location = new System.Drawing.Point(35, 2);
-            this.lblMetaSep1.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.lblMetaSep1.Name = "lblMetaSep1";
-            this.lblMetaSep1.Size = new System.Drawing.Size(28, 19);
-            this.lblMetaSep1.TabIndex = 1;
-            this.lblMetaSep1.Text = "  |  ";
-            this.lblMetaSep1.Click += new System.EventHandler(this.OnCardClick);
-            this.lblMetaSep1.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblMetaSep1.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblStatus
-            // 
-            this.lblStatus.AutoSize = true;
-            this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblStatus.Location = new System.Drawing.Point(63, 2);
-            this.lblStatus.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(40, 19);
-            this.lblStatus.TabIndex = 2;
-            this.lblStatus.Text = "Draft";
-            this.lblStatus.Click += new System.EventHandler(this.OnCardClick);
-            this.lblStatus.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblStatus.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblMetaSep2
-            // 
-            this.lblMetaSep2.AutoSize = true;
-            this.lblMetaSep2.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblMetaSep2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(195)))), ((int)(((byte)(205)))));
-            this.lblMetaSep2.Location = new System.Drawing.Point(103, 2);
-            this.lblMetaSep2.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.lblMetaSep2.Name = "lblMetaSep2";
-            this.lblMetaSep2.Size = new System.Drawing.Size(28, 19);
-            this.lblMetaSep2.TabIndex = 3;
-            this.lblMetaSep2.Text = "  |  ";
-            this.lblMetaSep2.Click += new System.EventHandler(this.OnCardClick);
-            this.lblMetaSep2.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblMetaSep2.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblVersion
-            // 
-            this.lblVersion.AutoSize = true;
-            this.lblVersion.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblVersion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblVersion.Location = new System.Drawing.Point(131, 2);
-            this.lblVersion.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.lblVersion.Name = "lblVersion";
-            this.lblVersion.Size = new System.Drawing.Size(66, 19);
-            this.lblVersion.TabIndex = 4;
-            this.lblVersion.Text = "Version 1";
-            this.lblVersion.Click += new System.EventHandler(this.OnCardClick);
-            this.lblVersion.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblVersion.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblMetaSep3
-            // 
-            this.lblMetaSep3.AutoSize = true;
-            this.lblMetaSep3.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblMetaSep3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(195)))), ((int)(((byte)(205)))));
-            this.lblMetaSep3.Location = new System.Drawing.Point(197, 2);
-            this.lblMetaSep3.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.lblMetaSep3.Name = "lblMetaSep3";
-            this.lblMetaSep3.Size = new System.Drawing.Size(28, 19);
-            this.lblMetaSep3.TabIndex = 5;
-            this.lblMetaSep3.Text = "  |  ";
-            this.lblMetaSep3.Click += new System.EventHandler(this.OnCardClick);
-            this.lblMetaSep3.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblMetaSep3.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblCategory
-            // 
-            this.lblCategory.AutoSize = true;
-            this.lblCategory.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblCategory.Location = new System.Drawing.Point(225, 2);
-            this.lblCategory.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.lblCategory.Name = "lblCategory";
-            this.lblCategory.Size = new System.Drawing.Size(15, 19);
-            this.lblCategory.TabIndex = 6;
-            this.lblCategory.Text = "-";
-            this.lblCategory.Click += new System.EventHandler(this.OnCardClick);
-            this.lblCategory.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblCategory.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblTitle
-            // 
-            this.lblTitle.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
-            this.lblTitle.Location = new System.Drawing.Point(12, 6);
-            this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(846, 23);
-            this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "ชื่อบทความ";
-            this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.lblTitle.Click += new System.EventHandler(this.OnCardClick);
-            this.lblTitle.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblTitle.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblTags
-            // 
-            this.lblTags.AutoSize = true;
-            this.lblTags.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(248)))), ((int)(((byte)(250)))));
-            this.lblTags.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTags.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblTags.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(150)))), ((int)(((byte)(100)))));
-            this.lblTags.Location = new System.Drawing.Point(187, 0);
-            this.lblTags.Margin = new System.Windows.Forms.Padding(0);
-            this.lblTags.Name = "lblTags";
-            this.lblTags.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblTags.Size = new System.Drawing.Size(24, 37);
-            this.lblTags.TabIndex = 5;
-            this.lblTags.Text = "-";
-            this.lblTags.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.lblTags.Click += new System.EventHandler(this.OnCardClick);
-            this.lblTags.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblTags.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblTagsIcon
-            // 
-            this.lblTagsIcon.AutoSize = true;
-            this.lblTagsIcon.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(248)))), ((int)(((byte)(250)))));
-            this.lblTagsIcon.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblTagsIcon.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblTagsIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(150)))), ((int)(((byte)(100)))));
-            this.lblTagsIcon.Location = new System.Drawing.Point(146, 0);
-            this.lblTagsIcon.Margin = new System.Windows.Forms.Padding(0);
-            this.lblTagsIcon.Name = "lblTagsIcon";
-            this.lblTagsIcon.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblTagsIcon.Size = new System.Drawing.Size(41, 37);
-            this.lblTagsIcon.TabIndex = 4;
-            this.lblTagsIcon.Text = "🏷";
-            this.lblTagsIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.lblTagsIcon.Click += new System.EventHandler(this.OnCardClick);
-            this.lblTagsIcon.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblTagsIcon.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
-            // lblLikeCount
-            // 
-            this.lblLikeCount.AutoSize = true;
-            this.lblLikeCount.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
-            this.lblLikeCount.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblLikeCount.Font = new System.Drawing.Font("Segoe UI Semibold", 9.5F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblLikeCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.lblLikeCount.Location = new System.Drawing.Point(118, 0);
-            this.lblLikeCount.Margin = new System.Windows.Forms.Padding(0);
-            this.lblLikeCount.Name = "lblLikeCount";
-            this.lblLikeCount.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblLikeCount.Size = new System.Drawing.Size(28, 37);
-            this.lblLikeCount.TabIndex = 3;
-            this.lblLikeCount.Text = "0";
-            this.lblLikeCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.lblLikeCount.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblLikeCount.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            this.lblViewCount.AutoSize = true;
+            this.lblViewCount.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.lblViewCount.Dock = System.Windows.Forms.DockStyle.Left;
+            this.lblViewCount.Font = new System.Drawing.Font("Segoe UI Semibold", 9.5F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblViewCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
+            this.lblViewCount.Location = new System.Drawing.Point(41, 0);
+            this.lblViewCount.Margin = new System.Windows.Forms.Padding(0);
+            this.lblViewCount.Name = "lblViewCount";
+            this.lblViewCount.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
+            this.lblViewCount.Size = new System.Drawing.Size(28, 37);
+            this.lblViewCount.TabIndex = 1;
+            this.lblViewCount.Text = "0";
+            this.lblViewCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblViewCount.Click += new System.EventHandler(this.OnCardClick);
+            this.lblViewCount.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblViewCount.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             // 
             // btnLike
             // 
@@ -422,74 +269,350 @@ namespace CMS.Presentation.Modules.KMS
             this.btnLike.UseVisualStyleBackColor = false;
             this.btnLike.Click += new System.EventHandler(this.btnLike_Click);
             // 
-            // lblViewCount
+            // lblLikeCount
             // 
-            this.lblViewCount.AutoSize = true;
-            this.lblViewCount.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
-            this.lblViewCount.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblViewCount.Font = new System.Drawing.Font("Segoe UI Semibold", 9.5F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblViewCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
-            this.lblViewCount.Location = new System.Drawing.Point(41, 0);
-            this.lblViewCount.Margin = new System.Windows.Forms.Padding(0);
-            this.lblViewCount.Name = "lblViewCount";
-            this.lblViewCount.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblViewCount.Size = new System.Drawing.Size(28, 37);
-            this.lblViewCount.TabIndex = 1;
-            this.lblViewCount.Text = "0";
-            this.lblViewCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.lblViewCount.Click += new System.EventHandler(this.OnCardClick);
-            this.lblViewCount.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblViewCount.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            this.lblLikeCount.AutoSize = true;
+            this.lblLikeCount.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
+            this.lblLikeCount.Dock = System.Windows.Forms.DockStyle.Left;
+            this.lblLikeCount.Font = new System.Drawing.Font("Segoe UI Semibold", 9.5F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblLikeCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.lblLikeCount.Location = new System.Drawing.Point(118, 0);
+            this.lblLikeCount.Margin = new System.Windows.Forms.Padding(0);
+            this.lblLikeCount.Name = "lblLikeCount";
+            this.lblLikeCount.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
+            this.lblLikeCount.Size = new System.Drawing.Size(28, 37);
+            this.lblLikeCount.TabIndex = 3;
+            this.lblLikeCount.Text = "0";
+            this.lblLikeCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblLikeCount.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblLikeCount.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             // 
-            // lblViewIcon
+            // lblTagsIcon
             // 
-            this.lblViewIcon.AutoSize = true;
-            this.lblViewIcon.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
-            this.lblViewIcon.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblViewIcon.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblViewIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
-            this.lblViewIcon.Location = new System.Drawing.Point(0, 0);
-            this.lblViewIcon.Margin = new System.Windows.Forms.Padding(0);
-            this.lblViewIcon.Name = "lblViewIcon";
-            this.lblViewIcon.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblViewIcon.Size = new System.Drawing.Size(41, 37);
-            this.lblViewIcon.TabIndex = 0;
-            this.lblViewIcon.Text = "👁";
-            this.lblViewIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.lblViewIcon.Click += new System.EventHandler(this.OnCardClick);
-            this.lblViewIcon.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblViewIcon.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            this.lblTagsIcon.AutoSize = true;
+            this.lblTagsIcon.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(248)))), ((int)(((byte)(250)))));
+            this.lblTagsIcon.Dock = System.Windows.Forms.DockStyle.Left;
+            this.lblTagsIcon.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTagsIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(150)))), ((int)(((byte)(100)))));
+            this.lblTagsIcon.Location = new System.Drawing.Point(146, 0);
+            this.lblTagsIcon.Margin = new System.Windows.Forms.Padding(0);
+            this.lblTagsIcon.Name = "lblTagsIcon";
+            this.lblTagsIcon.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
+            this.lblTagsIcon.Size = new System.Drawing.Size(41, 37);
+            this.lblTagsIcon.TabIndex = 4;
+            this.lblTagsIcon.Text = "🏷";
+            this.lblTagsIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblTagsIcon.Click += new System.EventHandler(this.OnCardClick);
+            this.lblTagsIcon.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblTagsIcon.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             // 
-            // pnlStats
+            // lblTags
             // 
-            this.pnlStats.Controls.Add(this.lblViewIcon);
-            this.pnlStats.Controls.Add(this.lblViewCount);
-            this.pnlStats.Controls.Add(this.btnLike);
-            this.pnlStats.Controls.Add(this.lblLikeCount);
-            this.pnlStats.Controls.Add(this.lblTagsIcon);
-            this.pnlStats.Controls.Add(this.lblTags);
-            this.pnlStats.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlStats.Location = new System.Drawing.Point(0, 0);
-            this.pnlStats.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.pnlStats.Name = "pnlStats";
-            this.pnlStats.Size = new System.Drawing.Size(846, 39);
-            this.pnlStats.TabIndex = 3;
-            this.pnlStats.WrapContents = false;
-            this.pnlStats.Click += new System.EventHandler(this.OnCardClick);
-            this.pnlStats.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.pnlStats.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            this.lblTags.AutoSize = true;
+            this.lblTags.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(248)))), ((int)(((byte)(250)))));
+            this.lblTags.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTags.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTags.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(150)))), ((int)(((byte)(100)))));
+            this.lblTags.Location = new System.Drawing.Point(187, 0);
+            this.lblTags.Margin = new System.Windows.Forms.Padding(0);
+            this.lblTags.Name = "lblTags";
+            this.lblTags.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
+            this.lblTags.Size = new System.Drawing.Size(24, 37);
+            this.lblTags.TabIndex = 5;
+            this.lblTags.Text = "-";
+            this.lblTags.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblTags.Click += new System.EventHandler(this.OnCardClick);
+            this.lblTags.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblTags.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             // 
-            // panelButton
+            // pnlActions
             // 
-            this.panelButton.Controls.Add(this.btnSendReview);
-            this.panelButton.Controls.Add(this.btnShare);
-            this.panelButton.Controls.Add(this.btnEdit);
-            this.panelButton.Controls.Add(this.btnRead);
-            this.panelButton.Dock = System.Windows.Forms.DockStyle.Right;
-            this.panelButton.Location = new System.Drawing.Point(406, 0);
-            this.panelButton.Name = "panelButton";
-            this.panelButton.Size = new System.Drawing.Size(440, 39);
-            this.panelButton.TabIndex = 5;
+            this.pnlActions.Controls.Add(this.panelArticelItem);
+            this.pnlActions.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlActions.Location = new System.Drawing.Point(12, 64);
+            this.pnlActions.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.pnlActions.Name = "pnlActions";
+            this.pnlActions.Padding = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.pnlActions.Size = new System.Drawing.Size(846, 33);
+            this.pnlActions.TabIndex = 4;
+            // 
+            // panelArticelItem
+            // 
+            this.panelArticelItem.Controls.Add(this.lblContent);
+            this.panelArticelItem.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelArticelItem.Location = new System.Drawing.Point(0, 3);
+            this.panelArticelItem.Name = "panelArticelItem";
+            this.panelArticelItem.Size = new System.Drawing.Size(846, 30);
+            this.panelArticelItem.TabIndex = 6;
+            // 
+            // lblContent
+            // 
+            this.lblContent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblContent.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblContent.Location = new System.Drawing.Point(0, 0);
+            this.lblContent.Name = "lblContent";
+            this.lblContent.Size = new System.Drawing.Size(846, 30);
+            this.lblContent.TabIndex = 0;
+            this.lblContent.Text = "เนื้อหา";
+            // 
+            // pnlMeta
+            // 
+            this.pnlMeta.Controls.Add(this.lblStatus);
+            this.pnlMeta.Controls.Add(this.lblMetaSep3);
+            this.pnlMeta.Controls.Add(this.lblArticleType);
+            this.pnlMeta.Controls.Add(this.lblCategory);
+            this.pnlMeta.Controls.Add(this.lblMetaSep2);
+            this.pnlMeta.Controls.Add(this.lblVersion);
+            this.pnlMeta.Controls.Add(this.lblMetaSep1);
+            this.pnlMeta.Controls.Add(this.lblSummary);
+            this.pnlMeta.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlMeta.Location = new System.Drawing.Point(12, 39);
+            this.pnlMeta.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.pnlMeta.Name = "pnlMeta";
+            this.pnlMeta.Size = new System.Drawing.Size(846, 25);
+            this.pnlMeta.TabIndex = 1;
+            this.pnlMeta.WrapContents = false;
+            this.pnlMeta.Click += new System.EventHandler(this.OnCardClick);
+            this.pnlMeta.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.pnlMeta.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // lblStatus
+            // 
+            this.lblStatus.AutoSize = true;
+            this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblStatus.Location = new System.Drawing.Point(0, 2);
+            this.lblStatus.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblStatus.Name = "lblStatus";
+            this.lblStatus.Size = new System.Drawing.Size(40, 19);
+            this.lblStatus.TabIndex = 2;
+            this.lblStatus.Text = "Draft";
+            this.lblStatus.Visible = false;
+            this.lblStatus.Click += new System.EventHandler(this.OnCardClick);
+            this.lblStatus.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblStatus.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // lblMetaSep3
+            // 
+            this.lblMetaSep3.AutoSize = true;
+            this.lblMetaSep3.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblMetaSep3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(195)))), ((int)(((byte)(205)))));
+            this.lblMetaSep3.Location = new System.Drawing.Point(40, 2);
+            this.lblMetaSep3.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblMetaSep3.Name = "lblMetaSep3";
+            this.lblMetaSep3.Size = new System.Drawing.Size(28, 19);
+            this.lblMetaSep3.TabIndex = 5;
+            this.lblMetaSep3.Text = "  |  ";
+            this.lblMetaSep3.Visible = false;
+            this.lblMetaSep3.Click += new System.EventHandler(this.OnCardClick);
+            this.lblMetaSep3.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblMetaSep3.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // lblArticleType
+            // 
+            this.lblArticleType.AutoSize = true;
+            this.lblArticleType.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblArticleType.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblArticleType.Location = new System.Drawing.Point(68, 2);
+            this.lblArticleType.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblArticleType.Name = "lblArticleType";
+            this.lblArticleType.Size = new System.Drawing.Size(35, 19);
+            this.lblArticleType.TabIndex = 0;
+            this.lblArticleType.Text = "SOP";
+            this.lblArticleType.Visible = false;
+            this.lblArticleType.Click += new System.EventHandler(this.OnCardClick);
+            this.lblArticleType.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblArticleType.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // lblCategory
+            // 
+            this.lblCategory.AutoSize = true;
+            this.lblCategory.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblCategory.Location = new System.Drawing.Point(103, 2);
+            this.lblCategory.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblCategory.Name = "lblCategory";
+            this.lblCategory.Size = new System.Drawing.Size(15, 19);
+            this.lblCategory.TabIndex = 6;
+            this.lblCategory.Text = "-";
+            this.lblCategory.Click += new System.EventHandler(this.OnCardClick);
+            this.lblCategory.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblCategory.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // lblMetaSep2
+            // 
+            this.lblMetaSep2.AutoSize = true;
+            this.lblMetaSep2.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblMetaSep2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(195)))), ((int)(((byte)(205)))));
+            this.lblMetaSep2.Location = new System.Drawing.Point(118, 2);
+            this.lblMetaSep2.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblMetaSep2.Name = "lblMetaSep2";
+            this.lblMetaSep2.Size = new System.Drawing.Size(28, 19);
+            this.lblMetaSep2.TabIndex = 3;
+            this.lblMetaSep2.Text = "  |  ";
+            this.lblMetaSep2.Click += new System.EventHandler(this.OnCardClick);
+            this.lblMetaSep2.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblMetaSep2.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // lblVersion
+            // 
+            this.lblVersion.AutoSize = true;
+            this.lblVersion.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblVersion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblVersion.Location = new System.Drawing.Point(146, 2);
+            this.lblVersion.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblVersion.Name = "lblVersion";
+            this.lblVersion.Size = new System.Drawing.Size(66, 19);
+            this.lblVersion.TabIndex = 4;
+            this.lblVersion.Text = "Version 1";
+            this.lblVersion.Click += new System.EventHandler(this.OnCardClick);
+            this.lblVersion.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblVersion.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // lblMetaSep1
+            // 
+            this.lblMetaSep1.AutoSize = true;
+            this.lblMetaSep1.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblMetaSep1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(195)))), ((int)(((byte)(205)))));
+            this.lblMetaSep1.Location = new System.Drawing.Point(212, 2);
+            this.lblMetaSep1.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblMetaSep1.Name = "lblMetaSep1";
+            this.lblMetaSep1.Size = new System.Drawing.Size(28, 19);
+            this.lblMetaSep1.TabIndex = 1;
+            this.lblMetaSep1.Text = "  |  ";
+            this.lblMetaSep1.Click += new System.EventHandler(this.OnCardClick);
+            this.lblMetaSep1.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblMetaSep1.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // lblSummary
+            // 
+            this.lblSummary.AutoSize = true;
+            this.lblSummary.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblSummary.Location = new System.Drawing.Point(240, 2);
+            this.lblSummary.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblSummary.Name = "lblSummary";
+            this.lblSummary.Size = new System.Drawing.Size(84, 19);
+            this.lblSummary.TabIndex = 2;
+            this.lblSummary.Text = "สรุปบทความ...";
+            this.lblSummary.Click += new System.EventHandler(this.OnCardClick);
+            this.lblSummary.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblSummary.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // pHeaderRight
+            // 
+            this.pHeaderRight.Controls.Add(this.label4);
+            this.pHeaderRight.Controls.Add(this.lblShowEntity);
+            this.pHeaderRight.Controls.Add(this.lblTitle);
+            this.pHeaderRight.Controls.Add(this.label2);
+            this.pHeaderRight.Controls.Add(this.lblPublishedDate);
+            this.pHeaderRight.Controls.Add(this.label3);
+            this.pHeaderRight.Controls.Add(this.lblExpiryDate);
+            this.pHeaderRight.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pHeaderRight.Location = new System.Drawing.Point(12, 6);
+            this.pHeaderRight.Name = "pHeaderRight";
+            this.pHeaderRight.Padding = new System.Windows.Forms.Padding(0, 5, 5, 0);
+            this.pHeaderRight.Size = new System.Drawing.Size(846, 33);
+            this.pHeaderRight.TabIndex = 6;
+            // 
+            // lblTitle
+            // 
+            this.lblTitle.AutoSize = true;
+            this.lblTitle.Dock = System.Windows.Forms.DockStyle.Left;
+            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
+            this.lblTitle.Location = new System.Drawing.Point(0, 5);
+            this.lblTitle.Margin = new System.Windows.Forms.Padding(0);
+            this.lblTitle.Name = "lblTitle";
+            this.lblTitle.Size = new System.Drawing.Size(95, 23);
+            this.lblTitle.TabIndex = 0;
+            this.lblTitle.Text = "ชื่อบทความ";
+            this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.lblTitle.Click += new System.EventHandler(this.OnCardClick);
+            this.lblTitle.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblTitle.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Dock = System.Windows.Forms.DockStyle.Right;
+            this.label2.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.label2.Location = new System.Drawing.Point(561, 5);
+            this.label2.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(72, 19);
+            this.label2.TabIndex = 7;
+            this.label2.Text = "วันที่เผยแพร่";
+            // 
+            // lblPublishedDate
+            // 
+            this.lblPublishedDate.AutoSize = true;
+            this.lblPublishedDate.Dock = System.Windows.Forms.DockStyle.Right;
+            this.lblPublishedDate.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblPublishedDate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblPublishedDate.Location = new System.Drawing.Point(633, 5);
+            this.lblPublishedDate.Margin = new System.Windows.Forms.Padding(0);
+            this.lblPublishedDate.Name = "lblPublishedDate";
+            this.lblPublishedDate.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.lblPublishedDate.Size = new System.Drawing.Size(78, 19);
+            this.lblPublishedDate.TabIndex = 1;
+            this.lblPublishedDate.Text = "published";
+            this.lblPublishedDate.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Dock = System.Windows.Forms.DockStyle.Right;
+            this.label3.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.label3.Location = new System.Drawing.Point(711, 5);
+            this.label3.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(85, 19);
+            this.label3.TabIndex = 8;
+            this.label3.Text = "วันที่เผยยกเลิก";
+            // 
+            // lblExpiryDate
+            // 
+            this.lblExpiryDate.AutoSize = true;
+            this.lblExpiryDate.Dock = System.Windows.Forms.DockStyle.Right;
+            this.lblExpiryDate.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblExpiryDate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblExpiryDate.Location = new System.Drawing.Point(796, 5);
+            this.lblExpiryDate.Margin = new System.Windows.Forms.Padding(0);
+            this.lblExpiryDate.Name = "lblExpiryDate";
+            this.lblExpiryDate.Size = new System.Drawing.Size(45, 19);
+            this.lblExpiryDate.TabIndex = 9;
+            this.lblExpiryDate.Text = "expire";
+            this.lblExpiryDate.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblShowEntity
+            // 
+            this.lblShowEntity.AutoSize = true;
+            this.lblShowEntity.Dock = System.Windows.Forms.DockStyle.Right;
+            this.lblShowEntity.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblShowEntity.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblShowEntity.Location = new System.Drawing.Point(530, 5);
+            this.lblShowEntity.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblShowEntity.Name = "lblShowEntity";
+            this.lblShowEntity.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.lblShowEntity.Size = new System.Drawing.Size(31, 19);
+            this.lblShowEntity.TabIndex = 10;
+            this.lblShowEntity.Text = "xx";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Dock = System.Windows.Forms.DockStyle.Right;
+            this.label4.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.label4.Location = new System.Drawing.Point(428, 5);
+            this.label4.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(102, 19);
+            this.label4.TabIndex = 11;
+            this.label4.Text = "Org./Div./Dept.";
             // 
             // ArticleCardControl
             // 
@@ -508,13 +631,15 @@ namespace CMS.Presentation.Modules.KMS
             this.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             this.pnlContent.ResumeLayout(false);
             this.panelFooter.ResumeLayout(false);
+            this.panelButton.ResumeLayout(false);
+            this.pnlStats.ResumeLayout(false);
+            this.pnlStats.PerformLayout();
             this.pnlActions.ResumeLayout(false);
             this.panelArticelItem.ResumeLayout(false);
             this.pnlMeta.ResumeLayout(false);
             this.pnlMeta.PerformLayout();
-            this.pnlStats.ResumeLayout(false);
-            this.pnlStats.PerformLayout();
-            this.panelButton.ResumeLayout(false);
+            this.pHeaderRight.ResumeLayout(false);
+            this.pHeaderRight.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -546,5 +671,13 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label lblTagsIcon;
         private System.Windows.Forms.Label lblTags;
         private System.Windows.Forms.Panel panelButton;
+        private System.Windows.Forms.Label lblContent;
+        private System.Windows.Forms.Panel pHeaderRight;
+        private System.Windows.Forms.Label lblExpiryDate;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label lblPublishedDate;
+        private System.Windows.Forms.Label lblShowEntity;
+        private System.Windows.Forms.Label label4;
     }
 }

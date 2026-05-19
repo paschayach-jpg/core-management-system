@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 
 namespace CMS.Services
 {
@@ -85,6 +86,7 @@ namespace CMS.Services
 
             var cache = new Dictionary<string, int>(StringComparer.Ordinal);
             KBCategoryCodeName result;
+            int counter = 1;
             foreach (var row in rows)
             {
                 if (row.Status == "Error")
@@ -109,6 +111,7 @@ namespace CMS.Services
                         code:      row.ColA,
                         name:      attr.Description,
                         parentId:  null,
+                        sortOrder: counter,
                         createdBy: createdBy,
                         cache:     cache);
 
@@ -116,6 +119,7 @@ namespace CMS.Services
                         code:      row.ColB,
                         name:      row.ColC,
                         parentId:  parentCategoryId,
+                        sortOrder: counter,
                         createdBy: createdBy,
                         cache:     cache);
 
@@ -126,6 +130,7 @@ namespace CMS.Services
                     row.Status     = "Error";
                     row.StatusNote = TruncateTo200(ex.Message);
                 }
+                counter++;
             }
         }
 
@@ -426,6 +431,7 @@ namespace CMS.Services
             string code,
             string name,
             int?   parentId,
+            int    sortOrder,
             string createdBy,
             Dictionary<string, int> cache)
         {
@@ -446,7 +452,7 @@ namespace CMS.Services
                 CategoryCode     = code,
                 CategoryName     = name,
                 Icon             = "6",
-                SortOrder        = 0,
+                SortOrder        = sortOrder,
                 IsActive         = true,
                 CreatedBy        = createdBy,
                 CreatedDate      = DateTime.Now,

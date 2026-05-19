@@ -33,7 +33,6 @@ namespace CMS.Presentation.Modules.KMS
             this.flpArticles = new System.Windows.Forms.FlowLayoutPanel();
             this.pnlFilterBar = new System.Windows.Forms.Panel();
             this.pnlFilterRight = new System.Windows.Forms.Panel();
-            this.cboPageSize = new System.Windows.Forms.ComboBox();
             this.lblPageSizeLabel = new System.Windows.Forms.Label();
             this.cboSortBy = new System.Windows.Forms.ComboBox();
             this.lblSortByLabel = new System.Windows.Forms.Label();
@@ -46,6 +45,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlToolbarRight = new System.Windows.Forms.Panel();
             this.txtToolbarSearch = new System.Windows.Forms.TextBox();
             this.lblToolbarSearchLabel = new System.Windows.Forms.Label();
+            this.cboSearchField = new System.Windows.Forms.ComboBox();
             this.btnTestNotification = new System.Windows.Forms.Button();
             this.btnExportPdf = new System.Windows.Forms.Button();
             this.btnImportExcel = new System.Windows.Forms.Button();
@@ -59,6 +59,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPage2 = new System.Windows.Forms.Button();
             this.btnPage1 = new System.Windows.Forms.Button();
             this.btnPrevPage = new System.Windows.Forms.Button();
+            this.cboPageSize = new System.Windows.Forms.ComboBox();
             this.lblPageInfo = new System.Windows.Forms.Label();
             this.pnlHeader.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
@@ -287,7 +288,6 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvArticles.AllowUserToAddRows = false;
             this.dgvArticles.AllowUserToDeleteRows = false;
             this.dgvArticles.AllowUserToResizeRows = false;
-            this.dgvArticles.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvArticles.BackgroundColor = System.Drawing.Color.White;
             this.dgvArticles.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvArticles.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
@@ -358,7 +358,6 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // pnlFilterRight
             // 
-            this.pnlFilterRight.Controls.Add(this.cboPageSize);
             this.pnlFilterRight.Controls.Add(this.lblPageSizeLabel);
             this.pnlFilterRight.Controls.Add(this.cboSortBy);
             this.pnlFilterRight.Controls.Add(this.lblSortByLabel);
@@ -367,21 +366,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlFilterRight.Name = "pnlFilterRight";
             this.pnlFilterRight.Size = new System.Drawing.Size(328, 24);
             this.pnlFilterRight.TabIndex = 0;
-            // 
-            // cboPageSize
-            // 
-            this.cboPageSize.Dock = System.Windows.Forms.DockStyle.Right;
-            this.cboPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboPageSize.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.cboPageSize.FormattingEnabled = true;
-            this.cboPageSize.Items.AddRange(new object[] {
-            "20 รายการ",
-            "50 รายการ",
-            "100 รายการ"});
-            this.cboPageSize.Location = new System.Drawing.Point(148, 0);
-            this.cboPageSize.Name = "cboPageSize";
-            this.cboPageSize.Size = new System.Drawing.Size(120, 25);
-            this.cboPageSize.TabIndex = 0;
+            this.pnlFilterRight.Visible = false;
             // 
             // lblPageSizeLabel
             // 
@@ -455,6 +440,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboDepartment.Name = "cboDepartment";
             this.cboDepartment.Size = new System.Drawing.Size(150, 25);
             this.cboDepartment.TabIndex = 2;
+            this.cboDepartment.Visible = false;
             // 
             // cboStatus
             // 
@@ -517,10 +503,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlToolbarRight.Controls.Add(this.txtToolbarSearch);
             this.pnlToolbarRight.Controls.Add(this.lblToolbarSearchLabel);
+            this.pnlToolbarRight.Controls.Add(this.cboSearchField);
             this.pnlToolbarRight.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlToolbarRight.Location = new System.Drawing.Point(626, 4);
+            this.pnlToolbarRight.Location = new System.Drawing.Point(506, 4);
             this.pnlToolbarRight.Name = "pnlToolbarRight";
-            this.pnlToolbarRight.Size = new System.Drawing.Size(248, 26);
+            this.pnlToolbarRight.Size = new System.Drawing.Size(368, 26);
             this.pnlToolbarRight.TabIndex = 0;
             // 
             // txtToolbarSearch
@@ -528,7 +515,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtToolbarSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtToolbarSearch.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtToolbarSearch.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.txtToolbarSearch.Location = new System.Drawing.Point(48, 0);
+            this.txtToolbarSearch.Location = new System.Drawing.Point(168, 0);
             this.txtToolbarSearch.Name = "txtToolbarSearch";
             this.txtToolbarSearch.Size = new System.Drawing.Size(200, 26);
             this.txtToolbarSearch.TabIndex = 0;
@@ -539,12 +526,23 @@ namespace CMS.Presentation.Modules.KMS
             this.lblToolbarSearchLabel.Dock = System.Windows.Forms.DockStyle.Left;
             this.lblToolbarSearchLabel.Font = new System.Drawing.Font("Segoe UI", 8F);
             this.lblToolbarSearchLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblToolbarSearchLabel.Location = new System.Drawing.Point(0, 0);
+            this.lblToolbarSearchLabel.Location = new System.Drawing.Point(120, 0);
             this.lblToolbarSearchLabel.Name = "lblToolbarSearchLabel";
             this.lblToolbarSearchLabel.Size = new System.Drawing.Size(48, 26);
             this.lblToolbarSearchLabel.TabIndex = 1;
             this.lblToolbarSearchLabel.Text = "ค้นหา:";
             this.lblToolbarSearchLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // cboSearchField
+            // 
+            this.cboSearchField.Dock = System.Windows.Forms.DockStyle.Left;
+            this.cboSearchField.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboSearchField.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.cboSearchField.FormattingEnabled = true;
+            this.cboSearchField.Location = new System.Drawing.Point(0, 0);
+            this.cboSearchField.Name = "cboSearchField";
+            this.cboSearchField.Size = new System.Drawing.Size(120, 25);
+            this.cboSearchField.TabIndex = 2;
             // 
             // btnTestNotification
             // 
@@ -662,10 +660,11 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlPaginationButtons.Controls.Add(this.btnPage2);
             this.pnlPaginationButtons.Controls.Add(this.btnPage1);
             this.pnlPaginationButtons.Controls.Add(this.btnPrevPage);
+            this.pnlPaginationButtons.Controls.Add(this.cboPageSize);
             this.pnlPaginationButtons.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlPaginationButtons.Location = new System.Drawing.Point(576, 6);
+            this.pnlPaginationButtons.Location = new System.Drawing.Point(535, 6);
             this.pnlPaginationButtons.Name = "pnlPaginationButtons";
-            this.pnlPaginationButtons.Size = new System.Drawing.Size(298, 26);
+            this.pnlPaginationButtons.Size = new System.Drawing.Size(339, 26);
             this.pnlPaginationButtons.TabIndex = 1;
             // 
             // btnNextPage
@@ -676,7 +675,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnNextPage.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnNextPage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnNextPage.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.btnNextPage.Location = new System.Drawing.Point(166, 0);
+            this.btnNextPage.Location = new System.Drawing.Point(266, 0);
             this.btnNextPage.Name = "btnNextPage";
             this.btnNextPage.Size = new System.Drawing.Size(70, 26);
             this.btnNextPage.TabIndex = 4;
@@ -691,7 +690,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPage3.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnPage3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPage3.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.btnPage3.Location = new System.Drawing.Point(134, 0);
+            this.btnPage3.Location = new System.Drawing.Point(234, 0);
             this.btnPage3.Name = "btnPage3";
             this.btnPage3.Size = new System.Drawing.Size(32, 26);
             this.btnPage3.TabIndex = 3;
@@ -706,7 +705,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPage2.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnPage2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPage2.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.btnPage2.Location = new System.Drawing.Point(102, 0);
+            this.btnPage2.Location = new System.Drawing.Point(202, 0);
             this.btnPage2.Name = "btnPage2";
             this.btnPage2.Size = new System.Drawing.Size(32, 26);
             this.btnPage2.TabIndex = 2;
@@ -722,7 +721,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPage1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPage1.Font = new System.Drawing.Font("Segoe UI", 8F);
             this.btnPage1.ForeColor = System.Drawing.Color.White;
-            this.btnPage1.Location = new System.Drawing.Point(70, 0);
+            this.btnPage1.Location = new System.Drawing.Point(170, 0);
             this.btnPage1.Name = "btnPage1";
             this.btnPage1.Size = new System.Drawing.Size(32, 26);
             this.btnPage1.TabIndex = 1;
@@ -737,12 +736,27 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPrevPage.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnPrevPage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPrevPage.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.btnPrevPage.Location = new System.Drawing.Point(0, 0);
+            this.btnPrevPage.Location = new System.Drawing.Point(100, 0);
             this.btnPrevPage.Name = "btnPrevPage";
             this.btnPrevPage.Size = new System.Drawing.Size(70, 26);
             this.btnPrevPage.TabIndex = 0;
             this.btnPrevPage.Text = "« ก่อนหน้า";
             this.btnPrevPage.UseVisualStyleBackColor = false;
+            // 
+            // cboPageSize
+            // 
+            this.cboPageSize.Dock = System.Windows.Forms.DockStyle.Left;
+            this.cboPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboPageSize.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.cboPageSize.FormattingEnabled = true;
+            this.cboPageSize.Items.AddRange(new object[] {
+            "20 รายการ",
+            "50 รายการ",
+            "100 รายการ"});
+            this.cboPageSize.Location = new System.Drawing.Point(0, 0);
+            this.cboPageSize.Name = "cboPageSize";
+            this.cboPageSize.Size = new System.Drawing.Size(100, 25);
+            this.cboPageSize.TabIndex = 0;
             // 
             // lblPageInfo
             // 
@@ -814,6 +828,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label           lblArticleTitle;
         private System.Windows.Forms.Panel           pnlToolbar;
         private System.Windows.Forms.Panel           pnlToolbarRight;
+        private System.Windows.Forms.ComboBox        cboSearchField;
         private System.Windows.Forms.TextBox         txtToolbarSearch;
         private System.Windows.Forms.Label           lblToolbarSearchLabel;
         private System.Windows.Forms.Button          btnExportPdf;

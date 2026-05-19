@@ -1,15 +1,16 @@
 // ✅ Allowed usings: CMS.Controllers, CMS.Domain
 // ❌ Forbidden usings: CMS.Services, CMS.Data
+using CMS.Controllers.KMS.KB;
+using CMS.Controllers.KMS.KB.Interfaces;
+using CMS.Domain.Models;
+using CMS.Presentation.Services;
+using CMS.Services;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using CMS.Controllers.KMS.KB.Interfaces;
-using CMS.Controllers.KMS.KB;
-using CMS.Domain.Models;
-using CMS.Services;
-using CMS.Presentation.Services;
 
 namespace CMS.Presentation.Modules.KMS
 {
@@ -182,8 +183,9 @@ namespace CMS.Presentation.Modules.KMS
 
         // ── IKBMainView ───────────────────────────────────────────────────
 
-        public string SearchKeyword      { get { return new string(txtToolbarSearch.Text.Where(c => !char.IsWhiteSpace(c)).ToArray()); } }
+        public string SearchKeyword      { get { return txtToolbarSearch.Text.Trim(); } }
         public int    StatusFilterIndex  { get { return cboStatus.SelectedIndex; } }
+        public int    SearchFieldId      { get { return cboSearchField.SelectedIndex >= 0 ? cboSearchField.SelectedIndex + 1 : 1; } }
 
         public int PageSize
         {
@@ -233,23 +235,28 @@ namespace CMS.Presentation.Modules.KMS
             {
                 var a = articles[i];
                 dgvArticles.Rows.Add(
-                    i + 1,
+                    0,
                     //a.ArticleCode,
+                    a.CategoryName,
                     a.Title,
                     a.Summary,
-                    //a.ContentHTML,
-                    a.ArticleTypeName,
-                    a.StatusName,
-                    a.CategoryName,
+                    a.ContentHTML,
+                    a.PublishedDate,
+                    a.ExpiryDate,
+                    a.LinkedEntities,
+                    a.Tags,
+                    //a.ArticleTypeName,
+                    //a.StatusName,
                     a.CurrentVersion > 0 ? "v" + a.CurrentVersion : "-",
                     a.ViewCount,
+                    
                     "👁️ Read",
                     "✏️ Edit",
                     "🔗 Share",
                     a.Status == 1 ? "📤 Review" : ""
                 );
             }
-
+            //dgvArticles.Sort(dgvArticles.Columns["colCode"], ListSortDirection.Ascending);
             dgvArticles.ResumeLayout();
         }
 
@@ -714,6 +721,17 @@ namespace CMS.Presentation.Modules.KMS
             cboSortBy.SelectedIndex     = 0;
             cboPageSize.SelectedIndex   = 0;
 
+            cboSearchField.DataSource = new[]
+            {
+                new { Id = 1, Description = "ชื่อบทความ"    },
+                new { Id = 2, Description = "เนื้อหาบทความ" },
+                new { Id = 3, Description = "Tag"           },
+                new { Id = 4, Description = "Summary"       },
+            };
+            cboSearchField.DisplayMember = "Description";
+            cboSearchField.ValueMember   = "Id";
+            cboSearchField.SelectedIndex = 0;
+
             // Wire up after initial values are set to avoid spurious loads
             btnPrevPage.Click  += BtnPrevPage_Click;
             btnNextPage.Click  += BtnNextPage_Click;
@@ -868,13 +886,12 @@ namespace CMS.Presentation.Modules.KMS
             dgvArticles.EnableHeadersVisualStyles = false;
             dgvArticles.ColumnHeadersHeight = 32;
             dgvArticles.RowTemplate.Height = 36;
-
             var hdrStyle = dgvArticles.ColumnHeadersDefaultCellStyle;
             hdrStyle.BackColor        = Color.FromArgb(240, 244, 249);
             hdrStyle.ForeColor        = Color.FromArgb(30, 58, 95);
             hdrStyle.Font             = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             hdrStyle.SelectionBackColor = Color.FromArgb(240, 244, 249);
-
+            hdrStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dgvArticles.DefaultCellStyle.Font                = new Font("Segoe UI", 8.5f);
             dgvArticles.DefaultCellStyle.SelectionBackColor  = Color.FromArgb(214, 228, 240);
             dgvArticles.DefaultCellStyle.SelectionForeColor  = Color.FromArgb(26, 35, 50);
@@ -884,79 +901,169 @@ namespace CMS.Presentation.Modules.KMS
                                                    Padding  = new Padding(4, 0, 0, 0) };
 
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
-                Name = "colRowNum", HeaderText = "#", Width = 40, ReadOnly = true,
-                DefaultCellStyle = ctr });
-            //dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
-            //    Name = "colCode", HeaderText = "รหัส", Width = 105, ReadOnly = true,
-            //    DefaultCellStyle = lft });
+                Name = "colRowNum", 
+                HeaderText = "#", 
+                Width = 25, 
+                ReadOnly = true,
+                DefaultCellStyle = ctr,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
+            //dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            //{
+            //    Name = "colCode",
+            //    HeaderText = "รหัส",
+            //    //Width = 0,
+            //    ReadOnly = true,
+            //    Visible = false
+            //});
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colCategory",
+                HeaderText = "หมวดหมู่",
+                ReadOnly = true,
+                DefaultCellStyle = lft,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
-                Name = "colTitle", HeaderText = "ชื่อบทความ", MinimumWidth = 105, ReadOnly = true,
-                DefaultCellStyle = lft });
+                Name = "colTitle", 
+                HeaderText = "ชื่อบทความ", 
+                ReadOnly = true,
+                DefaultCellStyle = lft,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colCode",
                 HeaderText = "summary",
                 Width = 105,
                 ReadOnly = true,
+                DefaultCellStyle = lft,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colContentHtml",
+                HeaderText = "รายละเอียด",
+                ReadOnly = true,
+                Width = 150,
                 DefaultCellStyle = lft
+            });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colPublishedDate",
+                HeaderText = "วันที่เผยแพร่",
+                ReadOnly = true,
+                DefaultCellStyle = { Format = "dd/MM/yyyy" },
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colExpiryDate",
+                HeaderText = "วันที่ยกเลิก",
+                ReadOnly = true,
+                DefaultCellStyle = { Format = "dd/MM/yyyy" },
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colOrgDivDept",
+                HeaderText = "Org./Div./Dept.",
+                ReadOnly = true,
+                DefaultCellStyle = lft,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colTags",
+                HeaderText = "Tags",
+                ReadOnly = true,
+                DefaultCellStyle = lft,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
             //dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             //{
-            //    Name = "colContentHtml",
-            //    HeaderText = "รายละเอียด",
+            //    Name = "colType",
+            //    HeaderText = "ประเภท",
+            //    Width = 78,
             //    ReadOnly = true,
-            //    Width = 150,
-            //    DefaultCellStyle = lft
+            //    DefaultCellStyle = ctr
             //});
-            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
-            {
-                Name = "colType",
-                HeaderText = "ประเภท",
-                Width = 78,
+            //dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
+            //    Name = "colStatus", HeaderText = "สถานะ", Width = 90, ReadOnly = true,
+            //    DefaultCellStyle = ctr });
+
+            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
+                Name = "colVersion", 
+                HeaderText = "Ver.", 
+                Width = 50, 
                 ReadOnly = true,
-                DefaultCellStyle = ctr
+                DefaultCellStyle = ctr,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
-                Name = "colStatus", HeaderText = "สถานะ", Width = 90, ReadOnly = true,
-                DefaultCellStyle = ctr });
-            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
-                Name = "colCategory", HeaderText = "หมวดหมู่", Width = 130, ReadOnly = true,
-                DefaultCellStyle = lft });
-            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
-                Name = "colVersion", HeaderText = "Ver.", Width = 50, ReadOnly = true,
-                DefaultCellStyle = ctr });
-            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
-                Name = "colViews", HeaderText = "👁", Width = 48, ReadOnly = true,
-                DefaultCellStyle = ctr });
-
+                Name = "colViews",
+                HeaderText = "👁",
+                Width = 48,
+                ReadOnly = true,
+                DefaultCellStyle = ctr,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
             dgvArticles.Columns.Add(new DataGridViewButtonColumn {
-                Name = "colBtnRead", HeaderText = "", Width = 74, FlatStyle = FlatStyle.Flat,
+                Name = "colBtnRead", 
+                HeaderText = "", 
+                Width = 74, 
+                FlatStyle = FlatStyle.Flat,
                 UseColumnTextForButtonValue = false,
                 DefaultCellStyle = new DataGridViewCellStyle {
-                    BackColor = Color.FromArgb(46, 116, 181), ForeColor = Color.White,
+                    BackColor = Color.FromArgb(46, 116, 181), 
+                    ForeColor = Color.White,
                     Font = new Font("Segoe UI", 8f),
-                    Alignment = DataGridViewContentAlignment.MiddleCenter } });
+                    Alignment = DataGridViewContentAlignment.MiddleCenter 
+                },
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
             dgvArticles.Columns.Add(new DataGridViewButtonColumn {
-                Name = "colBtnEdit", HeaderText = "", Width = 74, FlatStyle = FlatStyle.Flat,
+                Name = "colBtnEdit", 
+                HeaderText = "", 
+                Width = 74, 
+                FlatStyle = FlatStyle.Flat,
                 UseColumnTextForButtonValue = false,
                 DefaultCellStyle = new DataGridViewCellStyle {
-                    BackColor = Color.FromArgb(204, 92, 30), ForeColor = Color.White,
+                    BackColor = Color.FromArgb(204, 92, 30), 
+                    ForeColor = Color.White,
                     Font = new Font("Segoe UI", 8f),
-                    Alignment = DataGridViewContentAlignment.MiddleCenter } });
+                    Alignment = DataGridViewContentAlignment.MiddleCenter 
+                },
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
             dgvArticles.Columns.Add(new DataGridViewButtonColumn {
-                Name = "colBtnShare", HeaderText = "", Width = 74, FlatStyle = FlatStyle.Flat,
+                Name = "colBtnShare", 
+                HeaderText = "", 
+                Width = 74, 
+                FlatStyle = FlatStyle.Flat,
                 UseColumnTextForButtonValue = false,
                 DefaultCellStyle = new DataGridViewCellStyle {
-                    BackColor = Color.FromArgb(40, 140, 210), ForeColor = Color.White,
+                    BackColor = Color.FromArgb(40, 140, 210), 
+                    ForeColor = Color.White,
                     Font = new Font("Segoe UI", 8f),
-                    Alignment = DataGridViewContentAlignment.MiddleCenter } });
+                    Alignment = DataGridViewContentAlignment.MiddleCenter 
+                },
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
             dgvArticles.Columns.Add(new DataGridViewButtonColumn {
-                Name = "colBtnReview", HeaderText = "", Width = 84, FlatStyle = FlatStyle.Flat,
+                Name = "colBtnReview", 
+                HeaderText = "", 
+                Width = 84, 
+                FlatStyle = FlatStyle.Flat,
                 UseColumnTextForButtonValue = false,
                 DefaultCellStyle = new DataGridViewCellStyle {
-                    BackColor = Color.FromArgb(39, 174, 96), ForeColor = Color.White,
+                    BackColor = Color.FromArgb(39, 174, 96), 
+                    ForeColor = Color.White,
                     Font = new Font("Segoe UI", 8f),
-                    Alignment = DataGridViewContentAlignment.MiddleCenter } });
+                    Alignment = DataGridViewContentAlignment.MiddleCenter 
+                },
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
 
             dgvArticles.CellClick      += DgvArticles_CellClick;
             dgvArticles.CellFormatting += DgvArticles_CellFormatting;
@@ -982,7 +1089,12 @@ namespace CMS.Presentation.Modules.KMS
             var article = _cachedArticles[e.RowIndex];
             string col  = dgvArticles.Columns[e.ColumnIndex].Name;
 
-            if (col == "colStatus")
+            if (col == "colRowNum")
+            {
+                e.Value = ((_currentPage - 1) * PageSize + e.RowIndex + 1).ToString();
+                e.FormattingApplied = true;
+            }
+            else if (col == "colStatus")
             {
                 switch (article.Status)
                 {

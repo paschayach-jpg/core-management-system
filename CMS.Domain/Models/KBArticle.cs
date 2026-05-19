@@ -32,6 +32,7 @@ namespace CMS.Domain.Models
 
         // Display helpers (set by repository / service)
         public string CategoryName       { get; set; }
+        public string LinkedEntities     { get; set; }   // pipe-separated EntityIDs from KMS.t_KBArticleLink (ordered by CreatedDate DESC)
         public string ArticleTypeName
         {
             get

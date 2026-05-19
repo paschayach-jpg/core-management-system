@@ -83,20 +83,22 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                string keyword      = _view.SearchKeyword;
-                byte?  statusFilter = GetStatusFilter(_view.StatusFilterIndex);
-                int?   catId        = _view.SelectedCategoryId;
-                int    pageSize     = _view.PageSize;
+                string keyword       = _view.SearchKeyword;
+                int    searchFieldId = _view.SearchFieldId;
+                byte?  statusFilter  = GetStatusFilter(_view.StatusFilterIndex);
+                int?   catId         = _view.SelectedCategoryId;
+                int    pageSize      = _view.PageSize;
 
-                if (!catId.HasValue) return;   // require a specific category selection
+                if (!catId.HasValue) return;
 
                 IEnumerable<KBArticle> articles;
-                if (string.IsNullOrEmpty(keyword) && !statusFilter.HasValue)
+                if (!statusFilter.HasValue)
                     articles = _articleService.GetByCategory(catId.Value);
                 else
-                    articles = _articleService.Search(
-                        string.IsNullOrEmpty(keyword) ? null : keyword,
-                        catId, statusFilter, null);
+                    articles = _articleService.Search(null, catId, statusFilter, null);
+
+                if (!string.IsNullOrWhiteSpace(keyword))
+                    articles = ApplyKeywordFilter(articles, keyword, searchFieldId);
 
                 var list = articles.ToList();
                 foreach (var article in list)
@@ -114,6 +116,45 @@ namespace CMS.Controllers.KMS.KB
                 _view.RenderPagination(totalCount, _currentPage, pageSize);
             }
             catch (Exception ex) { _view.ShowError("Load articles failed: " + ex.Message); }
+        }
+
+        private static IEnumerable<KBArticle> ApplyKeywordFilter(
+            IEnumerable<KBArticle> articles, string keyword, int searchFieldId)
+        {
+            var _keyword = new string(keyword.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            switch (searchFieldId)
+            {
+                case 1:
+                    
+                    return articles.Where(a =>
+                        a.Title != null &&
+                        string.Equals(new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray()), _keyword, StringComparison.OrdinalIgnoreCase));
+                case 2:
+                    return articles.Where(a =>
+                        (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
+                case 3:
+                    return articles.Where(a =>
+                        (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
+                case 4:
+                    return articles.Where(a =>
+                        a.Summary != null &&
+                        a.Summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0);
+                default:
+                    return articles;
+            }
+        }
+
+        private static string StripHtmlTags(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html)) return string.Empty;
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"<br\s*/?>",  " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?p>",      " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?div>",    " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"</?li>",     " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"<[^>]+>",    string.Empty);
+            html = System.Net.WebUtility.HtmlDecode(html);
+            html = System.Text.RegularExpressions.Regex.Replace(html, @"\s+",        " ");
+            return new string(html.Where(c => !char.IsWhiteSpace(c)).ToArray());
         }
 
         public void OnArticleClicked(int articleId)

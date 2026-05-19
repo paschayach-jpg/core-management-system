@@ -39,11 +39,15 @@ namespace CMS.Presentation.Modules.KMS
         {
             pnlStripe.BackColor   = GetStatusColor(a.Status);
             lblTitle.Text         = a.IsOfficialPolicy ? "🏛 " + a.Title : a.Title ?? "(ไม่มีชื่อ)";
+            lblPublishedDate.Text = !string.IsNullOrEmpty(a.PublishedDate?.ToString()) ? a.PublishedDate.Value.ToString("dd/MM/yyyy") : "-";
+            lblExpiryDate.Text    = !string.IsNullOrEmpty(a.ExpiryDate?.ToString()) ? a.ExpiryDate.Value.ToString("dd/MM/yyyy") : "-";
             lblArticleType.Text   = a.ArticleTypeName;
+            lblContent.Text       = a.ContentHTML;
             lblStatus.Text        = a.StatusName;
             lblVersion.Text       = "Version " + a.CurrentVersion;
             lblCategory.Text      = a.CategoryName ?? "-";
             lblSummary.Text       = a.Summary ?? string.Empty;
+            lblShowEntity.Text    = a.LinkedEntities ?? "-";
             lblViewCount.Text     = a.ViewCount.ToString();
             lblLikeCount.Text     = a.LikeCount.ToString();
             lblTags.Text          = string.IsNullOrEmpty(a.Tags) ? "-" : a.Tags;
