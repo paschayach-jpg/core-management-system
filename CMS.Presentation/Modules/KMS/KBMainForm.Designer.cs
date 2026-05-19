@@ -32,19 +32,22 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlArticleList = new System.Windows.Forms.Panel();
             this.flpArticles = new System.Windows.Forms.FlowLayoutPanel();
             this.pnlFilterBar = new System.Windows.Forms.Panel();
+            this.cboDepartment = new System.Windows.Forms.ComboBox();
+            this.btnClearFilter = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
+            this.cboSearchField = new System.Windows.Forms.ComboBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.cboStatus = new System.Windows.Forms.ComboBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.cboType = new System.Windows.Forms.ComboBox();
             this.pnlFilterRight = new System.Windows.Forms.Panel();
             this.lblPageSizeLabel = new System.Windows.Forms.Label();
             this.cboSortBy = new System.Windows.Forms.ComboBox();
             this.lblSortByLabel = new System.Windows.Forms.Label();
-            this.btnClearFilter = new System.Windows.Forms.Button();
-            this.cboDepartment = new System.Windows.Forms.ComboBox();
-            this.cboStatus = new System.Windows.Forms.ComboBox();
-            this.cboType = new System.Windows.Forms.ComboBox();
             this.lblFilterLabel = new System.Windows.Forms.Label();
-            this.pnlToolbar = new System.Windows.Forms.Panel();
             this.txtToolbarSearch = new System.Windows.Forms.TextBox();
             this.lblToolbarSearchLabel = new System.Windows.Forms.Label();
-            this.cboSearchField = new System.Windows.Forms.ComboBox();
+            this.pnlToolbar = new System.Windows.Forms.Panel();
             this.btnTestNotification = new System.Windows.Forms.Button();
             this.btnExportPdf = new System.Windows.Forms.Button();
             this.btnImportExcel = new System.Windows.Forms.Button();
@@ -60,9 +63,6 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPrevPage = new System.Windows.Forms.Button();
             this.cboPageSize = new System.Windows.Forms.ComboBox();
             this.lblPageInfo = new System.Windows.Forms.Label();
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
-            this.label3 = new System.Windows.Forms.Label();
             this.pnlHeader.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).BeginInit();
             this.splitMain.Panel1.SuspendLayout();
@@ -312,7 +312,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabPage2.Location = new System.Drawing.Point(4, 28);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(878, 472);
+            this.tabPage2.Size = new System.Drawing.Size(1383, 467);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "🃏 การ์ดบทความ";
             // 
@@ -325,7 +325,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlArticleList.Location = new System.Drawing.Point(3, 3);
             this.pnlArticleList.Name = "pnlArticleList";
             this.pnlArticleList.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.pnlArticleList.Size = new System.Drawing.Size(872, 466);
+            this.pnlArticleList.Size = new System.Drawing.Size(1377, 461);
             this.pnlArticleList.TabIndex = 0;
             // 
             // flpArticles
@@ -336,7 +336,7 @@ namespace CMS.Presentation.Modules.KMS
             this.flpArticles.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpArticles.Location = new System.Drawing.Point(10, 8);
             this.flpArticles.Name = "flpArticles";
-            this.flpArticles.Size = new System.Drawing.Size(852, 450);
+            this.flpArticles.Size = new System.Drawing.Size(1357, 445);
             this.flpArticles.TabIndex = 0;
             this.flpArticles.WrapContents = false;
             // 
@@ -362,6 +362,120 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlFilterBar.Padding = new System.Windows.Forms.Padding(10, 5, 10, 5);
             this.pnlFilterBar.Size = new System.Drawing.Size(1391, 41);
             this.pnlFilterBar.TabIndex = 2;
+            // 
+            // cboDepartment
+            // 
+            this.cboDepartment.Dock = System.Windows.Forms.DockStyle.Left;
+            this.cboDepartment.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboDepartment.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.cboDepartment.FormattingEnabled = true;
+            this.cboDepartment.Items.AddRange(new object[] {
+            "ฝ่าย/แผนก ▼",
+            "สินไหมทดแทน",
+            "รับประกันภัย",
+            "กฎหมาย",
+            "IT"});
+            this.cboDepartment.Location = new System.Drawing.Point(896, 5);
+            this.cboDepartment.Name = "cboDepartment";
+            this.cboDepartment.Size = new System.Drawing.Size(150, 27);
+            this.cboDepartment.TabIndex = 2;
+            this.cboDepartment.Visible = false;
+            // 
+            // btnClearFilter
+            // 
+            this.btnClearFilter.BackColor = System.Drawing.Color.White;
+            this.btnClearFilter.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnClearFilter.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnClearFilter.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
+            this.btnClearFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClearFilter.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.btnClearFilter.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
+            this.btnClearFilter.Location = new System.Drawing.Point(822, 5);
+            this.btnClearFilter.Margin = new System.Windows.Forms.Padding(0);
+            this.btnClearFilter.Name = "btnClearFilter";
+            this.btnClearFilter.Size = new System.Drawing.Size(74, 29);
+            this.btnClearFilter.TabIndex = 1;
+            this.btnClearFilter.Text = "ล้าง";
+            this.btnClearFilter.UseVisualStyleBackColor = false;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Dock = System.Windows.Forms.DockStyle.Left;
+            this.label1.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.label1.Location = new System.Drawing.Point(817, 5);
+            this.label1.Name = "label1";
+            this.label1.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
+            this.label1.Size = new System.Drawing.Size(5, 19);
+            this.label1.TabIndex = 6;
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // cboSearchField
+            // 
+            this.cboSearchField.Dock = System.Windows.Forms.DockStyle.Left;
+            this.cboSearchField.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboSearchField.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.cboSearchField.FormattingEnabled = true;
+            this.cboSearchField.Location = new System.Drawing.Point(688, 5);
+            this.cboSearchField.Name = "cboSearchField";
+            this.cboSearchField.Size = new System.Drawing.Size(129, 27);
+            this.cboSearchField.TabIndex = 2;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Dock = System.Windows.Forms.DockStyle.Left;
+            this.label2.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.label2.Location = new System.Drawing.Point(683, 5);
+            this.label2.Name = "label2";
+            this.label2.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
+            this.label2.Size = new System.Drawing.Size(5, 19);
+            this.label2.TabIndex = 7;
+            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // cboStatus
+            // 
+            this.cboStatus.Dock = System.Windows.Forms.DockStyle.Left;
+            this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.cboStatus.FormattingEnabled = true;
+            this.cboStatus.Location = new System.Drawing.Point(563, 5);
+            this.cboStatus.Name = "cboStatus";
+            this.cboStatus.Size = new System.Drawing.Size(120, 27);
+            this.cboStatus.TabIndex = 3;
+            this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboFilter_SelectedIndexChanged);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Dock = System.Windows.Forms.DockStyle.Left;
+            this.label3.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.label3.Location = new System.Drawing.Point(558, 5);
+            this.label3.Name = "label3";
+            this.label3.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
+            this.label3.Size = new System.Drawing.Size(5, 19);
+            this.label3.TabIndex = 8;
+            this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // cboType
+            // 
+            this.cboType.Dock = System.Windows.Forms.DockStyle.Left;
+            this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboType.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.cboType.FormattingEnabled = true;
+            this.cboType.Items.AddRange(new object[] {
+            "ประเภท ▼",
+            "SOP",
+            "FAQ",
+            "Wiki",
+            "แนวทาง"});
+            this.cboType.Location = new System.Drawing.Point(438, 5);
+            this.cboType.Name = "cboType";
+            this.cboType.Size = new System.Drawing.Size(120, 27);
+            this.cboType.TabIndex = 4;
             // 
             // pnlFilterRight
             // 
@@ -415,70 +529,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblSortByLabel.Text = "เรียงตาม:";
             this.lblSortByLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // btnClearFilter
-            // 
-            this.btnClearFilter.BackColor = System.Drawing.Color.White;
-            this.btnClearFilter.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnClearFilter.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnClearFilter.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
-            this.btnClearFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnClearFilter.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.btnClearFilter.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.btnClearFilter.Location = new System.Drawing.Point(822, 5);
-            this.btnClearFilter.Margin = new System.Windows.Forms.Padding(0);
-            this.btnClearFilter.Name = "btnClearFilter";
-            this.btnClearFilter.Size = new System.Drawing.Size(74, 29);
-            this.btnClearFilter.TabIndex = 1;
-            this.btnClearFilter.Text = "ล้าง";
-            this.btnClearFilter.UseVisualStyleBackColor = false;
-            // 
-            // cboDepartment
-            // 
-            this.cboDepartment.Dock = System.Windows.Forms.DockStyle.Left;
-            this.cboDepartment.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboDepartment.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.cboDepartment.FormattingEnabled = true;
-            this.cboDepartment.Items.AddRange(new object[] {
-            "ฝ่าย/แผนก ▼",
-            "สินไหมทดแทน",
-            "รับประกันภัย",
-            "กฎหมาย",
-            "IT"});
-            this.cboDepartment.Location = new System.Drawing.Point(896, 5);
-            this.cboDepartment.Name = "cboDepartment";
-            this.cboDepartment.Size = new System.Drawing.Size(150, 27);
-            this.cboDepartment.TabIndex = 2;
-            this.cboDepartment.Visible = false;
-            // 
-            // cboStatus
-            // 
-            this.cboStatus.Dock = System.Windows.Forms.DockStyle.Left;
-            this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.cboStatus.FormattingEnabled = true;
-            this.cboStatus.Location = new System.Drawing.Point(563, 5);
-            this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(120, 27);
-            this.cboStatus.TabIndex = 3;
-            this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboFilter_SelectedIndexChanged);
-            // 
-            // cboType
-            // 
-            this.cboType.Dock = System.Windows.Forms.DockStyle.Left;
-            this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboType.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.cboType.FormattingEnabled = true;
-            this.cboType.Items.AddRange(new object[] {
-            "ประเภท ▼",
-            "SOP",
-            "FAQ",
-            "Wiki",
-            "แนวทาง"});
-            this.cboType.Location = new System.Drawing.Point(438, 5);
-            this.cboType.Name = "cboType";
-            this.cboType.Size = new System.Drawing.Size(120, 27);
-            this.cboType.TabIndex = 4;
-            // 
             // lblFilterLabel
             // 
             this.lblFilterLabel.Dock = System.Windows.Forms.DockStyle.Left;
@@ -491,21 +541,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblFilterLabel.TabIndex = 5;
             this.lblFilterLabel.Text = "ฟิลเตอร์:";
             this.lblFilterLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // pnlToolbar
-            // 
-            this.pnlToolbar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(251)))));
-            this.pnlToolbar.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlToolbar.Controls.Add(this.btnTestNotification);
-            this.pnlToolbar.Controls.Add(this.btnExportPdf);
-            this.pnlToolbar.Controls.Add(this.btnImportExcel);
-            this.pnlToolbar.Controls.Add(this.btnNewArticle);
-            this.pnlToolbar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlToolbar.Location = new System.Drawing.Point(0, 32);
-            this.pnlToolbar.Name = "pnlToolbar";
-            this.pnlToolbar.Padding = new System.Windows.Forms.Padding(10, 4, 10, 4);
-            this.pnlToolbar.Size = new System.Drawing.Size(1391, 36);
-            this.pnlToolbar.TabIndex = 1;
             // 
             // txtToolbarSearch
             // 
@@ -530,16 +565,20 @@ namespace CMS.Presentation.Modules.KMS
             this.lblToolbarSearchLabel.Text = "ค้นหา:";
             this.lblToolbarSearchLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // cboSearchField
+            // pnlToolbar
             // 
-            this.cboSearchField.Dock = System.Windows.Forms.DockStyle.Left;
-            this.cboSearchField.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboSearchField.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.cboSearchField.FormattingEnabled = true;
-            this.cboSearchField.Location = new System.Drawing.Point(688, 5);
-            this.cboSearchField.Name = "cboSearchField";
-            this.cboSearchField.Size = new System.Drawing.Size(129, 27);
-            this.cboSearchField.TabIndex = 2;
+            this.pnlToolbar.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(251)))));
+            this.pnlToolbar.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlToolbar.Controls.Add(this.btnTestNotification);
+            this.pnlToolbar.Controls.Add(this.btnExportPdf);
+            this.pnlToolbar.Controls.Add(this.btnImportExcel);
+            this.pnlToolbar.Controls.Add(this.btnNewArticle);
+            this.pnlToolbar.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlToolbar.Location = new System.Drawing.Point(0, 32);
+            this.pnlToolbar.Name = "pnlToolbar";
+            this.pnlToolbar.Padding = new System.Windows.Forms.Padding(10, 4, 10, 4);
+            this.pnlToolbar.Size = new System.Drawing.Size(1391, 36);
+            this.pnlToolbar.TabIndex = 1;
             // 
             // btnTestNotification
             // 
@@ -766,45 +805,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblPageInfo.TabIndex = 0;
             this.lblPageInfo.Text = "แสดง 1-20 จาก 36 รายการ";
             this.lblPageInfo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Dock = System.Windows.Forms.DockStyle.Left;
-            this.label1.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.label1.Location = new System.Drawing.Point(817, 5);
-            this.label1.Name = "label1";
-            this.label1.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
-            this.label1.Size = new System.Drawing.Size(5, 19);
-            this.label1.TabIndex = 6;
-            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Dock = System.Windows.Forms.DockStyle.Left;
-            this.label2.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.label2.Location = new System.Drawing.Point(683, 5);
-            this.label2.Name = "label2";
-            this.label2.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
-            this.label2.Size = new System.Drawing.Size(5, 19);
-            this.label2.TabIndex = 7;
-            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Dock = System.Windows.Forms.DockStyle.Left;
-            this.label3.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.label3.Location = new System.Drawing.Point(558, 5);
-            this.label3.Name = "label3";
-            this.label3.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
-            this.label3.Size = new System.Drawing.Size(5, 19);
-            this.label3.TabIndex = 8;
-            this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // KBMainForm
             // 
