@@ -147,9 +147,9 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // pnlViewerHost
             // 
-            this.pnlViewerHost.Location = new System.Drawing.Point(0, 0);
+            this.pnlViewerHost.Location = new System.Drawing.Point(12, 345);
             this.pnlViewerHost.Name = "pnlViewerHost";
-            this.pnlViewerHost.Size = new System.Drawing.Size(200, 100);
+            this.pnlViewerHost.Size = new System.Drawing.Size(309, 110);
             this.pnlViewerHost.TabIndex = 0;
             // 
             // splitMain
@@ -162,6 +162,7 @@ namespace CMS.Presentation.Modules.KMS
             // splitMain.Panel1
             // 
             this.splitMain.Panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.splitMain.Panel1.Controls.Add(this.pnlViewerHost);
             this.splitMain.Panel1.Controls.Add(this.treeCategories);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftFooter);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftHeader);
@@ -225,7 +226,6 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlLeftHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
             this.pnlLeftHeader.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlLeftHeader.Controls.Add(this.pnlViewerHost);
             this.pnlLeftHeader.Controls.Add(this.lblCategoryHeader);
             this.pnlLeftHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlLeftHeader.Location = new System.Drawing.Point(0, 0);
@@ -466,6 +466,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboType.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.cboType.FormattingEnabled = true;
+            this.cboType.ItemHeight = 19;
             this.cboType.Items.AddRange(new object[] {
             "ประเภท ▼",
             "SOP",
@@ -546,10 +547,10 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.txtToolbarSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtToolbarSearch.Dock = System.Windows.Forms.DockStyle.Left;
-            this.txtToolbarSearch.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.txtToolbarSearch.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtToolbarSearch.Location = new System.Drawing.Point(58, 5);
             this.txtToolbarSearch.Name = "txtToolbarSearch";
-            this.txtToolbarSearch.Size = new System.Drawing.Size(320, 26);
+            this.txtToolbarSearch.Size = new System.Drawing.Size(320, 30);
             this.txtToolbarSearch.TabIndex = 0;
             this.txtToolbarSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearch_KeyDown);
             // 
