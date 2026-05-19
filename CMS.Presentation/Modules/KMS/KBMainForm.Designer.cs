@@ -147,9 +147,9 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // pnlViewerHost
             // 
-            this.pnlViewerHost.Location = new System.Drawing.Point(0, 0);
+            this.pnlViewerHost.Location = new System.Drawing.Point(12, 345);
             this.pnlViewerHost.Name = "pnlViewerHost";
-            this.pnlViewerHost.Size = new System.Drawing.Size(200, 100);
+            this.pnlViewerHost.Size = new System.Drawing.Size(309, 110);
             this.pnlViewerHost.TabIndex = 0;
             // 
             // splitMain
@@ -162,6 +162,7 @@ namespace CMS.Presentation.Modules.KMS
             // splitMain.Panel1
             // 
             this.splitMain.Panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.splitMain.Panel1.Controls.Add(this.pnlViewerHost);
             this.splitMain.Panel1.Controls.Add(this.treeCategories);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftFooter);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftHeader);
@@ -225,7 +226,6 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlLeftHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
             this.pnlLeftHeader.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlLeftHeader.Controls.Add(this.pnlViewerHost);
             this.pnlLeftHeader.Controls.Add(this.lblCategoryHeader);
             this.pnlLeftHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlLeftHeader.Location = new System.Drawing.Point(0, 0);

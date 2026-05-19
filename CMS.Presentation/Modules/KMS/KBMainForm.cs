@@ -73,6 +73,7 @@ namespace CMS.Presentation.Modules.KMS
 
             // pnlViewerHost is created here so the designer stays free of a Dock=Fill panel
             // that would block adding other controls. Runtime behaviour is identical.
+            // ทำหน้าที่ เป็น Panel ที่ทำหน้าที่เป็น "full-screen layer" สำหรับแสดง ArticleViewerForm (หน้าอ่านบทความ) ทับบน splitMain
             pnlViewerHost = new System.Windows.Forms.Panel
             {
                 Name      = "pnlViewerHost",
