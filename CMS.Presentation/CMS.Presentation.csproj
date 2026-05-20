@@ -516,6 +516,13 @@
     <Compile Include="Modules\WFE\Presenters\Interfaces\IWorkflowTemplateListView.cs" />
     <Compile Include="Modules\WFE\Presenters\Interfaces\ISLAReportView.cs" />
     <Compile Include="Modules\WFE\Presenters\Interfaces\IHistorySearchView.cs" />
+    <!-- Shared UserControls -->
+    <Compile Include="UserControls\LoadingOverlayControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\LoadingOverlayControl.Designer.cs">
+      <DependentUpon>LoadingOverlayControl.cs</DependentUpon>
+    </Compile>
     <!-- Notification System -->
     <Compile Include="UserControls\NotificationItemControl.cs">
       <SubType>UserControl</SubType>

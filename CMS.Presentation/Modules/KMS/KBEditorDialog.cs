@@ -247,7 +247,8 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         private string _pendingHtml  = string.Empty;
-        private bool   _editorReady = false;
+        private bool   _editorReady    = false;
+        private bool   _syncingToolbar = false;
 
         public string ContentHTML
         {
@@ -623,19 +624,25 @@ namespace CMS.Presentation.Modules.KMS
             if (!string.IsNullOrEmpty(_pendingHtml))
                 webEditor.Document.Body.InnerHtml = _pendingHtml;
             UpdateEditorStatus();
-            webEditor.Document.Body.KeyPress += (s, ev) => UpdateEditorStatus();
-            
+
+            // KeyUp fires after the browser updates the selection — giving accurate queryCommandState results.
+            // onselectionchange fires on any cursor movement (click, arrow keys, Shift+select, etc.)
+            webEditor.Document.Body.KeyUp += (s, ev) => { UpdateEditorStatus(); SyncToolbarState(); };
+            webEditor.Document.AttachEventHandler("onselectionchange", (s, ev) => SyncToolbarState());
+
             // Attach link click handler to open links in external browser
             webEditor.Document.Click += WebEditor_Document_Click;
+
+            SyncToolbarState(); // sync once immediately after load
         }
 
         private void WebEditor_Document_Click(object sender, HtmlElementEventArgs e)
         {
             if (webEditor.Document == null) return;
-            
+
             var element = webEditor.Document.GetElementFromPoint(e.ClientMousePosition);
-            if (element == null) return;
-            
+            if (element == null) { SyncToolbarState(); return; }
+
             // Check if clicked element or its parent is a link
             while (element != null)
             {
@@ -658,6 +665,8 @@ namespace CMS.Presentation.Modules.KMS
                 }
                 element = element.Parent;
             }
+
+            SyncToolbarState(); // update toolbar after cursor placement
         }
 
         // ── Tag Chip Management ──────────────────────────────────────────────
@@ -812,11 +821,87 @@ namespace CMS.Presentation.Modules.KMS
             lblRteStatus.Text = string.Format("🖊️ กำลังแก้ไข  |  จำนวนอักขระ: {0}", len);
         }
 
+        /// <summary>
+        /// Reads the current cursor/selection format state from the WebBrowser via InvokeScript
+        /// and updates every formatting button's active (highlighted) appearance accordingly.
+        /// Triggered on: document click, key-up, selection-change, and after every ExecCmd.
+        /// </summary>
+        private void SyncToolbarState()
+        {
+            if (!_editorReady || webEditor.Document == null) return;
+            try
+            {
+                // getRteState() returns "BIUJCRUL|blockTag|fontName|fontSize"
+                // B=Bold I=Italic U=Underline J=JustifyLeft C=JustifyCenter R=JustifyRight
+                // U=UnorderedList L=OrderedList
+                var raw = webEditor.Document.InvokeScript("getRteState") as string;
+                if (string.IsNullOrEmpty(raw) || !raw.Contains("|")) return;
+
+                var parts    = raw.Split('|');
+                var f        = parts[0].PadRight(8, '0');
+                var block    = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+                var fontName = parts.Length > 2 ? parts[2].Trim() : string.Empty;
+                var fontSz   = parts.Length > 3 ? parts[3].Trim() : string.Empty;
+
+                SetBtnActive(tsRteBold,        f[0] == '1');
+                SetBtnActive(tsRteItalic,      f[1] == '1');
+                SetBtnActive(tsRteUnder,       f[2] == '1');
+                SetBtnActive(tsRteAlignLeft,   f[3] == '1');
+                SetBtnActive(tsRteAlignCenter, f[4] == '1');
+                SetBtnActive(tsRteAlignRight,  f[5] == '1');
+                SetBtnActive(tsRteBullet,      f[6] == '1');
+                SetBtnActive(tsRteNumList,     f[7] == '1');
+
+                SetBtnActive(tsRteH1, block == "h1");
+                SetBtnActive(tsRteH2, block == "h2");
+                SetBtnActive(tsRteH3, block == "h3");
+
+                // Sync font comboboxes without triggering their SelectedIndexChanged handlers
+                _syncingToolbar = true;
+                try
+                {
+                    // Font family — match case-insensitively against combo items
+                    int fi = -1;
+                    if (!string.IsNullOrEmpty(fontName))
+                        for (int i = 0; i < tsRteFontFamily.Items.Count; i++)
+                            if (string.Equals(tsRteFontFamily.Items[i].ToString(), fontName,
+                                              StringComparison.OrdinalIgnoreCase))
+                            { fi = i; break; }
+                    tsRteFontFamily.SelectedIndex = fi;
+
+                    // Font size — IE returns HTML size 1-7; combo index = htmlSize - 1
+                    int htmlSize;
+                    tsRteFontSize.SelectedIndex =
+                        int.TryParse(fontSz, out htmlSize) && htmlSize >= 1 && htmlSize <= 7
+                        ? htmlSize - 1
+                        : -1;
+                }
+                finally { _syncingToolbar = false; }
+            }
+            catch { /* non-critical — ignore errors during state sync */ }
+        }
+
+        /// <summary>
+        /// Applies or clears the active highlight on a ToolStripButton.
+        /// Active: light-blue fill matching the app's selection colour palette.
+        /// Inactive: transparent (inherits the ToolStrip background).
+        /// </summary>
+        private static void SetBtnActive(ToolStripButton btn, bool active)
+        {
+            btn.BackColor = active
+                ? Color.FromArgb(198, 217, 238)   // light-blue highlight (app selection shade)
+                : Color.Transparent;              // normal — inherits tsRte background
+            btn.ForeColor = active
+                ? Color.FromArgb(26, 58, 95)      // dark navy (active emphasis)
+                : Color.Empty;                    // default — inherited
+        }
+
         private void ExecCmd(string command, object value = null)
         {
             if (webEditor.Document == null) return;
             webEditor.Document.ExecCommand(command, false, value);
             webEditor.Focus();
+            SyncToolbarState(); // reflect the new format state in the toolbar immediately
         }
 
         private void PasteHtmlAtCursor(string html)
@@ -827,12 +912,26 @@ namespace CMS.Presentation.Modules.KMS
             UpdateEditorStatus();
         }
 
-        private void TsRteBold_Click(object sender, EventArgs e)         { ExecCmd("Bold"); }
+        private void TsRteBold_Click(object sender, EventArgs e)
+        {
+            if (!_editorReady || webEditor.Document == null) return;
+            webEditor.Document.InvokeScript("applyBold");
+            webEditor.Focus();
+            SyncToolbarState();
+        }
         private void TsRteItalic_Click(object sender, EventArgs e)       { ExecCmd("Italic"); }
         private void TsRteUnder_Click(object sender, EventArgs e)        { ExecCmd("Underline"); }
-        private void TsRteH1_Click(object sender, EventArgs e)           { ExecCmd("FormatBlock", "<h1>"); }
-        private void TsRteH2_Click(object sender, EventArgs e)           { ExecCmd("FormatBlock", "<h2>"); }
-        private void TsRteH3_Click(object sender, EventArgs e)           { ExecCmd("FormatBlock", "<h3>"); }
+        private void TsRteH1_Click(object sender, EventArgs e)           { ApplyHeading("h1"); }
+        private void TsRteH2_Click(object sender, EventArgs e)           { ApplyHeading("h2"); }
+        private void TsRteH3_Click(object sender, EventArgs e)           { ApplyHeading("h3"); }
+
+        private void ApplyHeading(string tag)
+        {
+            if (!_editorReady || webEditor.Document == null) return;
+            webEditor.Document.InvokeScript("applyHeading", new object[] { tag });
+            webEditor.Focus();
+            SyncToolbarState();
+        }
         private void TsRteAlignLeft_Click(object sender, EventArgs e)    { ExecCmd("JustifyLeft"); }
         private void TsRteAlignCenter_Click(object sender, EventArgs e)  { ExecCmd("JustifyCenter"); }
         private void TsRteAlignRight_Click(object sender, EventArgs e)   { ExecCmd("JustifyRight"); }
@@ -947,12 +1046,13 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TsRteFontFamily_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (tsRteFontFamily.SelectedItem == null) return;
+            if (_syncingToolbar || tsRteFontFamily.SelectedItem == null) return;
             ExecCmd("FontName", tsRteFontFamily.SelectedItem.ToString());
         }
 
         private void TsRteFontSize_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (_syncingToolbar) return;
             int idx = tsRteFontSize.SelectedIndex;
             if (idx < 0) return;
             // HTML font sizes 1–7 map to: 8pt 10pt 12pt 14pt 18pt 24pt 36pt
@@ -991,8 +1091,77 @@ namespace CMS.Presentation.Modules.KMS
                 "function pasteHtml(h){" +
                 "try{if(document.selection){var r=document.selection.createRange();r.pasteHTML(h);}}" +
                 "catch(e){}}" +
-                // Redirect clicks on <html> (outside body padding) into the body
-                // so the cursor is always placed correctly regardless of click position.
+                // getBlkTag: walks DOM from cursor to find nearest block tag.
+                // More reliable than queryCommandValue('FormatBlock') in IE/Trident, which can
+                // return display names ("Heading 1") or angle-bracketed tags ("<H1>").
+                "function getBlkTag(){" +
+                "try{" +
+                "if(document.selection){" +
+                "var r=document.selection.createRange();" +
+                "var e=r.parentElement?r.parentElement():null;" +
+                "while(e&&e.tagName){" +
+                "var t=e.tagName.toLowerCase();" +
+                "if(t==='h1'||t==='h2'||t==='h3'||t==='p'||t==='div'||t==='li'||t==='body'){" +
+                "return t==='body'?'':t;" +
+                "}" +
+                "e=e.parentElement;" +
+                "}" +
+                "}" +
+                "}catch(ex){}" +
+                "return (document.queryCommandValue('FormatBlock')||'').toLowerCase().replace(/[<>]/g,'');" +
+                "}" +
+                // getRteState — called by C# via InvokeScript after every cursor move / key / click.
+                // Returns a compact string: 8 binary flags + '|' + lowercase block tag.
+                // Flags order: bold italic underline justifyLeft justifyCenter justifyRight ul ol
+                // Bold flag is forced '0' inside h1/h2/h3: IE/Trident returns queryCommandState('Bold')=true
+                // for any heading element (heading = inherently bold), which would falsely light up tsRteBold.
+                "function getRteState(){" +
+                "try{" +
+                "var b=document.queryCommandState('Bold')?'1':'0';" +
+                "var i=document.queryCommandState('Italic')?'1':'0';" +
+                "var u=document.queryCommandState('Underline')?'1':'0';" +
+                "var jl=document.queryCommandState('JustifyLeft')?'1':'0';" +
+                "var jc=document.queryCommandState('JustifyCenter')?'1':'0';" +
+                "var jr=document.queryCommandState('JustifyRight')?'1':'0';" +
+                "var ul=document.queryCommandState('InsertUnorderedList')?'1':'0';" +
+                "var ol=document.queryCommandState('InsertOrderedList')?'1':'0';" +
+                "var blk=getBlkTag();" +
+                "if(blk==='h1'||blk==='h2'||blk==='h3'){b='0';}" +
+                "var fn=(document.queryCommandValue('FontName')||'').toLowerCase();" +
+                "var fs=(document.queryCommandValue('FontSize')||'');" +
+                "return b+i+u+jl+jc+jr+ul+ol+'|'+blk+'|'+fn+'|'+fs;" +
+                "}catch(e){return '00000000|||';}" +
+                "}" +
+                // applyHeading: apply or toggle heading block format.
+                // Toggle: clicking the same heading again converts back to <p>.
+                // Always strips Bold (via removeFormat), preserves Italic and Underline.
+                "function applyHeading(tag){" +
+                "var wasItalic=document.queryCommandState('Italic');" +
+                "var wasUnder=document.queryCommandState('Underline');" +
+                "var cur=getBlkTag();" +
+                "if(cur===tag){" +
+                "document.execCommand('FormatBlock',false,'<p>');" +
+                "document.execCommand('removeFormat',false,null);" +
+                "if(wasItalic){document.execCommand('Italic',false,null);}" +
+                "if(wasUnder){document.execCommand('Underline',false,null);}" +
+                "return;" +
+                "}" +
+                "document.execCommand('FormatBlock',false,'<'+tag+'>');" +
+                "document.execCommand('removeFormat',false,null);" +
+                "if(wasItalic){document.execCommand('Italic',false,null);}" +
+                "if(wasUnder){document.execCommand('Underline',false,null);}" +
+                "}" +
+                // applyBold: if cursor is inside a heading block, convert to <p> first,
+                // then ensure Bold is ON. Outside headings, works as a normal Bold toggle.
+                "function applyBold(){" +
+                "var blk=getBlkTag();" +
+                "if(blk==='h1'||blk==='h2'||blk==='h3'){" +
+                "document.execCommand('FormatBlock',false,'<p>');" +
+                "if(!document.queryCommandState('Bold')){document.execCommand('Bold',false,null);}" +
+                "}else{" +
+                "document.execCommand('Bold',false,null);" +
+                "}}" +
+                // Redirect clicks on <html> (outside body padding) into the body.
                 "document.onclick=function(e){" +
                 "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +
                 "};" +
