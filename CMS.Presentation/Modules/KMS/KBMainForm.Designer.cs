@@ -289,6 +289,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvArticles.AllowUserToAddRows = false;
             this.dgvArticles.AllowUserToDeleteRows = false;
             this.dgvArticles.AllowUserToResizeRows = false;
+            this.dgvArticles.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
             this.dgvArticles.BackgroundColor = System.Drawing.Color.White;
             this.dgvArticles.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvArticles.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
@@ -301,7 +302,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvArticles.Name = "dgvArticles";
             this.dgvArticles.RowHeadersVisible = false;
             this.dgvArticles.RowHeadersWidth = 51;
-            this.dgvArticles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
+            this.dgvArticles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvArticles.Size = new System.Drawing.Size(1377, 461);
             this.dgvArticles.TabIndex = 0;
             // 
@@ -477,6 +478,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboType.Name = "cboType";
             this.cboType.Size = new System.Drawing.Size(120, 27);
             this.cboType.TabIndex = 4;
+            this.cboType.SelectedIndexChanged += new System.EventHandler(this.cboType_SelectedIndexChanged);
             // 
             // pnlFilterRight
             // 

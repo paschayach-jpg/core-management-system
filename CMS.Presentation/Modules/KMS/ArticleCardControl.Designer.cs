@@ -41,13 +41,13 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMetaSep1 = new System.Windows.Forms.Label();
             this.lblSummary = new System.Windows.Forms.Label();
             this.pHeaderRight = new System.Windows.Forms.Panel();
+            this.label4 = new System.Windows.Forms.Label();
+            this.lblShowEntity = new System.Windows.Forms.Label();
             this.lblTitle = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.lblPublishedDate = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.lblExpiryDate = new System.Windows.Forms.Label();
-            this.lblShowEntity = new System.Windows.Forms.Label();
-            this.label4 = new System.Windows.Forms.Label();
             this.pnlContent.SuspendLayout();
             this.panelFooter.SuspendLayout();
             this.panelButton.SuspendLayout();
@@ -354,6 +354,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblContent.Size = new System.Drawing.Size(846, 30);
             this.lblContent.TabIndex = 0;
             this.lblContent.Text = "เนื้อหา";
+            this.lblContent.Click += new System.EventHandler(this.OnCardClick);
             // 
             // pnlMeta
             // 
@@ -515,6 +516,33 @@ namespace CMS.Presentation.Modules.KMS
             this.pHeaderRight.Size = new System.Drawing.Size(846, 33);
             this.pHeaderRight.TabIndex = 6;
             // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Dock = System.Windows.Forms.DockStyle.Right;
+            this.label4.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.label4.Location = new System.Drawing.Point(428, 5);
+            this.label4.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(102, 19);
+            this.label4.TabIndex = 11;
+            this.label4.Text = "Org./Div./Dept.";
+            // 
+            // lblShowEntity
+            // 
+            this.lblShowEntity.AutoSize = true;
+            this.lblShowEntity.Dock = System.Windows.Forms.DockStyle.Right;
+            this.lblShowEntity.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblShowEntity.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblShowEntity.Location = new System.Drawing.Point(530, 5);
+            this.lblShowEntity.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblShowEntity.Name = "lblShowEntity";
+            this.lblShowEntity.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.lblShowEntity.Size = new System.Drawing.Size(31, 19);
+            this.lblShowEntity.TabIndex = 10;
+            this.lblShowEntity.Text = "xx";
+            // 
             // lblTitle
             // 
             this.lblTitle.AutoSize = true;
@@ -586,33 +614,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblExpiryDate.TabIndex = 9;
             this.lblExpiryDate.Text = "expire";
             this.lblExpiryDate.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lblShowEntity
-            // 
-            this.lblShowEntity.AutoSize = true;
-            this.lblShowEntity.Dock = System.Windows.Forms.DockStyle.Right;
-            this.lblShowEntity.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblShowEntity.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblShowEntity.Location = new System.Drawing.Point(530, 5);
-            this.lblShowEntity.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.lblShowEntity.Name = "lblShowEntity";
-            this.lblShowEntity.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
-            this.lblShowEntity.Size = new System.Drawing.Size(31, 19);
-            this.lblShowEntity.TabIndex = 10;
-            this.lblShowEntity.Text = "xx";
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Dock = System.Windows.Forms.DockStyle.Right;
-            this.label4.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.label4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.label4.Location = new System.Drawing.Point(428, 5);
-            this.label4.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(102, 19);
-            this.label4.TabIndex = 11;
-            this.label4.Text = "Org./Div./Dept.";
             // 
             // ArticleCardControl
             // 

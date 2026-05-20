@@ -52,6 +52,9 @@ namespace CMS.Presentation.Modules.KMS
         // ── Import wizard embedded panel state ───────────────────────────────────
         private KBImportWizardForm _activeImportForm = null;
 
+        // ── Loading overlay ────────────────────────────────────────────────────────
+        private System.Windows.Forms.Panel pnlLoading;
+
         // ── Dialog / child-form factories (injected by composition root) ────────
         /// <summary>Creates and returns a pre-wired ArticleViewerForm for a given article.</summary>
         private Func<KBArticle, ArticleViewerForm> _viewerFactory;
@@ -64,7 +67,6 @@ namespace CMS.Presentation.Modules.KMS
         /// <summary>Creates, wires, and shows a pre-wired KBDashboardForm. Returns DialogResult.</summary>
         private Func<DialogResult> _dashboardFactory;
 
-        private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
 
         public KBMainForm()
         {
@@ -118,6 +120,36 @@ namespace CMS.Presentation.Modules.KMS
             pnlImportHost.BringToFront();
 
             splitMain.BringToFront();          // restore splitMain as the visible default layer
+
+            // pnlLoading — overlay that sits in splitMain.Panel2 (same parent as panelMainRight)
+            // using Dock=None + manual bounds so it does NOT disturb panelMainRight's Dock=Fill
+            // layout. BringToFront() makes it paint over panelMainRight when visible.
+            var lblLoading = new System.Windows.Forms.Label
+            {
+                Text      = "⏳  กำลังโหลดข้อมูล...",
+                Font      = new System.Drawing.Font("Segoe UI", 13f, System.Drawing.FontStyle.Regular),
+                ForeColor = System.Drawing.Color.FromArgb(70, 110, 160),
+                AutoSize  = false,
+                Dock      = System.Windows.Forms.DockStyle.Fill,
+                TextAlign = System.Drawing.ContentAlignment.MiddleCenter,
+            };
+            pnlLoading = new System.Windows.Forms.Panel
+            {
+                Name      = "pnlLoading",
+                BackColor = System.Drawing.Color.FromArgb(245, 247, 250),
+                Dock      = System.Windows.Forms.DockStyle.None,
+                Visible   = false,
+            };
+            pnlLoading.Controls.Add(lblLoading);
+            splitMain.Panel2.Controls.Add(pnlLoading);
+            pnlLoading.BringToFront();
+
+            // Keep overlay sized to match the right panel whenever it resizes
+            splitMain.Panel2.SizeChanged += (s, ev) =>
+            {
+                if (pnlLoading.Visible)
+                    pnlLoading.Bounds = splitMain.Panel2.ClientRectangle;
+            };
         }
 
         /// <summary>
@@ -185,7 +217,8 @@ namespace CMS.Presentation.Modules.KMS
         // ── IKBMainView ───────────────────────────────────────────────────
 
         public string SearchKeyword      { get { return txtToolbarSearch.Text.Trim(); } }
-        public int    StatusFilterIndex  { get { return cboStatus.SelectedIndex; } }
+        public byte?  TypeFilter         { get { return cboType.SelectedValue as byte?; } }
+        public byte?  StatusFilter       { get { return cboStatus.SelectedValue as byte?; } }
         public int    SearchFieldId      { get { return cboSearchField.SelectedIndex >= 0 ? cboSearchField.SelectedIndex + 1 : 1; } }
 
         public int PageSize
@@ -202,6 +235,21 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         public int? SelectedCategoryId  { get; set; }
+
+        public void ShowLoading()
+        {
+            pnlLoading.Bounds = splitMain.Panel2.ClientRectangle;
+            pnlLoading.Visible = true;
+            pnlLoading.BringToFront();
+            Cursor = Cursors.WaitCursor;
+            Application.DoEvents(); // flush paint queue so overlay renders before the synchronous DB call
+        }
+
+        public void HideLoading()
+        {
+            pnlLoading.Visible = false;
+            Cursor = Cursors.Default;
+        }
 
         public string ArticleTitleText  { set { lblArticleTitle.Text = value; } }
         public string ArticleCountText  { set { lblPageInfo.Text = value; } }
@@ -241,7 +289,7 @@ namespace CMS.Presentation.Modules.KMS
                     a.CategoryName,
                     a.Title,
                     a.Summary,
-                    a.ContentHTML,
+                    a.ContentHTML.Length >= 200 ? $"{a.ContentHTML.Substring(0, 200)}...read more" : a.ContentHTML,
                     a.PublishedDate,
                     a.ExpiryDate,
                     a.LinkedEntities,
@@ -709,12 +757,27 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitFilterCombo()
         {
-            cboStatus.Items.Clear();
-            cboStatus.Items.Add("ทุกสถานะ");
-            cboStatus.Items.Add("📝 Draft");
-            cboStatus.Items.Add("🔍 รอ Review");
-            cboStatus.Items.Add("✅ Published");
-            cboStatus.Items.Add("📦 Archived");
+            // cboType — code 5 = Wiki Page
+            cboType.DataSource = new[]
+            {
+                new { Code = (byte?)null, Description = "ทุกประเภท" },
+                new { Code = (byte?)5,    Description = "Wiki Page" },
+            };
+            cboType.DisplayMember = "Description";
+            cboType.ValueMember   = "Code";
+            cboType.SelectedIndex = 0;
+
+            // cboStatus — search by code (1=Draft, 2=Review, 3=Published, 4=Archived)
+            cboStatus.DataSource = new[]
+            {
+                new { Code = (byte?)null, Description = "ทุกสถานะ"  },
+                new { Code = (byte?)1,    Description = "Draft"     },
+                new { Code = (byte?)2,    Description = "Review"    },
+                new { Code = (byte?)3,    Description = "Published" },
+                new { Code = (byte?)4,    Description = "Archived"  },
+            };
+            cboStatus.DisplayMember = "Description";
+            cboStatus.ValueMember   = "Code";
             cboStatus.SelectedIndex = 0;
 
             cboType.SelectedIndex       = 0;
@@ -887,15 +950,16 @@ namespace CMS.Presentation.Modules.KMS
             dgvArticles.EnableHeadersVisualStyles = false;
             dgvArticles.ColumnHeadersHeight = 32;
             dgvArticles.RowTemplate.Height = 36;
+            dgvArticles.DefaultCellStyle.SelectionBackColor = Color.FromArgb(214, 228, 240);
+            dgvArticles.DefaultCellStyle.SelectionForeColor = Color.FromArgb(26, 35, 50);
+
             var hdrStyle = dgvArticles.ColumnHeadersDefaultCellStyle;
             hdrStyle.BackColor        = Color.FromArgb(240, 244, 249);
             hdrStyle.ForeColor        = Color.FromArgb(30, 58, 95);
-            hdrStyle.Font             = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+            //hdrStyle.Font             = new Font("Segoe UI", 8.5f, FontStyle.Bold);
             hdrStyle.SelectionBackColor = Color.FromArgb(240, 244, 249);
             hdrStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dgvArticles.DefaultCellStyle.Font                = new Font("Segoe UI", 8.5f);
-            dgvArticles.DefaultCellStyle.SelectionBackColor  = Color.FromArgb(214, 228, 240);
-            dgvArticles.DefaultCellStyle.SelectionForeColor  = Color.FromArgb(26, 35, 50);
+            //dgvArticles.DefaultCellStyle.Font                = new Font("Segoe UI", 8.5f);            
 
             var ctr = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter };
             var lft = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleLeft,
@@ -941,13 +1005,17 @@ namespace CMS.Presentation.Modules.KMS
                 DefaultCellStyle = lft,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
-            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            dgvArticles.Columns.Add(new DataGridViewLinkColumn
             {
                 Name = "colContentHtml",
                 HeaderText = "รายละเอียด",
                 ReadOnly = true,
-                Width = 150,
-                DefaultCellStyle = lft
+                Width = 600,
+                DefaultCellStyle = new DataGridViewCellStyle{
+                    Alignment = DataGridViewContentAlignment.MiddleLeft,
+                    Padding = new Padding(4, 0, 0, 0),
+                    WrapMode = DataGridViewTriState.True
+                }
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -970,8 +1038,14 @@ namespace CMS.Presentation.Modules.KMS
                 Name = "colOrgDivDept",
                 HeaderText = "Org./Div./Dept.",
                 ReadOnly = true,
-                DefaultCellStyle = lft,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                Width = 150,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleLeft,
+                    Padding = new Padding(4, 0, 0, 0),
+                    WrapMode = DataGridViewTriState.True,
+
+                }
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -979,7 +1053,8 @@ namespace CMS.Presentation.Modules.KMS
                 HeaderText = "Tags",
                 ReadOnly = true,
                 DefaultCellStyle = lft,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                Visible = false
             });
             //dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             //{
@@ -999,7 +1074,8 @@ namespace CMS.Presentation.Modules.KMS
                 Width = 50, 
                 ReadOnly = true,
                 DefaultCellStyle = ctr,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                Visible = false
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
                 Name = "colViews",
@@ -1007,7 +1083,8 @@ namespace CMS.Presentation.Modules.KMS
                 Width = 48,
                 ReadOnly = true,
                 DefaultCellStyle = ctr,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                Visible = false
             });
             dgvArticles.Columns.Add(new DataGridViewButtonColumn {
                 Name = "colBtnRead", 
@@ -1082,6 +1159,7 @@ namespace CMS.Presentation.Modules.KMS
             else if (col == "colBtnEdit")                          OnEditClick(article);
             else if (col == "colBtnShare")                         OnShareClick(article);
             else if (col == "colBtnReview" && article.Status == 1) OnSendReviewClick(article);
+            else                                                   OnArticleCardClick(article);
         }
 
         private void DgvArticles_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -1112,6 +1190,12 @@ namespace CMS.Presentation.Modules.KMS
                 e.CellStyle.ForeColor = Color.FromArgb(180, 180, 180);
                 e.FormattingApplied   = true;
             }
+        }
+
+        private void cboType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            _presenter.LoadArticles();
         }
     }
 }
