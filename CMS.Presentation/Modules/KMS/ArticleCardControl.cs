@@ -42,7 +42,7 @@ namespace CMS.Presentation.Modules.KMS
             lblPublishedDate.Text = !string.IsNullOrEmpty(a.PublishedDate?.ToString()) ? a.PublishedDate.Value.ToString("dd/MM/yyyy") : "-";
             lblExpiryDate.Text    = !string.IsNullOrEmpty(a.ExpiryDate?.ToString()) ? a.ExpiryDate.Value.ToString("dd/MM/yyyy") : "-";
             lblArticleType.Text   = a.ArticleTypeName;
-            lblContent.Text       = a.ContentHTML;
+            lblContent.Text       = a.ContentHTML.Length >= 185 ? $"{a.ContentHTML.Substring(0, 185)}...read more" : a.ContentHTML;
             lblStatus.Text        = a.StatusName;
             lblVersion.Text       = "Version " + a.CurrentVersion;
             lblCategory.Text      = a.CategoryName ?? "-";

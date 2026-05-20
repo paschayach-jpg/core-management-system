@@ -56,6 +56,13 @@ namespace CMS.Presentation.Modules.KMS
                 return;
             }
 
+            // Bug-fix: splitMain.Dock=Top gives it a fixed height (1166px in Designer),
+            // which overflows pnlScroll (AutoScroll=True, ~880px on a 1080p screen).
+            // When webEditor receives focus WinForms calls ScrollControlIntoView(),
+            // causing the view to jump to the bottom.  Switching to Dock=Fill makes
+            // splitMain always match pnlScroll's client area — no overflow, no jump.
+            splitMain.Dock = DockStyle.Fill;
+
             webEditor.DocumentText = GetEditorHtml();
             InitTypeCombo();
             InitCrafCombo();
@@ -534,11 +541,7 @@ namespace CMS.Presentation.Modules.KMS
         private void InitTypeCombo()
         {
             cboType.Items.Clear();
-            cboType.Items.Add(new ComboItem("SOP (Standard Operating Procedure)", 1));
-            cboType.Items.Add(new ComboItem("FAQ (คำถามที่พบบ่อย)",              2));
-            cboType.Items.Add(new ComboItem("Guideline (แนวปฏิบัติ)",             3));
-            cboType.Items.Add(new ComboItem("Template (แม่แบบเอกสาร)",            4));
-            cboType.Items.Add(new ComboItem("Policy (นโยบาย)",                    5));
+            cboType.Items.Add(new ComboItem("Wiki Page", 5));
             cboType.SelectedIndex = 0;
         }
 
@@ -958,10 +961,22 @@ namespace CMS.Presentation.Modules.KMS
 
         private static string GetEditorHtml()
         {
+            // Bug-fix notes:
+            // 1. html{height:100%} + body{min-height:100%} ensures the body fills the
+            //    entire WebBrowser viewport.  Without this the body is only as tall as
+            //    its content, so clicks below the last line land on the <html> element
+            //    (outside contenteditable) and no cursor is placed.
+            // 2. margin:0/padding:8px keeps visual spacing without shrinking the body's
+            //    percentage-based height (margin is excluded from % calculations in IE).
+            // 3. The document.onclick handler redirects clicks that land on <html>
+            //    (srcElement === document.documentElement) into the body so focus and
+            //    cursor placement always work.
             return
                 "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
                 "<style>" +
-                "body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:14px;margin:8px;" +
+                "html{height:100%;}" +
+                "body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:14px;" +
+                "margin:0;padding:8px;min-height:100%;box-sizing:border-box;" +
                 "line-height:1.6;color:#333;}" +
                 "h1{font-size:22px;}h2{font-size:18px;}h3{font-size:15px;}" +
                 "table{border-collapse:collapse;width:100%;margin:8px 0;}" +
@@ -976,6 +991,11 @@ namespace CMS.Presentation.Modules.KMS
                 "function pasteHtml(h){" +
                 "try{if(document.selection){var r=document.selection.createRange();r.pasteHTML(h);}}" +
                 "catch(e){}}" +
+                // Redirect clicks on <html> (outside body padding) into the body
+                // so the cursor is always placed correctly regardless of click position.
+                "document.onclick=function(e){" +
+                "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +
+                "};" +
                 "</script>" +
                 "</head><body contenteditable='true' style='outline:none;'></body></html>";
         }

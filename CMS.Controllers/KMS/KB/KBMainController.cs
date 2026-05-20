@@ -14,7 +14,6 @@ namespace CMS.Controllers.KMS.KB
         private readonly IKBArticleService  _articleService;
         private readonly UserContext        _user;
 
-        private static readonly byte?[] StatusFilterValues = { null, 1, 2, 3, 4 };
         private int _currentPage = 1;
 
         public KBMainController(
@@ -83,19 +82,22 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
+                _view.ShowLoading();
+
                 string keyword       = _view.SearchKeyword;
                 int    searchFieldId = _view.SearchFieldId;
-                byte?  statusFilter  = GetStatusFilter(_view.StatusFilterIndex);
+                byte?  statusFilter  = _view.StatusFilter;
+                byte?  typeFilter    = _view.TypeFilter;
                 int?   catId         = _view.SelectedCategoryId;
                 int    pageSize      = _view.PageSize;
 
                 if (!catId.HasValue) return;
 
                 IEnumerable<KBArticle> articles;
-                if (!statusFilter.HasValue)
+                if (!statusFilter.HasValue && !typeFilter.HasValue)
                     articles = _articleService.GetByCategory(catId.Value);
                 else
-                    articles = _articleService.Search(null, catId, statusFilter, null);
+                    articles = _articleService.Search(null, catId, statusFilter, typeFilter);
 
                 if (!string.IsNullOrWhiteSpace(keyword))
                     articles = ApplyKeywordFilter(articles, keyword, searchFieldId);
@@ -110,12 +112,16 @@ namespace CMS.Controllers.KMS.KB
                 if (_currentPage < 1)          _currentPage = 1;
 
                 var pageItems = list.Skip((_currentPage - 1) * pageSize).Take(pageSize).ToList();
-
+                pageItems.ForEach(x => x.ContentHTML = StripHtmlTags(x.ContentHTML));
                 _view.RenderArticles(pageItems);
                 _view.ArticleCountText = string.Format("{0} บทความ", totalCount);
                 _view.RenderPagination(totalCount, _currentPage, pageSize);
             }
             catch (Exception ex) { _view.ShowError("Load articles failed: " + ex.Message); }
+            finally
+            {
+                _view.HideLoading();
+            }
         }
 
         private static IEnumerable<KBArticle> ApplyKeywordFilter(
@@ -131,7 +137,7 @@ namespace CMS.Controllers.KMS.KB
                         string.Equals(new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray()), _keyword, StringComparison.OrdinalIgnoreCase));
                 case 2:
                     return articles.Where(a =>
-                        (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
+                        (a.ContentHTML != null && new string(StripHtmlTags(a.ContentHTML).Where(c => !char.IsWhiteSpace(c)).ToArray()).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
                 case 3:
                     return articles.Where(a =>
                         (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
@@ -154,7 +160,7 @@ namespace CMS.Controllers.KMS.KB
             html = System.Text.RegularExpressions.Regex.Replace(html, @"<[^>]+>",    string.Empty);
             html = System.Net.WebUtility.HtmlDecode(html);
             html = System.Text.RegularExpressions.Regex.Replace(html, @"\s+",        " ");
-            return new string(html.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            return html.Trim();
         }
 
         public void OnArticleClicked(int articleId)
@@ -207,12 +213,6 @@ namespace CMS.Controllers.KMS.KB
                 _view.ShowReport(report);
             }
             catch (Exception ex) { _view.ShowError("Load report failed: " + ex.Message); }
-        }
-
-        private byte? GetStatusFilter(int index)
-        {
-            if (index < 0 || index >= StatusFilterValues.Length) return null;
-            return StatusFilterValues[index];
         }
 
         /// <summary>

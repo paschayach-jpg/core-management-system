@@ -6,7 +6,8 @@ namespace CMS.Controllers.KMS.KB.Interfaces
     public interface IKBMainController
     {
         string SearchKeyword  { get; }
-        int    StatusFilterIndex { get; }
+        byte?  StatusFilter   { get; }
+        byte?  TypeFilter     { get; }
         int    SearchFieldId  { get; }
         int? SelectedCategoryId { get; set; }
         string ArticleTitleText { set; }
@@ -15,6 +16,8 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         int PageSize { get; }
         void RenderArticles(IEnumerable<KBArticle> articles);
         void RenderPagination(int totalCount, int currentPage, int pageSize);
+        void ShowLoading();
+        void HideLoading();
         void ShowError(string message);
         void ShowReport(string reportText);
     }
