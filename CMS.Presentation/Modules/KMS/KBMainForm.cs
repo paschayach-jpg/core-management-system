@@ -53,7 +53,7 @@ namespace CMS.Presentation.Modules.KMS
         private KBImportWizardForm _activeImportForm = null;
 
         // ── Loading overlay ────────────────────────────────────────────────────────
-        private System.Windows.Forms.Panel pnlLoading;
+        private CMS.Presentation.UserControls.LoadingOverlayControl _loadingOverlay;
 
         // ── Dialog / child-form factories (injected by composition root) ────────
         /// <summary>Creates and returns a pre-wired ArticleViewerForm for a given article.</summary>
@@ -121,34 +121,19 @@ namespace CMS.Presentation.Modules.KMS
 
             splitMain.BringToFront();          // restore splitMain as the visible default layer
 
-            // pnlLoading — overlay that sits in splitMain.Panel2 (same parent as panelMainRight)
-            // using Dock=None + manual bounds so it does NOT disturb panelMainRight's Dock=Fill
-            // layout. BringToFront() makes it paint over panelMainRight when visible.
-            var lblLoading = new System.Windows.Forms.Label
+            // LoadingOverlayControl — sits in splitMain.Panel2 over panelMainRight.
+            // Dock=None keeps it from disturbing panelMainRight's Dock=Fill layout.
+            _loadingOverlay = new CMS.Presentation.UserControls.LoadingOverlayControl
             {
-                Text      = "⏳  กำลังโหลดข้อมูล...",
-                Font      = new System.Drawing.Font("Segoe UI", 13f, System.Drawing.FontStyle.Regular),
-                ForeColor = System.Drawing.Color.FromArgb(70, 110, 160),
-                AutoSize  = false,
-                Dock      = System.Windows.Forms.DockStyle.Fill,
-                TextAlign = System.Drawing.ContentAlignment.MiddleCenter,
+                Dock = System.Windows.Forms.DockStyle.None,
             };
-            pnlLoading = new System.Windows.Forms.Panel
-            {
-                Name      = "pnlLoading",
-                BackColor = System.Drawing.Color.FromArgb(245, 247, 250),
-                Dock      = System.Windows.Forms.DockStyle.None,
-                Visible   = false,
-            };
-            pnlLoading.Controls.Add(lblLoading);
-            splitMain.Panel2.Controls.Add(pnlLoading);
-            pnlLoading.BringToFront();
+            splitMain.Panel2.Controls.Add(_loadingOverlay);
 
             // Keep overlay sized to match the right panel whenever it resizes
             splitMain.Panel2.SizeChanged += (s, ev) =>
             {
-                if (pnlLoading.Visible)
-                    pnlLoading.Bounds = splitMain.Panel2.ClientRectangle;
+                if (_loadingOverlay.Visible)
+                    _loadingOverlay.Bounds = splitMain.Panel2.ClientRectangle;
             };
         }
 
@@ -238,16 +223,14 @@ namespace CMS.Presentation.Modules.KMS
 
         public void ShowLoading()
         {
-            pnlLoading.Bounds = splitMain.Panel2.ClientRectangle;
-            pnlLoading.Visible = true;
-            pnlLoading.BringToFront();
+            _loadingOverlay.Bounds = splitMain.Panel2.ClientRectangle;
             Cursor = Cursors.WaitCursor;
-            Application.DoEvents(); // flush paint queue so overlay renders before the synchronous DB call
+            _loadingOverlay.ShowOverlay();
         }
 
         public void HideLoading()
         {
-            pnlLoading.Visible = false;
+            _loadingOverlay.HideOverlay();
             Cursor = Cursors.Default;
         }
 
