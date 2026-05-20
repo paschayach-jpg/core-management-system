@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36518.9 d17.14
+VisualStudioVersion = 17.14.36518.9
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Domain", "CMS.Domain\CMS.Domain.csproj", "{C1CC34BC-573E-4C98-AA9E-37CB98534DEA}"
 EndProject
@@ -14,19 +14,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Controllers", "CMS.Controllers\CMS.Controllers.csproj", "{2E4F8B3D-1A7C-4D96-B052-6C8E3F0A1D75}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Presentation", "CMS.Presentation\CMS.Presentation.csproj", "{598277F1-1DF7-4C37-88F2-CF817D829251}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MOD-006", "MOD-006", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
-	ProjectSection(SolutionItems) = preProject
-		MOD-006\03_KMS_WFE_TMS_Schema.sql = MOD-006\03_KMS_WFE_TMS_Schema.sql
-		MOD-006\CMS_BRD_v2_0.md = MOD-006\CMS_BRD_v2_0.md
-		MOD-006\CMS_DataDictionary_Full2.md = MOD-006\CMS_DataDictionary_Full2.md
-		MOD-006\CMS_SRS_Full_v1_0.md = MOD-006\CMS_SRS_Full_v1_0.md
-		MOD-006\kms_category.html = MOD-006\kms_category.html
-		MOD-006\kms_dashboard.html = MOD-006\kms_dashboard.html
-		MOD-006\kms_editor.html = MOD-006\kms_editor.html
-		MOD-006\kms_import.html = MOD-006\kms_import.html
-		MOD-006\kms_main.html = MOD-006\kms_main.html
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
