@@ -839,9 +839,8 @@ namespace CMS.Presentation.Modules.KMS
 
                 var parts    = raw.Split('|');
                 var f        = parts[0].PadRight(8, '0');
-                var block    = parts.Length > 1 ? parts[1].Trim() : string.Empty;
-                var fontName = parts.Length > 2 ? parts[2].Trim() : string.Empty;
-                var fontSz   = parts.Length > 3 ? parts[3].Trim() : string.Empty;
+                var fontName = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+                var fontSz   = parts.Length > 2 ? parts[2].Trim() : string.Empty;
 
                 SetBtnActive(tsRteBold,        f[0] == '1');
                 SetBtnActive(tsRteItalic,      f[1] == '1');
@@ -851,10 +850,6 @@ namespace CMS.Presentation.Modules.KMS
                 SetBtnActive(tsRteAlignRight,  f[5] == '1');
                 SetBtnActive(tsRteBullet,      f[6] == '1');
                 SetBtnActive(tsRteNumList,     f[7] == '1');
-
-                SetBtnActive(tsRteH1, block == "h1");
-                SetBtnActive(tsRteH2, block == "h2");
-                SetBtnActive(tsRteH3, block == "h3");
 
                 // Sync font comboboxes without triggering their SelectedIndexChanged handlers
                 _syncingToolbar = true;
@@ -921,17 +916,6 @@ namespace CMS.Presentation.Modules.KMS
         }
         private void TsRteItalic_Click(object sender, EventArgs e)       { ExecCmd("Italic"); }
         private void TsRteUnder_Click(object sender, EventArgs e)        { ExecCmd("Underline"); }
-        private void TsRteH1_Click(object sender, EventArgs e)           { ApplyHeading("h1"); }
-        private void TsRteH2_Click(object sender, EventArgs e)           { ApplyHeading("h2"); }
-        private void TsRteH3_Click(object sender, EventArgs e)           { ApplyHeading("h3"); }
-
-        private void ApplyHeading(string tag)
-        {
-            if (!_editorReady || webEditor.Document == null) return;
-            webEditor.Document.InvokeScript("applyHeading", new object[] { tag });
-            webEditor.Focus();
-            SyncToolbarState();
-        }
         private void TsRteAlignLeft_Click(object sender, EventArgs e)    { ExecCmd("JustifyLeft"); }
         private void TsRteAlignCenter_Click(object sender, EventArgs e)  { ExecCmd("JustifyCenter"); }
         private void TsRteAlignRight_Click(object sender, EventArgs e)   { ExecCmd("JustifyRight"); }
@@ -1041,9 +1025,6 @@ namespace CMS.Presentation.Modules.KMS
             tabMapping.SelectedTab = tabAttach;
         }
 
-        private void TsRteUndo_Click(object sender, EventArgs e) { ExecCmd("Undo"); }
-        private void TsRteRedo_Click(object sender, EventArgs e) { ExecCmd("Redo"); }
-
         private void TsRteFontFamily_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (_syncingToolbar || tsRteFontFamily.SelectedItem == null) return;
@@ -1091,30 +1072,9 @@ namespace CMS.Presentation.Modules.KMS
                 "function pasteHtml(h){" +
                 "try{if(document.selection){var r=document.selection.createRange();r.pasteHTML(h);}}" +
                 "catch(e){}}" +
-                // getBlkTag: walks DOM from cursor to find nearest block tag.
-                // More reliable than queryCommandValue('FormatBlock') in IE/Trident, which can
-                // return display names ("Heading 1") or angle-bracketed tags ("<H1>").
-                "function getBlkTag(){" +
-                "try{" +
-                "if(document.selection){" +
-                "var r=document.selection.createRange();" +
-                "var e=r.parentElement?r.parentElement():null;" +
-                "while(e&&e.tagName){" +
-                "var t=e.tagName.toLowerCase();" +
-                "if(t==='h1'||t==='h2'||t==='h3'||t==='p'||t==='div'||t==='li'||t==='body'){" +
-                "return t==='body'?'':t;" +
-                "}" +
-                "e=e.parentElement;" +
-                "}" +
-                "}" +
-                "}catch(ex){}" +
-                "return (document.queryCommandValue('FormatBlock')||'').toLowerCase().replace(/[<>]/g,'');" +
-                "}" +
                 // getRteState — called by C# via InvokeScript after every cursor move / key / click.
-                // Returns a compact string: 8 binary flags + '|' + lowercase block tag.
+                // Returns a compact string: 8 binary flags + '|' + fontName + '|' + fontSize.
                 // Flags order: bold italic underline justifyLeft justifyCenter justifyRight ul ol
-                // Bold flag is forced '0' inside h1/h2/h3: IE/Trident returns queryCommandState('Bold')=true
-                // for any heading element (heading = inherently bold), which would falsely light up tsRteBold.
                 "function getRteState(){" +
                 "try{" +
                 "var b=document.queryCommandState('Bold')?'1':'0';" +
@@ -1125,42 +1085,12 @@ namespace CMS.Presentation.Modules.KMS
                 "var jr=document.queryCommandState('JustifyRight')?'1':'0';" +
                 "var ul=document.queryCommandState('InsertUnorderedList')?'1':'0';" +
                 "var ol=document.queryCommandState('InsertOrderedList')?'1':'0';" +
-                "var blk=getBlkTag();" +
-                "if(blk==='h1'||blk==='h2'||blk==='h3'){b='0';}" +
                 "var fn=(document.queryCommandValue('FontName')||'').toLowerCase();" +
                 "var fs=(document.queryCommandValue('FontSize')||'');" +
-                "return b+i+u+jl+jc+jr+ul+ol+'|'+blk+'|'+fn+'|'+fs;" +
-                "}catch(e){return '00000000|||';}" +
+                "return b+i+u+jl+jc+jr+ul+ol+'|'+fn+'|'+fs;" +
+                "}catch(e){return '00000000||';}" +
                 "}" +
-                // applyHeading: apply or toggle heading block format.
-                // Toggle: clicking the same heading again converts back to <p>.
-                // Always strips Bold (via removeFormat), preserves Italic and Underline.
-                "function applyHeading(tag){" +
-                "var wasItalic=document.queryCommandState('Italic');" +
-                "var wasUnder=document.queryCommandState('Underline');" +
-                "var cur=getBlkTag();" +
-                "if(cur===tag){" +
-                "document.execCommand('FormatBlock',false,'<p>');" +
-                "document.execCommand('removeFormat',false,null);" +
-                "if(wasItalic){document.execCommand('Italic',false,null);}" +
-                "if(wasUnder){document.execCommand('Underline',false,null);}" +
-                "return;" +
-                "}" +
-                "document.execCommand('FormatBlock',false,'<'+tag+'>');" +
-                "document.execCommand('removeFormat',false,null);" +
-                "if(wasItalic){document.execCommand('Italic',false,null);}" +
-                "if(wasUnder){document.execCommand('Underline',false,null);}" +
-                "}" +
-                // applyBold: if cursor is inside a heading block, convert to <p> first,
-                // then ensure Bold is ON. Outside headings, works as a normal Bold toggle.
-                "function applyBold(){" +
-                "var blk=getBlkTag();" +
-                "if(blk==='h1'||blk==='h2'||blk==='h3'){" +
-                "document.execCommand('FormatBlock',false,'<p>');" +
-                "if(!document.queryCommandState('Bold')){document.execCommand('Bold',false,null);}" +
-                "}else{" +
-                "document.execCommand('Bold',false,null);" +
-                "}}" +
+                "function applyBold(){document.execCommand('Bold',false,null);}" +
                 // Redirect clicks on <html> (outside body padding) into the body.
                 "document.onclick=function(e){" +
                 "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +

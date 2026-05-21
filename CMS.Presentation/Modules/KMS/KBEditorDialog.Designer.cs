@@ -15,14 +15,14 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle185 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle186 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle187 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle188 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle189 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle190 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle191 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle192 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblHeader = new System.Windows.Forms.Label();
             this.pnlToolbar = new System.Windows.Forms.Panel();
@@ -87,10 +87,6 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteBold = new System.Windows.Forms.ToolStripButton();
             this.tsRteItalic = new System.Windows.Forms.ToolStripButton();
             this.tsRteUnder = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep2 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsRteH1 = new System.Windows.Forms.ToolStripButton();
-            this.tsRteH2 = new System.Windows.Forms.ToolStripButton();
-            this.tsRteH3 = new System.Windows.Forms.ToolStripButton();
             this.tsRteSep3 = new System.Windows.Forms.ToolStripSeparator();
             this.tsRteAlignLeft = new System.Windows.Forms.ToolStripButton();
             this.tsRteAlignCenter = new System.Windows.Forms.ToolStripButton();
@@ -104,9 +100,6 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteCode = new System.Windows.Forms.ToolStripButton();
             this.tsRteImage = new System.Windows.Forms.ToolStripButton();
             this.tsRteAttach = new System.Windows.Forms.ToolStripButton();
-            this.tsRteSep6 = new System.Windows.Forms.ToolStripSeparator();
-            this.tsRteUndo = new System.Windows.Forms.ToolStripButton();
-            this.tsRteRedo = new System.Windows.Forms.ToolStripButton();
             this.pnlSummaryArea = new System.Windows.Forms.Panel();
             this.txtSummary = new System.Windows.Forms.TextBox();
             this.lblSummary = new System.Windows.Forms.Label();
@@ -1046,10 +1039,6 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteBold,
             this.tsRteItalic,
             this.tsRteUnder,
-            this.tsRteSep2,
-            this.tsRteH1,
-            this.tsRteH2,
-            this.tsRteH3,
             this.tsRteSep3,
             this.tsRteAlignLeft,
             this.tsRteAlignCenter,
@@ -1062,10 +1051,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteTable,
             this.tsRteCode,
             this.tsRteImage,
-            this.tsRteAttach,
-            this.tsRteSep6,
-            this.tsRteUndo,
-            this.tsRteRedo});
+            this.tsRteAttach});
             this.tsRte.Location = new System.Drawing.Point(0, 65);
             this.tsRte.Name = "tsRte";
             this.tsRte.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
@@ -1146,41 +1132,6 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteUnder.Text = "U";
             this.tsRteUnder.ToolTipText = "Underline (Ctrl+U)";
             this.tsRteUnder.Click += new System.EventHandler(this.TsRteUnder_Click);
-            // 
-            // tsRteSep2
-            // 
-            this.tsRteSep2.Name = "tsRteSep2";
-            this.tsRteSep2.Size = new System.Drawing.Size(6, 28);
-            // 
-            // tsRteH1
-            // 
-            this.tsRteH1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteH1.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.tsRteH1.Name = "tsRteH1";
-            this.tsRteH1.Size = new System.Drawing.Size(33, 25);
-            this.tsRteH1.Text = "H1";
-            this.tsRteH1.ToolTipText = "หัวข้อหลัก (Heading 1)";
-            this.tsRteH1.Click += new System.EventHandler(this.TsRteH1_Click);
-            // 
-            // tsRteH2
-            // 
-            this.tsRteH2.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteH2.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.tsRteH2.Name = "tsRteH2";
-            this.tsRteH2.Size = new System.Drawing.Size(33, 25);
-            this.tsRteH2.Text = "H2";
-            this.tsRteH2.ToolTipText = "หัวข้อรอง (Heading 2)";
-            this.tsRteH2.Click += new System.EventHandler(this.TsRteH2_Click);
-            // 
-            // tsRteH3
-            // 
-            this.tsRteH3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteH3.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
-            this.tsRteH3.Name = "tsRteH3";
-            this.tsRteH3.Size = new System.Drawing.Size(33, 25);
-            this.tsRteH3.Text = "H3";
-            this.tsRteH3.ToolTipText = "หัวข้อย่อย (Heading 3)";
-            this.tsRteH3.Click += new System.EventHandler(this.TsRteH3_Click);
             // 
             // tsRteSep3
             // 
@@ -1287,29 +1238,6 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteAttach.Text = "📎";
             this.tsRteAttach.ToolTipText = "แนบไฟล์";
             this.tsRteAttach.Click += new System.EventHandler(this.TsRteAttach_Click);
-            // 
-            // tsRteSep6
-            // 
-            this.tsRteSep6.Name = "tsRteSep6";
-            this.tsRteSep6.Size = new System.Drawing.Size(6, 28);
-            // 
-            // tsRteUndo
-            // 
-            this.tsRteUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteUndo.Name = "tsRteUndo";
-            this.tsRteUndo.Size = new System.Drawing.Size(29, 25);
-            this.tsRteUndo.Text = "↶";
-            this.tsRteUndo.ToolTipText = "Undo (Ctrl+Z)";
-            this.tsRteUndo.Click += new System.EventHandler(this.TsRteUndo_Click);
-            // 
-            // tsRteRedo
-            // 
-            this.tsRteRedo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.tsRteRedo.Name = "tsRteRedo";
-            this.tsRteRedo.Size = new System.Drawing.Size(29, 25);
-            this.tsRteRedo.Text = "↷";
-            this.tsRteRedo.ToolTipText = "Redo (Ctrl+Y)";
-            this.tsRteRedo.Click += new System.EventHandler(this.TsRteRedo_Click);
             // 
             // pnlSummaryArea
             // 
@@ -1512,11 +1440,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colView
             // 
-            dataGridViewCellStyle185.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle185.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle185.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle185.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
-            this.colView.DefaultCellStyle = dataGridViewCellStyle185;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
+            this.colView.DefaultCellStyle = dataGridViewCellStyle1;
             this.colView.HeaderText = "ดูไฟล์";
             this.colView.MinimumWidth = 6;
             this.colView.Name = "colView";
@@ -1526,11 +1454,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDelete
             // 
-            dataGridViewCellStyle186.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle186.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle186.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle186.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDelete.DefaultCellStyle = dataGridViewCellStyle186;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDelete.DefaultCellStyle = dataGridViewCellStyle2;
             this.colDelete.HeaderText = "ลบไฟล์";
             this.colDelete.MinimumWidth = 6;
             this.colDelete.Name = "colDelete";
@@ -1563,7 +1491,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabRelated.Location = new System.Drawing.Point(4, 29);
             this.tabRelated.Name = "tabRelated";
             this.tabRelated.Padding = new System.Windows.Forms.Padding(4);
-            this.tabRelated.Size = new System.Drawing.Size(512, 1103);
+            this.tabRelated.Size = new System.Drawing.Size(519, 860);
             this.tabRelated.TabIndex = 1;
             this.tabRelated.Text = "🔗 ความรู้ที่เกี่ยวข้อง";
             // 
@@ -1588,7 +1516,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvRelatedSearch.RowHeadersWidth = 51;
             this.dgvRelatedSearch.RowTemplate.Height = 28;
             this.dgvRelatedSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvRelatedSearch.Size = new System.Drawing.Size(504, 300);
+            this.dgvRelatedSearch.Size = new System.Drawing.Size(511, 300);
             this.dgvRelatedSearch.TabIndex = 5;
             this.dgvRelatedSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvRelatedSearch_CellDoubleClick);
             // 
@@ -1642,7 +1570,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblRelatedSearch.Location = new System.Drawing.Point(4, 250);
             this.lblRelatedSearch.Name = "lblRelatedSearch";
             this.lblRelatedSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblRelatedSearch.Size = new System.Drawing.Size(504, 24);
+            this.lblRelatedSearch.Size = new System.Drawing.Size(511, 24);
             this.lblRelatedSearch.TabIndex = 4;
             this.lblRelatedSearch.Text = "ผลการค้นหา — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
@@ -1658,7 +1586,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRelatedSearch.Location = new System.Drawing.Point(4, 214);
             this.pnlRelatedSearch.Name = "pnlRelatedSearch";
             this.pnlRelatedSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlRelatedSearch.Size = new System.Drawing.Size(504, 36);
+            this.pnlRelatedSearch.Size = new System.Drawing.Size(511, 36);
             this.pnlRelatedSearch.TabIndex = 3;
             // 
             // btnSearchRelated
@@ -1741,7 +1669,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvRelatedLinked.RowHeadersWidth = 51;
             this.dgvRelatedLinked.RowTemplate.Height = 28;
             this.dgvRelatedLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvRelatedLinked.Size = new System.Drawing.Size(504, 186);
+            this.dgvRelatedLinked.Size = new System.Drawing.Size(511, 186);
             this.dgvRelatedLinked.TabIndex = 1;
             this.dgvRelatedLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvRelatedLinked_CellContentClick);
             // 
@@ -1787,11 +1715,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colRelatedLinkedDelete
             // 
-            dataGridViewCellStyle187.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle187.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle187.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle187.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colRelatedLinkedDelete.DefaultCellStyle = dataGridViewCellStyle187;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colRelatedLinkedDelete.DefaultCellStyle = dataGridViewCellStyle3;
             this.colRelatedLinkedDelete.HeaderText = "ลบ";
             this.colRelatedLinkedDelete.MinimumWidth = 6;
             this.colRelatedLinkedDelete.Name = "colRelatedLinkedDelete";
@@ -1808,7 +1736,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblRelatedLinked.Location = new System.Drawing.Point(4, 4);
             this.lblRelatedLinked.Name = "lblRelatedLinked";
             this.lblRelatedLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblRelatedLinked.Size = new System.Drawing.Size(504, 24);
+            this.lblRelatedLinked.Size = new System.Drawing.Size(511, 24);
             this.lblRelatedLinked.TabIndex = 0;
             this.lblRelatedLinked.Text = "รายการที่ Link อยู่แล้ว (0 รายการ)";
             // 
@@ -1824,7 +1752,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabWorkflow.Location = new System.Drawing.Point(4, 29);
             this.tabWorkflow.Name = "tabWorkflow";
             this.tabWorkflow.Padding = new System.Windows.Forms.Padding(4);
-            this.tabWorkflow.Size = new System.Drawing.Size(512, 1103);
+            this.tabWorkflow.Size = new System.Drawing.Size(519, 860);
             this.tabWorkflow.TabIndex = 2;
             this.tabWorkflow.Text = "⚖️ เส้นงาน (Workflow)";
             // 
@@ -1847,7 +1775,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvWorkflowSearch.RowHeadersVisible = false;
             this.dgvWorkflowSearch.RowHeadersWidth = 51;
             this.dgvWorkflowSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvWorkflowSearch.Size = new System.Drawing.Size(504, 891);
+            this.dgvWorkflowSearch.Size = new System.Drawing.Size(511, 648);
             this.dgvWorkflowSearch.TabIndex = 4;
             this.dgvWorkflowSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvWorkflowSearch_CellDoubleClick);
             // 
@@ -1892,7 +1820,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblWorkflowSearch.Location = new System.Drawing.Point(4, 184);
             this.lblWorkflowSearch.Name = "lblWorkflowSearch";
             this.lblWorkflowSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblWorkflowSearch.Size = new System.Drawing.Size(504, 24);
+            this.lblWorkflowSearch.Size = new System.Drawing.Size(511, 24);
             this.lblWorkflowSearch.TabIndex = 3;
             this.lblWorkflowSearch.Text = "ผลการค้นหา (0 รายการ) — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
@@ -1908,7 +1836,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlWorkflowSearch.Location = new System.Drawing.Point(4, 148);
             this.pnlWorkflowSearch.Name = "pnlWorkflowSearch";
             this.pnlWorkflowSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlWorkflowSearch.Size = new System.Drawing.Size(504, 36);
+            this.pnlWorkflowSearch.Size = new System.Drawing.Size(511, 36);
             this.pnlWorkflowSearch.TabIndex = 2;
             // 
             // btnSearchWorkflow
@@ -1919,7 +1847,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnSearchWorkflow.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSearchWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnSearchWorkflow.ForeColor = System.Drawing.Color.White;
-            this.btnSearchWorkflow.Location = new System.Drawing.Point(428, 6);
+            this.btnSearchWorkflow.Location = new System.Drawing.Point(435, 6);
             this.btnSearchWorkflow.Name = "btnSearchWorkflow";
             this.btnSearchWorkflow.Size = new System.Drawing.Size(68, 24);
             this.btnSearchWorkflow.TabIndex = 4;
@@ -1933,7 +1861,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboWorkflowStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboWorkflowStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cboWorkflowStatus.FormattingEnabled = true;
-            this.cboWorkflowStatus.Location = new System.Drawing.Point(348, 6);
+            this.cboWorkflowStatus.Location = new System.Drawing.Point(355, 6);
             this.cboWorkflowStatus.Name = "cboWorkflowStatus";
             this.cboWorkflowStatus.Size = new System.Drawing.Size(74, 28);
             this.cboWorkflowStatus.TabIndex = 3;
@@ -1944,7 +1872,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboWorkflowCategory.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboWorkflowCategory.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cboWorkflowCategory.FormattingEnabled = true;
-            this.cboWorkflowCategory.Location = new System.Drawing.Point(248, 6);
+            this.cboWorkflowCategory.Location = new System.Drawing.Point(255, 6);
             this.cboWorkflowCategory.Name = "cboWorkflowCategory";
             this.cboWorkflowCategory.Size = new System.Drawing.Size(94, 28);
             this.cboWorkflowCategory.TabIndex = 2;
@@ -1955,7 +1883,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboWorkflowType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboWorkflowType.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cboWorkflowType.FormattingEnabled = true;
-            this.cboWorkflowType.Location = new System.Drawing.Point(158, 6);
+            this.cboWorkflowType.Location = new System.Drawing.Point(165, 6);
             this.cboWorkflowType.Name = "cboWorkflowType";
             this.cboWorkflowType.Size = new System.Drawing.Size(84, 28);
             this.cboWorkflowType.TabIndex = 1;
@@ -1967,7 +1895,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtSearchWorkflow.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.txtSearchWorkflow.Location = new System.Drawing.Point(8, 6);
             this.txtSearchWorkflow.Name = "txtSearchWorkflow";
-            this.txtSearchWorkflow.Size = new System.Drawing.Size(144, 27);
+            this.txtSearchWorkflow.Size = new System.Drawing.Size(151, 27);
             this.txtSearchWorkflow.TabIndex = 0;
             this.txtSearchWorkflow.Enter += new System.EventHandler(this.TxtSearchWorkflow_Enter);
             this.txtSearchWorkflow.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearchWorkflow_KeyDown);
@@ -1993,7 +1921,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvWorkflowLinked.RowHeadersVisible = false;
             this.dgvWorkflowLinked.RowHeadersWidth = 51;
             this.dgvWorkflowLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvWorkflowLinked.Size = new System.Drawing.Size(504, 120);
+            this.dgvWorkflowLinked.Size = new System.Drawing.Size(511, 120);
             this.dgvWorkflowLinked.TabIndex = 1;
             this.dgvWorkflowLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvWorkflowLinked_CellContentClick);
             // 
@@ -2031,11 +1959,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colWorkflowLinkedDelete
             // 
-            dataGridViewCellStyle188.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle188.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle188.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle188.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colWorkflowLinkedDelete.DefaultCellStyle = dataGridViewCellStyle188;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle4.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colWorkflowLinkedDelete.DefaultCellStyle = dataGridViewCellStyle4;
             this.colWorkflowLinkedDelete.HeaderText = "ลบ";
             this.colWorkflowLinkedDelete.MinimumWidth = 6;
             this.colWorkflowLinkedDelete.Name = "colWorkflowLinkedDelete";
@@ -2053,7 +1981,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblWorkflowLinked.Location = new System.Drawing.Point(4, 4);
             this.lblWorkflowLinked.Name = "lblWorkflowLinked";
             this.lblWorkflowLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblWorkflowLinked.Size = new System.Drawing.Size(504, 24);
+            this.lblWorkflowLinked.Size = new System.Drawing.Size(511, 24);
             this.lblWorkflowLinked.TabIndex = 0;
             this.lblWorkflowLinked.Text = "Workflow ที่เชื่อมโยง (0 รายการ)";
             // 
@@ -2069,7 +1997,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabPrograms.Location = new System.Drawing.Point(4, 29);
             this.tabPrograms.Name = "tabPrograms";
             this.tabPrograms.Padding = new System.Windows.Forms.Padding(4);
-            this.tabPrograms.Size = new System.Drawing.Size(512, 1103);
+            this.tabPrograms.Size = new System.Drawing.Size(519, 860);
             this.tabPrograms.TabIndex = 3;
             this.tabPrograms.Text = "💻 โปรแกรมที่เกี่ยวข้อง";
             // 
@@ -2093,7 +2021,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvProgramsSearch.RowHeadersWidth = 51;
             this.dgvProgramsSearch.RowTemplate.Height = 28;
             this.dgvProgramsSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvProgramsSearch.Size = new System.Drawing.Size(504, 300);
+            this.dgvProgramsSearch.Size = new System.Drawing.Size(511, 300);
             this.dgvProgramsSearch.TabIndex = 5;
             this.dgvProgramsSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvProgramsSearch_CellDoubleClick);
             // 
@@ -2138,7 +2066,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblProgramsSearch.Location = new System.Drawing.Point(4, 250);
             this.lblProgramsSearch.Name = "lblProgramsSearch";
             this.lblProgramsSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblProgramsSearch.Size = new System.Drawing.Size(504, 24);
+            this.lblProgramsSearch.Size = new System.Drawing.Size(511, 24);
             this.lblProgramsSearch.TabIndex = 4;
             this.lblProgramsSearch.Text = "ผลการค้นหา — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
@@ -2154,7 +2082,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlProgramsSearch.Location = new System.Drawing.Point(4, 214);
             this.pnlProgramsSearch.Name = "pnlProgramsSearch";
             this.pnlProgramsSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlProgramsSearch.Size = new System.Drawing.Size(504, 36);
+            this.pnlProgramsSearch.Size = new System.Drawing.Size(511, 36);
             this.pnlProgramsSearch.TabIndex = 3;
             // 
             // btnSearchPrograms
@@ -2235,7 +2163,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvProgramsLinked.RowHeadersWidth = 51;
             this.dgvProgramsLinked.RowTemplate.Height = 28;
             this.dgvProgramsLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvProgramsLinked.Size = new System.Drawing.Size(504, 186);
+            this.dgvProgramsLinked.Size = new System.Drawing.Size(511, 186);
             this.dgvProgramsLinked.TabIndex = 1;
             this.dgvProgramsLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvProgramsLinked_CellContentClick);
             // 
@@ -2273,11 +2201,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colProgramsLinkedDelete
             // 
-            dataGridViewCellStyle189.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle189.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle189.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle189.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colProgramsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle189;
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colProgramsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle5;
             this.colProgramsLinkedDelete.HeaderText = "ลบ";
             this.colProgramsLinkedDelete.MinimumWidth = 6;
             this.colProgramsLinkedDelete.Name = "colProgramsLinkedDelete";
@@ -2294,7 +2222,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblProgramsLinked.Location = new System.Drawing.Point(4, 4);
             this.lblProgramsLinked.Name = "lblProgramsLinked";
             this.lblProgramsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblProgramsLinked.Size = new System.Drawing.Size(504, 24);
+            this.lblProgramsLinked.Size = new System.Drawing.Size(511, 24);
             this.lblProgramsLinked.TabIndex = 0;
             this.lblProgramsLinked.Text = "โปรแกรมที่เชื่อมโยง (0 รายการ)";
             // 
@@ -2310,7 +2238,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabDocs.Location = new System.Drawing.Point(4, 29);
             this.tabDocs.Name = "tabDocs";
             this.tabDocs.Padding = new System.Windows.Forms.Padding(4);
-            this.tabDocs.Size = new System.Drawing.Size(512, 1103);
+            this.tabDocs.Size = new System.Drawing.Size(519, 860);
             this.tabDocs.TabIndex = 4;
             this.tabDocs.Text = "📋 เอกสารที่เกี่ยวข้อง";
             // 
@@ -2334,7 +2262,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvDocsSearch.RowHeadersWidth = 51;
             this.dgvDocsSearch.RowTemplate.Height = 28;
             this.dgvDocsSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvDocsSearch.Size = new System.Drawing.Size(504, 300);
+            this.dgvDocsSearch.Size = new System.Drawing.Size(511, 300);
             this.dgvDocsSearch.TabIndex = 5;
             this.dgvDocsSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvDocsSearch_CellDoubleClick);
             // 
@@ -2379,7 +2307,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblDocsSearch.Location = new System.Drawing.Point(4, 250);
             this.lblDocsSearch.Name = "lblDocsSearch";
             this.lblDocsSearch.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblDocsSearch.Size = new System.Drawing.Size(504, 24);
+            this.lblDocsSearch.Size = new System.Drawing.Size(511, 24);
             this.lblDocsSearch.TabIndex = 4;
             this.lblDocsSearch.Text = "ผลการค้นหา — ดับเบิลคลิกเพื่อเพิ่ม";
             // 
@@ -2395,7 +2323,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlDocsSearch.Location = new System.Drawing.Point(4, 214);
             this.pnlDocsSearch.Name = "pnlDocsSearch";
             this.pnlDocsSearch.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
-            this.pnlDocsSearch.Size = new System.Drawing.Size(504, 36);
+            this.pnlDocsSearch.Size = new System.Drawing.Size(511, 36);
             this.pnlDocsSearch.TabIndex = 3;
             // 
             // btnSearchDocs
@@ -2477,7 +2405,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvDocsLinked.RowHeadersWidth = 51;
             this.dgvDocsLinked.RowTemplate.Height = 28;
             this.dgvDocsLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvDocsLinked.Size = new System.Drawing.Size(504, 186);
+            this.dgvDocsLinked.Size = new System.Drawing.Size(511, 186);
             this.dgvDocsLinked.TabIndex = 1;
             this.dgvDocsLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvDocsLinked_CellContentClick);
             // 
@@ -2515,11 +2443,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDocsLinkedView
             // 
-            dataGridViewCellStyle190.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle190.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle190.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle190.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
-            this.colDocsLinkedView.DefaultCellStyle = dataGridViewCellStyle190;
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle6.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
+            this.colDocsLinkedView.DefaultCellStyle = dataGridViewCellStyle6;
             this.colDocsLinkedView.HeaderText = "ดู";
             this.colDocsLinkedView.MinimumWidth = 6;
             this.colDocsLinkedView.Name = "colDocsLinkedView";
@@ -2529,11 +2457,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDocsLinkedDelete
             // 
-            dataGridViewCellStyle191.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle191.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle191.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle191.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDocsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle191;
+            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle7.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle7.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDocsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle7;
             this.colDocsLinkedDelete.HeaderText = "ลบ";
             this.colDocsLinkedDelete.MinimumWidth = 6;
             this.colDocsLinkedDelete.Name = "colDocsLinkedDelete";
@@ -2550,7 +2478,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblDocsLinked.Location = new System.Drawing.Point(4, 4);
             this.lblDocsLinked.Name = "lblDocsLinked";
             this.lblDocsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblDocsLinked.Size = new System.Drawing.Size(504, 24);
+            this.lblDocsLinked.Size = new System.Drawing.Size(511, 24);
             this.lblDocsLinked.TabIndex = 0;
             this.lblDocsLinked.Text = "เอกสารที่เชื่อมโยง (0 เอกสาร)";
             // 
@@ -2563,7 +2491,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tabDepartments.Location = new System.Drawing.Point(4, 29);
             this.tabDepartments.Name = "tabDepartments";
             this.tabDepartments.Padding = new System.Windows.Forms.Padding(4);
-            this.tabDepartments.Size = new System.Drawing.Size(512, 1103);
+            this.tabDepartments.Size = new System.Drawing.Size(519, 860);
             this.tabDepartments.TabIndex = 6;
             this.tabDepartments.Text = "🏢 ฝ่าย/แผนก ที่เกี่ยวข้อง";
             // 
@@ -2587,7 +2515,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvDepartmentsLinked.RowHeadersWidth = 51;
             this.dgvDepartmentsLinked.RowTemplate.Height = 28;
             this.dgvDepartmentsLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvDepartmentsLinked.Size = new System.Drawing.Size(504, 1071);
+            this.dgvDepartmentsLinked.Size = new System.Drawing.Size(511, 828);
             this.dgvDepartmentsLinked.TabIndex = 1;
             this.dgvDepartmentsLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvDepartmentsLinked_CellContentClick);
             // 
@@ -2625,11 +2553,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDeptDelete
             // 
-            dataGridViewCellStyle192.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle192.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle192.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle192.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDeptDelete.DefaultCellStyle = dataGridViewCellStyle192;
+            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle8.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDeptDelete.DefaultCellStyle = dataGridViewCellStyle8;
             this.colDeptDelete.HeaderText = "ลบ";
             this.colDeptDelete.MinimumWidth = 6;
             this.colDeptDelete.Name = "colDeptDelete";
@@ -2646,7 +2574,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblDepartmentsLinked.Location = new System.Drawing.Point(4, 4);
             this.lblDepartmentsLinked.Name = "lblDepartmentsLinked";
             this.lblDepartmentsLinked.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.lblDepartmentsLinked.Size = new System.Drawing.Size(504, 24);
+            this.lblDepartmentsLinked.Size = new System.Drawing.Size(511, 24);
             this.lblDepartmentsLinked.TabIndex = 0;
             this.lblDepartmentsLinked.Text = "ฝ่าย/แผนก ที่เกี่ยวข้อง (0 รายการ)";
             // 
@@ -2803,10 +2731,6 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ToolStripButton    tsRteBold;
         private System.Windows.Forms.ToolStripButton    tsRteItalic;
         private System.Windows.Forms.ToolStripButton    tsRteUnder;
-        private System.Windows.Forms.ToolStripSeparator tsRteSep2;
-        private System.Windows.Forms.ToolStripButton    tsRteH1;
-        private System.Windows.Forms.ToolStripButton    tsRteH2;
-        private System.Windows.Forms.ToolStripButton    tsRteH3;
         private System.Windows.Forms.ToolStripSeparator tsRteSep3;
         private System.Windows.Forms.ToolStripButton    tsRteAlignLeft;
         private System.Windows.Forms.ToolStripButton    tsRteAlignCenter;
@@ -2820,9 +2744,6 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ToolStripButton    tsRteCode;
         private System.Windows.Forms.ToolStripButton    tsRteImage;
         private System.Windows.Forms.ToolStripButton    tsRteAttach;
-        private System.Windows.Forms.ToolStripSeparator tsRteSep6;
-        private System.Windows.Forms.ToolStripButton    tsRteUndo;
-        private System.Windows.Forms.ToolStripButton    tsRteRedo;
         private System.Windows.Forms.Label       lblContent;
         private System.Windows.Forms.WebBrowser  webEditor;
         private System.Windows.Forms.Panel       pnlRteStatus;
