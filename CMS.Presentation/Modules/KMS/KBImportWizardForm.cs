@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
@@ -36,6 +37,11 @@ namespace CMS.Presentation.Modules.KMS
         private long     _uploadedFileSize;
         private DateTime _uploadedTime;
 
+        // Preview grid paging
+        private const int          GridPageSize = 50;
+        private IList<KBImportRow> _allRows     = new List<KBImportRow>();
+        private int                _gridPage    = 0;
+
         // Step 3 — skipped/failed grid paging
         private IList<KBImportRow> _errAllRows;
         private int                _errCurrentPage;
@@ -50,6 +56,7 @@ namespace CMS.Presentation.Modules.KMS
             if (user == null) throw new ArgumentNullException("user");
             _user = user;
             InitializeComponent();
+            InitPreviewGridColumns();
         }
 
         #endregion
@@ -402,7 +409,10 @@ namespace CMS.Presentation.Modules.KMS
             pnlUploadZone.Visible   = true;
             btnNext.Enabled         = false;
             lblFileHint.Visible     = true;
-            previewControl.Clear();
+            _allRows  = new List<KBImportRow>();
+            _gridPage = 0;
+            dgvPreview.Rows.Clear();
+            UpdatePagerLabels();
 
             pnlStep3.Height        = 460;
             pnlErrorDetail.Visible = false;
@@ -410,6 +420,19 @@ namespace CMS.Presentation.Modules.KMS
             _errCurrentPage        = 0;
 
             ShowStep(1);
+        }
+
+        // Preview grid pager events
+
+        private void BtnGridPrev_Click(object sender, EventArgs e)
+        {
+            if (_gridPage > 0) { _gridPage--; RefreshGridPage(); }
+        }
+
+        private void BtnGridNext_Click(object sender, EventArgs e)
+        {
+            int maxPage = MaxPage(_allRows.Count, GridPageSize);
+            if (_gridPage < maxPage) { _gridPage++; RefreshGridPage(); }
         }
 
         // Step 3 — error grid pager events
@@ -466,6 +489,48 @@ namespace CMS.Presentation.Modules.KMS
         #endregion
 
         #region Helper Methods
+
+        // Preview Grid Column Initialization
+
+        private void InitPreviewGridColumns()
+        {
+            var colNo          = new DataGridViewTextBoxColumn { Name = "colNo",          HeaderText = "#",                    MinimumWidth = 30,  Width = 46,  ReadOnly = true };
+            var colStatus      = new DataGridViewTextBoxColumn { Name = "colStatus",      HeaderText = "สถานะ",                MinimumWidth = 40,  Width = 73,  ReadOnly = true };
+            var colNote        = new DataGridViewTextBoxColumn { Name = "colNote",        HeaderText = "หมายเหตุ",             MinimumWidth = 200,              ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill };
+            var colArticleCode = new DataGridViewTextBoxColumn { Name = "colArticleCode", HeaderText = "ArticleCode",          MinimumWidth = 60,  Width = 108, ReadOnly = true, Visible = false };
+            var colColA        = new DataGridViewTextBoxColumn { Name = "colColA",        HeaderText = "A - รหัสกฎหมาย",       MinimumWidth = 40,  Width = 128, ReadOnly = true };
+            var colColB        = new DataGridViewTextBoxColumn { Name = "colColB",        HeaderText = "B",                    MinimumWidth = 40,  Width = 46,  ReadOnly = true };
+            var colCatName     = new DataGridViewTextBoxColumn { Name = "colCatName",     HeaderText = "C - ชื่อกฎหมาย",       MinimumWidth = 40,  Width = 121, ReadOnly = true };
+            var colColD        = new DataGridViewTextBoxColumn { Name = "colColD",        HeaderText = "D - Section",          MinimumWidth = 40,  Width = 60, ReadOnly = true };
+            var colTitle       = new DataGridViewTextBoxColumn { Name = "colTitle",       HeaderText = "E - ชื่อบทความ",       MinimumWidth = 40,  Width = 118, ReadOnly = true };
+            var colColF        = new DataGridViewTextBoxColumn { Name = "colColF",        HeaderText = "F",                    MinimumWidth = 40,  Width = 45,  ReadOnly = true };
+            var colColG        = new DataGridViewTextBoxColumn { Name = "colColG",        HeaderText = "G",                    MinimumWidth = 40,  Width = 48,  ReadOnly = true };
+            var colColH        = new DataGridViewTextBoxColumn { Name = "colColH",        HeaderText = "H - Subsection1",      MinimumWidth = 40,  Width = 45, ReadOnly = true };
+            var colColI        = new DataGridViewTextBoxColumn { Name = "colColI",        HeaderText = "I",                    MinimumWidth = 40,  Width = 42,  ReadOnly = true };
+            var colColJ        = new DataGridViewTextBoxColumn { Name = "colColJ",        HeaderText = "J - Subsection2",      MinimumWidth = 40,  Width = 45, ReadOnly = true };
+            var colColK        = new DataGridViewTextBoxColumn { Name = "colColK",        HeaderText = "K",                    MinimumWidth = 40,  Width = 46,  ReadOnly = true };
+            var colColL        = new DataGridViewTextBoxColumn { Name = "colColL",        HeaderText = "L - Paragraph",        MinimumWidth = 40,  Width = 45, ReadOnly = true };
+            var colColM        = new DataGridViewTextBoxColumn { Name = "colColM",        HeaderText = "M",                    MinimumWidth = 40,  Width = 51,  ReadOnly = true };
+            var colColN        = new DataGridViewTextBoxColumn { Name = "colColN",        HeaderText = "N - หนังสือประเภท",    MinimumWidth = 40,  Width = 45, ReadOnly = true };
+            var colColO        = new DataGridViewTextBoxColumn { Name = "colColO",        HeaderText = "O",                    MinimumWidth = 40,  Width = 49,  ReadOnly = true };
+            var colColP        = new DataGridViewTextBoxColumn { Name = "colColP",        HeaderText = "P - ฉบับที่",           MinimumWidth = 40,  Width = 45,  ReadOnly = true };
+            var colColQ        = new DataGridViewTextBoxColumn { Name = "colColQ",        HeaderText = "Q",                    MinimumWidth = 40,  Width = 49,  ReadOnly = true };
+            var colPublished   = new DataGridViewTextBoxColumn { Name = "colPublished",   HeaderText = "R - วันที่เผยแพร่",    MinimumWidth = 40,  Width = 123, ReadOnly = true };
+            var colExpiry      = new DataGridViewTextBoxColumn { Name = "colExpiry",      HeaderText = "S - วันหมดอายุ",       MinimumWidth = 40,  Width = 117, ReadOnly = true };
+            var colContentHtml = new DataGridViewTextBoxColumn { Name = "colContentHtml", HeaderText = "T - เนื้อหา",          MinimumWidth = 40,  Width = 92,  ReadOnly = true };
+            var colColU        = new DataGridViewTextBoxColumn { Name = "colColU",        HeaderText = "U - คณะอนุกรรมการ",   MinimumWidth = 40,  Width = 150, ReadOnly = true };
+            var colColV        = new DataGridViewTextBoxColumn { Name = "colColV",        HeaderText = "V - ฝ่ายที่รับผิดชอบ", MinimumWidth = 40,  Width = 143, ReadOnly = true };
+            var colSummary     = new DataGridViewTextBoxColumn { Name = "colSummary",     HeaderText = "Summary",              MinimumWidth = 40,  Width = 96,  ReadOnly = true, Visible = false };
+
+            dgvPreview.Columns.AddRange(new DataGridViewColumn[] {
+                colNo, colStatus, colNote, colArticleCode,
+                colColA, colColB, colCatName, colColD, colTitle,
+                colColF, colColG, colColH, colColI, colColJ, colColK,
+                colColL, colColM, colColN, colColO, colColP, colColQ,
+                colPublished, colExpiry, colContentHtml,
+                colColU, colColV, colSummary
+            });
+        }
 
         // Template Initialization
 
@@ -533,10 +598,9 @@ namespace CMS.Presentation.Modules.KMS
             // Called on form load with placeholder text; real data arrives via BindValidationItems().
             SetValItem(1, "⏳", "รูปแบบไฟล์",          "รอการตรวจสอบ...", false);
             SetValItem(2, "⏳", "โครงสร้าง Template",   "รอการตรวจสอบ...", false);
-            SetValItem(3, "⏳", "คอลัมน์จำเป็น",        "รอการตรวจสอบ...", false);
+            SetValItem(3, "⏳", "แถวที่มีข้อผิดพลาด",   "รอการตรวจสอบ...", false);
             SetValItem(4, "⏳", "คำเตือน",              "รอการตรวจสอบ...", false);
             SetValItem(5, "⏳", "วันที่ (R/S)",          "รอการตรวจสอบ...", false);
-            SetValItem(6, "⏳", "แถวที่มีข้อผิดพลาด",   "รอการตรวจสอบ...", false);
         }
 
         /// <summary>
@@ -561,22 +625,16 @@ namespace CMS.Presentation.Modules.KMS
                     : "ไม่พบข้อมูลในไฟล์ หรือ Template ไม่ตรง",
                 structureOk);
 
-            // Item 3 — Required columns: count rows with missing-required-field errors
-            // Required columns per requirements.md: A, B, C, D, E, F, H, J, L, N, P, R, T
-            int missingRequired = 0;
-            foreach (var r in rows)
-                if (r.Status == "Error" && r.StatusNote != null &&
-                    r.StatusNote.IndexOf("จำเป็น", StringComparison.OrdinalIgnoreCase) >= 0)
-                    missingRequired++;
-
-            bool reqOk = missingRequired == 0;
+            // Item 3 — Error rows: total count of all rows with errors (combines former items 3 & 6)
+            int errorCount = result.ErrorRecords;
+            bool noErrors  = errorCount == 0;
             SetValItem(3,
-                reqOk ? "✅" : "❌",
-                reqOk ? "คอลัมน์จำเป็น: ครบถ้วน"
-                      : string.Format("คอลัมน์จำเป็น: ขาด {0} แถว", missingRequired),
-                reqOk ? "คอลัมน์ A, B, C, D, E, F, H, J, L, N, P, R, T ครบทุกแถว"
-                      : string.Format("{0} แถวขาดข้อมูลในคอลัมน์บังคับ (A/B/C/D/E/F/H/J/L/N/P/R/T)", missingRequired),
-                reqOk);
+                noErrors ? "✅" : "❌",
+                noErrors ? "ข้อผิดพลาด: ไม่พบ"
+                         : string.Format("ข้อผิดพลาด: {0} แถว", errorCount),
+                noErrors ? "ไม่พบแถวที่มีข้อผิดพลาด — ข้อมูลพร้อมนำเข้าทุกแถว"
+                         : string.Format("{0} แถวมีข้อผิดพลาด (ดูรายละเอียดใน Gridview)", errorCount),
+                noErrors);
 
             // Item 4 — Warnings
             int warnCount = result.WarningRecords;
@@ -619,39 +677,6 @@ namespace CMS.Presentation.Modules.KMS
                        : string.Format("{0} แถวมีรูปแบบวันที่ที่ไม่รู้จัก — ตรวจสอบคอลัมน์ R/S", dateBadCount),
                 dateOk);
 
-            // Item 6 — Error rows: total count matching dgvPreview red rows
-            int errorCount = result.ErrorRecords;
-            bool noErrors  = errorCount == 0;
-
-            string errorDetail;
-            if (noErrors)
-            {
-                errorDetail = "ไม่พบแถวที่มีข้อผิดพลาด — ข้อมูลพร้อมนำเข้าทุกแถว";
-            }
-            else
-            {
-                // List the first 3 error rows with their notes (same data as dgvPreview red rows)
-                var sb = new System.Text.StringBuilder();
-                int shown = 0;
-                foreach (var r in rows)
-                {
-                    if (r.Status != "Error") continue;
-                    sb.AppendFormat("แถว {0}: {1}  |  ", r.RowNumber,
-                        string.IsNullOrEmpty(r.StatusNote) ? "ข้อผิดพลาดไม่ระบุ" : r.StatusNote);
-                    if (++shown >= 3) break;
-                }
-                string preview = sb.ToString().TrimEnd(' ', '|', ' ');
-                errorDetail = shown < errorCount
-                    ? string.Format("{0} (และอีก {1} แถว)", preview, errorCount - shown)
-                    : preview;
-            }
-
-            SetValItem(6,
-                noErrors ? "✅" : "❌",
-                noErrors ? "ข้อผิดพลาด: ไม่พบ"
-                         : string.Format("❌  ข้อผิดพลาด: {0} แถว (ดูรายละเอียดใน Gridview)", errorCount),
-                errorDetail,
-                noErrors);
         }
 
         /// <summary>Updates one validation item row (icon, title, detail, stripe colour).</summary>
@@ -836,7 +861,135 @@ namespace CMS.Presentation.Modules.KMS
 
         private void PopulatePreviewGrid(IList<KBImportRow> rows)
         {
-            previewControl.BindRows(rows);
+            _allRows = (rows ?? new List<KBImportRow>())
+                .OrderBy(r => StatusSortOrder(r.Status))
+                .ThenBy(r => r.RowNumber)
+                .ToList();
+            _gridPage = 0;
+            RefreshGridPage();
+        }
+
+        private void RefreshGridPage()
+        {
+            dgvPreview.SuspendLayout();
+            dgvPreview.Rows.Clear();
+
+            try
+            {
+                int start = _gridPage * GridPageSize;
+                int end   = Math.Min(start + GridPageSize, _allRows.Count);
+
+                for (int i = start; i < end; i++)
+                {
+                    var r = _allRows[i];
+                    try
+                    {
+                        int idx = dgvPreview.Rows.Add(
+                            r.RowNumber.ToString(),
+                            StatusLabel(r.Status),
+                            FormatPreviewNote(r),
+                            S(r.ArticleCode),
+                            S(r.ColA),
+                            S(r.ColB),
+                            S(r.ColC),
+                            S(r.ColD),
+                            S(r.ColE),
+                            S(r.ColF),
+                            S(r.ColG),
+                            S(r.ColH),
+                            S(r.ColI),
+                            S(r.ColJ),
+                            S(r.ColK),
+                            S(r.ColL),
+                            S(r.ColM),
+                            S(r.ColN),
+                            S(r.ColO),
+                            S(r.ColP),
+                            S(r.ColQ),
+                            S(r.ColR),
+                            S(r.ColS),
+                            S(r.ColT, 300),
+                            S(r.ColU),
+                            S(r.ColV),
+                            S(r.Summary));
+
+                        var dgvRow = dgvPreview.Rows[idx];
+                        if (r.Status == "Error")
+                            dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(253, 237, 236);
+                        else if (r.Status == "Warn")
+                            dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 249, 231);
+                        else if ((i - start) % 2 == 1)
+                            dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(248, 250, 253);
+                    }
+                    catch
+                    {
+                        // One row that fails to render must not stop subsequent rows from
+                        // being added. Continue the loop — the grid skips this row silently.
+                    }
+                }
+            }
+            finally
+            {
+                dgvPreview.ResumeLayout();
+            }
+
+            UpdatePagerLabels();
+        }
+
+        private void UpdatePagerLabels()
+        {
+            int gridTotal = TotalPages(_allRows.Count, GridPageSize);
+
+            lblGridPage.Text = string.Format("หน้า {0} / {1}  ({2} รายการ)",
+                _gridPage + 1, gridTotal, _allRows.Count);
+
+            btnGridPrev.Enabled = _gridPage > 0;
+            btnGridNext.Enabled = _gridPage < gridTotal - 1;
+        }
+
+        private static int TotalPages(int count, int pageSize)
+        {
+            return count == 0 ? 1 : (int)Math.Ceiling(count / (double)pageSize);
+        }
+
+        private static int MaxPage(int count, int pageSize)
+        {
+            return Math.Max(0, TotalPages(count, pageSize) - 1);
+        }
+
+        private static string StatusLabel(string status)
+        {
+            if (status == "Valid") return "✅  Valid";
+            if (status == "Warn")  return "⚠️  Warn";
+            if (status == "Error") return "❌  Error";
+            return "⏳";
+        }
+
+        private static int StatusSortOrder(string status)
+        {
+            if (status == "Error") return 0;
+            if (status == "Warn")  return 1;
+            return 2;
+        }
+
+        private static string S(string value, int maxLen = 500)
+        {
+            if (value == null) return string.Empty;
+            return value.Length <= maxLen ? value : value.Substring(0, maxLen) + "…";
+        }
+
+        private static string FormatPreviewNote(KBImportRow r)
+        {
+            if (r.Status == "Valid") return string.Empty;
+
+            string note = r.StatusNote ?? string.Empty;
+            if (string.IsNullOrEmpty(note))
+                return r.Status == "Error" ? "ข้อผิดพลาดไม่ระบุ" : string.Empty;
+
+            // Warn and Error: StatusNote is already a user-facing, semicolon-joined
+            // list of specific Thai validation messages produced by ValidateSingleRow /
+            // ResolveCategories / KBExcelReader — surface it directly.
+            return S(note, 300);
         }
 
         // Utility Methods
@@ -916,11 +1069,30 @@ namespace CMS.Presentation.Modules.KMS
                 if (row.Status == "Warn")
                 {
                     reason      = "⚠️ ข้ามตามตัวเลือก";
-                    relatedData = row.StatusNote ?? string.Empty;
+                    relatedData = S(row.StatusNote ?? string.Empty, 300);
                 }
                 else
                 {
-                    ClassifyError(row.StatusNote ?? string.Empty, out reason, out relatedData);
+                    string note = row.StatusNote ?? string.Empty;
+                    if (string.IsNullOrEmpty(note))
+                    {
+                        reason      = "ข้อผิดพลาดไม่ระบุ";
+                        relatedData = string.Empty;
+                    }
+                    else
+                    {
+                        ClassifyError(note, out reason, out relatedData);
+
+                        // ClassifyError generic fallback means the note is already a
+                        // user-facing Thai message (validation errors, business-rule
+                        // errors, Thai InvalidOperationException messages). Surface
+                        // it directly — consistent with FormatPreviewNote behaviour.
+                        if (reason == "❌ ข้อผิดพลาดทั่วไป")
+                        {
+                            reason      = S(note, 300);
+                            relatedData = string.Empty;
+                        }
+                    }
                 }
 
                 int idx = dgvFailedRows.Rows.Add(

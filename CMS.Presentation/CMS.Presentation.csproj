@@ -276,18 +276,6 @@
     <Compile Include="Modules\KMS\KBImportWizardForm.Designer.cs">
       <DependentUpon>KBImportWizardForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\KMS\KBImportPreviewControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Modules\KMS\KBImportPreviewControl.Designer.cs">
-      <DependentUpon>KBImportPreviewControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Modules\KMS\KBImportRowCardControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Modules\KMS\KBImportRowCardControl.Designer.cs">
-      <DependentUpon>KBImportRowCardControl.cs</DependentUpon>
-    </Compile>
     <Compile Include="Modules\KMS\KBDashboardForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -606,12 +594,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBImportWizardForm.resx">
       <DependentUpon>KBImportWizardForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Modules\KMS\KBImportPreviewControl.resx">
-      <DependentUpon>KBImportPreviewControl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Modules\KMS\KBImportRowCardControl.resx">
-      <DependentUpon>KBImportRowCardControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\ArticleCardControl.resx">
       <DependentUpon>ArticleCardControl.cs</DependentUpon>

@@ -20,6 +20,8 @@
         {
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlErrorDetail = new System.Windows.Forms.Panel();
             this.dgvFailedRows = new System.Windows.Forms.DataGridView();
             this.colFRow = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -83,7 +85,12 @@
             this.btnCancel2 = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
             this.btnImport = new System.Windows.Forms.Button();
-            this.previewControl = new CMS.Presentation.Modules.KMS.KBImportPreviewControl();
+            this.pnlPreviewGrid = new System.Windows.Forms.Panel();
+            this.dgvPreview = new System.Windows.Forms.DataGridView();
+            this.pnlGridPager = new System.Windows.Forms.Panel();
+            this.lblGridPage = new System.Windows.Forms.Label();
+            this.btnGridPrev = new System.Windows.Forms.Button();
+            this.btnGridNext = new System.Windows.Forms.Button();
             this.pnlImportOptions = new System.Windows.Forms.Panel();
             this.chkSkipWarning = new System.Windows.Forms.CheckBox();
             this.chkAutoCategory = new System.Windows.Forms.CheckBox();
@@ -208,6 +215,9 @@
             this.pnlStep2Inner.SuspendLayout();
             this.pnlActStep2.SuspendLayout();
             this.pnlProgress.SuspendLayout();
+            this.pnlPreviewGrid.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvPreview)).BeginInit();
+            this.pnlGridPager.SuspendLayout();
             this.pnlImportOptions.SuspendLayout();
             this.pnlSummaryPills.SuspendLayout();
             this.pnlPillError.SuspendLayout();
@@ -260,6 +270,7 @@
             // 
             this.dgvFailedRows.AllowUserToAddRows = false;
             this.dgvFailedRows.AllowUserToDeleteRows = false;
+            this.dgvFailedRows.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
             this.dgvFailedRows.BackgroundColor = System.Drawing.Color.White;
             this.dgvFailedRows.BorderStyle = System.Windows.Forms.BorderStyle.None;
             dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
@@ -304,7 +315,6 @@
             this.colFRow.MinimumWidth = 6;
             this.colFRow.Name = "colFRow";
             this.colFRow.ReadOnly = true;
-            this.colFRow.Width = 80;
             // 
             // colFCode
             // 
@@ -312,7 +322,7 @@
             this.colFCode.MinimumWidth = 6;
             this.colFCode.Name = "colFCode";
             this.colFCode.ReadOnly = true;
-            this.colFCode.Width = 170;
+            this.colFCode.Width = 108;
             // 
             // colFCat
             // 
@@ -320,7 +330,7 @@
             this.colFCat.MinimumWidth = 6;
             this.colFCat.Name = "colFCat";
             this.colFCat.ReadOnly = true;
-            this.colFCat.Width = 120;
+            this.colFCat.Width = 123;
             // 
             // colFTitle
             // 
@@ -328,7 +338,7 @@
             this.colFTitle.MinimumWidth = 6;
             this.colFTitle.Name = "colFTitle";
             this.colFTitle.ReadOnly = true;
-            this.colFTitle.Width = 200;
+            this.colFTitle.Width = 116;
             // 
             // colFRaw
             // 
@@ -336,7 +346,7 @@
             this.colFRaw.MinimumWidth = 6;
             this.colFRaw.Name = "colFRaw";
             this.colFRaw.ReadOnly = true;
-            this.colFRaw.Width = 200;
+            this.colFRaw.Width = 122;
             // 
             // colFReason
             // 
@@ -599,7 +609,7 @@
             this.pnlStep3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep3.Controls.Add(this.pnlStep3Inner);
             this.pnlStep3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep3.Location = new System.Drawing.Point(0, 1482);
+            this.pnlStep3.Location = new System.Drawing.Point(0, 1438);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Padding = new System.Windows.Forms.Padding(60, 20, 60, 20);
             this.pnlStep3.Size = new System.Drawing.Size(1179, 569);
@@ -911,23 +921,22 @@
             this.pnlStep2.Location = new System.Drawing.Point(0, 709);
             this.pnlStep2.Name = "pnlStep2";
             this.pnlStep2.Padding = new System.Windows.Forms.Padding(16, 8, 16, 16);
-            this.pnlStep2.Size = new System.Drawing.Size(1179, 773);
+            this.pnlStep2.Size = new System.Drawing.Size(1179, 729);
             this.pnlStep2.TabIndex = 1;
             this.pnlStep2.Visible = false;
             // 
             // pnlStep2Inner
             // 
             this.pnlStep2Inner.BackColor = System.Drawing.Color.Transparent;
-            this.pnlStep2Inner.Controls.Add(this.pnlActStep2);
-            this.pnlStep2Inner.Controls.Add(this.previewControl);
+            this.pnlStep2Inner.Controls.Add(this.pnlPreviewGrid);
             this.pnlStep2Inner.Controls.Add(this.pnlImportOptions);
             this.pnlStep2Inner.Controls.Add(this.pnlSummaryPills);
             this.pnlStep2Inner.Controls.Add(this.pnlPreviewHdr);
             this.pnlStep2Inner.Controls.Add(this.pnlValidation);
-            this.pnlStep2Inner.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlStep2Inner.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlStep2Inner.Location = new System.Drawing.Point(16, 8);
             this.pnlStep2Inner.Name = "pnlStep2Inner";
-            this.pnlStep2Inner.Size = new System.Drawing.Size(1147, 749);
+            this.pnlStep2Inner.Size = new System.Drawing.Size(1147, 710);
             this.pnlStep2Inner.TabIndex = 0;
             // 
             // pnlActStep2
@@ -937,10 +946,10 @@
             this.pnlActStep2.Controls.Add(this.btnCancel2);
             this.pnlActStep2.Controls.Add(this.btnBack);
             this.pnlActStep2.Controls.Add(this.btnImport);
-            this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlActStep2.Location = new System.Drawing.Point(310, 708);
+            this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlActStep2.Location = new System.Drawing.Point(0, 410);
             this.pnlActStep2.Name = "pnlActStep2";
-            this.pnlActStep2.Size = new System.Drawing.Size(837, 45);
+            this.pnlActStep2.Size = new System.Drawing.Size(837, 41);
             this.pnlActStep2.TabIndex = 1;
             this.pnlActStep2.Visible = false;
             // 
@@ -953,7 +962,7 @@
             this.pnlProgress.Location = new System.Drawing.Point(497, 0);
             this.pnlProgress.Name = "pnlProgress";
             this.pnlProgress.Padding = new System.Windows.Forms.Padding(0, 10, 20, 10);
-            this.pnlProgress.Size = new System.Drawing.Size(340, 45);
+            this.pnlProgress.Size = new System.Drawing.Size(340, 41);
             this.pnlProgress.TabIndex = 3;
             this.pnlProgress.Visible = false;
             // 
@@ -962,7 +971,7 @@
             this.progressBar.Dock = System.Windows.Forms.DockStyle.Fill;
             this.progressBar.Location = new System.Drawing.Point(0, 10);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(320, 9);
+            this.progressBar.Size = new System.Drawing.Size(320, 5);
             this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.progressBar.TabIndex = 0;
             // 
@@ -971,7 +980,7 @@
             this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.lblProgressText.Font = new System.Drawing.Font("Segoe UI", 7.5F);
             this.lblProgressText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblProgressText.Location = new System.Drawing.Point(0, 19);
+            this.lblProgressText.Location = new System.Drawing.Point(0, 15);
             this.lblProgressText.Name = "lblProgressText";
             this.lblProgressText.Size = new System.Drawing.Size(320, 16);
             this.lblProgressText.TabIndex = 1;
@@ -989,7 +998,7 @@
             this.btnCancel2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.btnCancel2.Location = new System.Drawing.Point(310, 0);
             this.btnCancel2.Name = "btnCancel2";
-            this.btnCancel2.Size = new System.Drawing.Size(100, 45);
+            this.btnCancel2.Size = new System.Drawing.Size(100, 41);
             this.btnCancel2.TabIndex = 2;
             this.btnCancel2.Text = "✕  ยกเลิก";
             this.btnCancel2.UseVisualStyleBackColor = false;
@@ -1006,7 +1015,7 @@
             this.btnBack.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.btnBack.Location = new System.Drawing.Point(190, 0);
             this.btnBack.Name = "btnBack";
-            this.btnBack.Size = new System.Drawing.Size(120, 45);
+            this.btnBack.Size = new System.Drawing.Size(120, 41);
             this.btnBack.TabIndex = 1;
             this.btnBack.Text = "◄  ย้อนกลับ";
             this.btnBack.UseVisualStyleBackColor = false;
@@ -1023,20 +1032,118 @@
             this.btnImport.ForeColor = System.Drawing.Color.White;
             this.btnImport.Location = new System.Drawing.Point(0, 0);
             this.btnImport.Name = "btnImport";
-            this.btnImport.Size = new System.Drawing.Size(190, 45);
+            this.btnImport.Size = new System.Drawing.Size(190, 41);
             this.btnImport.TabIndex = 0;
             this.btnImport.Text = "📥  เริ่มนำเข้าข้อมูล";
             this.btnImport.UseVisualStyleBackColor = false;
             this.btnImport.Click += new System.EventHandler(this.BtnImport_Click);
             // 
-            // previewControl
+            // pnlPreviewGrid
             // 
-            this.previewControl.BackColor = System.Drawing.Color.White;
-            this.previewControl.Dock = System.Windows.Forms.DockStyle.Top;
-            this.previewControl.Location = new System.Drawing.Point(310, 259);
-            this.previewControl.Name = "previewControl";
-            this.previewControl.Size = new System.Drawing.Size(837, 449);
-            this.previewControl.TabIndex = 2;
+            this.pnlPreviewGrid.BackColor = System.Drawing.Color.White;
+            this.pnlPreviewGrid.Controls.Add(this.dgvPreview);
+            this.pnlPreviewGrid.Controls.Add(this.pnlGridPager);
+            this.pnlPreviewGrid.Controls.Add(this.pnlActStep2);
+            this.pnlPreviewGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlPreviewGrid.Location = new System.Drawing.Point(310, 259);
+            this.pnlPreviewGrid.Name = "pnlPreviewGrid";
+            this.pnlPreviewGrid.Size = new System.Drawing.Size(837, 451);
+            this.pnlPreviewGrid.TabIndex = 2;
+            // 
+            // dgvPreview
+            // 
+            this.dgvPreview.AllowUserToAddRows = false;
+            this.dgvPreview.AllowUserToDeleteRows = false;
+            this.dgvPreview.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
+            this.dgvPreview.BackgroundColor = System.Drawing.Color.White;
+            this.dgvPreview.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 8F);
+            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvPreview.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            this.dgvPreview.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvPreview.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvPreview.EnableHeadersVisualStyles = false;
+            this.dgvPreview.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.dgvPreview.GridColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
+            this.dgvPreview.Location = new System.Drawing.Point(0, 0);
+            this.dgvPreview.Name = "dgvPreview";
+            this.dgvPreview.ReadOnly = true;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvPreview.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
+            this.dgvPreview.RowHeadersVisible = false;
+            this.dgvPreview.RowHeadersWidth = 51;
+            this.dgvPreview.RowTemplate.Height = 26;
+            this.dgvPreview.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvPreview.Size = new System.Drawing.Size(837, 374);
+            this.dgvPreview.TabIndex = 0;
+            // 
+            // pnlGridPager
+            // 
+            this.pnlGridPager.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
+            this.pnlGridPager.Controls.Add(this.lblGridPage);
+            this.pnlGridPager.Controls.Add(this.btnGridPrev);
+            this.pnlGridPager.Controls.Add(this.btnGridNext);
+            this.pnlGridPager.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlGridPager.Location = new System.Drawing.Point(0, 374);
+            this.pnlGridPager.Name = "pnlGridPager";
+            this.pnlGridPager.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
+            this.pnlGridPager.Size = new System.Drawing.Size(837, 36);
+            this.pnlGridPager.TabIndex = 1;
+            // 
+            // lblGridPage
+            // 
+            this.lblGridPage.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblGridPage.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblGridPage.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(116)))), ((int)(((byte)(139)))));
+            this.lblGridPage.Location = new System.Drawing.Point(108, 4);
+            this.lblGridPage.Name = "lblGridPage";
+            this.lblGridPage.Size = new System.Drawing.Size(621, 28);
+            this.lblGridPage.TabIndex = 1;
+            this.lblGridPage.Text = "หน้า 1 / 1  (0 รายการ)";
+            this.lblGridPage.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // btnGridPrev
+            // 
+            this.btnGridPrev.BackColor = System.Drawing.Color.White;
+            this.btnGridPrev.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnGridPrev.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnGridPrev.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
+            this.btnGridPrev.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnGridPrev.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.btnGridPrev.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnGridPrev.Location = new System.Drawing.Point(8, 4);
+            this.btnGridPrev.Name = "btnGridPrev";
+            this.btnGridPrev.Size = new System.Drawing.Size(100, 28);
+            this.btnGridPrev.TabIndex = 0;
+            this.btnGridPrev.Text = "◀  ก่อนหน้า";
+            this.btnGridPrev.UseVisualStyleBackColor = false;
+            this.btnGridPrev.Click += new System.EventHandler(this.BtnGridPrev_Click);
+            // 
+            // btnGridNext
+            // 
+            this.btnGridNext.BackColor = System.Drawing.Color.White;
+            this.btnGridNext.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnGridNext.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnGridNext.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
+            this.btnGridNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnGridNext.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.btnGridNext.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnGridNext.Location = new System.Drawing.Point(729, 4);
+            this.btnGridNext.Name = "btnGridNext";
+            this.btnGridNext.Size = new System.Drawing.Size(100, 28);
+            this.btnGridNext.TabIndex = 2;
+            this.btnGridNext.Text = "ถัดไป  ▶";
+            this.btnGridNext.UseVisualStyleBackColor = false;
+            this.btnGridNext.Click += new System.EventHandler(this.BtnGridNext_Click);
             // 
             // pnlImportOptions
             // 
@@ -1333,7 +1440,7 @@
             this.pnlValidation.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlValidation.Location = new System.Drawing.Point(0, 0);
             this.pnlValidation.Name = "pnlValidation";
-            this.pnlValidation.Size = new System.Drawing.Size(310, 749);
+            this.pnlValidation.Size = new System.Drawing.Size(310, 710);
             this.pnlValidation.TabIndex = 4;
             // 
             // pnlValidationBody
@@ -1343,7 +1450,7 @@
             this.pnlValidationBody.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlValidationBody.Location = new System.Drawing.Point(0, 36);
             this.pnlValidationBody.Name = "pnlValidationBody";
-            this.pnlValidationBody.Size = new System.Drawing.Size(310, 713);
+            this.pnlValidationBody.Size = new System.Drawing.Size(310, 674);
             this.pnlValidationBody.TabIndex = 0;
             // 
             // pnlValidationItems
@@ -1355,10 +1462,10 @@
             this.pnlValidationItems.Controls.Add(this.pnlValItem3);
             this.pnlValidationItems.Controls.Add(this.pnlValItem2);
             this.pnlValidationItems.Controls.Add(this.pnlValItem1);
-            this.pnlValidationItems.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlValidationItems.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlValidationItems.Location = new System.Drawing.Point(0, 0);
             this.pnlValidationItems.Name = "pnlValidationItems";
-            this.pnlValidationItems.Size = new System.Drawing.Size(310, 360);
+            this.pnlValidationItems.Size = new System.Drawing.Size(310, 674);
             this.pnlValidationItems.TabIndex = 0;
             // 
             // pnlValItem6
@@ -1372,8 +1479,9 @@
             this.pnlValItem6.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlValItem6.Location = new System.Drawing.Point(0, 300);
             this.pnlValItem6.Name = "pnlValItem6";
-            this.pnlValItem6.Size = new System.Drawing.Size(310, 60);
+            this.pnlValItem6.Size = new System.Drawing.Size(310, 372);
             this.pnlValItem6.TabIndex = 5;
+            this.pnlValItem6.Visible = false;
             // 
             // pnlValItem6Stripe
             // 
@@ -1381,7 +1489,7 @@
             this.pnlValItem6Stripe.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlValItem6Stripe.Location = new System.Drawing.Point(0, 0);
             this.pnlValItem6Stripe.Name = "pnlValItem6Stripe";
-            this.pnlValItem6Stripe.Size = new System.Drawing.Size(4, 58);
+            this.pnlValItem6Stripe.Size = new System.Drawing.Size(4, 42);
             this.pnlValItem6Stripe.TabIndex = 0;
             // 
             // lblValItem6Icon
@@ -1408,11 +1516,12 @@
             // 
             // lblValItem6Detail
             // 
+            this.lblValItem6Detail.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.lblValItem6Detail.Font = new System.Drawing.Font("Segoe UI", 7.5F);
             this.lblValItem6Detail.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.lblValItem6Detail.Location = new System.Drawing.Point(38, 28);
+            this.lblValItem6Detail.Location = new System.Drawing.Point(0, 42);
             this.lblValItem6Detail.Name = "lblValItem6Detail";
-            this.lblValItem6Detail.Size = new System.Drawing.Size(268, 28);
+            this.lblValItem6Detail.Size = new System.Drawing.Size(308, 328);
             this.lblValItem6Detail.TabIndex = 3;
             this.lblValItem6Detail.Text = "รอการตรวจสอบ...";
             // 
@@ -2266,6 +2375,9 @@
             this.pnlStep2Inner.ResumeLayout(false);
             this.pnlActStep2.ResumeLayout(false);
             this.pnlProgress.ResumeLayout(false);
+            this.pnlPreviewGrid.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvPreview)).EndInit();
+            this.pnlGridPager.ResumeLayout(false);
             this.pnlImportOptions.ResumeLayout(false);
             this.pnlSummaryPills.ResumeLayout(false);
             this.pnlPillError.ResumeLayout(false);
@@ -2375,7 +2487,12 @@
         private System.Windows.Forms.Panel    pnlPillError;
         private System.Windows.Forms.Label    lblErrorCount;
         private System.Windows.Forms.Label    lblErrorLabel;
-        private CMS.Presentation.Modules.KMS.KBImportPreviewControl previewControl;
+        private System.Windows.Forms.Panel             pnlPreviewGrid;
+        private System.Windows.Forms.DataGridView      dgvPreview;
+        private System.Windows.Forms.Panel             pnlGridPager;
+        private System.Windows.Forms.Label             lblGridPage;
+        private System.Windows.Forms.Button            btnGridPrev;
+        private System.Windows.Forms.Button            btnGridNext;
         private System.Windows.Forms.Panel    pnlImportOptions;
         private System.Windows.Forms.Label    lblOptionsHeader;
         private System.Windows.Forms.CheckBox chkSkipWarning;
