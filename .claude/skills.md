@@ -1,330 +1,163 @@
-# CMS Solution — Developer Skills Guide
-> C# .NET 4.5 · Windows Forms · SQL Server · ADO.NET · MVP Pattern
+# CMS Solution — Developer Guide
+> C# .NET 4.5 · WinForms · SQL Server · ADO.NET · MVP
 
 ---
 
-## 1. Architecture Overview
+## Architecture
 
-```
-CMS.Presentation   ← Form (UI only, event handlers only)
-CMS.Controllers    ← Presenter / Controller (MVP logic, no DB)
-CMS.Services       ← Business logic (rules, validation, orchestration)
-CMS.Data           ← Repository (ADO.NET, SQL Server only)
-CMS.Domain         ← Models + Enums (no logic, no dependencies)
-CMS.Infrastructure ← Cross-cutting (logging, AD, config)
-```
-
-**Dependency direction (strict, one-way):**
 ```
 Presentation → Controllers → Services → Data → Domain
                                               ↑
                                         Infrastructure
 ```
 
-**Wire-up location:** `CMS.Presentation/Program.cs`
-All `new` for repos/services/controllers happens here. No `new` inside forms.
-
-**Base MDI host:** `CMS.Presentation/MDI_Container` — all module forms open as MDI children.
-
----
-
-## 2. Creating a New Form — Full Checklist
-
-Follow the KBImportWizard (`KBImportWizardForm`) as the canonical example.
-
-### Step 1 — Domain (CMS.Domain)
-
-**Enums** → `CMS.Domain/Enums/<FeatureName>Enum.cs`
-```csharp
-public enum KBCategoryCodeName : byte { LW = 1 }
-```
-
-**Models** → `CMS.Domain/Models/<FeatureName>.cs`
-- Plain POCO, no logic beyond computed read-only properties
-- No service/repository references
-```csharp
-public class KBImportRow {
-    public int RowNumber { get; set; }
-    public string Title { get; set; }
-    public string Status { get; set; }   // "Valid" | "Warn" | "Error"
-    // computed only:
-    public string ArticleCode { get; }
-}
-```
-
----
-
-### Step 2 — Data (CMS.Data)
-
-**Interface** → `CMS.Data/Interfaces/I<Entity>Repository.cs`
-```csharp
-public interface IKBArticleRepository {
-    IEnumerable<KBArticle> GetAll();
-    KBArticle GetById(int id);
-    int Insert(KBArticle article);
-    void Update(KBArticle article);
-}
-```
-
-**Implementation** → `CMS.Data/Repositories/<Entity>Repository.cs`
-- Use ADO.NET only (`SqlConnection`, `SqlCommand`, `SqlDataReader`)
-- `using` blocks for every connection
-- No business logic here — pure SQL/mapping
-
----
-
-### Step 3 — Services (CMS.Services)
-
-**Interface** → `CMS.Services/Interfaces/I<Feature>Service.cs`
-```csharp
-public interface IKBArticleService {
-    IEnumerable<KBArticle> GetAll();
-    int Create(KBArticle article);
-    void ChangeStatus(int id, byte status, string actionBy);
-}
-```
-
-**Implementation** → `CMS.Services/<Feature>Service.cs`
-- Inject repos via constructor
-- All business rules, validation, orchestration live here
-- Throws meaningful exceptions (not returning bool/null silently)
-
-**Helper classes** (no interface needed) → `CMS.Services/<FeatureHelper>.cs`
-```csharp
-// Example: KBExcelReader, KBImportProcessor
-public class KBImportProcessor {
-    private readonly IKBCategoryRepository _categoryRepo;
-    private readonly IKBArticleRepository _articleRepo;
-    public KBImportProcessor(IKBCategoryRepository c, IKBArticleRepository a) { ... }
-    public void ValidateRows(IList<KBImportRow> rows) { ... }
-    public void InsertArticles(IList<KBImportRow> rows, string createdBy, ...) { ... }
-}
-```
-
----
-
-### Step 4 — Controllers (CMS.Controllers)
-
-**Two interfaces per feature:**
-
-**View contract** → `CMS.Controllers/<Module>/Interfaces/I<Feature>View.cs`
-(Properties the form exposes, methods the presenter calls)
-```csharp
-public interface IKBImportWizardView {
-    string SelectedFilePath { get; }
-    bool OptSkipWarning { get; }
-    void ShowValidationResult(KBImportValidationResult result);
-    void ShowImportComplete(KBImportValidationResult summary);
-    void ShowError(string message);
-    void SetStatus(string text);
-}
-```
-
-**Controller contract** → `CMS.Controllers/<Module>/Interfaces/I<Feature>Controller.cs`
-(Methods the form calls on user action)
-```csharp
-public interface IKBImportWizardController {
-    void ValidateFile();
-    void ExecuteImport();
-    void Cancel();
-}
-```
-
-**Presenter** → `CMS.Controllers/<Module>/<Feature>Controller.cs`
-```csharp
-public class KBImportWizardController : IKBImportWizardController {
-    private readonly IKBImportWizardView _view;
-    private readonly IKBArticleService _articleService;
-    private readonly KBImportProcessor _processor;
-
-    public KBImportWizardController(
-        IKBImportWizardView view,
-        IKBArticleService articleService,
-        KBImportProcessor processor) { ... }
-
-    public void ValidateFile() {
-        var result = _processor.ValidateRows(...);
-        _view.ShowValidationResult(result);
-    }
-}
-```
-
----
-
-### Step 5 — Presentation (CMS.Presentation)
-
-**Two files per form (mandatory):**
-
-#### `<FeatureForm>.cs` — Code-behind (event handlers ONLY)
-```csharp
-public partial class KBImportWizardForm : Form,
-    IKBImportWizardView       // View contract
-{
-    private KBImportWizardController _presenter;
-
-    // ctor: accept dependencies, set up form state
-    public KBImportWizardForm(IKBArticleService articleService,
-                               IKBCategoryService categoryService,
-                               KBImportProcessor processor,
-                               UserContext user) {
-        InitializeComponent();
-        _presenter = new KBImportWizardController(this, articleService, processor);
-    }
-
-    // --- IKBImportWizardView properties ---
-    public string SelectedFilePath => txtFilePath.Text.Trim();
-    public bool OptSkipWarning => chkSkipWarning.Checked;
-
-    // --- IKBImportWizardView methods ---
-    public void ShowValidationResult(KBImportValidationResult r) {
-        lblSummary.Text = $"Valid: {r.ValidRecords} / Total: {r.TotalRecords}";
-        previewControl.BindRows(r.Rows);
-    }
-    public void ShowError(string msg) => MessageBox.Show(msg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-    public void SetStatus(string text) => lblStatus.Text = text;
-
-    // --- Event handlers (ONLY thing allowed here) ---
-    private void btnBrowse_Click(object sender, EventArgs e) => _presenter.BrowseFile();
-    private void btnValidate_Click(object sender, EventArgs e) => _presenter.ValidateFile();
-    private void btnImport_Click(object sender, EventArgs e) => _presenter.ExecuteImport();
-    private void btnCancel_Click(object sender, EventArgs e) => Close();
-}
-```
-
-#### `<FeatureForm>.Designer.cs` — Visual designer (auto-generated, never edit manually)
-- All control declarations, `InitializeComponent()`, layout code
-- VS designer writes this file — treat as read-only
-
----
-
-### Step 6 — Wire up in Program.cs
-
-```csharp
-// 1. Repos
-var kbArticleRepo     = new KBArticleRepository(connectionString);
-var kbCategoryRepo    = new KBCategoryRepository(connectionString);
-
-// 2. Services
-var kbArticleService  = new KBArticleService(kbArticleRepo, auditService);
-var kbCategoryService = new KBCategoryService(kbCategoryRepo, auditService);
-
-// 3. Helpers
-var kbImportProcessor = new KBImportProcessor(kbCategoryRepo, kbArticleRepo, kbVersionRepo);
-
-// 4. Inject into MDI_Container (or form factory)
-var mdi = new MDI_Container(..., kbArticleService, kbCategoryService, kbImportProcessor, ...);
-```
-
----
-
-## 3. Opening a Form from MDI_Container
-
-```csharp
-// Inside MDI_Container — open as MDI child
-private void OpenKBImportWizard() {
-    var form = new KBImportWizardForm(
-        _kbArticleService, _kbCategoryService, _kbImportProcessor, _user);
-    form.MdiParent = this;
-    form.Show();
-}
-```
-
----
-
-## 4. Error Fix / Revision Rules
-
-### Before touching any code, identify ALL affected layers:
-| Layer changed | Must also check |
+| Project | Role |
 |---|---|
-| Domain Model (add/rename property) | Repository mapping, Service logic, Controller usage, Form binding |
-| Repository interface | Repository implementation, Service constructor, Program.cs wire-up |
-| Service interface | Service implementation, Controller constructor, Program.cs wire-up |
-| Controller interface | Presenter implementation, Form constructor, Form's view-contract impl |
-| Form (view contract) | Controller calls to view methods, matching interface |
+| `CMS.Presentation` | Forms, event handlers only |
+| `CMS.Controllers` | Presenter / MVP logic, no DB |
+| `CMS.Services` | Business rules, validation, orchestration |
+| `CMS.Data` | ADO.NET repositories, SQL only |
+| `CMS.Domain` | POCOs + Enums, no logic |
+| `CMS.Infrastructure` | Logging, AD, config |
 
-### Fix cascade order (bottom-up):
-```
-1. Domain  →  2. Data  →  3. Services  →  4. Controllers  →  5. Presentation  →  6. Program.cs
-```
-Never skip a layer. A compile error in any layer means the fix is incomplete.
-
-### Best practices when revising:
-- **Add a property/method to an interface** → implement it in ALL classes that implement that interface
-- **Rename a method** → use VS "Rename" (F2) to catch all callers across projects
-- **Change constructor signature** → update Program.cs wire-up immediately
-- **Move logic out of event handler** → put it in the presenter, call presenter method from handler
-- **Never** put `SqlCommand` / business rules in a Form or Controller
-- **Never** put UI calls (`MessageBox`, control references) in Services or Repositories
+- All `new` for repos/services happens in `Program.cs` only. No `new` inside forms.
+- All module forms open as MDI children of `MDI_Container`.
 
 ---
 
-## 5. Naming Conventions
+## New Form Checklist
+
+**1. Domain** — `CMS.Domain/Models/<Entity>.cs`, `CMS.Domain/Enums/<Feature>Enum.cs`
+- Plain POCO, no logic beyond computed read-only properties
+
+**2. Data** — `CMS.Data/Interfaces/I<Entity>Repository.cs` + `Repositories/<Entity>Repository.cs`
+- ADO.NET only (`SqlConnection`/`SqlCommand`/`SqlDataReader`), `using` on every connection
+- No business logic, pure SQL + mapping
+
+**3. Services** — `CMS.Services/Interfaces/I<Feature>Service.cs` + `<Feature>Service.cs`
+- Inject repos via constructor; all rules and validation live here
+- Throw meaningful exceptions, never return `bool`/`null` silently
+- Helper classes (no interface needed): `CMS.Services/<Feature>Processor.cs`
+
+**4. Controllers** — two interfaces per feature:
+- `I<Feature>View.cs` — properties + methods the form exposes to the presenter
+- `I<Feature>Controller.cs` — methods the form calls on user action
+- `<Feature>Controller.cs` — presenter; injects view + services via constructor
+
+**5. Presentation** — `CMS.Presentation/Modules/<Module>/`
+- `<Feature>Form.cs` — event handlers only; implements the View interface
+- `<Feature>Form.Designer.cs` — auto-generated; never edit manually
+
+**6. Wire up** — `Program.cs` → `MDI_Container.cs` in that order
+
+```csharp
+// Program.cs
+var articleRepo    = new KBArticleRepository(config);
+var articleService = new KBArticleService(articleRepo, auditService);
+var mdi            = new MDI_Container(..., articleService, ...);
+```
+
+```csharp
+// Form.cs — allowed
+private void btnSave_Click(object sender, EventArgs e) => _presenter.Save();
+public string InputText => txtInput.Text.Trim();
+
+// Form.cs — not allowed
+private void btnSave_Click(object sender, EventArgs e) {
+    var conn = new SqlConnection(...);   // ❌ no DB in form
+    if (txtName.Text.Length < 3) { }    // ❌ no validation in form
+}
+```
+
+---
+
+## Fix / Revision Rules
+
+### Layer cascade — bottom-up, never skip
+```
+Domain → Data → Services → Controllers → Presentation → Program.cs
+```
+
+| Layer changed | Also update |
+|---|---|
+| Domain model (add/rename property) | Repo mapping, Service, Controller, Form binding |
+| Repository interface | Implementation, Service ctor, Program.cs |
+| Service interface | Implementation, Controller ctor, Program.cs |
+| Controller / View interface | Presenter, Form ctor, Form view-contract impl |
+
+- Add to interface → implement in every class that implements it
+- Change constructor signature → update Program.cs immediately
+- Rename → use VS F2 (Rename) to catch all callers
+
+### Hard rules
+- No `SqlCommand` / business logic in Forms or Controllers
+- No `MessageBox` / control references in Services or Repositories
+- No `new` on services inside forms
+
+---
+
+## Troubleshooting Mindset
+
+### Before writing any fix
+1. **State the mechanism in one sentence.** If you cannot, keep investigating — do not write code yet.
+2. **Map runtime constraints first.** For third-party runtimes (browser engine, COM, native API): document no-op conditions, known side effects, and threading rules before touching code.
+3. **Enumerate side effects of the proposed fix.** Ask: what system state does this change? What invariant can it violate?
+
+### During diagnosis
+- **One specific value fails while all others pass** → structural collision in the runtime, not a code bug. Characterize *why* that value is different before fixing anything.
+- **Same root cause reappears after each patch** → you are treating symptoms. Stop and identify the actual constraint.
+- **Fix introduces a new regression** → the approach has uncontrolled side effects.
+- **Two independent attempts, same failure class** → the approach is wrong. Step back, list alternatives, evaluate each against the runtime constraints, then choose.
+
+### Before declaring success
+Test the full matrix, not just the reported case:
+- [ ] Exact failing value now works
+- [ ] All previously working values still work
+- [ ] Rapid / repeated use does not freeze or deadlock
+- [ ] Selection / focus / UI state remains consistent throughout
+
+---
+
+## Naming Conventions
 
 | Artifact | Convention | Example |
 |---|---|---|
-| Form class | `<Feature>Form` | `KBImportWizardForm` |
+| Form | `<Feature>Form` | `KBImportWizardForm` |
 | View interface | `I<Feature>View` | `IKBImportWizardView` |
 | Controller interface | `I<Feature>Controller` | `IKBImportWizardController` |
 | Presenter class | `<Feature>Controller` | `KBImportWizardController` |
 | Service interface | `I<Entity>Service` | `IKBArticleService` |
 | Repository interface | `I<Entity>Repository` | `IKBArticleRepository` |
-| Repository implementation | `<Entity>Repository` | `KBArticleRepository` |
-| Enum file | `<Feature>Enum` or descriptive | `KBCategoryCodeName` |
-| Domain model | `<EntityName>` | `KBArticle`, `KBImportRow` |
-| Helper/Processor | `<Feature><Role>` | `KBExcelReader`, `KBImportProcessor` |
+| Repository impl | `<Entity>Repository` | `KBArticleRepository` |
+| Domain model | `<EntityName>` | `KBArticle` |
+| Helper / Processor | `<Feature><Role>` | `KBImportProcessor` |
 
 ---
 
-## 6. File Location Quick Reference
+## File Locations
 
 ```
 CMS.Domain/
-  Enums/           ← ALL enums go here
-  Models/          ← ALL domain models (POCOs) go here
+  Enums/                    ← all enums
+  Models/                   ← all POCOs
 
 CMS.Data/
-  Interfaces/      ← I<Entity>Repository.cs
-  Repositories/    ← <Entity>Repository.cs (ADO.NET)
+  Interfaces/               ← I<Entity>Repository.cs
+  Repositories/             ← <Entity>Repository.cs
 
 CMS.Services/
-  Interfaces/      ← I<Feature>Service.cs
+  Interfaces/               ← I<Feature>Service.cs
   <Feature>Service.cs
-  <Feature>Helper.cs / <Feature>Processor.cs (no interface needed)
+  <Feature>Processor.cs     ← helpers (no interface needed)
 
-CMS.Controllers/
-  <Module>/
-    Interfaces/    ← I<Feature>View.cs + I<Feature>Controller.cs
-    <Feature>Controller.cs
+CMS.Controllers/<Module>/
+  Interfaces/               ← I<Feature>View.cs + I<Feature>Controller.cs
+  <Feature>Controller.cs
 
 CMS.Presentation/
   Modules/<Module>/
-    <Feature>Form.cs          ← code-behind (event handlers only)
-    <Feature>Form.Designer.cs ← designer (auto-generated)
-    <Feature>Form.resx        ← resources
-    <Feature>Control.cs       ← UserControls (same rules apply)
-
-CMS.Presentation/
-  Program.cs       ← ONLY place that calls `new` on repos/services
-  MDI_Container.cs ← base MDI host, injects dependencies into child forms
+    <Feature>Form.cs        ← event handlers only
+    <Feature>Form.Designer.cs
+  Program.cs                ← only place that calls new on repos/services
+  MDI_Container.cs          ← injects deps into child forms
 ```
-
----
-
-## 7. Code-Behind Rules (Hard Rules)
-
-```csharp
-// ✅ ALLOWED in Form.cs
-private void btnSave_Click(object sender, EventArgs e) => _presenter.Save();
-private void dgv_CellClick(object sender, DataGridViewCellEventArgs e) => _presenter.SelectRow(e.RowIndex);
-public string InputText => txtInput.Text.Trim();          // view property
-public void ShowResult(MyModel m) => lblResult.Text = m.Name; // view method
-
-// ❌ NOT ALLOWED in Form.cs
-private void btnSave_Click(object sender, EventArgs e) {
-    var conn = new SqlConnection(...);   // ❌ no DB in form
-    if (txtName.Text.Length < 3) { }    // ❌ no validation logic in form
-    var svc = new MyService();          // ❌ no new on services
-}
-```
-
-The form **only** bridges user gestures → presenter calls, and presenter calls → control updates.

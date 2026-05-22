@@ -834,7 +834,7 @@ namespace CMS.Presentation.Modules.KMS
                 rootNode.Nodes.Add(BuildCategoryNode(cat, categories, articleCounts, titlesByCategory));
 
             treeCategories.EndUpdate();
-            treeCategories.ExpandAll();
+            rootNode.Expand();
 
             _suppressCategorySelect  = true;
             treeCategories.SelectedNode = rootNode;
