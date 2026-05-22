@@ -131,3 +131,4 @@ CMS.Domain/obj/Debug/
 # Build folders
 bin/
 obj/
+/CMS.Presentation/.claude/settings.json
