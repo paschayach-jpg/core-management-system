@@ -869,7 +869,7 @@ namespace CMS.Presentation.Modules.KMS
             IDictionary<string, int> titleMap;
             if (titlesByCategory != null && titlesByCategory.TryGetValue(cat.CategoryID, out titleMap))
             {
-                foreach (var kvp in titleMap.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
+                foreach (var kvp in titleMap.OrderBy(x => x.Key, NaturalStringComparer.Instance))
                 {
                     string nodeLabel = string.Format("📄 {0} ({1})", kvp.Key, kvp.Value);
                     var titleNode = new TreeNode(nodeLabel)
@@ -1233,6 +1233,44 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             _presenter.LoadArticles();
+        }
+
+        // ── Natural sort: "มาตรา2" < "มาตรา10" ──────────────────────────────────
+        private sealed class NaturalStringComparer : IComparer<string>
+        {
+            public static readonly NaturalStringComparer Instance = new NaturalStringComparer();
+
+            public int Compare(string x, string y)
+            {
+                if (x == null && y == null) return 0;
+                if (x == null) return -1;
+                if (y == null) return 1;
+
+                int ix = 0, iy = 0;
+                while (ix < x.Length && iy < y.Length)
+                {
+                    bool xIsDigit = char.IsDigit(x[ix]);
+                    bool yIsDigit = char.IsDigit(y[iy]);
+
+                    if (xIsDigit && yIsDigit)
+                    {
+                        // compare numeric chunks as integers
+                        int numX = 0, numY = 0;
+                        while (ix < x.Length && char.IsDigit(x[ix])) numX = numX * 10 + (x[ix++] - '0');
+                        while (iy < y.Length && char.IsDigit(y[iy])) numY = numY * 10 + (y[iy++] - '0');
+                        int cmp = numX.CompareTo(numY);
+                        if (cmp != 0) return cmp;
+                    }
+                    else
+                    {
+                        int cmp = string.Compare(x[ix].ToString(), y[iy].ToString(),
+                                                 StringComparison.OrdinalIgnoreCase);
+                        if (cmp != 0) return cmp;
+                        ix++; iy++;
+                    }
+                }
+                return x.Length - y.Length;
+            }
         }
     }
 }
