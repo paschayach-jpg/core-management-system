@@ -226,6 +226,44 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private void btnCollapseGenInfo_Click(object sender, EventArgs e)
+        {
+            bool isExpanded = splitTopBottom.SplitterDistance > 28;
+            if (isExpanded)
+            {
+                _genInfoExpandedHeight = splitTopBottom.SplitterDistance;
+                splitTopBottom.Panel1MinSize = 0;
+                splitTopBottom.SplitterDistance = 28;
+                btnCollapseGenInfo.Text = "▼";
+            }
+            else
+            {
+                splitTopBottom.Panel1MinSize = 220;
+                splitTopBottom.SplitterDistance = _genInfoExpandedHeight;
+                btnCollapseGenInfo.Text = "▲";
+            }
+        }
+
+        private void btnCollapseMappingPanel_Click(object sender, EventArgs e)
+        {
+            int collapsedWidth = btnCollapseMappingPanel.Width;
+            int panel2Width = splitMain.Width - splitMain.SplitterDistance - splitMain.SplitterWidth;
+            bool isExpanded = panel2Width > collapsedWidth;
+            if (isExpanded)
+            {
+                _mappingExpandedWidth = panel2Width;
+                splitMain.Panel2MinSize = 0;
+                splitMain.SplitterDistance = splitMain.Width - splitMain.SplitterWidth - collapsedWidth;
+                btnCollapseMappingPanel.Text = "◀";
+            }
+            else
+            {
+                splitMain.Panel2MinSize = 400;
+                splitMain.SplitterDistance = splitMain.Width - splitMain.SplitterWidth - _mappingExpandedWidth;
+                btnCollapseMappingPanel.Text = "▶";
+            }
+        }
+
         // ── IKBEditorView Implementation ─────────────────────────────────────
 
         public string ArticleCode
@@ -248,6 +286,8 @@ namespace CMS.Presentation.Modules.KMS
 
         private string _pendingHtml  = string.Empty;
         private bool   _editorReady    = false;
+        private int    _genInfoExpandedHeight  = 220;
+        private int    _mappingExpandedWidth   = 529;
         private bool   _syncingToolbar = false;
         private bool   _applyingFormat = false; // guards against re-entrant InvokeScript during font-size apply
 
