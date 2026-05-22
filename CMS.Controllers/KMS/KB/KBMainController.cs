@@ -122,22 +122,7 @@ namespace CMS.Controllers.KMS.KB
                 if (!catId.HasValue) return;
 
                 IEnumerable<KBArticle> articles;
-                if (!statusFilter.HasValue && !typeFilter.HasValue)
-                    articles = _articleService.GetByCategory(catId.Value);
-                else
-                    articles = _articleService.Search(null, catId, statusFilter, typeFilter);
-
-                if (!string.IsNullOrWhiteSpace(keyword))
-                    articles = ApplyKeywordFilter(articles, keyword, searchFieldId);
-
-                // Title-subcategory filter: exact match (same semantics as Search-by-Title).
-                // Applied after the keyword filter so both can be combined freely.
-                if (!string.IsNullOrWhiteSpace(titleFilter))
-                    articles = articles.Where(a =>
-                        string.Equals(
-                            (a.Title ?? string.Empty).Trim(),
-                            titleFilter.Trim(),
-                            StringComparison.OrdinalIgnoreCase));
+                articles = _articleService.SearchByType(keyword, catId, statusFilter, typeFilter, searchFieldId);
 
                 var list = articles.ToList();
                 foreach (var article in list)
