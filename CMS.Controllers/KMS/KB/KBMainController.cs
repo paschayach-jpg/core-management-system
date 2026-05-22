@@ -38,31 +38,58 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                var categories = _categoryService.GetAll().ToList();
+                var categories       = _categoryService.GetAll().ToList();
+                var counts           = new Dictionary<int, int>();
+                // CategoryID → (Title → article count with that exact title)
+                var titlesByCategory = new Dictionary<int, IDictionary<string, int>>();
 
-                // Build per-category article counts
-                var counts = new Dictionary<int, int>();
                 try
                 {
                     foreach (var a in _articleService.GetAll())
                     {
+                        // per-category article count
                         if (!counts.ContainsKey(a.CategoryID)) counts[a.CategoryID] = 0;
                         counts[a.CategoryID]++;
+
+                        // per-title count within each category
+                        string t = (a.Title ?? string.Empty).Trim();
+                        if (string.IsNullOrEmpty(t)) continue;
+
+                        if (!titlesByCategory.ContainsKey(a.CategoryID))
+                            titlesByCategory[a.CategoryID] =
+                                new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+                        var titleMap = titlesByCategory[a.CategoryID];
+                        if (!titleMap.ContainsKey(t)) titleMap[t] = 0;
+                        titleMap[t]++;
                     }
                 }
-                catch { /* article counts are non-critical */ }
+                catch { /* article counts / titles are non-critical */ }
 
-                _view.BindCategoryTree(categories, counts);
+                _view.BindCategoryTree(categories, counts, titlesByCategory);
             }
             catch (Exception ex) { _view.ShowError("Load category failed: " + ex.Message); }
         }
 
         public void OnCategorySelected(int? categoryId, string categoryName)
         {
-            _view.SelectedCategoryId = categoryId;
-            _view.ArticleTitleText   = categoryId.HasValue
+            _view.SelectedCategoryId   = categoryId;
+            _view.SelectedArticleTitle = null;   // clear title-subcategory filter
+            _view.ArticleTitleText     = categoryId.HasValue
                 ? string.Format("  {0}", categoryName)
                 : "  ทุกหมวดหมู่";
+            LoadArticles();
+        }
+
+        /// <summary>
+        /// Called when the user clicks a title leaf-node in treeCategories.
+        /// Filters the article list to rows whose Title matches exactly.
+        /// </summary>
+        public void OnTitleSelected(int? categoryId, string categoryName, string title)
+        {
+            _view.SelectedCategoryId   = categoryId;
+            _view.SelectedArticleTitle = title;
+            _view.ArticleTitleText     = string.Format("  {0}  ›  {1}", categoryName, title);
             LoadArticles();
         }
 
@@ -89,6 +116,7 @@ namespace CMS.Controllers.KMS.KB
                 byte?  statusFilter  = _view.StatusFilter;
                 byte?  typeFilter    = _view.TypeFilter;
                 int?   catId         = _view.SelectedCategoryId;
+                string titleFilter   = _view.SelectedArticleTitle;
                 int    pageSize      = _view.PageSize;
 
                 if (!catId.HasValue) return;
@@ -101,6 +129,15 @@ namespace CMS.Controllers.KMS.KB
 
                 if (!string.IsNullOrWhiteSpace(keyword))
                     articles = ApplyKeywordFilter(articles, keyword, searchFieldId);
+
+                // Title-subcategory filter: exact match (same semantics as Search-by-Title).
+                // Applied after the keyword filter so both can be combined freely.
+                if (!string.IsNullOrWhiteSpace(titleFilter))
+                    articles = articles.Where(a =>
+                        string.Equals(
+                            (a.Title ?? string.Empty).Trim(),
+                            titleFilter.Trim(),
+                            StringComparison.OrdinalIgnoreCase));
 
                 var list = articles.ToList();
                 foreach (var article in list)

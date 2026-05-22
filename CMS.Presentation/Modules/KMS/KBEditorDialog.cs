@@ -226,6 +226,44 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private void btnCollapseGenInfo_Click(object sender, EventArgs e)
+        {
+            bool isExpanded = splitTopBottom.SplitterDistance > 28;
+            if (isExpanded)
+            {
+                _genInfoExpandedHeight = splitTopBottom.SplitterDistance;
+                splitTopBottom.Panel1MinSize = 0;
+                splitTopBottom.SplitterDistance = 28;
+                btnCollapseGenInfo.Text = "▼";
+            }
+            else
+            {
+                splitTopBottom.Panel1MinSize = 220;
+                splitTopBottom.SplitterDistance = _genInfoExpandedHeight;
+                btnCollapseGenInfo.Text = "▲";
+            }
+        }
+
+        private void btnCollapseMappingPanel_Click(object sender, EventArgs e)
+        {
+            int collapsedWidth = btnCollapseMappingPanel.Width;
+            int panel2Width = splitMain.Width - splitMain.SplitterDistance - splitMain.SplitterWidth;
+            bool isExpanded = panel2Width > collapsedWidth;
+            if (isExpanded)
+            {
+                _mappingExpandedWidth = panel2Width;
+                splitMain.Panel2MinSize = 0;
+                splitMain.SplitterDistance = splitMain.Width - splitMain.SplitterWidth - collapsedWidth;
+                btnCollapseMappingPanel.Text = "◀";
+            }
+            else
+            {
+                splitMain.Panel2MinSize = 400;
+                splitMain.SplitterDistance = splitMain.Width - splitMain.SplitterWidth - _mappingExpandedWidth;
+                btnCollapseMappingPanel.Text = "▶";
+            }
+        }
+
         // ── IKBEditorView Implementation ─────────────────────────────────────
 
         public string ArticleCode
@@ -248,7 +286,10 @@ namespace CMS.Presentation.Modules.KMS
 
         private string _pendingHtml  = string.Empty;
         private bool   _editorReady    = false;
+        private int    _genInfoExpandedHeight  = 220;
+        private int    _mappingExpandedWidth   = 529;
         private bool   _syncingToolbar = false;
+        private bool   _applyingFormat = false; // guards against re-entrant InvokeScript during font-size apply
 
         public string ContentHTML
         {
@@ -829,6 +870,8 @@ namespace CMS.Presentation.Modules.KMS
         private void SyncToolbarState()
         {
             if (!_editorReady || webEditor.Document == null) return;
+            if (_applyingFormat) return; // another format op is on the call stack — skip entirely
+            _applyingFormat = true;      // block re-entrant StepFontSize during our own InvokeScript
             try
             {
                 // getRteState() returns "BIUJCRUL|blockTag|fontName|fontSize"
@@ -839,9 +882,8 @@ namespace CMS.Presentation.Modules.KMS
 
                 var parts    = raw.Split('|');
                 var f        = parts[0].PadRight(8, '0');
-                var block    = parts.Length > 1 ? parts[1].Trim() : string.Empty;
-                var fontName = parts.Length > 2 ? parts[2].Trim() : string.Empty;
-                var fontSz   = parts.Length > 3 ? parts[3].Trim() : string.Empty;
+                var fontName = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+                var fontSz   = parts.Length > 2 ? parts[2].Trim() : string.Empty;
 
                 SetBtnActive(tsRteBold,        f[0] == '1');
                 SetBtnActive(tsRteItalic,      f[1] == '1');
@@ -851,10 +893,6 @@ namespace CMS.Presentation.Modules.KMS
                 SetBtnActive(tsRteAlignRight,  f[5] == '1');
                 SetBtnActive(tsRteBullet,      f[6] == '1');
                 SetBtnActive(tsRteNumList,     f[7] == '1');
-
-                SetBtnActive(tsRteH1, block == "h1");
-                SetBtnActive(tsRteH2, block == "h2");
-                SetBtnActive(tsRteH3, block == "h3");
 
                 // Sync font comboboxes without triggering their SelectedIndexChanged handlers
                 _syncingToolbar = true;
@@ -869,16 +907,18 @@ namespace CMS.Presentation.Modules.KMS
                             { fi = i; break; }
                     tsRteFontFamily.SelectedIndex = fi;
 
-                    // Font size — IE returns HTML size 1-7; combo index = htmlSize - 1
-                    int htmlSize;
-                    tsRteFontSize.SelectedIndex =
-                        int.TryParse(fontSz, out htmlSize) && htmlSize >= 1 && htmlSize <= 7
-                        ? htmlSize - 1
-                        : -1;
+                    // Font size — match pt value string to combo item
+                    int newSzIdx = -1;
+                    if (!string.IsNullOrEmpty(fontSz))
+                        for (int i = 0; i < tsRteFontSize.Items.Count; i++)
+                            if (tsRteFontSize.Items[i].ToString() == fontSz)
+                            { newSzIdx = i; break; }
+                    tsRteFontSize.SelectedIndex = newSzIdx;
                 }
                 finally { _syncingToolbar = false; }
             }
             catch { /* non-critical — ignore errors during state sync */ }
+            finally { _applyingFormat = false; }
         }
 
         /// <summary>
@@ -921,17 +961,6 @@ namespace CMS.Presentation.Modules.KMS
         }
         private void TsRteItalic_Click(object sender, EventArgs e)       { ExecCmd("Italic"); }
         private void TsRteUnder_Click(object sender, EventArgs e)        { ExecCmd("Underline"); }
-        private void TsRteH1_Click(object sender, EventArgs e)           { ApplyHeading("h1"); }
-        private void TsRteH2_Click(object sender, EventArgs e)           { ApplyHeading("h2"); }
-        private void TsRteH3_Click(object sender, EventArgs e)           { ApplyHeading("h3"); }
-
-        private void ApplyHeading(string tag)
-        {
-            if (!_editorReady || webEditor.Document == null) return;
-            webEditor.Document.InvokeScript("applyHeading", new object[] { tag });
-            webEditor.Focus();
-            SyncToolbarState();
-        }
         private void TsRteAlignLeft_Click(object sender, EventArgs e)    { ExecCmd("JustifyLeft"); }
         private void TsRteAlignCenter_Click(object sender, EventArgs e)  { ExecCmd("JustifyCenter"); }
         private void TsRteAlignRight_Click(object sender, EventArgs e)   { ExecCmd("JustifyRight"); }
@@ -1041,9 +1070,6 @@ namespace CMS.Presentation.Modules.KMS
             tabMapping.SelectedTab = tabAttach;
         }
 
-        private void TsRteUndo_Click(object sender, EventArgs e) { ExecCmd("Undo"); }
-        private void TsRteRedo_Click(object sender, EventArgs e) { ExecCmd("Redo"); }
-
         private void TsRteFontFamily_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (_syncingToolbar || tsRteFontFamily.SelectedItem == null) return;
@@ -1052,11 +1078,54 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TsRteFontSize_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (_syncingToolbar) return;
-            int idx = tsRteFontSize.SelectedIndex;
-            if (idx < 0) return;
-            // HTML font sizes 1–7 map to: 8pt 10pt 12pt 14pt 18pt 24pt 36pt
-            ExecCmd("FontSize", (idx + 1).ToString());
+            if (_syncingToolbar || tsRteFontSize.SelectedIndex < 0) return;
+            if (_applyingFormat) return;
+            _applyingFormat = true;
+            try
+            {
+                ApplyFontSizePt(tsRteFontSize.Items[tsRteFontSize.SelectedIndex].ToString());
+                webEditor.Focus();
+            }
+            finally { _applyingFormat = false; }
+            BeginInvoke((Action)SyncToolbarState); // defer off the current COM call stack
+        }
+
+        private void TsRteFontSizeInc_Click(object sender, EventArgs e) { StepFontSize(+1); }
+        private void TsRteFontSizeDec_Click(object sender, EventArgs e) { StepFontSize(-1); }
+
+        private void StepFontSize(int direction)
+        {
+            if (!_editorReady || webEditor.Document == null) return;
+            if (_applyingFormat) return;
+            _applyingFormat = true;
+            try
+            {
+                if (!true.Equals(webEditor.Document.InvokeScript("hasTextSel"))) return;
+
+                var current = webEditor.Document.InvokeScript("getSelFontSizePt") as string ?? string.Empty;
+                int currentIdx = -1;
+                for (int i = 0; i < tsRteFontSize.Items.Count; i++)
+                    if (tsRteFontSize.Items[i].ToString() == current)
+                    { currentIdx = i; break; }
+
+                int nextIdx = currentIdx < 0
+                    ? (direction > 0 ? 0 : tsRteFontSize.Items.Count - 1)
+                    : Math.Max(0, Math.Min(tsRteFontSize.Items.Count - 1, currentIdx + direction));
+
+                ApplyFontSizePt(tsRteFontSize.Items[nextIdx].ToString());
+                webEditor.Focus();
+            }
+            finally { _applyingFormat = false; }
+            BeginInvoke((Action)SyncToolbarState); // defer off the current COM call stack
+        }
+
+        private void ApplyFontSizePt(string pt)
+        {
+            if (webEditor.Document == null) return;
+            // Single InvokeScript crossing: apply font size and restore selection in one call.
+            // Caller owns _applyingFormat.
+            string markerId = "fsm" + Environment.TickCount.ToString();
+            webEditor.Document.InvokeScript("applyFontSizePt", new object[] { pt, markerId });
         }
 
         private static string GetEditorHtml()
@@ -1091,30 +1160,9 @@ namespace CMS.Presentation.Modules.KMS
                 "function pasteHtml(h){" +
                 "try{if(document.selection){var r=document.selection.createRange();r.pasteHTML(h);}}" +
                 "catch(e){}}" +
-                // getBlkTag: walks DOM from cursor to find nearest block tag.
-                // More reliable than queryCommandValue('FormatBlock') in IE/Trident, which can
-                // return display names ("Heading 1") or angle-bracketed tags ("<H1>").
-                "function getBlkTag(){" +
-                "try{" +
-                "if(document.selection){" +
-                "var r=document.selection.createRange();" +
-                "var e=r.parentElement?r.parentElement():null;" +
-                "while(e&&e.tagName){" +
-                "var t=e.tagName.toLowerCase();" +
-                "if(t==='h1'||t==='h2'||t==='h3'||t==='p'||t==='div'||t==='li'||t==='body'){" +
-                "return t==='body'?'':t;" +
-                "}" +
-                "e=e.parentElement;" +
-                "}" +
-                "}" +
-                "}catch(ex){}" +
-                "return (document.queryCommandValue('FormatBlock')||'').toLowerCase().replace(/[<>]/g,'');" +
-                "}" +
                 // getRteState — called by C# via InvokeScript after every cursor move / key / click.
-                // Returns a compact string: 8 binary flags + '|' + lowercase block tag.
+                // Returns a compact string: 8 binary flags + '|' + fontName + '|' + fontSize.
                 // Flags order: bold italic underline justifyLeft justifyCenter justifyRight ul ol
-                // Bold flag is forced '0' inside h1/h2/h3: IE/Trident returns queryCommandState('Bold')=true
-                // for any heading element (heading = inherently bold), which would falsely light up tsRteBold.
                 "function getRteState(){" +
                 "try{" +
                 "var b=document.queryCommandState('Bold')?'1':'0';" +
@@ -1125,42 +1173,45 @@ namespace CMS.Presentation.Modules.KMS
                 "var jr=document.queryCommandState('JustifyRight')?'1':'0';" +
                 "var ul=document.queryCommandState('InsertUnorderedList')?'1':'0';" +
                 "var ol=document.queryCommandState('InsertOrderedList')?'1':'0';" +
-                "var blk=getBlkTag();" +
-                "if(blk==='h1'||blk==='h2'||blk==='h3'){b='0';}" +
                 "var fn=(document.queryCommandValue('FontName')||'').toLowerCase();" +
-                "var fs=(document.queryCommandValue('FontSize')||'');" +
-                "return b+i+u+jl+jc+jr+ul+ol+'|'+blk+'|'+fn+'|'+fs;" +
-                "}catch(e){return '00000000|||';}" +
+                "var fs=getSelFontSizePt();" +
+                "return b+i+u+jl+jc+jr+ul+ol+'|'+fn+'|'+fs;" +
+                "}catch(e){return '00000000||';}" +
                 "}" +
-                // applyHeading: apply or toggle heading block format.
-                // Toggle: clicking the same heading again converts back to <p>.
-                // Always strips Bold (via removeFormat), preserves Italic and Underline.
-                "function applyHeading(tag){" +
-                "var wasItalic=document.queryCommandState('Italic');" +
-                "var wasUnder=document.queryCommandState('Underline');" +
-                "var cur=getBlkTag();" +
-                "if(cur===tag){" +
-                "document.execCommand('FormatBlock',false,'<p>');" +
-                "document.execCommand('removeFormat',false,null);" +
-                "if(wasItalic){document.execCommand('Italic',false,null);}" +
-                "if(wasUnder){document.execCommand('Underline',false,null);}" +
-                "return;" +
-                "}" +
-                "document.execCommand('FormatBlock',false,'<'+tag+'>');" +
-                "document.execCommand('removeFormat',false,null);" +
-                "if(wasItalic){document.execCommand('Italic',false,null);}" +
-                "if(wasUnder){document.execCommand('Underline',false,null);}" +
-                "}" +
-                // applyBold: if cursor is inside a heading block, convert to <p> first,
-                // then ensure Bold is ON. Outside headings, works as a normal Bold toggle.
-                "function applyBold(){" +
-                "var blk=getBlkTag();" +
-                "if(blk==='h1'||blk==='h2'||blk==='h3'){" +
-                "document.execCommand('FormatBlock',false,'<p>');" +
-                "if(!document.queryCommandState('Bold')){document.execCommand('Bold',false,null);}" +
-                "}else{" +
-                "document.execCommand('Bold',false,null);" +
-                "}}" +
+                "function applyBold(){document.execCommand('Bold',false,null);}" +
+                "function hasTextSel(){try{var s=document.selection;return !!(s&&s.type=='Text');}catch(e){return false;}}" +
+                // HTML font size 1-7 → pt equivalents (matches tsRteFontSize items)
+                "var _htmlSzPt={'1':'8','2':'10','3':'12','4':'14','5':'18','6':'24','7':'36'};" +
+                "function getSelFontSizePt(){" +
+                "try{var s=document.selection;" +
+                "if(s&&s.type=='Text'){var r=s.createRange();" +
+                "if(r&&r.parentElement){var el=r.parentElement();" +
+                "while(el&&el.tagName!='BODY'){" +
+                // CSS style.fontSize takes priority over HTML size attribute
+                "if(el.style&&el.style.fontSize){var f=el.style.fontSize;" +
+                "if(f.indexOf('pt')>-1)return Math.round(parseFloat(f)).toString();" +
+                "if(f.indexOf('px')>-1)return Math.round(parseFloat(f)*0.75).toString();}" +
+                // Fall back to HTML size attribute (old-code content)
+                "if(el.tagName=='FONT'){var a=el.getAttribute('size');if(a&&_htmlSzPt[a])return _htmlSzPt[a];}" +
+                "el=el.parentElement;}}}" +
+                "}catch(e){}return '';}" +
+                // Apply CSS font-size to the current selection in a single JS call (no second InvokeScript pump).
+                // Fast path: if the selection's immediate parent already has an inline font-size style,
+                //   update it in-place — avoids wrapping the content in another <span> on every press.
+                // Fallback: strip any existing font-size from inner HTML, wrap with a new <span>,
+                //   then immediately restore the selection to cover the new element.
+                "function applyFontSizePt(pt,markerId){" +
+                "try{if(!hasTextSel())return;" +
+                "var r=document.selection.createRange();" +
+                "var el=r.parentElement();" +
+                "if(el&&el.tagName!='BODY'&&el.style&&el.style.fontSize){" +
+                "el.style.fontSize=pt+'pt';r.select();return;}" +
+                "var inner=r.htmlText.replace(/font-size\\s*:[^;'\"]+;?/gi,'');" +
+                "r.pasteHTML('<span id=\"'+markerId+'\" style=\"font-size:'+pt+'pt\">'+inner+'</span>');" +
+                "var newEl=document.getElementById(markerId);" +
+                "if(newEl){var r2=document.body.createTextRange();" +
+                "r2.moveToElementText(newEl);r2.select();newEl.removeAttribute('id');}}" +
+                "catch(e){}}" +
                 // Redirect clicks on <html> (outside body padding) into the body.
                 "document.onclick=function(e){" +
                 "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +

@@ -162,10 +162,10 @@ namespace CMS.Presentation.Modules.KMS
             // splitMain.Panel1
             // 
             this.splitMain.Panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
-            this.splitMain.Panel1.Controls.Add(this.pnlViewerHost);
             this.splitMain.Panel1.Controls.Add(this.treeCategories);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftFooter);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftHeader);
+            this.splitMain.Panel1.Controls.Add(this.pnlViewerHost);
             this.splitMain.Panel1MinSize = 160;
             // 
             // splitMain.Panel2
@@ -302,7 +302,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvArticles.Name = "dgvArticles";
             this.dgvArticles.RowHeadersVisible = false;
             this.dgvArticles.RowHeadersWidth = 51;
-            this.dgvArticles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this.dgvArticles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
             this.dgvArticles.Size = new System.Drawing.Size(1377, 461);
             this.dgvArticles.TabIndex = 0;
             // 
