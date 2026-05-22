@@ -84,6 +84,8 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteSep0 = new System.Windows.Forms.ToolStripSeparator();
             this.tsRteFontSize = new System.Windows.Forms.ToolStripComboBox();
             this.tsRteSep1 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteFontSizeDec = new System.Windows.Forms.ToolStripButton();
+            this.tsRteFontSizeInc = new System.Windows.Forms.ToolStripButton();
             this.tsRteBold = new System.Windows.Forms.ToolStripButton();
             this.tsRteItalic = new System.Windows.Forms.ToolStripButton();
             this.tsRteUnder = new System.Windows.Forms.ToolStripButton();
@@ -1036,6 +1038,8 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteSep0,
             this.tsRteFontSize,
             this.tsRteSep1,
+            this.tsRteFontSizeDec,
+            this.tsRteFontSizeInc,
             this.tsRteBold,
             this.tsRteItalic,
             this.tsRteUnder,
@@ -1086,13 +1090,22 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteFontSize.AutoSize = false;
             this.tsRteFontSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.tsRteFontSize.Items.AddRange(new object[] {
-            "8pt",
-            "10pt",
-            "12pt",
-            "14pt",
-            "18pt",
-            "24pt",
-            "36pt"});
+            "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "14",
+            "16",
+            "18",
+            "20",
+            "22",
+            "24",
+            "26",
+            "28",
+            "36",
+            "48",
+            "72"});
             this.tsRteFontSize.Name = "tsRteFontSize";
             this.tsRteFontSize.Size = new System.Drawing.Size(70, 28);
             this.tsRteFontSize.ToolTipText = "Font Size";
@@ -1102,6 +1115,24 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tsRteSep1.Name = "tsRteSep1";
             this.tsRteSep1.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteFontSizeDec
+            // 
+            this.tsRteFontSizeDec.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteFontSizeDec.Name = "tsRteFontSizeDec";
+            this.tsRteFontSizeDec.Size = new System.Drawing.Size(29, 25);
+            this.tsRteFontSizeDec.Text = "−";
+            this.tsRteFontSizeDec.ToolTipText = "Decrease Font Size";
+            this.tsRteFontSizeDec.Click += new System.EventHandler(this.TsRteFontSizeDec_Click);
+            // 
+            // tsRteFontSizeInc
+            // 
+            this.tsRteFontSizeInc.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteFontSizeInc.Name = "tsRteFontSizeInc";
+            this.tsRteFontSizeInc.Size = new System.Drawing.Size(29, 25);
+            this.tsRteFontSizeInc.Text = "+";
+            this.tsRteFontSizeInc.ToolTipText = "Increase Font Size";
+            this.tsRteFontSizeInc.Click += new System.EventHandler(this.TsRteFontSizeInc_Click);
             // 
             // tsRteBold
             // 
@@ -2727,6 +2758,8 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ToolStripComboBox  tsRteFontFamily;
         private System.Windows.Forms.ToolStripSeparator tsRteSep0;
         private System.Windows.Forms.ToolStripComboBox  tsRteFontSize;
+        private System.Windows.Forms.ToolStripButton    tsRteFontSizeDec;
+        private System.Windows.Forms.ToolStripButton    tsRteFontSizeInc;
         private System.Windows.Forms.ToolStripSeparator tsRteSep1;
         private System.Windows.Forms.ToolStripButton    tsRteBold;
         private System.Windows.Forms.ToolStripButton    tsRteItalic;

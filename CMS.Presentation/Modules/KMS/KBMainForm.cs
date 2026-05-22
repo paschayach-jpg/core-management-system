@@ -1126,23 +1126,32 @@ namespace CMS.Presentation.Modules.KMS
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
 
-            dgvArticles.CellClick      += DgvArticles_CellClick;
+            dgvArticles.CellDoubleClick       += DgvArticles_CellDoubleClick;
+            dgvArticles.CellClick       += DgvArticles_CellClick;
             dgvArticles.CellFormatting += DgvArticles_CellFormatting;
         }
 
         // ── DataGridView events ───────────────────────────────────────────────────
 
-        private void DgvArticles_CellClick(object sender, DataGridViewCellEventArgs e)
+        private void DgvArticles_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0 || e.RowIndex >= _cachedArticles.Count) return;
             var article = _cachedArticles[e.RowIndex];
             string col  = dgvArticles.Columns[e.ColumnIndex].Name;
 
-            if      (col == "colBtnRead")                          OnArticleCardClick(article);
-            else if (col == "colBtnEdit")                          OnEditClick(article);
-            else if (col == "colBtnShare")                         OnShareClick(article);
+            if (col != "colContentHtml" && col != "colBtnRead" && col != "colBtnEdit" && col != "colBtnShare" && col != "colBtnReview" && article.Status == 1) OnArticleCardClick(article);
+        }
+        private void DgvArticles_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= _cachedArticles.Count) return;
+            var article = _cachedArticles[e.RowIndex];
+            string col = dgvArticles.Columns[e.ColumnIndex].Name;
+
+            if (col == "colContentHtml") OnArticleCardClick(article);
+            else if (col == "colBtnRead") OnArticleCardClick(article);
+            else if (col == "colBtnEdit") OnEditClick(article);
+            else if (col == "colBtnShare") OnShareClick(article);
             else if (col == "colBtnReview" && article.Status == 1) OnSendReviewClick(article);
-            else                                                   OnArticleCardClick(article);
         }
 
         private void DgvArticles_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)

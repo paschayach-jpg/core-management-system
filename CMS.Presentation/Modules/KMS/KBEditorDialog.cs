@@ -249,6 +249,7 @@ namespace CMS.Presentation.Modules.KMS
         private string _pendingHtml  = string.Empty;
         private bool   _editorReady    = false;
         private bool   _syncingToolbar = false;
+        private bool   _applyingFormat = false; // guards against re-entrant InvokeScript during font-size apply
 
         public string ContentHTML
         {
@@ -829,6 +830,8 @@ namespace CMS.Presentation.Modules.KMS
         private void SyncToolbarState()
         {
             if (!_editorReady || webEditor.Document == null) return;
+            if (_applyingFormat) return; // another format op is on the call stack — skip entirely
+            _applyingFormat = true;      // block re-entrant StepFontSize during our own InvokeScript
             try
             {
                 // getRteState() returns "BIUJCRUL|blockTag|fontName|fontSize"
@@ -864,16 +867,18 @@ namespace CMS.Presentation.Modules.KMS
                             { fi = i; break; }
                     tsRteFontFamily.SelectedIndex = fi;
 
-                    // Font size — IE returns HTML size 1-7; combo index = htmlSize - 1
-                    int htmlSize;
-                    tsRteFontSize.SelectedIndex =
-                        int.TryParse(fontSz, out htmlSize) && htmlSize >= 1 && htmlSize <= 7
-                        ? htmlSize - 1
-                        : -1;
+                    // Font size — match pt value string to combo item
+                    int newSzIdx = -1;
+                    if (!string.IsNullOrEmpty(fontSz))
+                        for (int i = 0; i < tsRteFontSize.Items.Count; i++)
+                            if (tsRteFontSize.Items[i].ToString() == fontSz)
+                            { newSzIdx = i; break; }
+                    tsRteFontSize.SelectedIndex = newSzIdx;
                 }
                 finally { _syncingToolbar = false; }
             }
             catch { /* non-critical — ignore errors during state sync */ }
+            finally { _applyingFormat = false; }
         }
 
         /// <summary>
@@ -1033,11 +1038,54 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TsRteFontSize_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (_syncingToolbar) return;
-            int idx = tsRteFontSize.SelectedIndex;
-            if (idx < 0) return;
-            // HTML font sizes 1–7 map to: 8pt 10pt 12pt 14pt 18pt 24pt 36pt
-            ExecCmd("FontSize", (idx + 1).ToString());
+            if (_syncingToolbar || tsRteFontSize.SelectedIndex < 0) return;
+            if (_applyingFormat) return;
+            _applyingFormat = true;
+            try
+            {
+                ApplyFontSizePt(tsRteFontSize.Items[tsRteFontSize.SelectedIndex].ToString());
+                webEditor.Focus();
+            }
+            finally { _applyingFormat = false; }
+            SyncToolbarState();
+        }
+
+        private void TsRteFontSizeInc_Click(object sender, EventArgs e) { StepFontSize(+1); }
+        private void TsRteFontSizeDec_Click(object sender, EventArgs e) { StepFontSize(-1); }
+
+        private void StepFontSize(int direction)
+        {
+            if (!_editorReady || webEditor.Document == null) return;
+            if (_applyingFormat) return;
+            _applyingFormat = true;
+            try
+            {
+                if (!true.Equals(webEditor.Document.InvokeScript("hasTextSel"))) return;
+
+                var current = webEditor.Document.InvokeScript("getSelFontSizePt") as string ?? string.Empty;
+                int currentIdx = -1;
+                for (int i = 0; i < tsRteFontSize.Items.Count; i++)
+                    if (tsRteFontSize.Items[i].ToString() == current)
+                    { currentIdx = i; break; }
+
+                int nextIdx = currentIdx < 0
+                    ? (direction > 0 ? 0 : tsRteFontSize.Items.Count - 1)
+                    : Math.Max(0, Math.Min(tsRteFontSize.Items.Count - 1, currentIdx + direction));
+
+                ApplyFontSizePt(tsRteFontSize.Items[nextIdx].ToString());
+                webEditor.Focus();
+            }
+            finally { _applyingFormat = false; }
+            SyncToolbarState(); // called after flag reset; SyncToolbarState guards itself internally
+        }
+
+        private void ApplyFontSizePt(string pt)
+        {
+            if (webEditor.Document == null) return;
+            // Caller owns _applyingFormat. This method just executes the two InvokeScript steps.
+            string markerId = "fsm" + Environment.TickCount.ToString();
+            webEditor.Document.InvokeScript("pasteHtmlWithFontSize", new object[] { pt, markerId });
+            webEditor.Document.InvokeScript("selectAndCleanMarker", new object[] { markerId });
         }
 
         private static string GetEditorHtml()
@@ -1086,11 +1134,43 @@ namespace CMS.Presentation.Modules.KMS
                 "var ul=document.queryCommandState('InsertUnorderedList')?'1':'0';" +
                 "var ol=document.queryCommandState('InsertOrderedList')?'1':'0';" +
                 "var fn=(document.queryCommandValue('FontName')||'').toLowerCase();" +
-                "var fs=(document.queryCommandValue('FontSize')||'');" +
+                "var fs=getSelFontSizePt();" +
                 "return b+i+u+jl+jc+jr+ul+ol+'|'+fn+'|'+fs;" +
                 "}catch(e){return '00000000||';}" +
                 "}" +
                 "function applyBold(){document.execCommand('Bold',false,null);}" +
+                "function hasTextSel(){try{var s=document.selection;return !!(s&&s.type=='Text');}catch(e){return false;}}" +
+                // HTML font size 1-7 → pt equivalents (matches tsRteFontSize items)
+                "var _htmlSzPt={'1':'8','2':'10','3':'12','4':'14','5':'18','6':'24','7':'36'};" +
+                "function getSelFontSizePt(){" +
+                "try{var s=document.selection;" +
+                "if(s&&s.type=='Text'){var r=s.createRange();" +
+                "if(r&&r.parentElement){var el=r.parentElement();" +
+                "while(el&&el.tagName!='BODY'){" +
+                // CSS style.fontSize takes priority over HTML size attribute
+                "if(el.style&&el.style.fontSize){var f=el.style.fontSize;" +
+                "if(f.indexOf('pt')>-1)return Math.round(parseFloat(f)).toString();" +
+                "if(f.indexOf('px')>-1)return Math.round(parseFloat(f)*0.75).toString();}" +
+                // Fall back to HTML size attribute (old-code content)
+                "if(el.tagName=='FONT'){var a=el.getAttribute('size');if(a&&_htmlSzPt[a])return _htmlSzPt[a];}" +
+                "el=el.parentElement;}}}" +
+                "}catch(e){}return '';}" +
+                // Apply CSS font-size to the current selection via pasteHTML.
+                // Strips any existing font-size from the inner HTML first, then wraps
+                // the content in a <span> tagged with markerId so the caller can
+                // restore the selection after the paste completes.
+                "function pasteHtmlWithFontSize(pt,markerId){" +
+                "try{if(!hasTextSel())return;" +
+                "var r=document.selection.createRange();" +
+                "var inner=r.htmlText.replace(/font-size\\s*:[^;'\"]+;?/gi,'');" +
+                "r.pasteHTML('<span id=\"'+markerId+'\" style=\"font-size:'+pt+'pt\">'+inner+'</span>');}" +
+                "catch(e){}}" +
+                // Move the IE selection to cover the content of the marker span, then remove the id.
+                "function selectAndCleanMarker(markerId){" +
+                "try{var el=document.getElementById(markerId);" +
+                "if(el){var r=document.body.createTextRange();" +
+                "r.moveToElementText(el);r.select();el.removeAttribute('id');}}" +
+                "catch(e){}}" +
                 // Redirect clicks on <html> (outside body padding) into the body.
                 "document.onclick=function(e){" +
                 "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +
