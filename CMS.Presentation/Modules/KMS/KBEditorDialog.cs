@@ -1047,7 +1047,7 @@ namespace CMS.Presentation.Modules.KMS
                 webEditor.Focus();
             }
             finally { _applyingFormat = false; }
-            SyncToolbarState();
+            BeginInvoke((Action)SyncToolbarState); // defer off the current COM call stack
         }
 
         private void TsRteFontSizeInc_Click(object sender, EventArgs e) { StepFontSize(+1); }
@@ -1076,16 +1076,16 @@ namespace CMS.Presentation.Modules.KMS
                 webEditor.Focus();
             }
             finally { _applyingFormat = false; }
-            SyncToolbarState(); // called after flag reset; SyncToolbarState guards itself internally
+            BeginInvoke((Action)SyncToolbarState); // defer off the current COM call stack
         }
 
         private void ApplyFontSizePt(string pt)
         {
             if (webEditor.Document == null) return;
-            // Caller owns _applyingFormat. This method just executes the two InvokeScript steps.
+            // Single InvokeScript crossing: apply font size and restore selection in one call.
+            // Caller owns _applyingFormat.
             string markerId = "fsm" + Environment.TickCount.ToString();
-            webEditor.Document.InvokeScript("pasteHtmlWithFontSize", new object[] { pt, markerId });
-            webEditor.Document.InvokeScript("selectAndCleanMarker", new object[] { markerId });
+            webEditor.Document.InvokeScript("applyFontSizePt", new object[] { pt, markerId });
         }
 
         private static string GetEditorHtml()
@@ -1155,21 +1155,22 @@ namespace CMS.Presentation.Modules.KMS
                 "if(el.tagName=='FONT'){var a=el.getAttribute('size');if(a&&_htmlSzPt[a])return _htmlSzPt[a];}" +
                 "el=el.parentElement;}}}" +
                 "}catch(e){}return '';}" +
-                // Apply CSS font-size to the current selection via pasteHTML.
-                // Strips any existing font-size from the inner HTML first, then wraps
-                // the content in a <span> tagged with markerId so the caller can
-                // restore the selection after the paste completes.
-                "function pasteHtmlWithFontSize(pt,markerId){" +
+                // Apply CSS font-size to the current selection in a single JS call (no second InvokeScript pump).
+                // Fast path: if the selection's immediate parent already has an inline font-size style,
+                //   update it in-place — avoids wrapping the content in another <span> on every press.
+                // Fallback: strip any existing font-size from inner HTML, wrap with a new <span>,
+                //   then immediately restore the selection to cover the new element.
+                "function applyFontSizePt(pt,markerId){" +
                 "try{if(!hasTextSel())return;" +
                 "var r=document.selection.createRange();" +
+                "var el=r.parentElement();" +
+                "if(el&&el.tagName!='BODY'&&el.style&&el.style.fontSize){" +
+                "el.style.fontSize=pt+'pt';r.select();return;}" +
                 "var inner=r.htmlText.replace(/font-size\\s*:[^;'\"]+;?/gi,'');" +
-                "r.pasteHTML('<span id=\"'+markerId+'\" style=\"font-size:'+pt+'pt\">'+inner+'</span>');}" +
-                "catch(e){}}" +
-                // Move the IE selection to cover the content of the marker span, then remove the id.
-                "function selectAndCleanMarker(markerId){" +
-                "try{var el=document.getElementById(markerId);" +
-                "if(el){var r=document.body.createTextRange();" +
-                "r.moveToElementText(el);r.select();el.removeAttribute('id');}}" +
+                "r.pasteHTML('<span id=\"'+markerId+'\" style=\"font-size:'+pt+'pt\">'+inner+'</span>');" +
+                "var newEl=document.getElementById(markerId);" +
+                "if(newEl){var r2=document.body.createTextRange();" +
+                "r2.moveToElementText(newEl);r2.select();newEl.removeAttribute('id');}}" +
                 "catch(e){}}" +
                 // Redirect clicks on <html> (outside body padding) into the body.
                 "document.onclick=function(e){" +
