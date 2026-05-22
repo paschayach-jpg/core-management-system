@@ -162,10 +162,10 @@ namespace CMS.Presentation.Modules.KMS
             // splitMain.Panel1
             // 
             this.splitMain.Panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
-            this.splitMain.Panel1.Controls.Add(this.pnlViewerHost);
             this.splitMain.Panel1.Controls.Add(this.treeCategories);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftFooter);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftHeader);
+            this.splitMain.Panel1.Controls.Add(this.pnlViewerHost);
             this.splitMain.Panel1MinSize = 160;
             // 
             // splitMain.Panel2

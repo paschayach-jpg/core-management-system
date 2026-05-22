@@ -15,14 +15,14 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle177 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle178 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle179 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle180 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle181 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle182 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle183 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle184 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblHeader = new System.Windows.Forms.Label();
             this.pnlToolbar = new System.Windows.Forms.Panel();
@@ -48,11 +48,6 @@ namespace CMS.Presentation.Modules.KMS
             this.splitTopBottom = new System.Windows.Forms.SplitContainer();
             this.pnlGenInfoOuter = new System.Windows.Forms.Panel();
             this.tlpGenInfo = new System.Windows.Forms.TableLayoutPanel();
-            this.flpTags = new System.Windows.Forms.FlowLayoutPanel();
-            this.pnlTagChipTemplate = new System.Windows.Forms.Panel();
-            this.lblTagChipTemplate = new System.Windows.Forms.Label();
-            this.btnTagChipRemoveTemplate = new System.Windows.Forms.Button();
-            this.txtTagInput = new System.Windows.Forms.TextBox();
             this.lblCode = new System.Windows.Forms.Label();
             this.lblType = new System.Windows.Forms.Label();
             this.lblStatus = new System.Windows.Forms.Label();
@@ -70,8 +65,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblCraf = new System.Windows.Forms.Label();
             this.lblViewCount = new System.Windows.Forms.Label();
             this.cboCraf = new System.Windows.Forms.ComboBox();
-            this.dtpExpiry = new System.Windows.Forms.DateTimePicker();
-            this.lblLikeCount = new System.Windows.Forms.Label();
             this.pnlGenInfoHeader = new System.Windows.Forms.Panel();
             this.lblGenInfoHeader = new System.Windows.Forms.Label();
             this.pnlContentOuter = new System.Windows.Forms.Panel();
@@ -214,6 +207,13 @@ namespace CMS.Presentation.Modules.KMS
             this.lblDepartmentsLinked = new System.Windows.Forms.Label();
             this.pnlMappingHeader = new System.Windows.Forms.Panel();
             this.lblMappingHeader = new System.Windows.Forms.Label();
+            this.lblLikeCount = new System.Windows.Forms.Label();
+            this.dtpExpiry = new System.Windows.Forms.DateTimePicker();
+            this.txtTagInput = new System.Windows.Forms.TextBox();
+            this.pnlTagChipTemplate = new System.Windows.Forms.Panel();
+            this.btnTagChipRemoveTemplate = new System.Windows.Forms.Button();
+            this.lblTagChipTemplate = new System.Windows.Forms.Label();
+            this.flpTags = new System.Windows.Forms.FlowLayoutPanel();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             this.flpToolbarLeft.SuspendLayout();
@@ -229,8 +229,6 @@ namespace CMS.Presentation.Modules.KMS
             this.splitTopBottom.SuspendLayout();
             this.pnlGenInfoOuter.SuspendLayout();
             this.tlpGenInfo.SuspendLayout();
-            this.flpTags.SuspendLayout();
-            this.pnlTagChipTemplate.SuspendLayout();
             this.pnlGenInfoHeader.SuspendLayout();
             this.pnlContentOuter.SuspendLayout();
             this.pnlRteStatus.SuspendLayout();
@@ -261,6 +259,8 @@ namespace CMS.Presentation.Modules.KMS
             this.tabDepartments.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDepartmentsLinked)).BeginInit();
             this.pnlMappingHeader.SuspendLayout();
+            this.pnlTagChipTemplate.SuspendLayout();
+            this.flpTags.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlHeader
@@ -576,14 +576,14 @@ namespace CMS.Presentation.Modules.KMS
             // splitTopBottom.Panel1
             // 
             this.splitTopBottom.Panel1.Controls.Add(this.pnlGenInfoOuter);
-            this.splitTopBottom.Panel1MinSize = 250;
+            this.splitTopBottom.Panel1MinSize = 220;
             // 
             // splitTopBottom.Panel2
             // 
             this.splitTopBottom.Panel2.Controls.Add(this.pnlContentOuter);
             this.splitTopBottom.Panel2MinSize = 250;
             this.splitTopBottom.Size = new System.Drawing.Size(1178, 923);
-            this.splitTopBottom.SplitterDistance = 250;
+            this.splitTopBottom.SplitterDistance = 220;
             this.splitTopBottom.SplitterWidth = 6;
             this.splitTopBottom.TabIndex = 0;
             // 
@@ -593,10 +593,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlGenInfoOuter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlGenInfoOuter.Controls.Add(this.tlpGenInfo);
             this.pnlGenInfoOuter.Controls.Add(this.pnlGenInfoHeader);
-            this.pnlGenInfoOuter.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlGenInfoOuter.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlGenInfoOuter.Location = new System.Drawing.Point(0, 0);
             this.pnlGenInfoOuter.Name = "pnlGenInfoOuter";
-            this.pnlGenInfoOuter.Size = new System.Drawing.Size(1178, 251);
+            this.pnlGenInfoOuter.Size = new System.Drawing.Size(1178, 220);
             this.pnlGenInfoOuter.TabIndex = 10;
             // 
             // tlpGenInfo
@@ -623,15 +623,15 @@ namespace CMS.Presentation.Modules.KMS
             this.tlpGenInfo.Controls.Add(this.lblTags, 0, 6);
             this.tlpGenInfo.Controls.Add(this.lblExpiry, 2, 6);
             this.tlpGenInfo.Controls.Add(this.lblCraf, 3, 3);
-            this.tlpGenInfo.Controls.Add(this.lblViewCount, 2, 8);
             this.tlpGenInfo.Controls.Add(this.cboCraf, 3, 4);
             this.tlpGenInfo.Controls.Add(this.dtpExpiry, 2, 7);
-            this.tlpGenInfo.Controls.Add(this.lblLikeCount, 2, 8);
+            this.tlpGenInfo.Controls.Add(this.lblViewCount, 3, 5);
+            this.tlpGenInfo.Controls.Add(this.lblLikeCount, 3, 7);
             this.tlpGenInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpGenInfo.Location = new System.Drawing.Point(0, 28);
             this.tlpGenInfo.Name = "tlpGenInfo";
             this.tlpGenInfo.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.tlpGenInfo.RowCount = 9;
+            this.tlpGenInfo.RowCount = 8;
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 9F));
@@ -640,75 +640,9 @@ namespace CMS.Presentation.Modules.KMS
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 8F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tlpGenInfo.Size = new System.Drawing.Size(1176, 221);
+            this.tlpGenInfo.Size = new System.Drawing.Size(1176, 190);
             this.tlpGenInfo.TabIndex = 1;
-            // 
-            // flpTags
-            // 
-            this.flpTags.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.tlpGenInfo.SetColumnSpan(this.flpTags, 2);
-            this.flpTags.Controls.Add(this.pnlTagChipTemplate);
-            this.flpTags.Controls.Add(this.txtTagInput);
-            this.flpTags.Dock = System.Windows.Forms.DockStyle.Top;
-            this.flpTags.Location = new System.Drawing.Point(12, 148);
-            this.flpTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.flpTags.Name = "flpTags";
-            this.tlpGenInfo.SetRowSpan(this.flpTags, 2);
-            this.flpTags.Size = new System.Drawing.Size(543, 70);
-            this.flpTags.TabIndex = 35;
-            // 
-            // pnlTagChipTemplate
-            // 
-            this.pnlTagChipTemplate.AutoSize = true;
-            this.pnlTagChipTemplate.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(234)))), ((int)(((byte)(248)))));
-            this.pnlTagChipTemplate.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlTagChipTemplate.Controls.Add(this.lblTagChipTemplate);
-            this.pnlTagChipTemplate.Controls.Add(this.btnTagChipRemoveTemplate);
-            this.pnlTagChipTemplate.Location = new System.Drawing.Point(2, 2);
-            this.pnlTagChipTemplate.Margin = new System.Windows.Forms.Padding(2);
-            this.pnlTagChipTemplate.Name = "pnlTagChipTemplate";
-            this.pnlTagChipTemplate.Padding = new System.Windows.Forms.Padding(6, 2, 2, 2);
-            this.pnlTagChipTemplate.Size = new System.Drawing.Size(65, 28);
-            this.pnlTagChipTemplate.TabIndex = 99;
-            this.pnlTagChipTemplate.Visible = false;
-            // 
-            // lblTagChipTemplate
-            // 
-            this.lblTagChipTemplate.AutoSize = true;
-            this.lblTagChipTemplate.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.lblTagChipTemplate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(82)))), ((int)(((byte)(118)))));
-            this.lblTagChipTemplate.Location = new System.Drawing.Point(6, 2);
-            this.lblTagChipTemplate.Name = "lblTagChipTemplate";
-            this.lblTagChipTemplate.Padding = new System.Windows.Forms.Padding(0, 2, 4, 0);
-            this.lblTagChipTemplate.Size = new System.Drawing.Size(4, 22);
-            this.lblTagChipTemplate.TabIndex = 0;
-            // 
-            // btnTagChipRemoveTemplate
-            // 
-            this.btnTagChipRemoveTemplate.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnTagChipRemoveTemplate.FlatAppearance.BorderSize = 0;
-            this.btnTagChipRemoveTemplate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnTagChipRemoveTemplate.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
-            this.btnTagChipRemoveTemplate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(82)))), ((int)(((byte)(118)))));
-            this.btnTagChipRemoveTemplate.Location = new System.Drawing.Point(45, 2);
-            this.btnTagChipRemoveTemplate.Margin = new System.Windows.Forms.Padding(0);
-            this.btnTagChipRemoveTemplate.Name = "btnTagChipRemoveTemplate";
-            this.btnTagChipRemoveTemplate.Size = new System.Drawing.Size(16, 16);
-            this.btnTagChipRemoveTemplate.TabIndex = 1;
-            this.btnTagChipRemoveTemplate.Text = "×";
-            this.btnTagChipRemoveTemplate.UseVisualStyleBackColor = true;
-            // 
-            // txtTagInput
-            // 
-            this.txtTagInput.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.txtTagInput.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtTagInput.Location = new System.Drawing.Point(72, 3);
-            this.txtTagInput.Name = "txtTagInput";
-            this.txtTagInput.Size = new System.Drawing.Size(104, 27);
-            this.txtTagInput.TabIndex = 0;
-            this.txtTagInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtTagInput_KeyDown);
             // 
             // lblCode
             // 
@@ -834,7 +768,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblCategory.Location = new System.Drawing.Point(559, 63);
             this.lblCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblCategory.Name = "lblCategory";
-            this.lblCategory.Size = new System.Drawing.Size(281, 18);
+            this.lblCategory.Size = new System.Drawing.Size(84, 18);
             this.lblCategory.TabIndex = 21;
             this.lblCategory.Text = "หมวดหมู่ *";
             // 
@@ -902,10 +836,10 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.lblViewCount.Font = new System.Drawing.Font("Segoe UI", 8F);
             this.lblViewCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblViewCount.Location = new System.Drawing.Point(877, 186);
+            this.lblViewCount.Location = new System.Drawing.Point(877, 112);
             this.lblViewCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
             this.lblViewCount.Name = "lblViewCount";
-            this.lblViewCount.Size = new System.Drawing.Size(134, 32);
+            this.lblViewCount.Size = new System.Drawing.Size(74, 6);
             this.lblViewCount.TabIndex = 41;
             this.lblViewCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
@@ -919,28 +853,6 @@ namespace CMS.Presentation.Modules.KMS
             this.cboCraf.Name = "cboCraf";
             this.cboCraf.Size = new System.Drawing.Size(287, 27);
             this.cboCraf.TabIndex = 33;
-            // 
-            // dtpExpiry
-            // 
-            this.dtpExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.dtpExpiry.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpExpiry.Location = new System.Drawing.Point(560, 151);
-            this.dtpExpiry.Name = "dtpExpiry";
-            this.dtpExpiry.Size = new System.Drawing.Size(312, 26);
-            this.dtpExpiry.TabIndex = 34;
-            // 
-            // lblLikeCount
-            // 
-            this.lblLikeCount.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblLikeCount.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblLikeCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblLikeCount.Location = new System.Drawing.Point(559, 186);
-            this.lblLikeCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
-            this.lblLikeCount.Name = "lblLikeCount";
-            this.lblLikeCount.Size = new System.Drawing.Size(120, 38);
-            this.lblLikeCount.TabIndex = 42;
-            this.lblLikeCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // pnlGenInfoHeader
             // 
@@ -978,7 +890,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContentOuter.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContentOuter.Location = new System.Drawing.Point(0, 0);
             this.pnlContentOuter.Name = "pnlContentOuter";
-            this.pnlContentOuter.Size = new System.Drawing.Size(1178, 667);
+            this.pnlContentOuter.Size = new System.Drawing.Size(1178, 697);
             this.pnlContentOuter.TabIndex = 12;
             // 
             // webEditor
@@ -989,7 +901,7 @@ namespace CMS.Presentation.Modules.KMS
             this.webEditor.MinimumSize = new System.Drawing.Size(20, 20);
             this.webEditor.Name = "webEditor";
             this.webEditor.ScriptErrorsSuppressed = true;
-            this.webEditor.Size = new System.Drawing.Size(1176, 528);
+            this.webEditor.Size = new System.Drawing.Size(1176, 558);
             this.webEditor.TabIndex = 5;
             this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
             // 
@@ -998,7 +910,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRteStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlRteStatus.Controls.Add(this.lblRteStatus);
             this.pnlRteStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlRteStatus.Location = new System.Drawing.Point(0, 643);
+            this.pnlRteStatus.Location = new System.Drawing.Point(0, 673);
             this.pnlRteStatus.Name = "pnlRteStatus";
             this.pnlRteStatus.Padding = new System.Windows.Forms.Padding(10, 0, 10, 0);
             this.pnlRteStatus.Size = new System.Drawing.Size(1176, 22);
@@ -1285,22 +1197,24 @@ namespace CMS.Presentation.Modules.KMS
             // txtSummary
             // 
             this.txtSummary.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtSummary.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtSummary.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.txtSummary.Location = new System.Drawing.Point(174, 4);
+            this.txtSummary.Location = new System.Drawing.Point(168, 4);
             this.txtSummary.MaxLength = 1000;
             this.txtSummary.Name = "txtSummary";
             this.txtSummary.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtSummary.Size = new System.Drawing.Size(1199, 27);
+            this.txtSummary.Size = new System.Drawing.Size(998, 27);
             this.txtSummary.TabIndex = 1;
             // 
             // lblSummary
             // 
-            this.lblSummary.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblSummary.AutoSize = true;
+            this.lblSummary.Dock = System.Windows.Forms.DockStyle.Left;
             this.lblSummary.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblSummary.Location = new System.Drawing.Point(10, 4);
             this.lblSummary.Name = "lblSummary";
-            this.lblSummary.Size = new System.Drawing.Size(1156, 27);
+            this.lblSummary.Size = new System.Drawing.Size(158, 20);
             this.lblSummary.TabIndex = 0;
             this.lblSummary.Text = "บทสรุปสั้น (Summary)";
             // 
@@ -1471,11 +1385,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colView
             // 
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
-            this.colView.DefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle177.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle177.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle177.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle177.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
+            this.colView.DefaultCellStyle = dataGridViewCellStyle177;
             this.colView.HeaderText = "ดูไฟล์";
             this.colView.MinimumWidth = 6;
             this.colView.Name = "colView";
@@ -1485,11 +1399,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDelete
             // 
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDelete.DefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle178.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle178.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle178.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle178.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDelete.DefaultCellStyle = dataGridViewCellStyle178;
             this.colDelete.HeaderText = "ลบไฟล์";
             this.colDelete.MinimumWidth = 6;
             this.colDelete.Name = "colDelete";
@@ -1746,11 +1660,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colRelatedLinkedDelete
             // 
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colRelatedLinkedDelete.DefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle179.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle179.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle179.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle179.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colRelatedLinkedDelete.DefaultCellStyle = dataGridViewCellStyle179;
             this.colRelatedLinkedDelete.HeaderText = "ลบ";
             this.colRelatedLinkedDelete.MinimumWidth = 6;
             this.colRelatedLinkedDelete.Name = "colRelatedLinkedDelete";
@@ -1990,11 +1904,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colWorkflowLinkedDelete
             // 
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle4.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colWorkflowLinkedDelete.DefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle180.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle180.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle180.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle180.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colWorkflowLinkedDelete.DefaultCellStyle = dataGridViewCellStyle180;
             this.colWorkflowLinkedDelete.HeaderText = "ลบ";
             this.colWorkflowLinkedDelete.MinimumWidth = 6;
             this.colWorkflowLinkedDelete.Name = "colWorkflowLinkedDelete";
@@ -2232,11 +2146,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colProgramsLinkedDelete
             // 
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colProgramsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle181.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle181.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle181.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle181.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colProgramsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle181;
             this.colProgramsLinkedDelete.HeaderText = "ลบ";
             this.colProgramsLinkedDelete.MinimumWidth = 6;
             this.colProgramsLinkedDelete.Name = "colProgramsLinkedDelete";
@@ -2474,11 +2388,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDocsLinkedView
             // 
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle6.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
-            this.colDocsLinkedView.DefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle182.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle182.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle182.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle182.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
+            this.colDocsLinkedView.DefaultCellStyle = dataGridViewCellStyle182;
             this.colDocsLinkedView.HeaderText = "ดู";
             this.colDocsLinkedView.MinimumWidth = 6;
             this.colDocsLinkedView.Name = "colDocsLinkedView";
@@ -2488,11 +2402,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDocsLinkedDelete
             // 
-            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle7.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle7.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDocsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle183.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle183.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle183.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle183.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDocsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle183;
             this.colDocsLinkedDelete.HeaderText = "ลบ";
             this.colDocsLinkedDelete.MinimumWidth = 6;
             this.colDocsLinkedDelete.Name = "colDocsLinkedDelete";
@@ -2584,11 +2498,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDeptDelete
             // 
-            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle8.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDeptDelete.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle184.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle184.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle184.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle184.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDeptDelete.DefaultCellStyle = dataGridViewCellStyle184;
             this.colDeptDelete.HeaderText = "ลบ";
             this.colDeptDelete.MinimumWidth = 6;
             this.colDeptDelete.Name = "colDeptDelete";
@@ -2632,6 +2546,91 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader.Text = "🔗  Mapping รายการที่เกี่ยวข้อง";
             this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // lblLikeCount
+            // 
+            this.lblLikeCount.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblLikeCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblLikeCount.Location = new System.Drawing.Point(877, 150);
+            this.lblLikeCount.Margin = new System.Windows.Forms.Padding(2, 2, 2, 0);
+            this.lblLikeCount.Name = "lblLikeCount";
+            this.lblLikeCount.Size = new System.Drawing.Size(72, 32);
+            this.lblLikeCount.TabIndex = 42;
+            this.lblLikeCount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // dtpExpiry
+            // 
+            this.dtpExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.dtpExpiry.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpExpiry.Location = new System.Drawing.Point(560, 151);
+            this.dtpExpiry.Name = "dtpExpiry";
+            this.dtpExpiry.Size = new System.Drawing.Size(312, 26);
+            this.dtpExpiry.TabIndex = 34;
+            // 
+            // txtTagInput
+            // 
+            this.txtTagInput.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.txtTagInput.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtTagInput.Location = new System.Drawing.Point(72, 3);
+            this.txtTagInput.Name = "txtTagInput";
+            this.txtTagInput.Size = new System.Drawing.Size(104, 27);
+            this.txtTagInput.TabIndex = 0;
+            this.txtTagInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtTagInput_KeyDown);
+            // 
+            // pnlTagChipTemplate
+            // 
+            this.pnlTagChipTemplate.AutoSize = true;
+            this.pnlTagChipTemplate.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(234)))), ((int)(((byte)(248)))));
+            this.pnlTagChipTemplate.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.pnlTagChipTemplate.Controls.Add(this.lblTagChipTemplate);
+            this.pnlTagChipTemplate.Controls.Add(this.btnTagChipRemoveTemplate);
+            this.pnlTagChipTemplate.Location = new System.Drawing.Point(2, 2);
+            this.pnlTagChipTemplate.Margin = new System.Windows.Forms.Padding(2);
+            this.pnlTagChipTemplate.Name = "pnlTagChipTemplate";
+            this.pnlTagChipTemplate.Padding = new System.Windows.Forms.Padding(6, 2, 2, 2);
+            this.pnlTagChipTemplate.Size = new System.Drawing.Size(65, 28);
+            this.pnlTagChipTemplate.TabIndex = 99;
+            this.pnlTagChipTemplate.Visible = false;
+            // 
+            // btnTagChipRemoveTemplate
+            // 
+            this.btnTagChipRemoveTemplate.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnTagChipRemoveTemplate.FlatAppearance.BorderSize = 0;
+            this.btnTagChipRemoveTemplate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnTagChipRemoveTemplate.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.btnTagChipRemoveTemplate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(82)))), ((int)(((byte)(118)))));
+            this.btnTagChipRemoveTemplate.Location = new System.Drawing.Point(45, 2);
+            this.btnTagChipRemoveTemplate.Margin = new System.Windows.Forms.Padding(0);
+            this.btnTagChipRemoveTemplate.Name = "btnTagChipRemoveTemplate";
+            this.btnTagChipRemoveTemplate.Size = new System.Drawing.Size(16, 16);
+            this.btnTagChipRemoveTemplate.TabIndex = 1;
+            this.btnTagChipRemoveTemplate.Text = "×";
+            this.btnTagChipRemoveTemplate.UseVisualStyleBackColor = true;
+            // 
+            // lblTagChipTemplate
+            // 
+            this.lblTagChipTemplate.AutoSize = true;
+            this.lblTagChipTemplate.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblTagChipTemplate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(82)))), ((int)(((byte)(118)))));
+            this.lblTagChipTemplate.Location = new System.Drawing.Point(6, 2);
+            this.lblTagChipTemplate.Name = "lblTagChipTemplate";
+            this.lblTagChipTemplate.Padding = new System.Windows.Forms.Padding(0, 2, 4, 0);
+            this.lblTagChipTemplate.Size = new System.Drawing.Size(4, 22);
+            this.lblTagChipTemplate.TabIndex = 0;
+            // 
+            // flpTags
+            // 
+            this.flpTags.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.tlpGenInfo.SetColumnSpan(this.flpTags, 2);
+            this.flpTags.Controls.Add(this.pnlTagChipTemplate);
+            this.flpTags.Controls.Add(this.txtTagInput);
+            this.flpTags.Dock = System.Windows.Forms.DockStyle.Top;
+            this.flpTags.Location = new System.Drawing.Point(12, 148);
+            this.flpTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.flpTags.Name = "flpTags";
+            this.flpTags.Size = new System.Drawing.Size(543, 34);
+            this.flpTags.TabIndex = 35;
+            // 
             // KBEditorDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -2669,10 +2668,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlGenInfoOuter.ResumeLayout(false);
             this.tlpGenInfo.ResumeLayout(false);
             this.tlpGenInfo.PerformLayout();
-            this.flpTags.ResumeLayout(false);
-            this.flpTags.PerformLayout();
-            this.pnlTagChipTemplate.ResumeLayout(false);
-            this.pnlTagChipTemplate.PerformLayout();
             this.pnlGenInfoHeader.ResumeLayout(false);
             this.pnlContentOuter.ResumeLayout(false);
             this.pnlContentOuter.PerformLayout();
@@ -2710,6 +2705,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tabDepartments.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvDepartmentsLinked)).EndInit();
             this.pnlMappingHeader.ResumeLayout(false);
+            this.pnlTagChipTemplate.ResumeLayout(false);
+            this.pnlTagChipTemplate.PerformLayout();
+            this.flpTags.ResumeLayout(false);
+            this.flpTags.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -2896,12 +2895,6 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label lblContentHeader;
         private System.Windows.Forms.Label lblMappingHeader;
         private System.Windows.Forms.TableLayoutPanel tlpGenInfo;
-        private System.Windows.Forms.FlowLayoutPanel flpTags;
-        private System.Windows.Forms.TextBox txtTagInput;
-        // Tag Chip Template Controls (hidden, used for cloning)
-        private System.Windows.Forms.Panel pnlTagChipTemplate;
-        private System.Windows.Forms.Label lblTagChipTemplate;
-        private System.Windows.Forms.Button btnTagChipRemoveTemplate;
         private System.Windows.Forms.Label lblCode;
         private System.Windows.Forms.Label lblType;
         private System.Windows.Forms.Label lblStatus;
@@ -2918,9 +2911,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label lblCraf;
         private System.Windows.Forms.Label lblViewCount;
         private System.Windows.Forms.ComboBox cboCraf;
-        private System.Windows.Forms.Label lblLikeCount;
         private System.Windows.Forms.Label lblExpiry;
-        private System.Windows.Forms.DateTimePicker dtpExpiry;
         private System.Windows.Forms.DataGridViewTextBoxColumn colNum;
         private System.Windows.Forms.DataGridViewTextBoxColumn colFilename;
         private System.Windows.Forms.DataGridViewTextBoxColumn colSize;
@@ -2945,5 +2936,12 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedLinkedSummary;
         private System.Windows.Forms.DataGridViewTextBoxColumn colType;
         private System.Windows.Forms.DataGridViewButtonColumn colRelatedLinkedDelete;
+        private System.Windows.Forms.FlowLayoutPanel flpTags;
+        private System.Windows.Forms.Panel pnlTagChipTemplate;
+        private System.Windows.Forms.Label lblTagChipTemplate;
+        private System.Windows.Forms.Button btnTagChipRemoveTemplate;
+        private System.Windows.Forms.TextBox txtTagInput;
+        private System.Windows.Forms.DateTimePicker dtpExpiry;
+        private System.Windows.Forms.Label lblLikeCount;
     }
 }

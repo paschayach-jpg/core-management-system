@@ -219,7 +219,8 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        public int? SelectedCategoryId  { get; set; }
+        public int?   SelectedCategoryId   { get; set; }
+        public string SelectedArticleTitle { get; set; }
 
         public void ShowLoading()
         {
@@ -238,10 +239,19 @@ namespace CMS.Presentation.Modules.KMS
         public string ArticleCountText  { set { lblPageInfo.Text = value; } }
 
         public void BindCategoryTree(
-            IEnumerable<KBCategory>         categories,
-            IDictionary<int, int>           articleCounts)
+            IEnumerable<KBCategory>                    categories,
+            IDictionary<int, int>                      articleCounts,
+            IDictionary<int, IDictionary<string, int>> titlesByCategory)
         {
-            BuildCategoryTree(categories.ToList(), articleCounts);
+            BuildCategoryTree(categories.ToList(), articleCounts, titlesByCategory);
+        }
+
+        /// <summary>Tag object placed on title leaf-nodes in treeCategories.</summary>
+        private sealed class TitleNode
+        {
+            public int    CategoryId   { get; set; }
+            public string CategoryName { get; set; }
+            public string Title        { get; set; }
         }
 
         public void RenderArticles(IEnumerable<KBArticle> articles)
@@ -394,6 +404,16 @@ namespace CMS.Presentation.Modules.KMS
         private void TreeCategories_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (_presenter == null || e.Node == null || _suppressCategorySelect) return;
+
+            // Title leaf-node → filter grid to that specific title
+            var tn = e.Node.Tag as TitleNode;
+            if (tn != null)
+            {
+                _presenter.OnTitleSelected(tn.CategoryId, tn.CategoryName, tn.Title);
+                return;
+            }
+
+            // Category node → existing behaviour
             var cat = e.Node.Tag as KBCategory;
             if (cat == null) return;  // root node — no specific category selected
             _presenter.OnCategorySelected(cat.CategoryID, cat.CategoryName);
@@ -790,8 +810,9 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         private void BuildCategoryTree(
-            List<KBCategory>      categories,
-            IDictionary<int, int> articleCounts)
+            List<KBCategory>                           categories,
+            IDictionary<int, int>                      articleCounts,
+            IDictionary<int, IDictionary<string, int>> titlesByCategory)
         {
             treeCategories.BeginUpdate();
             treeCategories.Nodes.Clear();
@@ -810,7 +831,7 @@ namespace CMS.Presentation.Modules.KMS
                 .Where(c => c.IsActive && !c.ParentCategoryID.HasValue)
                 .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
             foreach (var cat in roots)
-                rootNode.Nodes.Add(BuildCategoryNode(cat, categories, articleCounts));
+                rootNode.Nodes.Add(BuildCategoryNode(cat, categories, articleCounts, titlesByCategory));
 
             treeCategories.EndUpdate();
             treeCategories.ExpandAll();
@@ -821,9 +842,10 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         private TreeNode BuildCategoryNode(
-            KBCategory            cat,
-            List<KBCategory>      allCategories,
-            IDictionary<int, int> articleCounts)
+            KBCategory                                 cat,
+            List<KBCategory>                           allCategories,
+            IDictionary<int, int>                      articleCounts,
+            IDictionary<int, IDictionary<string, int>> titlesByCategory)
         {
             int    count = articleCounts.ContainsKey(cat.CategoryID) ? articleCounts[cat.CategoryID] : 0;
             string label = count > 0
@@ -836,11 +858,33 @@ namespace CMS.Presentation.Modules.KMS
                 ForeColor = Color.FromArgb(30, 30, 30),
             };
 
+            // ── Child categories (existing structure) ────────────────────────────
             var children = allCategories
                 .Where(c => c.IsActive && c.ParentCategoryID == cat.CategoryID)
                 .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
             foreach (var child in children)
-                node.Nodes.Add(BuildCategoryNode(child, allCategories, articleCounts));
+                node.Nodes.Add(BuildCategoryNode(child, allCategories, articleCounts, titlesByCategory));
+
+            // ── Title leaf-nodes: "📄 Title (N)" ────────────────────────────────
+            IDictionary<string, int> titleMap;
+            if (titlesByCategory != null && titlesByCategory.TryGetValue(cat.CategoryID, out titleMap))
+            {
+                foreach (var kvp in titleMap.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    string nodeLabel = string.Format("📄 {0} ({1})", kvp.Key, kvp.Value);
+                    var titleNode = new TreeNode(nodeLabel)
+                    {
+                        Tag       = new TitleNode
+                                    {
+                                        CategoryId   = cat.CategoryID,
+                                        CategoryName = cat.CategoryName,
+                                        Title        = kvp.Key,   // raw title, no count
+                                    },
+                        ForeColor = Color.FromArgb(50, 80, 140),
+                    };
+                    node.Nodes.Add(titleNode);
+                }
+            }
 
             return node;
         }
@@ -914,6 +958,7 @@ namespace CMS.Presentation.Modules.KMS
             cboDepartment.SelectedIndex = 0;
             cboSortBy.SelectedIndex     = 0;
             txtToolbarSearch.Text       = string.Empty;
+            SelectedArticleTitle        = null;  // also clear any active title-subcategory filter
             if (_presenter != null) _presenter.LoadArticles();
         }
 
