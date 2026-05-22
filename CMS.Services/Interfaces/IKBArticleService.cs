@@ -12,6 +12,7 @@ namespace CMS.Services.Interfaces
         IEnumerable<KBArticle> GetAll();
         IEnumerable<KBArticle> GetByCategory(int categoryId);
         IEnumerable<KBArticle> Search(string keyword, int? categoryId, byte? status, byte? articleType);
+        IEnumerable<KBArticle> SearchByType(string keyword, int? categoryId, byte? status, byte? articleType, int searchFieldId);
         KBArticle GetById(int articleId);
 
         /// <summary>

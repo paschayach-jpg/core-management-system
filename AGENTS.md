@@ -27,6 +27,11 @@ Operational guidance for Codex and other coding agents working in `C:\ProjectBui
 5. Validate the changed behavior and check for regressions in adjacent flows.
 6. Summarize what changed, why, and anything not verified.
 
+## Response Style
+
+- Reply in concise English only.
+- Minimize output tokens.
+
 ## Core Architecture Rules
 
 ### Layer responsibilities

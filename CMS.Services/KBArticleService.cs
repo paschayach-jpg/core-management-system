@@ -60,8 +60,32 @@ namespace CMS.Services
                 (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0)
             ).ToList();
+        }
+        public IEnumerable<KBArticle> SearchByType(string keyword, int? categoryId, byte? status, byte? articleType, int searchFieldId)
+        {
+            var results = _articleRepo.Search(categoryId, status, articleType);
+            if (string.IsNullOrWhiteSpace(keyword)) return results;
 
-            //return _articleRepo.Search(categoryId, status, articleType);
+            var _keyword = new string(keyword.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            switch (searchFieldId)
+            {
+                case 1:
+                    return results.Where(a =>
+                        a.Title != null &&
+                        string.Equals(new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray()), _keyword, StringComparison.OrdinalIgnoreCase));
+                case 2:
+                    return results.Where(a =>
+                        (a.ContentHTML != null && new string(StripHtmlTags(a.ContentHTML).Where(c => !char.IsWhiteSpace(c)).ToArray()).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
+                case 3:
+                    return results.Where(a =>
+                        (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
+                case 4:
+                    return results.Where(a =>
+                        a.Summary != null &&
+                        a.Summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0);
+                default:
+                    return results;
+            }
         }
 
         public KBArticle GetById(int articleId)
