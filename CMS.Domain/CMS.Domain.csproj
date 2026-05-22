@@ -36,8 +36,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Enums\ConfidentialityLevel.cs" />
-    <Compile Include="Enums\KBCategoryCodeName.cs" />
-    <Compile Include="Enums\KBCategoryIcon.cs" />
+<Compile Include="Enums\KBCategoryIcon.cs" />
     <Compile Include="Enums\KBCategoryIconHelper.cs" />
     <Compile Include="Enums\KBEntityType.cs" />
     <Compile Include="Enums\PermissionType.cs" />

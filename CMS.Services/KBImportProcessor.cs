@@ -4,9 +4,8 @@ using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Configuration;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
@@ -84,8 +83,16 @@ namespace CMS.Services
         {
             if (rows == null) throw new ArgumentNullException("rows");
 
+            var categoryMap = new Dictionary<string, string>(StringComparer.Ordinal);
+            string rawCategories = ConfigurationManager.AppSettings["KBCategories"] ?? string.Empty;
+            foreach (string entry in rawCategories.Split(';'))
+            {
+                int eq = entry.IndexOf('=');
+                if (eq > 0)
+                    categoryMap[entry.Substring(0, eq).Trim()] = entry.Substring(eq + 1).Trim();
+            }
+
             var cache = new Dictionary<string, int>(StringComparer.Ordinal);
-            KBCategoryCodeName result;
             int counter = 1;
             foreach (var row in rows)
             {
@@ -94,8 +101,8 @@ namespace CMS.Services
 
                 try
                 {
-                    bool success = Enum.TryParse(row.ColA, out result);
-                    if (!success)
+                    string categoryName;
+                    if (!categoryMap.TryGetValue(row.ColA, out categoryName))
                     {
                         row.Status     = "Error";
                         row.StatusNote = TruncateTo200(string.Format(
@@ -103,13 +110,9 @@ namespace CMS.Services
                         continue;
                     }
 
-                    FieldInfo field = result.GetType().GetField(result.ToString());
-                    DescriptionAttribute attr = (DescriptionAttribute)Attribute.GetCustomAttribute(
-                        field, typeof(DescriptionAttribute));
-
                     int parentCategoryId = ResolveOrInsertCategory(
                         code:      row.ColA,
-                        name:      attr.Description,
+                        name:      categoryName,
                         parentId:  null,
                         sortOrder: counter,
                         createdBy: createdBy,
