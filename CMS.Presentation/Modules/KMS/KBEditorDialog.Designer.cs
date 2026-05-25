@@ -2639,6 +2639,23 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingHeader.Size = new System.Drawing.Size(527, 28);
             this.pnlMappingHeader.TabIndex = 0;
             // 
+            // btnCollapseMappingPanel
+            // 
+            this.btnCollapseMappingPanel.BackColor = System.Drawing.Color.Transparent;
+            this.btnCollapseMappingPanel.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCollapseMappingPanel.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnCollapseMappingPanel.FlatAppearance.BorderSize = 0;
+            this.btnCollapseMappingPanel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCollapseMappingPanel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnCollapseMappingPanel.ForeColor = System.Drawing.Color.White;
+            this.btnCollapseMappingPanel.Location = new System.Drawing.Point(0, 0);
+            this.btnCollapseMappingPanel.Name = "btnCollapseMappingPanel";
+            this.btnCollapseMappingPanel.Size = new System.Drawing.Size(36, 28);
+            this.btnCollapseMappingPanel.TabIndex = 1;
+            this.btnCollapseMappingPanel.Text = "▶";
+            this.btnCollapseMappingPanel.UseVisualStyleBackColor = false;
+            this.btnCollapseMappingPanel.Click += new System.EventHandler(this.btnCollapseMappingPanel_Click);
+            // 
             // lblMappingHeader
             // 
             this.lblMappingHeader.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -2651,22 +2668,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader.TabIndex = 0;
             this.lblMappingHeader.Text = "🔗  Mapping รายการที่เกี่ยวข้อง";
             this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            //
-            // btnCollapseMappingPanel
-            //
-            this.btnCollapseMappingPanel.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnCollapseMappingPanel.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnCollapseMappingPanel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCollapseMappingPanel.FlatAppearance.BorderSize = 0;
-            this.btnCollapseMappingPanel.BackColor = System.Drawing.Color.Transparent;
-            this.btnCollapseMappingPanel.ForeColor = System.Drawing.Color.White;
-            this.btnCollapseMappingPanel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnCollapseMappingPanel.Text = "▶";
-            this.btnCollapseMappingPanel.Size = new System.Drawing.Size(36, 28);
-            this.btnCollapseMappingPanel.TabIndex = 1;
-            this.btnCollapseMappingPanel.Name = "btnCollapseMappingPanel";
-            this.btnCollapseMappingPanel.Click += new System.EventHandler(this.btnCollapseMappingPanel_Click);
-            //
+            // 
             // KBEditorDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);

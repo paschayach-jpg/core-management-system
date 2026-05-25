@@ -537,13 +537,25 @@ namespace CMS.Presentation.Modules.KMS
         private void InitTemplateCombo()
         {
             cboTemplate.Items.Clear();
-            cboTemplate.Items.Add("ความรู้ประกันภัย / Knowledge Base");
-            cboTemplate.Items.Add("SOP & แนวทาง / Procedures");
-            cboTemplate.Items.Add("FAQ / คำถามที่พบบ่อย");
-            cboTemplate.Items.Add("แนวทางปฏิบัติ / Guidelines");
+            cboTemplate.Items.Add(new ComboItem("Wiki Page", 5));
             cboTemplate.SelectedIndex = 0;
         }
+        private class ComboItem
+        {
+            public string Display { get; private set; }
+            public int Value { get; private set; }
 
+            public ComboItem(string display, int value)
+            {
+                Display = display;
+                Value = value;
+            }
+
+            public override string ToString()
+            {
+                return Display;
+            }
+        }
         // Column Reference Population
 
         private void PopulateColumnReference()
@@ -574,6 +586,8 @@ namespace CMS.Presentation.Modules.KMS
                 new { L="R",  F="วันที่เผยแพร่ (PublishedDate)",       T="Date — Thai B.E. text เช่น \"9 เมษายน 2535\"", R=true,  E="9 เมษายน 2535" },
                 new { L="S",  F="วันหมดอายุ (ExpiryDate)",             T="Date — Thai B.E. text (ไม่บังคับ)",             R=false, E="31 ธันวาคม 2570" },
                 new { L="T",  F="เนื้อหาบทความ (ContentHTML)",        T="Text (HTML หรือ Plain Text)",   R=true,  E="<p>เนื้อหา...</p>" },
+                new { L="U",  F="คณะอนุกรรมการ",        T="Text (คั่นด้วย pipe |)",   R=true,  E="คณะกรรมการบริหาร1|คณะกรรมการบริหาร2"},
+                new { L="V",  F="ฝ่าย/แผนก",        T="Text (คั่นด้วย pipe |)",   R=true,  E="รับประกันภัย|ฝ่ายบริหาร|รับประกัน 2|สำรวจภัย"},
             };
 
             foreach (var c in cols)
