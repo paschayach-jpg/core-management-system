@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& \"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"c:\\\\Users\\\\pitakpong\\\\Documents\\\\cms_import\\\\CMS.Services\\\\CMS.Services.csproj\" /t:Build /p:Configuration=Debug /nologo /v:quiet 2>&1)"
+    ]
+  }
+}

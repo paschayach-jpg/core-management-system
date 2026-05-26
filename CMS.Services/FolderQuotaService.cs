@@ -1,0 +1,270 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using CMS.Data.Interfaces;
+using CMS.Domain.Enums;
+using CMS.Domain.Models;
+using CMS.Services.DTOs;
+using CMS.Services.Exceptions;
+using CMS.Services.Interfaces;
+
+namespace CMS.Services
+{
+    public class FolderQuotaService : IFolderQuotaService
+    {
+        private readonly IFolderQuotaConfigRepository       _configRepo;
+        private readonly IFolderQuotaChangeRequestRepository _requestRepo;
+        private readonly IFolderRepository                  _folderRepo;
+        private readonly INotificationService               _notificationService;
+        private readonly IOrgUnitRepository                 _orgUnitRepo;
+
+        public FolderQuotaService(
+            IFolderQuotaConfigRepository        configRepo,
+            IFolderQuotaChangeRequestRepository requestRepo,
+            IFolderRepository                   folderRepo,
+            INotificationService                notificationService,
+            IOrgUnitRepository                  orgUnitRepo)
+        {
+            _configRepo          = configRepo;
+            _requestRepo         = requestRepo;
+            _folderRepo          = folderRepo;
+            _notificationService = notificationService;
+            _orgUnitRepo         = orgUnitRepo;
+        }
+
+        // ---------------------------------------------------------------
+        // Usage
+        // ---------------------------------------------------------------
+
+        public QuotaUsageResult GetUsage(int orgUnitId, int? parentOrgUnitId = null)
+        {
+            var config = _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);
+            var folders = _folderRepo.GetByOrgUnit(orgUnitId);
+            long usedBytes = folders.Sum(f => f.FolderSizeBytes);
+
+            long quotaBytes = config != null ? config.QuotaBytes : 0;
+            double pct = quotaBytes > 0 ? (double)usedBytes / quotaBytes * 100.0 : 0;
+
+            var orgUnit = _orgUnitRepo.GetById(orgUnitId);
+
+            return new QuotaUsageResult
+            {
+                OrgUnitID   = orgUnitId,
+                OrgUnitName = orgUnit != null ? orgUnit.Name : orgUnitId.ToString(),
+                QuotaBytes  = quotaBytes,
+                UsedBytes   = usedBytes,
+                UsedPercent = Math.Round(pct, 2),
+                Alert       = EvaluateAlert(pct, config)
+            };
+        }
+
+        public QuotaAlertLevel CheckAlert(int orgUnitId, int? parentOrgUnitId = null)
+        {
+            return GetUsage(orgUnitId, parentOrgUnitId).Alert;
+        }
+
+        public void EnforceQuota(int orgUnitId, int? parentOrgUnitId = null)
+        {
+            var usage = GetUsage(orgUnitId, parentOrgUnitId);
+            if (usage.Alert == QuotaAlertLevel.Full)
+                throw new QuotaExceededException(orgUnitId,
+                    string.Format("พื้นที่ folder เต็ม ({0:F1} GB จาก {1:F1} GB) กรุณาขออนุมัติเพิ่ม quota",
+                        usage.UsedGB, usage.QuotaGB));
+        }
+
+        public void SendAlertIfNeeded(int orgUnitId, int? parentOrgUnitId = null)
+        {
+            try
+            {
+                var usage = GetUsage(orgUnitId, parentOrgUnitId);
+                if (usage.Alert == QuotaAlertLevel.Normal) return;
+
+                // หา admin ของ OrgUnit นี้เพื่อแจ้งเตือน — ใช้ OrgUnitID เป็น RelatedEntityId
+                string message = BuildAlertMessage(usage);
+                _notificationService.Send(new NotificationRequest
+                {
+                    RecipientUserId = 0,   // 0 = broadcast to OrgUnit admins (resolved by NotificationService)
+                    EventType       = "QUOTA_ALERT",
+                    RelatedEntityId = orgUnitId.ToString(),
+                    MessageText     = message
+                });
+            }
+            catch
+            {
+                // fire-and-forget: ไม่ block flow หลักถ้า notification ล้มเหลว
+            }
+        }
+
+        // ---------------------------------------------------------------
+        // Config
+        // ---------------------------------------------------------------
+
+        public IEnumerable<FolderQuotaConfig> GetAllConfigs()
+        {
+            return _configRepo.GetAll();
+        }
+
+        public FolderQuotaConfig GetConfig(int orgUnitId, int? parentOrgUnitId = null)
+        {
+            return _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);
+        }
+
+        public void SaveConfig(FolderQuotaConfig config, UserContext user)
+        {
+            if (config.QuotaBytes <= 0)
+                throw new ArgumentException("QuotaBytes ต้องมากกว่า 0");
+            if (config.WarnThresholdPct >= 100)
+                throw new ArgumentException("WarnThresholdPct ต้องน้อยกว่า 100");
+            if (config.CriticalThresholdPct <= config.WarnThresholdPct)
+                throw new ArgumentException("CriticalThresholdPct ต้องมากกว่า WarnThresholdPct");
+
+            config.CreatedBy  = user.UserID;
+            config.UpdatedBy  = user.UserID;
+            _configRepo.Save(config);
+        }
+
+        public void DeleteConfig(int quotaConfigId, UserContext user)
+        {
+            _configRepo.Delete(quotaConfigId);
+        }
+
+        // ---------------------------------------------------------------
+        // Change Request
+        // ---------------------------------------------------------------
+
+        public int SubmitChangeRequest(SubmitQuotaChangeRequest dto, UserContext user)
+        {
+            var existing = _configRepo.GetByOrgUnit(dto.OrgUnitID);
+            long currentQuota = existing != null ? existing.QuotaBytes : 0;
+
+            if (dto.RequestedQuotaBytes <= 0)
+                throw new ArgumentException("ขนาด quota ที่ขอต้องมากกว่า 0");
+            if (dto.RequestedQuotaBytes <= currentQuota)
+                throw new ArgumentException("ขนาด quota ที่ขอต้องมากกว่า quota ปัจจุบัน");
+            if (string.IsNullOrWhiteSpace(dto.Reason))
+                throw new ArgumentException("กรุณาระบุเหตุผลในการขอเพิ่ม quota");
+
+            var request = new FolderQuotaChangeRequest
+            {
+                OrgUnitID           = dto.OrgUnitID,
+                CurrentQuotaBytes   = currentQuota,
+                RequestedQuotaBytes = dto.RequestedQuotaBytes,
+                Reason              = dto.Reason.Trim(),
+                Status              = QuotaRequestStatus.Pending,
+                RequestedBy         = user.UserID,
+                RequestedDate       = DateTime.Now
+            };
+            return _requestRepo.Insert(request);
+        }
+
+        public IEnumerable<FolderQuotaChangeRequest> GetPendingRequests()
+        {
+            return _requestRepo.GetPending();
+        }
+
+        public IEnumerable<FolderQuotaChangeRequest> GetAllRequests()
+        {
+            return _requestRepo.GetAll();
+        }
+
+        public IEnumerable<FolderQuotaChangeRequest> GetRequestsByOrgUnit(int orgUnitId)
+        {
+            return _requestRepo.GetByOrgUnit(orgUnitId);
+        }
+
+        public void ApproveRequest(int requestId, string remark, UserContext user)
+        {
+            var req = _requestRepo.GetById(requestId);
+            if (req == null) throw new ArgumentException("ไม่พบ Request ID " + requestId);
+            if (req.Status != QuotaRequestStatus.Pending)
+                throw new InvalidOperationException("Request นี้ไม่อยู่ในสถานะรอดำเนินการ");
+
+            _requestRepo.UpdateStatus(requestId, QuotaRequestStatus.Approved, user.UserID, remark);
+
+            // อัปเดต quota config ทันที
+            var config = _configRepo.GetByOrgUnit(req.OrgUnitID) ?? new FolderQuotaConfig
+            {
+                OrgUnitID           = req.OrgUnitID,
+                WarnThresholdPct    = 80,
+                CriticalThresholdPct= 95
+            };
+            config.QuotaBytes = req.RequestedQuotaBytes;
+            config.UpdatedBy  = user.UserID;
+            config.CreatedBy  = config.CreatedBy == 0 ? user.UserID : config.CreatedBy;
+            _configRepo.Save(config);
+
+            // แจ้งผู้ขอ
+            _notificationService.Send(new NotificationRequest
+            {
+                RecipientUserId = req.RequestedBy,
+                EventType       = "QUOTA_REQUEST_APPROVED",
+                RelatedEntityId = requestId.ToString(),
+                MessageText     = string.Format("คำขอเพิ่ม quota พื้นที่ folder ของ {0} ได้รับการอนุมัติแล้ว (ใหม่: {1:F1} GB)",
+                    req.OrgUnitName, req.RequestedQuotaBytes / 1073741824.0)
+            });
+        }
+
+        public void RejectRequest(int requestId, string remark, UserContext user)
+        {
+            var req = _requestRepo.GetById(requestId);
+            if (req == null) throw new ArgumentException("ไม่พบ Request ID " + requestId);
+            if (req.Status != QuotaRequestStatus.Pending)
+                throw new InvalidOperationException("Request นี้ไม่อยู่ในสถานะรอดำเนินการ");
+
+            if (string.IsNullOrWhiteSpace(remark))
+                throw new ArgumentException("กรุณาระบุเหตุผลในการปฏิเสธ");
+
+            _requestRepo.UpdateStatus(requestId, QuotaRequestStatus.Rejected, user.UserID, remark);
+
+            _notificationService.Send(new NotificationRequest
+            {
+                RecipientUserId = req.RequestedBy,
+                EventType       = "QUOTA_REQUEST_REJECTED",
+                RelatedEntityId = requestId.ToString(),
+                MessageText     = string.Format("คำขอเพิ่ม quota พื้นที่ folder ของ {0} ถูกปฏิเสธ: {1}",
+                    req.OrgUnitName, remark)
+            });
+        }
+
+        public void CancelRequest(int requestId, UserContext user)
+        {
+            var req = _requestRepo.GetById(requestId);
+            if (req == null) throw new ArgumentException("ไม่พบ Request ID " + requestId);
+            if (req.RequestedBy != user.UserID)
+                throw new UnauthorizedAccessException("ยกเลิกได้เฉพาะคำขอของตนเองเท่านั้น");
+            if (req.Status != QuotaRequestStatus.Pending)
+                throw new InvalidOperationException("ยกเลิกได้เฉพาะ Request ที่ยังรออนุมัติ");
+
+            _requestRepo.UpdateStatus(requestId, QuotaRequestStatus.Cancelled, user.UserID, "ยกเลิกโดยผู้ขอ");
+        }
+
+        // ---------------------------------------------------------------
+        // Helpers
+        // ---------------------------------------------------------------
+
+        private static QuotaAlertLevel EvaluateAlert(double usedPct, FolderQuotaConfig config)
+        {
+            if (config == null) return QuotaAlertLevel.Normal;
+            if (usedPct >= 100)                       return QuotaAlertLevel.Full;
+            if (usedPct >= config.CriticalThresholdPct) return QuotaAlertLevel.Critical;
+            if (usedPct >= config.WarnThresholdPct)     return QuotaAlertLevel.Warning;
+            return QuotaAlertLevel.Normal;
+        }
+
+        private static string BuildAlertMessage(QuotaUsageResult usage)
+        {
+            switch (usage.Alert)
+            {
+                case QuotaAlertLevel.Full:
+                    return string.Format("[QUOTA FULL] {0}: ใช้ {1:F1} GB / {2:F1} GB (100%)",
+                        usage.OrgUnitName, usage.UsedGB, usage.QuotaGB);
+                case QuotaAlertLevel.Critical:
+                    return string.Format("[QUOTA วิกฤต] {0}: ใช้ {1:F1} GB / {2:F1} GB ({3:F1}%)",
+                        usage.OrgUnitName, usage.UsedGB, usage.QuotaGB, usage.UsedPercent);
+                default:
+                    return string.Format("[QUOTA เตือน] {0}: ใช้ {1:F1} GB / {2:F1} GB ({3:F1}%)",
+                        usage.OrgUnitName, usage.UsedGB, usage.QuotaGB, usage.UsedPercent);
+            }
+        }
+    }
+}

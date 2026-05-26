@@ -36,6 +36,7 @@ namespace CMS.Presentation
         private readonly IOrgStructureService _orgStructureService;
         private readonly IFolderService _folderService;
         private readonly IConfigManager _configManager;
+        private readonly CMS.Services.Interfaces.IFolderQuotaService _quotaService;
         private readonly IPermissionService _permissionService;
         private readonly IFilePermissionService _filePermissionService;
         private readonly IFolderTemplateController _folderTemplateController;
@@ -86,7 +87,11 @@ namespace CMS.Presentation
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
         public CMS.Services.Interfaces.IWorkflowTemplateService WorkflowTemplateService => _workflowTemplateService;
+        public IWorkflowService WorkflowService => _workflowService;
+        public ISLACalculator SlaCalculator    => _slaCalculator;
         public IAuditService AuditService => _auditService;
+        public ILoggingService Logger => _logger;
+        public UserContext CurrentUser => _currentUser;
 
         // Notification inbox controls (built programmatically)
         private Panel _notificationPanel;
@@ -212,7 +217,8 @@ namespace CMS.Presentation
             CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null,
             CMS.Data.Interfaces.ISubCommitteeRepository  subCommitteeRepository  = null,
             CMS.Data.Interfaces.IHrDivisionRepository   hrDivisionRepository    = null,
-            CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepository  = null)
+            CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepository  = null,
+            CMS.Services.Interfaces.IFolderQuotaService quotaService = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -229,6 +235,7 @@ namespace CMS.Presentation
             _orgStructureService = orgStructureService;
             _folderService = folderService;
             _configManager = configManager;
+            _quotaService  = quotaService;
             _permissionService = permissionService;
             _filePermissionService = filePermissionService;
             _folderTemplateController = folderTemplateController;
@@ -2053,6 +2060,15 @@ namespace CMS.Presentation
                 case "AuthorityConfig":
                     OpenAuthorityConfig();
                     return true;
+                case "QuotaConfig":
+                    OpenQuotaConfig();
+                    return true;
+                case "QuotaRequest":
+                    OpenQuotaRequest();
+                    return true;
+                case "QuotaApproval":
+                    OpenQuotaApproval();
+                    return true;
                 case "SyncEmployee":
                     SyncEmployeeFromApi();
                     return true;
@@ -2160,12 +2176,12 @@ namespace CMS.Presentation
 
         public void OpenWorkflowTemplateList()
         {
-            OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowTemplateListForm(
-                _workflowTemplateService,
-                _auditService,
-                _logger,
-                _currentUser));
-
+            ActivateOrOpenChild<CMS.Presentation.Modules.Workflow.WorkflowTemplateListForm>(
+                () => new CMS.Presentation.Modules.Workflow.WorkflowTemplateListForm(
+                    _workflowTemplateService,
+                    _auditService,
+                    _logger,
+                    _currentUser));
         }
 
         public void OpenWorkflowDesigner(int? templateId = null)
@@ -2254,6 +2270,39 @@ namespace CMS.Presentation
             else
                 MessageBox.Show("FolderAuthority service ไม่พร้อมใช้งาน", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        public void OpenQuotaConfig()
+        {
+            if (_quotaService == null || _orgStructureService == null)
+            {
+                MessageBox.Show("Quota service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new FolderQuotaConfigForm(_quotaService, _orgStructureService, _currentUser));
+        }
+
+        public void OpenQuotaRequest()
+        {
+            if (_quotaService == null || _orgStructureService == null)
+            {
+                MessageBox.Show("Quota service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new FolderQuotaRequestForm(_quotaService, _orgStructureService, _currentUser));
+        }
+
+        public void OpenQuotaApproval()
+        {
+            if (_quotaService == null)
+            {
+                MessageBox.Show("Quota service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new FolderQuotaApprovalForm(_quotaService, _currentUser));
         }
 
         private void OpenKBCategorySettings()
@@ -2631,6 +2680,20 @@ namespace CMS.Presentation
         /// <summary>
         /// Opens a form as an MDI child. Multiple instances may be open concurrently.
         /// </summary>
+        private void ActivateOrOpenChild<T>(Func<T> factory, bool maximize = false) where T : Form
+        {
+            foreach (Form child in MdiChildren)
+            {
+                if (child is T existing && !existing.IsDisposed)
+                {
+                    existing.WindowState = FormWindowState.Normal;
+                    existing.Activate();
+                    return;
+                }
+            }
+            OpenChildForm(factory(), maximize);
+        }
+
         private void OpenChildForm(Form childForm, bool maximize = false)
         {
             if (childForm == null)

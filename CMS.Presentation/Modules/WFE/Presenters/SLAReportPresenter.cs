@@ -37,29 +37,52 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
             try
             {
                 _view.GetDateRange(out DateTime fromDate, out DateTime toDate);
-                var templateId = _view.GetTemplateFilter();
+                int? templateId = _view.GetTemplateFilter();
 
-                var items = LoadWorkflowInstancesSafely(templateId, fromDate, toDate);
+                _view.UpdateSubtitle(fromDate, toDate);
 
-                var metrics = BuildMetrics(items);
-                _view.DisplayMetrics(metrics);
+                // Call SLACalculator which delegates to real DB queries with graceful fallback
+                var metricsResult = TryGetRealMetrics(fromDate, toDate, templateId);
+
+                // ── Template compliance list ─────────────────────────────────────────
+                var metricRows = BuildMetricRowsFromResult(metricsResult);
+                _view.DisplayMetrics(metricRows);
+
+                // ── KPI summary cards ────────────────────────────────────────────────
+                int total = metricsResult.TotalTasks > 0 ? metricsResult.TotalTasks : metricRows.Sum(m => m.Total);
+                int overdue = metricsResult.OverdueCount > 0 ? metricsResult.OverdueCount : metricRows.Sum(m => m.Overdue);
+                double compliance = metricsResult.CompliancePercentage > 0
+                    ? (double)metricsResult.CompliancePercentage
+                    : (metricRows.Count > 0 ? metricRows.Average(m => m.CompliancePercent) : 0);
 
                 var kpi = new SlaKpiSummary
                 {
-                    CompliancePercent = metrics.Count > 0 ? metrics.Average(m => m.CompliancePercent) : 0,
-                    ComplianceDelta = "+2.1 ตามเป้า 90%",
-                    AvgCycleTimeDays = 2.8,
-                    CycleTimeDelta = "-0.4 จากเดือนก่อน",
-                    OverdueCount = metrics.Sum(m => m.Overdue),
-                    TotalCount = metrics.Sum(m => m.Total),
-                    CompletedMtd = items.Count,
-                    PeriodLabel = string.Format("เมษายน {0} (MTD)", fromDate.Year + 543),
+                    CompliancePercent = compliance,
+                    ComplianceDelta = total > 0 ? string.Format("{0:+0.0;-0.0} ตามเป้า 90%", compliance - 90) : string.Empty,
+                    AvgCycleTimeDays = metricsResult.AverageCompletionHours > 0
+                                        ? (double)metricsResult.AverageCompletionHours / 24.0
+                                        : 0,
+                    CycleTimeDelta = string.Empty,
+                    OverdueCount = overdue,
+                    TotalCount = total,
+                    CompletedMtd = total > 0 ? total - overdue : 0,
+                    PeriodLabel = string.Format("{0:MMMM yyyy} (MTD)", fromDate),
                 };
                 _view.DisplayKpiSummary(kpi);
 
-                _view.DisplayComplianceTrendChart(BuildTrendData());
-                _view.DisplayCycleTimeDistribution(BuildCycleTimeBars());
-                _view.DisplayStatusDistributionChart(BuildDistribution(items));
+                // ── Trend chart ──────────────────────────────────────────────────────
+                var trendData = BuildTrendData(metricsResult);
+                _view.DisplayComplianceTrendChart(trendData);
+
+                // ── Cycle time distribution ──────────────────────────────────────────
+                var cycleBars = BuildCycleTimeBars(metricsResult);
+                _view.DisplayCycleTimeDistribution(cycleBars);
+
+                // ── Overdue by person ────────────────────────────────────────────────
+                var overdueRows = BuildOverdueRows(metricsResult);
+                _view.DisplayOverdueByPerson(overdueRows);
+
+                _view.DisplayStatusDistributionChart(new List<SLADistributionData>());
 
                 _loggingService.Info(string.Format(
                     "Generated SLA report: {0:yyyy-MM-dd} – {1:yyyy-MM-dd}", fromDate, toDate));
@@ -68,32 +91,6 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
             {
                 _loggingService.Error("Error generating SLA report: " + ex.Message, ex);
                 _view.ShowError("ไม่สามารถสร้างรายงานได้: " + ex.Message);
-            }
-        }
-
-        private List<WorkflowInstanceResult> LoadWorkflowInstancesSafely(int? templateId, DateTime fromDate, DateTime toDate)
-        {
-            try
-            {
-                var filter = new WorkflowInstanceFilter
-                {
-                    WorkflowDefinitionId = templateId,
-                    FromDate = fromDate,
-                    ToDate = toDate,
-                    PageNumber = 1,
-                    PageSize = 1000
-                };
-
-                var instances = _workflowService.GetWorkflowInstances(filter, _userContext);
-                return instances != null && instances.Items != null
-                    ? instances.Items.ToList()
-                    : new List<WorkflowInstanceResult>();
-            }
-            catch (Exception ex)
-            {
-                // Temporary fallback: allow SLA UI to open even when workflow tables are not ready.
-                _loggingService.Warn("SLA report fallback to mock data. Unable to load workflow instances: " + ex.Message);
-                return new List<WorkflowInstanceResult>();
             }
         }
 
@@ -114,51 +111,109 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
 
         // ── Private helpers ──────────────────────────────────────────────────────
 
-        private List<SLAMetricRow> BuildMetrics(List<WorkflowInstanceResult> items)
+        private SLAComplianceMetricsResult TryGetRealMetrics(DateTime fromDate, DateTime toDate, int? templateId)
         {
-            // TODO: replace with real SLA calculation via _slaCalculator
+            try
+            {
+                var filter = new SLAMetricsFilter
+                {
+                    WorkflowDefinitionId = templateId,
+                    FromDate = fromDate,
+                    ToDate = toDate,
+                    OnlyCompleted = false,
+                };
+                return _slaCalculator.GetSLAComplianceMetrics(filter);
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Warn("SLA metrics unavailable: " + ex.Message);
+                return new SLAComplianceMetricsResult();
+            }
+        }
+
+        private List<SLAMetricRow> BuildMetricRowsFromResult(SLAComplianceMetricsResult result)
+        {
+            if (result.ByTemplate != null && result.ByTemplate.Count > 0)
+            {
+                return result.ByTemplate.Select(t => new SLAMetricRow
+                {
+                    TemplateCode = "WFD-" + t.WorkflowDefinitionId.ToString("D3"),
+                    TemplateName = t.TemplateName,
+                    Total = t.TotalTasks,
+                    OnTime = t.OnTimeCount,
+                    AtRisk = t.AtRiskCount,
+                    Overdue = t.OverdueCount,
+                    CompliancePercent = (double)t.CompliancePercentage,
+                }).ToList();
+            }
+            return new List<SLAMetricRow>();
+        }
+
+        private List<SLATrendData> BuildTrendData(SLAComplianceMetricsResult result)
+        {
+            if (result.WeeklyTrend != null && result.WeeklyTrend.Count >= 2)
+                return result.WeeklyTrend
+                    .Select(t => new SLATrendData { WeekLabel = t.WeekLabel, CompliancePercent = t.CompliancePercent })
+                    .ToList();
+
+            return new List<SLATrendData>();
+        }
+
+        private List<CycleTimeBar> BuildCycleTimeBars(SLAComplianceMetricsResult result)
+        {
+            if (result.CycleTimeDistribution != null && result.CycleTimeDistribution.Count > 0)
+                return result.CycleTimeDistribution
+                    .Select(b => new CycleTimeBar { Label = b.Label, Count = b.Count, Category = b.Category })
+                    .ToList();
+
+            return new List<CycleTimeBar>();
+        }
+
+        private List<OverduePersonRow> BuildOverdueRows(SLAComplianceMetricsResult result)
+        {
+            if (result.ByUser != null && result.ByUser.Count > 0)
+                return result.ByUser.Select(u => new OverduePersonRow
+                {
+                    UserName = u.UserName,
+                    Department = string.IsNullOrEmpty(u.Department) ? "—" : u.Department,
+                    OverdueCount = u.OverdueCount,
+                    AvgOverdueDays = u.AvgOverdueDays,
+                }).ToList();
+
+            return new List<OverduePersonRow>();
+        }
+
+        // ── Mock data (fallback when DB is not ready) ────────────────────────────
+
+        private static SLAComplianceMetricsResult BuildMockMetrics()
+        {
+            return new SLAComplianceMetricsResult
+            {
+                TotalTasks = 211,
+                OnTimeCount = 193,
+                OverdueCount = 18,
+                AtRiskCount = 0,
+                CompliancePercentage = 91.4m,
+                AverageCompletionHours = 67.2m,
+                FromDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1),
+                ToDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddDays(-1),
+                ByTemplate = new List<TemplateMetrics>(),
+                ByUser = new List<UserMetrics>(),
+                WeeklyTrend = new List<WeeklyTrendPoint>(),
+                CycleTimeDistribution = new List<CycleTimeBucket>(),
+            };
+        }
+
+        private static List<SLAMetricRow> MockTemplateRows()
+        {
             return new List<SLAMetricRow>
             {
-                new SLAMetricRow { TemplateCode="WFD-001", TemplateName="Upload 1HC",      Total=28, OnTime=27, AtRisk=1,  Overdue=0, CompliancePercent=96 },
-                new SLAMetricRow { TemplateCode="WFD-003", TemplateName="KB Article",      Total=52, OnTime=46, AtRisk=4,  Overdue=2, CompliancePercent=88 },
-                new SLAMetricRow { TemplateCode="WFD-004", TemplateName="Review SOP",      Total=18, OnTime=17, AtRisk=1,  Overdue=0, CompliancePercent=94 },
-                new SLAMetricRow { TemplateCode="WFD-005", TemplateName="ลา",              Total=68, OnTime=66, AtRisk=2,  Overdue=0, CompliancePercent=97 },
-                new SLAMetricRow { TemplateCode="WFD-006", TemplateName="IT Landscape",    Total=24, OnTime=20, AtRisk=2,  Overdue=2, CompliancePercent=82 },
-                new SLAMetricRow { TemplateCode="WFD-007", TemplateName="Onboarding",      Total=21, OnTime=16, AtRisk=3,  Overdue=2, CompliancePercent=78 },
-            };
-        }
-
-        private List<SLATrendData> BuildTrendData()
-        {
-            var values = new double[] { 83, 85, 84, 87, 88, 86, 89, 89, 90, 90, 91, 91 };
-            var result = new List<SLATrendData>();
-            for (int i = 0; i < values.Length; i++)
-                result.Add(new SLATrendData { WeekLabel = "W" + (i + 1), CompliancePercent = values[i] });
-            return result;
-        }
-
-        private List<CycleTimeBar> BuildCycleTimeBars()
-        {
-            return new List<CycleTimeBar>
-            {
-                new CycleTimeBar { Label = "0–1",  Count = 8,  Category = "pass" },
-                new CycleTimeBar { Label = "1–2",  Count = 42, Category = "pass" },
-                new CycleTimeBar { Label = "2–3",  Count = 68, Category = "pass" },
-                new CycleTimeBar { Label = "3–4",  Count = 38, Category = "near" },
-                new CycleTimeBar { Label = "4–5",  Count = 21, Category = "near" },
-                new CycleTimeBar { Label = "5–7",  Count = 12, Category = "over" },
-                new CycleTimeBar { Label = "7–10", Count = 4,  Category = "over" },
-                new CycleTimeBar { Label = "10+",  Count = 2,  Category = "over" },
-            };
-        }
-
-        private List<SLADistributionData> BuildDistribution(List<WorkflowInstanceResult> items)
-        {
-            return new List<SLADistributionData>
-            {
-                new SLADistributionData { Status = "On Time",  Count = (int)(items.Count * 0.75) },
-                new SLADistributionData { Status = "At Risk",  Count = (int)(items.Count * 0.15) },
-                new SLADistributionData { Status = "Overdue",  Count = (int)(items.Count * 0.10) },
+                new SLAMetricRow { TemplateCode="WFD-001", TemplateName="Upload 1HC",   Total=28, OnTime=27, AtRisk=1,  Overdue=0, CompliancePercent=96 },
+                new SLAMetricRow { TemplateCode="WFD-003", TemplateName="KB Article",   Total=52, OnTime=46, AtRisk=4,  Overdue=2, CompliancePercent=88 },
+                new SLAMetricRow { TemplateCode="WFD-004", TemplateName="Review SOP",   Total=18, OnTime=17, AtRisk=1,  Overdue=0, CompliancePercent=94 },
+                new SLAMetricRow { TemplateCode="WFD-005", TemplateName="ลา",           Total=68, OnTime=66, AtRisk=2,  Overdue=0, CompliancePercent=97 },
+                new SLAMetricRow { TemplateCode="WFD-006", TemplateName="IT Landscape", Total=24, OnTime=20, AtRisk=2,  Overdue=2, CompliancePercent=82 },
+                new SLAMetricRow { TemplateCode="WFD-007", TemplateName="Onboarding",   Total=21, OnTime=16, AtRisk=3,  Overdue=2, CompliancePercent=78 },
             };
         }
     }

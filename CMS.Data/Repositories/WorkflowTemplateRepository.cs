@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
 using CMS.Data.Models;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 
@@ -33,16 +34,17 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "INSERT INTO WFE.s_WFDefinition " +
-                    "    (WFName, WFDescription, Version, IsActive, CreatedBy, CreatedDate, IsDeleted) " +
+                    "    (WFName, WFDescription, Version, IsActive, ApprovalStatus, CreatedBy, CreatedDate, IsDeleted) " +
                     "OUTPUT INSERTED.WFDefinitionId " +
-                    "VALUES (@Name, @Description, @Version, @IsActive, @CreatedBy, GETUTCDATE(), 0)", conn))
+                    "VALUES (@Name, @Description, @Version, @IsActive, @ApprovalStatus, @CreatedBy, GETUTCDATE(), 0)", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@Name",        template.Name);
-                    cmd.Parameters.AddWithValue("@Description", (object)template.Description ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Version",     template.Version);
-                    cmd.Parameters.AddWithValue("@IsActive",    template.IsActive);
-                    cmd.Parameters.AddWithValue("@CreatedBy",   template.CreatedBy);
+                    cmd.Parameters.AddWithValue("@Name",           template.Name);
+                    cmd.Parameters.AddWithValue("@Description",    (object)template.Description ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Version",        template.Version);
+                    cmd.Parameters.AddWithValue("@IsActive",       template.IsActive);
+                    cmd.Parameters.AddWithValue("@ApprovalStatus", (byte)template.ApprovalStatus);
+                    cmd.Parameters.AddWithValue("@CreatedBy",      template.CreatedBy);
                     return Convert.ToInt32(cmd.ExecuteScalar());
                 }
             }
@@ -60,6 +62,7 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "SELECT TOP 1 " +
                     "    WFDefinitionId as WorkflowDefinitionId, WFName as Name, WFDescription as Description, Version, IsActive, " +
+                    "    ApprovalStatus, SubmittedBy, SubmittedDate, ApprovedBy, ApprovedDate, RejectionReason, " +
                     "    CreatedBy, CreatedDate, ModifiedBy, ModifiedDate, IsDeleted, DeletedDate " +
                     "FROM WFE.s_WFDefinition " +
                     "WHERE WFDefinitionId = @WorkflowDefinitionId " +
@@ -83,6 +86,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "SELECT WFDefinitionId as WorkflowDefinitionId, WFName as Name, WFDescription as Description, Version, IsActive, " +
+                    "       ApprovalStatus, SubmittedBy, SubmittedDate, ApprovedBy, ApprovedDate, RejectionReason, " +
                     "       CreatedBy, CreatedDate, ModifiedBy, ModifiedDate, IsDeleted, DeletedDate " +
                     "FROM   WFE.s_WFDefinition " +
                     "WHERE  WFDefinitionId = @WorkflowDefinitionId " +
@@ -108,6 +112,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "SELECT WFDefinitionId as WorkflowDefinitionId, WFName as Name, WFDescription as Description, Version, IsActive, " +
+                    "       ApprovalStatus, SubmittedBy, SubmittedDate, ApprovedBy, ApprovedDate, RejectionReason, " +
                     "       CreatedBy, CreatedDate, ModifiedBy, ModifiedDate, IsDeleted, DeletedDate " +
                     "FROM   WFE.s_WFDefinition " +
                     "WHERE  WFDefinitionId = @WorkflowDefinitionId " +
@@ -139,13 +144,16 @@ namespace CMS.Data.Repositories
                 if (filter.IsActive.HasValue)
                     where.Append(" AND IsActive = @IsActive");
                 if (!string.IsNullOrEmpty(filter.NameContains))
-                    where.Append(" AND Name LIKE @NameContains");
+                    where.Append(" AND WFName LIKE @NameContains");
+                if (filter.ApprovalStatus.HasValue)
+                    where.Append(" AND ApprovalStatus = @ApprovalStatus");
 
                 int offset = (filter.PageNumber - 1) * filter.PageSize;
 
                 string sql =
                     "SELECT COUNT(*) OVER () AS TotalCount, " +
                     "       WFDefinitionId as WorkflowDefinitionId, WFName as Name, WFDescription as Description, Version, IsActive, " +
+                    "       ApprovalStatus, SubmittedBy, SubmittedDate, ApprovedBy, ApprovedDate, RejectionReason, " +
                     "       CreatedBy, CreatedDate, ModifiedBy, ModifiedDate, IsDeleted, DeletedDate " +
                     "FROM   WFE.s_WFDefinition " +
                     where +
@@ -159,6 +167,8 @@ namespace CMS.Data.Repositories
                         cmd.Parameters.AddWithValue("@IsActive", filter.IsActive.Value);
                     if (!string.IsNullOrEmpty(filter.NameContains))
                         cmd.Parameters.AddWithValue("@NameContains", "%" + filter.NameContains + "%");
+                    if (filter.ApprovalStatus.HasValue)
+                        cmd.Parameters.AddWithValue("@ApprovalStatus", filter.ApprovalStatus.Value);
                     cmd.Parameters.AddWithValue("@Offset",   offset);
                     cmd.Parameters.AddWithValue("@PageSize", filter.PageSize);
 
@@ -214,22 +224,34 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "UPDATE WFE.s_WFDefinition " +
-                    "SET    WFName       = @Name, " +
-                    "       WFDescription = @Description, " +
-                    "       Version      = @Version, " +
-                    "       IsActive     = @IsActive, " +
-                    "       ModifiedBy   = @ModifiedBy, " +
-                    "       ModifiedDate = GETUTCDATE() " +
+                    "SET    WFName         = @Name, " +
+                    "       WFDescription  = @Description, " +
+                    "       Version        = @Version, " +
+                    "       IsActive       = @IsActive, " +
+                    "       ApprovalStatus = @ApprovalStatus, " +
+                    "       SubmittedBy    = @SubmittedBy, " +
+                    "       SubmittedDate  = @SubmittedDate, " +
+                    "       ApprovedBy     = @ApprovedBy, " +
+                    "       ApprovedDate   = @ApprovedDate, " +
+                    "       RejectionReason = @RejectionReason, " +
+                    "       ModifiedBy     = @ModifiedBy, " +
+                    "       ModifiedDate   = GETUTCDATE() " +
                     "WHERE  WFDefinitionId = @WorkflowDefinitionId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
                     cmd.Parameters.AddWithValue("@WorkflowDefinitionId", template.WorkflowDefinitionId);
-                    cmd.Parameters.AddWithValue("@Name",        template.Name);
-                    cmd.Parameters.AddWithValue("@Description", (object)template.Description ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Version",     template.Version);
-                    cmd.Parameters.AddWithValue("@IsActive",    template.IsActive);
-                    cmd.Parameters.AddWithValue("@ModifiedBy",  (object)template.ModifiedBy ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Name",            template.Name);
+                    cmd.Parameters.AddWithValue("@Description",     (object)template.Description     ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Version",         template.Version);
+                    cmd.Parameters.AddWithValue("@IsActive",        template.IsActive);
+                    cmd.Parameters.AddWithValue("@ApprovalStatus",  (byte)template.ApprovalStatus);
+                    cmd.Parameters.AddWithValue("@SubmittedBy",     (object)template.SubmittedBy     ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@SubmittedDate",   (object)template.SubmittedDate   ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ApprovedBy",      (object)template.ApprovedBy      ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ApprovedDate",    (object)template.ApprovedDate    ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@RejectionReason", (object)template.RejectionReason ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ModifiedBy",      (object)template.ModifiedBy      ?? DBNull.Value);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -272,6 +294,12 @@ namespace CMS.Data.Repositories
                 Description          = reader["Description"] == DBNull.Value ? null : (string)reader["Description"],
                 Version              = (int)reader["Version"],
                 IsActive             = (bool)reader["IsActive"],
+                ApprovalStatus       = ReadApprovalStatus(reader),
+                SubmittedBy          = SafeString(reader, "SubmittedBy"),
+                SubmittedDate        = SafeDateTime(reader, "SubmittedDate"),
+                ApprovedBy           = SafeString(reader, "ApprovedBy"),
+                ApprovedDate         = SafeDateTime(reader, "ApprovedDate"),
+                RejectionReason      = SafeString(reader, "RejectionReason"),
                 CreatedBy            = (string)reader["CreatedBy"],
                 CreatedDate          = (DateTime)reader["CreatedDate"],
                 ModifiedBy           = reader["ModifiedBy"] == DBNull.Value ? null : (string)reader["ModifiedBy"],
@@ -279,6 +307,29 @@ namespace CMS.Data.Repositories
                 IsDeleted            = (bool)reader["IsDeleted"],
                 DeletedDate          = reader["DeletedDate"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["DeletedDate"]
             };
+        }
+
+        private static WorkflowTemplateStatus ReadApprovalStatus(SqlDataReader reader)
+        {
+            try
+            {
+                var val = reader["ApprovalStatus"];
+                if (val == DBNull.Value) return WorkflowTemplateStatus.Draft;
+                return (WorkflowTemplateStatus)Convert.ToByte(val);
+            }
+            catch { return WorkflowTemplateStatus.Draft; }
+        }
+
+        private static string SafeString(SqlDataReader reader, string column)
+        {
+            try { return reader[column] == DBNull.Value ? null : (string)reader[column]; }
+            catch { return null; }
+        }
+
+        private static DateTime? SafeDateTime(SqlDataReader reader, string column)
+        {
+            try { return reader[column] == DBNull.Value ? (DateTime?)null : (DateTime)reader[column]; }
+            catch { return null; }
         }
     }
 }

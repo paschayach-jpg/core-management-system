@@ -1,10 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CMS.Services.Interfaces;
 using CMS.Services.DTOs;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Data.Models;
-using System;
-using System.Collections.Generic;
 
 namespace CMS.Controllers
 {
@@ -85,20 +87,20 @@ namespace CMS.Controllers
 
                 _loggingService?.Info($"Getting dashboard metrics for user {userContext.ADUserName}");
 
-                // TODO: Implement dashboard metrics calculation
-                // Return object with:
-                // - Total tasks assigned
-                // - Tasks by status (Pending, In Progress, Completed, Overdue)
-                // - SLA compliance metrics
-                // - Recent workflow instances
+                var tasks = _workflowService.GetMyTasks(userContext) ?? new List<WorkflowTaskResult>();
+                var totalTasks = tasks.Count;
+                var overdueTasks = tasks.Count(t => t.SLAStatus == SLAStatus.Overdue);
+                var completedTasks = tasks.Count(t => t.Status == WorkflowStepInstanceStatus.Completed && t.CompletedDate.HasValue && t.CompletedDate.Value.Date == DateTime.Today);
+                var pendingTasks = tasks.Count(t => t.Status != WorkflowStepInstanceStatus.Completed);
+                var slaCompliance = totalTasks == 0 ? 100 : (int)Math.Round((double)(totalTasks - overdueTasks) * 100 / totalTasks);
 
                 return new
                 {
-                    TotalTasks = 0,
-                    PendingTasks = 0,
-                    OverdueTasks = 0,
-                    CompletedTasks = 0,
-                    SLACompliancePercentage = 0
+                    TotalTasks = totalTasks,
+                    PendingTasks = pendingTasks,
+                    OverdueTasks = overdueTasks,
+                    CompletedTasks = completedTasks,
+                    SLACompliancePercentage = slaCompliance
                 };
             }
             catch (Exception ex)

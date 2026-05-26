@@ -149,6 +149,24 @@
     <Compile Include="Modules\DMS\AuditLogForm.Designer.cs">
       <DependentUpon>AuditLogForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaConfigForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaConfigForm.Designer.cs">
+      <DependentUpon>FolderQuotaConfigForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaRequestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaRequestForm.Designer.cs">
+      <DependentUpon>FolderQuotaRequestForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaApprovalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaApprovalForm.Designer.cs">
+      <DependentUpon>FolderQuotaApprovalForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\DMS\AuthorityConfigForm.cs">
       <SubType>Form</SubType>
     </Compile>

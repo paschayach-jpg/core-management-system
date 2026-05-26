@@ -57,6 +57,8 @@ namespace CMS.Presentation
                 var kbVersionRepository     = new KBVersionRepository(configManager);
                 var kbArticleLinkRepository = new KBArticleLinkRepository(configManager);
                 var subCommitteeRepository  = new SubCommitteeRepository(configManager);
+                var folderQuotaConfigRepo   = new CMS.Data.Repositories.FolderQuotaConfigRepository(configManager);
+                var folderQuotaRequestRepo  = new CMS.Data.Repositories.FolderQuotaChangeRequestRepository(configManager);
 
                 var auditService = new AuditService(auditRepository, loggingService);
                 var notificationService = new NotificationService(notificationRepository, loggingService);
@@ -497,6 +499,14 @@ namespace CMS.Presentation
                 var workflowDelegationController = new WorkflowDelegationController(workflowDelegationService, loggingService);
                 var workflowReportController = new WorkflowReportController(slaCalculator, loggingService);
 
+                // ── Quota Service (MOD-DMS-Quota) ─────────────────────────────
+                var quotaService = new CMS.Services.FolderQuotaService(
+                    folderQuotaConfigRepo,
+                    folderQuotaRequestRepo,
+                    folderRepository,
+                    notificationService,
+                    orgUnitRepository);
+
                 // ── กรณีที่ 3: Global handler — catch UI-thread exceptions หลัง login ──
                 string _globalErrUser = account != null ? account.ADUserName : adUserName ?? string.Empty;
                 Application.ThreadException += (s, ev) =>
@@ -556,7 +566,8 @@ namespace CMS.Presentation
                     kbArticleLinkRepository: kbArticleLinkRepository,
                     subCommitteeRepository: subCommitteeRepository,
                     hrDivisionRepository: hrDivisionRepository,
-                    hrDepartmentRepository: hrDepartmentRepository);
+                    hrDepartmentRepository: hrDepartmentRepository,
+                    quotaService: quotaService);
 
                 Application.Run(mainForm);
 

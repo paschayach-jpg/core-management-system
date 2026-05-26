@@ -89,9 +89,16 @@ namespace CMS.Presentation.Modules.Workflow
             UserContext userContext)
         {
             if (currentForm is WorkflowDashboardFormNew)
-                return; // Already on this form
+                return;
 
-            // Allow opening without services for preview/testing
+            if (currentForm.MdiParent is MDI_Container mdi)
+            {
+                if (workflowService == null) workflowService = mdi.WorkflowService;
+                if (slaCalculator   == null) slaCalculator   = mdi.SlaCalculator;
+                if (loggingService  == null) loggingService  = mdi.Logger;
+                if (userContext     == null) userContext      = mdi.CurrentUser;
+            }
+
             var form = new WorkflowDashboardFormNew(workflowService, slaCalculator, loggingService, userContext);
             OpenAsMdiChild(currentForm, form);
         }
@@ -105,7 +112,13 @@ namespace CMS.Presentation.Modules.Workflow
             if (currentForm is WorkflowMonitorForm)
                 return;
 
-            // Allow opening without services for preview/testing
+            if (currentForm.MdiParent is MDI_Container mdi)
+            {
+                if (workflowService == null) workflowService = mdi.WorkflowService;
+                if (loggingService  == null) loggingService  = mdi.Logger;
+                if (userContext     == null) userContext      = mdi.CurrentUser;
+            }
+
             var form = new WorkflowMonitorForm(workflowService, loggingService, userContext);
             OpenAsMdiChild(currentForm, form);
         }
@@ -122,8 +135,9 @@ namespace CMS.Presentation.Modules.Workflow
             IAuditService auditService = null;
             if (currentForm.MdiParent is MDI_Container mdi)
             {
-                if (templateService == null)
-                    templateService = mdi.WorkflowTemplateService;
+                if (templateService == null) templateService = mdi.WorkflowTemplateService;
+                if (loggingService == null)  loggingService  = mdi.Logger;
+                if (userContext == null)      userContext      = mdi.CurrentUser;
                 auditService = mdi.AuditService;
             }
 
@@ -157,10 +171,10 @@ namespace CMS.Presentation.Modules.Workflow
 
             if (currentForm.MdiParent is MDI_Container mdi)
             {
-                if (templateService == null)
-                    templateService = mdi.WorkflowTemplateService;
-                if (auditService == null)
-                    auditService = mdi.AuditService;
+                if (templateService == null) templateService = mdi.WorkflowTemplateService;
+                if (auditService == null)    auditService    = mdi.AuditService;
+                if (loggingService == null)  loggingService  = mdi.Logger;
+                if (userContext == null)      userContext      = mdi.CurrentUser;
             }
 
             var form = new TemplateApprovalForm(templateService, auditService, loggingService, userContext);
@@ -186,7 +200,14 @@ namespace CMS.Presentation.Modules.Workflow
             if (currentForm is SLAReportForm)
                 return;
 
-            // Allow opening without services for preview/testing
+            if (currentForm.MdiParent is MDI_Container mdi)
+            {
+                if (workflowService == null) workflowService = mdi.WorkflowService;
+                if (slaCalculator   == null) slaCalculator   = mdi.SlaCalculator;
+                if (loggingService  == null) loggingService  = mdi.Logger;
+                if (userContext     == null) userContext      = mdi.CurrentUser;
+            }
+
             var form = new SLAReportForm(workflowService, slaCalculator, loggingService, userContext);
             OpenAsMdiChild(currentForm, form);
         }
@@ -211,7 +232,13 @@ namespace CMS.Presentation.Modules.Workflow
             if (currentForm is WorkflowVisualFlowForm)
                 return;
 
-            // Allow opening without services for preview/testing
+            if (currentForm.MdiParent is MDI_Container mdi)
+            {
+                if (workflowService == null) workflowService = mdi.WorkflowService;
+                if (loggingService  == null) loggingService  = mdi.Logger;
+                if (userContext     == null) userContext      = mdi.CurrentUser;
+            }
+
             var form = new WorkflowVisualFlowForm(workflowService, loggingService, userContext);
             OpenAsMdiChild(currentForm, form);
         }

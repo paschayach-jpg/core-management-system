@@ -35,9 +35,9 @@ namespace CMS.Data.Repositories
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@WorkflowInstanceId", instance.WorkflowInstanceId);
-                    cmd.Parameters.AddWithValue("@WorkflowStepId",     instance.WorkflowStepId);
-                    cmd.Parameters.AddWithValue("@AssignedTo",         instance.AssignedTo);
-                    cmd.Parameters.AddWithValue("@SLADeadline",        instance.SLADeadline);
+                    cmd.Parameters.AddWithValue("@WorkflowStepId", instance.WorkflowStepId);
+                    cmd.Parameters.AddWithValue("@AssignedTo", instance.AssignedTo);
+                    cmd.Parameters.AddWithValue("@SLADeadline", instance.SLADeadline);
 
                     var outParam = new SqlParameter("@NewWorkflowStepInstanceId", SqlDbType.Int)
                     {
@@ -60,7 +60,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowStepInstanceId, WorkflowInstanceId, WorkflowStepId, " +
+                    "SELECT WFStepInstanceId, WFInstanceId, WFStepId, " +
                     "       AssignedTo, AssignedDate, Status, CompletedDate, CompletedBy, " +
                     "       OutputData, SLADeadline, SLAStatus, IsDeleted " +
                     "FROM   WFE.t_WFStepInstance " +
@@ -84,12 +84,12 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT wsi.WorkflowStepInstanceId, wsi.WorkflowInstanceId, wsi.WorkflowStepId, " +
+                    "SELECT wsi.WFStepInstanceId, wsi.WFInstanceId, wsi.WFStepId, " +
                     "       wsi.AssignedTo, wsi.AssignedDate, wsi.Status, wsi.CompletedDate, wsi.CompletedBy, " +
                     "       wsi.OutputData, wsi.SLADeadline, wsi.SLAStatus, wsi.IsDeleted " +
                     "FROM   WFE.t_WFStepInstance wsi " +
-                    "INNER JOIN dbo.WorkflowStep ws ON ws.WorkflowStepId = wsi.WorkflowStepId " +
-                    "WHERE  wsi.WorkflowInstanceId = @WorkflowInstanceId " +
+                    "INNER JOIN dbo.WorkflowStep ws ON ws.WFStepId = wsi.WFStepId " +
+                    "WHERE  wsi.WFInstanceId = @WorkflowInstanceId " +
                     "  AND  wsi.IsDeleted = 0 " +
                     "ORDER BY ws.SequenceNumber ASC, wsi.AssignedDate ASC", conn))
                 {
@@ -126,13 +126,13 @@ namespace CMS.Data.Repositories
                             results.Add(new WorkflowStepInstance
                             {
                                 WorkflowStepInstanceId = (int)reader["WorkflowStepInstanceId"],
-                                WorkflowInstanceId     = (int)reader["WorkflowInstanceId"],
-                                WorkflowStepId         = (int)reader["WorkflowStepId"],
-                                AssignedTo             = (string)reader["AssignedTo"],
-                                AssignedDate           = (DateTime)reader["AssignedDate"],
-                                Status                 = (WorkflowStepInstanceStatus)(byte)reader["Status"],
-                                SLADeadline            = (DateTime)reader["SLADeadline"],
-                                SLAStatus              = (SLAStatus)(byte)reader["SLAStatus"]
+                                WorkflowInstanceId = (int)reader["WorkflowInstanceId"],
+                                WorkflowStepId = (int)reader["WorkflowStepId"],
+                                AssignedTo = (string)reader["AssignedTo"],
+                                AssignedDate = (DateTime)reader["AssignedDate"],
+                                Status = (WorkflowStepInstanceStatus)(byte)reader["Status"],
+                                SLADeadline = (DateTime)reader["SLADeadline"],
+                                SLAStatus = (SLAStatus)(byte)reader["SLAStatus"]
                             });
                         }
                     }
@@ -148,12 +148,12 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT WorkflowStepInstanceId, WorkflowInstanceId, WorkflowStepId, " +
+                    "SELECT WFStepInstanceId, WFInstanceId, WFStepId, " +
                     "       AssignedTo, AssignedDate, Status, CompletedDate, CompletedBy, " +
                     "       OutputData, SLADeadline, SLAStatus, IsDeleted " +
                     "FROM   WFE.t_WFStepInstance " +
                     "WHERE  AssignedTo = @AssignedTo " +
-                    "  AND  Status IN (1, 2) " +   // Pending or InProgress
+                    "  AND  Status IN (1, 2, 3) " +   // Pending, InProgress or Completed
                     "  AND  IsDeleted = 0 " +
                     "ORDER BY SLADeadline ASC", conn))
                 {
@@ -180,7 +180,7 @@ namespace CMS.Data.Repositories
                 // For now, scan OutputData for the reference (acceptable for low-volume callbacks).
                 using (var cmd = new SqlCommand(
                     "SELECT TOP 1 " +
-                    "       WorkflowStepInstanceId, WorkflowInstanceId, WorkflowStepId, " +
+                    "       WFStepInstanceId, WFInstanceId, WFStepId, " +
                     "       AssignedTo, AssignedDate, Status, CompletedDate, CompletedBy, " +
                     "       OutputData, SLADeadline, SLAStatus, IsDeleted " +
                     "FROM   WFE.t_WFStepInstance " +
@@ -223,13 +223,13 @@ namespace CMS.Data.Repositories
                 {
                     cmd.CommandType = CommandType.Text;
                     cmd.Parameters.AddWithValue("@WorkflowStepInstanceId", instance.WorkflowStepInstanceId);
-                    cmd.Parameters.AddWithValue("@AssignedTo",    instance.AssignedTo);
-                    cmd.Parameters.AddWithValue("@Status",        (byte)instance.Status);
+                    cmd.Parameters.AddWithValue("@AssignedTo", instance.AssignedTo);
+                    cmd.Parameters.AddWithValue("@Status", (byte)instance.Status);
                     cmd.Parameters.AddWithValue("@CompletedDate", (object)instance.CompletedDate ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@CompletedBy",   (object)instance.CompletedBy   ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@OutputData",    (object)instance.OutputData    ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@SLADeadline",   instance.SLADeadline);
-                    cmd.Parameters.AddWithValue("@SLAStatus",     (byte)instance.SLAStatus);
+                    cmd.Parameters.AddWithValue("@CompletedBy", (object)instance.CompletedBy ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@OutputData", (object)instance.OutputData ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@SLADeadline", instance.SLADeadline);
+                    cmd.Parameters.AddWithValue("@SLAStatus", (byte)instance.SLAStatus);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -263,20 +263,40 @@ namespace CMS.Data.Repositories
 
         private static WorkflowStepInstance MapStepInstance(SqlDataReader reader)
         {
+            // tolerant mapping: some DB schemas use different column names (WFStepInstanceId, WFInstanceId, DueDate, etc.)
+            T GetValue<T>(string[] keys, Func<object, T> convert, T defaultValue = default(T))
+            {
+                foreach (var k in keys)
+                {
+                    try
+                    {
+                        var val = reader[k];
+                        if (val == DBNull.Value) return defaultValue;
+                        return convert(val);
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        // try next key
+                        continue;
+                    }
+                }
+                return defaultValue;
+            }
+
             return new WorkflowStepInstance
             {
-                WorkflowStepInstanceId = (int)reader["WorkflowStepInstanceId"],
-                WorkflowInstanceId     = (int)reader["WorkflowInstanceId"],
-                WorkflowStepId         = (int)reader["WorkflowStepId"],
-                AssignedTo             = (string)reader["AssignedTo"],
-                AssignedDate           = (DateTime)reader["AssignedDate"],
-                Status                 = (WorkflowStepInstanceStatus)(byte)reader["Status"],
-                CompletedDate          = reader["CompletedDate"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["CompletedDate"],
-                CompletedBy            = reader["CompletedBy"] == DBNull.Value ? null : (string)reader["CompletedBy"],
-                OutputData             = reader["OutputData"] == DBNull.Value ? null : (string)reader["OutputData"],
-                SLADeadline            = (DateTime)reader["SLADeadline"],
-                SLAStatus              = (SLAStatus)(byte)reader["SLAStatus"],
-                IsDeleted              = (bool)reader["IsDeleted"]
+                WorkflowStepInstanceId = GetValue<int>(new[] { "WorkflowStepInstanceId", "WFStepInstanceId", "WFStepInstanceID" }, v => Convert.ToInt32(v)),
+                WorkflowInstanceId = GetValue<int>(new[] { "WorkflowInstanceId", "WFInstanceId", "WorkflowInstanceID" }, v => Convert.ToInt32(v)),
+                WorkflowStepId = GetValue<int>(new[] { "WorkflowStepId", "WFStepId", "WorkflowStepID" }, v => Convert.ToInt32(v)),
+                AssignedTo = GetValue<string>(new[] { "AssignedTo", "AssignedUser", "Assigned" }, v => v.ToString(), null),
+                AssignedDate = GetValue<DateTime>(new[] { "AssignedDate", "AssignedOn", "StartedDate" }, v => Convert.ToDateTime(v), DateTime.MinValue),
+                Status = GetValue<WorkflowStepInstanceStatus>(new[] { "Status" }, v => (WorkflowStepInstanceStatus)Convert.ToByte(v), WorkflowStepInstanceStatus.Pending),
+                CompletedDate = GetValue<DateTime?>(new[] { "CompletedDate", "CompletedOn", "FinishedDate" }, v => (DateTime?)Convert.ToDateTime(v), null),
+                CompletedBy = GetValue<string>(new[] { "CompletedBy", "CompletedByAD", "CompletedUser" }, v => v.ToString(), null),
+                OutputData = GetValue<string>(new[] { "OutputData", "Output", "Payload" }, v => v.ToString(), null),
+                SLADeadline = GetValue<DateTime>(new[] { "SLADeadline", "DueDate", "Deadline" }, v => Convert.ToDateTime(v), DateTime.MinValue),
+                SLAStatus = GetValue<SLAStatus>(new[] { "SLAStatus", "SLAState" }, v => (SLAStatus)Convert.ToByte(v), SLAStatus.OnTime),
+                IsDeleted = GetValue<bool>(new[] { "IsDeleted", "Deleted" }, v => Convert.ToBoolean(v), false)
             };
         }
     }

@@ -250,6 +250,21 @@ namespace CMS.Presentation
                         if (!TryRequestMdiAction(context, "WorkflowVisualFlow"))
                             MessageBox.Show("กรุณาเปิด Workflow Visual Flow ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
+
+                    case "QuotaConfig":
+                        if (!TryRequestMdiAction(context, "QuotaConfig"))
+                            MessageBox.Show("กรุณาเปิด Quota Config ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "QuotaRequest":
+                        if (!TryRequestMdiAction(context, "QuotaRequest"))
+                            MessageBox.Show("กรุณาเปิด Quota Request ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "QuotaApproval":
+                        if (!TryRequestMdiAction(context, "QuotaApproval"))
+                            MessageBox.Show("กรุณาเปิด Quota Approval ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
                 }
             }
             catch (Exception ex)

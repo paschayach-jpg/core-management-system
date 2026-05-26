@@ -178,9 +178,9 @@ namespace CMS.Services
                     PageNumber = filter.PageNumber,
                     PageSize = filter.PageSize
                 };
-                
+
                 var result = _workflowRepository.GetWorkflowInstances(dataFilter);
-                
+
                 var mappedItems = result.Items.Select(instance =>
                 {
                     var steps = _stepRepository.GetStepsByTemplate(instance.WorkflowDefinitionId).ToList();
@@ -399,50 +399,46 @@ namespace CMS.Services
         {
             try
             {
-                var dtoFilter = new CMS.Services.DTOs.WorkflowInstanceFilter
-                {
-                    Status = WorkflowInstanceStatus.InProgress,
-                    PageSize = 1000
-                };
-
-                var dataFilter = new CMS.Data.Interfaces.WorkflowInstanceFilter
-                {
-                    Status = (byte?)dtoFilter.Status.Value,
-                    PageSize = dtoFilter.PageSize
-                };
-
-                var instances = _workflowRepository.GetWorkflowInstances(dataFilter);
+                var stepInstances = _stepInstanceRepository.GetStepInstancesByUser(userContext.ADUserName);
+                var workflowCache = new Dictionary<int, WorkflowInstance>();
                 var tasks = new List<WorkflowTaskResult>();
 
-                foreach (var instance in instances.Items)
+                foreach (var stepInstance in stepInstances)
                 {
-                    var stepInstances = _stepInstanceRepository.GetStepInstancesByWorkflow(instance.WorkflowInstanceId);
-                    var pendingSteps = stepInstances.Where(s => s.Status == WorkflowStepInstanceStatus.Pending && s.AssignedTo == userContext.ADUserName);
-
-                    foreach (var stepInstance in pendingSteps)
+                    if (!workflowCache.TryGetValue(stepInstance.WorkflowInstanceId, out var instance))
                     {
-                        var step = _stepRepository.GetStep(stepInstance.WorkflowStepId);
-                        var template = _templateRepository.GetTemplate(instance.WorkflowDefinitionId);
-
-                        tasks.Add(new WorkflowTaskResult
-                        {
-                            WorkflowStepInstanceId = stepInstance.WorkflowStepInstanceId,
-                            WorkflowInstanceId = instance.WorkflowInstanceId,
-                            WorkflowName = template.Name,
-                            StepName = step.StepName,
-                            StepDescription = step.Description,
-                            Status = stepInstance.Status,
-                            AssignedDate = stepInstance.AssignedDate,
-                            SLADeadline = stepInstance.SLADeadline,
-                            SLAStatus = stepInstance.SLAStatus,
-                            CanDelegate = step.AllowDelegation,
-                            MaxDelegationDepth = step.MaxDelegationDepth,
-                            TimeRemainingMinutes = (int)(stepInstance.SLADeadline - DateTime.Now).TotalMinutes
-                        });
+                        instance = _workflowRepository.GetWorkflowInstance(stepInstance.WorkflowInstanceId);
+                        if (instance == null)
+                            continue;
+                        workflowCache[instance.WorkflowInstanceId] = instance;
                     }
+
+                    var step = _stepRepository.GetStep(stepInstance.WorkflowStepId);
+                    var template = _templateRepository.GetTemplate(instance.WorkflowDefinitionId);
+
+                    tasks.Add(new WorkflowTaskResult
+                    {
+                        WorkflowStepInstanceId = stepInstance.WorkflowStepInstanceId,
+                        WorkflowInstanceId = instance.WorkflowInstanceId,
+                        WorkflowName = template?.Name ?? "ไม่ระบุ",
+                        StepName = step?.StepName ?? "ไม่ระบุ",
+                        StepDescription = step?.Description,
+                        Status = stepInstance.Status,
+                        AssignedDate = stepInstance.AssignedDate,
+                        CompletedDate = stepInstance.CompletedDate,
+                        SLADeadline = stepInstance.SLADeadline,
+                        SLAStatus = stepInstance.SLAStatus,
+                        CanDelegate = step?.AllowDelegation ?? false,
+                        MaxDelegationDepth = step?.MaxDelegationDepth ?? 0,
+                        TimeRemainingMinutes = (int)(stepInstance.SLADeadline - DateTime.Now).TotalMinutes,
+                        InitiatedBy = instance.InitiatedBy
+                    });
                 }
 
-                return tasks.OrderBy(t => t.SLADeadline).ToList();
+                return tasks
+                    .OrderBy(t => t.Status == WorkflowStepInstanceStatus.Completed)
+                    .ThenBy(t => t.SLADeadline)
+                    .ToList();
             }
             catch (Exception ex)
             {

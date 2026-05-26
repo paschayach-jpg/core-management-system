@@ -44,6 +44,11 @@ namespace CMS.Services.DTOs
         public DateTime AssignedDate { get; set; }
 
         /// <summary>
+        /// Date task was completed
+        /// </summary>
+        public DateTime? CompletedDate { get; set; }
+
+        /// <summary>
         /// SLA deadline
         /// </summary>
         public DateTime SLADeadline { get; set; }

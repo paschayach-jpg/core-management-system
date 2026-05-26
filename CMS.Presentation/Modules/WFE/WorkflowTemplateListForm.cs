@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -37,6 +37,7 @@ namespace CMS.Presentation.Modules.Workflow
         private Panel _pnlRibbonBtnPublish;
         private Panel _pnlRibbonBtnDeactivate;
         private Panel _pnlRibbonBtnVersions;
+        private Panel _pnlRibbonBtnSubmit;
 
         // ── Category colors map ──────────────────────────────────────────────
         private static readonly Dictionary<string, Color[]> _categoryColors =
@@ -80,12 +81,8 @@ namespace CMS.Presentation.Modules.Workflow
             _templateService = templateService;
             _loggingService = loggingService;
 
-            // Only create presenter if services are available
-            if (templateService != null && loggingService != null && userContext != null)
-            {
-                _presenter = new WorkflowTemplateListPresenter(
-                    this, templateService, auditService, loggingService, userContext);
-            }
+            _presenter = new WorkflowTemplateListPresenter(
+                this, templateService, auditService, loggingService, userContext);
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -94,47 +91,27 @@ namespace CMS.Presentation.Modules.Workflow
         private void WorkflowTemplateListForm_Load(object sender, EventArgs e)
         {
             InitializeControls();
-
-            if (_presenter != null)
-            {
-                _presenter.LoadTemplates();
-            }
-            else
-            {
-                LoadMockData();
-            }
-        }
-
-        private void LoadMockData()
-        {
-            var now = DateTime.Now;
-            var mock = new System.Collections.Generic.List<WorkflowTemplateResult>
-            {
-                new WorkflowTemplateResult { WorkflowDefinitionId=1,  Name="อนุมัติ KB Article",          Category="Knowledge", StepCount=3, Version=2, IsActive=true,  OwnerDepartment="IT",  CreatedBy="admin",    ModifiedDate=now.AddDays(-5),  ActiveInstanceCount=12 },
-                new WorkflowTemplateResult { WorkflowDefinitionId=2,  Name="ขออนุมัติ Upload ไฟล์",       Category="เอกสาร",    StepCount=2, Version=1, IsActive=true,  OwnerDepartment="HR",  CreatedBy="admin",    ModifiedDate=now.AddDays(-10), ActiveInstanceCount=8  },
-                new WorkflowTemplateResult { WorkflowDefinitionId=3,  Name="อนุมัติเปลี่ยน Permission",   Category="IT",        StepCount=3, Version=1, IsActive=false, Status="Draft",    OwnerDepartment="IT",  CreatedBy="admin",    ModifiedDate=now.AddDays(-2),  ActiveInstanceCount=0  },
-                new WorkflowTemplateResult { WorkflowDefinitionId=4,  Name="Review SOP Document",         Category="เอกสาร",    StepCount=2, Version=3, IsActive=true,  OwnerDepartment="QA",  CreatedBy="admin",    ModifiedDate=now.AddDays(-15), ActiveInstanceCount=5  },
-                new WorkflowTemplateResult { WorkflowDefinitionId=5,  Name="Work Instruction Approval",   Category="เอกสาร",    StepCount=4, Version=1, IsActive=false, OwnerDepartment="Ops", CreatedBy="admin",    ModifiedDate=now.AddDays(-30), ActiveInstanceCount=0  },
-                new WorkflowTemplateResult { WorkflowDefinitionId=6,  Name="อนุมัติแก้ไข Template",      Category="Knowledge", StepCount=2, Version=1, IsActive=false, Status="Draft",    OwnerDepartment="IT",  CreatedBy="admin",    ModifiedDate=now.AddDays(-1),  ActiveInstanceCount=0  },
-                new WorkflowTemplateResult { WorkflowDefinitionId=7,  Name="HR Onboarding Process",       Category="HR",        StepCount=5, Version=2, IsActive=true,  OwnerDepartment="HR",  CreatedBy="hr.admin", ModifiedDate=now.AddDays(-7),  ActiveInstanceCount=3  },
-            };
-
-            DisplayTemplates(new PagedResult<WorkflowTemplateResult>
-            {
-                Items = mock,
-                TotalCount = mock.Count,
-                PageNumber = 1,
-                PageSize = 50,
-            });
+            _presenter.LoadTemplates();
         }
 
         private void InitializeControls()
         {
-            // Build sidebar navigation
-            WorkflowNavigationBuilder.BuildSidebar(
-                pnlSidebar, "template", OnNavItemClick, out _);
+            // Must be set before any DataSource assignment to prevent auto-generating
+            // columns from property names (which would override the designer-defined columns).
+            dgvTemplates.AutoGenerateColumns = false;
+            dgvTemplates.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvTemplates.MultiSelect = false;
+            dgvTemplates.ReadOnly = true;
 
-            // Category filter
+            // Build sidebar navigation with live approval badge count
+            int approvalBadge = GetPendingApprovalCount();
+            WorkflowNavigationBuilder.BuildSidebar(
+                pnlSidebar, "template", OnNavItemClick, out _, approvalBadge: approvalBadge);
+
+            // Populate filters without triggering search during init
+            cmbCategory.SelectedIndexChanged -= cmbFilter_Changed;
+            cmbStatus.SelectedIndexChanged -= cmbFilter_Changed;
+
             cmbCategory.Items.Clear();
             cmbCategory.Items.Add("ทั้งหมด");
             cmbCategory.Items.Add("เอกสาร");
@@ -143,7 +120,6 @@ namespace CMS.Presentation.Modules.Workflow
             cmbCategory.Items.Add("HR");
             cmbCategory.SelectedIndex = 0;
 
-            // Status filter
             cmbStatus.Items.Clear();
             cmbStatus.Items.Add("ทั้งหมด");
             cmbStatus.Items.Add("Active");
@@ -152,18 +128,17 @@ namespace CMS.Presentation.Modules.Workflow
             cmbStatus.Items.Add("Deprecated");
             cmbStatus.SelectedIndex = 0;
 
+            cmbCategory.SelectedIndexChanged += cmbFilter_Changed;
+            cmbStatus.SelectedIndexChanged += cmbFilter_Changed;
+
             // Active ribbon tab
             _activeTabLabel = lblTabTools;
             _activeTabLabel.ForeColor = Color.FromArgb(37, 99, 235);
 
             BuildRibbonToolbar();
 
-            dgvTemplates.AutoGenerateColumns = false;
-            dgvTemplates.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvTemplates.MultiSelect = false;
-            dgvTemplates.ReadOnly = true;
-
             SetActionButtonsEnabled(false, false, false);
+            SetSubmitButtonEnabled(false);
             UpdateResultCountLabel();
         }
 
@@ -255,11 +230,7 @@ namespace CMS.Presentation.Modules.Workflow
                     dialogOwner);
 
                 wizard.ShowWizard();
-
-                if (_presenter != null)
-                {
-                    _presenter.LoadTemplates();
-                }
+                _presenter.LoadTemplates();
             }
             catch (Exception ex)
             {
@@ -313,6 +284,11 @@ namespace CMS.Presentation.Modules.Workflow
             SetRibbonPanelEnabled(_pnlRibbonBtnDeactivate, canEdit);
         }
 
+        private void SetSubmitButtonEnabled(bool enabled)
+        {
+            SetRibbonPanelEnabled(_pnlRibbonBtnSubmit, enabled);
+        }
+
         public void ShowError(string message)
         {
             MessageBox.Show(message, "ข้อผิดพลาด",
@@ -360,32 +336,39 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void btnEdit_Click(object sender, EventArgs e)
         {
-            if (_presenter != null) _presenter.EditTemplate(GetSelectedTemplate());
+            _presenter.EditTemplate(GetSelectedTemplate());
         }
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
             var selected = GetSelectedTemplate();
             if (selected == null) { ShowError("กรุณาเลือกรายการที่ต้องการลบ"); return; }
-            if (_presenter == null) return;
 
-            if (MessageBox.Show(
-                    string.Format("ยืนยันลบ Template '{0}' ?", selected.Name),
-                    "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Warning)
-                == DialogResult.Yes)
+            string confirmMsg = selected.ActiveInstanceCount > 0
+                ? string.Format("Template '{0}' มี {1} Instance กำลังใช้งาน\nไม่สามารถลบได้ขณะมี Active Instance", selected.Name, selected.ActiveInstanceCount)
+                : string.Format("ยืนยันลบ Template '{0}' ?\n\nการลบไม่สามารถย้อนกลับได้", selected.Name);
+
+            if (selected.ActiveInstanceCount > 0)
             {
-                _presenter.DeleteTemplate(selected);
+                ShowError(confirmMsg);
+                return;
             }
+
+            if (MessageBox.Show(confirmMsg, "ยืนยันการลบ",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                return;
+
+            _presenter.DeleteTemplate(selected);
         }
 
         private void btnDuplicate_Click(object sender, EventArgs e)
         {
-            if (_presenter != null) _presenter.DuplicateTemplate(GetSelectedTemplate());
+            _presenter.DuplicateTemplate(GetSelectedTemplate());
         }
 
         private void btnVersions_Click(object sender, EventArgs e)
         {
-            if (_presenter != null) _presenter.ViewVersions(GetSelectedTemplate());
+            _presenter.ViewVersions(GetSelectedTemplate());
         }
 
         private void btnPublish_Click(object sender, EventArgs e)
@@ -393,14 +376,13 @@ namespace CMS.Presentation.Modules.Workflow
             var selected = GetSelectedTemplate();
             if (selected == null) { ShowError("กรุณาเลือก Template ที่ต้องการ Publish"); return; }
             ShowInfo(string.Format("Publish Template '{0}' v{1} เรียบร้อย", selected.Name, selected.Version));
-            if (_presenter != null) _presenter.LoadTemplates();
+            _presenter.LoadTemplates();
         }
 
         private void btnDeactivate_Click(object sender, EventArgs e)
         {
             var selected = GetSelectedTemplate();
             if (selected == null) { ShowError("กรุณาเลือก Template ที่ต้องการ Deactivate"); return; }
-            if (_presenter == null) return;
             if (MessageBox.Show(
                     string.Format("ยืนยัน Deactivate Template '{0}' ?", selected.Name),
                     "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
@@ -440,7 +422,7 @@ namespace CMS.Presentation.Modules.Workflow
         // ════════════════════════════════════════════════════════════════════
         private void cmbFilter_Changed(object sender, EventArgs e)
         {
-            if (_presenter != null) _presenter.SearchTemplates();
+            _presenter.SearchTemplates();
         }
 
         private void txtSearch_Enter(object sender, EventArgs e)
@@ -465,7 +447,7 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void txtSearch_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter && _presenter != null)
+            if (e.KeyCode == Keys.Enter)
                 _presenter.SearchTemplates();
         }
 
@@ -479,10 +461,27 @@ namespace CMS.Presentation.Modules.Workflow
                 txtSearch.ForeColor = Color.FromArgb(107, 114, 128);
                 _searchPlaceholderActive = true;
             }
-            if (_presenter != null) _presenter.LoadTemplates();
+            _presenter.LoadTemplates();
         }
 
         // ════════════════════════════════════════════════════════════════════
+        private int GetPendingApprovalCount()
+        {
+            if (_templateService == null || _userContext == null) return 0;
+            try
+            {
+                var filter = new CMS.Services.DTOs.WorkflowTemplateFilter
+                {
+                    StatusLabel = "PendingApproval",
+                    PageNumber  = 1,
+                    PageSize    = 1,
+                };
+                var result = _templateService.GetTemplates(filter, _userContext);
+                return result.TotalCount;
+            }
+            catch { return 0; }
+        }
+
         // Sidebar nav
         // ════════════════════════════════════════════════════════════════════
         private void OnNavItemClick(string tag)
@@ -510,8 +509,13 @@ namespace CMS.Presentation.Modules.Workflow
         // ════════════════════════════════════════════════════════════════════
         private void dgvTemplates_SelectionChanged(object sender, EventArgs e)
         {
-            bool hasSelection = GetSelectedTemplate() != null;
+            var selected = GetSelectedTemplate();
+            bool hasSelection = selected != null;
             SetActionButtonsEnabled(hasSelection, hasSelection, hasSelection);
+
+            // "ส่งอนุมัติ" เฉพาะ Draft templates เท่านั้น
+            bool isDraft = hasSelection && selected.StatusLabel == "Draft";
+            SetSubmitButtonEnabled(isDraft);
 
             int selCount = dgvTemplates.SelectedRows.Count;
             lblSelectionInfo.Text = selCount > 0
@@ -761,11 +765,11 @@ namespace CMS.Presentation.Modules.Workflow
                     new { Icon = "", Text = "แก้ไข",    Tag = "edit",      Primary = false },
                     new { Icon = "", Text = "ลบ",       Tag = "delete",    Primary = false },
                 }},
-                new { Header = "Publish", Items = new[]
+                new { Header = "Approval", Items = new[]
                 {
-                    new { Icon = "", Text = "Publish",    Tag = "publish",    Primary = false },
+                    new { Icon = "?",              Text = "ส่งอนุมัติ",  Tag = "submit",     Primary = false },
                     new { Icon = "", Text = "Deactivate", Tag = "deactivate", Primary = false },
-                    new { Icon = "", Text = "ประวัติ",   Tag = "versions",   Primary = false },
+                    new { Icon = "",   Text = "ประวัติ",   Tag = "versions",   Primary = false },
                 }},
                 new { Header = "นำเข้า/ส่งออก", Items = new[]
                 {
@@ -831,12 +835,13 @@ namespace CMS.Presentation.Modules.Workflow
 
                     switch (tag)
                     {
-                        case "duplicate": _pnlRibbonBtnDuplicate = pnlBtn; break;
-                        case "edit": _pnlRibbonBtnEdit = pnlBtn; break;
-                        case "delete": _pnlRibbonBtnDelete = pnlBtn; break;
-                        case "publish": _pnlRibbonBtnPublish = pnlBtn; break;
+                        case "duplicate":  _pnlRibbonBtnDuplicate = pnlBtn; break;
+                        case "edit":       _pnlRibbonBtnEdit       = pnlBtn; break;
+                        case "delete":     _pnlRibbonBtnDelete     = pnlBtn; break;
+                        case "publish":    _pnlRibbonBtnPublish    = pnlBtn; break;
                         case "deactivate": _pnlRibbonBtnDeactivate = pnlBtn; break;
-                        case "versions": _pnlRibbonBtnVersions = pnlBtn; break;
+                        case "versions":   _pnlRibbonBtnVersions   = pnlBtn; break;
+                        case "submit":     _pnlRibbonBtnSubmit     = pnlBtn; break;
                     }
 
                     pnlRibbonContent.Controls.Add(pnlBtn);
@@ -871,16 +876,24 @@ namespace CMS.Presentation.Modules.Workflow
         {
             switch (tag)
             {
-                case "create": btnCreate_Click(null, EventArgs.Empty); break;
-                case "duplicate": btnDuplicate_Click(null, EventArgs.Empty); break;
-                case "edit": btnEdit_Click(null, EventArgs.Empty); break;
-                case "delete": btnDelete_Click(null, EventArgs.Empty); break;
-                case "publish": btnPublish_Click(null, EventArgs.Empty); break;
-                case "deactivate": btnDeactivate_Click(null, EventArgs.Empty); break;
-                case "versions": btnVersions_Click(null, EventArgs.Empty); break;
-                case "import": btnImport_Click(null, EventArgs.Empty); break;
-                case "export": btnExport_Click(null, EventArgs.Empty); break;
+                case "create":     btnCreate_Click(null, EventArgs.Empty);     break;
+                case "duplicate":  btnDuplicate_Click(null, EventArgs.Empty);  break;
+                case "edit":       btnEdit_Click(null, EventArgs.Empty);        break;
+                case "delete":     btnDelete_Click(null, EventArgs.Empty);      break;
+                case "publish":    btnPublish_Click(null, EventArgs.Empty);     break;
+                case "deactivate": btnDeactivate_Click(null, EventArgs.Empty);  break;
+                case "versions":   btnVersions_Click(null, EventArgs.Empty);    break;
+                case "import":     btnImport_Click(null, EventArgs.Empty);      break;
+                case "export":     btnExport_Click(null, EventArgs.Empty);      break;
+                case "submit":     btnSubmitForApproval_Click(null, EventArgs.Empty); break;
             }
+        }
+
+        private void btnSubmitForApproval_Click(object sender, EventArgs e)
+        {
+            var selected = GetSelectedTemplate();
+            if (selected == null) { ShowError("กรุณาเลือก Template ที่ต้องการส่งอนุมัติ"); return; }
+            _presenter.SubmitForApproval(selected);
         }
 
         private static void SetRibbonPanelEnabled(Panel panel, bool enabled)

@@ -213,6 +213,173 @@ namespace CMS.Data.Repositories
         }
 
         // ----------------------------------------------------------------
+        // SLA by Template
+        // ----------------------------------------------------------------
+
+        public IList<SLATemplateMetricRow> GetSLAByTemplate(WorkflowReportFilter filter)
+        {
+            var results = new List<SLATemplateMetricRow>();
+            try
+            {
+                using (var conn = new SqlConnection(_connectionString))
+                {
+                    conn.Open();
+                    const string sql =
+                        "SELECT wd.WFDefinitionId AS WorkflowDefinitionId, wd.WFName AS TemplateName, " +
+                        "       COUNT(*) AS Total, " +
+                        "       SUM(CASE WHEN wsi.SLAStatus = 1 THEN 1 ELSE 0 END) AS OnTime, " +
+                        "       SUM(CASE WHEN wsi.SLAStatus = 2 THEN 1 ELSE 0 END) AS AtRisk, " +
+                        "       SUM(CASE WHEN wsi.SLAStatus = 3 THEN 1 ELSE 0 END) AS Overdue " +
+                        "FROM   WFE.s_WFDefinition wd " +
+                        "INNER JOIN dbo.WorkflowInstance wi " +
+                        "       ON wi.WorkflowDefinitionId = wd.WFDefinitionId AND wi.IsDeleted = 0 " +
+                        "INNER JOIN dbo.WorkflowStepInstance wsi " +
+                        "       ON wsi.WorkflowInstanceId = wi.WorkflowInstanceId AND wsi.IsDeleted = 0 " +
+                        "WHERE  wd.IsDeleted = 0 " +
+                        "  AND  (@WorkflowDefinitionId IS NULL OR wd.WFDefinitionId = @WorkflowDefinitionId) " +
+                        "  AND  (@FromDate IS NULL OR wsi.AssignedDate >= @FromDate) " +
+                        "  AND  (@ToDate   IS NULL OR wsi.AssignedDate <= @ToDate) " +
+                        "GROUP  BY wd.WFDefinitionId, wd.WFName " +
+                        "ORDER  BY Total DESC";
+                    using (var cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.CommandType = CommandType.Text;
+                        AddFilterParameters(cmd, filter);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                results.Add(new SLATemplateMetricRow
+                                {
+                                    WorkflowDefinitionId = (int)reader["WorkflowDefinitionId"],
+                                    TemplateName         = reader["TemplateName"] == DBNull.Value ? "" : (string)reader["TemplateName"],
+                                    Total                = (int)reader["Total"],
+                                    OnTime               = (int)reader["OnTime"],
+                                    AtRisk               = (int)reader["AtRisk"],
+                                    Overdue              = (int)reader["Overdue"],
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch { /* return empty list — table may not exist yet */ }
+            return results;
+        }
+
+        // ----------------------------------------------------------------
+        // SLA Weekly Trend
+        // ----------------------------------------------------------------
+
+        public IList<SLATrendRow> GetSLAWeeklyTrend(int weeks)
+        {
+            var results = new List<SLATrendRow>();
+            try
+            {
+                using (var conn = new SqlConnection(_connectionString))
+                {
+                    conn.Open();
+                    const string sql =
+                        "SELECT yr, wk, " +
+                        "       CAST(SUM(CASE WHEN SLAStatus = 1 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) AS float) AS CompliancePct " +
+                        "FROM ( " +
+                        "    SELECT YEAR(AssignedDate) AS yr, DATEPART(WEEK, AssignedDate) AS wk, SLAStatus " +
+                        "    FROM   dbo.WorkflowStepInstance " +
+                        "    WHERE  IsDeleted = 0 AND AssignedDate >= DATEADD(WEEK, -@Weeks, GETUTCDATE()) " +
+                        ") t " +
+                        "GROUP  BY yr, wk " +
+                        "ORDER  BY yr, wk";
+                    using (var cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.CommandType = CommandType.Text;
+                        cmd.Parameters.AddWithValue("@Weeks", weeks);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            int idx = 1;
+                            while (reader.Read())
+                            {
+                                double pct = reader["CompliancePct"] == DBNull.Value ? 0 : Convert.ToDouble(reader["CompliancePct"]);
+                                results.Add(new SLATrendRow { WeekLabel = "W" + idx++, CompliancePercent = pct });
+                            }
+                        }
+                    }
+                }
+            }
+            catch { /* return empty list */ }
+            return results;
+        }
+
+        // ----------------------------------------------------------------
+        // Cycle Time Distribution
+        // ----------------------------------------------------------------
+
+        public IList<CycleTimeRow> GetCycleTimeDistribution(WorkflowReportFilter filter)
+        {
+            var results = new List<CycleTimeRow>();
+            try
+            {
+                using (var conn = new SqlConnection(_connectionString))
+                {
+                    conn.Open();
+                    const string sql =
+                        "SELECT BucketLabel AS Label, BucketOrder AS SortKey, COUNT(*) AS Cnt " +
+                        "FROM ( " +
+                        "    SELECT " +
+                        "        CASE " +
+                        "            WHEN ct >= 0  AND ct < 1  THEN '0–1'  " +
+                        "            WHEN ct >= 1  AND ct < 2  THEN '1–2'  " +
+                        "            WHEN ct >= 2  AND ct < 3  THEN '2–3'  " +
+                        "            WHEN ct >= 3  AND ct < 4  THEN '3–4'  " +
+                        "            WHEN ct >= 4  AND ct < 5  THEN '4–5'  " +
+                        "            WHEN ct >= 5  AND ct < 7  THEN '5–7'  " +
+                        "            WHEN ct >= 7  AND ct < 10 THEN '7–10' " +
+                        "            ELSE '10+' " +
+                        "        END AS BucketLabel, " +
+                        "        CASE " +
+                        "            WHEN ct >= 0  AND ct < 1  THEN 0 " +
+                        "            WHEN ct >= 1  AND ct < 2  THEN 1 " +
+                        "            WHEN ct >= 2  AND ct < 3  THEN 2 " +
+                        "            WHEN ct >= 3  AND ct < 4  THEN 3 " +
+                        "            WHEN ct >= 4  AND ct < 5  THEN 4 " +
+                        "            WHEN ct >= 5  AND ct < 7  THEN 5 " +
+                        "            WHEN ct >= 7  AND ct < 10 THEN 6 " +
+                        "            ELSE 7 " +
+                        "        END AS BucketOrder " +
+                        "    FROM ( " +
+                        "        SELECT DATEDIFF(MINUTE, wi.CreatedDate, wi.CompletedDate) / 1440.0 AS ct " +
+                        "        FROM   dbo.WorkflowInstance wi " +
+                        "        WHERE  wi.IsDeleted = 0 AND wi.Status = 3 AND wi.CompletedDate IS NOT NULL " +
+                        "          AND  (@FromDate IS NULL OR wi.CreatedDate >= @FromDate) " +
+                        "          AND  (@ToDate   IS NULL OR wi.CreatedDate <= @ToDate) " +
+                        "    ) t " +
+                        ") b " +
+                        "GROUP  BY BucketLabel, BucketOrder " +
+                        "ORDER  BY BucketOrder";
+                    using (var cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.CommandType = CommandType.Text;
+                        cmd.Parameters.AddWithValue("@FromDate", filter.FromDate.HasValue ? (object)filter.FromDate.Value : DBNull.Value);
+                        cmd.Parameters.AddWithValue("@ToDate",   filter.ToDate.HasValue   ? (object)filter.ToDate.Value   : DBNull.Value);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                results.Add(new CycleTimeRow
+                                {
+                                    Label   = (string)reader["Label"],
+                                    Count   = (int)reader["Cnt"],
+                                    SortKey = (int)reader["SortKey"],
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch { /* return empty list */ }
+            return results;
+        }
+
+        // ----------------------------------------------------------------
         // Helpers
         // ----------------------------------------------------------------
 

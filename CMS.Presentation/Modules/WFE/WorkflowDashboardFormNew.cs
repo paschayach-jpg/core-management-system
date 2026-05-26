@@ -615,7 +615,8 @@ namespace CMS.Presentation.Modules.Workflow
                 DueDate = dueDate.ToString("dd/MM/yy"),
                 DaysLeft = daysLeft,
                 SlaPercent = slaPercent,
-                Status = statusText
+                Status = statusText,
+                CompletedDate = result.CompletedDate
             };
         }
 
@@ -684,9 +685,9 @@ namespace CMS.Presentation.Modules.Workflow
             lblPage.Text = string.Format("หน้า {0} / {1}", _currentPage, _totalPages);
             btnPrev.Enabled = _currentPage > 1;
             btnNext.Enabled = _currentPage < _totalPages;
-            lblCardPendingCount.Text = result.Count.ToString();
+            lblCardPendingCount.Text = result.Count(t => t.Status != "เสร็จ").ToString();
             lblCardSLACount.Text = result.Count(t => t.Status == "เกิน SLA").ToString();
-            lblCardDoneCount.Text = result.Count(t => t.Status == "เสร็จ").ToString();
+            lblCardDoneCount.Text = result.Count(t => t.Status == "เสร็จ" && t.CompletedDate.HasValue && t.CompletedDate.Value.Date == DateTime.Today).ToString();
             UpdateSelectionInfo();
         }
 
@@ -760,6 +761,7 @@ namespace CMS.Presentation.Modules.Workflow
         public string DueDate { get; set; }
         public int DaysLeft { get; set; }
         public double SlaPercent { get; set; }
+        public DateTime? CompletedDate { get; set; }
         public string Status { get; set; }
     }
 

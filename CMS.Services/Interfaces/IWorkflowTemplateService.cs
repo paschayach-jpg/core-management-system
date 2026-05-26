@@ -51,5 +51,22 @@ namespace CMS.Services.Interfaces
         /// Check if a template has active instances
         /// </summary>
         bool HasActiveInstances(int templateId);
+
+        /// <summary>
+        /// Submit a Draft template into the Approval Queue (sets ApprovalStatus = PendingApproval).
+        /// Only Draft templates may be submitted.
+        /// </summary>
+        WorkflowTemplateResult SubmitForApproval(int templateId, UserContext userContext);
+
+        /// <summary>
+        /// Approve a PendingApproval template (sets ApprovalStatus = Active, IsActive = true).
+        /// </summary>
+        WorkflowTemplateResult ApproveTemplate(int templateId, UserContext userContext);
+
+        /// <summary>
+        /// Reject a PendingApproval template — returns it to Draft with a rejection reason.
+        /// Does NOT delete the template.
+        /// </summary>
+        WorkflowTemplateResult RejectTemplate(int templateId, string reason, UserContext userContext);
     }
 }

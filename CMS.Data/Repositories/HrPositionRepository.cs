@@ -25,7 +25,7 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "SELECT PositionID, PositionCode, PositionName, " +
                     "       ISNULL(Level,'') AS Level, IsActive " +
-                    "FROM core.HR_Position " +
+                    "FROM core.HR_Role " +
                     "WHERE IsActive = 1 " +
                     "ORDER BY PositionName", conn))
                 {

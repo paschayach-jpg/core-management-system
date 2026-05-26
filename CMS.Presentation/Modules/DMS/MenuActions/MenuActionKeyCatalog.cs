@@ -49,7 +49,10 @@ namespace CMS.Presentation
             "WorkflowDesigner",
             "WorkflowDelegation",
             "SLAReport",
-            "WorkflowVisualFlow"
+            "WorkflowVisualFlow",
+            "QuotaConfig",
+            "QuotaRequest",
+            "QuotaApproval"
         };
 
         public static string[] GetAvailableActionKeys()
@@ -90,6 +93,12 @@ namespace CMS.Presentation
                 return "SLAReport";
             if (string.Equals(normalized, "workflowvisualflowform", StringComparison.OrdinalIgnoreCase))
                 return "WorkflowVisualFlow";
+            if (string.Equals(normalized, "folderquotaconfigform", StringComparison.OrdinalIgnoreCase))
+                return "QuotaConfig";
+            if (string.Equals(normalized, "folderquotarequestform", StringComparison.OrdinalIgnoreCase))
+                return "QuotaRequest";
+            if (string.Equals(normalized, "folderquotaapprovalform", StringComparison.OrdinalIgnoreCase))
+                return "QuotaApproval";
 
             foreach (var builtIn in BuiltInActionKeys)
             {

@@ -64,15 +64,15 @@ namespace CMS.Data.Repositories
         public IEnumerable<FolderPermission> GetAllByFolder(int folderId)
         {
             var results = new List<FolderPermission>();
-            System.Diagnostics.Debug.WriteLine($"[REPO] GetAllByFolder: FolderID={folderId}, ConnStr={(string.IsNullOrEmpty(_connectionString) ? "EMPTY!" : "OK")}");
+            System.Diagnostics.Debug.WriteLine("[REPO] GetAllByFolder: FolderID=" + folderId + ", ConnStr=" + (string.IsNullOrEmpty(_connectionString) ? "EMPTY!" : "OK"));
 
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                System.Diagnostics.Debug.WriteLine($"[REPO] DB connection opened (State={conn.State})");
+                System.Diagnostics.Debug.WriteLine("[REPO] DB connection opened (State=" + conn.State + ")");
                 try
                 {
-                    System.Diagnostics.Debug.WriteLine($"[REPO] Calling SP: security.sp_GetAllPermissionsByFolder");
+                    System.Diagnostics.Debug.WriteLine("[REPO] Calling SP: security.sp_GetAllPermissionsByFolder");
                     using (var cmd = new SqlCommand("security.sp_GetAllPermissionsByFolder", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
@@ -82,12 +82,12 @@ namespace CMS.Data.Repositories
                             while (reader.Read()) results.Add(MapPermission(reader));
                         }
                     }
-                    System.Diagnostics.Debug.WriteLine($"[REPO] SP succeeded → {results.Count} rows");
+                    System.Diagnostics.Debug.WriteLine("[REPO] SP succeeded → " + results.Count + " rows");
                 }
                 catch (System.Data.SqlClient.SqlException sqlEx)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[REPO] SP FAILED ({sqlEx.Number}): {sqlEx.Message}");
-                    System.Diagnostics.Debug.WriteLine($"[REPO] Falling back to direct SQL query");
+                    System.Diagnostics.Debug.WriteLine("[REPO] SP FAILED (" + sqlEx.Number + "): " + sqlEx.Message);
+                    System.Diagnostics.Debug.WriteLine("[REPO] Falling back to direct SQL query");
 
                     // SP may not exist yet — fall back to direct query
                     results.Clear();
@@ -106,12 +106,12 @@ namespace CMS.Data.Repositories
                             while (reader.Read()) results.Add(MapPermission(reader));
                         }
                     }
-                    System.Diagnostics.Debug.WriteLine($"[REPO] Direct SQL → {results.Count} rows");
+                    System.Diagnostics.Debug.WriteLine("[REPO] Direct SQL → " + results.Count + " rows");
                 }
             }
 
             foreach (var r in results)
-                System.Diagnostics.Debug.WriteLine($"[REPO]   Row: PermID={r.PermissionID} Principal={r.PrincipalType}#{r.PrincipalID} Read={r.CanRead} Write={r.CanWrite} Revoked={r.RevokedDate.HasValue}");
+                System.Diagnostics.Debug.WriteLine("[REPO]   Row: PermID=" + r.PermissionID + " Principal=" + r.PrincipalType + "#" + r.PrincipalID + " Read=" + r.CanRead + " Write=" + r.CanWrite + " Revoked=" + r.RevokedDate.HasValue);
 
             return results;
         }

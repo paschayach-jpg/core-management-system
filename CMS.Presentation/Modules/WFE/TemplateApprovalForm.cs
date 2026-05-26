@@ -75,7 +75,9 @@ namespace CMS.Presentation.Modules.Workflow
                 BuildRibbonTabs();
                 BuildToolbar();
                 Panel initialNav;
-                WorkflowNavigationBuilder.BuildSidebar(pnlSidebarContainer, "approval", OnNavItemClick, out initialNav);
+                int pendingCount = _presenter != null ? GetPendingCountSafe() : 0;
+                WorkflowNavigationBuilder.BuildSidebar(pnlSidebarContainer, "approval", OnNavItemClick, out initialNav,
+                    approvalBadge: pendingCount);
                 _activeNavItem = initialNav;
                 BuildStatusBar();
                 SetupListView();
@@ -100,9 +102,9 @@ namespace CMS.Presentation.Modules.Workflow
             var now = DateTime.Now;
             var mock = new List<WorkflowTemplateResult>
             {
-                new WorkflowTemplateResult { WorkflowDefinitionId=3,  Name="อนุมัติ KB Article",        Category="Knowledge", StepCount=3, Version=2, IsActive=false, Status="Draft", OwnerDepartment="IT",  CreatedBy="supaph.jan", ModifiedDate=now.AddDays(-2),  ActiveInstanceCount=0 },
-                new WorkflowTemplateResult { WorkflowDefinitionId=7,  Name="HR Onboarding Process",      Category="HR",        StepCount=5, Version=3, IsActive=false, Status="Draft", OwnerDepartment="HR",  CreatedBy="hr.admin",   ModifiedDate=now.AddDays(-5),  ActiveInstanceCount=0 },
-                new WorkflowTemplateResult { WorkflowDefinitionId=12, Name="ขออนุมัติ Upload ไฟล์ NC",  Category="เอกสาร",    StepCount=2, Version=2, IsActive=false, Status="Draft", OwnerDepartment="Ops", CreatedBy="ops.user",   ModifiedDate=now.AddDays(-1),  ActiveInstanceCount=0 },
+                new WorkflowTemplateResult { WorkflowDefinitionId=3,  Name="อนุมัติ KB Article",        Category="Knowledge", StepCount=3, Version=2, IsActive=false, Status="PendingApproval", OwnerDepartment="IT",  CreatedBy="supaph.jan", ModifiedDate=now.AddDays(-2),  ActiveInstanceCount=0 },
+                new WorkflowTemplateResult { WorkflowDefinitionId=7,  Name="HR Onboarding Process",      Category="HR",        StepCount=5, Version=3, IsActive=false, Status="PendingApproval", OwnerDepartment="HR",  CreatedBy="hr.admin",   ModifiedDate=now.AddDays(-5),  ActiveInstanceCount=0 },
+                new WorkflowTemplateResult { WorkflowDefinitionId=12, Name="ขออนุมัติ Upload ไฟล์ NC",  Category="เอกสาร",    StepCount=2, Version=2, IsActive=false, Status="PendingApproval", OwnerDepartment="Ops", CreatedBy="ops.user",   ModifiedDate=now.AddDays(-1),  ActiveInstanceCount=0 },
             };
             DisplayPendingTemplates(new PagedResult<WorkflowTemplateResult>
             {
@@ -930,6 +932,18 @@ namespace CMS.Presentation.Modules.Workflow
         // ════════════════════════════════════════════════════════════════════════
         // Sidebar Navigation
         // ════════════════════════════════════════════════════════════════════════
+
+        private int GetPendingCountSafe()
+        {
+            try
+            {
+                var result = _presenter != null
+                    ? _presenter.GetPendingCount()
+                    : 0;
+                return result;
+            }
+            catch { return 0; }
+        }
 
         private void OnNavItemClick(string tag)
         {

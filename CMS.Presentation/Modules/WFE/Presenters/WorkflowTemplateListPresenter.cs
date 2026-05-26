@@ -267,6 +267,47 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
         }
 
         /// <summary>
+        /// Submit a Draft template into the Approval Queue.
+        /// </summary>
+        public void SubmitForApproval(WorkflowTemplateResult template)
+        {
+            try
+            {
+                if (template == null)
+                {
+                    _view.ShowError("กรุณาเลือก Template ที่ต้องการส่งอนุมัติ");
+                    return;
+                }
+
+                if (template.StatusLabel != "Draft")
+                {
+                    _view.ShowError($"เฉพาะ Template ที่เป็น Draft เท่านั้นที่สามารถส่งอนุมัติได้\n(สถานะปัจจุบัน: {template.StatusLabel})");
+                    return;
+                }
+
+                _templateService.SubmitForApproval(template.WorkflowDefinitionId, _userContext);
+
+                _auditService?.Log(new AuditEntry
+                {
+                    Action    = "WorkflowTemplateSubmittedFromList",
+                    TableName = "WorkflowDefinition",
+                    RecordID  = template.WorkflowDefinitionId,
+                    UserName  = _userContext.ADUserName,
+                    AuditDate = DateTime.Now,
+                    NewValue  = $"Submitted template '{template.Name}' for approval"
+                });
+
+                _view.ShowInfo($"✔  ส่ง Template '{template.Name}' เข้า Approval Queue เรียบร้อยแล้ว\n\nสถานะเปลี่ยนเป็น: รออนุมัติ");
+                LoadTemplates();
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"SubmitForApproval error: {ex.Message}", ex);
+                _view.ShowError($"ส่งอนุมัติไม่สำเร็จ: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Go to next page
         /// </summary>
         public void NextPage()

@@ -47,15 +47,8 @@ namespace CMS.Presentation.Modules.Workflow
             Color.FromArgb(41, 128, 185), Color.FromArgb(230, 126, 34),
         };
 
-        // ── Overdue mock data ────────────────────────────────────────────────────
-        private struct OverdueRow { public string Name; public string Dept; public int Count; public double AvgDays; }
-        private static readonly OverdueRow[] OverdueData =
-        {
-            new OverdueRow { Name="วิชัย ม.",   Dept="Legal", Count=5, AvgDays=2.1 },
-            new OverdueRow { Name="ปริดา ส.",   Dept="Legal", Count=3, AvgDays=1.4 },
-            new OverdueRow { Name="ธนพล ภ.",    Dept="IT",    Count=2, AvgDays=3.2 },
-            new OverdueRow { Name="สุนิสา ร.", Dept="QA",    Count=2, AvgDays=1.1 },
-        };
+        // ── Overdue data (populated from presenter) ───────────────────────────────
+        private List<OverduePersonRow> _overdueRows = new List<OverduePersonRow>();
 
         // ── Nav ──────────────────────────────────────────────────────────────────
         private Panel _activeNavItem;
@@ -679,6 +672,22 @@ namespace CMS.Presentation.Modules.Workflow
             lblCardCompletedSub.Text    = summary.PeriodLabel;
         }
 
+        public void DisplayOverdueByPerson(List<OverduePersonRow> rows)
+        {
+            if (InvokeRequired) { Invoke(new Action(() => DisplayOverdueByPerson(rows))); return; }
+            _overdueRows = rows ?? new List<OverduePersonRow>();
+            _pnlOverdueContent?.Invalidate();
+        }
+
+        public void UpdateSubtitle(DateTime fromDate, DateTime toDate)
+        {
+            if (InvokeRequired) { Invoke(new Action(() => UpdateSubtitle(fromDate, toDate))); return; }
+            int thaiFrom = fromDate.Year + 543;
+            int thaiTo   = toDate.Year + 543;
+            lblSubtitle.Text = string.Format("ช่วงข้อมูล: {0:dd/MM}/{1} – {2:dd/MM}/{3} · ทุก Template · ทุกหน่วยงาน",
+                fromDate, thaiFrom, toDate, thaiTo);
+        }
+
         public void DisplayComplianceTrendChart(List<SLATrendData> trendData)
         {
             if (InvokeRequired) { Invoke(new Action(() => DisplayComplianceTrendChart(trendData))); return; }
@@ -712,9 +721,10 @@ namespace CMS.Presentation.Modules.Workflow
 
         public void GetDateRange(out DateTime fromDate, out DateTime toDate)
         {
-            // TODO: wire up date picker controls
-            fromDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            toDate   = DateTime.Now;
+            // Default: previous full calendar month
+            var firstOfThisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            fromDate = firstOfThisMonth.AddMonths(-1);
+            toDate   = firstOfThisMonth.AddDays(-1);
         }
 
         public int? GetTemplateFilter() => null;
@@ -894,58 +904,60 @@ namespace CMS.Presentation.Modules.Workflow
             int rowH = 44;
             int y    = 4;
 
-            for (int i = 0; i < OverdueData.Length; i++)
+            if (_overdueRows == null || _overdueRows.Count == 0)
             {
-                var row = OverdueData[i];
+                using (var fEmpty = new Font("Segoe UI", 9F))
+                    g.DrawString("ไม่มีข้อมูลเกิน SLA ในช่วงเวลานี้", fEmpty,
+                        new SolidBrush(Color.FromArgb(140, 150, 165)), 12, 12);
+                return;
+            }
 
-                // Alternate background
+            for (int i = 0; i < _overdueRows.Count; i++)
+            {
+                var row = _overdueRows[i];
+
                 if (i % 2 == 1)
                     g.FillRectangle(new SolidBrush(Color.FromArgb(250, 251, 253)),
                         0, y, pnl.Width, rowH);
 
                 // Avatar circle
-                int avSz = 28;
-                int avX  = 12;
-                int avY  = y + (rowH - avSz) / 2;
-                var avColor = AvatarColors[Math.Abs(row.Name.GetHashCode()) % AvatarColors.Length];
+                int avSz    = 28;
+                int avX     = 12;
+                int avY     = y + (rowH - avSz) / 2;
+                var avColor = AvatarColors[Math.Abs(row.UserName.GetHashCode()) % AvatarColors.Length];
                 using (var avBrush = new SolidBrush(avColor))
-                using (var avPath = RoundedRect(new Rectangle(avX, avY, avSz, avSz), avSz / 2))
+                using (var avPath  = RoundedRect(new Rectangle(avX, avY, avSz, avSz), avSz / 2))
                     g.FillPath(avBrush, avPath);
 
-                var initials = GetInitials(row.Name);
+                var initials = GetInitials(row.UserName);
                 g.DrawString(initials, new Font("Segoe UI", 9F, FontStyle.Bold), Brushes.White,
                     new RectangleF(avX, avY, avSz, avSz),
                     new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
 
-                // Name
                 using (var fName = new Font("Segoe UI", 9F))
-                    g.DrawString(row.Name, fName, new SolidBrush(Color.FromArgb(30, 36, 55)),
-                        avX + avSz + 6, y + 12);
+                    g.DrawString(row.UserName, fName,
+                        new SolidBrush(Color.FromArgb(30, 36, 55)), avX + avSz + 6, y + 12);
 
                 // Dept badge
-                int deptX = 200;
-                Color deptColor = row.Dept == "Legal" ? Color.FromArgb(80, 130, 200)
-                                : row.Dept == "IT"    ? Color.FromArgb(22, 160, 133)
-                                : row.Dept == "QA"    ? Color.FromArgb(155, 89, 182)
-                                :                       Color.FromArgb(120, 130, 150);
+                string dept     = string.IsNullOrEmpty(row.Department) ? "—" : row.Department;
+                Color deptColor = dept == "Legal" ? Color.FromArgb(80, 130, 200)
+                                : dept == "IT"    ? Color.FromArgb(22, 160, 133)
+                                : dept == "QA"    ? Color.FromArgb(155, 89, 182)
+                                :                   Color.FromArgb(120, 130, 150);
                 using (var fDept = new Font("Segoe UI", 8F))
-                {
-                    g.DrawString("● " + row.Dept, fDept,
-                        new SolidBrush(deptColor), deptX, y + 14);
-                }
+                    g.DrawString("● " + dept, fDept, new SolidBrush(deptColor), 200, y + 14);
 
-                // Count
+                // Overdue count
                 using (var fCount = new Font("Segoe UI", 9F, FontStyle.Bold))
-                    g.DrawString(row.Count.ToString(), fCount,
+                    g.DrawString(row.OverdueCount.ToString(), fCount,
                         new SolidBrush(Color.FromArgb(30, 36, 55)), 295, y + 13);
 
-                // Avg days
-                Color dayColor = row.AvgDays > 2.0 ? _clrRed : _clrAmber;
+                // Avg overdue days
+                Color dayColor = row.AvgOverdueDays > 2.0 ? _clrRed : _clrAmber;
                 using (var fDays = new Font("Segoe UI", 9F, FontStyle.Bold))
-                    g.DrawString(string.Format("{0:F1} วัน", row.AvgDays), fDays,
+                    g.DrawString(string.Format("{0:F1} วัน", row.AvgOverdueDays), fDays,
                         new SolidBrush(dayColor), 340, y + 13);
 
-                // Row separator
                 g.DrawLine(new Pen(Color.FromArgb(235, 238, 244)),
                     0, y + rowH - 1, pnl.Width, y + rowH - 1);
 

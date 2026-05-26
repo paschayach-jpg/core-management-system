@@ -49,9 +49,9 @@ namespace CMS.Presentation.Modules.Workflow
         /// This is the only place the menu is defined; all forms reference this.
         /// </summary>
         public static WfeNavSection[] GetDefaultSections(
-            int myTasksBadge = 8,
-            int monitorBadge = 24,
-            int approvalBadge = 3)
+            int myTasksBadge  = 0,
+            int monitorBadge  = 0,
+            int approvalBadge = 0)
         {
             return new[]
             {
@@ -99,12 +99,14 @@ namespace CMS.Presentation.Modules.Workflow
             Panel container,
             string activeTag,
             NavClickHandler onNavClick,
-            out Panel initialActivePanel)
+            out Panel initialActivePanel,
+            int myTasksBadge  = 0,
+            int monitorBadge  = 0,
+            int approvalBadge = 0)
         {
             container.BackColor = SidebarBg;
             container.Controls.Clear();
 
-            // Right border to separate sidebar from content area
             var border = new Panel
             {
                 Dock = DockStyle.Right,
@@ -113,7 +115,7 @@ namespace CMS.Presentation.Modules.Workflow
             };
             container.Controls.Add(border);
 
-            var sections = GetDefaultSections();
+            var sections = GetDefaultSections(myTasksBadge, monitorBadge, approvalBadge);
             Panel activePanel = null;
             int y = 4;
 

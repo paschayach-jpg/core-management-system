@@ -43,14 +43,14 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
 
         // ── Load ─────────────────────────────────────────────────────────────
 
-        /// <summary>Load Draft templates waiting for approval.</summary>
+        /// <summary>Load PendingApproval templates waiting for approval.</summary>
         public void LoadPendingTemplates()
         {
             try
             {
                 var filter = new WorkflowTemplateFilter
                 {
-                    StatusLabel   = "Draft",
+                    StatusLabel   = "PendingApproval",
                     PageNumber    = _currentPage,
                     PageSize      = PageSize,
                     SearchKeyword = _view.GetSearchFilter(),
@@ -87,36 +87,17 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
 
         // ── Actions ──────────────────────────────────────────────────────────
 
-        /// <summary>Approve the selected template — sets IsActive = true.</summary>
+        /// <summary>Approve the selected template — sets ApprovalStatus = Active, IsActive = true.</summary>
         public void ApproveTemplate(WorkflowTemplateResult template)
         {
             if (template == null) { _view.ShowError("กรุณาเลือก Template ที่ต้องการอนุมัติ"); return; }
 
             try
             {
-                var request = new UpdateTemplateRequest
-                {
-                    WorkflowDefinitionId = template.WorkflowDefinitionId,
-                    Name                 = template.Name,
-                    Description          = template.Description,
-                    IsActive             = true,
-                    ChangeDescription    = "Approved by " + _userContext.ADUserName
-                };
-
-                _templateService.UpdateTemplate(request, _userContext);
-
-                _auditService.Log(new AuditEntry
-                {
-                    Action    = "WorkflowTemplateApproved",
-                    TableName = "WorkflowDefinition",
-                    RecordID  = template.WorkflowDefinitionId,
-                    UserName  = _userContext.ADUserName,
-                    NewValue  = string.Format("Approved template: {0} v{1}", template.Name, template.Version),
-                    AuditDate = DateTime.Now
-                });
+                _templateService.ApproveTemplate(template.WorkflowDefinitionId, _userContext);
 
                 _loggingService.Info(string.Format("Template {0} approved by {1}", template.WorkflowDefinitionId, _userContext.ADUserName));
-                _view.ShowInfo(string.Format("อนุมัติ Template '{0}' เรียบร้อยแล้ว", template.Name));
+                _view.ShowInfo(string.Format("✔  อนุมัติ Template '{0}' เรียบร้อยแล้ว\n\nสถานะเปลี่ยนเป็น Active — สามารถสร้าง Workflow Instance ได้ทันที", template.Name));
                 LoadPendingTemplates();
             }
             catch (Exception ex)
@@ -126,27 +107,24 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
             }
         }
 
-        /// <summary>Reject the selected template — soft-delete (IsActive stays false, mark deleted).</summary>
+        /// <summary>
+        /// Reject the selected template — returns it to Draft status with a reason.
+        /// Does NOT delete the template; the submitter can revise and re-submit.
+        /// </summary>
         public void RejectTemplate(WorkflowTemplateResult template, string reason)
         {
             if (template == null) { _view.ShowError("กรุณาเลือก Template ที่ต้องการปฏิเสธ"); return; }
 
             try
             {
-                _templateService.DeleteTemplate(template.WorkflowDefinitionId, _userContext);
-
-                _auditService.Log(new AuditEntry
-                {
-                    Action    = "WorkflowTemplateRejected",
-                    TableName = "WorkflowDefinition",
-                    RecordID  = template.WorkflowDefinitionId,
-                    UserName  = _userContext.ADUserName,
-                    NewValue  = string.Format("Rejected template: {0} v{1}. Reason: {2}", template.Name, template.Version, reason ?? "-"),
-                    AuditDate = DateTime.Now
-                });
+                _templateService.RejectTemplate(template.WorkflowDefinitionId, reason, _userContext);
 
                 _loggingService.Info(string.Format("Template {0} rejected by {1}", template.WorkflowDefinitionId, _userContext.ADUserName));
-                _view.ShowInfo(string.Format("ปฏิเสธ Template '{0}' เรียบร้อยแล้ว", template.Name));
+                _view.ShowInfo(string.Format(
+                    "✖  ปฏิเสธ Template '{0}' เรียบร้อยแล้ว\n\n" +
+                    "สถานะเปลี่ยนกลับเป็น Draft\n" +
+                    "ผู้ส่งสามารถแก้ไขและส่งอนุมัติใหม่ได้",
+                    template.Name));
                 LoadPendingTemplates();
             }
             catch (Exception ex)
@@ -154,6 +132,22 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 _loggingService.Error("RejectTemplate: " + ex.Message, ex);
                 _view.ShowError("ปฏิเสธไม่สำเร็จ: " + ex.Message);
             }
+        }
+
+        /// <summary>Returns total pending-approval count for sidebar badge.</summary>
+        public int GetPendingCount()
+        {
+            try
+            {
+                var filter = new WorkflowTemplateFilter
+                {
+                    StatusLabel = "PendingApproval",
+                    PageNumber  = 1,
+                    PageSize    = 1,
+                };
+                return _templateService.GetTemplates(filter, _userContext).TotalCount;
+            }
+            catch { return 0; }
         }
 
         // ── Pagination ───────────────────────────────────────────────────────

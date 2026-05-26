@@ -33,6 +33,15 @@ namespace CMS.Data.Interfaces
         /// Used by the administrative dashboard escalation statistics panel.
         /// </summary>
         EscalationStatistics GetEscalationStatistics(WorkflowReportFilter filter);
+
+        /// <summary>SLA compliance breakdown per workflow template.</summary>
+        System.Collections.Generic.IList<SLATemplateMetricRow> GetSLAByTemplate(WorkflowReportFilter filter);
+
+        /// <summary>Weekly SLA compliance trend for the last <paramref name="weeks"/> weeks.</summary>
+        System.Collections.Generic.IList<SLATrendRow> GetSLAWeeklyTrend(int weeks);
+
+        /// <summary>Cycle-time distribution histogram for completed workflow instances.</summary>
+        System.Collections.Generic.IList<CycleTimeRow> GetCycleTimeDistribution(WorkflowReportFilter filter);
     }
 
     // ----------------------------------------------------------------
@@ -86,13 +95,38 @@ namespace CMS.Data.Interfaces
         public int AutoRejectCount       { get; set; }
     }
 
+    public class SLATemplateMetricRow
+    {
+        public int    WorkflowDefinitionId { get; set; }
+        public string TemplateName         { get; set; }
+        public int    Total                { get; set; }
+        public int    OnTime               { get; set; }
+        public int    AtRisk               { get; set; }
+        public int    Overdue              { get; set; }
+    }
+
+    public class SLATrendRow
+    {
+        public string WeekLabel          { get; set; }
+        public double CompliancePercent  { get; set; }
+    }
+
+    public class CycleTimeRow
+    {
+        public string Label    { get; set; }
+        public int    Count    { get; set; }
+        public int    SortKey  { get; set; }
+    }
+
     /// <summary>Common filter parameters shared by all reporting queries.</summary>
     public class WorkflowReportFilter
     {
         public int?     WorkflowDefinitionId { get; set; }
         public DateTime? FromDate            { get; set; }
         public DateTime? ToDate              { get; set; }
-        public int      PageNumber           { get; set; } = 1;
-        public int      PageSize             { get; set; } = 50;
+        public int      PageNumber           { get; set; }
+        public int      PageSize             { get; set; }
+
+        public WorkflowReportFilter() { PageNumber = 1; PageSize = 50; }
     }
 }
