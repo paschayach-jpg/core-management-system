@@ -17,8 +17,8 @@ namespace CMS.Data.Repositories
                      r.Reason, r.Status, r.RequestedBy, r.RequestedDate,
                      r.ReviewedBy, r.ReviewedDate, r.ReviewRemark,
                      ISNULL(o.OrgUnitNameTH, o.OrgUnitNameEN) AS OrgUnitName,
-                     ISNULL(ua1.DisplayName, ua1.Username)    AS RequestedByName,
-                     ISNULL(ua2.DisplayName, ua2.Username)    AS ReviewedByName
+                     ISNULL(ua1.DisplayName, ua1.ADUserName)  AS RequestedByName,
+                     ISNULL(ua2.DisplayName, ua2.ADUserName)  AS ReviewedByName
               FROM   dms.FolderQuotaChangeRequest r
               INNER JOIN core.OrgUnit     o   ON o.OrgUnitID     = r.OrgUnitID
               INNER JOIN core.UserAccount ua1 ON ua1.UserID      = r.RequestedBy

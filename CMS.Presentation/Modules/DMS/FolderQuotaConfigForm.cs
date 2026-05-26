@@ -36,24 +36,39 @@ namespace CMS.Presentation
         // ── Tree ──────────────────────────────────────────────────────────────
         private void LoadOrgTree()
         {
-            var all = _orgService.GetHierarchy()
+            var orgMap = _orgService.GetHierarchy()
                 .GroupBy(o => o.OrgUnitID)
                 .Select(g => g.First())
-                .ToList();
+                .ToDictionary(o => o.OrgUnitID);
+
+            // ใช้เฉพาะ relationship ที่ตั้งค่าจริง — ไม่ใช้ ParentOrgUnitID fallback
+            var rels = _orgService.GetAllActiveRelationships().ToList();
 
             tvOrgUnits.BeginUpdate();
             tvOrgUnits.Nodes.Clear();
 
-            foreach (var sub in all.Where(o => o.OrgUnitType == 1).OrderBy(o => o.Name))
+            foreach (var sub in orgMap.Values.Where(o => o.OrgUnitType == 1 && o.IsActive && !o.IsDeleted).OrderBy(o => o.Name))
             {
                 var subNode = new TreeNode(sub.Name) { Tag = sub };
                 subNode.NodeFont = new Font(tvOrgUnits.Font, FontStyle.Bold);
 
-                foreach (var div in all.Where(o => o.OrgUnitType == 2 && o.ParentOrgUnitID == sub.OrgUnitID).OrderBy(o => o.Name))
+                var divIds = new HashSet<int>(
+                    rels.Where(r => r.SubCommitteeID == sub.OrgUnitID
+                                 && orgMap.ContainsKey(r.DivisionID)
+                                 && orgMap[r.DivisionID].IsActive
+                                 && !orgMap[r.DivisionID].IsDeleted)
+                        .Select(r => r.DivisionID));
+                foreach (var o in orgMap.Values.Where(o => o.OrgUnitType == 2 && o.IsActive && !o.IsDeleted && o.ParentOrgUnitID == sub.OrgUnitID))
+                    divIds.Add(o.OrgUnitID);
+
+                foreach (var divId in divIds.OrderBy(id => orgMap[id].Name))
                 {
+                    var div     = orgMap[divId];
                     var divNode = new TreeNode(div.Name) { Tag = div };
 
-                    foreach (var dep in all.Where(o => o.OrgUnitType == 3 && o.ParentOrgUnitID == div.OrgUnitID).OrderBy(o => o.Name))
+                    foreach (var dep in orgMap.Values
+                                              .Where(o => o.OrgUnitType == 3 && o.IsActive && !o.IsDeleted && o.ParentOrgUnitID == div.OrgUnitID)
+                                              .OrderBy(o => o.Name))
                         divNode.Nodes.Add(new TreeNode(dep.Name) { Tag = dep });
 
                     subNode.Nodes.Add(divNode);
