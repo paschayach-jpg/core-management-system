@@ -9,6 +9,9 @@ namespace CMS.Services.Interfaces
     {
         // ---- Usage ----
         QuotaUsageResult GetUsage(int orgUnitId, int? parentOrgUnitId = null);
+        IList<FileTypeUsage> GetFileTypeStats(int orgUnitId);
+        IEnumerable<FileDocument> GetFilesByOrgUnit(int orgUnitId);
+        Dictionary<int, OrgUnitFileStat> GetAllFileStats();
         QuotaAlertLevel  CheckAlert(int orgUnitId, int? parentOrgUnitId = null);
 
         /// <summary>โยน QuotaExceededException ถ้า quota เต็ม</summary>

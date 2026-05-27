@@ -17,19 +17,22 @@ namespace CMS.Services
         private readonly IFolderRepository                  _folderRepo;
         private readonly INotificationService               _notificationService;
         private readonly IOrgUnitRepository                 _orgUnitRepo;
+        private readonly IFileDocumentRepository            _fileDocRepo;
 
         public FolderQuotaService(
             IFolderQuotaConfigRepository        configRepo,
             IFolderQuotaChangeRequestRepository requestRepo,
             IFolderRepository                   folderRepo,
             INotificationService                notificationService,
-            IOrgUnitRepository                  orgUnitRepo)
+            IOrgUnitRepository                  orgUnitRepo,
+            IFileDocumentRepository             fileDocRepo = null)
         {
             _configRepo          = configRepo;
             _requestRepo         = requestRepo;
             _folderRepo          = folderRepo;
             _notificationService = notificationService;
             _orgUnitRepo         = orgUnitRepo;
+            _fileDocRepo         = fileDocRepo;
         }
 
         // ---------------------------------------------------------------
@@ -38,14 +41,13 @@ namespace CMS.Services
 
         public QuotaUsageResult GetUsage(int orgUnitId, int? parentOrgUnitId = null)
         {
-            var config = _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);
             var folders = _folderRepo.GetByOrgUnit(orgUnitId).Where(f => f != null && !f.IsDeleted).ToList();
             long usedBytes = CalculateQuotaBucketUsage(folders);
 
+            var orgUnit = _orgUnitRepo.GetById(orgUnitId);
+            var config = ResolveConfigForSelectedOrgUnit(orgUnit, orgUnitId, parentOrgUnitId);
             long quotaBytes = config != null ? config.QuotaBytes : 0;
             double pct = quotaBytes > 0 ? (double)usedBytes / quotaBytes * 100.0 : 0;
-
-            var orgUnit = _orgUnitRepo.GetById(orgUnitId);
 
             return new QuotaUsageResult
             {
@@ -56,6 +58,52 @@ namespace CMS.Services
                 UsedPercent = Math.Round(pct, 2),
                 Alert       = EvaluateAlert(pct, config)
             };
+        }
+
+        public Dictionary<int, OrgUnitFileStat> GetAllFileStats()
+        {
+            return _configRepo.GetAllFileStats();
+        }
+
+        public IEnumerable<FileDocument> GetFilesByOrgUnit(int orgUnitId)
+        {
+            if (_fileDocRepo == null)
+                return new List<FileDocument>();
+            return _fileDocRepo.GetByOrgUnit(orgUnitId)
+                .Where(f => f != null && f.FileStatus == 1)
+                .OrderByDescending(f => f.UploadedDate)
+                .ToList();
+        }
+
+        public IList<FileTypeUsage> GetFileTypeStats(int orgUnitId)
+        {
+            if (_fileDocRepo == null)
+                return new List<FileTypeUsage>();
+
+            var files = _fileDocRepo.GetByOrgUnit(orgUnitId)
+                .Where(f => f != null && f.FileStatus == 1)
+                .ToList();
+
+            if (files.Count == 0)
+                return new List<FileTypeUsage>();
+
+            long grandTotal = files.Sum(f => f.FileSizeBytes);
+
+            var grouped = files
+                .GroupBy(f => string.IsNullOrWhiteSpace(f.FileExtension)
+                    ? "อื่นๆ"
+                    : f.FileExtension.TrimStart('.').ToUpperInvariant())
+                .Select(g => new FileTypeUsage
+                {
+                    Extension  = g.Key,
+                    FileCount  = g.Count(),
+                    TotalBytes = g.Sum(f => f.FileSizeBytes),
+                    Percent    = grandTotal > 0 ? Math.Round(g.Sum(f => f.FileSizeBytes) * 100.0 / grandTotal, 1) : 0
+                })
+                .OrderByDescending(x => x.TotalBytes)
+                .ToList();
+
+            return grouped;
         }
 
         public QuotaAlertLevel CheckAlert(int orgUnitId, int? parentOrgUnitId = null)
@@ -249,6 +297,27 @@ namespace CMS.Services
             if (usedPct >= config.CriticalThresholdPct) return QuotaAlertLevel.Critical;
             if (usedPct >= config.WarnThresholdPct)     return QuotaAlertLevel.Warning;
             return QuotaAlertLevel.Normal;
+        }
+
+        private FolderQuotaConfig ResolveConfigForSelectedOrgUnit(OrgUnit orgUnit, int orgUnitId, int? parentOrgUnitId)
+        {
+            if (orgUnit == null)
+                return _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);
+
+            if (orgUnit.OrgUnitType == 2 || orgUnit.OrgUnitType == 3)
+            {
+                var config = _configRepo.GetByMasterCode(orgUnit.OrgUnitType, orgUnit.OrgUnitCode);
+                return config != null && config.QuotaBytes > 0 ? config : null;
+            }
+
+            if (orgUnit.OrgUnitType == 1)
+            {
+                var config = _configRepo.GetByMasterCode(orgUnit.OrgUnitType, orgUnit.OrgUnitCode);
+                if (config != null && config.QuotaBytes > 0)
+                    return config;
+            }
+
+            return _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);
         }
 
         private static long CalculateQuotaBucketUsage(IList<Folder> folders)

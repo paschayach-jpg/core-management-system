@@ -16,6 +16,14 @@ namespace CMS.Services.DTOs
         public double FreeGB   { get { return (QuotaBytes - UsedBytes) / 1073741824.0; } }
     }
 
+    public class FileTypeUsage
+    {
+        public string Extension  { get; set; }
+        public long   TotalBytes { get; set; }
+        public int    FileCount  { get; set; }
+        public double Percent    { get; set; }
+    }
+
     public class SubmitQuotaChangeRequest
     {
         public int    OrgUnitID            { get; set; }

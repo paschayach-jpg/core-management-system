@@ -86,7 +86,8 @@ namespace CMS.Presentation
                     folderQuotaRequestRepo,
                     folderRepository,
                     notificationService,
-                    orgUnitRepository);
+                    orgUnitRepository,
+                    fileDocumentRepository);
 
                 var folderService = new FolderService(
                     folderRepository,

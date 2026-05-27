@@ -825,9 +825,13 @@ namespace CMS.Presentation
 
             var droppedFolders = paths.Where(p => Directory.Exists(p)).ToArray();
             var droppedFiles   = paths.Where(p => File.Exists(p)).ToArray();
+            var currentFolder = GetCurrentNavFolder();
 
             if (droppedFolders.Length == 0)
             {
+                if (TryShowQuotaBlockForLocalFiles(currentFolder, droppedFiles, "วาง"))
+                    return;
+
                 OpenUploadWithFiles(droppedFiles);
                 return;
             }
@@ -851,6 +855,9 @@ namespace CMS.Presentation
             using (var dlg = new FolderDropImportDialog(droppedFolders, droppedFiles, extractedFiles, skipped))
             {
                 if (dlg.ShowDialog(this.MdiParent ?? this) != DialogResult.OK) return;
+
+                if (TryShowQuotaBlockForLocalFiles(currentFolder, dlg.AllFiles, "วาง"))
+                    return;
 
                 if ((dlg.CreateRootFolder || dlg.CreateFolderStructure) && droppedFolders.Length > 0)
                     ExecuteStructuredDrop(droppedFolders, dlg.PerSourceFilesDict,
@@ -1339,6 +1346,14 @@ namespace CMS.Presentation
                     // Choice.SaveCopy → copy ทุกไฟล์ โดย service จะ rename อัตโนมัติ
                 }
             }
+
+            var destinationFolder = GetFolderForQuotaCheck(destFolderId);
+            long copyBytes = filesToCopy
+                .Where(f => duplicateChoice != DuplicateFileChoiceDialog.Choice.Replace
+                            || !duplicateSet.Contains(f.OriginalFileName))
+                .Sum(f => Math.Max(0, f.FileSizeBytes));
+            if (copyBytes > 0 && TryShowQuotaBlockForIncomingBytes(destinationFolder, copyBytes, "วาง"))
+                return;
 
             // ── Progress dialog ───────────────────────────────────────────────
             var copyItems = filesToCopy.Select(f => new FileCopyInput
@@ -3923,12 +3938,16 @@ namespace CMS.Presentation
             // Use cached OrgUnit lookup (populated by LoadOrgUnitTree) — no DB call here
             Dictionary<int, string> orgUnitNames = _orgUnitNameCache ?? new Dictionary<int, string>();
             var actualFileCountByFolderId = new Dictionary<int, int>();
+            var actualFileSizeByFolderId = new Dictionary<int, long>();
+            var liveFilesByFolderId = new Dictionary<int, List<FileDocument>>();
 
             // ── Sub-folders first ──────────────────────────────────────────
             foreach (var folder in folderList)
             {
-                int actualFileCount = GetActualFileCount(folder, actualFileCountByFolderId);
+                int actualFileCount = GetActualFileCount(folder, actualFileCountByFolderId, liveFilesByFolderId);
+                long actualFolderSize = GetActualFolderSize(folder, actualFileSizeByFolderId, liveFilesByFolderId);
                 folder.FileCount = actualFileCount;
+                folder.FolderSizeBytes = actualFolderSize;
 
                 // Populate OrgUnitName
                 string ouName;
@@ -3942,11 +3961,14 @@ namespace CMS.Presentation
                     ? ConfidentialityBookIcon(folder.ConfidentialityLevel)
                     : "folder";
                 var item = new ListViewItem(nameText) { ImageKey = iconKey };
-                item.SubItems.Add(actualFileCount > 0
+                string folderTypeText = actualFileCount > 0
                     ? string.Format("Folder  {0} ไฟล์", actualFileCount)
-                    : "Folder");                                          // ประเภท
+                    : "Folder";
+                if (actualFolderSize > 0)
+                    folderTypeText += string.Format(" / {0}", FormatBytes(actualFolderSize));
+                item.SubItems.Add(folderTypeText);                         // ประเภท
                 item.SubItems.Add(ConfidentialityShort(folder.ConfidentialityLevel)); // ระดับ
-                item.SubItems.Add(FormatBytes(folder.FolderSizeBytes));              // ขนาด
+                item.SubItems.Add(FormatBytes(actualFolderSize));              // ขนาด
                 item.SubItems.Add(folder.CreatedAt.ToString("dd/MM/yy HH:mm")); // วันที่
                 item.SubItems.Add(folder.CreatedByName ?? "—");                      // โดย
                 item.SubItems.Add("—");                                              // Ver
@@ -4051,7 +4073,8 @@ namespace CMS.Presentation
 
             // Update content header info using actual loaded rows (prevents stale Folder.FileCount)
             int totalItems = folderList.Count + fileList.Count;
-            long totalFileSize = fileList.Sum(f => f.FileSizeBytes);
+            long totalFileSize = folderList.Sum(f => Math.Max(0, f.FolderSizeBytes))
+                               + fileList.Sum(f => Math.Max(0, f.FileSizeBytes));
             var currentFolder = SelectedFolder ?? _lastSelectedFolder;
             string currentLevel = currentFolder != null
                 ? ConfidentialityLabel(currentFolder.ConfidentialityLevel)
@@ -4180,7 +4203,10 @@ namespace CMS.Presentation
             }
         }
 
-        private int GetActualFileCount(Folder folder, Dictionary<int, int> cache)
+        private int GetActualFileCount(
+            Folder folder,
+            Dictionary<int, int> cache,
+            Dictionary<int, List<FileDocument>> liveFilesCache)
         {
             if (folder == null)
                 return 0;
@@ -4191,26 +4217,73 @@ namespace CMS.Presentation
 
             int count = Math.Max(0, folder.FileCount);
 
-            if (_fileBrowseController != null)
+            try
             {
-                try
-                {
-                    var liveFiles = _fileBrowseController.GetFilesInFolder(folder.FolderID, _user);
-                    count = liveFiles == null
-                        ? 0
-                        : liveFiles.Count(f => f != null && !f.IsDeleted);
-                }
-                catch
-                {
-                    // Fallback to Folder.FileCount when live query fails.
-                    count = Math.Max(0, folder.FileCount);
-                }
+                var liveFiles = GetLiveFilesForFolder(folder, liveFilesCache);
+                count = liveFiles == null ? Math.Max(0, folder.FileCount) : liveFiles.Count;
+            }
+            catch
+            {
+                // Fallback to Folder.FileCount when live query fails.
+                count = Math.Max(0, folder.FileCount);
             }
 
             if (cache != null)
                 cache[folder.FolderID] = count;
 
             return count;
+        }
+
+        private long GetActualFolderSize(
+            Folder folder,
+            Dictionary<int, long> cache,
+            Dictionary<int, List<FileDocument>> liveFilesCache)
+        {
+            if (folder == null)
+                return 0;
+
+            long cached;
+            if (cache != null && cache.TryGetValue(folder.FolderID, out cached))
+                return cached;
+
+            long size = Math.Max(0, folder.FolderSizeBytes);
+
+            try
+            {
+                var liveFiles = GetLiveFilesForFolder(folder, liveFilesCache);
+                if (liveFiles != null)
+                    size = liveFiles.Sum(f => Math.Max(0, f.FileSizeBytes));
+            }
+            catch
+            {
+                size = Math.Max(0, folder.FolderSizeBytes);
+            }
+
+            if (cache != null)
+                cache[folder.FolderID] = size;
+
+            return size;
+        }
+
+        private List<FileDocument> GetLiveFilesForFolder(
+            Folder folder,
+            Dictionary<int, List<FileDocument>> cache)
+        {
+            if (folder == null || _fileBrowseController == null)
+                return null;
+
+            List<FileDocument> cached;
+            if (cache != null && cache.TryGetValue(folder.FolderID, out cached))
+                return cached;
+
+            var liveFiles = _fileBrowseController.GetFilesInFolder(folder.FolderID, _user)
+                .Where(f => f != null && !f.IsDeleted)
+                .ToList();
+
+            if (cache != null)
+                cache[folder.FolderID] = liveFiles;
+
+            return liveFiles;
         }
 
         /// <summary>
@@ -6061,6 +6134,9 @@ namespace CMS.Presentation
                 return;
             }
 
+            if (TryShowQuotaBlockForIncomingBytes(folder, 0, "อัปโหลด"))
+                return;
+
             // เก็บ folder ID ที่กำลังดูอยู่ก่อน upload
             int uploadFolderId = folder.FolderId;
 
@@ -6088,6 +6164,9 @@ namespace CMS.Presentation
 
             if (folder == null || _fileUploadController == null) return;
 
+            if (TryShowQuotaBlockForLocalFiles(folder, paths, "วาง"))
+                return;
+
             int uploadFolderId = folder.FolderId;
             var uploadForm = new FileUploadForm(
                 _fileUploadController, _user, folder,
@@ -6110,6 +6189,9 @@ namespace CMS.Presentation
         private void OpenUploadForFolder(Folder folder, string[] paths)
         {
             if (folder == null || _fileUploadController == null || paths == null || paths.Length == 0)
+                return;
+
+            if (TryShowQuotaBlockForLocalFiles(folder, paths, "วาง"))
                 return;
 
             var uploadForm = new FileUploadForm(
@@ -6249,6 +6331,77 @@ namespace CMS.Presentation
             if (folder == null)
                 folder = SelectedFolder;
             return folder;
+        }
+
+        private Folder GetFolderForQuotaCheck(int folderId)
+        {
+            var node = FindNodeByFolderId(folderTreeView.Nodes, folderId);
+            var folder = node != null ? node.Tag as Folder : null;
+            if (folder == null && _lastSelectedFolder != null && _lastSelectedFolder.FolderId == folderId)
+                folder = _lastSelectedFolder;
+            if (folder == null && SelectedFolder != null && SelectedFolder.FolderId == folderId)
+                folder = SelectedFolder;
+            return folder;
+        }
+
+        private bool TryShowQuotaBlockForLocalFiles(Folder folder, IEnumerable<string> paths, string actionText)
+        {
+            if (paths == null)
+                return false;
+
+            long incomingBytes = 0;
+            foreach (var path in paths.Where(p => !string.IsNullOrWhiteSpace(p)).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (!File.Exists(path))
+                    continue;
+
+                try
+                {
+                    incomingBytes += Math.Max(0, new FileInfo(path).Length);
+                }
+                catch (Exception ex)
+                {
+                    ShowError(string.Format("ไม่สามารถตรวจสอบขนาดไฟล์ก่อน{0}ได้\n{1}", actionText, ex.Message));
+                    return true;
+                }
+            }
+
+            return TryShowQuotaBlockForIncomingBytes(folder, incomingBytes, actionText);
+        }
+
+        private bool TryShowQuotaBlockForIncomingBytes(Folder folder, long incomingBytes, string actionText)
+        {
+            if (_folderQuotaService == null || folder == null)
+                return false;
+
+            try
+            {
+                var usage = _folderQuotaService.GetUsage(folder.OrgUnitID);
+                if (usage == null || usage.QuotaBytes <= 0)
+                    return false;
+
+                long incoming = Math.Max(0, incomingBytes);
+                long remainingBytes = Math.Max(0, usage.QuotaBytes - usage.UsedBytes);
+                long projectedBytes = usage.UsedBytes + incoming;
+                bool isAlreadyFull = incoming == 0 && usage.UsedBytes >= usage.QuotaBytes;
+                if (!isAlreadyFull && projectedBytes <= usage.QuotaBytes)
+                    return false;
+
+                ShowError(string.Format(
+                    "ไม่สามารถ{0}ไฟล์ได้ในระบบ\n\nพื้นที่ของ {1} เกิน quota ที่กำหนด\nใช้แล้ว: {2}\nQuota: {3}\nคงเหลือ: {4}\nขนาดไฟล์ที่จะ{0}: {5}",
+                    actionText,
+                    string.IsNullOrWhiteSpace(usage.OrgUnitName) ? folder.OrgUnitID.ToString() : usage.OrgUnitName,
+                    FormatBytes(usage.UsedBytes),
+                    FormatBytes(usage.QuotaBytes),
+                    FormatBytes(remainingBytes),
+                    FormatBytes(incoming)));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ShowError("ไม่สามารถตรวจสอบ quota ได้: " + ex.Message);
+                return true;
+            }
         }
 
         // -----------------------------------------------------------------------

@@ -160,6 +160,33 @@ namespace CMS.Services
                 FormatBytes(usage.QuotaBytes));
         }
 
+        private string ValidateIncomingBytesAgainstOrgQuota(Folder folder, long incomingBytes, string actionName)
+        {
+            if (_folderQuotaService == null || folder == null || incomingBytes <= 0)
+                return null;
+
+            var usage = _folderQuotaService.GetUsage(folder.OrgUnitID);
+            if (usage == null || usage.QuotaBytes <= 0)
+                return null;
+
+            long remaining = usage.QuotaBytes - usage.UsedBytes;
+            if (incomingBytes <= remaining)
+                return null;
+
+            return BuildQuotaExceededMessage(actionName, usage, incomingBytes);
+        }
+
+        private static string BuildQuotaExceededMessage(string actionName, QuotaUsageResult usage, long incomingBytes)
+        {
+            return string.Format(
+                "ไม่สามารถ{0}ไฟล์ได้ในระบบ เนื่องจากพื้นที่คงเหลือ {1} แต่ไฟล์ที่จะ{0}มีขนาดรวม {2} (ใช้ไป {3} จาก quota {4})",
+                actionName,
+                FormatBytes(Math.Max(0, usage.QuotaBytes - usage.UsedBytes)),
+                FormatBytes(Math.Max(0, incomingBytes)),
+                FormatBytes(usage.UsedBytes),
+                FormatBytes(usage.QuotaBytes));
+        }
+
         // -----------------------------------------------------------------------
         // DownloadFile
         // -----------------------------------------------------------------------
@@ -665,6 +692,20 @@ namespace CMS.Services
                         string.Format("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง '{0}'", destFolder.FolderName));
             }
 
+            long existingDestSize = 0;
+            if (overwrite && !string.IsNullOrEmpty(source.OriginalFileName))
+            {
+                var existingForQuota = _fileDocumentRepository.GetByOriginalName(source.OriginalFileName, destinationFolderId);
+                existingDestSize = existingForQuota != null ? existingForQuota.FileSizeBytes : 0;
+            }
+
+            var quotaBlockMessage = ValidateIncomingBytesAgainstOrgQuota(
+                destFolder,
+                Math.Max(0, source.FileSizeBytes - existingDestSize),
+                "วาง");
+            if (!string.IsNullOrEmpty(quotaBlockMessage))
+                throw new InvalidOperationException(quotaBlockMessage);
+
             string ext = source.FileExtension ?? Path.GetExtension(source.OriginalFileName ?? "");
             if (!ext.StartsWith(".")) ext = "." + ext;
 
@@ -742,6 +783,10 @@ namespace CMS.Services
             };
 
             int newId = _fileDocumentRepository.Insert(newDoc);
+            destFolder.FolderSizeBytes = Math.Max(0, destFolder.FolderSizeBytes - existingDestSize) + source.FileSizeBytes;
+            if (!overwrite || existingDestSize <= 0)
+                destFolder.FileCount += 1;
+            _folderRepository.Update(destFolder);
             RefreshFolderFileCounts(destinationFolderId);
 
             _auditService.Log(new AuditEntry

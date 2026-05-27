@@ -42,4 +42,12 @@ namespace CMS.Domain.Models
             get { return QuotaBytes / 1073741824.0; }
         }
     }
+
+    /// <summary>ข้อมูลสรุปจำนวนไฟล์และพื้นที่ที่ใช้ต่อ OrgUnit (batch query)</summary>
+    public class OrgUnitFileStat
+    {
+        public int    FileCount { get; set; }
+        public long   UsedBytes { get; set; }
+        public double UsedGB    { get { return UsedBytes / 1073741824.0; } }
+    }
 }

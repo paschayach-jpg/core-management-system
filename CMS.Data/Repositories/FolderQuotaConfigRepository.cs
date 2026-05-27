@@ -12,9 +12,9 @@ namespace CMS.Data.Repositories
         private readonly string _connectionString;
 
         private const string SelectMasterQuota = @"
-SELECT o.OrgUnitID AS QuotaConfigID,
-       o.OrgUnitID,
-       o.ParentOrgUnitID,
+SELECT sc.OrgUnitID AS QuotaConfigID,
+       sc.OrgUnitID,
+       CAST(NULL AS INT) AS ParentOrgUnitID,
        CAST(ISNULL(sc.quota_size, 0) AS BIGINT) AS QuotaBytes,
        CAST(80 AS TINYINT) AS WarnThresholdPct,
        CAST(95 AS TINYINT) AS CriticalThresholdPct,
@@ -23,11 +23,10 @@ SELECT o.OrgUnitID AS QuotaConfigID,
        ISNULL(sc.CreatedDate, GETDATE()) AS CreatedDate,
        CAST(NULL AS INT) AS UpdatedBy,
        CAST(NULL AS DATETIME) AS UpdatedDate,
-       ISNULL(o.OrgUnitNameTH, o.OrgUnitNameEN) AS OrgUnitName,
+       COALESCE(NULLIF(sc.SubCommitteeNameTH, ''), NULLIF(sc.SubCommitteeNameEN, ''), sc.SubCommitteeCode) AS OrgUnitName,
        N'Sub Committee' AS OrgUnitTypeName
 FROM EMS.m_SubCommittee sc
-INNER JOIN EMS.OrgUnit o ON o.OrgUnitID = sc.OrgUnitID
-WHERE sc.IsActive = 1 AND sc.IsDeleted = 0 AND o.IsDeleted = 0
+WHERE sc.IsActive = 1 AND sc.IsDeleted = 0
 
 UNION ALL
 
@@ -79,6 +78,84 @@ WHERE dep.IsActive = 1";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                    using (var reader = cmd.ExecuteReader())
+                        return reader.Read() ? Map(reader) : null;
+                }
+            }
+        }
+
+        public FolderQuotaConfig GetByMasterCode(int orgUnitType, string orgUnitCode)
+        {
+            if (string.IsNullOrWhiteSpace(orgUnitCode))
+                return null;
+
+            string sql;
+            switch (orgUnitType)
+            {
+                case 1:
+                    sql = @"
+SELECT TOP 1 sc.OrgUnitID AS QuotaConfigID,
+       sc.OrgUnitID,
+       CAST(NULL AS INT) AS ParentOrgUnitID,
+       CAST(ISNULL(sc.quota_size, 0) AS BIGINT) AS QuotaBytes,
+       CAST(80 AS TINYINT) AS WarnThresholdPct,
+       CAST(95 AS TINYINT) AS CriticalThresholdPct,
+       CAST(sc.IsActive AS BIT) AS IsActive,
+       CAST(0 AS INT) AS CreatedBy,
+       ISNULL(sc.CreatedDate, GETDATE()) AS CreatedDate,
+       CAST(NULL AS INT) AS UpdatedBy,
+       CAST(NULL AS DATETIME) AS UpdatedDate,
+       COALESCE(NULLIF(sc.SubCommitteeNameTH, ''), NULLIF(sc.SubCommitteeNameEN, ''), sc.SubCommitteeCode) AS OrgUnitName,
+       N'Sub Committee' AS OrgUnitTypeName
+FROM EMS.m_SubCommittee sc
+WHERE sc.IsActive = 1 AND sc.IsDeleted = 0 AND sc.SubCommitteeCode = @OrgUnitCode";
+                    break;
+                case 2:
+                    sql = @"
+SELECT TOP 1 d.DivisionID AS QuotaConfigID,
+       d.DivisionID AS OrgUnitID,
+       CAST(NULL AS INT) AS ParentOrgUnitID,
+       CAST(ISNULL(d.quota_size, 0) AS BIGINT) AS QuotaBytes,
+       CAST(80 AS TINYINT) AS WarnThresholdPct,
+       CAST(95 AS TINYINT) AS CriticalThresholdPct,
+       CAST(d.IsActive AS BIT) AS IsActive,
+       CAST(0 AS INT) AS CreatedBy,
+       ISNULL(d.CreatedDate, GETDATE()) AS CreatedDate,
+       CAST(NULL AS INT) AS UpdatedBy,
+       CAST(NULL AS DATETIME) AS UpdatedDate,
+       d.DivisionName AS OrgUnitName,
+       N'Division' AS OrgUnitTypeName
+FROM EMS.m_Division d
+WHERE d.IsActive = 1 AND d.DivisionCode = @OrgUnitCode";
+                    break;
+                case 3:
+                    sql = @"
+SELECT TOP 1 dep.DepartmentID AS QuotaConfigID,
+       dep.DepartmentID AS OrgUnitID,
+       dep.DivisionID AS ParentOrgUnitID,
+       CAST(ISNULL(dep.quota_size, 0) AS BIGINT) AS QuotaBytes,
+       CAST(80 AS TINYINT) AS WarnThresholdPct,
+       CAST(95 AS TINYINT) AS CriticalThresholdPct,
+       CAST(dep.IsActive AS BIT) AS IsActive,
+       CAST(0 AS INT) AS CreatedBy,
+       ISNULL(dep.CreatedDate, GETDATE()) AS CreatedDate,
+       CAST(NULL AS INT) AS UpdatedBy,
+       CAST(NULL AS DATETIME) AS UpdatedDate,
+       COALESCE(NULLIF(dep.DepartmentNameTh, ''), NULLIF(dep.DepartmentNameEn, ''), dep.DepartmentName) AS OrgUnitName,
+       N'Department' AS OrgUnitTypeName
+FROM EMS.m_Department dep
+WHERE dep.IsActive = 1 AND dep.DepartmentCode = @OrgUnitCode";
+                    break;
+                default:
+                    return null;
+            }
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@OrgUnitCode", orgUnitCode);
                     using (var reader = cmd.ExecuteReader())
                         return reader.Read() ? Map(reader) : null;
                 }
@@ -157,6 +234,40 @@ ELSE IF @OrgUnitTypeName LIKE '%Department%'
                     cmd.ExecuteNonQuery();
                 }
             }
+        }
+
+        public Dictionary<int, OrgUnitFileStat> GetAllFileStats()
+        {
+            const string sql = @"
+SELECT f.OrgUnitID,
+       COUNT(fd.FileID)              AS FileCount,
+       ISNULL(SUM(fd.FileSizeBytes), 0) AS UsedBytes
+FROM   storage.Folder f
+LEFT JOIN storage.FileDocument fd
+       ON fd.FolderID  = f.FolderID
+      AND fd.FileStatus = 1
+WHERE  f.IsDeleted = 0
+GROUP BY f.OrgUnitID";
+
+            var result = new Dictionary<int, OrgUnitFileStat>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        int orgId = Convert.ToInt32(reader["OrgUnitID"]);
+                        result[orgId] = new OrgUnitFileStat
+                        {
+                            FileCount = Convert.ToInt32(reader["FileCount"]),
+                            UsedBytes = Convert.ToInt64(reader["UsedBytes"])
+                        };
+                    }
+                }
+            }
+            return result;
         }
 
         private static FolderQuotaConfig Map(SqlDataReader reader)

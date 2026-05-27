@@ -45,6 +45,9 @@ namespace CMS.Presentation
             this.colCfgWarn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colCfgCrit = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colCfgDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colCfgFileCount = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colCfgUsedGB = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colCfgUsedPct = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.pnlFooter = new System.Windows.Forms.Panel();
             this.lblStatus = new System.Windows.Forms.Label();
             this.btnClose = new System.Windows.Forms.Button();
@@ -242,16 +245,32 @@ namespace CMS.Presentation
             this.colCfgQuota.MinimumWidth = 110;
             this.colCfgQuota.FillWeight = 110;
             this.colCfgWarn.HeaderText = "ตาราง";
-            this.colCfgWarn.MinimumWidth = 160;
-            this.colCfgWarn.FillWeight = 160;
+            this.colCfgWarn.MinimumWidth = 140;
+            this.colCfgWarn.FillWeight = 140;
             this.colCfgCrit.Visible = false;
             this.colCfgDate.HeaderText = "แก้ไขล่าสุด";
-            this.colCfgDate.MinimumWidth = 110;
-            this.colCfgDate.FillWeight = 110;
+            this.colCfgDate.MinimumWidth = 100;
+            this.colCfgDate.FillWeight = 100;
+
+            this.colCfgFileCount.HeaderText = "จำนวนไฟล์";
+            this.colCfgFileCount.MinimumWidth = 90;
+            this.colCfgFileCount.FillWeight = 90;
+            this.colCfgFileCount.DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+
+            this.colCfgUsedGB.HeaderText = "ใช้ไปแล้ว";
+            this.colCfgUsedGB.MinimumWidth = 90;
+            this.colCfgUsedGB.FillWeight = 90;
+            this.colCfgUsedGB.DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
+
+            this.colCfgUsedPct.HeaderText = "% ใช้งาน";
+            this.colCfgUsedPct.MinimumWidth = 80;
+            this.colCfgUsedPct.FillWeight = 80;
+            this.colCfgUsedPct.DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleRight;
 
             this.dgvConfigs.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
                 this.colCfgID, this.colCfgType, this.colCfgOrg,
-                this.colCfgQuota, this.colCfgWarn, this.colCfgCrit, this.colCfgDate
+                this.colCfgQuota, this.colCfgWarn, this.colCfgCrit, this.colCfgDate,
+                this.colCfgFileCount, this.colCfgUsedGB, this.colCfgUsedPct
             });
 
             this.pnlRight.Controls.Add(this.dgvConfigs);
@@ -344,5 +363,8 @@ namespace CMS.Presentation
         private System.Windows.Forms.Panel pnlFooter;
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.Button btnClose;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colCfgFileCount;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colCfgUsedGB;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colCfgUsedPct;
     }
 }

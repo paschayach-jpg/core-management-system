@@ -14,8 +14,16 @@ namespace CMS.Presentation
         private readonly UserContext _user;
 
         private List<FolderQuotaConfig> _configs = new List<FolderQuotaConfig>();
+        private Dictionary<int, OrgUnitFileStat> _fileStats
+            = new Dictionary<int, OrgUnitFileStat>();
         private FolderQuotaConfig _selected;
         private bool _bindingMasterList;
+
+        // drill-down state: Division → Department
+        private int?   _drillDownParentId   = null;
+        private string _drillDownParentName = null;
+        private Panel  _pnlBreadcrumb;
+        private Label  _lblBreadcrumb;
 
         public FolderQuotaConfigForm(IFolderQuotaService quotaService, UserContext user)
         {
@@ -26,8 +34,185 @@ namespace CMS.Presentation
             _user = user;
 
             InitializeComponent();
+            SetupDrillDown();
             SetupComboBox();
+            SetupContextMenu();
             LoadData();
+        }
+
+        private void SetupDrillDown()
+        {
+            // Refresh button in footer
+            var btnRefresh = new Button
+            {
+                Text      = "รีเฟรช",
+                Width     = 90,
+                Dock      = DockStyle.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(26, 58, 108),
+                ForeColor = Color.White,
+                Font      = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Cursor    = Cursors.Hand
+            };
+            btnRefresh.FlatAppearance.BorderSize = 0;
+            btnRefresh.Click += (s, e) => { LoadData(); };
+            pnlFooter.Controls.Add(btnRefresh);
+
+            // Breadcrumb bar — shown when drilled into Departments of a Division
+            _pnlBreadcrumb = new Panel
+            {
+                Dock      = DockStyle.Top,
+                Height    = 34,
+                BackColor = Color.FromArgb(42, 90, 150),
+                Visible   = false
+            };
+
+            var btnBack = new Button
+            {
+                Text      = "  ← กลับ",
+                Width     = 90,
+                Dock      = DockStyle.Left,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(60, 110, 175),
+                ForeColor = Color.White,
+                Font      = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Cursor    = Cursors.Hand
+            };
+            btnBack.FlatAppearance.BorderSize = 0;
+            btnBack.Click += (s, e) => DrillBack();
+
+            _lblBreadcrumb = new Label
+            {
+                Dock      = DockStyle.Fill,
+                ForeColor = Color.White,
+                Font      = new Font("Segoe UI", 9.5F),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding   = new Padding(12, 0, 0, 0)
+            };
+
+            _pnlBreadcrumb.Controls.Add(_lblBreadcrumb);
+            _pnlBreadcrumb.Controls.Add(btnBack);
+
+            // Insert breadcrumb between pnlEditHost (top) and dgvConfigs (fill)
+            // pnlRight.Controls: 0=dgvConfigs(Fill), 1=pnlEditHost(Top)
+            // After insert: 0=dgvConfigs, 1=_pnlBreadcrumb, 2=pnlEditHost → pnlEditHost stays on top
+            pnlRight.Controls.Add(_pnlBreadcrumb);
+            pnlRight.Controls.SetChildIndex(_pnlBreadcrumb, 1);
+
+            // Double-click on grid row to drill down
+            dgvConfigs.CellDoubleClick += DgvConfigs_CellDoubleClick;
+        }
+
+        private void DgvConfigs_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            var cfg = dgvConfigs.Rows[e.RowIndex].Tag as FolderQuotaConfig;
+            if (cfg == null) return;
+            if (GetOrgUnitType(cfg.OrgUnitTypeName) != 2) return; // Division only
+            DrillDown(cfg);
+        }
+
+        private void DrillDown(FolderQuotaConfig divisionCfg)
+        {
+            _drillDownParentId   = divisionCfg.OrgUnitID;
+            _drillDownParentName = divisionCfg.OrgUnitName;
+
+            _lblBreadcrumb.Text = string.Format(
+                "Division  ▶  {0}  ▶  Department  ({1} รายการ)",
+                _drillDownParentName,
+                _configs.Count(c => GetOrgUnitType(c.OrgUnitTypeName) == 3
+                                 && c.ParentOrgUnitID == _drillDownParentId));
+
+            _pnlBreadcrumb.Visible = true;
+
+            // Switch ComboBox to Department silently
+            _bindingMasterList = true;
+            cmbMasterType.SelectedIndex = 2;
+            _bindingMasterList = false;
+
+            BindMasterList();
+            RefreshGrid();
+        }
+
+        private void DrillBack()
+        {
+            _drillDownParentId   = null;
+            _drillDownParentName = null;
+            _pnlBreadcrumb.Visible = false;
+
+            // Switch ComboBox back to Division silently
+            _bindingMasterList = true;
+            cmbMasterType.SelectedIndex = 1;
+            _bindingMasterList = false;
+
+            BindMasterList();
+            RefreshGrid();
+        }
+
+        private ContextMenuStrip _chartMenu;
+
+        private void SetupContextMenu()
+        {
+            _chartMenu = new ContextMenuStrip();
+            var mnuChart = new ToolStripMenuItem("ดูการใช้พื้นที่ (กราฟ)");
+            mnuChart.Click += MnuChart_Click;
+            _chartMenu.Items.Add(mnuChart);
+
+            // ListBox ซ้าย
+            lstOrgUnits.MouseDown += LstOrgUnits_MouseDown;
+
+            // DataGridView ขวา
+            dgvConfigs.CellMouseDown += DgvConfigs_CellMouseDown;
+        }
+
+        private void LstOrgUnits_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right) return;
+            int idx = lstOrgUnits.IndexFromPoint(e.Location);
+            if (idx < 0) return;
+            lstOrgUnits.SelectedIndex = idx;
+            _chartMenu.Show(lstOrgUnits, e.Location);
+        }
+
+        private void DgvConfigs_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right || e.RowIndex < 0) return;
+            dgvConfigs.ClearSelection();
+            dgvConfigs.Rows[e.RowIndex].Selected = true;
+            _chartMenu.Show(dgvConfigs, dgvConfigs.PointToClient(Cursor.Position));
+        }
+
+        private void MnuChart_Click(object sender, EventArgs e)
+        {
+            // หา config จาก ListBox หรือ DataGridView ที่ถูกเลือก
+            FolderQuotaConfig cfg = null;
+
+            if (dgvConfigs.SelectedRows.Count > 0)
+                cfg = dgvConfigs.SelectedRows[0].Tag as FolderQuotaConfig;
+
+            if (cfg == null)
+                cfg = _selected;
+
+            if (cfg == null)
+            {
+                MessageBox.Show("กรุณาเลือกหน่วยงานก่อน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                var usage     = _quotaService.GetUsage(cfg.OrgUnitID, cfg.ParentOrgUnitID);
+                var fileStats = _quotaService.GetFileTypeStats(cfg.OrgUnitID);
+                var files     = _quotaService.GetFilesByOrgUnit(cfg.OrgUnitID).ToList();
+                using (var frm = new QuotaUsageChartForm(usage, fileStats, files))
+                    frm.ShowDialog(this);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void SetupComboBox()
@@ -43,13 +228,20 @@ namespace CMS.Presentation
 
         private void LoadData()
         {
-            _configs = _quotaService.GetAllConfigs().ToList();
+            _configs   = _quotaService.GetAllConfigs().ToList();
+            try { _fileStats = _quotaService.GetAllFileStats(); }
+            catch { _fileStats = new Dictionary<int, OrgUnitFileStat>(); }
             BindMasterList();
             RefreshGrid();
         }
 
         private void cmbMasterType_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (_bindingMasterList) return;
+            // User changed type manually — clear any active drill-down
+            _drillDownParentId   = null;
+            _drillDownParentName = null;
+            if (_pnlBreadcrumb != null) _pnlBreadcrumb.Visible = false;
             BindMasterList();
             RefreshGrid();
         }
@@ -124,6 +316,7 @@ namespace CMS.Presentation
 
             var list = _configs
                 .Where(c => GetOrgUnitType(c.OrgUnitTypeName) == orgUnitType)
+                .Where(c => _drillDownParentId == null || c.ParentOrgUnitID == _drillDownParentId)
                 .Where(c => keyword.Length == 0
                          || (c.OrgUnitName ?? string.Empty).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
                 .OrderBy(c => c.OrgUnitName)
@@ -175,8 +368,19 @@ namespace CMS.Presentation
             int selectedType = GetSelectedMasterType();
             dgvConfigs.Rows.Clear();
 
-            foreach (var c in _configs.Where(c => GetOrgUnitType(c.OrgUnitTypeName) == selectedType))
+            foreach (var c in _configs
+                .Where(c => GetOrgUnitType(c.OrgUnitTypeName) == selectedType)
+                .Where(c => _drillDownParentId == null || c.ParentOrgUnitID == _drillDownParentId))
             {
+                OrgUnitFileStat stat;
+                _fileStats.TryGetValue(c.OrgUnitID, out stat);
+
+                int    fileCount = stat != null ? stat.FileCount : 0;
+                double usedGB    = stat != null ? stat.UsedGB    : 0;
+                double usedPct   = c.QuotaBytes > 0
+                    ? Math.Min(usedGB / c.QuotaGB * 100.0, 999)
+                    : 0;
+
                 int row = dgvConfigs.Rows.Add(
                     c.QuotaConfigID,
                     c.OrgUnitTypeName,
@@ -186,12 +390,26 @@ namespace CMS.Presentation
                     "quota_size",
                     c.UpdatedDate.HasValue
                         ? c.UpdatedDate.Value.ToString("dd/MM/yyyy")
-                        : c.CreatedDate.ToString("dd/MM/yyyy")
+                        : c.CreatedDate.ToString("dd/MM/yyyy"),
+                    fileCount > 0 ? fileCount.ToString("N0") : "-",
+                    usedGB    > 0 ? string.Format("{0:F2} GB", usedGB) : "-",
+                    usedPct   > 0 ? string.Format("{0:F1}%", usedPct)  : "-"
                 );
+
                 dgvConfigs.Rows[row].Tag = c;
+
+                // Color-code % ใช้งาน
+                if (usedPct >= 95)
+                    dgvConfigs.Rows[row].Cells[colCfgUsedPct.Index].Style.ForeColor = Color.FromArgb(180, 30, 30);
+                else if (usedPct >= 80)
+                    dgvConfigs.Rows[row].Cells[colCfgUsedPct.Index].Style.ForeColor = Color.FromArgb(200, 120, 0);
+                else if (usedPct > 0)
+                    dgvConfigs.Rows[row].Cells[colCfgUsedPct.Index].Style.ForeColor = Color.FromArgb(39, 130, 70);
             }
 
-            lblStatus.Text = string.Format("ทั้งหมด {0} รายการ | ประเภท {1}", dgvConfigs.Rows.Count, GetSelectedMasterText());
+            lblStatus.Text = _drillDownParentId != null
+                ? string.Format("Department ภายใต้ {0}: {1} รายการ", _drillDownParentName, dgvConfigs.Rows.Count)
+                : string.Format("ทั้งหมด {0} รายการ | ประเภท {1}", dgvConfigs.Rows.Count, GetSelectedMasterText());
         }
 
         private void dgvConfigs_SelectionChanged(object sender, EventArgs e)
