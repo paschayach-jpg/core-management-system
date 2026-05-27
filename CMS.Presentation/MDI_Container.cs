@@ -10,6 +10,7 @@ using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Modules.KMS;
 using CMS.Presentation.Modules.Workflow;
 using CMS.Presentation.Services;
+using CMS.Services;
 using CMS.Services.Interfaces;
 using System;
 using System.Collections.Generic;

@@ -1,6 +1,7 @@
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
+using CMS.Services;
 using CMS.Services.DTOs;
 using System;
 using System.Collections.Generic;

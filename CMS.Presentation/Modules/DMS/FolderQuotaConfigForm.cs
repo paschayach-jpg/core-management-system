@@ -203,6 +203,7 @@ namespace CMS.Presentation
             try
             {
                 var usage     = _quotaService.GetUsage(cfg.OrgUnitID, cfg.ParentOrgUnitID);
+                usage.OrgUnitName = cfg.OrgUnitName;
                 var fileStats = _quotaService.GetFileTypeStats(cfg.OrgUnitID);
                 var files     = _quotaService.GetFilesByOrgUnit(cfg.OrgUnitID).ToList();
                 using (var frm = new QuotaUsageChartForm(usage, fileStats, files))

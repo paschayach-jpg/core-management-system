@@ -32,6 +32,8 @@ namespace CMS.Presentation
 
         private void LoadRequests()
         {
+            dgvRequests.SelectionChanged -= dgvRequests_SelectionChanged;
+
             bool pendingOnly = chkPendingOnly.Checked;
             _requests = (pendingOnly
                 ? _quotaService.GetPendingRequests()
@@ -64,9 +66,10 @@ namespace CMS.Presentation
 
             int pending = _requests.Count(r => r.Status == QuotaRequestStatus.Pending);
             lblStatus.Text = string.Format("ทั้งหมด {0} รายการ  รอดำเนินการ: {1}", _requests.Count, pending);
-            btnApprove.Enabled = false;
-            btnReject.Enabled  = false;
             txtRemark.Clear();
+
+            dgvRequests.SelectionChanged += dgvRequests_SelectionChanged;
+            dgvRequests_SelectionChanged(null, EventArgs.Empty);
         }
 
         private void dgvRequests_SelectionChanged(object sender, EventArgs e)

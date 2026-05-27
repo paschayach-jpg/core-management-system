@@ -103,9 +103,7 @@
       <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
-    <Compile Include="Modules\DMS\LoginManager.cs" />
-    <Compile Include="Modules\DMS\MenuControl.cs" />
-    <Compile Include="Modules\DMS\MenuModel.cs" />
+    <Compile Include="MenuControl.cs" />
     <Compile Include="Modules\DMS\LoginErrorForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -348,7 +346,7 @@
     <Compile Include="Modules\DMS\OrgUnitSelectorDialog.Designer.cs">
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\DMS\PdfSecurityHelper.cs" />
+    <Compile Include="PdfSecurityHelper.cs" />
     <Compile Include="Modules\DMS\PdpaConsentDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -389,9 +387,8 @@
       <DependentUpon>UserManagementForm.cs</DependentUpon>
     </Compile>
     <!-- Module: ImportFile — Presenters (ย้ายไปไว้ใน CMS.Controllers แล้ว) -->
-    <Compile Include="Modules\DMS\MenuActions\MenuActionContext.cs" />
-    <Compile Include="Modules\DMS\MenuActions\MenuActionKeyCatalog.cs" />
-    <Compile Include="Modules\DMS\MenuActions\MenuActionRegistry.cs" />
+    <Compile Include="MenuActions\MenuActionContext.cs" />
+    <Compile Include="MenuActions\MenuActionRegistry.cs" />
     <Compile Include="Modules\DMS\MenuManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -401,7 +398,7 @@
     <Compile Include="Modules\DMS\ParentMenuPickerDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\DMS\MenuTreeViewManager.cs" />
+    <Compile Include="MenuTreeViewManager.cs" />
     <!-- Module: Workflow — Forms -->
     <Compile Include="Modules\WFE\WorkflowDashboardForm.cs">
       <SubType>Form</SubType>

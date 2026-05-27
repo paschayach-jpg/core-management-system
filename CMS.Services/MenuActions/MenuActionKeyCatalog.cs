@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 
-namespace CMS.Presentation
+namespace CMS.Services
 {
-    internal static class MenuActionKeyCatalog
+    public static class MenuActionKeyCatalog
     {
         private static readonly string[] BuiltInActionKeys =
         {
@@ -79,7 +79,6 @@ namespace CMS.Presentation
             if (string.IsNullOrEmpty(normalized))
                 return null;
 
-            // Support symbol-style configured value such as #sym:WorkflowDashboardFormNew
             if (string.Equals(normalized, "workflowdashboardformnew", StringComparison.OrdinalIgnoreCase))
                 return "WorkflowDashboard";
             if (string.Equals(normalized, "workflowdetailformnew", StringComparison.OrdinalIgnoreCase))

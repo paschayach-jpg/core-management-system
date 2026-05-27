@@ -1,11 +1,7 @@
 using Microsoft.Win32;
 
-namespace CMS.Presentation
+namespace CMS.Services
 {
-    /// <summary>
-    /// Session singleton สำหรับ UI layer — เก็บ Token และข้อมูล User หลัง login สำเร็จ
-    /// HTTP auth calls ทำผ่าน IAdAuthService (AdAuthService) ใน CMS.Services
-    /// </summary>
     public class SessionContext
     {
         private static SessionContext _current;
@@ -25,10 +21,6 @@ namespace CMS.Presentation
 
         public bool IsLoggedIn => !string.IsNullOrEmpty(Token);
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Setters (เรียกหลัง login สำเร็จจาก LoginForm / Program)
-        // ─────────────────────────────────────────────────────────────────────
-
         public void SetToken(string token)           { Token        = token; }
         public void SetUserID(string userId)         { UserID       = userId; }
         public void SetADUserName(string adUserName) { ADUserName   = adUserName; }
@@ -40,10 +32,6 @@ namespace CMS.Presentation
             Token = RefreshToken = TokenExpired = UserID = ADUserName = null;
             DeleteRegistryToken();
         }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Registry persistence (optional — ใช้เมื่อต้องการ remember session)
-        // ─────────────────────────────────────────────────────────────────────
 
         public static void SaveToRegistry(string token, string refreshToken, string expired)
         {

@@ -1,5 +1,6 @@
 using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Modules.KMS;
+using CMS.Services;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
