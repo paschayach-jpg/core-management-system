@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -25,7 +25,7 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "SELECT PositionID, PositionCode, PositionName, " +
                     "       ISNULL(Level,'') AS Level, IsActive " +
-                    "FROM core.HR_Role " +
+                    "FROM EMS.m_Role " +
                     "WHERE IsActive = 1 " +
                     "ORDER BY PositionName", conn))
                 {
@@ -51,3 +51,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

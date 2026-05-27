@@ -15,6 +15,7 @@ using CMS.Presentation.Modules.ImportFile;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Services.DTOs;
+using CMS.Services.Interfaces;
 using MenuItem = CMS.Domain.Models.MenuItem;
 
 namespace CMS.Presentation
@@ -61,6 +62,7 @@ namespace CMS.Presentation
         private readonly IUserAdminController _userAdminController;
         private readonly IUserOrgVisibilityController _userOrgVisibilityController;
         private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
+        private readonly IFolderQuotaService _folderQuotaService;
         private readonly UserContext _user;
 
         // Quick Access panel (Req 7)
@@ -128,6 +130,8 @@ namespace CMS.Presentation
         // Drop zone overlay — shown when content list is empty to prompt drag-and-drop upload
         private Panel _pnlDropHint;
         private bool _isDragOverContent = false;
+        private Panel _pnlFolderUsageSummary;
+        private Label _lblFolderUsageSummary;
 
         // Allowed extensions for folder-drop extraction (BR-003-02)
         private static readonly HashSet<string> _folderDropAllowedExt = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -172,7 +176,8 @@ namespace CMS.Presentation
                           IUserAdminController userAdminController = null,
                           IUserOrgVisibilityController userOrgVisibilityController = null,
                           IFolderReadLookupController folderReadLookupController = null,
-                          CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null)
+                          CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
+                          IFolderQuotaService folderQuotaService = null)
         {
             if (user == null) throw new ArgumentNullException("user");
             if (folderCommandController == null) throw new ArgumentNullException("folderCommandController");
@@ -204,6 +209,7 @@ namespace CMS.Presentation
             _userOrgVisibilityController = userOrgVisibilityController;
             _folderReadLookupController = folderReadLookupController ?? new FolderReadLookupController(null);
             _employeeApiService = employeeApiService;
+            _folderQuotaService = folderQuotaService;
             _user = user;
 
             InitializeComponent();
@@ -311,6 +317,9 @@ namespace CMS.Presentation
 
             // Build right-click context menu for contentsListView
             BuildContentsListViewContextMenu();
+
+            // Bottom read-only summary for current folder size/quota.
+            InitializeFolderUsageSummaryBar();
 
             // Build drag-and-drop upload zone overlay over content list
             BuildDropZoneOverlay();
@@ -738,10 +747,37 @@ namespace CMS.Presentation
             // It must be added AFTER contentsListView so BringToFront works correctly
             pnlContent.Controls.Add(_pnlDropHint);
             _pnlDropHint.BringToFront();
+            if (_pnlFolderUsageSummary != null)
+                _pnlFolderUsageSummary.BringToFront();
 
             // Share the same context menu so right-click works even when the folder is empty
             // and the drop-zone panel is covering contentsListView
             _pnlDropHint.ContextMenuStrip = contentsListView.ContextMenuStrip;
+        }
+
+        private void InitializeFolderUsageSummaryBar()
+        {
+            _pnlFolderUsageSummary = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 32,
+                BackColor = Color.FromArgb(248, 251, 255),
+                Padding = new Padding(8, 4, 8, 4)
+            };
+
+            _lblFolderUsageSummary = new Label
+            {
+                Dock = DockStyle.Fill,
+                AutoEllipsis = true,
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(43, 87, 154),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Text = "ขนาดไฟล์ใน Folder นี้: —"
+            };
+
+            _pnlFolderUsageSummary.Controls.Add(_lblFolderUsageSummary);
+            pnlContent.Controls.Add(_pnlFolderUsageSummary);
+            _pnlFolderUsageSummary.BringToFront();
         }
 
         private void ContentArea_DragEnter(object sender, DragEventArgs e)
@@ -1225,7 +1261,7 @@ namespace CMS.Presentation
                     _clipboardFiles.Clear();
 
                     if (_currentNavFolderId.HasValue)
-                        _presenter.GetFolderContents(_currentNavFolderId.Value);
+                        RefreshCurrentViewAfterFileMutation(_currentNavFolderId.Value);
                 }
                 catch (Exception ex)
                 {
@@ -1319,7 +1355,7 @@ namespace CMS.Presentation
 
             // Refresh folder view
             if (_currentNavFolderId.HasValue)
-                _presenter.GetFolderContents(_currentNavFolderId.Value);
+                RefreshCurrentViewAfterFileMutation(_currentNavFolderId.Value);
         }
 
         private List<FileDocument> GetSelectedFilesFromContents()
@@ -4028,6 +4064,8 @@ namespace CMS.Presentation
             lblContentInfo.Text = string.Format(
                 "{0} รายการ ({1} Folder, {2} ไฟล์ ขนาด {3}) | {4} | {5}",
                 totalItems, folderList.Count, fileList.Count, FormatBytes(totalFileSize), currentLevel, currentName);
+            UpdateQuotaUsageDisplay(currentFolder);
+            UpdateFolderUsageSummary(currentFolder, fileList.Count, totalFileSize);
 
             // Adjust column widths to fit content
             AdjustNameColumnWidth();
@@ -4037,6 +4075,109 @@ namespace CMS.Presentation
             // Show drop hint only when folder is empty — allows drag-drop upload even in empty folders
             bool isEmpty = folderList.Count == 0 && fileList.Count == 0;
             SetDropHintVisible(isEmpty && _currentNavFolderId.HasValue);
+        }
+
+        private string BuildQuotaUsageText(Folder folder)
+        {
+            if (_folderQuotaService == null)
+                return string.Empty;
+
+            int? orgUnitId = folder != null
+                ? (int?)folder.OrgUnitID
+                : _selectedOrgUnitId;
+            if (!orgUnitId.HasValue)
+                return string.Empty;
+
+            try
+            {
+                var usage = _folderQuotaService.GetUsage(orgUnitId.Value);
+                if (usage == null || usage.QuotaBytes <= 0)
+                    return "Quota: ยังไม่ได้กำหนด";
+
+                long remaining = Math.Max(0, usage.QuotaBytes - usage.UsedBytes);
+                return string.Format(
+                    "Quota: ใช้ไป {0} จาก {1} ({2:N1}%) เหลือ {3}",
+                    FormatBytes(usage.UsedBytes),
+                    FormatBytes(usage.QuotaBytes),
+                    usage.UsedPercent,
+                    FormatBytes(remaining));
+            }
+            catch
+            {
+                return "Quota: ไม่สามารถโหลดข้อมูลได้";
+            }
+        }
+
+        private void UpdateQuotaUsageDisplay(Folder folder)
+        {
+            string baseText = StripQuotaUsageText(lblContentInfo.Text);
+            string usageText = BuildQuotaUsageText(folder);
+
+            lblContentInfo.Text = string.IsNullOrEmpty(usageText)
+                ? baseText
+                : baseText + " | " + usageText;
+        }
+
+        private static string StripQuotaUsageText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return string.Empty;
+
+            int quotaIndex = text.IndexOf(" | Quota:", StringComparison.OrdinalIgnoreCase);
+            return quotaIndex >= 0 ? text.Substring(0, quotaIndex) : text;
+        }
+
+        private void UpdateFolderUsageSummary(Folder folder, int fileCount, long folderFileSizeBytes)
+        {
+            if (_lblFolderUsageSummary == null)
+                return;
+
+            if (folder == null && !_selectedOrgUnitId.HasValue)
+            {
+                _lblFolderUsageSummary.Text = "ขนาดไฟล์ใน Folder นี้: —";
+                return;
+            }
+
+            string text = string.Format(
+                "ขนาดไฟล์ใน Folder นี้: {0} | จำนวนไฟล์: {1:N0}",
+                FormatBytes(folderFileSizeBytes),
+                fileCount);
+
+            var quotaText = BuildFolderUsageQuotaText(folder);
+            if (!string.IsNullOrEmpty(quotaText))
+                text += " | " + quotaText;
+
+            _lblFolderUsageSummary.Text = text;
+        }
+
+        private string BuildFolderUsageQuotaText(Folder folder)
+        {
+            if (_folderQuotaService == null)
+                return string.Empty;
+
+            int? orgUnitId = folder != null
+                ? (int?)folder.OrgUnitID
+                : _selectedOrgUnitId;
+            if (!orgUnitId.HasValue)
+                return string.Empty;
+
+            try
+            {
+                var usage = _folderQuotaService.GetUsage(orgUnitId.Value);
+                if (usage == null || usage.QuotaBytes <= 0)
+                    return "Quota: ยังไม่ได้กำหนด";
+
+                long remaining = Math.Max(0, usage.QuotaBytes - usage.UsedBytes);
+                return string.Format(
+                    "Quota: {0} | ใช้ไป: {1:N1}% | คงเหลือ: {2}",
+                    FormatBytes(usage.QuotaBytes),
+                    usage.UsedPercent,
+                    FormatBytes(remaining));
+            }
+            catch
+            {
+                return "Quota: ไม่สามารถโหลดข้อมูลได้";
+            }
         }
 
         private int GetActualFileCount(Folder folder, Dictionary<int, int> cache)
@@ -4795,6 +4936,7 @@ namespace CMS.Presentation
             _currentSubFolders.Clear();
             txtBreadcrumb.Text = "";
             lblContentInfo.Text = "";
+            UpdateFolderUsageSummary(null, 0, 0);
             lblConfidentialityBadge.Text = "";
             lblFilterStatus.Text = string.Empty;
             lblFilterStatus.Visible = false;
@@ -8405,7 +8547,7 @@ namespace CMS.Presentation
                 return "🔒 ไม่มีสิทธิ์";
 
             if (isPrivileged)
-                return "👑 เต็ม";
+                return "👑 ครบ";
 
             if (canEdit)
                 return "✏️ แก้ไข";
@@ -8422,7 +8564,7 @@ namespace CMS.Presentation
             if (permissionText.Contains("ไม่มีสิทธิ์"))
                 return Color.FromArgb(180, 0, 0); // Red
 
-            if (permissionText.Contains("เต็ม"))
+            if (permissionText.Contains("ครบ"))
                 return Color.FromArgb(0, 120, 0); // Dark green
 
             if (permissionText.Contains("แก้ไข"))

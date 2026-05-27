@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -27,7 +27,7 @@ namespace CMS.Data.Repositories
                     "       ISNULL(Level,'') AS Level," +
                     "       ISNULL(DepartmentNameTh,'') AS DepartmentNameTh," +
                     "       ISNULL(DepartmentNameEn,'') AS DepartmentNameEn " +
-                    "FROM core.HR_Department WHERE IsActive = 1 ORDER BY DepartmentCode", conn))
+                    "FROM EMS.m_Department WHERE IsActive = 1 ORDER BY DepartmentCode", conn))
                 {
                     using (var reader = cmd.ExecuteReader())
                         while (reader.Read()) results.Add(MapDepartment(reader));
@@ -47,7 +47,7 @@ namespace CMS.Data.Repositories
                     "       ISNULL(Level,'') AS Level," +
                     "       ISNULL(DepartmentNameTh,'') AS DepartmentNameTh," +
                     "       ISNULL(DepartmentNameEn,'') AS DepartmentNameEn " +
-                    "FROM core.HR_Department WHERE IsActive = 1 AND DivisionID = @DivisionID ORDER BY DepartmentCode", conn))
+                    "FROM EMS.m_Department WHERE IsActive = 1 AND DivisionID = @DivisionID ORDER BY DepartmentCode", conn))
                 {
                     cmd.Parameters.AddWithValue("@DivisionID", divisionID);
                     using (var reader = cmd.ExecuteReader())
@@ -74,3 +74,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

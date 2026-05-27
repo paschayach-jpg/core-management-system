@@ -13,6 +13,6 @@ namespace CMS.Data.Interfaces
         /// <summary>Insert หรือ Update (upsert by OrgUnitID + ParentOrgUnitID)</summary>
         void Save(FolderQuotaConfig config);
 
-        void Delete(int quotaConfigId);
+        void Delete(int quotaConfigId, string orgUnitTypeName);
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -81,6 +81,13 @@ namespace CMS.Presentation
                     auditService,
                     configManager);
 
+                var quotaService = new CMS.Services.FolderQuotaService(
+                    folderQuotaConfigRepo,
+                    folderQuotaRequestRepo,
+                    folderRepository,
+                    notificationService,
+                    orgUnitRepository);
+
                 var folderService = new FolderService(
                     folderRepository,
                     fileDocumentRepository,
@@ -91,7 +98,8 @@ namespace CMS.Presentation
                     folderTemplateRepository,
                     approvalRepository,
                     userOrgVisibilityService,
-                    userAccountRepo);
+                    userAccountRepo,
+                    quotaService);
 
                 var approvalService = new ApprovalService(
                     approvalRepository,
@@ -118,7 +126,8 @@ namespace CMS.Presentation
                     userAccountRepo,
                     loggingService,
                     permissionRepository,
-                    filePermissionRepository);
+                    filePermissionRepository,
+                    quotaService);
 
                 var employeeApiService = new EmployeeApiService(configManager);
                 var uploadCheckpointService = new UploadCheckpointService(loggingService);
@@ -421,7 +430,7 @@ namespace CMS.Presentation
                     Action = "LOGIN",
                     UserID = userContext.UserID,
                     UserName = account.ADUserName,
-                    TableName = "core.UserAccount",
+                    TableName = "EMS.UserAccount",
                     RecordID = userContext.UserID,
                     MachineName = userContext.MachineName,
                     IPAddress = userContext.IPAddress,
@@ -440,7 +449,7 @@ namespace CMS.Presentation
                             UserID = userContext.UserID,
                             UserName = userContext.ADUserName ?? string.Empty,
                             UserRole = userContext.AppRole,
-                            TableName = "core.UserAccount",
+                            TableName = "EMS.UserAccount",
                             RecordID = userContext.UserID,
                             MachineName = userContext.MachineName,
                             IPAddress = userContext.IPAddress,
@@ -498,14 +507,6 @@ namespace CMS.Presentation
                 var workflowDashboardController = new WorkflowDashboardController(workflowService, slaCalculator, loggingService);
                 var workflowDelegationController = new WorkflowDelegationController(workflowDelegationService, loggingService);
                 var workflowReportController = new WorkflowReportController(slaCalculator, loggingService);
-
-                // ── Quota Service (MOD-DMS-Quota) ─────────────────────────────
-                var quotaService = new CMS.Services.FolderQuotaService(
-                    folderQuotaConfigRepo,
-                    folderQuotaRequestRepo,
-                    folderRepository,
-                    notificationService,
-                    orgUnitRepository);
 
                 // ── กรณีที่ 3: Global handler — catch UI-thread exceptions หลัง login ──
                 string _globalErrUser = account != null ? account.ADUserName : adUserName ?? string.Empty;
@@ -860,3 +861,4 @@ namespace CMS.Presentation
         }
     }
 }
+

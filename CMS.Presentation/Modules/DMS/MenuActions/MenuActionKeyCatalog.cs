@@ -52,7 +52,8 @@ namespace CMS.Presentation
             "WorkflowVisualFlow",
             "QuotaConfig",
             "QuotaRequest",
-            "QuotaApproval"
+            "QuotaApproval",
+            "FolderUsageReport"
         };
 
         public static string[] GetAvailableActionKeys()
@@ -99,6 +100,8 @@ namespace CMS.Presentation
                 return "QuotaRequest";
             if (string.Equals(normalized, "folderquotaapprovalform", StringComparison.OrdinalIgnoreCase))
                 return "QuotaApproval";
+            if (string.Equals(normalized, "folderusagereportform", StringComparison.OrdinalIgnoreCase))
+                return "FolderUsageReport";
 
             foreach (var builtIn in BuiltInActionKeys)
             {

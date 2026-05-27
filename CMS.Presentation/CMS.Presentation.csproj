@@ -263,6 +263,9 @@
     <Compile Include="Modules\DMS\FolderTemplateForm.Designer.cs">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\FolderUsageReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <!-- Module: KMS — Forms -->
     <Compile Include="Modules\KMS\KBCategoryForm.cs">
       <SubType>Form</SubType>

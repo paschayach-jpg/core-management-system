@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 
 namespace CMS.Domain.Models
 {
-    /// <summary>ข้อมูลฝ่าย จาก core.HR_Division</summary>
+    /// <summary>ข้อมูลฝ่าย จาก EMS.m_Division</summary>
     public class HrDivision
     {
         public int      DivisionID   { get; set; }
@@ -12,3 +12,4 @@ namespace CMS.Domain.Models
         public DateTime CreatedDate  { get; set; }
     }
 }
+

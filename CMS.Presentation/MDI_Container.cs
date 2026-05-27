@@ -740,6 +740,7 @@ namespace CMS.Presentation
             dms.Nodes.Add(new TreeNode("🔗 แชร์กับฉัน") { Tag = "SharedWithMe" });
             dms.Nodes.Add(new TreeNode("📤 จัดการการแชร์") { Tag = "ShareManagement" });
             dms.Nodes.Add(new TreeNode("✅ รออนุมัติ") { Tag = "ApprovalInbox" });
+            dms.Nodes.Add(new TreeNode("📊 รายงานพื้นที่ Folder") { Tag = "FolderUsageReport" });
             dms.Nodes.Add(new TreeNode("🗑️ ถังขยะ") { Tag = "RecycleBin" });
 
             var admin = new TreeNode("⚙️ ผู้ดูแลระบบ");
@@ -1291,7 +1292,7 @@ namespace CMS.Presentation
                         UserID = _currentUser.UserID,
                         UserName = _currentUser.ADUserName ?? string.Empty,
                         UserRole = _currentUser.AppRole,
-                        TableName = "core.UserAccount",
+                        TableName = "EMS.UserAccount",
                         RecordID = _currentUser.UserID,
                         MachineName = _currentUser.MachineName,
                         IPAddress = _currentUser.IPAddress,
@@ -1588,7 +1589,8 @@ namespace CMS.Presentation
                     userAccountLookupController: _userAccountLookupController,
                     userAdminController: _userAdminController,
                     userOrgVisibilityController: _userOrgVisibilityController,
-                    folderReadLookupController: _folderReadLookupController
+                    folderReadLookupController: _folderReadLookupController,
+                    folderQuotaService: _quotaService
                 );
 
                 // Wire event handlers
@@ -2038,7 +2040,8 @@ namespace CMS.Presentation
                 userAdminController: _userAdminController,
                 userOrgVisibilityController: _userOrgVisibilityController,
                 folderReadLookupController: _folderReadLookupController,
-                employeeApiService: _employeeApiService);
+                employeeApiService: _employeeApiService,
+                folderQuotaService: _quotaService);
             folderForm.OpenPermissionRequested += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file) => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged += (s, ev) => UpdateMoveControlsState();
@@ -2068,6 +2071,9 @@ namespace CMS.Presentation
                     return true;
                 case "QuotaApproval":
                     OpenQuotaApproval();
+                    return true;
+                case "FolderUsageReport":
+                    OpenFolderUsageReport();
                     return true;
                 case "SyncEmployee":
                     SyncEmployeeFromApi();
@@ -2280,7 +2286,7 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenChildForm(new FolderQuotaConfigForm(_quotaService, _orgStructureService, _currentUser));
+            OpenChildForm(new FolderQuotaConfigForm(_quotaService, _currentUser));
         }
 
         public void OpenQuotaRequest()
@@ -2303,6 +2309,22 @@ namespace CMS.Presentation
                 return;
             }
             OpenChildForm(new FolderQuotaApprovalForm(_quotaService, _currentUser));
+        }
+
+        public void OpenFolderUsageReport()
+        {
+            if (_folderReadLookupController == null)
+            {
+                MessageBox.Show("Folder lookup service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            OpenChildForm(new FolderUsageReportForm(
+                _folderReadLookupController,
+                _quotaService,
+                _orgStructureService,
+                _currentUser), true);
         }
 
         private void OpenKBCategorySettings()
@@ -4812,3 +4834,4 @@ namespace CMS.Presentation
         }
     }
 }
+

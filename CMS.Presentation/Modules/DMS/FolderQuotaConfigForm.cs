@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -10,191 +10,238 @@ namespace CMS.Presentation
 {
     public partial class FolderQuotaConfigForm : Form
     {
-        private readonly IFolderQuotaService  _quotaService;
-        private readonly IOrgStructureService _orgService;
-        private readonly UserContext          _user;
+        private readonly IFolderQuotaService _quotaService;
+        private readonly UserContext _user;
 
         private List<FolderQuotaConfig> _configs = new List<FolderQuotaConfig>();
         private FolderQuotaConfig _selected;
-        private OrgUnit           _selectedOrgUnit;
+        private bool _bindingMasterList;
 
-        public FolderQuotaConfigForm(IFolderQuotaService quotaService, IOrgStructureService orgService, UserContext user)
+        public FolderQuotaConfigForm(IFolderQuotaService quotaService, UserContext user)
         {
             if (quotaService == null) throw new ArgumentNullException("quotaService");
-            if (orgService   == null) throw new ArgumentNullException("orgService");
-            if (user         == null) throw new ArgumentNullException("user");
+            if (user == null) throw new ArgumentNullException("user");
 
             _quotaService = quotaService;
-            _orgService   = orgService;
-            _user         = user;
+            _user = user;
 
             InitializeComponent();
-            LoadOrgTree();
-            LoadGrid();
+            SetupComboBox();
+            LoadData();
         }
 
-        // ── Tree ──────────────────────────────────────────────────────────────
-        private void LoadOrgTree()
+        private void SetupComboBox()
         {
-            var orgMap = _orgService.GetHierarchy()
-                .GroupBy(o => o.OrgUnitID)
-                .Select(g => g.First())
-                .ToDictionary(o => o.OrgUnitID);
+            cmbMasterType.DisplayMember = "Text";
+            cmbMasterType.ValueMember = "OrgUnitType";
+            cmbMasterType.Items.Clear();
+            cmbMasterType.Items.Add(new MasterTypeItem(1, "Sub Committee", "EMS.m_SubCommittee"));
+            cmbMasterType.Items.Add(new MasterTypeItem(2, "Division", "EMS.m_Division"));
+            cmbMasterType.Items.Add(new MasterTypeItem(3, "Department", "EMS.m_Department"));
+            cmbMasterType.SelectedIndex = 0;
+        }
 
-            // ใช้เฉพาะ relationship ที่ตั้งค่าจริง — ไม่ใช้ ParentOrgUnitID fallback
-            var rels = _orgService.GetAllActiveRelationships().ToList();
+        private void LoadData()
+        {
+            _configs = _quotaService.GetAllConfigs().ToList();
+            BindMasterList();
+            RefreshGrid();
+        }
 
-            tvOrgUnits.BeginUpdate();
-            tvOrgUnits.Nodes.Clear();
+        private void cmbMasterType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            BindMasterList();
+            RefreshGrid();
+        }
 
-            foreach (var sub in orgMap.Values.Where(o => o.OrgUnitType == 1 && o.IsActive && !o.IsDeleted).OrderBy(o => o.Name))
+        private const string SearchPlaceholder = "ค้นหาหน่วยงาน...";
+
+        private void txtMasterSearch_Enter(object sender, EventArgs e)
+        {
+            if (txtMasterSearch.ForeColor == Color.Silver)
             {
-                var subNode = new TreeNode(sub.Name) { Tag = sub };
-                subNode.NodeFont = new Font(tvOrgUnits.Font, FontStyle.Bold);
+                txtMasterSearch.Text = "";
+                txtMasterSearch.ForeColor = SystemColors.WindowText;
+            }
+        }
 
-                var divIds = new HashSet<int>(
-                    rels.Where(r => r.SubCommitteeID == sub.OrgUnitID
-                                 && orgMap.ContainsKey(r.DivisionID)
-                                 && orgMap[r.DivisionID].IsActive
-                                 && !orgMap[r.DivisionID].IsDeleted)
-                        .Select(r => r.DivisionID));
-                foreach (var o in orgMap.Values.Where(o => o.OrgUnitType == 2 && o.IsActive && !o.IsDeleted && o.ParentOrgUnitID == sub.OrgUnitID))
-                    divIds.Add(o.OrgUnitID);
+        private void txtMasterSearch_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtMasterSearch.Text))
+            {
+                txtMasterSearch.Text = SearchPlaceholder;
+                txtMasterSearch.ForeColor = Color.Silver;
+            }
+        }
 
-                foreach (var divId in divIds.OrderBy(id => orgMap[id].Name))
-                {
-                    var div     = orgMap[divId];
-                    var divNode = new TreeNode(div.Name) { Tag = div };
+        private void txtMasterSearch_TextChanged(object sender, EventArgs e)
+        {
+            if (txtMasterSearch.ForeColor == Color.Silver) return;
+            BindMasterList();
+        }
 
-                    foreach (var dep in orgMap.Values
-                                              .Where(o => o.OrgUnitType == 3 && o.IsActive && !o.IsDeleted && o.ParentOrgUnitID == div.OrgUnitID)
-                                              .OrderBy(o => o.Name))
-                        divNode.Nodes.Add(new TreeNode(dep.Name) { Tag = dep });
+        private void lstOrgUnits_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_bindingMasterList) return;
+            SelectConfig(lstOrgUnits.SelectedItem as FolderQuotaConfig);
+        }
 
-                    subNode.Nodes.Add(divNode);
-                }
-                tvOrgUnits.Nodes.Add(subNode);
+        private void lstOrgUnits_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            if (e.Index < 0) return;
+            var cfg = lstOrgUnits.Items[e.Index] as FolderQuotaConfig;
+            bool hasQuota = cfg != null && cfg.QuotaBytes > 0;
+            bool selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+
+            Color bg = selected ? Color.FromArgb(26, 58, 108) : Color.FromArgb(245, 247, 250);
+            Color fg = selected ? Color.White : Color.FromArgb(40, 40, 40);
+
+            using (var bgBrush = new SolidBrush(bg))
+                e.Graphics.FillRectangle(bgBrush, e.Bounds);
+
+            if (hasQuota)
+            {
+                using (var bar = new SolidBrush(Color.FromArgb(52, 120, 47)))
+                    e.Graphics.FillRectangle(bar, new Rectangle(e.Bounds.X, e.Bounds.Y, 4, e.Bounds.Height));
             }
 
-            tvOrgUnits.ExpandAll();
-            tvOrgUnits.EndUpdate();
+            string name = cfg != null ? cfg.OrgUnitName : string.Empty;
+            using (var textBrush = new SolidBrush(fg))
+                e.Graphics.DrawString(name, e.Font, textBrush,
+                    new RectangleF(e.Bounds.X + 10, e.Bounds.Y + (e.Bounds.Height - e.Font.Height) / 2f,
+                        e.Bounds.Width - 14, e.Bounds.Height));
+
+            if ((e.State & DrawItemState.Focus) == DrawItemState.Focus)
+                e.DrawFocusRectangle();
         }
 
-        private void tvOrgUnits_AfterSelect(object sender, TreeViewEventArgs e)
+        private void BindMasterList()
         {
-            _selectedOrgUnit = e.Node != null ? e.Node.Tag as OrgUnit : null;
-            if (_selectedOrgUnit != null)
+            int orgUnitType = GetSelectedMasterType();
+            string keyword = txtMasterSearch.ForeColor == Color.Silver
+                ? string.Empty
+                : (txtMasterSearch.Text ?? string.Empty).Trim();
+
+            var list = _configs
+                .Where(c => GetOrgUnitType(c.OrgUnitTypeName) == orgUnitType)
+                .Where(c => keyword.Length == 0
+                         || (c.OrgUnitName ?? string.Empty).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                .OrderBy(c => c.OrgUnitName)
+                .ToList();
+
+            _bindingMasterList = true;
+            lstOrgUnits.DataSource = null;
+            lstOrgUnits.DisplayMember = "OrgUnitName";
+            lstOrgUnits.ValueMember = "OrgUnitID";
+            lstOrgUnits.DataSource = list;
+            lstOrgUnits.ClearSelected();
+            _bindingMasterList = false;
+
+            SelectConfig(null);
+            lblTreeHeader.Text = string.Format("  {0} ({1})", GetSelectedMasterText(), list.Count);
+        }
+
+        private void SelectConfig(FolderQuotaConfig config)
+        {
+            _selected = config;
+            if (_selected == null)
             {
-                string tier = _selectedOrgUnit.OrgUnitType == 1 ? "Sub"
-                            : _selectedOrgUnit.OrgUnitType == 2 ? "Div" : "Dep";
-                lblSelectedOrg.Text      = string.Format("[{0}] {1}", tier, _selectedOrgUnit.Name);
-                lblSelectedOrg.ForeColor = Color.FromArgb(26, 58, 108);
-                lblSelectedOrg.Font      = new Font(lblSelectedOrg.Font, FontStyle.Bold);
+                SetOrgPlaceholder();
+                nudQuotaGB.Value = 40;
+                btnSave.Text = "บันทึก";
+                return;
+            }
+
+            string tier = GetMasterTypeShortName(GetOrgUnitType(_selected.OrgUnitTypeName));
+            lblSelectedOrg.Text = string.Format("[{0}] {1}", tier, _selected.OrgUnitName);
+            lblSelectedOrg.ForeColor = Color.FromArgb(26, 58, 108);
+            lblSelectedOrg.Font = new Font(lblSelectedOrg.Font, FontStyle.Bold);
+            SetMasterTargetLabel(_selected.OrgUnitTypeName);
+
+            if (_selected.QuotaBytes > 0)
+            {
+                nudQuotaGB.Value = (decimal)Math.Round(_selected.QuotaGB, 1);
+                btnSave.Text = "แก้ไข";
             }
             else
             {
-                SetOrgPlaceholder();
+                nudQuotaGB.Value = 40;
+                btnSave.Text = "บันทึก";
             }
         }
 
-        private TreeNode FindNode(TreeNodeCollection nodes, int orgUnitId)
+        private void RefreshGrid()
         {
-            foreach (TreeNode n in nodes)
-            {
-                var o = n.Tag as OrgUnit;
-                if (o != null && o.OrgUnitID == orgUnitId) return n;
-                var child = FindNode(n.Nodes, orgUnitId);
-                if (child != null) return child;
-            }
-            return null;
-        }
-
-        // ── Grid ──────────────────────────────────────────────────────────────
-        private void LoadGrid()
-        {
-            _configs = _quotaService.GetAllConfigs().ToList();
+            int selectedType = GetSelectedMasterType();
             dgvConfigs.Rows.Clear();
-            foreach (var c in _configs)
+
+            foreach (var c in _configs.Where(c => GetOrgUnitType(c.OrgUnitTypeName) == selectedType))
             {
                 int row = dgvConfigs.Rows.Add(
                     c.QuotaConfigID,
                     c.OrgUnitTypeName,
                     c.OrgUnitName,
                     string.Format("{0:F1} GB", c.QuotaGB),
-                    c.WarnThresholdPct + "%",
-                    c.CriticalThresholdPct + "%",
+                    GetMasterTableName(c.OrgUnitTypeName),
+                    "quota_size",
                     c.UpdatedDate.HasValue
                         ? c.UpdatedDate.Value.ToString("dd/MM/yyyy")
                         : c.CreatedDate.ToString("dd/MM/yyyy")
                 );
                 dgvConfigs.Rows[row].Tag = c;
             }
-            lblStatus.Text = string.Format("ทั้งหมด {0} รายการ", _configs.Count);
+
+            lblStatus.Text = string.Format("ทั้งหมด {0} รายการ | ประเภท {1}", dgvConfigs.Rows.Count, GetSelectedMasterText());
         }
 
         private void dgvConfigs_SelectionChanged(object sender, EventArgs e)
         {
             if (dgvConfigs.SelectedRows.Count == 0) return;
-            _selected = dgvConfigs.SelectedRows[0].Tag as FolderQuotaConfig;
-            if (_selected == null) return;
+            var cfg = dgvConfigs.SelectedRows[0].Tag as FolderQuotaConfig;
+            if (cfg == null) return;
 
-            var node = FindNode(tvOrgUnits.Nodes, _selected.OrgUnitID);
-            if (node != null) { tvOrgUnits.SelectedNode = node; node.EnsureVisible(); }
-
-            nudQuotaGB.Value     = (decimal)Math.Round(_selected.QuotaGB, 1);
-            nudWarnPct.Value     = _selected.WarnThresholdPct;
-            nudCriticalPct.Value = _selected.CriticalThresholdPct;
-            btnSave.Text = "แก้ไข";
+            SelectConfigInList(cfg.OrgUnitID);
         }
 
-        // ── Form actions ─────────────────────────────────────────────────────
         private void ClearForm()
         {
-            _selected        = null;
-            _selectedOrgUnit = null;
-            tvOrgUnits.SelectedNode = null;
+            _selected = null;
+            lstOrgUnits.ClearSelected();
             SetOrgPlaceholder();
-            nudQuotaGB.Value     = 40;
-            nudWarnPct.Value     = 80;
-            nudCriticalPct.Value = 95;
+            nudQuotaGB.Value = 40;
             btnSave.Text = "บันทึก";
         }
 
         private void SetOrgPlaceholder()
         {
-            lblSelectedOrg.Text      = "กรุณาเลือก OrgUnit จากรายการด้านซ้าย";
+            lblSelectedOrg.Text = "เลือกประเภทหน่วยงาน แล้วคลิกเลือกรายการด้านซ้าย";
             lblSelectedOrg.ForeColor = Color.Gray;
-            lblSelectedOrg.Font      = new Font(lblSelectedOrg.Font, FontStyle.Italic);
+            lblSelectedOrg.Font = new Font(lblSelectedOrg.Font, FontStyle.Italic);
+            lblWarn.Text = "บันทึกลง: -";
         }
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            if (_selectedOrgUnit == null)
+            if (_selected == null)
             {
-                MessageBox.Show("กรุณาเลือก OrgUnit จากรายการด้านซ้าย", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            if (nudCriticalPct.Value <= nudWarnPct.Value)
-            {
-                MessageBox.Show("% Critical ต้องมากกว่า % Warning", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("กรุณาเลือกหน่วยงานที่ต้องการกำหนด quota", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            var config = _selected ?? new FolderQuotaConfig();
-            config.OrgUnitID            = _selectedOrgUnit.OrgUnitID;
-            config.QuotaBytes           = (long)(nudQuotaGB.Value * 1073741824m);
-            config.WarnThresholdPct     = (byte)nudWarnPct.Value;
-            config.CriticalThresholdPct = (byte)nudCriticalPct.Value;
-            config.IsActive             = true;
-            config.CreatedBy            = _user.UserID;
-            config.UpdatedBy            = _user.UserID;
+            _selected.QuotaBytes = (long)(nudQuotaGB.Value * 1073741824m);
+            _selected.WarnThresholdPct = 80;
+            _selected.CriticalThresholdPct = 95;
+            _selected.IsActive = true;
+            _selected.CreatedBy = _user.UserID;
+            _selected.UpdatedBy = _user.UserID;
 
             try
             {
-                _quotaService.SaveConfig(config, _user);
+                _quotaService.SaveConfig(_selected, _user);
                 MessageBox.Show("บันทึกสำเร็จ", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                ClearForm();
-                LoadGrid();
+                int orgUnitId = _selected.OrgUnitID;
+                LoadData();
+                SelectConfigInList(orgUnitId);
             }
             catch (Exception ex)
             {
@@ -204,14 +251,20 @@ namespace CMS.Presentation
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
-            if (_selected == null) { MessageBox.Show("กรุณาเลือกรายการที่ต้องการลบ"); return; }
-            if (MessageBox.Show("ต้องการลบ quota config นี้?", "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            if (_selected == null || _selected.QuotaBytes == 0)
+            {
+                MessageBox.Show("กรุณาเลือกรายการที่มีการกำหนด quota แล้ว");
+                return;
+            }
+
+            if (MessageBox.Show("ต้องการล้างค่า quota ของรายการนี้เป็น 0?", "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
 
             try
             {
-                _quotaService.DeleteConfig(_selected.QuotaConfigID, _user);
-                ClearForm();
-                LoadGrid();
+                int orgUnitId = _selected.OrgUnitID;
+                _quotaService.DeleteConfig(_selected.QuotaConfigID, _selected.OrgUnitTypeName, _user);
+                LoadData();
+                SelectConfigInList(orgUnitId);
             }
             catch (Exception ex)
             {
@@ -221,5 +274,94 @@ namespace CMS.Presentation
 
         private void btnClear_Click(object sender, EventArgs e) { ClearForm(); }
         private void btnClose_Click(object sender, EventArgs e) { Close(); }
+
+        private int GetSelectedMasterType()
+        {
+            var item = cmbMasterType.SelectedItem as MasterTypeItem;
+            return item == null ? 1 : item.OrgUnitType;
+        }
+
+        private string GetSelectedMasterText()
+        {
+            var item = cmbMasterType.SelectedItem as MasterTypeItem;
+            return item == null ? "Sub Committee" : item.Text;
+        }
+
+        private void SelectConfigInList(int orgUnitId)
+        {
+            for (int i = 0; i < lstOrgUnits.Items.Count; i++)
+            {
+                var cfg = lstOrgUnits.Items[i] as FolderQuotaConfig;
+                if (cfg == null || cfg.OrgUnitID != orgUnitId) continue;
+                lstOrgUnits.SelectedIndex = i;
+                return;
+            }
+        }
+
+        private void SetMasterTargetLabel(int orgUnitType)
+        {
+            lblWarn.Text = "บันทึกลง: " + GetMasterTableName(orgUnitType);
+        }
+
+        private void SetMasterTargetLabel(string orgUnitTypeName)
+        {
+            lblWarn.Text = "บันทึกลง: " + GetMasterTableName(orgUnitTypeName);
+        }
+
+        private static string GetMasterTypeShortName(int orgUnitType)
+        {
+            switch (orgUnitType)
+            {
+                case 1: return "Sub";
+                case 2: return "Div";
+                case 3: return "Dep";
+                default: return "-";
+            }
+        }
+
+        private static string GetMasterTableName(int orgUnitType)
+        {
+            switch (orgUnitType)
+            {
+                case 1: return "EMS.m_SubCommittee";
+                case 2: return "EMS.m_Division";
+                case 3: return "EMS.m_Department";
+                default: return "-";
+            }
+        }
+
+        private static string GetMasterTableName(string orgUnitTypeName)
+        {
+            return GetMasterTableName(GetOrgUnitType(orgUnitTypeName));
+        }
+
+        private static int GetOrgUnitType(string orgUnitTypeName)
+        {
+            if (string.IsNullOrWhiteSpace(orgUnitTypeName)) return 0;
+            if (orgUnitTypeName.IndexOf("Sub", StringComparison.OrdinalIgnoreCase) >= 0) return 1;
+            if (orgUnitTypeName.IndexOf("Division", StringComparison.OrdinalIgnoreCase) >= 0) return 2;
+            if (orgUnitTypeName.IndexOf("Department", StringComparison.OrdinalIgnoreCase) >= 0) return 3;
+            return 0;
+        }
+
+        private sealed class MasterTypeItem
+        {
+            public MasterTypeItem(int orgUnitType, string text, string tableName)
+            {
+                OrgUnitType = orgUnitType;
+                Text = text;
+                TableName = tableName;
+            }
+
+            public int OrgUnitType { get; private set; }
+            public string Text { get; private set; }
+            public string TableName { get; private set; }
+
+            public override string ToString()
+            {
+                return Text;
+            }
+        }
     }
 }
+

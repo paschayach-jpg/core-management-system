@@ -265,6 +265,11 @@ namespace CMS.Presentation
                         if (!TryRequestMdiAction(context, "QuotaApproval"))
                             MessageBox.Show("กรุณาเปิด Quota Approval ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
+
+                    case "FolderUsageReport":
+                        if (!TryRequestMdiAction(context, "FolderUsageReport"))
+                            MessageBox.Show("กรุณาเปิด Folder Usage Report ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
                 }
             }
             catch (Exception ex)

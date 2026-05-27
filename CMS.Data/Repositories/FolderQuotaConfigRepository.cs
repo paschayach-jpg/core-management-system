@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -11,17 +11,59 @@ namespace CMS.Data.Repositories
     {
         private readonly string _connectionString;
 
-        private const string _selectCols =
-            @"SELECT q.QuotaConfigID, q.OrgUnitID, q.ParentOrgUnitID,
-                     q.QuotaBytes, q.WarnThresholdPct, q.CriticalThresholdPct,
-                     q.IsActive, q.CreatedBy, q.CreatedDate, q.UpdatedBy, q.UpdatedDate,
-                     ISNULL(o.OrgUnitNameTH, o.OrgUnitNameEN) AS OrgUnitName,
-                     CASE o.OrgUnitType WHEN 1 THEN N'Sub Committee'
-                                        WHEN 2 THEN N'Division'
-                                        WHEN 3 THEN N'Department' END AS OrgUnitTypeName
-              FROM   dms.FolderQuotaConfig q
-              INNER JOIN core.OrgUnit o ON o.OrgUnitID = q.OrgUnitID
-              WHERE  q.IsActive = 1";
+        private const string SelectMasterQuota = @"
+SELECT o.OrgUnitID AS QuotaConfigID,
+       o.OrgUnitID,
+       o.ParentOrgUnitID,
+       CAST(ISNULL(sc.quota_size, 0) AS BIGINT) AS QuotaBytes,
+       CAST(80 AS TINYINT) AS WarnThresholdPct,
+       CAST(95 AS TINYINT) AS CriticalThresholdPct,
+       CAST(sc.IsActive AS BIT) AS IsActive,
+       CAST(0 AS INT) AS CreatedBy,
+       ISNULL(sc.CreatedDate, GETDATE()) AS CreatedDate,
+       CAST(NULL AS INT) AS UpdatedBy,
+       CAST(NULL AS DATETIME) AS UpdatedDate,
+       ISNULL(o.OrgUnitNameTH, o.OrgUnitNameEN) AS OrgUnitName,
+       N'Sub Committee' AS OrgUnitTypeName
+FROM EMS.m_SubCommittee sc
+INNER JOIN EMS.OrgUnit o ON o.OrgUnitID = sc.OrgUnitID
+WHERE sc.IsActive = 1 AND sc.IsDeleted = 0 AND o.IsDeleted = 0
+
+UNION ALL
+
+SELECT d.DivisionID AS QuotaConfigID,
+       d.DivisionID AS OrgUnitID,
+       CAST(NULL AS INT) AS ParentOrgUnitID,
+       CAST(ISNULL(d.quota_size, 0) AS BIGINT) AS QuotaBytes,
+       CAST(80 AS TINYINT) AS WarnThresholdPct,
+       CAST(95 AS TINYINT) AS CriticalThresholdPct,
+       CAST(d.IsActive AS BIT) AS IsActive,
+       CAST(0 AS INT) AS CreatedBy,
+       ISNULL(d.CreatedDate, GETDATE()) AS CreatedDate,
+       CAST(NULL AS INT) AS UpdatedBy,
+       CAST(NULL AS DATETIME) AS UpdatedDate,
+       d.DivisionName AS OrgUnitName,
+       N'Division' AS OrgUnitTypeName
+FROM EMS.m_Division d
+WHERE d.IsActive = 1
+
+UNION ALL
+
+SELECT dep.DepartmentID AS QuotaConfigID,
+       dep.DepartmentID AS OrgUnitID,
+       dep.DivisionID AS ParentOrgUnitID,
+       CAST(ISNULL(dep.quota_size, 0) AS BIGINT) AS QuotaBytes,
+       CAST(80 AS TINYINT) AS WarnThresholdPct,
+       CAST(95 AS TINYINT) AS CriticalThresholdPct,
+       CAST(dep.IsActive AS BIT) AS IsActive,
+       CAST(0 AS INT) AS CreatedBy,
+       ISNULL(dep.CreatedDate, GETDATE()) AS CreatedDate,
+       CAST(NULL AS INT) AS UpdatedBy,
+       CAST(NULL AS DATETIME) AS UpdatedDate,
+       COALESCE(NULLIF(dep.DepartmentNameTh, ''), NULLIF(dep.DepartmentNameEn, ''), dep.DepartmentName) AS OrgUnitName,
+       N'Department' AS OrgUnitTypeName
+FROM EMS.m_Department dep
+WHERE dep.IsActive = 1";
 
         public FolderQuotaConfigRepository(IConfigManager configManager)
         {
@@ -30,22 +72,15 @@ namespace CMS.Data.Repositories
 
         public FolderQuotaConfig GetByOrgUnit(int orgUnitId, int? parentOrgUnitId = null)
         {
-            // เลือก config ที่ตรง parentOrgUnitId ก่อน ถ้าไม่มีค่อย fallback หา null
-            var sql = _selectCols +
-                @" AND q.OrgUnitID = @OrgUnitID
-                   ORDER BY CASE WHEN q.ParentOrgUnitID = @ParentOrgUnitID THEN 0
-                                 WHEN q.ParentOrgUnitID IS NULL            THEN 1
-                                 ELSE 2 END";
-
+            var sql = "SELECT TOP 1 * FROM (" + SelectMasterQuota + ") q WHERE q.OrgUnitID = @OrgUnitID";
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(sql, conn))
                 {
-                    cmd.Parameters.AddWithValue("@OrgUnitID",       orgUnitId);
-                    cmd.Parameters.AddWithValue("@ParentOrgUnitID", (object)parentOrgUnitId ?? DBNull.Value);
-                    using (var r = cmd.ExecuteReader())
-                        return r.Read() ? Map(r) : null;
+                    cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                    using (var reader = cmd.ExecuteReader())
+                        return reader.Read() ? Map(reader) : null;
                 }
             }
         }
@@ -53,93 +88,96 @@ namespace CMS.Data.Repositories
         public IEnumerable<FolderQuotaConfig> GetAll()
         {
             var results = new List<FolderQuotaConfig>();
-            var sql = _selectCols + " ORDER BY o.OrgUnitType, o.OrgUnitNameTH";
+            var sql = "SELECT * FROM (" + SelectMasterQuota + ") q ORDER BY q.OrgUnitTypeName, q.OrgUnitName";
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(sql, conn))
-                using (var r = cmd.ExecuteReader())
-                    while (r.Read()) results.Add(Map(r));
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read()) results.Add(Map(reader));
             }
             return results;
         }
 
         public void Save(FolderQuotaConfig config)
         {
-            const string sql =
-                @"IF EXISTS (SELECT 1 FROM dms.FolderQuotaConfig
-                             WHERE OrgUnitID = @OrgUnitID
-                               AND (ParentOrgUnitID = @ParentOrgUnitID
-                                    OR (ParentOrgUnitID IS NULL AND @ParentOrgUnitID IS NULL)))
-                  BEGIN
-                      UPDATE dms.FolderQuotaConfig
-                      SET    QuotaBytes           = @QuotaBytes,
-                             WarnThresholdPct     = @WarnThresholdPct,
-                             CriticalThresholdPct = @CriticalThresholdPct,
-                             UpdatedBy            = @UpdatedBy,
-                             UpdatedDate          = GETDATE()
-                      WHERE  OrgUnitID = @OrgUnitID
-                        AND  (ParentOrgUnitID = @ParentOrgUnitID
-                              OR (ParentOrgUnitID IS NULL AND @ParentOrgUnitID IS NULL))
-                  END
-                  ELSE
-                  BEGIN
-                      INSERT INTO dms.FolderQuotaConfig
-                             (OrgUnitID, ParentOrgUnitID, QuotaBytes, WarnThresholdPct,
-                              CriticalThresholdPct, IsActive, CreatedBy, CreatedDate)
-                      VALUES (@OrgUnitID, @ParentOrgUnitID, @QuotaBytes, @WarnThresholdPct,
-                              @CriticalThresholdPct, 1, @CreatedBy, GETDATE())
-                  END";
+            const string sql = @"
+IF @OrgUnitTypeName LIKE '%Sub%'
+BEGIN
+    UPDATE EMS.m_SubCommittee
+    SET quota_size = @QuotaBytes,
+        UpdatedBy = CONVERT(NVARCHAR(100), @UpdatedBy),
+        UpdatedDate = GETDATE()
+    WHERE OrgUnitID = @OrgUnitID;
+END
+ELSE IF @OrgUnitTypeName LIKE '%Division%'
+BEGIN
+    UPDATE EMS.m_Division
+    SET quota_size = @QuotaBytes
+    WHERE DivisionID = @OrgUnitID;
+END
+ELSE IF @OrgUnitTypeName LIKE '%Department%'
+BEGIN
+    UPDATE EMS.m_Department
+    SET quota_size = @QuotaBytes
+    WHERE DepartmentID = @OrgUnitID;
+END
+ELSE
+BEGIN
+    RAISERROR('Unsupported OrgUnitType for quota config.', 16, 1);
+END";
 
-            using (var conn = new SqlConnection(_connectionString))
-            {
-                conn.Open();
-                using (var cmd = new SqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@OrgUnitID",           config.OrgUnitID);
-                    cmd.Parameters.AddWithValue("@ParentOrgUnitID",     (object)config.ParentOrgUnitID ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@QuotaBytes",          config.QuotaBytes);
-                    cmd.Parameters.AddWithValue("@WarnThresholdPct",    config.WarnThresholdPct);
-                    cmd.Parameters.AddWithValue("@CriticalThresholdPct",config.CriticalThresholdPct);
-                    cmd.Parameters.AddWithValue("@CreatedBy",           config.CreatedBy);
-                    cmd.Parameters.AddWithValue("@UpdatedBy",           (object)config.UpdatedBy ?? DBNull.Value);
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            ExecuteQuotaUpdate(sql, config.OrgUnitID, config.QuotaBytes, config.UpdatedBy, config.OrgUnitTypeName);
         }
 
-        public void Delete(int quotaConfigId)
+        public void Delete(int quotaConfigId, string orgUnitTypeName)
         {
-            const string sql = "UPDATE dms.FolderQuotaConfig SET IsActive = 0 WHERE QuotaConfigID = @ID";
+            const string sql = @"
+IF @OrgUnitTypeName LIKE '%Sub%'
+    UPDATE EMS.m_SubCommittee SET quota_size = 0 WHERE OrgUnitID = @OrgUnitID;
+ELSE IF @OrgUnitTypeName LIKE '%Division%'
+    UPDATE EMS.m_Division SET quota_size = 0 WHERE DivisionID = @OrgUnitID;
+ELSE IF @OrgUnitTypeName LIKE '%Department%'
+    UPDATE EMS.m_Department SET quota_size = 0 WHERE DepartmentID = @OrgUnitID;";
+
+            ExecuteQuotaUpdate(sql, quotaConfigId, 0, null, orgUnitTypeName);
+        }
+
+        private void ExecuteQuotaUpdate(string sql, int orgUnitId, long quotaBytes, int? updatedBy, string orgUnitTypeName)
+        {
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(sql, conn))
                 {
-                    cmd.Parameters.AddWithValue("@ID", quotaConfigId);
+                    cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                    cmd.Parameters.AddWithValue("@QuotaBytes", quotaBytes);
+                    cmd.Parameters.AddWithValue("@UpdatedBy", (object)updatedBy ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@OrgUnitTypeName", (object)orgUnitTypeName ?? DBNull.Value);
                     cmd.ExecuteNonQuery();
                 }
             }
         }
 
-        private static FolderQuotaConfig Map(SqlDataReader r)
+        private static FolderQuotaConfig Map(SqlDataReader reader)
         {
             return new FolderQuotaConfig
             {
-                QuotaConfigID       = (int)r["QuotaConfigID"],
-                OrgUnitID           = (int)r["OrgUnitID"],
-                ParentOrgUnitID     = r["ParentOrgUnitID"] == DBNull.Value ? (int?)null : (int)r["ParentOrgUnitID"],
-                QuotaBytes          = (long)r["QuotaBytes"],
-                WarnThresholdPct    = (byte)r["WarnThresholdPct"],
-                CriticalThresholdPct= (byte)r["CriticalThresholdPct"],
-                IsActive            = (bool)r["IsActive"],
-                CreatedBy           = (int)r["CreatedBy"],
-                CreatedDate         = (DateTime)r["CreatedDate"],
-                UpdatedBy           = r["UpdatedBy"]   == DBNull.Value ? (int?)null     : (int)r["UpdatedBy"],
-                UpdatedDate         = r["UpdatedDate"] == DBNull.Value ? (DateTime?)null : (DateTime)r["UpdatedDate"],
-                OrgUnitName         = r["OrgUnitName"]      == DBNull.Value ? "" : Convert.ToString(r["OrgUnitName"]),
-                OrgUnitTypeName     = r["OrgUnitTypeName"]  == DBNull.Value ? "" : Convert.ToString(r["OrgUnitTypeName"])
+                QuotaConfigID = Convert.ToInt32(reader["QuotaConfigID"]),
+                OrgUnitID = Convert.ToInt32(reader["OrgUnitID"]),
+                ParentOrgUnitID = reader["ParentOrgUnitID"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["ParentOrgUnitID"]),
+                QuotaBytes = Convert.ToInt64(reader["QuotaBytes"]),
+                WarnThresholdPct = Convert.ToByte(reader["WarnThresholdPct"]),
+                CriticalThresholdPct = Convert.ToByte(reader["CriticalThresholdPct"]),
+                IsActive = reader["IsActive"] != DBNull.Value && Convert.ToBoolean(reader["IsActive"]),
+                CreatedBy = Convert.ToInt32(reader["CreatedBy"]),
+                CreatedDate = reader["CreatedDate"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader["CreatedDate"]),
+                UpdatedBy = reader["UpdatedBy"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["UpdatedBy"]),
+                UpdatedDate = reader["UpdatedDate"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(reader["UpdatedDate"]),
+                OrgUnitName = reader["OrgUnitName"] == DBNull.Value ? string.Empty : Convert.ToString(reader["OrgUnitName"]),
+                OrgUnitTypeName = reader["OrgUnitTypeName"] == DBNull.Value ? string.Empty : Convert.ToString(reader["OrgUnitTypeName"])
             };
         }
     }
 }
+

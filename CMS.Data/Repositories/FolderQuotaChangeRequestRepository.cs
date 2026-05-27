@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -20,9 +20,9 @@ namespace CMS.Data.Repositories
                      ISNULL(ua1.DisplayName, ua1.ADUserName)  AS RequestedByName,
                      ISNULL(ua2.DisplayName, ua2.ADUserName)  AS ReviewedByName
               FROM   dms.FolderQuotaChangeRequest r
-              INNER JOIN core.OrgUnit     o   ON o.OrgUnitID     = r.OrgUnitID
-              INNER JOIN core.UserAccount ua1 ON ua1.UserID      = r.RequestedBy
-              LEFT  JOIN core.UserAccount ua2 ON ua2.UserID      = r.ReviewedBy";
+              INNER JOIN EMS.OrgUnit     o   ON o.OrgUnitID     = r.OrgUnitID
+              INNER JOIN EMS.UserAccount ua1 ON ua1.UserID      = r.RequestedBy
+              LEFT  JOIN EMS.UserAccount ua2 ON ua2.UserID      = r.ReviewedBy";
 
         public FolderQuotaChangeRequestRepository(IConfigManager configManager)
         {
@@ -145,3 +145,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

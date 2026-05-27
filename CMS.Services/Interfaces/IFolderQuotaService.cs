@@ -21,7 +21,7 @@ namespace CMS.Services.Interfaces
         IEnumerable<FolderQuotaConfig> GetAllConfigs();
         FolderQuotaConfig GetConfig(int orgUnitId, int? parentOrgUnitId = null);
         void SaveConfig(FolderQuotaConfig config, UserContext user);
-        void DeleteConfig(int quotaConfigId, UserContext user);
+        void DeleteConfig(int quotaConfigId, string orgUnitTypeName, UserContext user);
 
         // ---- Change Request ----
         int SubmitChangeRequest(SubmitQuotaChangeRequest request, UserContext user);

@@ -1,4 +1,4 @@
--- =============================================================================
+﻿-- =============================================================================
 -- Script : 095_DMS_FolderQuota_Schema.sql
 -- Module : DMS — Folder Quota Management
 -- Tables : dms.FolderQuotaConfig
@@ -12,7 +12,7 @@ IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES
 BEGIN
     CREATE TABLE dms.FolderQuotaConfig (
         QuotaConfigID       INT           NOT NULL IDENTITY(1,1),
-        OrgUnitID           INT           NOT NULL,  -- FK -> core.OrgUnit
+        OrgUnitID           INT           NOT NULL,  -- FK -> EMS.OrgUnit
         ParentOrgUnitID     INT           NULL,       -- NULL = ทั่วไป, NOT NULL = เฉพาะ Sub นั้น
         QuotaBytes          BIGINT        NOT NULL,   -- 40GB default = 42949672960
         WarnThresholdPct    TINYINT       NOT NULL DEFAULT 80,
@@ -25,9 +25,9 @@ BEGIN
 
         CONSTRAINT PK_FolderQuotaConfig PRIMARY KEY (QuotaConfigID),
         CONSTRAINT FK_FolderQuotaConfig_OrgUnit
-            FOREIGN KEY (OrgUnitID) REFERENCES core.OrgUnit(OrgUnitID),
+            FOREIGN KEY (OrgUnitID) REFERENCES EMS.OrgUnit(OrgUnitID),
         CONSTRAINT FK_FolderQuotaConfig_ParentOrgUnit
-            FOREIGN KEY (ParentOrgUnitID) REFERENCES core.OrgUnit(OrgUnitID),
+            FOREIGN KEY (ParentOrgUnitID) REFERENCES EMS.OrgUnit(OrgUnitID),
         CONSTRAINT CHK_FolderQuotaConfig_WarnPct
             CHECK (WarnThresholdPct BETWEEN 1 AND 99),
         CONSTRAINT CHK_FolderQuotaConfig_CritPct
@@ -65,11 +65,11 @@ BEGIN
 
         CONSTRAINT PK_FolderQuotaChangeRequest PRIMARY KEY (RequestID),
         CONSTRAINT FK_FolderQuotaChangeRequest_OrgUnit
-            FOREIGN KEY (OrgUnitID) REFERENCES core.OrgUnit(OrgUnitID),
+            FOREIGN KEY (OrgUnitID) REFERENCES EMS.OrgUnit(OrgUnitID),
         CONSTRAINT FK_FolderQuotaChangeRequest_RequestedBy
-            FOREIGN KEY (RequestedBy) REFERENCES core.UserAccount(UserID),
+            FOREIGN KEY (RequestedBy) REFERENCES EMS.UserAccount(UserID),
         CONSTRAINT FK_FolderQuotaChangeRequest_ReviewedBy
-            FOREIGN KEY (ReviewedBy) REFERENCES core.UserAccount(UserID),
+            FOREIGN KEY (ReviewedBy) REFERENCES EMS.UserAccount(UserID),
         CONSTRAINT CHK_FolderQuotaChangeRequest_Status
             CHECK (Status IN (1, 2, 3, 4))
     );
@@ -98,7 +98,7 @@ BEGIN
 
         CONSTRAINT PK_FolderQuotaUsageLog PRIMARY KEY (LogID),
         CONSTRAINT FK_FolderQuotaUsageLog_OrgUnit
-            FOREIGN KEY (OrgUnitID) REFERENCES core.OrgUnit(OrgUnitID)
+            FOREIGN KEY (OrgUnitID) REFERENCES EMS.OrgUnit(OrgUnitID)
     );
 
     CREATE INDEX IX_FolderQuotaUsageLog_OrgUnit_Date
@@ -119,9 +119,10 @@ SELECT OrgUnitID,
        42949672960,   -- 40 GB
        80, 95, 1,
        1              -- Admin UserID
-FROM   core.OrgUnit
+FROM   EMS.OrgUnit
 WHERE  IsActive = 1 AND IsDeleted = 0;
 */
 
 PRINT '=== 095_DMS_FolderQuota_Schema.sql completed ===';
 GO
+

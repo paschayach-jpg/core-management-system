@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -22,10 +22,10 @@ namespace CMS.Data.Repositories
                 m.PositionID,   p.PositionCode,  p.PositionName,
                 m.HeadCount,    m.IsActive,       m.CreatedDate,
                 ISNULL(p.Level,'') AS LevelCode
-              FROM core.HR_PositionMapping m
-              INNER JOIN core.HR_Role       p ON p.PositionID   = m.PositionID
-              INNER JOIN core.HR_Division   v ON v.DivisionID   = m.DivisionID
-              INNER JOIN core.HR_Department d ON d.DepartmentID = m.DepartmentID
+              FROM EMS.m_PositionMapping m
+              INNER JOIN EMS.m_Role       p ON p.PositionID   = m.PositionID
+              INNER JOIN EMS.m_Division   v ON v.DivisionID   = m.DivisionID
+              INNER JOIN EMS.m_Department d ON d.DepartmentID = m.DepartmentID
               WHERE m.IsActive = 1";
 
         public HrPositionMappingRepository(IConfigManager configManager)
@@ -90,3 +90,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

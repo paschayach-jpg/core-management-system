@@ -39,8 +39,8 @@ namespace CMS.Services
         public QuotaUsageResult GetUsage(int orgUnitId, int? parentOrgUnitId = null)
         {
             var config = _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);
-            var folders = _folderRepo.GetByOrgUnit(orgUnitId);
-            long usedBytes = folders.Sum(f => f.FolderSizeBytes);
+            var folders = _folderRepo.GetByOrgUnit(orgUnitId).Where(f => f != null && !f.IsDeleted).ToList();
+            long usedBytes = CalculateQuotaBucketUsage(folders);
 
             long quotaBytes = config != null ? config.QuotaBytes : 0;
             double pct = quotaBytes > 0 ? (double)usedBytes / quotaBytes * 100.0 : 0;
@@ -123,9 +123,9 @@ namespace CMS.Services
             _configRepo.Save(config);
         }
 
-        public void DeleteConfig(int quotaConfigId, UserContext user)
+        public void DeleteConfig(int quotaConfigId, string orgUnitTypeName, UserContext user)
         {
-            _configRepo.Delete(quotaConfigId);
+            _configRepo.Delete(quotaConfigId, orgUnitTypeName);
         }
 
         // ---------------------------------------------------------------
@@ -249,6 +249,71 @@ namespace CMS.Services
             if (usedPct >= config.CriticalThresholdPct) return QuotaAlertLevel.Critical;
             if (usedPct >= config.WarnThresholdPct)     return QuotaAlertLevel.Warning;
             return QuotaAlertLevel.Normal;
+        }
+
+        private static long CalculateQuotaBucketUsage(IList<Folder> folders)
+        {
+            if (folders == null || folders.Count == 0)
+                return 0;
+
+            var childrenByParent = folders
+                .Where(f => f.ParentFolderID.HasValue)
+                .GroupBy(f => f.ParentFolderID.Value)
+                .ToDictionary(g => g.Key, g => g.ToList());
+            var visitedRoots = new HashSet<int>();
+            long total = 0;
+
+            foreach (var root in folders.Where(IsQuotaBucketFolder))
+            {
+                if (!visitedRoots.Add(root.FolderID))
+                    continue;
+                total += Math.Max(0, root.FolderSizeBytes) + SumDescendantSize(root.FolderID, childrenByParent, new HashSet<int>());
+            }
+
+            return total;
+        }
+
+        private static bool IsQuotaBucketFolder(Folder folder)
+        {
+            if (folder == null || folder.IsDeleted || folder.IsArchived)
+                return false;
+            if (folder.ConfidentialityLevel < 1 || folder.ConfidentialityLevel > 4)
+                return false;
+
+            var name = (folder.FolderName ?? folder.Name ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(name))
+                return false;
+
+            return name.StartsWith(LevelCode(folder.ConfidentialityLevel), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static long SumDescendantSize(int folderId, Dictionary<int, List<Folder>> childrenByParent, HashSet<int> visited)
+        {
+            if (!visited.Add(folderId))
+                return 0;
+
+            long total = 0;
+            List<Folder> children;
+            if (childrenByParent.TryGetValue(folderId, out children))
+            {
+                foreach (var child in children.Where(c => c != null && !c.IsDeleted && !c.IsArchived))
+                    total += Math.Max(0, child.FolderSizeBytes) + SumDescendantSize(child.FolderID, childrenByParent, visited);
+            }
+
+            visited.Remove(folderId);
+            return total;
+        }
+
+        private static string LevelCode(int level)
+        {
+            switch (level)
+            {
+                case 1: return "1HC";
+                case 2: return "2SC";
+                case 3: return "3NC";
+                case 4: return "4PC";
+                default: return level.ToString();
+            }
         }
 
         private static string BuildAlertMessage(QuotaUsageResult usage)

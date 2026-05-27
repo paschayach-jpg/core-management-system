@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 
 namespace CMS.Domain.Models
 {
-    /// <summary>ข้อมูลแผนก จาก core.HR_Department</summary>
+    /// <summary>ข้อมูลแผนก จาก EMS.m_Department</summary>
     public class HrDepartment
     {
         public int      DepartmentID     { get; set; }
@@ -31,3 +31,4 @@ namespace CMS.Domain.Models
         }
     }
 }
+
