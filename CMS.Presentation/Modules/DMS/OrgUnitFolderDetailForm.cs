@@ -366,28 +366,33 @@ namespace CMS.Presentation
                 // Donut ①: สัดส่วนประเภทไฟล์ (multi-color, from the red box data)
                 DrawFileTypeDonut(e.Graphics, new Rectangle(donutX0, donutY, donutSize, donutSize));
 
-                double usedPct  = _cachedQuotaBytes > 0
-                    ? Math.Min(_cachedUsedBytes * 100.0 / _cachedQuotaBytes, 100.0) : 0;
-                double freePct  = _cachedQuotaBytes > 0
+                bool   hasQuota  = _cachedQuotaBytes > 0;
+                double usedPct   = hasQuota
+                    ? Math.Min(_cachedUsedBytes * 100.0 / _cachedQuotaBytes, 100.0)
+                    : (_cachedUsedBytes > 0 ? 100.0 : 0.0);
+                double freePct   = hasQuota
                     ? Math.Min((_cachedQuotaBytes - _cachedUsedBytes) * 100.0 / _cachedQuotaBytes, 100.0) : 0;
-                long   freeBytes = _cachedQuotaBytes > 0
+                long   freeBytes = hasQuota
                     ? Math.Max(_cachedQuotaBytes - _cachedUsedBytes, 0L) : 0L;
+
+                Color  usedColor   = hasQuota ? GetUsageColor(usedPct) : Color.FromArgb(100, 140, 200);
+                string freeLabel   = hasQuota ? FormatFileSize(freeBytes) : "ไม่จำกัด";
 
                 // Donut ②: พื้นที่ใช้งาน
                 DrawSmallDonut(e.Graphics,
                     new Rectangle(donutX2, donutY, donutSize, donutSize),
                     "พื้นที่ใช้งาน", usedPct,
-                    GetUsageColor(usedPct), Color.FromArgb(220, 225, 235),
+                    usedColor, Color.FromArgb(220, 225, 235),
                     FormatFileSize(_cachedUsedBytes),
-                    _cachedQuotaBytes > 0, true);
+                    hasQuota, true);
 
                 // Donut ③: พื้นที่ว่างคงเหลือ
                 DrawSmallDonut(e.Graphics,
                     new Rectangle(donutX3, donutY, donutSize, donutSize),
                     "พื้นที่ว่างคงเหลือ", freePct,
                     Color.FromArgb(100, 160, 220), Color.FromArgb(220, 225, 235),
-                    FormatFileSize(freeBytes),
-                    _cachedQuotaBytes > 0, false);
+                    freeLabel,
+                    hasQuota, false);
             }
         }
 
@@ -526,14 +531,14 @@ namespace CMS.Presentation
             using (var bgBrush = new SolidBrush(bgColor))
                 g.FillPie(bgBrush, rect, -90f, 360f);
 
-            // Primary arc
-            if (hasQuota && primaryPct > 0)
+            // Primary arc — draw even when no quota as long as there's a value to show
+            if (primaryPct > 0)
             {
                 float sweep = (float)(primaryPct / 100.0 * 360.0);
                 using (var pb = new SolidBrush(primaryColor))
                     g.FillPie(pb, rect, -90f, sweep);
 
-                if (showThreshold)
+                if (hasQuota && showThreshold)
                 {
                     DrawThresholdMarker(g, rect, cx, cy, 80f, Color.FromArgb(230, 150, 0), "80%");
                     DrawThresholdMarker(g, rect, cx, cy, 95f, Color.FromArgb(200, 50, 50),  "95%");
@@ -545,11 +550,11 @@ namespace CMS.Presentation
             using (var wb = new SolidBrush(Color.White))
                 g.FillEllipse(wb, cx - hole / 2, cy - hole / 2, hole, hole);
 
-            // Centre text — % or N/A
-            string pctText = hasQuota ? string.Format("{0:F1}%", primaryPct) : "N/A";
-            float  cFontSz = size < 100 ? 10F : (size < 130 ? 12F : 14F);
+            // Centre text — % when quota set, sizeLabel when no quota
+            string pctText = hasQuota ? string.Format("{0:F1}%", primaryPct) : sizeLabel;
+            float  cFontSz = size < 100 ? 10F : (size < 130 ? 11F : 12F);
             using (var cf = new Font("Segoe UI", cFontSz, FontStyle.Bold))
-            using (var cb = new SolidBrush(hasQuota ? primaryColor : Color.FromArgb(170, 170, 170)))
+            using (var cb = new SolidBrush(hasQuota ? primaryColor : Color.FromArgb(80, 120, 180)))
             {
                 var cs = g.MeasureString(pctText, cf);
                 g.DrawString(pctText, cf, cb, cx - cs.Width / 2, cy - cs.Height / 2);
@@ -710,29 +715,23 @@ namespace CMS.Presentation
                 { 4, "4PC - Public Confidential" }
             };
 
+            // Map FolderID → ConfidentialityLevel for all folders in this OrgUnit
+            var levelByFolder = _folders
+                .Where(f => f.ConfidentialityLevel >= 1 && f.ConfidentialityLevel <= 4)
+                .ToDictionary(f => f.FolderID, f => f.ConfidentialityLevel);
+
             var rows = new List<PieRow>();
             for (int level = 1; level <= 4; level++)
             {
-                long bytes = _folders
-                    .Where(f => f.ConfidentialityLevel == level)
-                    .Sum(f => Math.Max(0, f.FolderSizeBytes));
+                // Sum file sizes for files whose folder belongs to this level
+                long bytes = _files
+                    .Where(f => levelByFolder.ContainsKey(f.FolderID) && levelByFolder[f.FolderID] == level)
+                    .Sum(f => Math.Max(0, f.FileSizeBytes));
                 rows.Add(new PieRow
                 {
                     Label = labels[level],
                     Bytes = bytes,
                     Color = _pieColors[level - 1]
-                });
-            }
-
-            long known = rows.Sum(r => r.Bytes);
-            long fileTotal = _files.Sum(f => Math.Max(0, f.FileSizeBytes));
-            if (fileTotal > known)
-            {
-                rows.Add(new PieRow
-                {
-                    Label = "อื่นๆ / ไม่ทราบระดับ",
-                    Bytes = fileTotal - known,
-                    Color = _pieColors[4]
                 });
             }
 
@@ -792,14 +791,19 @@ namespace CMS.Presentation
             try
             {
                 _lvFolders.Items.Clear();
+                var fileSizeByFolder = _files.GroupBy(f => f.FolderID)
+                    .ToDictionary(g => g.Key, g => g.Sum(f => Math.Max(0, f.FileSizeBytes)));
                 foreach (var folder in _folders.OrderBy(f => f.FolderDepth).ThenBy(f => f.FolderName))
                 {
+                    long displaySize = folder.FolderSizeBytes > 0
+                        ? folder.FolderSizeBytes
+                        : (fileSizeByFolder.ContainsKey(folder.FolderID) ? fileSizeByFolder[folder.FolderID] : 0);
                     var item = new ListViewItem(new string[]
                     {
                         new string(' ', Math.Max(0, folder.FolderDepth) * 2) + folder.FolderName,
                         ConfidentialityBadge(folder.ConfidentialityLevel),
                         folder.FileCount.ToString("N0"),
-                        FormatFileSize(folder.FolderSizeBytes)
+                        FormatFileSize(displaySize)
                     });
                     item.Tag = folder;
                     item.ForeColor = ConfidentialityColor(folder.ConfidentialityLevel);

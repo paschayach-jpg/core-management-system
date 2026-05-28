@@ -1,6 +1,7 @@
 // =============================================
 // CMS Notification System
 // Services/NotificationManager.cs
+
 // Singleton Manager - Production Ready
 // Compatible with .NET Framework 4.5
 // =============================================

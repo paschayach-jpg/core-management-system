@@ -317,15 +317,103 @@ ELSE IF @OrgUnitTypeName LIKE '%Department%'
         public Dictionary<int, OrgUnitFileStat> GetAllFileStats()
         {
             const string sql = @"
-SELECT f.OrgUnitID,
-       COUNT(fd.FileID)              AS FileCount,
+-- ================================================================
+-- SubCommittee: aggregate SC own + all Divisions + all Departments
+-- Link: SC -> EMS.OrgUnitRelationship -> Division -> m_Department
+-- ================================================================
+SELECT EntityID, SUM(FileCount) AS FileCount, SUM(UsedBytes) AS UsedBytes
+FROM (
+    -- SC own OrgUnit folders
+    SELECT sc.OrgUnitID AS EntityID,
+           COUNT(fd.FileID)                 AS FileCount,
+           ISNULL(SUM(fd.FileSizeBytes), 0) AS UsedBytes
+    FROM   EMS.m_SubCommittee sc
+    JOIN   storage.Folder f      ON f.OrgUnitID = sc.OrgUnitID AND f.IsDeleted = 0
+    LEFT JOIN storage.FileDocument fd ON fd.FolderID = f.FolderID AND fd.FileStatus = 1
+    WHERE  sc.IsActive = 1 AND sc.IsDeleted = 0
+    GROUP BY sc.OrgUnitID
+
+    UNION ALL
+
+    -- SC via Division OrgUnits (linked via OrgUnitRelationship)
+    SELECT sc.OrgUnitID AS EntityID,
+           COUNT(fd.FileID)                 AS FileCount,
+           ISNULL(SUM(fd.FileSizeBytes), 0) AS UsedBytes
+    FROM   EMS.m_SubCommittee sc
+    JOIN   EMS.OrgUnitRelationship rel ON rel.SubCommitteeID = sc.OrgUnitID AND rel.IsActive = 1
+    JOIN   EMS.m_Division d ON d.DivisionID = rel.DivisionID AND d.IsActive = 1
+    JOIN   EMS.OrgUnit ou   ON ou.OrgUnitCode = d.DivisionCode AND ou.OrgUnitType = 2 AND ou.IsDeleted = 0
+    JOIN   storage.Folder f      ON f.OrgUnitID = ou.OrgUnitID AND f.IsDeleted = 0
+    LEFT JOIN storage.FileDocument fd ON fd.FolderID = f.FolderID AND fd.FileStatus = 1
+    WHERE  sc.IsActive = 1 AND sc.IsDeleted = 0
+    GROUP BY sc.OrgUnitID
+
+    UNION ALL
+
+    -- SC via Department OrgUnits (linked via OrgUnitRelationship -> m_Department)
+    SELECT sc.OrgUnitID AS EntityID,
+           COUNT(fd.FileID)                 AS FileCount,
+           ISNULL(SUM(fd.FileSizeBytes), 0) AS UsedBytes
+    FROM   EMS.m_SubCommittee sc
+    JOIN   EMS.OrgUnitRelationship rel ON rel.SubCommitteeID = sc.OrgUnitID AND rel.IsActive = 1
+    JOIN   EMS.m_Department dep ON dep.DivisionID = rel.DivisionID AND dep.IsActive = 1
+    JOIN   EMS.OrgUnit ou       ON ou.OrgUnitCode = dep.DepartmentCode AND ou.OrgUnitType = 3 AND ou.IsDeleted = 0
+    JOIN   storage.Folder f      ON f.OrgUnitID = ou.OrgUnitID AND f.IsDeleted = 0
+    LEFT JOIN storage.FileDocument fd ON fd.FolderID = f.FolderID AND fd.FileStatus = 1
+    WHERE  sc.IsActive = 1 AND sc.IsDeleted = 0
+    GROUP BY sc.OrgUnitID
+) sc_agg
+GROUP BY EntityID
+
+UNION ALL
+
+-- ================================================================
+-- Division: aggregate Division own OrgUnits + all Departments
+-- Link: Division -> m_Department.DivisionID (entity FK)
+-- ================================================================
+SELECT EntityID, SUM(FileCount) AS FileCount, SUM(UsedBytes) AS UsedBytes
+FROM (
+    -- Division own OrgUnits (match by DivisionCode)
+    SELECT d.DivisionID AS EntityID,
+           COUNT(fd.FileID)                 AS FileCount,
+           ISNULL(SUM(fd.FileSizeBytes), 0) AS UsedBytes
+    FROM   EMS.m_Division d
+    JOIN   EMS.OrgUnit ou ON ou.OrgUnitCode = d.DivisionCode AND ou.OrgUnitType = 2 AND ou.IsDeleted = 0
+    JOIN   storage.Folder f      ON f.OrgUnitID = ou.OrgUnitID AND f.IsDeleted = 0
+    LEFT JOIN storage.FileDocument fd ON fd.FolderID = f.FolderID AND fd.FileStatus = 1
+    WHERE  d.IsActive = 1
+    GROUP BY d.DivisionID
+
+    UNION ALL
+
+    -- Division via Department OrgUnits (m_Department.DivisionID FK)
+    SELECT d.DivisionID AS EntityID,
+           COUNT(fd.FileID)                 AS FileCount,
+           ISNULL(SUM(fd.FileSizeBytes), 0) AS UsedBytes
+    FROM   EMS.m_Division d
+    JOIN   EMS.m_Department dep ON dep.DivisionID = d.DivisionID AND dep.IsActive = 1
+    JOIN   EMS.OrgUnit ou       ON ou.OrgUnitCode = dep.DepartmentCode AND ou.OrgUnitType = 3 AND ou.IsDeleted = 0
+    JOIN   storage.Folder f      ON f.OrgUnitID = ou.OrgUnitID AND f.IsDeleted = 0
+    LEFT JOIN storage.FileDocument fd ON fd.FolderID = f.FolderID AND fd.FileStatus = 1
+    WHERE  d.IsActive = 1
+    GROUP BY d.DivisionID
+) div_agg
+GROUP BY EntityID
+
+UNION ALL
+
+-- ================================================================
+-- Department: all OrgUnit instances sharing same DepartmentCode
+-- ================================================================
+SELECT dep.DepartmentID AS EntityID,
+       COUNT(fd.FileID)                 AS FileCount,
        ISNULL(SUM(fd.FileSizeBytes), 0) AS UsedBytes
-FROM   storage.Folder f
-LEFT JOIN storage.FileDocument fd
-       ON fd.FolderID  = f.FolderID
-      AND fd.FileStatus = 1
-WHERE  f.IsDeleted = 0
-GROUP BY f.OrgUnitID";
+FROM   EMS.m_Department dep
+JOIN   EMS.OrgUnit ou ON ou.OrgUnitCode = dep.DepartmentCode AND ou.OrgUnitType = 3 AND ou.IsDeleted = 0
+JOIN   storage.Folder f      ON f.OrgUnitID = ou.OrgUnitID AND f.IsDeleted = 0
+LEFT JOIN storage.FileDocument fd ON fd.FolderID = f.FolderID AND fd.FileStatus = 1
+WHERE  dep.IsActive = 1
+GROUP BY dep.DepartmentID";
 
             var result = new Dictionary<int, OrgUnitFileStat>();
             using (var conn = new SqlConnection(_connectionString))
@@ -336,8 +424,8 @@ GROUP BY f.OrgUnitID";
                 {
                     while (reader.Read())
                     {
-                        int orgId = Convert.ToInt32(reader["OrgUnitID"]);
-                        result[orgId] = new OrgUnitFileStat
+                        int entityId = Convert.ToInt32(reader["EntityID"]);
+                        result[entityId] = new OrgUnitFileStat
                         {
                             FileCount = Convert.ToInt32(reader["FileCount"]),
                             UsedBytes = Convert.ToInt64(reader["UsedBytes"])

@@ -70,6 +70,26 @@ namespace CMS.Presentation
             btnRefresh.Click += (s, e) => { LoadData(); };
             pnlFooter.Controls.Add(btnRefresh);
 
+            // Executive Dashboard button
+            var btnDashboard = new Button
+            {
+                Text      = "Executive View",
+                Width     = 130,
+                Dock      = DockStyle.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(52, 100, 52),
+                ForeColor = Color.White,
+                Font      = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Cursor    = Cursors.Hand
+            };
+            btnDashboard.FlatAppearance.BorderSize = 0;
+            btnDashboard.Click += (s, e) =>
+            {
+                using (var frm = new ExecutiveDashboardForm(_quotaService))
+                    frm.ShowDialog(this);
+            };
+            pnlFooter.Controls.Add(btnDashboard);
+
             // Detail button — visible only when folderLookup injected
             if (_folderLookup != null)
             {
