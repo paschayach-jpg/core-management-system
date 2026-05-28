@@ -162,6 +162,84 @@ WHERE dep.IsActive = 1 AND dep.DepartmentCode = @OrgUnitCode";
             }
         }
 
+        public FolderQuotaConfig GetByEmsOrgUnitId(int emsOrgUnitId, int orgUnitType)
+        {
+            string sql;
+            switch (orgUnitType)
+            {
+                case 1:
+                    sql = @"
+SELECT TOP 1 sc.OrgUnitID AS QuotaConfigID,
+       sc.OrgUnitID,
+       CAST(NULL AS INT) AS ParentOrgUnitID,
+       CAST(ISNULL(sc.quota_size, 0) AS BIGINT) AS QuotaBytes,
+       CAST(80 AS TINYINT) AS WarnThresholdPct,
+       CAST(95 AS TINYINT) AS CriticalThresholdPct,
+       CAST(sc.IsActive AS BIT) AS IsActive,
+       CAST(0 AS INT) AS CreatedBy,
+       ISNULL(sc.CreatedDate, GETDATE()) AS CreatedDate,
+       CAST(NULL AS INT) AS UpdatedBy,
+       CAST(NULL AS DATETIME) AS UpdatedDate,
+       COALESCE(NULLIF(sc.SubCommitteeNameTH, ''), NULLIF(sc.SubCommitteeNameEN, ''), sc.SubCommitteeCode) AS OrgUnitName,
+       N'Sub Committee' AS OrgUnitTypeName
+FROM EMS.m_SubCommittee sc
+JOIN EMS.OrgUnit ou ON ou.OrgUnitCode = sc.SubCommitteeCode AND ou.IsDeleted = 0
+WHERE sc.IsActive = 1 AND sc.IsDeleted = 0 AND ou.OrgUnitID = @EmsOrgUnitId";
+                    break;
+                case 2:
+                    sql = @"
+SELECT TOP 1 d.DivisionID AS QuotaConfigID,
+       d.DivisionID AS OrgUnitID,
+       CAST(NULL AS INT) AS ParentOrgUnitID,
+       CAST(ISNULL(d.quota_size, 0) AS BIGINT) AS QuotaBytes,
+       CAST(80 AS TINYINT) AS WarnThresholdPct,
+       CAST(95 AS TINYINT) AS CriticalThresholdPct,
+       CAST(d.IsActive AS BIT) AS IsActive,
+       CAST(0 AS INT) AS CreatedBy,
+       ISNULL(d.CreatedDate, GETDATE()) AS CreatedDate,
+       CAST(NULL AS INT) AS UpdatedBy,
+       CAST(NULL AS DATETIME) AS UpdatedDate,
+       d.DivisionName AS OrgUnitName,
+       N'Division' AS OrgUnitTypeName
+FROM EMS.m_Division d
+JOIN EMS.OrgUnit ou ON ou.OrgUnitCode = d.DivisionCode AND ou.IsDeleted = 0
+WHERE d.IsActive = 1 AND ou.OrgUnitID = @EmsOrgUnitId";
+                    break;
+                case 3:
+                    sql = @"
+SELECT TOP 1 dep.DepartmentID AS QuotaConfigID,
+       dep.DepartmentID AS OrgUnitID,
+       dep.DivisionID AS ParentOrgUnitID,
+       CAST(ISNULL(dep.quota_size, 0) AS BIGINT) AS QuotaBytes,
+       CAST(80 AS TINYINT) AS WarnThresholdPct,
+       CAST(95 AS TINYINT) AS CriticalThresholdPct,
+       CAST(dep.IsActive AS BIT) AS IsActive,
+       CAST(0 AS INT) AS CreatedBy,
+       ISNULL(dep.CreatedDate, GETDATE()) AS CreatedDate,
+       CAST(NULL AS INT) AS UpdatedBy,
+       CAST(NULL AS DATETIME) AS UpdatedDate,
+       COALESCE(NULLIF(dep.DepartmentNameTh, ''), NULLIF(dep.DepartmentNameEn, ''), dep.DepartmentName) AS OrgUnitName,
+       N'Department' AS OrgUnitTypeName
+FROM EMS.m_Department dep
+JOIN EMS.OrgUnit ou ON ou.OrgUnitCode = dep.DepartmentCode AND ou.IsDeleted = 0
+WHERE dep.IsActive = 1 AND ou.OrgUnitID = @EmsOrgUnitId";
+                    break;
+                default:
+                    return null;
+            }
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@EmsOrgUnitId", emsOrgUnitId);
+                    using (var reader = cmd.ExecuteReader())
+                        return reader.Read() ? Map(reader) : null;
+                }
+            }
+        }
+
         public IEnumerable<FolderQuotaConfig> GetAll()
         {
             var results = new List<FolderQuotaConfig>();

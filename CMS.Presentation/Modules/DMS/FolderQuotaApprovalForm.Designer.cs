@@ -131,35 +131,33 @@ namespace CMS.Presentation
             this.pnlAction.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlAction.BackColor   = System.Drawing.Color.FromArgb(252, 252, 252);
 
-            int ax = 14, ay = 12;
-
             this.lblDetailTitle.Text      = "รายละเอียดที่เลือก:";
             this.lblDetailTitle.Font      = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
-            this.lblDetailTitle.Location  = new System.Drawing.Point(ax, ay);
+            this.lblDetailTitle.Location  = new System.Drawing.Point(14, 12);
             this.lblDetailTitle.Size      = new System.Drawing.Size(160, 24);
             this.lblDetailTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
             this.lblDetail.Text      = "-";
             this.lblDetail.Font      = new System.Drawing.Font("Segoe UI", 10);
             this.lblDetail.ForeColor = System.Drawing.Color.FromArgb(30, 60, 120);
-            this.lblDetail.Location  = new System.Drawing.Point(ax, ay + 30);
+            this.lblDetail.Location  = new System.Drawing.Point(14, 42);
             this.lblDetail.Size      = new System.Drawing.Size(560, 38);
 
             this.lblRemark.Text      = "หมายเหตุ:";
             this.lblRemark.Font      = new System.Drawing.Font("Segoe UI", 10);
-            this.lblRemark.Location  = new System.Drawing.Point(ax, ay + 78);
+            this.lblRemark.Location  = new System.Drawing.Point(14, 90);
             this.lblRemark.Size      = new System.Drawing.Size(88, 26);
             this.lblRemark.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
             this.txtRemark.Font     = new System.Drawing.Font("Segoe UI", 10);
-            this.txtRemark.Location = new System.Drawing.Point(ax + 96, ay + 78);
+            this.txtRemark.Location = new System.Drawing.Point(110, 90);
             this.txtRemark.Size     = new System.Drawing.Size(472, 28);
             this.txtRemark.MaxLength = 300;
 
             this.btnApprove.Text      = "อนุมัติ";
             this.btnApprove.Font      = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             this.btnApprove.Size      = new System.Drawing.Size(110, 38);
-            this.btnApprove.Location  = new System.Drawing.Point(590, ay + 12);
+            this.btnApprove.Location  = new System.Drawing.Point(590, 24);
             this.btnApprove.BackColor = System.Drawing.Color.FromArgb(52, 120, 47);
             this.btnApprove.ForeColor = System.Drawing.Color.White;
             this.btnApprove.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -168,7 +166,7 @@ namespace CMS.Presentation
             this.btnReject.Text      = "ปฏิเสธ";
             this.btnReject.Font      = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             this.btnReject.Size      = new System.Drawing.Size(110, 38);
-            this.btnReject.Location  = new System.Drawing.Point(590, ay + 60);
+            this.btnReject.Location  = new System.Drawing.Point(590, 72);
             this.btnReject.BackColor = System.Drawing.Color.FromArgb(180, 30, 30);
             this.btnReject.ForeColor = System.Drawing.Color.White;
             this.btnReject.FlatStyle = System.Windows.Forms.FlatStyle.Flat;

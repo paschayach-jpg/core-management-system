@@ -136,39 +136,33 @@ namespace CMS.Presentation
             this.pnlEdit.BackColor = System.Drawing.Color.White;
             this.pnlEdit.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 
-            int ex = 16, ey = 14, lw = 116, ew = 92;
-            int r0 = ey;
-            int r1 = ey + 46;
-            int r2 = ey + 90;
-            int r3 = ey + 138;
-
             this.lblSelectedOrg.Text = "เลือกประเภท Master และเลือกรายการด้านซ้าย";
             this.lblSelectedOrg.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Italic);
             this.lblSelectedOrg.ForeColor = System.Drawing.Color.Gray;
-            this.lblSelectedOrg.Location = new System.Drawing.Point(ex, r0);
+            this.lblSelectedOrg.Location = new System.Drawing.Point(16, 14);
             this.lblSelectedOrg.Size = new System.Drawing.Size(600, 22);
 
             this.lblQuota.Text = "Quota (GB):";
-            this.lblQuota.Location = new System.Drawing.Point(ex, r1);
-            this.lblQuota.Size = new System.Drawing.Size(lw, 24);
+            this.lblQuota.Location = new System.Drawing.Point(16, 60);
+            this.lblQuota.Size = new System.Drawing.Size(116, 24);
             this.lblQuota.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
-            this.nudQuotaGB.Location = new System.Drawing.Point(ex + lw + 4, r1 - 1);
-            this.nudQuotaGB.Size = new System.Drawing.Size(ew, 28);
+            this.nudQuotaGB.Location = new System.Drawing.Point(136, 59);
+            this.nudQuotaGB.Size = new System.Drawing.Size(92, 28);
             this.nudQuotaGB.Minimum = 0;
             this.nudQuotaGB.Maximum = 10000;
             this.nudQuotaGB.Value = 40;
             this.nudQuotaGB.DecimalPlaces = 1;
 
             this.lblGB.Text = "GB";
-            this.lblGB.Location = new System.Drawing.Point(ex + lw + ew + 10, r1);
+            this.lblGB.Location = new System.Drawing.Point(234, 60);
             this.lblGB.Size = new System.Drawing.Size(32, 24);
             this.lblGB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
             this.lblWarn.Text = "บันทึกลง: -";
             this.lblWarn.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblWarn.ForeColor = System.Drawing.Color.FromArgb(120, 120, 120);
-            this.lblWarn.Location = new System.Drawing.Point(ex, r2);
+            this.lblWarn.Location = new System.Drawing.Point(16, 104);
             this.lblWarn.Size = new System.Drawing.Size(600, 24);
             this.lblWarn.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
@@ -187,7 +181,7 @@ namespace CMS.Presentation
             this.btnSave.Text = "บันทึก";
             this.btnSave.Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             this.btnSave.Size = new System.Drawing.Size(104, 36);
-            this.btnSave.Location = new System.Drawing.Point(ex, r3);
+            this.btnSave.Location = new System.Drawing.Point(16, 152);
             this.btnSave.BackColor = System.Drawing.Color.FromArgb(52, 120, 47);
             this.btnSave.ForeColor = System.Drawing.Color.White;
             this.btnSave.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -195,7 +189,7 @@ namespace CMS.Presentation
             this.btnDelete.Text = "ล้างค่า Quota";
             this.btnDelete.Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             this.btnDelete.Size = new System.Drawing.Size(128, 36);
-            this.btnDelete.Location = new System.Drawing.Point(ex + 114, r3);
+            this.btnDelete.Location = new System.Drawing.Point(130, 152);
             this.btnDelete.BackColor = System.Drawing.Color.FromArgb(180, 30, 30);
             this.btnDelete.ForeColor = System.Drawing.Color.White;
             this.btnDelete.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -203,7 +197,7 @@ namespace CMS.Presentation
             this.btnClear.Text = "ยกเลิก";
             this.btnClear.Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             this.btnClear.Size = new System.Drawing.Size(104, 36);
-            this.btnClear.Location = new System.Drawing.Point(ex + 252, r3);
+            this.btnClear.Location = new System.Drawing.Point(268, 152);
             this.btnClear.BackColor = System.Drawing.Color.FromArgb(108, 108, 108);
             this.btnClear.ForeColor = System.Drawing.Color.White;
             this.btnClear.FlatStyle = System.Windows.Forms.FlatStyle.Flat;

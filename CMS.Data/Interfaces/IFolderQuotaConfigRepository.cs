@@ -8,6 +8,8 @@ namespace CMS.Data.Interfaces
         /// <summary>ค้นหา config ตาม OrgUnit — ใช้ ParentOrgUnitID เป็น tiebreaker (เฉพาะ Sub มี priority สูงกว่า)</summary>
         FolderQuotaConfig GetByOrgUnit(int orgUnitId, int? parentOrgUnitId = null);
         FolderQuotaConfig GetByMasterCode(int orgUnitType, string orgUnitCode);
+        /// <summary>JOIN EMS.OrgUnit กับ master table โดยตรง — ใช้เมื่อ EMS.OrgUnit.OrgUnitID ≠ master table PK</summary>
+        FolderQuotaConfig GetByEmsOrgUnitId(int emsOrgUnitId, int orgUnitType);
 
         IEnumerable<FolderQuotaConfig> GetAll();
 

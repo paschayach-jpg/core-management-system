@@ -27,6 +27,15 @@ namespace CMS.Presentation
             Color.FromArgb(52,  152, 219),
         };
 
+        private static readonly Color[] CategoryColors = new Color[]
+        {
+            Color.FromArgb(52,  120,  47),   // รูปภาพ
+            Color.FromArgb(26,   58, 108),   // เอกสาร
+            Color.FromArgb(180,  80,   0),   // VOD
+            Color.FromArgb(110, 110, 110),   // อื่นๆ
+        };
+        private static readonly string[] CategoryLabels = { "รูปภาพ", "เอกสาร", "VOD", "อื่นๆ" };
+
         // actual used bytes calculated from file list (more accurate than batch query when quota_size=0)
         private long _actualUsedBytes;
 
@@ -233,6 +242,11 @@ namespace CMS.Presentation
                 HeaderText = "ประเภท", Width = 70, MinimumWidth = 60,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
             };
+            var colCat = new DataGridViewTextBoxColumn
+            {
+                HeaderText = "หมวดหมู่", Width = 82, MinimumWidth = 72,
+                DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
+            };
             var colSize = new DataGridViewTextBoxColumn
             {
                 HeaderText = "ขนาด", Width = 90, MinimumWidth = 80,
@@ -248,16 +262,23 @@ namespace CMS.Presentation
                 HeaderText = "เวอร์ชัน", Width = 62, MinimumWidth = 55,
                 DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
             };
-            dgv.Columns.AddRange(colNo, colName, colExt, colSize, colDate, colVer);
+            dgv.Columns.AddRange(colNo, colName, colExt, colCat, colSize, colDate, colVer);
 
             int row = 1;
             foreach (var f in _files)
             {
                 string ext  = string.IsNullOrWhiteSpace(f.FileExtension)
                     ? "-" : f.FileExtension.TrimStart('.').ToUpperInvariant();
+                string cat  = CategoryLabels[ClassifyFile(f.FileExtension)];
                 string size = FormatFileSize(f.FileSizeBytes);
-                dgv.Rows.Add(row++, f.OriginalFileName, ext, size,
+                int rowIdx = dgv.Rows.Add(row++, f.OriginalFileName, ext, cat, size,
                     f.UploadedDate.ToString("dd/MM/yyyy HH:mm"), f.Version);
+
+                // สีตาม category
+                dgv.Rows[rowIdx].Cells[colCat.Index].Style.ForeColor =
+                    CategoryColors[ClassifyFile(f.FileExtension)];
+                dgv.Rows[rowIdx].Cells[colCat.Index].Style.Font =
+                    new Font("Segoe UI", 8.5F, FontStyle.Bold);
             }
 
             // Summary bar — total size
@@ -410,23 +431,20 @@ namespace CMS.Presentation
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            if (_fileStats == null || _fileStats.Count == 0)
+            var cats = BuildFileCategoryStats();
+            long total = cats.Sum(c => c.Bytes);
+
+            if (total == 0)
             {
-                var noDataFont = new Font("Segoe UI", 10F, FontStyle.Italic);
-                g.DrawString("ไม่มีข้อมูลไฟล์", noDataFont, Brushes.Gray,
-                    bounds.Width / 2 - 50, bounds.Height / 2 - 10);
+                using (var f = new Font("Segoe UI", 10F, FontStyle.Italic))
+                    g.DrawString("ไม่มีข้อมูลไฟล์", f, Brushes.Gray,
+                        bounds.Width / 2 - 50, bounds.Height / 2 - 10);
                 return;
             }
 
-            // Show top 7 + combine the rest as "อื่นๆ"
-            var top       = _fileStats.Take(7).ToList();
-            double others = _fileStats.Skip(7).Sum(x => x.Percent);
-            if (others > 0)
-                top.Add(new FileTypeUsage { Extension = "อื่นๆ", Percent = Math.Round(others, 1) });
-
-            int margin   = 20;
-            int legendH  = (top.Count * 20) + 8;
-            int size     = Math.Min(bounds.Width - margin * 2, bounds.Height - legendH - margin * 2 - 30);
+            int margin  = 20;
+            int legendH = (CategoryLabels.Length * 22) + 10;
+            int size    = Math.Min(bounds.Width - margin * 2, bounds.Height - legendH - margin * 2 - 20);
             if (size < 40) return;
 
             int cx   = bounds.Width / 2;
@@ -434,42 +452,97 @@ namespace CMS.Presentation
             var rect = new Rectangle(cx - size / 2, cy - size / 2, size, size);
 
             float start = -90f;
-            for (int i = 0; i < top.Count; i++)
+            for (int i = 0; i < cats.Count; i++)
             {
-                float sweep = (float)(top[i].Percent / 100.0 * 360.0);
+                if (cats[i].Bytes == 0) continue;
+                float sweep = (float)(cats[i].Bytes * 360.0 / total);
                 if (sweep < 0.5f) continue;
-                Color c = PieColors[i % PieColors.Length];
-                g.FillPie(new SolidBrush(c), rect, start, sweep);
-                g.DrawPie(new Pen(Color.White, 1.5f), rect, start, sweep);
 
-                // Percentage label on slice
-                if (sweep > 18)
+                using (var brush = new SolidBrush(CategoryColors[i]))
+                    g.FillPie(brush, rect, start, sweep);
+                using (var pen = new Pen(Color.White, 1.5f))
+                    g.DrawPie(pen, rect, start, sweep);
+
+                if (sweep > 15)
                 {
                     double mid    = (start + sweep / 2.0) * Math.PI / 180.0;
                     int    lx     = cx + (int)(size * 0.32 * Math.Cos(mid));
                     int    ly     = cy + (int)(size * 0.32 * Math.Sin(mid));
-                    string pctTxt = top[i].Percent.ToString("F1") + "%";
-                    var    pctF   = new Font("Segoe UI", 7.5F, FontStyle.Bold);
-                    var    pctSz  = g.MeasureString(pctTxt, pctF);
-                    g.DrawString(pctTxt, pctF, Brushes.White, lx - pctSz.Width / 2, ly - pctSz.Height / 2);
+                    string pctTxt = string.Format("{0:F1}%", cats[i].Bytes * 100.0 / total);
+                    using (var pf = new Font("Segoe UI", 8F, FontStyle.Bold))
+                    {
+                        var sz = g.MeasureString(pctTxt, pf);
+                        g.DrawString(pctTxt, pf, Brushes.White, lx - sz.Width / 2, ly - sz.Height / 2);
+                    }
                 }
 
                 start += sweep;
             }
 
-            // Legend
-            int legendY = rect.Bottom + 12;
-            for (int i = 0; i < top.Count; i++)
+            // Legend — 1 column, 4 rows
+            int legendY = rect.Bottom + 14;
+            using (var lf = new Font("Segoe UI", 8.5F))
+            using (var bf = new Font("Segoe UI", 8.5F, FontStyle.Bold))
             {
-                int col = i % 2;
-                int row = i / 2;
-                int lx  = margin + col * (bounds.Width / 2 - margin);
-                int ly  = legendY + row * 20;
-                Color c = PieColors[i % PieColors.Length];
-                g.FillRectangle(new SolidBrush(c), lx, ly + 3, 12, 12);
-                string lbl = string.Format(".{0}  {1:F1}%", top[i].Extension, top[i].Percent);
-                g.DrawString(lbl, new Font("Segoe UI", 8F), Brushes.Black, lx + 16, ly);
+                for (int i = 0; i < cats.Count; i++)
+                {
+                    int lx = margin;
+                    int ly = legendY + i * 22;
+                    using (var b = new SolidBrush(CategoryColors[i]))
+                        g.FillRectangle(b, lx, ly + 3, 14, 14);
+                    double pct = total > 0 ? cats[i].Bytes * 100.0 / total : 0;
+                    string lbl = string.Format("{0}  {1}  ({2:F1}%)",
+                        CategoryLabels[i], FormatFileSize(cats[i].Bytes), pct);
+                    g.DrawString(lbl, cats[i].Count > 0 ? bf : lf,
+                        cats[i].Count > 0 ? Brushes.Black : Brushes.Gray,
+                        lx + 20, ly);
+                }
             }
+        }
+
+        private List<FileCategoryStats> BuildFileCategoryStats()
+        {
+            var counts = new int[4];
+            var bytes  = new long[4];
+            foreach (var f in _files)
+            {
+                int cat = ClassifyFile(f.FileExtension);
+                counts[cat]++;
+                bytes[cat] += Math.Max(0, f.FileSizeBytes);
+            }
+            var result = new List<FileCategoryStats>();
+            for (int i = 0; i < 4; i++)
+                result.Add(new FileCategoryStats { Label = CategoryLabels[i], Count = counts[i], Bytes = bytes[i] });
+            return result;
+        }
+
+        private static int ClassifyFile(string ext)
+        {
+            var e = (ext ?? string.Empty).TrimStart('.').ToLowerInvariant();
+            switch (e)
+            {
+                case "jpg": case "jpeg": case "png": case "gif":
+                case "bmp": case "tiff": case "tif": case "svg":
+                case "webp": case "ico": case "heic": case "heif":
+                    return 0;
+                case "pdf": case "doc": case "docx": case "xls":
+                case "xlsx": case "ppt": case "pptx": case "txt":
+                case "csv": case "rtf": case "odt": case "ods": case "odp":
+                    return 1;
+                case "mp4": case "avi": case "mov": case "mkv":
+                case "wmv": case "flv": case "m4v": case "mpg":
+                case "mpeg": case "webm": case "ts": case "m2ts":
+                    return 2;
+                default:
+                    return 3;
+            }
+        }
+
+        private class FileCategoryStats
+        {
+            public string Label { get; set; }
+            public int    Count { get; set; }
+            public long   Bytes { get; set; }
         }
 
         private static Color GetUsageColor(double pct)

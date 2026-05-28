@@ -2287,7 +2287,8 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenChildForm(new FolderQuotaConfigForm(_quotaService, _currentUser));
+            OpenChildForm(new FolderQuotaConfigForm(_quotaService, _currentUser,
+                _folderReadLookupController, _fileBrowseController));
         }
 
         public void OpenQuotaRequest()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -10,8 +11,10 @@ namespace CMS.Presentation
 {
     public partial class FolderQuotaConfigForm : Form
     {
-        private readonly IFolderQuotaService _quotaService;
-        private readonly UserContext _user;
+        private readonly IFolderQuotaService          _quotaService;
+        private readonly UserContext                   _user;
+        private readonly IFolderReadLookupController  _folderLookup;
+        private readonly IFileBrowseController        _fileBrowse;
 
         private List<FolderQuotaConfig> _configs = new List<FolderQuotaConfig>();
         private Dictionary<int, OrgUnitFileStat> _fileStats
@@ -25,17 +28,26 @@ namespace CMS.Presentation
         private Panel  _pnlBreadcrumb;
         private Label  _lblBreadcrumb;
 
-        public FolderQuotaConfigForm(IFolderQuotaService quotaService, UserContext user)
+        // quota filter: 0=All, 1=Set (>0), 2=NotSet (=0)
+        private ComboBox _cmbQuotaFilter;
+        private int _quotaFilter = 0;
+
+        public FolderQuotaConfigForm(IFolderQuotaService quotaService, UserContext user,
+            IFolderReadLookupController folderLookup = null,
+            IFileBrowseController fileBrowse = null)
         {
             if (quotaService == null) throw new ArgumentNullException("quotaService");
             if (user == null) throw new ArgumentNullException("user");
 
-            _quotaService = quotaService;
-            _user = user;
+            _quotaService  = quotaService;
+            _user          = user;
+            _folderLookup  = folderLookup;
+            _fileBrowse    = fileBrowse;
 
             InitializeComponent();
             SetupDrillDown();
             SetupComboBox();
+            SetupQuotaFilter();
             SetupContextMenu();
             LoadData();
         }
@@ -57,6 +69,28 @@ namespace CMS.Presentation
             btnRefresh.FlatAppearance.BorderSize = 0;
             btnRefresh.Click += (s, e) => { LoadData(); };
             pnlFooter.Controls.Add(btnRefresh);
+
+            // Detail button — visible only when folderLookup injected
+            if (_folderLookup != null)
+            {
+                var btnDetail = new Button
+                {
+                    Text      = "ดูรายละเอียด",
+                    Width     = 110,
+                    Dock      = DockStyle.Right,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(52, 120, 47),
+                    ForeColor = Color.White,
+                    Font      = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor    = Cursors.Hand
+                };
+                btnDetail.FlatAppearance.BorderSize = 0;
+                btnDetail.Click += (s, e) => OpenOrgUnitDetail(_selected);
+                pnlFooter.Controls.Add(btnDetail);
+            }
+
+            // double-click on list → open detail
+            lstOrgUnits.DoubleClick += (s, e) => OpenOrgUnitDetail(_selected);
 
             // Breadcrumb bar — shown when drilled into Departments of a Division
             _pnlBreadcrumb = new Panel
@@ -108,8 +142,10 @@ namespace CMS.Presentation
             if (e.RowIndex < 0) return;
             var cfg = dgvConfigs.Rows[e.RowIndex].Tag as FolderQuotaConfig;
             if (cfg == null) return;
-            if (GetOrgUnitType(cfg.OrgUnitTypeName) != 2) return; // Division only
-            DrillDown(cfg);
+            if (GetOrgUnitType(cfg.OrgUnitTypeName) == 2)
+                DrillDown(cfg);         // Division → drill down to departments
+            else
+                OpenOrgUnitDetail(cfg); // Sub/Department → open detail form
         }
 
         private void DrillDown(FolderQuotaConfig divisionCfg)
@@ -227,6 +263,52 @@ namespace CMS.Presentation
             cmbMasterType.SelectedIndex = 0;
         }
 
+        private void SetupQuotaFilter()
+        {
+            var lblFilter = new Label
+            {
+                Dock      = DockStyle.Top,
+                Height    = 24,
+                Text      = "  สถานะ Quota:",
+                Font      = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(60, 80, 110),
+                BackColor = Color.FromArgb(235, 241, 250),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding   = new Padding(8, 0, 0, 0)
+            };
+
+            _cmbQuotaFilter = new ComboBox
+            {
+                Dock          = DockStyle.Top,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font          = new Font("Segoe UI", 10F),
+                Height        = 28,
+                BackColor     = Color.White
+            };
+            _cmbQuotaFilter.Items.Add(new QuotaFilterItem(0, "ทั้งหมด"));
+            _cmbQuotaFilter.Items.Add(new QuotaFilterItem(1, "กำหนดแล้ว (Quota > 0)"));
+            _cmbQuotaFilter.Items.Add(new QuotaFilterItem(2, "ยังไม่กำหนด (Quota = 0)"));
+            _cmbQuotaFilter.SelectedIndex = 0;
+            _cmbQuotaFilter.SelectedIndexChanged += (s, e) =>
+            {
+                var item = _cmbQuotaFilter.SelectedItem as QuotaFilterItem;
+                _quotaFilter = item != null ? item.Value : 0;
+                BindMasterList();
+                RefreshGrid();
+            };
+
+            // Insert below txtMasterSearch (which is DockTop) — add in reverse dock order
+            pnlLeft.Controls.Add(lblFilter);
+            pnlLeft.Controls.Add(_cmbQuotaFilter);
+
+            // Move to correct Z-order: below txtMasterSearch, above lstOrgUnits
+            // pnlLeft dock-top stack (bottom to top in Controls order): lstOrgUnits(Fill) → txtMasterSearch(Top) → cmbMasterType(Top) → lblTreeHeader(Top)
+            // We want: lblFilter(Top), _cmbQuotaFilter(Top) to appear below txtMasterSearch
+            int txtIdx = pnlLeft.Controls.IndexOf(txtMasterSearch);
+            pnlLeft.Controls.SetChildIndex(_cmbQuotaFilter, txtIdx);
+            pnlLeft.Controls.SetChildIndex(lblFilter,       txtIdx);
+        }
+
         private void LoadData()
         {
             _configs   = _quotaService.GetAllConfigs().ToList();
@@ -315,13 +397,14 @@ namespace CMS.Presentation
                 ? string.Empty
                 : (txtMasterSearch.Text ?? string.Empty).Trim();
 
-            var list = _configs
+            var all = _configs
                 .Where(c => GetOrgUnitType(c.OrgUnitTypeName) == orgUnitType)
                 .Where(c => _drillDownParentId == null || c.ParentOrgUnitID == _drillDownParentId)
                 .Where(c => keyword.Length == 0
                          || (c.OrgUnitName ?? string.Empty).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
-                .OrderBy(c => c.OrgUnitName)
                 .ToList();
+
+            var list = ApplyQuotaFilter(all).OrderBy(c => c.OrgUnitName).ToList();
 
             _bindingMasterList = true;
             lstOrgUnits.DataSource = null;
@@ -332,7 +415,22 @@ namespace CMS.Presentation
             _bindingMasterList = false;
 
             SelectConfig(null);
-            lblTreeHeader.Text = string.Format("  {0} ({1})", GetSelectedMasterText(), list.Count);
+
+            int setCount    = all.Count(c => c.QuotaBytes > 0);
+            int notSetCount = all.Count(c => c.QuotaBytes == 0);
+            lblTreeHeader.Text = string.Format(
+                "  {0} ({1})  ✓{2} ✗{3}",
+                GetSelectedMasterText(), list.Count, setCount, notSetCount);
+        }
+
+        private IEnumerable<FolderQuotaConfig> ApplyQuotaFilter(IEnumerable<FolderQuotaConfig> source)
+        {
+            switch (_quotaFilter)
+            {
+                case 1: return source.Where(c => c.QuotaBytes > 0);
+                case 2: return source.Where(c => c.QuotaBytes == 0);
+                default: return source;
+            }
         }
 
         private void SelectConfig(FolderQuotaConfig config)
@@ -364,14 +462,30 @@ namespace CMS.Presentation
             }
         }
 
+        private static readonly Color RowColorSet    = Color.White;
+        private static readonly Color RowColorNotSet = Color.FromArgb(245, 245, 245);
+        private static readonly Color ForeColorSet    = Color.FromArgb(30, 30, 30);
+        private static readonly Color ForeColorNotSet = Color.FromArgb(160, 160, 160);
+
         private void RefreshGrid()
         {
             int selectedType = GetSelectedMasterType();
             dgvConfigs.Rows.Clear();
 
-            foreach (var c in _configs
+            var rows = _configs
                 .Where(c => GetOrgUnitType(c.OrgUnitTypeName) == selectedType)
-                .Where(c => _drillDownParentId == null || c.ParentOrgUnitID == _drillDownParentId))
+                .Where(c => _drillDownParentId == null || c.ParentOrgUnitID == _drillDownParentId);
+
+            rows = ApplyQuotaFilter(rows);
+
+            int totalAll    = _configs.Count(c => GetOrgUnitType(c.OrgUnitTypeName) == selectedType
+                                              && (_drillDownParentId == null || c.ParentOrgUnitID == _drillDownParentId));
+            int totalSet    = _configs.Count(c => GetOrgUnitType(c.OrgUnitTypeName) == selectedType
+                                              && (_drillDownParentId == null || c.ParentOrgUnitID == _drillDownParentId)
+                                              && c.QuotaBytes > 0);
+            int totalNotSet = totalAll - totalSet;
+
+            foreach (var c in rows)
             {
                 OrgUnitFileStat stat;
                 _fileStats.TryGetValue(c.OrgUnitID, out stat);
@@ -382,11 +496,13 @@ namespace CMS.Presentation
                     ? Math.Min(usedGB / c.QuotaGB * 100.0, 999)
                     : 0;
 
+                bool hasQuota = c.QuotaBytes > 0;
+
                 int row = dgvConfigs.Rows.Add(
                     c.QuotaConfigID,
                     c.OrgUnitTypeName,
                     c.OrgUnitName,
-                    string.Format("{0:F1} GB", c.QuotaGB),
+                    hasQuota ? string.Format("{0:F1} GB", c.QuotaGB) : "ยังไม่กำหนด",
                     GetMasterTableName(c.OrgUnitTypeName),
                     "quota_size",
                     c.UpdatedDate.HasValue
@@ -397,20 +513,35 @@ namespace CMS.Presentation
                     usedPct   > 0 ? string.Format("{0:F1}%", usedPct)  : "-"
                 );
 
-                dgvConfigs.Rows[row].Tag = c;
+                var dgvRow = dgvConfigs.Rows[row];
+                dgvRow.Tag = c;
+
+                // แยก set vs not-set ด้วยสีพื้นหลัง + สีตัวอักษร
+                dgvRow.DefaultCellStyle.BackColor = hasQuota ? RowColorSet    : RowColorNotSet;
+                dgvRow.DefaultCellStyle.ForeColor = hasQuota ? ForeColorSet   : ForeColorNotSet;
+
+                // Color-code quota column เพิ่มเติม
+                if (hasQuota)
+                    dgvRow.Cells[colCfgQuota.Index].Style.ForeColor = Color.FromArgb(26, 58, 108);
 
                 // Color-code % ใช้งาน
                 if (usedPct >= 95)
-                    dgvConfigs.Rows[row].Cells[colCfgUsedPct.Index].Style.ForeColor = Color.FromArgb(180, 30, 30);
+                    dgvRow.Cells[colCfgUsedPct.Index].Style.ForeColor = Color.FromArgb(180, 30, 30);
                 else if (usedPct >= 80)
-                    dgvConfigs.Rows[row].Cells[colCfgUsedPct.Index].Style.ForeColor = Color.FromArgb(200, 120, 0);
+                    dgvRow.Cells[colCfgUsedPct.Index].Style.ForeColor = Color.FromArgb(200, 120, 0);
                 else if (usedPct > 0)
-                    dgvConfigs.Rows[row].Cells[colCfgUsedPct.Index].Style.ForeColor = Color.FromArgb(39, 130, 70);
+                    dgvRow.Cells[colCfgUsedPct.Index].Style.ForeColor = Color.FromArgb(39, 130, 70);
             }
 
+            string filterLabel = _quotaFilter == 1 ? "กำหนดแล้ว"
+                               : _quotaFilter == 2 ? "ยังไม่กำหนด"
+                               : "ทั้งหมด";
+
             lblStatus.Text = _drillDownParentId != null
-                ? string.Format("Department ภายใต้ {0}: {1} รายการ", _drillDownParentName, dgvConfigs.Rows.Count)
-                : string.Format("ทั้งหมด {0} รายการ | ประเภท {1}", dgvConfigs.Rows.Count, GetSelectedMasterText());
+                ? string.Format("Department ภายใต้ {0}: {1} รายการ ({2}) | กำหนดแล้ว {3} | ยังไม่กำหนด {4}",
+                    _drillDownParentName, dgvConfigs.Rows.Count, filterLabel, totalSet, totalNotSet)
+                : string.Format("แสดง {0} รายการ ({1}) | กำหนดแล้ว {2} | ยังไม่กำหนด {3} | ประเภท {4}",
+                    dgvConfigs.Rows.Count, filterLabel, totalSet, totalNotSet, GetSelectedMasterText());
         }
 
         private void dgvConfigs_SelectionChanged(object sender, EventArgs e)
@@ -494,6 +625,39 @@ namespace CMS.Presentation
         private void btnClear_Click(object sender, EventArgs e) { ClearForm(); }
         private void btnClose_Click(object sender, EventArgs e) { Close(); }
 
+        private void OpenOrgUnitDetail(FolderQuotaConfig cfg)
+        {
+            if (_folderLookup == null) return;
+            if (cfg == null)
+            {
+                MessageBox.Show("กรุณาเลือกหน่วยงานก่อน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // สร้าง OrgUnit จาก FolderQuotaConfig
+            var orgUnit = new OrgUnit
+            {
+                OrgUnitID     = cfg.OrgUnitID,
+                OrgUnitNameTH = cfg.OrgUnitName ?? string.Empty,
+                OrgUnitType   = (byte)GetOrgUnitType(cfg.OrgUnitTypeName)
+            };
+
+            try
+            {
+                using (var form = new OrgUnitFolderDetailForm(
+                    orgUnit, _folderLookup, _fileBrowse, _quotaService, _user))
+                {
+                    form.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("ไม่สามารถเปิดรายละเอียด: " + ex.Message, "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private int GetSelectedMasterType()
         {
             var item = cmbMasterType.SelectedItem as MasterTypeItem;
@@ -576,10 +740,15 @@ namespace CMS.Presentation
             public string Text { get; private set; }
             public string TableName { get; private set; }
 
-            public override string ToString()
-            {
-                return Text;
-            }
+            public override string ToString() { return Text; }
+        }
+
+        private sealed class QuotaFilterItem
+        {
+            public QuotaFilterItem(int value, string text) { Value = value; Text = text; }
+            public int Value { get; private set; }
+            public string Text { get; private set; }
+            public override string ToString() { return Text; }
         }
     }
 }

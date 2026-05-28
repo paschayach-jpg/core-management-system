@@ -154,7 +154,8 @@ namespace CMS.Services
 
         public FolderQuotaConfig GetConfig(int orgUnitId, int? parentOrgUnitId = null)
         {
-            return _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);
+            var orgUnit = _orgUnitRepo.GetById(orgUnitId);
+            return ResolveConfigForSelectedOrgUnit(orgUnit, orgUnitId, parentOrgUnitId);
         }
 
         public void SaveConfig(FolderQuotaConfig config, UserContext user)
@@ -230,12 +231,21 @@ namespace CMS.Services
             _requestRepo.UpdateStatus(requestId, QuotaRequestStatus.Approved, user.UserID, remark);
 
             // อัปเดต quota config ทันที
-            var config = _configRepo.GetByOrgUnit(req.OrgUnitID) ?? new FolderQuotaConfig
-            {
-                OrgUnitID           = req.OrgUnitID,
-                WarnThresholdPct    = 80,
-                CriticalThresholdPct= 95
-            };
+            // lookup by master code first (same as ResolveConfigForSelectedOrgUnit) so OrgUnitTypeName is always populated
+            var orgUnit = _orgUnitRepo.GetById(req.OrgUnitID);
+            FolderQuotaConfig config = null;
+            if (orgUnit != null)
+                config = _configRepo.GetByMasterCode(orgUnit.OrgUnitType, orgUnit.OrgUnitCode);
+            if (config == null)
+                config = _configRepo.GetByOrgUnit(req.OrgUnitID);
+            if (config == null)
+                config = new FolderQuotaConfig
+                {
+                    OrgUnitID            = req.OrgUnitID,
+                    OrgUnitTypeName      = orgUnit != null ? OrgUnitTypeToName(orgUnit.OrgUnitType) : null,
+                    WarnThresholdPct     = 80,
+                    CriticalThresholdPct = 95
+                };
             config.QuotaBytes = req.RequestedQuotaBytes;
             config.UpdatedBy  = user.UserID;
             config.CreatedBy  = config.CreatedBy == 0 ? user.UserID : config.CreatedBy;
@@ -290,6 +300,17 @@ namespace CMS.Services
         // Helpers
         // ---------------------------------------------------------------
 
+        private static string OrgUnitTypeToName(int orgUnitType)
+        {
+            switch (orgUnitType)
+            {
+                case 1: return "Sub Committee";
+                case 2: return "Division";
+                case 3: return "Department";
+                default: return null;
+            }
+        }
+
         private static QuotaAlertLevel EvaluateAlert(double usedPct, FolderQuotaConfig config)
         {
             if (config == null) return QuotaAlertLevel.Normal;
@@ -304,17 +325,27 @@ namespace CMS.Services
             if (orgUnit == null)
                 return _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);
 
-            if (orgUnit.OrgUnitType == 2 || orgUnit.OrgUnitType == 3)
+            if (orgUnit.OrgUnitType >= 1 && orgUnit.OrgUnitType <= 3)
             {
-                var config = _configRepo.GetByMasterCode(orgUnit.OrgUnitType, orgUnit.OrgUnitCode);
-                return config != null && config.QuotaBytes > 0 ? config : null;
-            }
-
-            if (orgUnit.OrgUnitType == 1)
-            {
-                var config = _configRepo.GetByMasterCode(orgUnit.OrgUnitType, orgUnit.OrgUnitCode);
+                // Primary: JOIN EMS.OrgUnit กับ master table โดยตรง (ไม่พึ่ง ID matching)
+                var config = _configRepo.GetByEmsOrgUnitId(orgUnit.OrgUnitID, orgUnit.OrgUnitType);
                 if (config != null && config.QuotaBytes > 0)
                     return config;
+
+                // Fallback 1: lookup by code (ใช้เมื่อ OrgUnitCode ตรงกับ master code)
+                if (!string.IsNullOrWhiteSpace(orgUnit.OrgUnitCode))
+                {
+                    config = _configRepo.GetByMasterCode(orgUnit.OrgUnitType, orgUnit.OrgUnitCode);
+                    if (config != null && config.QuotaBytes > 0)
+                        return config;
+                }
+
+                // Fallback 2: lookup by OrgUnitID ตรง (ใช้งานได้กรณี SubCommittee)
+                config = _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);
+                if (config != null && config.QuotaBytes > 0)
+                    return config;
+
+                return null;
             }
 
             return _configRepo.GetByOrgUnit(orgUnitId, parentOrgUnitId);

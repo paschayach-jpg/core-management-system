@@ -102,36 +102,26 @@ namespace CMS.Presentation
             this.pnlForm.BackColor   = System.Drawing.Color.White;
             this.pnlForm.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 
-            int ex = 16, ey = 14;
-            // Row y-positions
-            int r0 = ey;        // hint label
-            int r1 = ey + 38;   // current quota info
-            int r2 = ey + 78;   // request GB input
-            int r3 = ey + 120;  // reason + submit button
-
-            // Row 0: selected org placeholder
             this.lblSelectedOrg.Text      = "กรุณาเลือก OrgUnit จากรายการด้านซ้าย";
             this.lblSelectedOrg.Font      = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Italic);
             this.lblSelectedOrg.ForeColor = System.Drawing.Color.Gray;
-            this.lblSelectedOrg.Location  = new System.Drawing.Point(ex, r0);
+            this.lblSelectedOrg.Location  = new System.Drawing.Point(16, 14);
             this.lblSelectedOrg.Size      = new System.Drawing.Size(520, 22);
 
-            // Row 1: current quota info
             this.lblCurrentQuota.Text      = "";
             this.lblCurrentQuota.Font      = new System.Drawing.Font("Segoe UI", 10);
             this.lblCurrentQuota.ForeColor = System.Drawing.Color.FromArgb(0, 80, 160);
-            this.lblCurrentQuota.Location  = new System.Drawing.Point(ex, r1);
+            this.lblCurrentQuota.Location  = new System.Drawing.Point(16, 52);
             this.lblCurrentQuota.Size      = new System.Drawing.Size(520, 24);
             this.lblCurrentQuota.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
-            // Row 2: request GB
             this.lblRequestGB.Text      = "ขอเพิ่มเป็น (GB):";
             this.lblRequestGB.Font      = new System.Drawing.Font("Segoe UI", 10);
-            this.lblRequestGB.Location  = new System.Drawing.Point(ex, r2);
+            this.lblRequestGB.Location  = new System.Drawing.Point(16, 92);
             this.lblRequestGB.Size      = new System.Drawing.Size(140, 24);
             this.lblRequestGB.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
-            this.nudRequestGB.Location      = new System.Drawing.Point(ex + 144, r2 - 1);
+            this.nudRequestGB.Location      = new System.Drawing.Point(160, 91);
             this.nudRequestGB.Size          = new System.Drawing.Size(92, 28);
             this.nudRequestGB.Font          = new System.Drawing.Font("Segoe UI", 10);
             this.nudRequestGB.Minimum       = 1;
@@ -141,18 +131,17 @@ namespace CMS.Presentation
 
             this.lblGBUnit.Text      = "GB";
             this.lblGBUnit.Font      = new System.Drawing.Font("Segoe UI", 10);
-            this.lblGBUnit.Location  = new System.Drawing.Point(ex + 244, r2);
+            this.lblGBUnit.Location  = new System.Drawing.Point(260, 92);
             this.lblGBUnit.Size      = new System.Drawing.Size(32, 24);
             this.lblGBUnit.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
-            // Row 3: reason (multiline) + submit button
             this.lblReason.Text      = "เหตุผล:";
             this.lblReason.Font      = new System.Drawing.Font("Segoe UI", 10);
-            this.lblReason.Location  = new System.Drawing.Point(ex, r3);
+            this.lblReason.Location  = new System.Drawing.Point(16, 134);
             this.lblReason.Size      = new System.Drawing.Size(140, 24);
             this.lblReason.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 
-            this.txtReason.Location   = new System.Drawing.Point(ex + 144, r3);
+            this.txtReason.Location   = new System.Drawing.Point(160, 134);
             this.txtReason.Size       = new System.Drawing.Size(300, 72);
             this.txtReason.Multiline  = true;
             this.txtReason.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
@@ -162,7 +151,7 @@ namespace CMS.Presentation
             this.btnSubmit.Text      = "ส่งคำขอ";
             this.btnSubmit.Font      = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             this.btnSubmit.Size      = new System.Drawing.Size(114, 38);
-            this.btnSubmit.Location  = new System.Drawing.Point(ex + 458, r3);
+            this.btnSubmit.Location  = new System.Drawing.Point(474, 134);
             this.btnSubmit.BackColor = System.Drawing.Color.FromArgb(26, 58, 108);
             this.btnSubmit.ForeColor = System.Drawing.Color.White;
             this.btnSubmit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;

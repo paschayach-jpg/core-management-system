@@ -31,6 +31,7 @@ namespace CMS.Presentation
         {
             _isAdmin = currentUser != null && currentUser.AppRole == 4;
             InitializeComponent();
+            BuildUI();
             _shareManagementController = shareManagementController;
             _currentUser = currentUser;
             _shareLookupController = shareLookupController;
@@ -39,7 +40,7 @@ namespace CMS.Presentation
             _externalShareStatusMap = new Dictionary<int, string>();
         }
 
-        private void InitializeComponent()
+        private void BuildUI()
         {
             // ── Palette ─────────────────────────────────────────────────────
             Color navyDark   = Color.FromArgb(25,  55,  105);
@@ -51,16 +52,8 @@ namespace CMS.Presentation
             var   uiFont     = new Font("Segoe UI", 9f);
             var   boldFont   = new Font("Segoe UI", 9f, FontStyle.Bold);
 
-            this.SuspendLayout();
-            this.Text            = "จัดการการแบ่งปัน";
-            this.ClientSize      = new Size(960, 620);
-            this.MinimumSize     = new Size(800, 520);
-            this.StartPosition   = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.MaximizeBox     = true;
-            this.MinimizeBox     = true;
-            this.BackColor       = bodyBg;
-            this.Font            = uiFont;
+            this.BackColor = bodyBg;
+            this.Font      = uiFont;
 
             // ── Header ──────────────────────────────────────────────────────
             var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60, BackColor = navyDark };
@@ -215,8 +208,8 @@ namespace CMS.Presentation
             pnlIntBar.Controls.AddRange(new Control[] { btnRevokeInternal, lblIntHint, lblIntSelCount });
 
             var tabInternal = new TabPage { Text = "  📋 Internal Shares  ", BackColor = bodyBg, UseVisualStyleBackColor = false };
-            tabInternal.Controls.Add(_dgvInternalShares);
             tabInternal.Controls.Add(pnlIntBar);
+            tabInternal.Controls.Add(_dgvInternalShares);
 
             // ── Tab: External Shares ─────────────────────────────────────────
             _dgvExternalShares = mkGrid();
@@ -275,8 +268,8 @@ namespace CMS.Presentation
             }
 
             var tabExternal = new TabPage { Text = "  🌐 External Shares  ", BackColor = bodyBg, UseVisualStyleBackColor = false };
-            tabExternal.Controls.Add(_dgvExternalShares);
             tabExternal.Controls.Add(pnlExtBar);
+            tabExternal.Controls.Add(_dgvExternalShares);
 
             // ── TabControl ────────────────────────────────────────────────────
             _tabControl = new TabControl
@@ -291,11 +284,9 @@ namespace CMS.Presentation
             var pnlBody = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10, 8, 10, 0), BackColor = bodyBg };
             pnlBody.Controls.Add(_tabControl);
 
-            this.Controls.Add(pnlBody);
             this.Controls.Add(pnlHeader);
             this.Controls.Add(pnlFooter);
-
-            this.ResumeLayout();
+            this.Controls.Add(pnlBody);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -316,23 +307,17 @@ namespace CMS.Presentation
                 var internalShares = _isAdmin
                     ? _shareManagementController.GetAllInternalShares(_currentUser).ToList()
                     : _shareManagementController.GetInternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
-                var internalData = new List<object>();
                 for (int i = 0; i < internalShares.Count; i++)
+                    _internalShareIdMap[i] = internalShares[i].FilePermissionID;
+
+                var internalData = internalShares.Select((s, i) => new
                 {
-                    var s = internalShares[i];
-                    string sharerLabel = _isAdmin
-                        ? string.Format("UserID:{0}", s.GrantedBy)
-                        : _currentUser.ADUserName ?? "Current User";
-                    internalData.Add(new
-                    {
-                        SharerName   = sharerLabel,
-                        TargetName   = ResolvePrincipalName(s.PrincipalType, s.PrincipalID),
-                        ResourceName = ResolveFileName(s.FileID),
-                        CreatedDate  = s.GrantedDate,
-                        Status       = s.RevokedDate.HasValue ? "🚫 ยกเลิกแล้ว" : "✅ ใช้งาน"
-                    });
-                    _internalShareIdMap[i] = s.FilePermissionID;
-                }
+                    SharerName   = _isAdmin ? string.Format("UserID:{0}", s.GrantedBy) : (_currentUser.ADUserName ?? "Current User"),
+                    TargetName   = ResolvePrincipalName(s.PrincipalType, s.PrincipalID),
+                    ResourceName = ResolveFileName(s.FileID),
+                    CreatedDate  = s.GrantedDate,
+                    Status       = s.RevokedDate.HasValue ? "🚫 ยกเลิกแล้ว" : "✅ ใช้งาน"
+                }).ToList();
                 _dgvInternalShares.DataSource = null;
                 _dgvInternalShares.DataSource = internalData;
 
@@ -340,10 +325,14 @@ namespace CMS.Presentation
                 var externalShares = _isAdmin
                     ? _shareManagementController.GetAllExternalShares(_currentUser).ToList()
                     : _shareManagementController.GetExternalSharesForUser(_currentUser.UserID, _currentUser).ToList();
-                var externalData = new List<object>();
                 for (int i = 0; i < externalShares.Count; i++)
                 {
-                    var s = externalShares[i];
+                    _externalShareIdMap[i]     = externalShares[i].ExternalShareID;
+                    _externalShareStatusMap[i] = externalShares[i].ShareTokenStatus ?? string.Empty;
+                }
+
+                var externalData = externalShares.Select((s, i) =>
+                {
                     string extResource = s.FileID.HasValue
                         ? ResolveFileName(s.FileID.Value)
                         : ResolveExternalFolderName(s.FolderID);
@@ -353,7 +342,7 @@ namespace CMS.Presentation
                                     : s.ShareTokenStatus == "Revoked"  ? "🚫 ยกเลิกแล้ว"
                                     : s.ShareTokenStatus == "Expired"  ? "⌛ หมดอายุ"
                                     : s.ShareTokenStatus ?? "-";
-                    externalData.Add(new
+                    return new
                     {
                         SharerName           = _currentUser.ADUserName ?? "Current User",
                         ResourceName         = extResource,
@@ -362,10 +351,8 @@ namespace CMS.Presentation
                         ExpiryDate           = s.ExpiryDate?.ToString("yyyy-MM-dd") ?? "ไม่มีกำหนด",
                         DownloadLimit        = s.DownloadLimit?.ToString() ?? "ไม่จำกัด",
                         CurrentDownloadCount = s.CurrentDownloadCount
-                    });
-                    _externalShareIdMap[i]    = s.ExternalShareID;
-                    _externalShareStatusMap[i] = s.ShareTokenStatus ?? string.Empty;
-                }
+                    };
+                }).ToList();
                 _dgvExternalShares.DataSource = null;
                 _dgvExternalShares.DataSource = externalData;
                 ColorCodeExternalRows();
@@ -737,6 +724,11 @@ namespace CMS.Presentation
             form.CancelButton = btnCancel;
 
             return form.ShowDialog(this) == DialogResult.OK ? textBox.Text.Trim() : null;
+        }
+
+        private void ShareManagementForm_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

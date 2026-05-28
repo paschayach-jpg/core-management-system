@@ -316,6 +316,9 @@ namespace CMS.Presentation
             // Build right-click context menu for folderTreeView
             BuildFolderTreeContextMenu();
 
+            // Build right-click context menu for OrgUnit tree (the "ตามองค์กร" view)
+            BuildOrgUnitTreeContextMenu();
+
             // Build right-click context menu for contentsListView
             BuildContentsListViewContextMenu();
 
@@ -441,6 +444,7 @@ namespace CMS.Presentation
             var mnuPermission = new ToolStripMenuItem("🔒  ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
             var mnuMyPermission = new ToolStripMenuItem("🔐  สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
             var mnuSharedWithMe = new ToolStripMenuItem("📥  แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
+            var mnuFolderDetail = new ToolStripMenuItem("📊  รายละเอียด Folder...", null, CtxFolderDetail_Click);
             var mnuProperties = new ToolStripMenuItem("ℹ️  รายละเอียด", null, CtxProperties_Click);
             var mnuAddQuickAccess = new ToolStripMenuItem("⭐  เพิ่มใน Quick Access", null, CtxAddQuickAccess_Click);
 
@@ -468,6 +472,7 @@ namespace CMS.Presentation
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuAddQuickAccess);
             ctx.Items.Add(new ToolStripSeparator());
+            ctx.Items.Add(mnuFolderDetail);
             ctx.Items.Add(mnuProperties);
 
             // enable/disable ตาม selection + FolderAuthorityConfig
@@ -498,6 +503,7 @@ namespace CMS.Presentation
                     mnuPermission.Enabled = isPrivileged;
                     mnuMyPermission.Enabled = true;
                     mnuSharedWithMe.Enabled = true;
+                    mnuFolderDetail.Enabled = true;
                     mnuProperties.Enabled = true;
                     mnuAddQuickAccess.Enabled = hasFolder && _quickAccessController != null;
                     return;
@@ -518,6 +524,7 @@ namespace CMS.Presentation
                 mnuPermission.Enabled = hasFolder && isPrivileged;
                 mnuMyPermission.Enabled = true;
                 mnuSharedWithMe.Enabled = true;
+                mnuFolderDetail.Enabled = hasFolder && canView && _folderReadLookupController != null;
                 mnuProperties.Enabled = hasFolder && canView;
                 mnuAddQuickAccess.Enabled = hasFolder && canView && _quickAccessController != null;
                 // mnuReload ใช้ได้เสมอ
@@ -544,6 +551,43 @@ namespace CMS.Presentation
             RefreshCurrentViewAfterMove();
         }
 
+        private void BuildOrgUnitTreeContextMenu()
+        {
+            var ctx = new ContextMenuStrip();
+            var mnuOpen = new ToolStripMenuItem("📂  เปิด", null, (s, e) =>
+            {
+                if (treeOrgUnit.SelectedNode != null)
+                {
+                    LoadOrgUnitNode(treeOrgUnit.SelectedNode);
+                    ApplyBreadcrumb(BuildBreadcrumbPath(treeOrgUnit.SelectedNode, null), new List<int?>());
+                }
+            });
+            var mnuDetail = new ToolStripMenuItem("📊  รายละเอียดพื้นที่ Folder...", null, CtxOrgUnitFolderDetail_Click);
+
+            ctx.Items.Add(mnuOpen);
+            ctx.Items.Add(new ToolStripSeparator());
+            ctx.Items.Add(mnuDetail);
+
+            ctx.Opening += (s, e) =>
+            {
+                bool hasOrg = treeOrgUnit.SelectedNode != null && treeOrgUnit.SelectedNode.Tag is OrgUnit;
+                mnuOpen.Enabled = hasOrg;
+                mnuDetail.Enabled = hasOrg && _folderReadLookupController != null;
+                if (!hasOrg)
+                    e.Cancel = true;
+            };
+
+            treeOrgUnit.ContextMenuStrip = ctx;
+            treeOrgUnit.NodeMouseClick += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right)
+                {
+                    treeOrgUnit.SelectedNode = e.Node;
+                    e.Node.EnsureVisible();
+                }
+            };
+        }
+
         private void BuildContentsListViewContextMenu()
         {
             var ctx = new ContextMenuStrip();
@@ -567,6 +611,7 @@ namespace CMS.Presentation
             var mnuPermission = new ToolStripMenuItem("ตั้งค่าสิทธิ์...", null, CtxPermission_Click);
             var mnuMyPermission = new ToolStripMenuItem("สิทธิ์ของฉัน", null, CtxMyPermissionSummary_Click);
             var mnuSharedWithMe = new ToolStripMenuItem("แบ่งปันให้ฉัน", null, CtxSharedWithMe_Click);
+            var mnuFolderDetail = new ToolStripMenuItem("รายละเอียด Folder...", null, CtxFolderDetail_Click);
             var mnuProperties = new ToolStripMenuItem("รายละเอียด", null, CtxFileProperties_Click) { ShortcutKeys = System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.Enter, ShowShortcutKeys = true };
 
             ctx.Items.Add(mnuUpload);
@@ -594,6 +639,7 @@ namespace CMS.Presentation
             ctx.Items.Add(mnuMyPermission);
             ctx.Items.Add(mnuSharedWithMe);
             ctx.Items.Add(new ToolStripSeparator());
+            ctx.Items.Add(mnuFolderDetail);
             ctx.Items.Add(mnuProperties);
 
             // enable/disable based on selection + FolderAuthorityConfig
@@ -686,6 +732,8 @@ namespace CMS.Presentation
                 mnuPermission.Enabled = isPrivileged;
                 mnuMyPermission.Enabled = true;
                 mnuSharedWithMe.Enabled = true;
+                mnuFolderDetail.Enabled = contentFolder != null && selectedFoldersInContent.Count == 1 && !hasFileSelection
+                    && canView && _folderReadLookupController != null;
                 mnuProperties.Enabled = singleFileSelected && canView;
             };
 
@@ -922,6 +970,34 @@ namespace CMS.Presentation
                 return;
 
             ShowInfo("ไม่สามารถเปิดเมนู แชร์ ได้ในขณะนี้");
+        }
+
+        private void CtxOrgUnitFolderDetail_Click(object sender, EventArgs e)
+        {
+            var node = treeOrgUnit.SelectedNode;
+            var orgUnit = node != null ? node.Tag as OrgUnit : null;
+            if (orgUnit == null)
+            {
+                ShowInfo("กรุณาเลือกหน่วยงานก่อนดูรายละเอียด");
+                return;
+            }
+
+            try
+            {
+                using (var form = new OrgUnitFolderDetailForm(
+                    orgUnit,
+                    _folderReadLookupController,
+                    _fileBrowseController,
+                    _folderQuotaService,
+                    _user))
+                {
+                    form.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowError("ไม่สามารถเปิดรายละเอียดพื้นที่ Folder ได้: " + ex.Message);
+            }
         }
 
         private async void CtxFileOpen_Click(object sender, EventArgs e)
@@ -1182,6 +1258,51 @@ namespace CMS.Presentation
                 MessageBox.Show(info, string.Format("รายละเอียด — {0}", folder.Name),
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+        }
+
+        private void CtxFolderDetail_Click(object sender, EventArgs e)
+        {
+            var folder = ResolveSelectedFolderForDetail();
+            if (folder == null)
+            {
+                ShowInfo("กรุณาเลือก Folder ก่อนดูรายละเอียด");
+                return;
+            }
+
+            if (!HasFolderViewAccess(folder))
+            {
+                ShowNoAccessFolderHint(folder.FolderName);
+                return;
+            }
+
+            try
+            {
+                using (var form = new FolderDetailForm(
+                    folder,
+                    _folderReadLookupController,
+                    _fileBrowseController,
+                    _folderQuotaService,
+                    _user))
+                {
+                    form.ShowDialog(this);
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowError("ไม่สามารถเปิดรายละเอียด Folder ได้: " + ex.Message);
+            }
+        }
+
+        private Folder ResolveSelectedFolderForDetail()
+        {
+            if (contentsListView.SelectedItems.Count == 1)
+            {
+                var contentFolder = contentsListView.SelectedItems[0].Tag as Folder;
+                if (contentFolder != null)
+                    return contentFolder;
+            }
+
+            return SelectedFolder;
         }
 
         // -----------------------------------------------------------------------
