@@ -210,10 +210,11 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void BuildUserDetailPanel()
         {
+            // Float on pnlContent so it never overlaps card children
+            int panelW = cmbDelegateTo.Width + 16 + cmbScope.Width;
             _pnlUserDetail = new Panel
             {
-                Location    = new Point(cmbDelegateTo.Left, cmbDelegateTo.Bottom + 4),
-                Size        = new Size(cmbDelegateTo.Width + cmbScope.Width + 10, 50),
+                Size        = new Size(panelW, 48),
                 BackColor   = Color.FromArgb(235, 245, 255),
                 BorderStyle = BorderStyle.FixedSingle,
                 Visible     = false,
@@ -221,22 +222,22 @@ namespace CMS.Presentation.Modules.Workflow
 
             _lblUserDetailName = new Label
             {
-                Location  = new Point(8, 5),
-                Size      = new Size(_pnlUserDetail.Width - 16, 20),
+                Location  = new Point(8, 4),
+                Size      = new Size(panelW - 16, 20),
                 Font      = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(22, 36, 62),
             };
             _lblUserDetailInfo = new Label
             {
                 Location  = new Point(8, 26),
-                Size      = new Size(_pnlUserDetail.Width - 16, 18),
+                Size      = new Size(panelW - 16, 18),
                 Font      = new Font("Segoe UI", 8.5F),
                 ForeColor = Color.FromArgb(80, 90, 120),
             };
 
             _pnlUserDetail.Controls.Add(_lblUserDetailName);
             _pnlUserDetail.Controls.Add(_lblUserDetailInfo);
-            pnlDelegationCard.Controls.Add(_pnlUserDetail);
+            pnlContent.Controls.Add(_pnlUserDetail);
             _pnlUserDetail.BringToFront();
         }
 
@@ -249,7 +250,13 @@ namespace CMS.Presentation.Modules.Workflow
             if (!string.IsNullOrEmpty(user.Department)) parts.Add(user.Department);
             if (!string.IsNullOrEmpty(user.Mail))       parts.Add(user.Mail);
             _lblUserDetailInfo.Text = string.Join("  |  ", parts);
-            _pnlUserDetail.Visible = true;
+
+            // Position: directly below cmbDelegateTo, converted to pnlContent coordinates
+            var screenPt = pnlDelegationCard.PointToScreen(
+                new Point(cmbDelegateTo.Left, cmbDelegateTo.Bottom + 2));
+            _pnlUserDetail.Location = pnlContent.PointToClient(screenPt);
+            _pnlUserDetail.Visible  = true;
+            _pnlUserDetail.BringToFront();
         }
 
         private void HideUserDetail()
