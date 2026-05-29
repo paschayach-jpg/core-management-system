@@ -129,9 +129,9 @@ namespace CMS.Presentation.Modules.Workflow
                 SendMessage(cmbDelegateTo.Handle, CB_SETCUEBANNER, IntPtr.Zero,
                     "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
 
-            // Attach search-as-you-type
-            cmbDelegateTo.TextChanged -= cmbDelegateTo_TextChanged;
-            cmbDelegateTo.TextChanged += cmbDelegateTo_TextChanged;
+            // Attach search-as-you-type (KeyUp avoids suppression-flag complexity)
+            cmbDelegateTo.KeyUp -= cmbDelegateTo_KeyUp;
+            cmbDelegateTo.KeyUp += cmbDelegateTo_KeyUp;
 
             // Scope dropdown: all + unique workflow names from current tasks
             cmbScope.Items.Clear();
@@ -200,72 +200,66 @@ namespace CMS.Presentation.Modules.Workflow
 
         // ─── Delegate-to LDAP auto-filter ───────────────────────────────────────
 
-        private bool _suppressTextChanged = false;
-
-        private void cmbDelegateTo_TextChanged(object sender, EventArgs e)
+        private void cmbDelegateTo_KeyUp(object sender, KeyEventArgs e)
         {
-            if (_suppressTextChanged) return;
+            // Ignore navigation keys — let ComboBox handle them normally
+            if (e.KeyCode == Keys.Up     || e.KeyCode == Keys.Down  ||
+                e.KeyCode == Keys.Enter  || e.KeyCode == Keys.Escape ||
+                e.KeyCode == Keys.Tab    || e.KeyCode == Keys.Return)
+                return;
 
             string keyword = cmbDelegateTo.Text.Trim();
-
-            // Clear confirmed selection when text changes
             _selectedLdapUser = null;
 
             if (keyword.Length < 2)
             {
+                cmbDelegateTo.DroppedDown = false;
                 cmbDelegateTo.Items.Clear();
                 return;
             }
 
+            var displayItems = new List<string>();
+
             if (_ldapSearchService != null)
             {
-                // LDAP live search
                 try
                 {
                     _ldapResults = _ldapSearchService.Search(keyword, maxResults: 30);
+                    foreach (var u in _ldapResults)
+                        displayItems.Add(u.DropdownLabel);
                 }
                 catch (Exception ex)
                 {
                     _loggingService.Error($"LDAP search error: {ex.Message}", ex);
                     _ldapResults = new List<CMS.Services.DTOs.LdapUserResult>();
                 }
-
-                _suppressTextChanged = true;
-                int caretPos = cmbDelegateTo.SelectionStart;
-                cmbDelegateTo.Items.Clear();
-                foreach (var u in _ldapResults)
-                    cmbDelegateTo.Items.Add(u.DropdownLabel);
-                cmbDelegateTo.Text = keyword;
-                cmbDelegateTo.SelectionStart  = caretPos;
-                cmbDelegateTo.SelectionLength = 0;
-                _suppressTextChanged = false;
-
-                if (_ldapResults.Count > 0 && !cmbDelegateTo.DroppedDown)
-                    cmbDelegateTo.DroppedDown = true;
             }
             else
             {
-                // Fallback: filter local EmployeeApi list
-                var matches = _employees
+                _ldapResults = new List<CMS.Services.DTOs.LdapUserResult>();
+                displayItems = _employees
                     .Where(emp =>
                         emp.DropdownLabel.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0 ||
                         emp.DisplayName.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0 ||
                         emp.EmployeeCode.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .Select(emp => emp.DropdownLabel)
                     .ToList();
-
-                _suppressTextChanged = true;
-                int caretPos = cmbDelegateTo.SelectionStart;
-                cmbDelegateTo.Items.Clear();
-                foreach (var emp in matches)
-                    cmbDelegateTo.Items.Add(emp.DropdownLabel);
-                cmbDelegateTo.Text = keyword;
-                cmbDelegateTo.SelectionStart  = caretPos;
-                cmbDelegateTo.SelectionLength = 0;
-                _suppressTextChanged = false;
-
-                if (matches.Count > 0 && !cmbDelegateTo.DroppedDown)
-                    cmbDelegateTo.DroppedDown = true;
             }
+
+            // Update items without triggering further events
+            cmbDelegateTo.BeginUpdate();
+            cmbDelegateTo.Items.Clear();
+            foreach (var item in displayItems)
+                cmbDelegateTo.Items.Add(item);
+            cmbDelegateTo.EndUpdate();
+
+            // Restore typed text (Items.Clear resets it) and open dropdown
+            cmbDelegateTo.Text = keyword;
+            cmbDelegateTo.SelectionStart  = keyword.Length;
+            cmbDelegateTo.SelectionLength = 0;
+
+            if (displayItems.Count > 0)
+                cmbDelegateTo.DroppedDown = true;
         }
 
         private void cmbDelegateTo_SelectionChangeCommitted(object sender, EventArgs e)
