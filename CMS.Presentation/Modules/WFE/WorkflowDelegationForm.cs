@@ -226,7 +226,7 @@ namespace CMS.Presentation.Modules.Workflow
                 {
                     _ldapResults = _ldapSearchService.Search(keyword, maxResults: 30);
                     foreach (var u in _ldapResults)
-                        displayItems.Add(u.DropdownLabel);
+                        displayItems.Add(u.SamAccountName);
                 }
                 catch (Exception ex)
                 {
