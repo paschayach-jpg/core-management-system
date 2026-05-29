@@ -147,28 +147,6 @@ namespace CMS.Presentation.Modules.Workflow
             }
         }
 
-        public WorkflowHistorySearchCriteria GetSearchCriteria()
-        {
-            return new WorkflowHistorySearchCriteria
-            {
-                TemplateId = null,
-                Status = null,
-                FromDate = null,
-                ToDate = null,
-                InitiatedBy = null,
-                AssignedTo = null,
-                PageNumber = 1,
-                PageSize = 50
-            };
-        }
-
-        public void ClearResults()
-        {
-            var grid = this.Controls.OfType<DataGridView>().FirstOrDefault();
-            if (grid != null)
-                grid.DataSource = null;
-        }
-
         public void ShowError(string message)
         {
             MessageBox.Show(message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
