@@ -129,6 +129,8 @@ namespace CMS.Presentation.Modules.Workflow
                 SendMessage(cmbDelegateTo.Handle, CB_SETCUEBANNER, IntPtr.Zero,
                     "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
 
+            _lastSearchKeyword = string.Empty;
+
             // Attach search-as-you-type (KeyUp avoids suppression-flag complexity)
             cmbDelegateTo.KeyUp -= cmbDelegateTo_KeyUp;
             cmbDelegateTo.KeyUp += cmbDelegateTo_KeyUp;
@@ -200,6 +202,8 @@ namespace CMS.Presentation.Modules.Workflow
 
         // ─── Delegate-to LDAP auto-filter ───────────────────────────────────────
 
+        private string _lastSearchKeyword = string.Empty;
+
         private void cmbDelegateTo_KeyUp(object sender, KeyEventArgs e)
         {
             // Ignore navigation keys — let ComboBox handle them normally
@@ -209,6 +213,11 @@ namespace CMS.Presentation.Modules.Workflow
                 return;
 
             string keyword = cmbDelegateTo.Text.Trim();
+
+            // Skip re-search if keyword unchanged (prevents click-in-dropdown from resetting list)
+            if (keyword == _lastSearchKeyword) return;
+            _lastSearchKeyword = keyword;
+
             _selectedLdapUser = null;
 
             if (keyword.Length < 2)
