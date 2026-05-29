@@ -414,39 +414,32 @@ namespace CMS.Presentation.Modules.Workflow
 
                 if (result == DialogResult.Yes)
                 {
-                    if (dgvMyTasks.SelectedRows.Count > 0)
+                    if (stepInstanceId > 0)
                     {
-                        var selectedRow = dgvMyTasks.SelectedRows[0];
-                        var taskId = (int?)selectedRow.Cells["TaskId"].Value ?? 0;
-
-                        if (taskId > 0)
+                        try
                         {
-                            try
+                            _workflowService.RejectWorkflowStep(new CMS.Services.DTOs.RejectWorkflowStepRequest
                             {
-                                _workflowService.RejectWorkflowStep(new CMS.Services.DTOs.RejectWorkflowStepRequest
-                                {
-                                    WorkflowStepInstanceId = taskId,
-                                    RejectionReason = "Rejected from dashboard"
-                                }, _userContext);
+                                WorkflowStepInstanceId = stepInstanceId,
+                                RejectionReason = "Rejected from dashboard"
+                            }, _userContext);
 
-                                _auditService.Log(new AuditEntry
-                                {
-                                    Action = "WorkflowStepRejected",
-                                    TableName = "WorkflowStepInstance",
-                                    RecordID = taskId,
-                                    UserName = _userContext.ADUserName,
-                                    AuditDate = DateTime.Now,
-                                    NewValue = "Rejected from dashboard"
-                                });
-
-                                _loggingService.Info($"Rejected workflow step {taskId}");
-                                ShowInfo("Task rejected successfully.");
-                            }
-                            catch (Exception ex)
+                            _auditService.Log(new AuditEntry
                             {
-                                ShowError($"Failed to reject task: {ex.Message}");
-                            }
+                                Action = "WorkflowStepRejected",
+                                TableName = "WorkflowStepInstance",
+                                RecordID = stepInstanceId,
+                                UserName = _userContext.ADUserName,
+                                AuditDate = DateTime.Now,
+                                NewValue = "Rejected from dashboard"
+                            });
+
+                            _loggingService.Info($"Rejected workflow step {stepInstanceId}");
+                            ShowInfo("Task rejected successfully.");
                         }
+                        catch (Exception ex)
+                        {
+                            ShowError($"Failed to reject task: {ex.Message}");
                     }
                     _presenter.RefreshDashboard();
                 }
