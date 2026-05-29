@@ -486,7 +486,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblTo.Name = "lblTo";
             this.lblTo.Size = new System.Drawing.Size(104, 15);
             this.lblTo.TabIndex = 3;
-            this.lblTo.Text = "ถึง (ผู้รับมอบหมาย)";
+            this.lblTo.Text = "ถึง (ผู้รับมอบหมาย)  —  ค้นหาจาก AD";
             // 
             // txtFromUser
             // 

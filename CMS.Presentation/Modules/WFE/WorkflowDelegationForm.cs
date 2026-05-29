@@ -27,6 +27,10 @@ namespace CMS.Presentation.Modules.Workflow
         private readonly Color _navyDark = Color.FromArgb(31, 56, 100);
         private readonly Color _navHover = Color.FromArgb(245, 249, 255);
 
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, string lParam);
+        private const int CB_SETCUEBANNER = 0x1703;
+
         private List<EmployeeSummary> _employees = new List<EmployeeSummary>();
         private List<WorkflowTaskResult> _myTasks = new List<WorkflowTaskResult>();
 
@@ -64,6 +68,9 @@ namespace CMS.Presentation.Modules.Workflow
             LoadEmployees();
             LoadMyTasks();
             InitializeFormData();
+            // Re-apply cue banner after InitializeFormData clears the combo
+            SendMessage(cmbDelegateTo.Handle, CB_SETCUEBANNER, IntPtr.Zero,
+                "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
             LoadHistoryRows();
         }
 
@@ -111,22 +118,18 @@ namespace CMS.Presentation.Modules.Workflow
                 fromDisplay += ")";
             txtFromUser.Text = fromDisplay;
 
-            // Delegate-to: searchable combo (type to filter) + autocomplete from employee list
+            // Delegate-to: start empty — user types to trigger AD search
             cmbDelegateTo.Items.Clear();
-            cmbDelegateTo.DropDownStyle = ComboBoxStyle.DropDown;
-            cmbDelegateTo.AutoCompleteMode   = AutoCompleteMode.SuggestAppend;
-            cmbDelegateTo.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            cmbDelegateTo.DropDownStyle    = ComboBoxStyle.DropDown;
+            cmbDelegateTo.AutoCompleteMode = AutoCompleteMode.None; // manual search only
+            cmbDelegateTo.Text             = string.Empty;
 
-            var acSource = new AutoCompleteStringCollection();
-            foreach (var emp in _employees)
-            {
-                cmbDelegateTo.Items.Add(emp.DropdownLabel);
-                acSource.Add(emp.DropdownLabel);
-            }
-            cmbDelegateTo.AutoCompleteCustomSource = acSource;
-            cmbDelegateTo.Text = string.Empty;
+            // Native cue-banner placeholder (Vista+)
+            if (cmbDelegateTo.IsHandleCreated)
+                SendMessage(cmbDelegateTo.Handle, CB_SETCUEBANNER, IntPtr.Zero,
+                    "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
 
-            // Attach search-as-you-type filter on TextChanged
+            // Attach search-as-you-type
             cmbDelegateTo.TextChanged -= cmbDelegateTo_TextChanged;
             cmbDelegateTo.TextChanged += cmbDelegateTo_TextChanged;
 
@@ -441,6 +444,8 @@ namespace CMS.Presentation.Modules.Workflow
         private void btnCancel_Click(object sender, EventArgs e)
         {
             InitializeFormData();
+            SendMessage(cmbDelegateTo.Handle, CB_SETCUEBANNER, IntPtr.Zero,
+                "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
         }
 
         // ─── Ribbon / Toolbar ────────────────────────────────────────────────────
