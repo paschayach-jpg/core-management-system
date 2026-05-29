@@ -137,7 +137,10 @@ namespace CMS.Presentation.Modules.Workflow
             _selectedLdapUser  = null;
             HideUserDetail();
 
-            // Attach search-as-you-type
+            // KeyDown clears items BEFORE native WM_CHAR prefix-match runs
+            cmbDelegateTo.KeyDown -= cmbDelegateTo_KeyDown;
+            cmbDelegateTo.KeyDown += cmbDelegateTo_KeyDown;
+            // KeyUp triggers debounce search
             cmbDelegateTo.KeyUp -= cmbDelegateTo_KeyUp;
             cmbDelegateTo.KeyUp += cmbDelegateTo_KeyUp;
 
@@ -268,6 +271,23 @@ namespace CMS.Presentation.Modules.Workflow
         // ─── Delegate-to LDAP auto-filter ───────────────────────────────────────
 
         private string _lastSearchKeyword = string.Empty;
+
+        private void cmbDelegateTo_KeyDown(object sender, KeyEventArgs e)
+        {
+            // Let navigation keys pass through unchanged
+            if (e.KeyCode == Keys.Up     || e.KeyCode == Keys.Down  ||
+                e.KeyCode == Keys.Enter  || e.KeyCode == Keys.Escape ||
+                e.KeyCode == Keys.Tab    || e.KeyCode == Keys.Return)
+                return;
+
+            // Clear items NOW — before WM_CHAR fires and native prefix-match jumps to item 0
+            if (cmbDelegateTo.Items.Count > 0)
+            {
+                cmbDelegateTo.BeginUpdate();
+                cmbDelegateTo.Items.Clear();
+                cmbDelegateTo.EndUpdate();
+            }
+        }
 
         private void cmbDelegateTo_KeyUp(object sender, KeyEventArgs e)
         {
