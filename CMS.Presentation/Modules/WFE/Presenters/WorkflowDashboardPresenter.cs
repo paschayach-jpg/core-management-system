@@ -153,7 +153,8 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
             {
                 try
                 {
-                    var steps = _workflowService.GetWorkflowStepInstances(instance.WorkflowInstanceId, _userContext);
+                    var fullInstance = _workflowService.GetWorkflowInstance(instance.WorkflowInstanceId, _userContext);
+                    var steps = fullInstance?.StepHistory;
                     if (steps != null)
                     {
                         foreach (var step in steps)

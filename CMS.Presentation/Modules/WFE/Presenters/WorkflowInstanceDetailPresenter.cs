@@ -69,9 +69,8 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
         {
             try
             {
-                var history = _workflowService.GetWorkflowStepInstances(workflowInstanceId, _userContext);
-                if (history == null)
-                    history = new List<WorkflowStepInstanceResult>();
+                var fullInstance = _workflowService.GetWorkflowInstance(workflowInstanceId, _userContext);
+                var history = fullInstance?.StepHistory ?? new List<WorkflowStepInstanceResult>();
 
                 _view.DisplayStepHistory(history);
                 _loggingService.Info($"Loaded step history for instance {workflowInstanceId}");
@@ -150,12 +149,7 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                     return;
                 }
 
-                bool success = _workflowService.CancelWorkflowInstance(_currentInstanceId, _userContext);
-                if (!success)
-                {
-                    _view.ShowError("Failed to cancel workflow instance");
-                    return;
-                }
+                _workflowService.SuspendWorkflowInstance(_currentInstanceId, _userContext);
 
                 _auditService.Log(new AuditEntry
                 {

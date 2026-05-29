@@ -423,7 +423,11 @@ namespace CMS.Presentation.Modules.Workflow
                         {
                             try
                             {
-                                _workflowService.RejectWorkflowStep(taskId, "Rejected from dashboard", _userContext);
+                                _workflowService.RejectWorkflowStep(new CMS.Services.DTOs.RejectWorkflowStepRequest
+                                {
+                                    WorkflowStepInstanceId = taskId,
+                                    RejectionReason = "Rejected from dashboard"
+                                }, _userContext);
 
                                 _auditService.Log(new AuditEntry
                                 {

@@ -103,7 +103,8 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
 
                         foreach (var instance in instances.Items)
                         {
-                            var steps = _workflowService.GetWorkflowStepInstances(instance.WorkflowInstanceId, _userContext);
+                            var fullInstance = _workflowService.GetWorkflowInstance(instance.WorkflowInstanceId, _userContext);
+                            var steps = fullInstance?.StepHistory;
                             if (steps != null)
                             {
                                 foreach (var step in steps)
@@ -177,7 +178,8 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
 
                         foreach (var instance in instances.Items)
                         {
-                            var steps = _workflowService.GetWorkflowStepInstances(instance.WorkflowInstanceId, _userContext);
+                            var fullInstance = _workflowService.GetWorkflowInstance(instance.WorkflowInstanceId, _userContext);
+                            var steps = fullInstance?.StepHistory;
                             if (steps != null)
                             {
                                 foreach (var step in steps)
@@ -266,7 +268,8 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
 
                         foreach (var instance in instances.Items)
                         {
-                            var steps = _workflowService.GetWorkflowStepInstances(instance.WorkflowInstanceId, _userContext);
+                            var fullInstance = _workflowService.GetWorkflowInstance(instance.WorkflowInstanceId, _userContext);
+                            var steps = fullInstance?.StepHistory;
                             if (steps != null)
                             {
                                 foreach (var step in steps)
