@@ -562,6 +562,7 @@ namespace CMS.Presentation
                     slaCalculator: slaCalculator,
                     workflowTemplateService: workflowTemplateService,
                     workflowDelegationService: workflowDelegationService,
+                    ldapUserSearchService: new CMS.Services.LdapUserSearchService(configManager),
                     kbVersionRepository: kbVersionRepository,
                     kbDashboardService: kbDashboardService,
                     kbCategoryRepository: kbCategoryRepository,
