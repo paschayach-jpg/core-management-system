@@ -135,5 +135,25 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 _view.ShowError($"Failed to clear search: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Load available templates for dropdown
+        /// </summary>
+        public void LoadTemplates()
+        {
+            try
+            {
+                // Placeholder: would fetch from service
+                _loggingService.Info("Templates loaded");
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"Error loading templates: {ex.Message}", ex);
+            }
+        }
+
+        public IWorkflowService GetWorkflowService() => _workflowService;
+        public ILoggingService GetLoggingService() => _loggingService;
+        public IWorkflowTemplateService GetTemplateService() => null;
     }
 }

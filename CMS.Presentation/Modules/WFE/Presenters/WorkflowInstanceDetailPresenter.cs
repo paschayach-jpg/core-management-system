@@ -69,9 +69,12 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
         {
             try
             {
-                // TODO: Implement step history loading from repository
-                var history = new List<WorkflowStepInstanceResult>();
+                var history = _workflowService.GetWorkflowStepInstances(workflowInstanceId, _userContext);
+                if (history == null)
+                    history = new List<WorkflowStepInstanceResult>();
+
                 _view.DisplayStepHistory(history);
+                _loggingService.Info($"Loaded step history for instance {workflowInstanceId}");
             }
             catch (Exception ex)
             {
@@ -141,8 +144,18 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
         {
             try
             {
-                // TODO: Implement cancel logic
-                _view.ShowInfo("Workflow instance cancelled successfully");
+                if (_currentInstanceId <= 0)
+                {
+                    _view.ShowError("No workflow instance selected");
+                    return;
+                }
+
+                bool success = _workflowService.CancelWorkflowInstance(_currentInstanceId, _userContext);
+                if (!success)
+                {
+                    _view.ShowError("Failed to cancel workflow instance");
+                    return;
+                }
 
                 _auditService.Log(new AuditEntry
                 {
@@ -152,6 +165,10 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                     UserName = _userContext.ADUserName,
                     AuditDate = DateTime.Now
                 });
+
+                _view.ShowInfo("Workflow instance cancelled successfully");
+                LoadInstanceDetails(_currentInstanceId);
+                _loggingService.Info($"Cancelled workflow instance {_currentInstanceId}");
             }
             catch (Exception ex)
             {

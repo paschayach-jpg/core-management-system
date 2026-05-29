@@ -44,7 +44,20 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 _view.DisplayTemplate(template);
                 _view.ClearCanvas();
 
-                // TODO: Load steps and connections from repository
+                var steps = _templateService.GetTemplateSteps(templateId, _userContext);
+                if (steps != null && steps.Count > 0)
+                {
+                    foreach (var step in steps)
+                        _view.DrawStep(step);
+
+                    var connections = _templateService.GetStepConnections(templateId, _userContext);
+                    if (connections != null)
+                    {
+                        foreach (var conn in connections)
+                            _view.DrawConnection(conn.FromStepId, conn.ToStepId, conn.Condition);
+                    }
+                }
+
                 _loggingService.Info($"Loaded template {templateId} for editing");
             }
             catch (Exception ex)
@@ -147,12 +160,31 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
             {
                 var errors = new List<string>();
 
-                // TODO: Implement validation logic
-                // - Check for Start step
-                // - Check for End step
-                // - Check for orphaned steps
-                // - Check for cycles
-                // - Check for missing connections
+                if (!_currentTemplateId.HasValue)
+                {
+                    errors.Add("No template loaded");
+                }
+                else
+                {
+                    var steps = _templateService.GetTemplateSteps(_currentTemplateId.Value, _userContext);
+                    var connections = _templateService.GetStepConnections(_currentTemplateId.Value, _userContext);
+
+                    if (steps == null || steps.Count == 0)
+                        errors.Add("Template has no steps");
+                    else
+                    {
+                        bool hasStart = steps.Any(s => s.StepType == "Start");
+                        bool hasEnd = steps.Any(s => s.StepType == "End");
+
+                        if (!hasStart)
+                            errors.Add("Template must have a Start step");
+                        if (!hasEnd)
+                            errors.Add("Template must have an End step");
+
+                        if (connections == null || connections.Count == 0)
+                            errors.Add("Template has no connections between steps");
+                    }
+                }
 
                 if (errors.Count > 0)
                 {

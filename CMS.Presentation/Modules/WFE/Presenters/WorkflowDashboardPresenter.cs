@@ -151,16 +151,34 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
 
             foreach (var instance in instances)
             {
-                // TODO: Get step instances from service and evaluate SLA status
-                // For now, use placeholder calculation
-                totalSteps += instance.TotalStepCount;
-            }
-
-            if (totalSteps > 0)
-            {
-                onTimeSteps = (int)(totalSteps * 0.75);
-                atRiskSteps = (int)(totalSteps * 0.15);
-                overdueSteps = (int)(totalSteps * 0.10);
+                try
+                {
+                    var steps = _workflowService.GetWorkflowStepInstances(instance.WorkflowInstanceId, _userContext);
+                    if (steps != null)
+                    {
+                        foreach (var step in steps)
+                        {
+                            totalSteps++;
+                            switch (step.SLAStatus)
+                            {
+                                case CMS.Domain.Enums.SLAStatus.OnTime:
+                                    onTimeSteps++;
+                                    break;
+                                case CMS.Domain.Enums.SLAStatus.AtRisk:
+                                    atRiskSteps++;
+                                    break;
+                                case CMS.Domain.Enums.SLAStatus.Overdue:
+                                    overdueSteps++;
+                                    break;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _loggingService.Warn($"Failed to load steps for instance {instance.WorkflowInstanceId}: {ex.Message}");
+                    totalSteps += instance.TotalStepCount;
+                }
             }
 
             metrics.TotalTasks = totalSteps;

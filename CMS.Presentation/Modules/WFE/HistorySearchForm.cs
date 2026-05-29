@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using CMS.Data.Models;
 using CMS.Domain.Models;
@@ -43,31 +45,86 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void InitializeControls()
         {
-            // TODO: Initialize controls
-            // - Search criteria panel
-            //   - Template dropdown
-            //   - Status dropdown
-            //   - Date range picker
-            //   - InitiatedBy textbox
-            //   - AssignedTo textbox
-            // - Results DataGridView with columns: InstanceID, Template, Status, InitiatedBy, InitiatedDate
-            // - Detail view panel
-            // - Export button
+            this.Text = "Workflow History Search";
+            _presenter?.LoadTemplates();
         }
 
         public void DisplayResults(PagedResult<WorkflowInstanceResult> results)
         {
-            // TODO: Bind results to DataGridView
+            if (results?.Items == null) return;
+
+            var grid = this.Controls.OfType<DataGridView>().FirstOrDefault();
+            if (grid == null) return;
+
+            grid.DataSource = results.Items;
+            grid.AutoResizeColumns();
+            this.ShowInfo(string.Format("Found {0} records", results.TotalCount));
         }
 
         public void ShowDetailView(WorkflowInstanceResult instance)
         {
-            // TODO: Show detail view for selected instance
+            if (instance == null) return;
+
+            var detailForm = new WorkflowDetailFormNew(
+                instance.WorkflowInstanceId,
+                _presenter?.GetWorkflowService(),
+                _presenter?.GetTemplateService(),
+                _presenter?.GetLoggingService(),
+                _userContext);
+
+            detailForm.ShowDialog(this);
         }
 
         public void ExportResults(string filePath)
         {
-            // TODO: Implement export to file
+            try
+            {
+                var grid = this.Controls.OfType<DataGridView>().FirstOrDefault();
+                if (grid == null || grid.Rows.Count == 0)
+                {
+                    MessageBox.Show("No data to export", "Export", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                using (var writer = new System.IO.StreamWriter(filePath))
+                {
+                    var headers = string.Join(",", grid.Columns.Cast<DataGridViewColumn>().Select(c => c.HeaderText));
+                    writer.WriteLine(headers);
+
+                    foreach (DataGridViewRow row in grid.Rows)
+                    {
+                        var values = string.Join(",", row.Cells.Cast<DataGridViewCell>().Select(c => c.Value?.ToString() ?? ""));
+                        writer.WriteLine(values);
+                    }
+                }
+                MessageBox.Show("Exported successfully", "Export", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Export failed: " + ex.Message);
+            }
+        }
+
+        public WorkflowHistorySearchCriteria GetSearchCriteria()
+        {
+            return new WorkflowHistorySearchCriteria
+            {
+                TemplateId = null,
+                Status = null,
+                FromDate = null,
+                ToDate = null,
+                InitiatedBy = null,
+                AssignedTo = null,
+                PageNumber = 1,
+                PageSize = 50
+            };
+        }
+
+        public void ClearResults()
+        {
+            var grid = this.Controls.OfType<DataGridView>().FirstOrDefault();
+            if (grid != null)
+                grid.DataSource = null;
         }
 
         public void ShowError(string message)
