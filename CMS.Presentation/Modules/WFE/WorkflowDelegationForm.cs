@@ -29,7 +29,7 @@ namespace CMS.Presentation.Modules.Workflow
 
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, string lParam);
-        private const int CB_SETCUEBANNER = 0x1703;
+        private const int EM_SETCUEBANNER = 0x1501;
 
         private List<EmployeeSummary> _employees = new List<EmployeeSummary>();
         private List<WorkflowTaskResult> _myTasks = new List<WorkflowTaskResult>();
@@ -38,6 +38,12 @@ namespace CMS.Presentation.Modules.Workflow
         private CMS.Services.DTOs.LdapUserResult _selectedLdapUser = null;
 
         private System.Windows.Forms.Timer _searchTimer;
+
+        // Search TextBox + results ListBox (replaces cmbDelegateTo which has uncontrollable native autocomplete)
+        private TextBox _txtSearch;
+        private ListBox _lstResults;
+        private Panel   _pnlResults;
+
         private Panel _pnlUserDetail;
         private Label _lblUserDetailName;
         private Label _lblUserDetailInfo;
@@ -72,9 +78,8 @@ namespace CMS.Presentation.Modules.Workflow
             LoadEmployees();
             LoadMyTasks();
             BuildUserDetailPanel();
+            ReplaceComboWithSearchBox();
             InitializeFormData();
-            SendMessage(cmbDelegateTo.Handle, CB_SETCUEBANNER, IntPtr.Zero,
-                "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
             LoadHistoryRows();
         }
 
@@ -122,27 +127,12 @@ namespace CMS.Presentation.Modules.Workflow
                 fromDisplay += ")";
             txtFromUser.Text = fromDisplay;
 
-            // Delegate-to: start empty — user types to trigger AD search
-            cmbDelegateTo.Items.Clear();
-            cmbDelegateTo.DropDownStyle    = ComboBoxStyle.DropDown;
-            cmbDelegateTo.AutoCompleteMode = AutoCompleteMode.None; // manual search only
-            cmbDelegateTo.Text             = string.Empty;
-
-            // Native cue-banner placeholder (Vista+)
-            if (cmbDelegateTo.IsHandleCreated)
-                SendMessage(cmbDelegateTo.Handle, CB_SETCUEBANNER, IntPtr.Zero,
-                    "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
-
+            // Reset search box
+            if (_txtSearch != null) _txtSearch.Text = string.Empty;
+            HideResults();
             _lastSearchKeyword = string.Empty;
             _selectedLdapUser  = null;
             HideUserDetail();
-
-            // KeyDown clears items BEFORE native WM_CHAR prefix-match runs
-            cmbDelegateTo.KeyDown -= cmbDelegateTo_KeyDown;
-            cmbDelegateTo.KeyDown += cmbDelegateTo_KeyDown;
-            // KeyUp triggers debounce search
-            cmbDelegateTo.KeyUp -= cmbDelegateTo_KeyUp;
-            cmbDelegateTo.KeyUp += cmbDelegateTo_KeyUp;
 
             // Scope dropdown: all + unique workflow names from current tasks
             cmbScope.Items.Clear();
@@ -254,9 +244,10 @@ namespace CMS.Presentation.Modules.Workflow
             if (!string.IsNullOrEmpty(user.Mail))       parts.Add(user.Mail);
             _lblUserDetailInfo.Text = string.Join("  |  ", parts);
 
-            // Position: directly below cmbDelegateTo, converted to pnlContent coordinates
+            // Position: directly below _txtSearch, converted to pnlContent coordinates
+            var anchor = _txtSearch ?? (Control)cmbDelegateTo;
             var screenPt = pnlDelegationCard.PointToScreen(
-                new Point(cmbDelegateTo.Left, cmbDelegateTo.Bottom + 2));
+                new Point(anchor.Left, anchor.Bottom + 2));
             _pnlUserDetail.Location = pnlContent.PointToClient(screenPt);
             _pnlUserDetail.Visible  = true;
             _pnlUserDetail.BringToFront();
@@ -268,62 +259,66 @@ namespace CMS.Presentation.Modules.Workflow
                 _pnlUserDetail.Visible = false;
         }
 
-        // ─── Delegate-to LDAP auto-filter ───────────────────────────────────────
+        // ─── Delegate-to: TextBox + floating ListBox (no native ComboBox autocomplete) ──
 
         private string _lastSearchKeyword = string.Empty;
 
-        private void cmbDelegateTo_KeyDown(object sender, KeyEventArgs e)
+        private void ReplaceComboWithSearchBox()
         {
-            // Let navigation keys pass through unchanged
-            if (e.KeyCode == Keys.Up     || e.KeyCode == Keys.Down  ||
-                e.KeyCode == Keys.Enter  || e.KeyCode == Keys.Escape ||
-                e.KeyCode == Keys.Tab    || e.KeyCode == Keys.Return)
-                return;
+            // Hide native ComboBox (kept in Designer for compatibility)
+            cmbDelegateTo.Visible = false;
 
-            // Clear items NOW — before WM_CHAR fires and native prefix-match jumps to item 0
-            if (cmbDelegateTo.Items.Count > 0)
+            // TextBox at same position/size
+            _txtSearch = new TextBox
             {
-                cmbDelegateTo.BeginUpdate();
-                cmbDelegateTo.Items.Clear();
-                cmbDelegateTo.EndUpdate();
-            }
+                Location    = cmbDelegateTo.Location,
+                Size        = new Size(cmbDelegateTo.Width, cmbDelegateTo.Height),
+                Font        = cmbDelegateTo.Font,
+                BorderStyle = BorderStyle.FixedSingle,
+            };
+            SendMessage(_txtSearch.Handle, EM_SETCUEBANNER, (IntPtr)1,
+                "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
+            _txtSearch.TextChanged += TxtSearch_TextChanged;
+            _txtSearch.Leave       += TxtSearch_Leave;
+            _txtSearch.KeyDown     += TxtSearch_KeyDown;
+            pnlDelegationCard.Controls.Add(_txtSearch);
+            _txtSearch.BringToFront();
+
+            // Floating results panel on pnlContent (so it overlays other controls)
+            _pnlResults = new Panel
+            {
+                Size        = new Size(cmbDelegateTo.Width, 0),
+                BackColor   = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Visible     = false,
+            };
+            _lstResults = new ListBox
+            {
+                Dock        = DockStyle.Fill,
+                Font        = new Font("Segoe UI", 9F),
+                BorderStyle = BorderStyle.None,
+                ItemHeight  = 22,
+            };
+            _lstResults.Click          += LstResults_Click;
+            _lstResults.KeyDown        += LstResults_KeyDown;
+            _pnlResults.Controls.Add(_lstResults);
+            pnlContent.Controls.Add(_pnlResults);
+            _pnlResults.BringToFront();
         }
 
-        private void cmbDelegateTo_KeyUp(object sender, KeyEventArgs e)
+        private void TxtSearch_TextChanged(object sender, EventArgs e)
         {
-            if (e.KeyCode == Keys.Up    || e.KeyCode == Keys.Down   ||
-                e.KeyCode == Keys.Enter || e.KeyCode == Keys.Escape  ||
-                e.KeyCode == Keys.Tab   || e.KeyCode == Keys.Return)
-                return;
-
-            string keyword = cmbDelegateTo.Text.Trim();
+            string keyword = _txtSearch.Text.Trim();
             if (keyword == _lastSearchKeyword) return;
             _lastSearchKeyword = keyword;
-
-            // Clear existing items IMMEDIATELY so native ComboBox cannot auto-match
-            // and jump cursor to first item while debounce is pending
-            cmbDelegateTo.BeginUpdate();
-            cmbDelegateTo.Items.Clear();
-            cmbDelegateTo.SelectedIndex = -1;
-            cmbDelegateTo.EndUpdate();
-            cmbDelegateTo.Text            = keyword;
-            cmbDelegateTo.SelectionStart  = keyword.Length;
-            cmbDelegateTo.SelectionLength = 0;
 
             _selectedLdapUser = null;
             HideUserDetail();
 
-            // Stop any pending search
             if (_searchTimer != null) { _searchTimer.Stop(); _searchTimer.Dispose(); _searchTimer = null; }
 
-            if (keyword.Length < 2)
-            {
-                cmbDelegateTo.DroppedDown = false;
-                cmbDelegateTo.Items.Clear();
-                return;
-            }
+            if (keyword.Length < 2) { HideResults(); return; }
 
-            // Debounce 350 ms — fires search only after user pauses typing
             var captured = keyword;
             _searchTimer = new System.Windows.Forms.Timer { Interval = 350 };
             _searchTimer.Tick += (s, ev) =>
@@ -332,6 +327,29 @@ namespace CMS.Presentation.Modules.Workflow
                 PerformLdapSearch(captured);
             };
             _searchTimer.Start();
+        }
+
+        private void TxtSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Down && _pnlResults.Visible)
+            {
+                _lstResults.Focus();
+                if (_lstResults.Items.Count > 0) _lstResults.SelectedIndex = 0;
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Escape)
+            {
+                HideResults();
+                e.Handled = true;
+            }
+        }
+
+        private void TxtSearch_Leave(object sender, EventArgs e)
+        {
+            // Delay so ListBox click can fire before we hide
+            var t = new System.Windows.Forms.Timer { Interval = 200 };
+            t.Tick += (s, ev) => { ((System.Windows.Forms.Timer)s).Stop(); HideResults(); };
+            t.Start();
         }
 
         private void PerformLdapSearch(string keyword)
@@ -364,45 +382,65 @@ namespace CMS.Presentation.Modules.Workflow
                     .ToList();
             }
 
-            cmbDelegateTo.BeginUpdate();
-            cmbDelegateTo.Items.Clear();
-            foreach (var item in displayItems)
-                cmbDelegateTo.Items.Add(item);
-            cmbDelegateTo.SelectedIndex = -1;
-            cmbDelegateTo.EndUpdate();
+            _lstResults.BeginUpdate();
+            _lstResults.Items.Clear();
+            foreach (var item in displayItems) _lstResults.Items.Add(item);
+            _lstResults.EndUpdate();
 
-            if (displayItems.Count > 0 && !cmbDelegateTo.DroppedDown)
-                cmbDelegateTo.DroppedDown = true;
-
-            // Restore typed text AFTER DroppedDown (Windows auto-selects first on open)
-            cmbDelegateTo.SelectedIndex   = -1;
-            cmbDelegateTo.Text            = keyword;
-            cmbDelegateTo.SelectionStart  = keyword.Length;
-            cmbDelegateTo.SelectionLength = 0;
-        }
-
-        private void cmbDelegateTo_SelectionChangeCommitted(object sender, EventArgs e)
-        {
-            int idx = cmbDelegateTo.SelectedIndex;
-            if (idx < 0) return;
-
-            if (_ldapSearchService != null && idx < _ldapResults.Count)
+            if (displayItems.Count > 0)
             {
-                _selectedLdapUser = _ldapResults[idx];
-                ShowUserDetail(_selectedLdapUser);
-                // Update keyword guard so no re-search on click
-                _lastSearchKeyword = _selectedLdapUser.SamAccountName;
+                var screenPt = pnlDelegationCard.PointToScreen(
+                    new Point(_txtSearch.Left, _txtSearch.Bottom));
+                _pnlResults.Location = pnlContent.PointToClient(screenPt);
+                int h = Math.Min(displayItems.Count * 22 + 4, 180);
+                _pnlResults.Size = new Size(_txtSearch.Width, h);
+                _pnlResults.Visible = true;
+                _pnlResults.BringToFront();
+            }
+            else
+            {
+                HideResults();
             }
         }
 
+        private void LstResults_Click(object sender, EventArgs e)
+        {
+            SelectResult(_lstResults.SelectedIndex);
+        }
+
+        private void LstResults_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Return)
+                SelectResult(_lstResults.SelectedIndex);
+            else if (e.KeyCode == Keys.Escape)
+                HideResults();
+        }
+
+        private void SelectResult(int idx)
+        {
+            if (idx < 0 || idx >= _ldapResults.Count) return;
+            _selectedLdapUser  = _ldapResults[idx];
+            _lastSearchKeyword = _selectedLdapUser.SamAccountName;
+            _txtSearch.Text    = _selectedLdapUser.SamAccountName;
+            HideResults();
+            ShowUserDetail(_selectedLdapUser);
+            _txtSearch.Focus();
+        }
+
+        private void HideResults()
+        {
+            if (_pnlResults != null) _pnlResults.Visible = false;
+        }
+
+        // Keep stub — wired in Designer; cmbDelegateTo is now hidden
+        private void cmbDelegateTo_SelectionChangeCommitted(object sender, EventArgs e) { }
+
         private string GetDelegateToUsername()
         {
-            // LDAP path: use SamAccountName
             if (_selectedLdapUser != null)
                 return _selectedLdapUser.SamAccountName;
 
-            // EmployeeApi fallback: try matching text to employee code
-            string text = cmbDelegateTo.Text.Trim();
+            string text = (_txtSearch != null ? _txtSearch.Text : cmbDelegateTo.Text).Trim();
             if (string.IsNullOrEmpty(text)) return null;
 
             var emp = _employees.FirstOrDefault(e2 =>
@@ -415,7 +453,7 @@ namespace CMS.Presentation.Modules.Workflow
             if (_selectedLdapUser != null)
                 return _selectedLdapUser.DisplayName;
 
-            string text = cmbDelegateTo.Text.Trim();
+            string text = (_txtSearch != null ? _txtSearch.Text : cmbDelegateTo.Text).Trim();
             var emp = _employees.FirstOrDefault(e2 =>
                 string.Equals(e2.DropdownLabel, text, StringComparison.OrdinalIgnoreCase));
             return emp?.DisplayName ?? text;
@@ -559,8 +597,6 @@ namespace CMS.Presentation.Modules.Workflow
         private void btnCancel_Click(object sender, EventArgs e)
         {
             InitializeFormData();
-            SendMessage(cmbDelegateTo.Handle, CB_SETCUEBANNER, IntPtr.Zero,
-                "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
         }
 
         // ─── Ribbon / Toolbar ────────────────────────────────────────────────────
