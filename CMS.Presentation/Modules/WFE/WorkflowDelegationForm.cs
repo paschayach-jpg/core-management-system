@@ -273,6 +273,16 @@ namespace CMS.Presentation.Modules.Workflow
             if (keyword == _lastSearchKeyword) return;
             _lastSearchKeyword = keyword;
 
+            // Clear existing items IMMEDIATELY so native ComboBox cannot auto-match
+            // and jump cursor to first item while debounce is pending
+            cmbDelegateTo.BeginUpdate();
+            cmbDelegateTo.Items.Clear();
+            cmbDelegateTo.SelectedIndex = -1;
+            cmbDelegateTo.EndUpdate();
+            cmbDelegateTo.Text            = keyword;
+            cmbDelegateTo.SelectionStart  = keyword.Length;
+            cmbDelegateTo.SelectionLength = 0;
+
             _selectedLdapUser = null;
             HideUserDetail();
 
@@ -334,12 +344,14 @@ namespace CMS.Presentation.Modules.Workflow
             cmbDelegateTo.SelectedIndex = -1;
             cmbDelegateTo.EndUpdate();
 
-            cmbDelegateTo.Text = keyword;
-            cmbDelegateTo.SelectionStart  = keyword.Length;
-            cmbDelegateTo.SelectionLength = 0;
-
             if (displayItems.Count > 0 && !cmbDelegateTo.DroppedDown)
                 cmbDelegateTo.DroppedDown = true;
+
+            // Restore typed text AFTER DroppedDown (Windows auto-selects first on open)
+            cmbDelegateTo.SelectedIndex   = -1;
+            cmbDelegateTo.Text            = keyword;
+            cmbDelegateTo.SelectionStart  = keyword.Length;
+            cmbDelegateTo.SelectionLength = 0;
         }
 
         private void cmbDelegateTo_SelectionChangeCommitted(object sender, EventArgs e)
