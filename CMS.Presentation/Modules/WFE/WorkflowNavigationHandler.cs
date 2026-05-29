@@ -59,7 +59,7 @@ namespace CMS.Presentation.Modules.Workflow
                     return true;
 
                 case "delegation":
-                    OpenDelegation(currentForm);
+                    OpenDelegation(currentForm, workflowService, loggingService, auditService, userContext);
                     return true;
 
                 case "sla":
@@ -181,12 +181,48 @@ namespace CMS.Presentation.Modules.Workflow
             OpenAsMdiChild(currentForm, form);
         }
 
-        private static void OpenDelegation(Form currentForm)
+        private static void OpenDelegation(
+            Form currentForm,
+            IWorkflowService workflowService,
+            ILoggingService loggingService,
+            IAuditService auditService,
+            UserContext userContext)
         {
             if (currentForm is WorkflowDelegationForm)
                 return;
 
-            var form = new WorkflowDelegationForm();
+            CMS.Services.Interfaces.IWorkflowDelegationService delegationService = null;
+            CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null;
+
+            CMS.Services.Interfaces.ILdapUserSearchService ldapSearchService = null;
+
+            if (currentForm.MdiParent is MDI_Container mdi)
+            {
+                if (workflowService  == null) workflowService  = mdi.WorkflowService;
+                if (loggingService   == null) loggingService   = mdi.Logger;
+                if (auditService     == null) auditService     = mdi.AuditService;
+                if (userContext      == null) userContext       = mdi.CurrentUser;
+                delegationService  = mdi.WorkflowDelegationService;
+                employeeApiService = mdi.EmployeeApiService;
+                ldapSearchService  = mdi.LdapUserSearchService;
+            }
+
+            if (delegationService == null || workflowService == null || employeeApiService == null)
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    "Delegation service ไม่พร้อมใช้งาน กรุณาเปิดผ่าน MDI Container",
+                    "ข้อมูล", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
+                return;
+            }
+
+            var form = new WorkflowDelegationForm(
+                delegationService,
+                workflowService,
+                employeeApiService,
+                loggingService,
+                auditService,
+                userContext,
+                ldapSearchService);
             OpenAsMdiChild(currentForm, form);
         }
 

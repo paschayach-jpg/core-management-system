@@ -561,6 +561,7 @@ namespace CMS.Presentation
                     workflowService: workflowService,
                     slaCalculator: slaCalculator,
                     workflowTemplateService: workflowTemplateService,
+                    workflowDelegationService: workflowDelegationService,
                     kbVersionRepository: kbVersionRepository,
                     kbDashboardService: kbDashboardService,
                     kbCategoryRepository: kbCategoryRepository,

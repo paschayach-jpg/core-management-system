@@ -440,8 +440,9 @@ namespace CMS.Presentation.Modules.Workflow
                         catch (Exception ex)
                         {
                             ShowError($"Failed to reject task: {ex.Message}");
+                        }
+                        _presenter.RefreshDashboard();
                     }
-                    _presenter.RefreshDashboard();
                 }
             }
             catch (Exception ex)

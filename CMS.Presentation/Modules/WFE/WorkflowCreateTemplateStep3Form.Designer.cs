@@ -211,18 +211,58 @@ namespace CMS.Presentation.Modules.Workflow
             this.pnlPaletteScroll.Padding   = new System.Windows.Forms.Padding(8, 6, 8, 6);
             this.pnlPaletteScroll.Name      = "pnlPaletteScroll";
 
-            // section label style helper — will be set in code
-            ConfigureSectionLabel(this.lblPaletteSection1, "พื้นฐาน", 0);
-            ConfigureFlowPalettePanel(this.flowPaletteBasic,    74);
+            // section labels — rebuilt at runtime by InitializePalette()
+            this.lblPaletteSection1.Text = "พื้นฐาน";
+            this.lblPaletteSection1.Font      = new System.Drawing.Font("Segoe UI", 7.5F, System.Drawing.FontStyle.Bold);
+            this.lblPaletteSection1.ForeColor = System.Drawing.Color.FromArgb(100, 116, 139);
+            this.lblPaletteSection1.BackColor = System.Drawing.Color.White;
+            this.lblPaletteSection1.Location  = new System.Drawing.Point(0, 0);
+            this.lblPaletteSection1.Size      = new System.Drawing.Size(174, 18);
+            this.lblPaletteSection1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.flowPaletteBasic.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flowPaletteBasic.WrapContents  = false;
+            this.flowPaletteBasic.AutoScroll    = false;
+            this.flowPaletteBasic.Size          = new System.Drawing.Size(174, 74);
+            this.flowPaletteBasic.BackColor     = System.Drawing.Color.White;
 
-            ConfigureSectionLabel(this.lblPaletteSection2, "เลือก", 110);
-            ConfigureFlowPalettePanel(this.flowPaletteSelect,   110);
+            this.lblPaletteSection2.Text = "เลือก";
+            this.lblPaletteSection2.Font      = new System.Drawing.Font("Segoe UI", 7.5F, System.Drawing.FontStyle.Bold);
+            this.lblPaletteSection2.ForeColor = System.Drawing.Color.FromArgb(100, 116, 139);
+            this.lblPaletteSection2.BackColor = System.Drawing.Color.White;
+            this.lblPaletteSection2.Location  = new System.Drawing.Point(0, 110);
+            this.lblPaletteSection2.Size      = new System.Drawing.Size(174, 18);
+            this.lblPaletteSection2.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.flowPaletteSelect.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flowPaletteSelect.WrapContents  = false;
+            this.flowPaletteSelect.AutoScroll    = false;
+            this.flowPaletteSelect.Size          = new System.Drawing.Size(174, 110);
+            this.flowPaletteSelect.BackColor     = System.Drawing.Color.White;
 
-            ConfigureSectionLabel(this.lblPaletteSection3, "ขั้นสูง", 232);
-            ConfigureFlowPalettePanel(this.flowPaletteAdvanced, 110);
+            this.lblPaletteSection3.Text = "ขั้นสูง";
+            this.lblPaletteSection3.Font      = new System.Drawing.Font("Segoe UI", 7.5F, System.Drawing.FontStyle.Bold);
+            this.lblPaletteSection3.ForeColor = System.Drawing.Color.FromArgb(100, 116, 139);
+            this.lblPaletteSection3.BackColor = System.Drawing.Color.White;
+            this.lblPaletteSection3.Location  = new System.Drawing.Point(0, 232);
+            this.lblPaletteSection3.Size      = new System.Drawing.Size(174, 18);
+            this.lblPaletteSection3.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.flowPaletteAdvanced.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flowPaletteAdvanced.WrapContents  = false;
+            this.flowPaletteAdvanced.AutoScroll    = false;
+            this.flowPaletteAdvanced.Size          = new System.Drawing.Size(174, 110);
+            this.flowPaletteAdvanced.BackColor     = System.Drawing.Color.White;
 
-            ConfigureSectionLabel(this.lblPaletteSection4, "เค้าโครง", 356);
-            ConfigureFlowPalettePanel(this.flowPaletteLayout,   74);
+            this.lblPaletteSection4.Text = "เค้าโครง";
+            this.lblPaletteSection4.Font      = new System.Drawing.Font("Segoe UI", 7.5F, System.Drawing.FontStyle.Bold);
+            this.lblPaletteSection4.ForeColor = System.Drawing.Color.FromArgb(100, 116, 139);
+            this.lblPaletteSection4.BackColor = System.Drawing.Color.White;
+            this.lblPaletteSection4.Location  = new System.Drawing.Point(0, 356);
+            this.lblPaletteSection4.Size      = new System.Drawing.Size(174, 18);
+            this.lblPaletteSection4.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.flowPaletteLayout.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.flowPaletteLayout.WrapContents  = false;
+            this.flowPaletteLayout.AutoScroll    = false;
+            this.flowPaletteLayout.Size          = new System.Drawing.Size(174, 74);
+            this.flowPaletteLayout.BackColor     = System.Drawing.Color.White;
 
             this.pnlPaletteScroll.Controls.Add(this.flowPaletteLayout);
             this.pnlPaletteScroll.Controls.Add(this.lblPaletteSection4);
@@ -281,9 +321,36 @@ namespace CMS.Presentation.Modules.Workflow
             this.pnlFieldProps.Visible    = false;
             this.pnlFieldProps.AutoScroll = true;
 
-            BuildPropRow(this.lblPropLabel, "ชื่อ Field (Label)", this.txtPropLabel, 10, 30);
-            BuildPropRow(this.lblPropFieldName, "Field ID (ภาษาอังกฤษ)", this.txtPropFieldName, 65, 85);
-            BuildMultilineProp(this.lblPropHelpText, "คำอธิบาย (Help Text)", this.txtPropHelpText, 120, 140, 55);
+            this.lblPropLabel.Text = "ชื่อ Field (Label)";
+            this.lblPropLabel.Font      = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblPropLabel.ForeColor = System.Drawing.Color.FromArgb(71, 85, 105);
+            this.lblPropLabel.Location  = new System.Drawing.Point(12, 10);
+            this.lblPropLabel.Size      = new System.Drawing.Size(242, 17);
+            this.txtPropLabel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtPropLabel.Font        = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtPropLabel.Location    = new System.Drawing.Point(12, 30);
+            this.txtPropLabel.Size        = new System.Drawing.Size(242, 23);
+
+            this.lblPropFieldName.Text = "Field ID (ภาษาอังกฤษ)";
+            this.lblPropFieldName.Font      = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblPropFieldName.ForeColor = System.Drawing.Color.FromArgb(71, 85, 105);
+            this.lblPropFieldName.Location  = new System.Drawing.Point(12, 65);
+            this.lblPropFieldName.Size      = new System.Drawing.Size(242, 17);
+            this.txtPropFieldName.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtPropFieldName.Font        = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtPropFieldName.Location    = new System.Drawing.Point(12, 85);
+            this.txtPropFieldName.Size        = new System.Drawing.Size(242, 23);
+
+            this.lblPropHelpText.Text = "คำอธิบาย (Help Text)";
+            this.lblPropHelpText.Font      = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblPropHelpText.ForeColor = System.Drawing.Color.FromArgb(71, 85, 105);
+            this.lblPropHelpText.Location  = new System.Drawing.Point(12, 120);
+            this.lblPropHelpText.Size      = new System.Drawing.Size(242, 17);
+            this.txtPropHelpText.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtPropHelpText.Font        = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtPropHelpText.Location    = new System.Drawing.Point(12, 140);
+            this.txtPropHelpText.Size        = new System.Drawing.Size(242, 55);
+            this.txtPropHelpText.Multiline   = true;
 
             this.chkRequired.Text      = "จำเป็นต้องกรอก (Required)";
             this.chkRequired.Font      = new System.Drawing.Font("Segoe UI", 9F);
@@ -305,16 +372,47 @@ namespace CMS.Presentation.Modules.Workflow
             this.pnlDivider1.Size      = new System.Drawing.Size(242, 1);
             this.pnlDivider1.Name      = "pnlDivider1";
 
-            BuildPropRow(this.lblPropSource, "แหล่งข้อมูล (Source)", null, 268, 0);
+            this.lblPropSource.Text = "แหล่งข้อมูล (Source)";
+            this.lblPropSource.Font      = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblPropSource.ForeColor = System.Drawing.Color.FromArgb(71, 85, 105);
+            this.lblPropSource.Location  = new System.Drawing.Point(12, 268);
+            this.lblPropSource.Size      = new System.Drawing.Size(242, 17);
             this.cmbPropSource.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbPropSource.Font      = new System.Drawing.Font("Segoe UI", 9F);
             this.cmbPropSource.Location  = new System.Drawing.Point(12, 288);
             this.cmbPropSource.Size      = new System.Drawing.Size(242, 25);
             this.cmbPropSource.Name      = "cmbPropSource";
 
-            BuildPropRow(this.lblPropDefault, "ค่าเริ่มต้น (Default Value)", this.txtPropDefault, 320, 340);
-            BuildMultilineProp(this.lblPropConditional, "เงื่อนไข (Conditional Logic)", this.txtPropConditional, 374, 394, 55);
-            BuildPropRow(this.lblPropMapContext, "Map to Context Key", this.txtPropMapContext, 462, 482);
+            this.lblPropDefault.Text = "ค่าเริ่มต้น (Default Value)";
+            this.lblPropDefault.Font      = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblPropDefault.ForeColor = System.Drawing.Color.FromArgb(71, 85, 105);
+            this.lblPropDefault.Location  = new System.Drawing.Point(12, 320);
+            this.lblPropDefault.Size      = new System.Drawing.Size(242, 17);
+            this.txtPropDefault.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtPropDefault.Font        = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtPropDefault.Location    = new System.Drawing.Point(12, 340);
+            this.txtPropDefault.Size        = new System.Drawing.Size(242, 23);
+
+            this.lblPropConditional.Text = "เงื่อนไข (Conditional Logic)";
+            this.lblPropConditional.Font      = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblPropConditional.ForeColor = System.Drawing.Color.FromArgb(71, 85, 105);
+            this.lblPropConditional.Location  = new System.Drawing.Point(12, 374);
+            this.lblPropConditional.Size      = new System.Drawing.Size(242, 17);
+            this.txtPropConditional.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtPropConditional.Font        = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtPropConditional.Location    = new System.Drawing.Point(12, 394);
+            this.txtPropConditional.Size        = new System.Drawing.Size(242, 55);
+            this.txtPropConditional.Multiline   = true;
+
+            this.lblPropMapContext.Text = "Map to Context Key";
+            this.lblPropMapContext.Font      = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblPropMapContext.ForeColor = System.Drawing.Color.FromArgb(71, 85, 105);
+            this.lblPropMapContext.Location  = new System.Drawing.Point(12, 462);
+            this.lblPropMapContext.Size      = new System.Drawing.Size(242, 17);
+            this.txtPropMapContext.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.txtPropMapContext.Font        = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtPropMapContext.Location    = new System.Drawing.Point(12, 482);
+            this.txtPropMapContext.Size        = new System.Drawing.Size(242, 23);
 
             this.btnApplyProps.Text             = "✓  บันทึกการเปลี่ยนแปลง";
             this.btnApplyProps.BackColor        = System.Drawing.Color.FromArgb(37, 99, 235);

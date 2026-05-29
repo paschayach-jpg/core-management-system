@@ -87,12 +87,17 @@ namespace CMS.Presentation
         private readonly IWorkflowService _workflowService;
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
+        private CMS.Services.Interfaces.IWorkflowDelegationService _workflowDelegationService;
+        private CMS.Services.Interfaces.ILdapUserSearchService _ldapUserSearchService;
         public CMS.Services.Interfaces.IWorkflowTemplateService WorkflowTemplateService => _workflowTemplateService;
         public IWorkflowService WorkflowService => _workflowService;
         public ISLACalculator SlaCalculator    => _slaCalculator;
         public IAuditService AuditService => _auditService;
         public ILoggingService Logger => _logger;
         public UserContext CurrentUser => _currentUser;
+        public CMS.Services.Interfaces.IWorkflowDelegationService WorkflowDelegationService => _workflowDelegationService;
+        public CMS.Services.Interfaces.IEmployeeApiService EmployeeApiService => _employeeApiService;
+        public CMS.Services.Interfaces.ILdapUserSearchService LdapUserSearchService => _ldapUserSearchService;
 
         // Notification inbox controls (built programmatically)
         private Panel _notificationPanel;
@@ -211,6 +216,8 @@ namespace CMS.Presentation
             IWorkflowService workflowService = null,
             ISLACalculator slaCalculator = null,
             CMS.Services.Interfaces.IWorkflowTemplateService workflowTemplateService = null,
+            CMS.Services.Interfaces.IWorkflowDelegationService workflowDelegationService = null,
+            CMS.Services.Interfaces.ILdapUserSearchService ldapUserSearchService = null,
             CMS.Data.Interfaces.IKBVersionRepository kbVersionRepository = null,
             CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null,
             CMS.Data.Interfaces.IKBCategoryRepository kbCategoryRepository = null,
@@ -277,6 +284,8 @@ namespace CMS.Presentation
             _employeeDirectoryController = employeeDirectoryController;
             _userOrgVisibilityController = userOrgVisibilityController;
             _employeeApiService = employeeApiService;
+            _workflowDelegationService = workflowDelegationService;
+            _ldapUserSearchService     = ldapUserSearchService;
             _kbCategoryService = kbCategoryService;
             _kbArticleService = kbArticleService;
             _workflowService = workflowService;
@@ -2209,7 +2218,22 @@ namespace CMS.Presentation
 
         public void OpenWorkflowDelegation()
         {
-            OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowDelegationForm());
+            if (_workflowDelegationService == null || _workflowService == null || _employeeApiService == null)
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    "Delegation service ไม่พร้อมใช้งาน กรุณาตรวจสอบการตั้งค่า",
+                    "Workflow Delegation", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+                return;
+            }
+
+            OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowDelegationForm(
+                _workflowDelegationService,
+                _workflowService,
+                _employeeApiService,
+                _logger,
+                _auditService,
+                _currentUser,
+                _ldapUserSearchService));
         }
 
         public void OpenSLAReport()

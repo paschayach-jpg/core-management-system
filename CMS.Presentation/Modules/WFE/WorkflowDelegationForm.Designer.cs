@@ -468,7 +468,8 @@ namespace CMS.Presentation.Modules.Workflow
             // 
             // cmbDelegateTo
             // 
-            this.cmbDelegateTo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbDelegateTo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
+            this.cmbDelegateTo.SelectionChangeCommitted += new System.EventHandler(this.cmbDelegateTo_SelectionChangeCommitted);
             this.cmbDelegateTo.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cmbDelegateTo.FormattingEnabled = true;
             this.cmbDelegateTo.Location = new System.Drawing.Point(358, 78);
