@@ -21,6 +21,8 @@ namespace CMS.Presentation.Modules.Workflow
         private readonly WorkflowDashboardPresenter _presenter;
         private readonly UserContext _userContext;
         private readonly IWorkflowService _workflowService;
+        private readonly IAuditService _auditService;
+        private readonly ILoggingService _loggingService;
         private Timer _autoRefreshTimer;
         private List<WorkflowTaskResult> _currentTasks;
         private List<WorkflowInstanceResult> _currentInstances;
@@ -35,6 +37,8 @@ namespace CMS.Presentation.Modules.Workflow
             InitializeComponent();
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
             _workflowService = workflowService ?? throw new ArgumentNullException(nameof(workflowService));
+            _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+            _loggingService = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
 
             _presenter = new WorkflowDashboardPresenter(
                 this,
@@ -410,7 +414,36 @@ namespace CMS.Presentation.Modules.Workflow
 
                 if (result == DialogResult.Yes)
                 {
-                    // TODO: Call service to reject task
+                    if (dgvMyTasks.SelectedRows.Count > 0)
+                    {
+                        var selectedRow = dgvMyTasks.SelectedRows[0];
+                        var taskId = (int?)selectedRow.Cells["TaskId"].Value ?? 0;
+
+                        if (taskId > 0)
+                        {
+                            try
+                            {
+                                _workflowService.RejectWorkflowStep(taskId, "Rejected from dashboard", _userContext);
+
+                                _auditService.Log(new AuditEntry
+                                {
+                                    Action = "WorkflowStepRejected",
+                                    TableName = "WorkflowStepInstance",
+                                    RecordID = taskId,
+                                    UserName = _userContext.ADUserName,
+                                    AuditDate = DateTime.Now,
+                                    NewValue = "Rejected from dashboard"
+                                });
+
+                                _loggingService.Info($"Rejected workflow step {taskId}");
+                                ShowInfo("Task rejected successfully.");
+                            }
+                            catch (Exception ex)
+                            {
+                                ShowError($"Failed to reject task: {ex.Message}");
+                            }
+                        }
+                    }
                     _presenter.RefreshDashboard();
                 }
             }
@@ -443,8 +476,8 @@ namespace CMS.Presentation.Modules.Workflow
                 var detailForm = new WorkflowInstanceDetailForm(
                     instanceId,
                     _workflowService,
-                    null, // TODO: Inject other services
-                    null,
+                    _auditService,
+                    _loggingService,
                     _userContext);
                 detailForm.ShowDialog();
             }
