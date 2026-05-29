@@ -34,9 +34,13 @@ namespace CMS.Presentation.Modules.Workflow
         private List<EmployeeSummary> _employees = new List<EmployeeSummary>();
         private List<WorkflowTaskResult> _myTasks = new List<WorkflowTaskResult>();
 
-        // Tracks last LDAP search results (for save validation)
         private List<CMS.Services.DTOs.LdapUserResult> _ldapResults = new List<CMS.Services.DTOs.LdapUserResult>();
         private CMS.Services.DTOs.LdapUserResult _selectedLdapUser = null;
+
+        private System.Windows.Forms.Timer _searchTimer;
+        private Panel _pnlUserDetail;
+        private Label _lblUserDetailName;
+        private Label _lblUserDetailInfo;
 
         public WorkflowDelegationForm(
             IWorkflowDelegationService delegationService,
@@ -67,8 +71,8 @@ namespace CMS.Presentation.Modules.Workflow
 
             LoadEmployees();
             LoadMyTasks();
+            BuildUserDetailPanel();
             InitializeFormData();
-            // Re-apply cue banner after InitializeFormData clears the combo
             SendMessage(cmbDelegateTo.Handle, CB_SETCUEBANNER, IntPtr.Zero,
                 "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
             LoadHistoryRows();
@@ -130,8 +134,10 @@ namespace CMS.Presentation.Modules.Workflow
                     "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
 
             _lastSearchKeyword = string.Empty;
+            _selectedLdapUser  = null;
+            HideUserDetail();
 
-            // Attach search-as-you-type (KeyUp avoids suppression-flag complexity)
+            // Attach search-as-you-type
             cmbDelegateTo.KeyUp -= cmbDelegateTo_KeyUp;
             cmbDelegateTo.KeyUp += cmbDelegateTo_KeyUp;
 
@@ -200,25 +206,78 @@ namespace CMS.Presentation.Modules.Workflow
 
         // ─── Button handlers ─────────────────────────────────────────────────────
 
+        // ─── Delegate-to AD search panel ────────────────────────────────────────
+
+        private void BuildUserDetailPanel()
+        {
+            _pnlUserDetail = new Panel
+            {
+                Location    = new Point(cmbDelegateTo.Left, cmbDelegateTo.Bottom + 4),
+                Size        = new Size(cmbDelegateTo.Width + cmbScope.Width + 10, 50),
+                BackColor   = Color.FromArgb(235, 245, 255),
+                BorderStyle = BorderStyle.FixedSingle,
+                Visible     = false,
+            };
+
+            _lblUserDetailName = new Label
+            {
+                Location  = new Point(8, 5),
+                Size      = new Size(_pnlUserDetail.Width - 16, 20),
+                Font      = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(22, 36, 62),
+            };
+            _lblUserDetailInfo = new Label
+            {
+                Location  = new Point(8, 26),
+                Size      = new Size(_pnlUserDetail.Width - 16, 18),
+                Font      = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(80, 90, 120),
+            };
+
+            _pnlUserDetail.Controls.Add(_lblUserDetailName);
+            _pnlUserDetail.Controls.Add(_lblUserDetailInfo);
+            pnlDelegationCard.Controls.Add(_pnlUserDetail);
+            _pnlUserDetail.BringToFront();
+        }
+
+        private void ShowUserDetail(CMS.Services.DTOs.LdapUserResult user)
+        {
+            if (_pnlUserDetail == null) return;
+            _lblUserDetailName.Text = user.DisplayName ?? user.SamAccountName;
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(user.Title))      parts.Add(user.Title);
+            if (!string.IsNullOrEmpty(user.Department)) parts.Add(user.Department);
+            if (!string.IsNullOrEmpty(user.Mail))       parts.Add(user.Mail);
+            _lblUserDetailInfo.Text = string.Join("  |  ", parts);
+            _pnlUserDetail.Visible = true;
+        }
+
+        private void HideUserDetail()
+        {
+            if (_pnlUserDetail != null)
+                _pnlUserDetail.Visible = false;
+        }
+
         // ─── Delegate-to LDAP auto-filter ───────────────────────────────────────
 
         private string _lastSearchKeyword = string.Empty;
 
         private void cmbDelegateTo_KeyUp(object sender, KeyEventArgs e)
         {
-            // Ignore navigation keys — let ComboBox handle them normally
-            if (e.KeyCode == Keys.Up     || e.KeyCode == Keys.Down  ||
-                e.KeyCode == Keys.Enter  || e.KeyCode == Keys.Escape ||
-                e.KeyCode == Keys.Tab    || e.KeyCode == Keys.Return)
+            if (e.KeyCode == Keys.Up    || e.KeyCode == Keys.Down   ||
+                e.KeyCode == Keys.Enter || e.KeyCode == Keys.Escape  ||
+                e.KeyCode == Keys.Tab   || e.KeyCode == Keys.Return)
                 return;
 
             string keyword = cmbDelegateTo.Text.Trim();
-
-            // Skip re-search if keyword unchanged (prevents click-in-dropdown from resetting list)
             if (keyword == _lastSearchKeyword) return;
             _lastSearchKeyword = keyword;
 
             _selectedLdapUser = null;
+            HideUserDetail();
+
+            // Stop any pending search
+            if (_searchTimer != null) { _searchTimer.Stop(); _searchTimer.Dispose(); _searchTimer = null; }
 
             if (keyword.Length < 2)
             {
@@ -227,6 +286,19 @@ namespace CMS.Presentation.Modules.Workflow
                 return;
             }
 
+            // Debounce 350 ms — fires search only after user pauses typing
+            var captured = keyword;
+            _searchTimer = new System.Windows.Forms.Timer { Interval = 350 };
+            _searchTimer.Tick += (s, ev) =>
+            {
+                _searchTimer.Stop(); _searchTimer.Dispose(); _searchTimer = null;
+                PerformLdapSearch(captured);
+            };
+            _searchTimer.Start();
+        }
+
+        private void PerformLdapSearch(string keyword)
+        {
             var displayItems = new List<string>();
 
             if (_ldapSearchService != null)
@@ -255,31 +327,32 @@ namespace CMS.Presentation.Modules.Workflow
                     .ToList();
             }
 
-            // Update items without triggering further events
             cmbDelegateTo.BeginUpdate();
             cmbDelegateTo.Items.Clear();
             foreach (var item in displayItems)
                 cmbDelegateTo.Items.Add(item);
+            cmbDelegateTo.SelectedIndex = -1;
             cmbDelegateTo.EndUpdate();
 
-            // Restore typed text (Items.Clear resets it) and open dropdown
             cmbDelegateTo.Text = keyword;
             cmbDelegateTo.SelectionStart  = keyword.Length;
             cmbDelegateTo.SelectionLength = 0;
 
-            if (displayItems.Count > 0)
+            if (displayItems.Count > 0 && !cmbDelegateTo.DroppedDown)
                 cmbDelegateTo.DroppedDown = true;
         }
 
         private void cmbDelegateTo_SelectionChangeCommitted(object sender, EventArgs e)
         {
-            // User picked an item — confirm selection
             int idx = cmbDelegateTo.SelectedIndex;
             if (idx < 0) return;
 
             if (_ldapSearchService != null && idx < _ldapResults.Count)
             {
                 _selectedLdapUser = _ldapResults[idx];
+                ShowUserDetail(_selectedLdapUser);
+                // Update keyword guard so no re-search on click
+                _lastSearchKeyword = _selectedLdapUser.SamAccountName;
             }
         }
 
