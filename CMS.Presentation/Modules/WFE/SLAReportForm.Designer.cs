@@ -257,17 +257,19 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblCardComplianceTitle.Name      = "lblCardComplianceTitle";
             this.lblCardComplianceTitle.Text      = "SLA Compliance";
 
-            this.lblCardComplianceCount.AutoSize  = true;
+            this.lblCardComplianceCount.AutoSize  = false;
+            this.lblCardComplianceCount.Size      = new System.Drawing.Size(240, 32);
             this.lblCardComplianceCount.Font      = new System.Drawing.Font("Segoe UI", 24F, System.Drawing.FontStyle.Bold);
             this.lblCardComplianceCount.ForeColor = System.Drawing.Color.FromArgb(23, 133, 49);
             this.lblCardComplianceCount.Location  = new System.Drawing.Point(14, 28);
             this.lblCardComplianceCount.Name      = "lblCardComplianceCount";
             this.lblCardComplianceCount.Text      = "91.4%";
 
-            this.lblCardComplianceSub.AutoSize  = true;
+            this.lblCardComplianceSub.AutoSize  = false;
+            this.lblCardComplianceSub.Size      = new System.Drawing.Size(240, 18);
             this.lblCardComplianceSub.Font      = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblCardComplianceSub.ForeColor = System.Drawing.Color.FromArgb(23, 133, 49);
-            this.lblCardComplianceSub.Location  = new System.Drawing.Point(14, 62);
+            this.lblCardComplianceSub.Location  = new System.Drawing.Point(14, 60);
             this.lblCardComplianceSub.Name      = "lblCardComplianceSub";
             this.lblCardComplianceSub.Text      = "+2.1 ตามเป้า 90%";
 
@@ -296,17 +298,19 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblCardCycleTimeTitle.Name      = "lblCardCycleTimeTitle";
             this.lblCardCycleTimeTitle.Text      = "Avg Cycle Time";
 
-            this.lblCardCycleTimeCount.AutoSize  = true;
+            this.lblCardCycleTimeCount.AutoSize  = false;
+            this.lblCardCycleTimeCount.Size      = new System.Drawing.Size(240, 32);
             this.lblCardCycleTimeCount.Font      = new System.Drawing.Font("Segoe UI", 24F, System.Drawing.FontStyle.Bold);
             this.lblCardCycleTimeCount.ForeColor = System.Drawing.Color.FromArgb(25, 100, 195);
             this.lblCardCycleTimeCount.Location  = new System.Drawing.Point(14, 28);
             this.lblCardCycleTimeCount.Name      = "lblCardCycleTimeCount";
             this.lblCardCycleTimeCount.Text      = "2.8 วัน";
 
-            this.lblCardCycleTimeSub.AutoSize  = true;
+            this.lblCardCycleTimeSub.AutoSize  = false;
+            this.lblCardCycleTimeSub.Size      = new System.Drawing.Size(240, 18);
             this.lblCardCycleTimeSub.Font      = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblCardCycleTimeSub.ForeColor = System.Drawing.Color.FromArgb(140, 150, 165);
-            this.lblCardCycleTimeSub.Location  = new System.Drawing.Point(14, 62);
+            this.lblCardCycleTimeSub.Location  = new System.Drawing.Point(14, 60);
             this.lblCardCycleTimeSub.Name      = "lblCardCycleTimeSub";
             this.lblCardCycleTimeSub.Text      = "-0.4 จากเดือนก่อน";
 
@@ -335,17 +339,19 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblCardOverdueTitle.Name      = "lblCardOverdueTitle";
             this.lblCardOverdueTitle.Text      = "เกิน SLA";
 
-            this.lblCardOverdueCount.AutoSize  = true;
+            this.lblCardOverdueCount.AutoSize  = false;
+            this.lblCardOverdueCount.Size      = new System.Drawing.Size(240, 32);
             this.lblCardOverdueCount.Font      = new System.Drawing.Font("Segoe UI", 24F, System.Drawing.FontStyle.Bold);
             this.lblCardOverdueCount.ForeColor = System.Drawing.Color.FromArgb(194, 38, 54);
             this.lblCardOverdueCount.Location  = new System.Drawing.Point(14, 28);
             this.lblCardOverdueCount.Name      = "lblCardOverdueCount";
             this.lblCardOverdueCount.Text      = "18 / 211";
 
-            this.lblCardOverdueSub.AutoSize  = true;
+            this.lblCardOverdueSub.AutoSize  = false;
+            this.lblCardOverdueSub.Size      = new System.Drawing.Size(240, 18);
             this.lblCardOverdueSub.Font      = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblCardOverdueSub.ForeColor = System.Drawing.Color.FromArgb(194, 38, 54);
-            this.lblCardOverdueSub.Location  = new System.Drawing.Point(14, 62);
+            this.lblCardOverdueSub.Location  = new System.Drawing.Point(14, 60);
             this.lblCardOverdueSub.Name      = "lblCardOverdueSub";
             this.lblCardOverdueSub.Text      = "8.5% ของทั้งหมด";
 
@@ -374,17 +380,19 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblCardCompletedTitle.Name      = "lblCardCompletedTitle";
             this.lblCardCompletedTitle.Text      = "Workflow เสร็จสิ้น";
 
-            this.lblCardCompletedCount.AutoSize  = true;
+            this.lblCardCompletedCount.AutoSize  = false;
+            this.lblCardCompletedCount.Size      = new System.Drawing.Size(240, 32);
             this.lblCardCompletedCount.Font      = new System.Drawing.Font("Segoe UI", 24F, System.Drawing.FontStyle.Bold);
             this.lblCardCompletedCount.ForeColor = System.Drawing.Color.FromArgb(197, 120, 16);
             this.lblCardCompletedCount.Location  = new System.Drawing.Point(14, 28);
             this.lblCardCompletedCount.Name      = "lblCardCompletedCount";
             this.lblCardCompletedCount.Text      = "193";
 
-            this.lblCardCompletedSub.AutoSize  = true;
+            this.lblCardCompletedSub.AutoSize  = false;
+            this.lblCardCompletedSub.Size      = new System.Drawing.Size(240, 18);
             this.lblCardCompletedSub.Font      = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblCardCompletedSub.ForeColor = System.Drawing.Color.FromArgb(140, 150, 165);
-            this.lblCardCompletedSub.Location  = new System.Drawing.Point(14, 62);
+            this.lblCardCompletedSub.Location  = new System.Drawing.Point(14, 60);
             this.lblCardCompletedSub.Name      = "lblCardCompletedSub";
             this.lblCardCompletedSub.Text      = "เมษายน 2569 (MTD)";
 

@@ -44,6 +44,11 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 // Call SLACalculator which delegates to real DB queries with graceful fallback
                 var metricsResult = TryGetRealMetrics(fromDate, toDate, templateId);
 
+                if (metricsResult == null)
+                {
+                    metricsResult = new SLAComplianceMetricsResult();
+                }
+
                 // ── Template compliance list ─────────────────────────────────────────
                 var metricRows = BuildMetricRowsFromResult(metricsResult);
                 _view.DisplayMetrics(metricRows);
@@ -187,6 +192,53 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
 
         private static SLAComplianceMetricsResult BuildMockMetrics()
         {
+            var byTemplate = new List<TemplateMetrics>
+            {
+                new TemplateMetrics { WorkflowDefinitionId = 1, TemplateName = "พิจารณารับประกัน (Underwriting)", TotalTasks = 45, OnTimeCount = 42, AtRiskCount = 3, OverdueCount = 0, CompliancePercentage = 93 },
+                new TemplateMetrics { WorkflowDefinitionId = 3, TemplateName = "จัดการกรมธรรม์ (Policy Admin)", TotalTasks = 52, OnTimeCount = 46, AtRiskCount = 4, OverdueCount = 2, CompliancePercentage = 88 },
+                new TemplateMetrics { WorkflowDefinitionId = 4, TemplateName = "เรียกร้องสินไหม (Claim Approval)", TotalTasks = 28, OnTimeCount = 25, AtRiskCount = 2, OverdueCount = 1, CompliancePercentage = 89 },
+                new TemplateMetrics { WorkflowDefinitionId = 5, TemplateName = "ใบคำขอเอาประกัน (Application)", TotalTasks = 68, OnTimeCount = 66, AtRiskCount = 2, OverdueCount = 0, CompliancePercentage = 97 },
+                new TemplateMetrics { WorkflowDefinitionId = 6, TemplateName = "ต่ออายุกรมธรรม์ (Policy Renewal)", TotalTasks = 35, OnTimeCount = 31, AtRiskCount = 2, OverdueCount = 2, CompliancePercentage = 88 },
+                new TemplateMetrics { WorkflowDefinitionId = 7, TemplateName = "ยกเลิกกรมธรรม์ (Policy Cancel)", TotalTasks = 12, OnTimeCount = 10, AtRiskCount = 1, OverdueCount = 1, CompliancePercentage = 83 }
+            };
+
+            var byUser = new List<UserMetrics>
+            {
+                new UserMetrics { UserName = "Saichon S.", Department = "ฝ่ายพิจารณารับประกัน", TotalTasks = 14, OnTimeCount = 10, OverdueCount = 4, AvgOverdueDays = 3.2 },
+                new UserMetrics { UserName = "Khanittha C.", Department = "ฝ่ายบริการลูกค้า", TotalTasks = 19, OnTimeCount = 16, OverdueCount = 3, AvgOverdueDays = 2.1 },
+                new UserMetrics { UserName = "Pitakpong P.", Department = "ฝ่ายไอที", TotalTasks = 12, OnTimeCount = 10, OverdueCount = 2, AvgOverdueDays = 1.5 },
+                new UserMetrics { UserName = "Athika A.", Department = "ฝ่ายจัดการสินไหม", TotalTasks = 8, OnTimeCount = 7, OverdueCount = 1, AvgOverdueDays = 0.8 },
+                new UserMetrics { UserName = "Somchai K.", Department = "ฝ่ายกฎหมาย", TotalTasks = 5, OnTimeCount = 4, OverdueCount = 1, AvgOverdueDays = 1.2 }
+            };
+
+            var weeklyTrend = new List<WeeklyTrendPoint>
+            {
+                new WeeklyTrendPoint { WeekLabel = "W1", CompliancePercent = 88.5 },
+                new WeeklyTrendPoint { WeekLabel = "W2", CompliancePercent = 90.2 },
+                new WeeklyTrendPoint { WeekLabel = "W3", CompliancePercent = 89.0 },
+                new WeeklyTrendPoint { WeekLabel = "W4", CompliancePercent = 91.5 },
+                new WeeklyTrendPoint { WeekLabel = "W5", CompliancePercent = 92.0 },
+                new WeeklyTrendPoint { WeekLabel = "W6", CompliancePercent = 89.8 },
+                new WeeklyTrendPoint { WeekLabel = "W7", CompliancePercent = 91.2 },
+                new WeeklyTrendPoint { WeekLabel = "W8", CompliancePercent = 93.4 },
+                new WeeklyTrendPoint { WeekLabel = "W9", CompliancePercent = 91.0 },
+                new WeeklyTrendPoint { WeekLabel = "W10", CompliancePercent = 92.5 },
+                new WeeklyTrendPoint { WeekLabel = "W11", CompliancePercent = 94.1 },
+                new WeeklyTrendPoint { WeekLabel = "W12", CompliancePercent = 91.4 }
+            };
+
+            var cycleTimeDistribution = new List<CycleTimeBucket>
+            {
+                new CycleTimeBucket { Label = "0–1 วัน", Count = 85, Category = "pass" },
+                new CycleTimeBucket { Label = "1–2 วัน", Count = 62, Category = "pass" },
+                new CycleTimeBucket { Label = "2–3 วัน", Count = 30, Category = "pass" },
+                new CycleTimeBucket { Label = "3–4 วัน", Count = 15, Category = "near" },
+                new CycleTimeBucket { Label = "4–5 วัน", Count = 8, Category = "near" },
+                new CycleTimeBucket { Label = "5–7 วัน", Count = 5, Category = "over" },
+                new CycleTimeBucket { Label = "7–10 วัน", Count = 4, Category = "over" },
+                new CycleTimeBucket { Label = "10+ วัน", Count = 2, Category = "over" }
+            };
+
             return new SLAComplianceMetricsResult
             {
                 TotalTasks = 211,
@@ -197,23 +249,10 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 AverageCompletionHours = 67.2m,
                 FromDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-1),
                 ToDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddDays(-1),
-                ByTemplate = new List<TemplateMetrics>(),
-                ByUser = new List<UserMetrics>(),
-                WeeklyTrend = new List<WeeklyTrendPoint>(),
-                CycleTimeDistribution = new List<CycleTimeBucket>(),
-            };
-        }
-
-        private static List<SLAMetricRow> MockTemplateRows()
-        {
-            return new List<SLAMetricRow>
-            {
-                new SLAMetricRow { TemplateCode="WFD-001", TemplateName="Upload 1HC",   Total=28, OnTime=27, AtRisk=1,  Overdue=0, CompliancePercent=96 },
-                new SLAMetricRow { TemplateCode="WFD-003", TemplateName="KB Article",   Total=52, OnTime=46, AtRisk=4,  Overdue=2, CompliancePercent=88 },
-                new SLAMetricRow { TemplateCode="WFD-004", TemplateName="Review SOP",   Total=18, OnTime=17, AtRisk=1,  Overdue=0, CompliancePercent=94 },
-                new SLAMetricRow { TemplateCode="WFD-005", TemplateName="ลา",           Total=68, OnTime=66, AtRisk=2,  Overdue=0, CompliancePercent=97 },
-                new SLAMetricRow { TemplateCode="WFD-006", TemplateName="IT Landscape", Total=24, OnTime=20, AtRisk=2,  Overdue=2, CompliancePercent=82 },
-                new SLAMetricRow { TemplateCode="WFD-007", TemplateName="Onboarding",   Total=21, OnTime=16, AtRisk=3,  Overdue=2, CompliancePercent=78 },
+                ByTemplate = byTemplate,
+                ByUser = byUser,
+                WeeklyTrend = weeklyTrend,
+                CycleTimeDistribution = cycleTimeDistribution,
             };
         }
     }

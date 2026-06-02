@@ -629,18 +629,7 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void LoadMockData()
         {
-            _allTasks = new List<WorkflowTaskItem>
-            {
-                new WorkflowTaskItem { WorkflowId="WFI-2569-00012", WorkflowTitle="อนุมัติ KB Article",         WorkflowStep="ผู้จัดการตรวจสอบเนื้อหา (2/3)", AssigneeName="สมชาย กาญจนา",   AssigneeRole="Officer · IT",     DueDate="17/04/69", DaysLeft=-2,  SlaPercent=102, Status="เกิน SLA"    },
-                new WorkflowTaskItem { WorkflowId="WFI-2569-00015", WorkflowTitle="ขออนุมัติ Upload ไฟล์ 1HC", WorkflowStep="ผู้จัดการตรวจสอบไฟล์ (1/2)",   AssigneeName="วิภา สุริยวงศ์",  AssigneeRole="Sr.Officer · HR",  DueDate="20/04/69", DaysLeft=2,   SlaPercent=60,  Status="รอดำเนินการ" },
-                new WorkflowTaskItem { WorkflowId="WFI-2569-00018", WorkflowTitle="อนุมัติเปลี่ยน Permission",  WorkflowStep="ตรวจสอบสิทธิ์ (1/3)",           AssigneeName="ประวิทย์ ชัยวงศ์", AssigneeRole="Officer · Ops",    DueDate="25/04/69", DaysLeft=7,   SlaPercent=40,  Status="รอ"           },
-                new WorkflowTaskItem { WorkflowId="WFI-2569-00020", WorkflowTitle="Review SOP Document",       WorkflowStep="Review เนื้อหา (1/2)",           AssigneeName="สุนิสา รัตนพร",   AssigneeRole="Officer · QA",     DueDate="30/04/69", DaysLeft=12,  SlaPercent=20,  Status="รอ"           },
-                new WorkflowTaskItem { WorkflowId="WFI-2569-00023", WorkflowTitle="อนุมัติ Work Instruction",  WorkflowStep="ผู้จัดการอนุมัติ (1/3)",         AssigneeName="นิรุตต์ รัฒนกุล", AssigneeRole="Manager · Docs",   DueDate="02/05/69", DaysLeft=14,  SlaPercent=10,  Status="รอ"           },
-                new WorkflowTaskItem { WorkflowId="WFI-2569-00025", WorkflowTitle="อนุมัติ Knowledge Article", WorkflowStep="ตรวจสอบเนื้อหา (1/2)",          AssigneeName="กัลยา สิทธิวงศ์", AssigneeRole="SrOfficer · KB",   DueDate="05/05/69", DaysLeft=18,  SlaPercent=5,   Status="รอ"           },
-                new WorkflowTaskItem { WorkflowId="WFI-2569-00028", WorkflowTitle="ขออนุมัติ Upload ไฟล์ NC",  WorkflowStep="ผู้จัดการตรวจสอบ (1/2)",        AssigneeName="อดิศักดิ์ วงษ์ดี",AssigneeRole="Officer · IT",     DueDate="01/05/69", DaysLeft=10,  SlaPercent=30,  Status="รอดำเนินการ" },
-                new WorkflowTaskItem { WorkflowId="WFI-2569-00030", WorkflowTitle="อนุมัติแก้ไข Template",    WorkflowStep="ตรวจสอบ Template (2/3)",         AssigneeName="ชลธิชา มีสุข",    AssigneeRole="Officer · Admin",  DueDate="28/04/69", DaysLeft=6,   SlaPercent=50,  Status="รอดำเนินการ" },
-            };
-
+            _allTasks = new List<WorkflowTaskItem>();
             ApplyFilter();
         }
 

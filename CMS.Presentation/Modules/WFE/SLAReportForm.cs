@@ -26,6 +26,9 @@ namespace CMS.Presentation.Modules.Workflow
         // ── Template list UI refs ────────────────────────────────────────────────
         private Panel _pnlTemplateListContent;
         private Button _btnPeriod30;
+        private Label _lblTemplateFootnote;
+        private Label _lblYoy;
+        private Label _lblCycleTimeSubtitle;
 
         // ── Trend/cycle chart panel refs ─────────────────────────────────────────
         private Panel _pnlTrendContent;
@@ -379,14 +382,15 @@ namespace CMS.Presentation.Modules.Workflow
                 Height    = 28,
                 BackColor = Color.FromArgb(250, 251, 253),
             };
-            pnlNote.Controls.Add(new Label
+            _lblTemplateFootnote = new Label
             {
-                Text      = "ⓘ  เป้าหมาย 90% · 2 Templates ต่ำกว่าเป้า",
+                Text      = "ⓘ  เป้าหมาย 90% · กำลังคำนวณ...",
                 Font      = new Font("Segoe UI", 8F),
                 ForeColor = Color.FromArgb(120, 130, 150),
                 Location  = new Point(12, 6),
                 AutoSize  = true,
-            });
+            };
+            pnlNote.Controls.Add(_lblTemplateFootnote);
 
             pnlTemplateListOuter.Controls.Add(_pnlTemplateListContent);
             pnlTemplateListOuter.Controls.Add(pnlNote);
@@ -410,17 +414,18 @@ namespace CMS.Presentation.Modules.Workflow
                 AutoSize  = true,
             });
             // YoY badge
-            var lblYoy = new Label
+            _lblYoy = new Label
             {
-                Text      = "+17 pts YoY",
+                Text      = "0.0 pts YoY",
                 Font      = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = _clrGreen,
                 BackColor = Color.FromArgb(220, 248, 228),
                 Location  = new Point(230, 12),
-                Size      = new Size(84, 20),
+                Size      = new Size(120, 20),
                 TextAlign = ContentAlignment.MiddleCenter,
+                Visible   = false,
             };
-            pnlHeader.Controls.Add(lblYoy);
+            pnlHeader.Controls.Add(_lblYoy);
             pnlHeader.Controls.Add(new Panel
                 { BackColor = Color.FromArgb(220, 224, 232), Dock = DockStyle.Bottom, Height = 1 });
 
@@ -511,14 +516,15 @@ namespace CMS.Presentation.Modules.Workflow
                 Location  = new Point(12, 12),
                 AutoSize  = true,
             });
-            pnlHeader.Controls.Add(new Label
+            _lblCycleTimeSubtitle = new Label
             {
-                Text      = "เฉลี่ย 2.8 วัน · Median 2.1",
+                Text      = "กำลังคำนวณ...",
                 Font      = new Font("Segoe UI", 8F),
                 ForeColor = Color.FromArgb(120, 130, 150),
                 Location  = new Point(200, 14),
                 AutoSize  = true,
-            });
+            };
+            pnlHeader.Controls.Add(_lblCycleTimeSubtitle);
             pnlHeader.Controls.Add(new Panel
                 { BackColor = Color.FromArgb(220, 224, 232), Dock = DockStyle.Bottom, Height = 1 });
 
@@ -653,6 +659,19 @@ namespace CMS.Presentation.Modules.Workflow
 
                 double avgCompliance = metrics.Average(m => m.CompliancePercent);
                 lblCardComplianceCount.Text = string.Format("{0:F1}%", avgCompliance);
+
+                int underTargetCount = metrics.Count(m => m.CompliancePercent < 90);
+                if (_lblTemplateFootnote != null)
+                {
+                    _lblTemplateFootnote.Text = string.Format("ⓘ  เป้าหมาย 90% · {0} Templates ต่ำกว่าเป้า", underTargetCount);
+                }
+            }
+            else
+            {
+                if (_lblTemplateFootnote != null)
+                {
+                    _lblTemplateFootnote.Text = "ⓘ  เป้าหมาย 90% · ไม่มีข้อมูล";
+                }
             }
         }
 
@@ -670,6 +689,11 @@ namespace CMS.Presentation.Modules.Workflow
                     (double)summary.OverdueCount / summary.TotalCount * 100);
             lblCardCompletedCount.Text  = summary.CompletedMtd.ToString();
             lblCardCompletedSub.Text    = summary.PeriodLabel;
+
+            if (_lblCycleTimeSubtitle != null)
+            {
+                _lblCycleTimeSubtitle.Text = string.Format("เฉลี่ย {0:F1} วัน", summary.AvgCycleTimeDays);
+            }
         }
 
         public void DisplayOverdueByPerson(List<OverduePersonRow> rows)
@@ -693,6 +717,24 @@ namespace CMS.Presentation.Modules.Workflow
             if (InvokeRequired) { Invoke(new Action(() => DisplayComplianceTrendChart(trendData))); return; }
             _trendData = trendData ?? new List<SLATrendData>();
             _pnlTrendContent?.Invalidate();
+
+            if (_lblYoy != null)
+            {
+                if (_trendData.Count >= 2)
+                {
+                    double first = _trendData[0].CompliancePercent;
+                    double last = _trendData[_trendData.Count - 1].CompliancePercent;
+                    double diff = last - first;
+                    _lblYoy.Text = string.Format("{0:+0.0;-0.0;0.0} pts เทียบช่วงแรก", diff);
+                    _lblYoy.BackColor = diff >= 0 ? Color.FromArgb(220, 248, 228) : Color.FromArgb(254, 224, 224);
+                    _lblYoy.ForeColor = diff >= 0 ? _clrGreen : _clrRed;
+                    _lblYoy.Visible = true;
+                }
+                else
+                {
+                    _lblYoy.Visible = false;
+                }
+            }
         }
 
         public void DisplayCycleTimeDistribution(List<CycleTimeBar> bars)
@@ -721,10 +763,9 @@ namespace CMS.Presentation.Modules.Workflow
 
         public void GetDateRange(out DateTime fromDate, out DateTime toDate)
         {
-            // Default: previous full calendar month
-            var firstOfThisMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            fromDate = firstOfThisMonth.AddMonths(-1);
-            toDate   = firstOfThisMonth.AddDays(-1);
+            // Default: last 30 days (to match default "30 วัน" tab selection)
+            fromDate = DateTime.Today.AddDays(-30);
+            toDate   = DateTime.Now;
         }
 
         public int? GetTemplateFilter() => null;

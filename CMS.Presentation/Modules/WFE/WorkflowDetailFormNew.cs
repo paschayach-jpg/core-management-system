@@ -355,47 +355,47 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void LoadMockData()
         {
-            lblTitle.Text = "WFI-2569-00012 · อนุมัติ KB Article";
-            lblSubtitle.Text = "Instance ของ Template WFD-003 v1 · Frozen Snapshot";
-            lblBreadcrumb.Text = "CMS  ›  Workflow Engine  ›  Monitor  ›  WFI-2569-00012";
+            lblTitle.Text = "ไม่มีข้อมูล";
+            lblSubtitle.Text = "ไม่พบเวิร์กโฟลว์หรือบริการไม่พร้อมใช้งาน";
+            lblBreadcrumb.Text = "CMS  ›  Workflow Engine  ›  Monitor";
 
-            lblWFIDValue.Text = "WFI-2569-00012";
-            lblTemplateValue.Text = "WFD-003 · อนุมัติ KB Article  v1";
-            lblInitiatorValue.Text = "สมชาย กาญจนา";
-            lblInitiatorRoleValue.Text = "Officer · IT";
-            lblStartDateValue.Text = "15/04/2569 09:30";
-            lblDueDateValue.Text = "22/04/2569 17:00 (รวม)";
-            lblLinkedDocValue.Text = "🔗  KBArticle#1234  คู่มือ PDPA";
-            lblCRAFValue.Text = "● 3NC · General";
+            lblWFIDValue.Text = "-";
+            lblTemplateValue.Text = "-";
+            lblInitiatorValue.Text = "-";
+            lblInitiatorRoleValue.Text = "-";
+            lblStartDateValue.Text = "-";
+            lblDueDateValue.Text = "-";
+            lblLinkedDocValue.Text = "-";
+            lblCRAFValue.Text = "-";
 
-            lblStepBadge.Text = "Step 2/3";
-            prgProgress.Value = 55;
-            lblProgressPct.Text = "55%";
-            lblCurrentStepValue.Text = "ผู้จัดการตรวจสอบเนื้อหา";
-            lblAssigneeValue.Text = "วิชัย มีสุข";
-            lblAssigneeRoleValue.Text = "Manager · Legal";
-            lblDeadlineValue.Text = "20/04/2569 17:00";
-            lblSLAValue.Text = "เหลือ 3 วัน";
-            lblStartedValue.Text = "15/04/2569 09:32";
+            lblStepBadge.Text = "Step 0/0";
+            prgProgress.Value = 0;
+            lblProgressPct.Text = "0%";
+            lblCurrentStepValue.Text = "-";
+            lblAssigneeValue.Text = "-";
+            lblAssigneeRoleValue.Text = "-";
+            lblDeadlineValue.Text = "-";
+            lblSLAValue.Text = "-";
+            lblStartedValue.Text = "-";
 
-            lblStatusBadge.Text = "● กำลังดำเนินการ";
+            lblStatusBadge.Text = "● ไม่มีข้อมูล";
 
-            // Initiator avatar: สมชาย กาญจนา → "สก" orange
-            pnlInitiatorAvatar.Tag = "สก|230,115,0";
+            // Initiator avatar: -
+            pnlInitiatorAvatar.Tag = "-|120,130,150";
             pnlInitiatorAvatar.Invalidate();
 
-            // Assignee avatar: วิชัย มีสุข → "วม" blue
-            pnlAssigneeAvatar.Tag = "วม|41,128,185";
+            // Assignee avatar: -
+            pnlAssigneeAvatar.Tag = "-|120,130,150";
             pnlAssigneeAvatar.Invalidate();
 
-            // Ribbon avatar: อรวรรณ สุวรรณ → "AS" navy
-            pnlRibbonAvatar.Tag = "AS|90,120,170";
+            // Ribbon avatar: -
+            pnlRibbonAvatar.Tag = "-|120,130,150";
             pnlRibbonAvatar.Invalidate();
 
-            // SLA bar: 40% orange
-            UpdateSlaBar(40, Color.FromArgb(197, 120, 16));
+            // SLA bar: 0%
+            UpdateSlaBar(0, Color.FromArgb(120, 130, 150));
 
-            LoadMockTimeline();
+            RenderTimeline(new TimelineStep[0]);
         }
 
         private void UpdateSlaBar(int percent, Color barColor)

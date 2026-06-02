@@ -122,20 +122,20 @@ BEGIN
 
     SELECT
         COUNT(*)                                                                   AS TotalSteps,
-        SUM(CASE WHEN wsi.SLAStatus = 1 THEN 1 ELSE 0 END)                       AS OnTimeCount,
-        SUM(CASE WHEN wsi.SLAStatus = 2 THEN 1 ELSE 0 END)                       AS AtRiskCount,
-        SUM(CASE WHEN wsi.SLAStatus = 3 THEN 1 ELSE 0 END)                       AS OverdueCount,
+        SUM(CASE WHEN wsi.SLAStatus = '1' THEN 1 ELSE 0 END)                       AS OnTimeCount,
+        SUM(CASE WHEN wsi.SLAStatus = '2' THEN 1 ELSE 0 END)                       AS AtRiskCount,
+        SUM(CASE WHEN wsi.SLAStatus = '3' THEN 1 ELSE 0 END)                       AS OverdueCount,
         ISNULL(
-            CAST(SUM(CASE WHEN wsi.SLAStatus = 1 THEN 1 ELSE 0 END) AS float)
+            CAST(SUM(CASE WHEN wsi.SLAStatus = '1' THEN 1 ELSE 0 END) AS float)
             / NULLIF(COUNT(*), 0) * 100, 0)                                       AS OnTimePercent,
         ISNULL(AVG(DATEDIFF(MINUTE,
             wsi.AssignedDate,
             ISNULL(wsi.CompletedDate, GETUTCDATE())) / 60.0), 0)                 AS AvgCompletionHours
-    FROM   dbo.WorkflowStepInstance wsi
-    INNER  JOIN dbo.WorkflowInstance wi
-           ON wi.WorkflowInstanceId = wsi.WorkflowInstanceId AND wi.IsDeleted = 0
+    FROM   WFE.t_WFStepInstance wsi
+    INNER  JOIN WFE.t_WFInstance wi
+           ON wi.WFInstanceId = wsi.WFInstanceId AND wi.IsDeleted = 0
     WHERE  wsi.IsDeleted = 0
-      AND  (@WorkflowDefinitionId IS NULL OR wi.WorkflowDefinitionId = @WorkflowDefinitionId)
+      AND  (@WorkflowDefinitionId IS NULL OR wi.WFDefinitionId = @WorkflowDefinitionId)
       AND  (@FromDate IS NULL OR wsi.AssignedDate >= @FromDate)
       AND  (@ToDate   IS NULL OR wsi.AssignedDate <= @ToDate);
 END
@@ -162,13 +162,13 @@ BEGIN
         SUM(CASE WHEN wsi.Status = 3 THEN 1 ELSE 0 END)                          AS Completed,
         SUM(CASE WHEN wsi.Status NOT IN (3, 4) THEN 1 ELSE 0 END)                AS Pending,
         SUM(CASE WHEN wsi.Status = 4 THEN 1 ELSE 0 END)                          AS Rejected,
-        SUM(CASE WHEN wsi.SLAStatus = 3 THEN 1 ELSE 0 END)                       AS Overdue
-    FROM   dbo.WorkflowStepInstance wsi
-    INNER  JOIN dbo.WorkflowInstance wi
-           ON wi.WorkflowInstanceId = wsi.WorkflowInstanceId AND wi.IsDeleted = 0
+        SUM(CASE WHEN wsi.SLAStatus = '3' THEN 1 ELSE 0 END)                       AS Overdue
+    FROM   WFE.t_WFStepInstance wsi
+    INNER  JOIN WFE.t_WFInstance wi
+           ON wi.WFInstanceId = wsi.WFInstanceId AND wi.IsDeleted = 0
     WHERE  wsi.IsDeleted = 0
       AND  wsi.AssignedTo IS NOT NULL
-      AND  (@WorkflowDefinitionId IS NULL OR wi.WorkflowDefinitionId = @WorkflowDefinitionId)
+      AND  (@WorkflowDefinitionId IS NULL OR wi.WFDefinitionId = @WorkflowDefinitionId)
       AND  (@FromDate IS NULL OR wsi.AssignedDate >= @FromDate)
       AND  (@ToDate   IS NULL OR wsi.AssignedDate <= @ToDate)
     GROUP  BY wsi.AssignedTo
@@ -192,32 +192,32 @@ BEGIN
     SET NOCOUNT ON;
 
     SELECT
-        ws.WorkflowStepId,
+        ws.WFStepId                                                                AS WorkflowStepId,
         ws.StepName,
         ws.StepType,
         ws.SequenceNumber,
         wd.WFName                                                                  AS WorkflowDefinitionName,
         COUNT(*)                                                                   AS TotalExecutions,
         SUM(CASE WHEN wsi.Status = 3 THEN 1 ELSE 0 END)                          AS CompletedCount,
-        SUM(CASE WHEN wsi.SLAStatus = 3 THEN 1 ELSE 0 END)                       AS OverdueCount,
+        SUM(CASE WHEN wsi.SLAStatus = '3' THEN 1 ELSE 0 END)                       AS OverdueCount,
         AVG(CASE WHEN wsi.CompletedDate IS NOT NULL
             THEN DATEDIFF(MINUTE, wsi.AssignedDate, wsi.CompletedDate) / 60.0
             ELSE NULL END)                                                         AS AvgCompletionHours,
         MAX(CASE WHEN wsi.CompletedDate IS NOT NULL
             THEN DATEDIFF(MINUTE, wsi.AssignedDate, wsi.CompletedDate) / 60.0
             ELSE NULL END)                                                         AS MaxCompletionHours
-    FROM   dbo.WorkflowStepInstance wsi
-    INNER  JOIN dbo.WorkflowInstance wi
-           ON wi.WorkflowInstanceId = wsi.WorkflowInstanceId AND wi.IsDeleted = 0
-    INNER  JOIN dbo.WorkflowStep ws
-           ON ws.WorkflowStepId = wsi.WorkflowStepId
+    FROM   WFE.t_WFStepInstance wsi
+    INNER  JOIN WFE.t_WFInstance wi
+           ON wi.WFInstanceId = wsi.WFInstanceId AND wi.IsDeleted = 0
+    INNER  JOIN WFE.s_WFStep ws
+           ON ws.WFStepId = wsi.WFStepId
     INNER  JOIN WFE.s_WFDefinition wd
-           ON wd.WFDefinitionId = wi.WorkflowDefinitionId AND wd.IsDeleted = 0
+           ON wd.WFDefinitionId = wi.WFDefinitionId AND wd.IsDeleted = 0
     WHERE  wsi.IsDeleted = 0
-      AND  (@WorkflowDefinitionId IS NULL OR wi.WorkflowDefinitionId = @WorkflowDefinitionId)
+      AND  (@WorkflowDefinitionId IS NULL OR wi.WFDefinitionId = @WorkflowDefinitionId)
       AND  (@FromDate IS NULL OR wsi.AssignedDate >= @FromDate)
       AND  (@ToDate   IS NULL OR wsi.AssignedDate <= @ToDate)
-    GROUP  BY ws.WorkflowStepId, ws.StepName, ws.StepType, ws.SequenceNumber, wd.WFName
+    GROUP  BY ws.WFStepId, ws.StepName, ws.StepType, ws.SequenceNumber, wd.WFName
     ORDER  BY AvgCompletionHours DESC;
 END
 GO

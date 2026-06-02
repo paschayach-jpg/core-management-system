@@ -175,13 +175,13 @@ namespace CMS.Data.Repositories
                     "    SUM(CASE WHEN sla.EscalationAction = 2 THEN 1 ELSE 0 END)            AS IncreasePriorityCount, " +
                     "    SUM(CASE WHEN sla.EscalationAction = 3 THEN 1 ELSE 0 END)            AS ReassignCount, " +
                     "    SUM(CASE WHEN sla.EscalationAction = 4 THEN 1 ELSE 0 END)            AS AutoRejectCount " +
-                    "FROM dbo.WorkflowStepInstance wsi " +
-                    "INNER JOIN dbo.WorkflowInstance wi ON wi.WorkflowInstanceId = wsi.WorkflowInstanceId " +
-                    "LEFT  JOIN dbo.WFSLARule sla ON sla.WorkflowStepId = wsi.WorkflowStepId AND sla.IsActive = 1 " +
-                    "WHERE wsi.SLAStatus = 3 " +   // Overdue
+                    "FROM WFE.t_WFStepInstance wsi " +
+                    "INNER JOIN WFE.t_WFInstance wi ON wi.WFInstanceId = wsi.WFInstanceId " +
+                    "LEFT  JOIN dbo.WFSLARule sla ON sla.WorkflowStepId = wsi.WFStepId AND sla.IsActive = 1 " +
+                    "WHERE wsi.SLAStatus = '3' " +   // Overdue
                     "  AND wsi.IsDeleted = 0 " +
                     "  AND wi.IsDeleted  = 0 " +
-                    "  AND (@WorkflowDefinitionId IS NULL OR wi.WorkflowDefinitionId = @WorkflowDefinitionId) " +
+                    "  AND (@WorkflowDefinitionId IS NULL OR wi.WFDefinitionId = @WorkflowDefinitionId) " +
                     "  AND (@FromDate IS NULL OR wsi.AssignedDate >= @FromDate) " +
                     "  AND (@ToDate   IS NULL OR wsi.AssignedDate <= @ToDate)", conn))
                 {
@@ -227,14 +227,14 @@ namespace CMS.Data.Repositories
                     const string sql =
                         "SELECT wd.WFDefinitionId AS WorkflowDefinitionId, wd.WFName AS TemplateName, " +
                         "       COUNT(*) AS Total, " +
-                        "       SUM(CASE WHEN wsi.SLAStatus = 1 THEN 1 ELSE 0 END) AS OnTime, " +
-                        "       SUM(CASE WHEN wsi.SLAStatus = 2 THEN 1 ELSE 0 END) AS AtRisk, " +
-                        "       SUM(CASE WHEN wsi.SLAStatus = 3 THEN 1 ELSE 0 END) AS Overdue " +
+                        "       SUM(CASE WHEN wsi.SLAStatus = '1' THEN 1 ELSE 0 END) AS OnTime, " +
+                        "       SUM(CASE WHEN wsi.SLAStatus = '2' THEN 1 ELSE 0 END) AS AtRisk, " +
+                        "       SUM(CASE WHEN wsi.SLAStatus = '3' THEN 1 ELSE 0 END) AS Overdue " +
                         "FROM   WFE.s_WFDefinition wd " +
-                        "INNER JOIN dbo.WorkflowInstance wi " +
-                        "       ON wi.WorkflowDefinitionId = wd.WFDefinitionId AND wi.IsDeleted = 0 " +
-                        "INNER JOIN dbo.WorkflowStepInstance wsi " +
-                        "       ON wsi.WorkflowInstanceId = wi.WorkflowInstanceId AND wsi.IsDeleted = 0 " +
+                        "INNER JOIN WFE.t_WFInstance wi " +
+                        "       ON wi.WFDefinitionId = wd.WFDefinitionId AND wi.IsDeleted = 0 " +
+                        "INNER JOIN WFE.t_WFStepInstance wsi " +
+                        "       ON wsi.WFInstanceId = wi.WFInstanceId AND wsi.IsDeleted = 0 " +
                         "WHERE  wd.IsDeleted = 0 " +
                         "  AND  (@WorkflowDefinitionId IS NULL OR wd.WFDefinitionId = @WorkflowDefinitionId) " +
                         "  AND  (@FromDate IS NULL OR wsi.AssignedDate >= @FromDate) " +
@@ -281,10 +281,10 @@ namespace CMS.Data.Repositories
                     conn.Open();
                     const string sql =
                         "SELECT yr, wk, " +
-                        "       CAST(SUM(CASE WHEN SLAStatus = 1 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) AS float) AS CompliancePct " +
+                        "       CAST(SUM(CASE WHEN SLAStatus = '1' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0) AS float) AS CompliancePct " +
                         "FROM ( " +
                         "    SELECT YEAR(AssignedDate) AS yr, DATEPART(WEEK, AssignedDate) AS wk, SLAStatus " +
-                        "    FROM   dbo.WorkflowStepInstance " +
+                        "    FROM   WFE.t_WFStepInstance " +
                         "    WHERE  IsDeleted = 0 AND AssignedDate >= DATEADD(WEEK, -@Weeks, GETUTCDATE()) " +
                         ") t " +
                         "GROUP  BY yr, wk " +
@@ -346,11 +346,11 @@ namespace CMS.Data.Repositories
                         "            ELSE 7 " +
                         "        END AS BucketOrder " +
                         "    FROM ( " +
-                        "        SELECT DATEDIFF(MINUTE, wi.CreatedDate, wi.CompletedDate) / 1440.0 AS ct " +
-                        "        FROM   dbo.WorkflowInstance wi " +
+                        "        SELECT DATEDIFF(MINUTE, wi.InitiatedDate, wi.CompletedDate) / 1440.0 AS ct " +
+                        "        FROM   WFE.t_WFInstance wi " +
                         "        WHERE  wi.IsDeleted = 0 AND wi.Status = 3 AND wi.CompletedDate IS NOT NULL " +
-                        "          AND  (@FromDate IS NULL OR wi.CreatedDate >= @FromDate) " +
-                        "          AND  (@ToDate   IS NULL OR wi.CreatedDate <= @ToDate) " +
+                        "          AND  (@FromDate IS NULL OR wi.InitiatedDate >= @FromDate) " +
+                        "          AND  (@ToDate   IS NULL OR wi.InitiatedDate <= @ToDate) " +
                         "    ) t " +
                         ") b " +
                         "GROUP  BY BucketLabel, BucketOrder " +

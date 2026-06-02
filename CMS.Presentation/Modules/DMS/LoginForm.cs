@@ -326,8 +326,8 @@ namespace CMS.Presentation
 
         private void pnlHeader_Paint(object sender, PaintEventArgs e)
         {
-            // วาดเส้นขอบสีทองที่ด้านล่างสุดของ pnlHeader
-            using (var pen = new Pen(Color.FromArgb(218, 165, 32), 3f)) // สีทอง (Goldenrod) ความหนา 3px
+            // วาดเส้นขอบสีทองพรีเมียมที่ด้านล่างสุดของ pnlHeader
+            using (var pen = new Pen(Color.FromArgb(197, 160, 89), 3f)) // สีทองพรีเมียม ความหนา 3px
             {
                 e.Graphics.DrawLine(pen, 0, pnlHeader.Height - 1, pnlHeader.Width, pnlHeader.Height - 1);
             }
