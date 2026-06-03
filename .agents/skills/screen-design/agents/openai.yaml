@@ -1,0 +1,4 @@
+interface:
+  display_name: "Screen Design"
+  short_description: "Design practical app screens and UI flows"
+  default_prompt: "Use $screen-design to design a practical app screen with clear layout, states, and responsive behavior."

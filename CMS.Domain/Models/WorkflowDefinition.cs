@@ -65,5 +65,20 @@ namespace CMS.Domain.Models
 
         /// <summary>Date and time the template was soft-deleted. Null when not deleted.</summary>
         public DateTime? DeletedDate { get; set; }
+
+        /// <summary>Template definition (JSON string) used by the wizard and form builder.</summary>
+        public string TemplateDefinition { get; set; }
+
+        /// <summary>Number of steps defined in this template (populated in list queries).</summary>
+        public int StepCount { get; set; }
+
+        /// <summary>Total workflow instances ever created from this template.</summary>
+        public int TotalInstanceCount { get; set; }
+
+        /// <summary>Active (non-terminal) workflow instances from this template.</summary>
+        public int ActiveInstanceCount { get; set; }
+
+        /// <summary>Category label (e.g. เอกสาร, IT, HR). Maps to Category column in s_WFDefinition.</summary>
+        public string Category { get; set; }
     }
 }

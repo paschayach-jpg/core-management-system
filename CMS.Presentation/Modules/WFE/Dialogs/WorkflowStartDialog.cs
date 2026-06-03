@@ -8,6 +8,7 @@ using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
+using Newtonsoft.Json;
 
 namespace CMS.Presentation.Modules.Workflow.Dialogs
 {
@@ -32,6 +33,10 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
         private WorkflowTemplateResult _selectedTemplate;
         private bool _searchPlaceholderActive = true;
 
+        // ── Input ─────────────────────────────────────────────────────────────
+        /// <summary>Template ID ที่ให้เลือกอัตโนมัติเมื่อเปิด Dialog</summary>
+        public int? PreSelectedTemplateId { get; set; }
+
         // ── Output ────────────────────────────────────────────────────────────
         /// <summary>Template ที่ user เลือก (set เมื่อ DialogResult = OK)</summary>
         public int SelectedTemplateId   { get; private set; }
@@ -43,6 +48,8 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
         public int    Priority          { get; private set; }
         /// <summary>CRAF index (0=1HC … 3=4PC)</summary>
         public int    CRAFLevel         { get; private set; }
+        /// <summary>Context JSON sent to CreateWorkflowInstanceRequest.InputParameters.</summary>
+        public string InputParametersJson { get; private set; }
 
         // ── Colors ────────────────────────────────────────────────────────────
         private static readonly Color NavyDark   = Color.FromArgb(22,  36,  62);
@@ -78,6 +85,34 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             _linkedEntityType   = linkedEntityType;
             _linkedEntityId     = linkedEntityId;
             _linkedEntityLabel  = linkedEntityLabel;
+
+            AdjustButtonLayout();
+            btnStart.Enabled = false;
+        }
+
+        private void AdjustButtonLayout()
+        {
+            try
+            {
+                // Clear anchors first to avoid any layout adjustment conflicts
+                btnClose.Anchor = AnchorStyles.None;
+                btnStart.Anchor = AnchorStyles.None;
+                btnCancel.Anchor = AnchorStyles.None;
+
+                // Set correct coordinates based on design size (1020)
+                btnClose.Location = new Point(pnlTitleBar.Width - btnClose.Width - 16, (pnlTitleBar.Height - btnClose.Height) / 2);
+                btnStart.Location = new Point(pnlFooter.Width - btnStart.Width - 16, (pnlFooter.Height - btnStart.Height) / 2);
+                btnCancel.Location = new Point(btnStart.Left - btnCancel.Width - 12, (pnlFooter.Height - btnCancel.Height) / 2);
+
+                // Re-apply anchors so they scale/move correctly with resizing
+                btnClose.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                btnStart.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+                btnCancel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error("WorkflowStartDialog AdjustButtonLayout failed: " + ex.Message, ex);
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -91,6 +126,46 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
                 WireSearchEvents();
                 SetEntityBadge();
                 LoadTemplates();
+
+                if (PreSelectedTemplateId.HasValue)
+                {
+                    // Look for template in the loaded list
+                    var match = _allTemplates.FirstOrDefault(t => t.WorkflowDefinitionId == PreSelectedTemplateId.Value);
+                    if (match == null)
+                    {
+                        // If it's not active, LoadTemplates wouldn't return it. In that case, let's load it directly from service
+                        try
+                        {
+                            var directTemplate = _templateService.GetTemplate(PreSelectedTemplateId.Value, _userContext);
+                            if (directTemplate != null)
+                            {
+                                var tempResult = new WorkflowTemplateResult
+                                {
+                                    WorkflowDefinitionId = directTemplate.WorkflowDefinitionId,
+                                    Name = directTemplate.Name,
+                                    Description = directTemplate.Description,
+                                    Version = directTemplate.Version,
+                                    IsActive = directTemplate.IsActive,
+                                    ApprovalStatus = directTemplate.ApprovalStatus,
+                                    Category = "ทั่วไป",
+                                    StepCount = 3 // placeholder/default steps
+                                };
+                                _allTemplates.Add(tempResult);
+                                RenderTemplateList(_allTemplates);
+                                match = tempResult;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _loggingService.Warn("Pre-selected template fetch failed: " + ex.Message);
+                        }
+                    }
+
+                    if (match != null)
+                    {
+                        SelectTemplate(match);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -463,6 +538,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             InstanceDescription   = txtDescription.Text.Trim();
             Priority              = cmbPriority.SelectedIndex;
             CRAFLevel             = cmbCRAF.SelectedIndex;
+            InputParametersJson   = BuildInputParametersJson();
 
             DialogResult = DialogResult.OK;
             Close();
@@ -490,6 +566,26 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
                 return false;
             }
             return true;
+        }
+
+        private string BuildInputParametersJson()
+        {
+            return JsonConvert.SerializeObject(new
+            {
+                Title = InstanceTitle,
+                Description = InstanceDescription,
+                Priority = Priority,
+                PriorityText = cmbPriority.SelectedItem != null ? cmbPriority.SelectedItem.ToString() : null,
+                CRAFLevel = CRAFLevel,
+                CRAFText = cmbCRAF.SelectedItem != null ? cmbCRAF.SelectedItem.ToString() : null,
+                TemplateId = SelectedTemplateId,
+                TemplateName = _selectedTemplate != null ? _selectedTemplate.Name : null,
+                LinkedEntityType = _linkedEntityType,
+                LinkedEntityId = _linkedEntityId,
+                LinkedEntityLabel = _linkedEntityLabel,
+                StartedBy = _userContext.ADUserName,
+                StartedAt = DateTime.Now
+            });
         }
 
         // ════════════════════════════════════════════════════════════════════

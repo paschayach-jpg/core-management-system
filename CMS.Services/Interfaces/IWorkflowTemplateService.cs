@@ -68,5 +68,15 @@ namespace CMS.Services.Interfaces
         /// Does NOT delete the template.
         /// </summary>
         WorkflowTemplateResult RejectTemplate(int templateId, string reason, UserContext userContext);
+
+        /// <summary>
+        /// Direct publish/activate a template (sets ApprovalStatus = Active, IsActive = true).
+        /// </summary>
+        WorkflowTemplateResult PublishTemplate(int templateId, UserContext userContext);
+
+        /// <summary>
+        /// Deactivate an active template (sets ApprovalStatus = Inactive, IsActive = false).
+        /// </summary>
+        WorkflowTemplateResult DeactivateTemplate(int templateId, UserContext userContext);
     }
 }

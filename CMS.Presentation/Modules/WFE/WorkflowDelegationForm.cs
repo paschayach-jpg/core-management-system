@@ -180,15 +180,28 @@ namespace CMS.Presentation.Modules.Workflow
 
                 foreach (var d in allDelegations.OrderByDescending(d => d.DelegationDate))
                 {
-                    string status = d.DelegationDate > DateTime.Now ? "กำลังใช้งาน" : "สิ้นสุดแล้ว";
-                    dgvDelegations.Rows.Add(
+                    string status;
+                    if (!d.IsActive)
+                        status = "สิ้นสุดแล้ว";
+                    else if (d.StartDate.HasValue && d.StartDate.Value > DateTime.Now)
+                        status = "กำหนดไว้";
+                    else if (d.EndDate.HasValue && d.EndDate.Value < DateTime.Now)
+                        status = "สิ้นสุดแล้ว";
+                    else
+                        status = "กำลังใช้งาน";
+
+                    string displayStart = d.StartDate.HasValue ? d.StartDate.Value.ToString("dd/MM/yy HH:mm") : d.DelegationDate.ToString("dd/MM/yy HH:mm");
+                    string displayEnd = d.EndDate.HasValue ? d.EndDate.Value.ToString("dd/MM/yy HH:mm") : "-";
+
+                    int rowIndex = dgvDelegations.Rows.Add(
                         string.Format("{0} → {1}", d.DelegatedFrom, d.DelegatedTo),
-                        "-",
-                        d.DelegationDate.ToString("dd/MM/yy"),
-                        "-",
+                        d.Remarks ?? "-",
+                        displayStart,
+                        displayEnd,
                         status,
                         d.DelegationReason ?? "-"
                     );
+                    dgvDelegations.Rows[rowIndex].Tag = d;
                 }
             }
             catch (Exception ex)
@@ -204,7 +217,7 @@ namespace CMS.Presentation.Modules.Workflow
         private void BuildUserDetailPanel()
         {
             // Float on pnlContent so it never overlaps card children
-            int panelW = cmbDelegateTo.Width + 16 + cmbScope.Width;
+            int panelW = cmbDelegateTo.Width;
             _pnlUserDetail = new Panel
             {
                 Size        = new Size(panelW, 48),
@@ -246,8 +259,7 @@ namespace CMS.Presentation.Modules.Workflow
 
             // Position: directly below _txtSearch, converted to pnlContent coordinates
             var anchor = _txtSearch ?? (Control)cmbDelegateTo;
-            var screenPt = pnlDelegationCard.PointToScreen(
-                new Point(anchor.Left, anchor.Bottom + 2));
+            var screenPt = anchor.PointToScreen(new Point(0, anchor.Height + 2));
             _pnlUserDetail.Location = pnlContent.PointToClient(screenPt);
             _pnlUserDetail.Visible  = true;
             _pnlUserDetail.BringToFront();
@@ -389,8 +401,7 @@ namespace CMS.Presentation.Modules.Workflow
 
             if (displayItems.Count > 0)
             {
-                var screenPt = pnlDelegationCard.PointToScreen(
-                    new Point(_txtSearch.Left, _txtSearch.Bottom));
+                var screenPt = _txtSearch.PointToScreen(new Point(0, _txtSearch.Height));
                 _pnlResults.Location = pnlContent.PointToClient(screenPt);
                 int h = Math.Min(displayItems.Count * 22 + 4, 180);
                 _pnlResults.Size = new Size(_txtSearch.Width, h);
@@ -547,7 +558,9 @@ namespace CMS.Presentation.Modules.Workflow
                         WorkflowStepInstanceId = task.WorkflowStepInstanceId,
                         DelegateToUserName     = delegateToUsername,
                         DelegationReason       = txtReason.Text.Trim(),
-                        Remarks                = remarks
+                        Remarks                = remarks,
+                        StartDate              = dtpStart.Value,
+                        EndDate                = dtpEnd.Value
                     };
 
                     _delegationService.DelegateTask(request, _userContext);
@@ -597,6 +610,13 @@ namespace CMS.Presentation.Modules.Workflow
         private void btnCancel_Click(object sender, EventArgs e)
         {
             InitializeFormData();
+        }
+
+        private void btnCreateDelegation_Click(object sender, EventArgs e)
+        {
+            InitializeFormData();
+            if (_txtSearch != null)
+                _txtSearch.Focus();
         }
 
         // ─── Ribbon / Toolbar ────────────────────────────────────────────────────
@@ -763,10 +783,49 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 case "new":
                     InitializeFormData();
+                    if (_txtSearch != null) _txtSearch.Focus();
                     break;
                 case "history":
                     LoadHistoryRows();
                     dgvDelegations.Focus();
+                    break;
+                case "cancel":
+                    if (dgvDelegations.SelectedRows.Count == 0)
+                    {
+                        MessageBox.Show("กรุณาเลือกรายการ Delegation ในตารางที่ต้องการยกเลิก",
+                            "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    var selectedRow = dgvDelegations.SelectedRows[0];
+                    var del = selectedRow.Tag as WFDelegationResult;
+                    if (del == null) return;
+
+                    if (!del.IsActive)
+                    {
+                        MessageBox.Show("รายการนี้ได้สิ้นสุดหรือถูกยกเลิกไปแล้ว",
+                            "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    var confirmCancel = MessageBox.Show(
+                        "คุณต้องการยกเลิกการมอบหมายงานนี้ใช่หรือไม่?",
+                        "ยืนยันการยกเลิก", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (confirmCancel != DialogResult.Yes) return;
+
+                    try
+                    {
+                        _delegationService.DeactivateDelegation(del.WFDelegationId, _userContext);
+                        MessageBox.Show("ยกเลิกการมอบหมายสำเร็จ", "สำเร็จ",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadMyTasks();
+                        LoadHistoryRows();
+                    }
+                    catch (Exception ex)
+                    {
+                        _loggingService.Error($"Error deactivating delegation: {ex.Message}", ex);
+                        MessageBox.Show($"เกิดข้อผิดพลาดในการยกเลิกการมอบหมาย: {ex.Message}",
+                            "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                     break;
                 default:
                     MessageBox.Show(string.Format("ฟังก์ชัน '{0}' อยู่ระหว่างพัฒนา", tag),

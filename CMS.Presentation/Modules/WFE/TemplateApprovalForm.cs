@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using CMS.Data.Models;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.Workflow.Presenters;
@@ -19,6 +20,9 @@ namespace CMS.Presentation.Modules.Workflow
         // ── Dependencies ─────────────────────────────────────────────────────────
         private readonly TemplateApprovalPresenter _presenter;
         private readonly UserContext _userContext;
+        private readonly IWorkflowTemplateService _templateService;
+        private readonly IAuditService _auditService;
+        private readonly ILoggingService _loggingService;
 
         // ── State ────────────────────────────────────────────────────────────────
         private readonly List<WorkflowTemplateResult> _currentItems = new List<WorkflowTemplateResult>();
@@ -31,6 +35,7 @@ namespace CMS.Presentation.Modules.Workflow
         private WorkflowTemplateResult _reviewItem;
         private int _queueIndex;      // 0-based index in _currentItems
         private int _queueTotal;
+        private int _hotItemIndex = -1;
 
         // ── Colors ───────────────────────────────────────────────────────────────
         private static readonly Color Blue       = Color.FromArgb(37,  99,  235);
@@ -59,6 +64,9 @@ namespace CMS.Presentation.Modules.Workflow
         {
             InitializeComponent();
             _userContext = userContext;
+            _templateService = templateService;
+            _auditService = auditService;
+            _loggingService = loggingService;
             if (templateService != null && auditService != null && loggingService != null && userContext != null)
                 _presenter = new TemplateApprovalPresenter(this, templateService, auditService, loggingService, userContext);
         }
@@ -129,7 +137,7 @@ namespace CMS.Presentation.Modules.Workflow
                 var lvi = new ListViewItem(string.Format("WFD-{0:D3}", t.WorkflowDefinitionId));
                 lvi.SubItems.Add(t.Name ?? "-");
                 lvi.SubItems.Add(t.Category ?? "-");
-                lvi.SubItems.Add(string.Format("v{0} Draft", t.Version));
+                lvi.SubItems.Add(string.Format("v{0} {1}", t.Version, GetTemplateStatusLabel(t)));
                 lvi.SubItems.Add(ExtractName(t.CreatedBy));
                 lvi.SubItems.Add(t.ModifiedDate.ToString("dd/MM/yy") + "  ·  รอ " + (int)(DateTime.Now - t.ModifiedDate).TotalDays + " วัน");
                 lvi.Tag = t;
@@ -138,7 +146,11 @@ namespace CMS.Presentation.Modules.Workflow
 
             lblResultCount.Text = string.Format("พบ {0} รายการรออนุมัติ", _totalCount);
             lblSelectionInfo.Text = string.Format("แสดง {0} รายการ", items.Count);
-            BuildSummaryCards(_totalCount, 0, 0);
+            int pendingRows = items.Count(IsPendingTemplate);
+            lblResultCount.Text = pendingRows == items.Count
+                ? string.Format("พบ {0} รายการรออนุมัติ", _totalCount)
+                : string.Format("ไม่มีรายการรออนุมัติ - แสดง Template ทั้งหมด {0} รายการ", _totalCount);
+            BuildSummaryCards(pendingRows, 0, 0);
             SetActionButtonsEnabled(false, false, false);
         }
 
@@ -148,7 +160,9 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 if (!(c is Panel pnl)) continue;
                 var tag = pnl.Tag as string ?? string.Empty;
-                if (tag == "approve" || tag == "reject" || tag == "preview") pnl.Enabled = canApprove;
+                if (tag == "approve") pnl.Enabled = canApprove;
+                else if (tag == "reject") pnl.Enabled = canReject;
+                else if (tag == "preview") pnl.Enabled = canPreview;
             }
         }
 
@@ -329,13 +343,37 @@ namespace CMS.Presentation.Modules.Workflow
             lvTemplates.Columns.Add("ผู้ส่ง",          150);
             lvTemplates.Columns.Add("ส่งเมื่อ / รอ",  200);
 
+            typeof(ListView).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
+                null, lvTemplates, new object[] { true });
+
             lvTemplates.DrawColumnHeader     += (s, e) => DrawColHeader(e);
-            lvTemplates.DrawItem             += (s, e) => { /* background drawn per-cell in DrawSubItem to survive hover repaints */ };
+            lvTemplates.DrawItem             += (s, e) => { /* background drawn per-cell in DrawSubItem */ };
             lvTemplates.DrawSubItem          += (s, e) => DrawListSubItem(e);
+
+            lvTemplates.MouseMove += (s, e) =>
+            {
+                int idx = lvTemplates.HitTest(e.Location).Item?.Index ?? -1;
+                if (idx == _hotItemIndex) return;
+                int old = _hotItemIndex;
+                _hotItemIndex = idx;
+                InvalidateTemplateListRow(old);
+                InvalidateTemplateListRow(idx);
+            };
+            lvTemplates.MouseLeave += (s, e) =>
+            {
+                if (_hotItemIndex == -1) return;
+                int old = _hotItemIndex;
+                _hotItemIndex = -1;
+                InvalidateTemplateListRow(old);
+            };
+
             lvTemplates.SelectedIndexChanged += (s, e) =>
             {
                 bool has = lvTemplates.SelectedItems.Count > 0;
-                SetActionButtonsEnabled(has, has, has);
+                var selected = GetSelectedListTemplate();
+                bool canReview = has && IsPendingTemplate(selected);
+                SetActionButtonsEnabled(canReview, canReview, has);
                 int sel = lvTemplates.SelectedItems.Count;
                 lblSelectionInfo.Text = sel > 0
                     ? string.Format("เลือก {0} รายการจาก {1}", sel, _totalCount)
@@ -363,6 +401,7 @@ namespace CMS.Presentation.Modules.Workflow
             // Each cell fills its own background so hover/hot repaints can't leave text on wrong bg
             var bg = e.Item.Selected
                 ? Color.FromArgb(232, 241, 255)
+                : e.ItemIndex == _hotItemIndex ? Color.FromArgb(240, 245, 255)
                 : (e.ItemIndex % 2 == 0 ? Color.White : Color.FromArgb(250, 251, 253));
             using (var br = new SolidBrush(bg))
                 g.FillRectangle(br, r);
@@ -711,21 +750,140 @@ namespace CMS.Presentation.Modules.Workflow
             return card;
         }
 
-        // ── Flow comparison placeholder ──────────────────────────────────────────
+        // ── Flow section ─────────────────────────────────────────────────────────
 
         private Panel BuildFlowSection()
         {
             var card = MakeCard();
             card.Margin = new Padding(0, 0, 0, 10);
-            card.Height = 120;
 
             var hdr = new Panel { Dock = DockStyle.Top, Height = 34, BackColor = Color.White };
-            hdr.Controls.Add(new Label { Text = "เปรียบเทียบ Flow: v" + (_reviewItem.Version - 1) + " → v" + _reviewItem.Version, Font = new Font("Segoe UI", 10F, FontStyle.Bold), ForeColor = Color.FromArgb(22, 36, 62), AutoSize = true, Location = new Point(16, 9) });
-            hdr.Paint += (s, pe) => pe.Graphics.DrawLine(new Pen(Color.FromArgb(235, 238, 244)), 0, hdr.Height - 1, hdr.Width, hdr.Height - 1);
+            hdr.Controls.Add(new Label
+            {
+                Text = "Flow ของ Template v" + _reviewItem.Version,
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(22, 36, 62),
+                AutoSize = true,
+                Location = new Point(16, 9)
+            });
+            hdr.Paint += (s, pe) =>
+                pe.Graphics.DrawLine(new Pen(Color.FromArgb(235, 238, 244)), 0, hdr.Height - 1, hdr.Width, hdr.Height - 1);
             card.Controls.Add(hdr);
 
-            card.Controls.Add(new Label { Text = "[ Flow Diagram Comparison — อยู่ระหว่างพัฒนา ]", Font = new Font("Segoe UI", 9F), ForeColor = Color.FromArgb(140, 150, 165), TextAlign = ContentAlignment.MiddleCenter, Dock = DockStyle.Fill });
+            // Load steps from DB
+            var steps = new List<CMS.Domain.Models.WorkflowStep>();
+            var connections = new List<CMS.Domain.Models.WorkflowConnection>();
+            try
+            {
+                var cfg = new CMS.Infrastructure.ConfigManager();
+                var stepRepo = new CMS.Data.Repositories.WorkflowStepRepository(cfg);
+                steps = stepRepo.GetStepsByTemplate(_reviewItem.WorkflowDefinitionId)?.ToList()
+                        ?? new List<CMS.Domain.Models.WorkflowStep>();
+                connections = stepRepo.GetConnectionsByTemplate(_reviewItem.WorkflowDefinitionId)?.ToList()
+                              ?? new List<CMS.Domain.Models.WorkflowConnection>();
+            }
+            catch { /* DB not available — canvas will show placeholder text */ }
 
+            // Pre-compute node positions
+            var nodeBounds = new Dictionary<int, Rectangle>();
+            const int nodeW = 110, nodeH = 42, xSpacing = 150, ySpacing = 26, yMid = 90;
+            if (steps.Count > 0)
+            {
+                var grouped = steps.Where(s => !s.IsDeleted)
+                    .GroupBy(s => s.SequenceNumber)
+                    .OrderBy(g => g.Key).ToList();
+                for (int ci = 0; ci < grouped.Count; ci++)
+                {
+                    var group = grouped[ci].ToList();
+                    int x = 30 + ci * xSpacing;
+                    int k = group.Count;
+                    int totalH = k * nodeH + (k - 1) * ySpacing;
+                    int startY = yMid - totalH / 2;
+                    for (int ri = 0; ri < k; ri++)
+                        nodeBounds[group[ri].WorkflowStepId] = new Rectangle(x, startY + ri * (nodeH + ySpacing), nodeW, nodeH);
+                }
+            }
+
+            int canvasH = steps.Count > 0 ? 200 : 60;
+            var canvas = new Panel { Dock = DockStyle.Top, Height = canvasH, BackColor = Color.FromArgb(246, 248, 251) };
+
+            var capturedSteps = steps;
+            var capturedConns = connections;
+            var capturedBounds = nodeBounds;
+
+            canvas.Paint += (s, pe) =>
+            {
+                var g = pe.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                if (capturedSteps.Count == 0)
+                {
+                    using (var f = new Font("Segoe UI", 9F))
+                    using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                        g.DrawString("ไม่พบข้อมูล Step สำหรับ Template นี้", f,
+                            new SolidBrush(Color.FromArgb(140, 150, 165)),
+                            new RectangleF(0, 0, canvas.Width, canvas.Height), sf);
+                    return;
+                }
+
+                // Connections
+                foreach (var conn in capturedConns)
+                {
+                    if (conn.IsDeleted) continue;
+                    if (capturedBounds.TryGetValue(conn.FromStepId, out var rf) &&
+                        capturedBounds.TryGetValue(conn.ToStepId,   out var rt))
+                    {
+                        int x1 = rf.Right, y1 = rf.Top + rf.Height / 2;
+                        int x2 = rt.Left,  y2 = rt.Top  + rt.Height / 2;
+                        int cx = (x1 + x2) / 2;
+                        using (var pen = new Pen(Color.FromArgb(160, 170, 190), 1.5f) { EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor })
+                            g.DrawBezier(pen, x1, y1, cx, y1, cx, y2, x2, y2);
+                        if (!string.IsNullOrEmpty(conn.ConditionExpression))
+                            using (var f = new Font("Segoe UI", 7F))
+                                g.DrawString(conn.ConditionExpression, f, new SolidBrush(Color.FromArgb(100, 110, 130)),
+                                    new PointF((x1 + x2) / 2f, (y1 + y2) / 2f - 10));
+                    }
+                }
+
+                // Nodes
+                foreach (var step in capturedSteps)
+                {
+                    if (step.IsDeleted) continue;
+                    if (!capturedBounds.TryGetValue(step.WorkflowStepId, out var rect)) continue;
+
+                    // Shadow
+                    using (var shadowBr = new SolidBrush(Color.FromArgb(20, 0, 0, 0)))
+                        g.FillRectangle(shadowBr, rect.X + 2, rect.Y + 2, rect.Width, rect.Height);
+
+                    // Body
+                    using (var bodyBr = new SolidBrush(Color.White))
+                    using (var path = RoundedRect(rect, 6))
+                        g.FillPath(bodyBr, path);
+
+                    // Top accent
+                    using (var accentBr = new SolidBrush(NavyDark))
+                    {
+                        var accentRect = new Rectangle(rect.X, rect.Y, rect.Width, 5);
+                        using (var accentPath = RoundedRect(accentRect, 3))
+                            g.FillPath(accentBr, accentPath);
+                    }
+
+                    // Border
+                    using (var borderPen = new Pen(Color.FromArgb(210, 215, 225), 1f))
+                    using (var path = RoundedRect(rect, 6))
+                        g.DrawPath(borderPen, path);
+
+                    // Label
+                    using (var f = new Font("Segoe UI", 8F, FontStyle.Bold))
+                    using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter })
+                        g.DrawString(step.StepName, f, new SolidBrush(Color.FromArgb(30, 40, 65)),
+                            new RectangleF(rect.X + 4, rect.Y + 6, rect.Width - 8, rect.Height - 6), sf);
+                }
+            };
+
+            card.Controls.Add(canvas);
+            card.Height = 34 + canvasH;
             return card;
         }
 
@@ -888,6 +1046,7 @@ namespace CMS.Presentation.Modules.Workflow
         {
             var t = _reviewItem ?? GetSelectedListTemplate();
             if (t == null) { ShowError("กรุณาเลือก Template ที่ต้องการอนุมัติ"); return; }
+            if (!IsPendingTemplate(t)) { ShowError("Template นี้ไม่ได้อยู่ในสถานะ PendingApproval"); return; }
             if (MessageBox.Show(
                     string.Format("ยืนยันอนุมัติ Template '{0}' v{1} ?", t.Name, t.Version),
                     "ยืนยันการอนุมัติ", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
@@ -903,6 +1062,7 @@ namespace CMS.Presentation.Modules.Workflow
         {
             var t = _reviewItem ?? GetSelectedListTemplate();
             if (t == null) { ShowError("กรุณาเลือก Template ที่ต้องการปฏิเสธ"); return; }
+            if (!IsPendingTemplate(t)) { ShowError("Template นี้ไม่ได้อยู่ในสถานะ PendingApproval"); return; }
             string reason = PromptReason();
             if (reason == null) return;
             if (_presenter != null) _presenter.RejectTemplate(t, reason);
@@ -912,6 +1072,20 @@ namespace CMS.Presentation.Modules.Workflow
 
         private WorkflowTemplateResult GetSelectedListTemplate()
             => lvTemplates.SelectedItems.Count > 0 ? lvTemplates.SelectedItems[0].Tag as WorkflowTemplateResult : null;
+
+        private static bool IsPendingTemplate(WorkflowTemplateResult template)
+        {
+            return template != null
+                && (template.ApprovalStatus == WorkflowTemplateStatus.PendingApproval
+                    || string.Equals(template.StatusLabel, "PendingApproval", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(template.Status, "PendingApproval", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string GetTemplateStatusLabel(WorkflowTemplateResult template)
+        {
+            if (template == null) return "-";
+            return string.IsNullOrWhiteSpace(template.StatusLabel) ? "-" : template.StatusLabel;
+        }
 
         private string PromptReason()
         {
@@ -948,12 +1122,20 @@ namespace CMS.Presentation.Modules.Workflow
         private void OnNavItemClick(string tag)
         {
             if (tag == "approval") { CloseDetailView(); return; }
-            WorkflowNavigationHandler.HandleNavigation(tag, this, null, null, null, null, _userContext, null);
+            WorkflowNavigationHandler.HandleNavigation(tag, this, null, _templateService, null, _loggingService, _userContext, _auditService);
         }
 
         // ════════════════════════════════════════════════════════════════════════
         // Helpers
         // ════════════════════════════════════════════════════════════════════════
+
+        private void InvalidateTemplateListRow(int index)
+        {
+            if (index < 0 || index >= lvTemplates.Items.Count) return;
+            var r = lvTemplates.GetItemRect(index, ItemBoundsPortion.Entire);
+            r.Width = lvTemplates.ClientSize.Width;
+            lvTemplates.Invalidate(r);
+        }
 
         private static RectangleF PadRect(Rectangle r, int hp, int vp)
             => new RectangleF(r.X + hp, r.Y + vp, r.Width - hp * 2, r.Height - vp * 2);

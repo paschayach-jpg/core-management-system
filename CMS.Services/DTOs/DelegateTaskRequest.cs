@@ -26,5 +26,15 @@ namespace CMS.Services.DTOs
         /// Optional remarks
         /// </summary>
         public string Remarks { get; set; }
+
+        /// <summary>
+        /// Start date of delegation
+        /// </summary>
+        public DateTime? StartDate { get; set; }
+
+        /// <summary>
+        /// End date of delegation
+        /// </summary>
+        public DateTime? EndDate { get; set; }
     }
 }

@@ -49,8 +49,9 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 var instances = _workflowService.GetWorkflowInstances(filter, _userContext);
                 var metrics = CalculateMetrics(instances.Items.ToList());
                 _view.DisplayMetrics(metrics);
+                _view.DisplayWorkflowInstances(instances.Items.ToList());
 
-                _loggingService.Info("Loaded workflow monitor metrics");
+                _loggingService.Info("Loaded workflow monitor metrics and instances list");
             }
             catch (Exception ex)
             {
@@ -323,14 +324,15 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
         /// <summary>
         /// Refresh all monitor data
         /// </summary>
-        public void RefreshMonitor()
+        public void RefreshMonitor(bool showInfo = false)
         {
             LoadMetrics();
             LoadSLAChart();
             LoadTaskDistribution();
             LoadBottleneckAnalysis();
             LoadEscalationStats();
-            _view.ShowInfo("Monitor refreshed successfully");
+            if (showInfo)
+                _view.ShowInfo("Monitor refreshed successfully");
         }
 
         /// <summary>
@@ -373,12 +375,15 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
             {
                 var data = new SLAChartData
                 {
-                    TemplateName = $"Template {group.Key}",
-                    OnTimeCount = (int)(group.Count() * 0.75),
-                    AtRiskCount = (int)(group.Count() * 0.15),
-                    OverdueCount = (int)(group.Count() * 0.10),
-                    CompliancePercentage = 75
+                    TemplateName = group.FirstOrDefault()?.WorkflowName ?? $"Template {group.Key}",
+                    OnTimeCount = group.SelectMany(i => i.StepHistory ?? new List<WorkflowStepInstanceResult>()).Count(s => s.SLAStatus == SLAStatus.OnTime),
+                    AtRiskCount = group.SelectMany(i => i.StepHistory ?? new List<WorkflowStepInstanceResult>()).Count(s => s.SLAStatus == SLAStatus.AtRisk),
+                    OverdueCount = group.SelectMany(i => i.StepHistory ?? new List<WorkflowStepInstanceResult>()).Count(s => s.SLAStatus == SLAStatus.Overdue)
                 };
+                var total = data.OnTimeCount + data.AtRiskCount + data.OverdueCount;
+                data.CompliancePercentage = total > 0
+                    ? Math.Round((data.OnTimeCount + data.AtRiskCount) * 100.0 / total, 1)
+                    : 100;
 
                 chartData.Add(data);
             }

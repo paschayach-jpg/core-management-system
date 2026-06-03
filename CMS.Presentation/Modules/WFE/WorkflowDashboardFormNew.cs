@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using CMS.Domain.Models;
 using CMS.Domain.Enums;
@@ -31,6 +32,12 @@ namespace CMS.Presentation.Modules.Workflow
         private int _totalPages = 1;
         private const int PageSize = 10;
         private Timer _refreshTimer;
+        private int _hotItemIndex = -1;
+
+        // ── Win32 double-buffer for native ListView ───────────────────────────────
+        [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+        private const uint LVM_SETEXTENDEDLISTVIEWSTYLE = 0x1036;
+        private const uint LVS_EX_DOUBLEBUFFER          = 0x00010000;
 
         // ── Nav ──────────────────────────────────────────────────────────────────
         private Panel _activeNavItem;
@@ -263,16 +270,83 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 case "refresh": _currentPage = 1; LoadRealData(); break;
                 case "filter": txtSearch.Focus(); break;
-                case "execute":
-                case "detail":
-                    if (lvTasks.SelectedItems.Count == 0)
-                        MessageBox.Show("กรุณาเลือกรายการก่อน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    break;
+                case "execute": ExecuteSelectedTask(); break;
+                case "detail":  OpenSelectedDetail();  break;
                 default:
                     MessageBox.Show(string.Format("ฟังก์ชัน '{0}' อยู่ระหว่างพัฒนา", tag),
                         "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     break;
             }
+        }
+
+        private void ExecuteSelectedTask()
+        {
+            if (lvTasks.SelectedItems.Count == 0)
+            { MessageBox.Show("กรุณาเลือกรายการก่อน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+
+            var item = lvTasks.SelectedItems[0].Tag as WorkflowTaskItem;
+            if (item?.OriginalResult == null)
+            { MessageBox.Show("ไม่พบข้อมูลงาน", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
+
+            var task = item.OriginalResult;
+            using (var actionForm = new CMS.Presentation.Modules.Workflow.Dialogs.WorkflowStepActionForm(task))
+            {
+                actionForm.AllowForward = task.CanDelegate;
+                actionForm.DueDate      = task.SLADeadline;
+                actionForm.InitiatorName = task.InitiatedBy;
+
+                if (actionForm.ShowDialog(this) != DialogResult.OK) return;
+
+                try
+                {
+                    string action   = actionForm.SelectedAction;
+                    string comments = actionForm.Comments;
+
+                    if (string.Equals(action, "Reject", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _workflowService.RejectWorkflowStep(new RejectWorkflowStepRequest
+                        {
+                            WorkflowInstanceId     = task.WorkflowInstanceId,
+                            WorkflowStepInstanceId = task.WorkflowStepInstanceId,
+                            RejectionReason        = comments,
+                            Remarks                = comments
+                        }, _userContext);
+                    }
+                    else
+                    {
+                        _workflowService.CompleteWorkflowStep(new CompleteWorkflowStepRequest
+                        {
+                            WorkflowInstanceId     = task.WorkflowInstanceId,
+                            WorkflowStepInstanceId = task.WorkflowStepInstanceId,
+                            OutputData             = null,
+                            Remarks                = comments
+                        }, _userContext);
+                    }
+
+                    MessageBox.Show("ดำเนินการเสร็จสิ้น", "Workflow", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    _currentPage = 1;
+                    LoadRealData();
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.Error("Failed to complete workflow task", ex);
+                    MessageBox.Show("ดำเนินการไม่สำเร็จ: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void OpenSelectedDetail()
+        {
+            if (lvTasks.SelectedItems.Count == 0)
+            { MessageBox.Show("กรุณาเลือกรายการก่อน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+
+            var item = lvTasks.SelectedItems[0].Tag as WorkflowTaskItem;
+            if (item == null || item.WorkflowInstanceId <= 0) return;
+
+            WorkflowNavigationHandler.HandleNavigation(
+                "detail", this, _workflowService, _templateService,
+                _slaCalculator, _loggingService, _userContext,
+                workflowInstanceId: item.WorkflowInstanceId);
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -320,11 +394,47 @@ namespace CMS.Presentation.Modules.Workflow
             cmbFilterStatus.SelectedIndexChanged += (s, e) => ApplyFilter();
             cmbFilterType.SelectedIndexChanged += (s, e) => ApplyFilter();
             txtSearch.TextChanged += (s, e) => ApplyFilter();
+            txtSearch.Enter += (s, e) =>
+            {
+                if (txtSearch.Text == "ค้นหา...")
+                {
+                    txtSearch.Text = "";
+                    txtSearch.ForeColor = System.Drawing.SystemColors.WindowText;
+                }
+            };
+            txtSearch.Leave += (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(txtSearch.Text))
+                {
+                    txtSearch.Text = "ค้นหา...";
+                    txtSearch.ForeColor = System.Drawing.Color.FromArgb(140, 150, 165);
+                }
+            };
             btnClearFilter.Click += (s, e) => { cmbFilterStatus.SelectedIndex = 0; cmbFilterType.SelectedIndex = 0; txtSearch.Text = ""; };
             btnPrev.Click += (s, e) => GoPage(-1);
             btnNext.Click += (s, e) => GoPage(+1);
             btnExportHeader.Click += (s, e) => MessageBox.Show("ฟังก์ชัน Export อยู่ระหว่างพัฒนา", "ข้อมูล");
             lvTasks.SelectedIndexChanged += (s, e) => UpdateSelectionInfo();
+            lvTasks.DoubleClick += (s, e) => OpenSelectedDetail();
+            lvTasks.ShowItemToolTips = false;
+            SendMessage(lvTasks.Handle, LVM_SETEXTENDEDLISTVIEWSTYLE, (IntPtr)LVS_EX_DOUBLEBUFFER, (IntPtr)LVS_EX_DOUBLEBUFFER);
+
+            lvTasks.MouseMove += (s, e) =>
+            {
+                int idx = lvTasks.HitTest(e.Location).Item?.Index ?? -1;
+                if (idx == _hotItemIndex) return;
+                int old = _hotItemIndex;
+                _hotItemIndex = idx;
+                InvalidateListRow(old);
+                InvalidateListRow(idx);
+            };
+            lvTasks.MouseLeave += (s, e) =>
+            {
+                if (_hotItemIndex == -1) return;
+                int old = _hotItemIndex;
+                _hotItemIndex = -1;
+                InvalidateListRow(old);
+            };
         }
 
         // ── Column header painting ───────────────────────────────────────────────
@@ -349,11 +459,12 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void LvTasks_DrawItem(object sender, DrawListViewItemEventArgs e)
         {
-            // Row background
             bool sel = e.Item.Selected;
-            var bg = sel ? Color.FromArgb(232, 241, 255) : (e.ItemIndex % 2 == 0 ? Color.White : Color.FromArgb(250, 251, 253));
+            bool hot = e.ItemIndex == _hotItemIndex;
+            var bg = sel ? Color.FromArgb(232, 241, 255)
+                   : hot ? Color.FromArgb(240, 245, 255)
+                   : (e.ItemIndex % 2 == 0 ? Color.White : Color.FromArgb(250, 251, 253));
             e.Graphics.FillRectangle(new SolidBrush(bg), e.Bounds);
-            // Bottom row line
             e.Graphics.DrawLine(new Pen(Color.FromArgb(235, 238, 244)), e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
         }
 
@@ -365,10 +476,17 @@ namespace CMS.Presentation.Modules.Workflow
 
             var r = e.Bounds;
             var task = e.Item.Tag as WorkflowTaskItem;
-            if (task == null) return;
 
             bool sel = e.Item.Selected;
-            var bg = sel ? Color.FromArgb(232, 241, 255) : (e.ItemIndex % 2 == 0 ? Color.White : Color.FromArgb(250, 251, 253));
+            bool hot = e.ItemIndex == _hotItemIndex;
+            var bg = sel ? Color.FromArgb(232, 241, 255)
+                   : hot ? Color.FromArgb(240, 245, 255)
+                   : (e.ItemIndex % 2 == 0 ? Color.White : Color.FromArgb(250, 251, 253));
+
+            // Always fill cell background first — prevents hover hot-track from erasing content
+            g.FillRectangle(new SolidBrush(bg), r);
+
+            if (task == null) return;
 
             switch (e.ColumnIndex)
             {
@@ -428,10 +546,15 @@ namespace CMS.Presentation.Modules.Workflow
             using (var fSmall = new Font("Segoe UI", 8.5F))
             {
                 var titleR = new RectangleF(rf.X, rf.Y, rf.Width, 20);
-                var stepR = new RectangleF(rf.X, rf.Y + 22, rf.Width, 18);
+                var stepR  = new RectangleF(rf.X, rf.Y + 22, rf.Width, 18);
+
                 g.DrawString(task.WorkflowTitle, fBold, new SolidBrush(Color.FromArgb(30, 36, 55)), titleR,
                     new StringFormat { Trimming = StringTrimming.EllipsisCharacter });
-                g.DrawString("↳ " + task.WorkflowStep, fSmall, new SolidBrush(Color.FromArgb(110, 120, 140)), stepR,
+
+                var stepLabel = task.TotalSteps > 0
+                    ? string.Format("↳ {0}  ({1}/{2})", task.WorkflowStep, task.StepOrder, task.TotalSteps)
+                    : "↳ " + task.WorkflowStep;
+                g.DrawString(stepLabel, fSmall, new SolidBrush(Color.FromArgb(110, 120, 140)), stepR,
                     new StringFormat { Trimming = StringTrimming.EllipsisCharacter });
             }
         }
@@ -496,22 +619,60 @@ namespace CMS.Presentation.Modules.Workflow
             int barH = 8;
             int barX = r.X + 10;
             int barY = r.Y + (r.Height - barH) / 2 - 6;
-            int fill = (int)(barW * Math.Min(1.0, task.SlaPercent / 100.0));
 
-            // Background
+            double slaPercent = task.SlaPercent;
+            int daysLeft = task.DaysLeft;
+            bool isCompleted = task.Status == "เสร็จ";
+            string dayText;
+
+            if (task.OriginalResult != null)
+            {
+                var deadline = task.OriginalResult.SLADeadline;
+                var assigned  = task.OriginalResult.AssignedDate;
+                // For completed tasks use completion time; otherwise use now (live)
+                var reference = (isCompleted && task.CompletedDate.HasValue)
+                    ? task.CompletedDate.Value
+                    : DateTime.Now;
+                daysLeft = (int)(deadline - reference).TotalDays;
+                var totalMinutes = (deadline - assigned).TotalMinutes;
+                if (totalMinutes > 0)
+                {
+                    var elapsed = (reference - assigned).TotalMinutes;
+                    slaPercent = Math.Max(0, Math.Min(100, elapsed / totalMinutes * 100));
+                }
+                else
+                {
+                    slaPercent = 100;
+                }
+            }
+
+            // For completed tasks: always show full green bar at completion point
+            if (isCompleted)
+            {
+                Color doneColor = Color.FromArgb(23, 133, 49);
+                int fill100 = (int)(barW * Math.Min(1.0, slaPercent / 100.0));
+                g.FillRectangle(new SolidBrush(Color.FromArgb(228, 232, 240)), barX, barY, barW, barH);
+                g.FillRectangle(new SolidBrush(doneColor), barX, barY, fill100, barH);
+                using (var f = new Font("Segoe UI", 8F))
+                    g.DrawString("✓ เสร็จ", f, new SolidBrush(doneColor),
+                        new RectangleF(barX, barY + barH + 4, barW, 14),
+                        new StringFormat { Alignment = StringAlignment.Far });
+                return;
+            }
+
+            int fill = (int)(barW * Math.Min(1.0, slaPercent / 100.0));
+
             g.FillRectangle(new SolidBrush(Color.FromArgb(228, 232, 240)), barX, barY, barW, barH);
 
-            // Fill color: red if SLA exceeded, orange if <30% left, green otherwise
             Color barColor;
-            if (task.SlaPercent >= 100) barColor = Color.FromArgb(194, 38, 54);
-            else if (task.SlaPercent >= 70) barColor = Color.FromArgb(197, 120, 16);
+            if (slaPercent >= 100) barColor = Color.FromArgb(194, 38, 54);
+            else if (slaPercent >= 70) barColor = Color.FromArgb(197, 120, 16);
             else barColor = Color.FromArgb(23, 133, 49);
             g.FillRectangle(new SolidBrush(barColor), barX, barY, fill, barH);
 
-            // Days text
-            string dayText = task.DaysLeft < 0
-                ? string.Format("-{0} วัน", -task.DaysLeft)
-                : string.Format("{0} วัน", task.DaysLeft);
+            dayText = daysLeft < 0
+                ? string.Format("-{0} วัน", -daysLeft)
+                : string.Format("{0} วัน", daysLeft);
             using (var f = new Font("Segoe UI", 8F))
                 g.DrawString(dayText, f, new SolidBrush(barColor),
                     new RectangleF(barX, barY + barH + 4, barW, 14),
@@ -610,13 +771,18 @@ namespace CMS.Presentation.Modules.Workflow
                 WorkflowId = $"WFI-{result.WorkflowInstanceId:D5}",
                 WorkflowTitle = result.WorkflowName ?? "ไม่มีชื่อ",
                 WorkflowStep = result.StepName ?? "ไม่ระบุ",
+                StepOrder    = result.StepOrder,
+                TotalSteps   = result.TotalSteps,
                 AssigneeName = ExtractDisplayName(result.InitiatedBy) ?? "ไม่ระบุ",
                 AssigneeRole = "Officer",
                 DueDate = dueDate.ToString("dd/MM/yy"),
                 DaysLeft = daysLeft,
                 SlaPercent = slaPercent,
                 Status = statusText,
-                CompletedDate = result.CompletedDate
+                CompletedDate = result.CompletedDate,
+                WorkflowInstanceId = result.WorkflowInstanceId,
+                WorkflowStepInstanceId = result.WorkflowStepInstanceId,
+                OriginalResult = result
             };
         }
 
@@ -637,7 +803,8 @@ namespace CMS.Presentation.Modules.Workflow
         {
             var filtered = _allTasks.AsEnumerable();
 
-            string q = txtSearch.Text.Trim().ToLower();
+            string rawQ = txtSearch.Text.Trim();
+            string q = (rawQ == "ค้นหา..." || rawQ == "") ? "" : rawQ.ToLower();
             if (!string.IsNullOrEmpty(q))
                 filtered = filtered.Where(t =>
                     t.WorkflowId.ToLower().Contains(q) ||
@@ -698,8 +865,13 @@ namespace CMS.Presentation.Modules.Workflow
         private void StartAutoRefresh()
         {
             _refreshTimer = new Timer { Interval = 60000 };
-            _refreshTimer.Tick += (s, e) => lblSubtitle.Text = string.Format(
-                "รายการงานที่รอดำเนินการของคุณ — อัปเดตล่าสุด {0}", DateTime.Now.ToString("dd/MM/yy HH:mm"));
+            _refreshTimer.Tick += (s, e) =>
+            {
+                lblSubtitle.Text = string.Format(
+                    "รายการงานที่รอดำเนินการของคุณ — อัปเดตล่าสุด {0}", DateTime.Now.ToString("dd/MM/yy HH:mm"));
+                // Repaint SLA column live without reloading from DB
+                lvTasks.Invalidate();
+            };
             _refreshTimer.Start();
         }
 
@@ -713,6 +885,14 @@ namespace CMS.Presentation.Modules.Workflow
         // ════════════════════════════════════════════════════════════════════════
         // HELPERS
         // ════════════════════════════════════════════════════════════════════════
+
+        private void InvalidateListRow(int index)
+        {
+            if (index < 0 || index >= lvTasks.Items.Count) return;
+            var r = lvTasks.GetItemRect(index, ItemBoundsPortion.Entire);
+            r.Width = lvTasks.ClientSize.Width;
+            lvTasks.Invalidate(r);
+        }
 
         private static RectangleF PadRect(Rectangle r, int hPad, int vPad)
             => new RectangleF(r.X + hPad, r.Y + vPad, r.Width - hPad * 2, r.Height - vPad * 2);
@@ -745,6 +925,8 @@ namespace CMS.Presentation.Modules.Workflow
         public string WorkflowId { get; set; }
         public string WorkflowTitle { get; set; }
         public string WorkflowStep { get; set; }
+        public int StepOrder { get; set; }
+        public int TotalSteps { get; set; }
         public string AssigneeName { get; set; }
         public string AssigneeRole { get; set; }
         public string DueDate { get; set; }
@@ -752,6 +934,9 @@ namespace CMS.Presentation.Modules.Workflow
         public double SlaPercent { get; set; }
         public DateTime? CompletedDate { get; set; }
         public string Status { get; set; }
+        public int WorkflowInstanceId { get; set; }
+        public int WorkflowStepInstanceId { get; set; }
+        public CMS.Services.DTOs.WorkflowTaskResult OriginalResult { get; set; }
     }
 
     // Legacy display item kept for backward compatibility

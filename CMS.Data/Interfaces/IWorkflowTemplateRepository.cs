@@ -56,6 +56,8 @@ namespace CMS.Data.Interfaces
         public int     PageSize      { get; set; }
         /// <summary>Filter by ApprovalStatus value (tinyint). Null = no filter.</summary>
         public byte?   ApprovalStatus { get; set; }
+        /// <summary>Filter by Category string. Null = no filter.</summary>
+        public string  Category      { get; set; }
 
         public WorkflowTemplateFilter() { PageNumber = 1; PageSize = 50; }
     }

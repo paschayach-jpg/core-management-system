@@ -2177,7 +2177,8 @@ namespace CMS.Presentation
                 _slaCalculator,
                 _logger,
                 _currentUser,
-                _workflowTemplateService));
+                _workflowTemplateService,
+                _workflowDelegationService));
         }
 
         public void OpenWorkflowDetail()

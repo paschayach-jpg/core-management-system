@@ -54,7 +54,8 @@ namespace CMS.Services
                     CreatedDate = DateTime.Now,
                     ModifiedBy = userContext.ADUserName,
                     ModifiedDate = DateTime.Now,
-                    IsDeleted = false
+                    IsDeleted = false,
+                    TemplateDefinition = request.TemplateDefinition
                 };
 
                 var templateId = _templateRepository.CreateTemplate(template);
@@ -105,6 +106,7 @@ namespace CMS.Services
                 template.Version++;
                 template.ModifiedBy = userContext.ADUserName;
                 template.ModifiedDate = DateTime.Now;
+                template.TemplateDefinition = request.TemplateDefinition ?? template.TemplateDefinition;
 
                 _templateRepository.UpdateTemplate(template);
 
@@ -170,7 +172,8 @@ namespace CMS.Services
                     NameContains   = filter.SearchKeyword,
                     PageNumber     = filter.PageNumber,
                     PageSize       = filter.PageSize,
-                    ApprovalStatus = approvalStatusFilter
+                    ApprovalStatus = approvalStatusFilter,
+                    Category       = filter.Category
                 };
 
                 var result = _templateRepository.GetTemplates(dataFilter);
@@ -419,6 +422,76 @@ namespace CMS.Services
             }
         }
 
+        public WorkflowTemplateResult PublishTemplate(int templateId, UserContext userContext)
+        {
+            try
+            {
+                var template = _templateRepository.GetTemplate(templateId);
+                if (template == null)
+                    throw new Exception($"Template {templateId} not found");
+
+                template.ApprovalStatus = WorkflowTemplateStatus.Active;
+                template.IsActive       = true;
+                template.ModifiedBy     = userContext.ADUserName;
+                template.ModifiedDate   = DateTime.Now;
+
+                _templateRepository.UpdateTemplate(template);
+
+                _auditService.Log(new AuditEntry
+                {
+                    Action    = "WorkflowTemplatePublished",
+                    TableName = "WorkflowDefinition",
+                    RecordID  = templateId,
+                    UserName  = userContext.ADUserName,
+                    AuditDate = DateTime.Now,
+                    NewValue  = $"Template '{template.Name}' v{template.Version} published directly"
+                });
+
+                _loggingService.Info($"Template {templateId} published directly by {userContext.ADUserName}");
+                return MapToResult(template);
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"PublishTemplate error: {ex.Message}", ex);
+                throw;
+            }
+        }
+
+        public WorkflowTemplateResult DeactivateTemplate(int templateId, UserContext userContext)
+        {
+            try
+            {
+                var template = _templateRepository.GetTemplate(templateId);
+                if (template == null)
+                    throw new Exception($"Template {templateId} not found");
+
+                template.ApprovalStatus = WorkflowTemplateStatus.Inactive;
+                template.IsActive       = false;
+                template.ModifiedBy     = userContext.ADUserName;
+                template.ModifiedDate   = DateTime.Now;
+
+                _templateRepository.UpdateTemplate(template);
+
+                _auditService.Log(new AuditEntry
+                {
+                    Action    = "WorkflowTemplateDeactivated",
+                    TableName = "WorkflowDefinition",
+                    RecordID  = templateId,
+                    UserName  = userContext.ADUserName,
+                    AuditDate = DateTime.Now,
+                    NewValue  = $"Template '{template.Name}' v{template.Version} deactivated"
+                });
+
+                _loggingService.Info($"Template {templateId} deactivated by {userContext.ADUserName}");
+                return MapToResult(template);
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"DeactivateTemplate error: {ex.Message}", ex);
+                throw;
+            }
+        }
+
         // ── MapToResult ──────────────────────────────────────────────────────────
 
         private WorkflowTemplateResult MapToResult(WorkflowDefinition template)
@@ -439,7 +512,13 @@ namespace CMS.Services
                 SubmittedDate   = template.SubmittedDate,
                 ApprovedBy      = template.ApprovedBy,
                 ApprovedDate    = template.ApprovedDate,
-                RejectionReason = template.RejectionReason
+                RejectionReason     = template.RejectionReason,
+                TemplateDefinition  = template.TemplateDefinition,
+                StepCount           = template.StepCount,
+                TotalInstanceCount  = template.TotalInstanceCount,
+                ActiveInstanceCount = template.ActiveInstanceCount,
+                OwnerDepartment     = template.CreatedBy,
+                Category            = template.Category
             };
         }
     }

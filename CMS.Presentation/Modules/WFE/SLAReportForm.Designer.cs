@@ -25,7 +25,7 @@ namespace CMS.Presentation.Modules.Workflow
 
         // ── Dashboard body ───────────────────────────────────────────────────────
         private System.Windows.Forms.Panel pnlDashboard;
-        private System.Windows.Forms.FlowLayoutPanel flpCards;
+        private System.Windows.Forms.TableLayoutPanel tlpCards;
 
         // Card 1 – SLA Compliance
         private System.Windows.Forms.Panel pnlCardCompliance;
@@ -84,7 +84,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblSubtitle         = new System.Windows.Forms.Label();
             this.btnExportHeader     = new System.Windows.Forms.Button();
             this.pnlDashboard        = new System.Windows.Forms.Panel();
-            this.flpCards            = new System.Windows.Forms.FlowLayoutPanel();
+            this.tlpCards            = new System.Windows.Forms.TableLayoutPanel();
 
             this.pnlCardCompliance      = new System.Windows.Forms.Panel();
             this.lblCardComplianceIcon  = new System.Windows.Forms.Label();
@@ -221,23 +221,27 @@ namespace CMS.Presentation.Modules.Workflow
             this.pnlDashboard.Name      = "pnlDashboard";
             this.pnlDashboard.Padding   = new System.Windows.Forms.Padding(12, 8, 12, 8);
             this.pnlDashboard.Controls.Add(this.tlpMainContent);
-            this.pnlDashboard.Controls.Add(this.flpCards);
+            this.pnlDashboard.Controls.Add(this.tlpCards);
 
-            // ── flpCards ─────────────────────────────────────────────────────────
-            this.flpCards.BackColor      = System.Drawing.Color.White;
-            this.flpCards.Dock           = System.Windows.Forms.DockStyle.Top;
-            this.flpCards.FlowDirection  = System.Windows.Forms.FlowDirection.LeftToRight;
-            this.flpCards.Height         = 100;
-            this.flpCards.Name           = "flpCards";
-            this.flpCards.Padding        = new System.Windows.Forms.Padding(0, 0, 0, 8);
-            this.flpCards.WrapContents   = false;
+            // ── tlpCards ─────────────────────────────────────────────────────────
+            this.tlpCards.BackColor      = System.Drawing.Color.White;
+            this.tlpCards.Dock           = System.Windows.Forms.DockStyle.Top;
+            this.tlpCards.Height         = 100;
+            this.tlpCards.Name           = "tlpCards";
+            this.tlpCards.ColumnCount    = 4;
+            this.tlpCards.RowCount       = 1;
+            this.tlpCards.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpCards.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpCards.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpCards.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tlpCards.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
 
             // ── Card 1: SLA Compliance (green) ───────────────────────────────────
             this.pnlCardCompliance.BackColor    = System.Drawing.Color.White;
             this.pnlCardCompliance.BorderStyle  = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlCardCompliance.Margin       = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.pnlCardCompliance.Margin       = new System.Windows.Forms.Padding(0, 0, 8, 8);
             this.pnlCardCompliance.Name         = "pnlCardCompliance";
-            this.pnlCardCompliance.Size         = new System.Drawing.Size(272, 84);
+            this.pnlCardCompliance.Dock         = System.Windows.Forms.DockStyle.Fill;
             this.pnlCardCompliance.Controls.Add(this.lblCardComplianceSub);
             this.pnlCardCompliance.Controls.Add(this.lblCardComplianceCount);
             this.pnlCardCompliance.Controls.Add(this.lblCardComplianceTitle);
@@ -246,39 +250,37 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblCardComplianceIcon.AutoSize  = true;
             this.lblCardComplianceIcon.Font      = new System.Drawing.Font("Segoe UI", 14F);
             this.lblCardComplianceIcon.ForeColor = System.Drawing.Color.FromArgb(23, 133, 49);
-            this.lblCardComplianceIcon.Location  = new System.Drawing.Point(14, 8);
+            this.lblCardComplianceIcon.Location  = new System.Drawing.Point(14, 10);
             this.lblCardComplianceIcon.Name      = "lblCardComplianceIcon";
             this.lblCardComplianceIcon.Text      = "✓";
 
             this.lblCardComplianceTitle.AutoSize  = true;
             this.lblCardComplianceTitle.Font      = new System.Drawing.Font("Segoe UI", 9.5F);
             this.lblCardComplianceTitle.ForeColor = System.Drawing.Color.FromArgb(80, 90, 110);
-            this.lblCardComplianceTitle.Location  = new System.Drawing.Point(40, 12);
+            this.lblCardComplianceTitle.Location  = new System.Drawing.Point(40, 14);
             this.lblCardComplianceTitle.Name      = "lblCardComplianceTitle";
             this.lblCardComplianceTitle.Text      = "SLA Compliance";
 
-            this.lblCardComplianceCount.AutoSize  = false;
-            this.lblCardComplianceCount.Size      = new System.Drawing.Size(240, 32);
+            this.lblCardComplianceCount.AutoSize  = true;
             this.lblCardComplianceCount.Font      = new System.Drawing.Font("Segoe UI", 24F, System.Drawing.FontStyle.Bold);
             this.lblCardComplianceCount.ForeColor = System.Drawing.Color.FromArgb(23, 133, 49);
             this.lblCardComplianceCount.Location  = new System.Drawing.Point(14, 28);
             this.lblCardComplianceCount.Name      = "lblCardComplianceCount";
             this.lblCardComplianceCount.Text      = "91.4%";
 
-            this.lblCardComplianceSub.AutoSize  = false;
-            this.lblCardComplianceSub.Size      = new System.Drawing.Size(240, 18);
+            this.lblCardComplianceSub.AutoSize  = true;
             this.lblCardComplianceSub.Font      = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblCardComplianceSub.ForeColor = System.Drawing.Color.FromArgb(23, 133, 49);
-            this.lblCardComplianceSub.Location  = new System.Drawing.Point(14, 60);
+            this.lblCardComplianceSub.Location  = new System.Drawing.Point(14, 68);
             this.lblCardComplianceSub.Name      = "lblCardComplianceSub";
             this.lblCardComplianceSub.Text      = "+2.1 ตามเป้า 90%";
 
             // ── Card 2: Avg Cycle Time (blue) ────────────────────────────────────
             this.pnlCardCycleTime.BackColor    = System.Drawing.Color.White;
             this.pnlCardCycleTime.BorderStyle  = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlCardCycleTime.Margin       = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.pnlCardCycleTime.Margin       = new System.Windows.Forms.Padding(4, 0, 8, 8);
             this.pnlCardCycleTime.Name         = "pnlCardCycleTime";
-            this.pnlCardCycleTime.Size         = new System.Drawing.Size(272, 84);
+            this.pnlCardCycleTime.Dock         = System.Windows.Forms.DockStyle.Fill;
             this.pnlCardCycleTime.Controls.Add(this.lblCardCycleTimeSub);
             this.pnlCardCycleTime.Controls.Add(this.lblCardCycleTimeCount);
             this.pnlCardCycleTime.Controls.Add(this.lblCardCycleTimeTitle);
@@ -287,39 +289,37 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblCardCycleTimeIcon.AutoSize  = true;
             this.lblCardCycleTimeIcon.Font      = new System.Drawing.Font("Segoe UI", 14F);
             this.lblCardCycleTimeIcon.ForeColor = System.Drawing.Color.FromArgb(25, 100, 195);
-            this.lblCardCycleTimeIcon.Location  = new System.Drawing.Point(14, 8);
+            this.lblCardCycleTimeIcon.Location  = new System.Drawing.Point(14, 10);
             this.lblCardCycleTimeIcon.Name      = "lblCardCycleTimeIcon";
             this.lblCardCycleTimeIcon.Text      = "⏱";
 
             this.lblCardCycleTimeTitle.AutoSize  = true;
             this.lblCardCycleTimeTitle.Font      = new System.Drawing.Font("Segoe UI", 9.5F);
             this.lblCardCycleTimeTitle.ForeColor = System.Drawing.Color.FromArgb(80, 90, 110);
-            this.lblCardCycleTimeTitle.Location  = new System.Drawing.Point(40, 12);
+            this.lblCardCycleTimeTitle.Location  = new System.Drawing.Point(40, 14);
             this.lblCardCycleTimeTitle.Name      = "lblCardCycleTimeTitle";
             this.lblCardCycleTimeTitle.Text      = "Avg Cycle Time";
 
-            this.lblCardCycleTimeCount.AutoSize  = false;
-            this.lblCardCycleTimeCount.Size      = new System.Drawing.Size(240, 32);
+            this.lblCardCycleTimeCount.AutoSize  = true;
             this.lblCardCycleTimeCount.Font      = new System.Drawing.Font("Segoe UI", 24F, System.Drawing.FontStyle.Bold);
             this.lblCardCycleTimeCount.ForeColor = System.Drawing.Color.FromArgb(25, 100, 195);
             this.lblCardCycleTimeCount.Location  = new System.Drawing.Point(14, 28);
             this.lblCardCycleTimeCount.Name      = "lblCardCycleTimeCount";
             this.lblCardCycleTimeCount.Text      = "2.8 วัน";
 
-            this.lblCardCycleTimeSub.AutoSize  = false;
-            this.lblCardCycleTimeSub.Size      = new System.Drawing.Size(240, 18);
+            this.lblCardCycleTimeSub.AutoSize  = true;
             this.lblCardCycleTimeSub.Font      = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblCardCycleTimeSub.ForeColor = System.Drawing.Color.FromArgb(140, 150, 165);
-            this.lblCardCycleTimeSub.Location  = new System.Drawing.Point(14, 60);
+            this.lblCardCycleTimeSub.Location  = new System.Drawing.Point(14, 68);
             this.lblCardCycleTimeSub.Name      = "lblCardCycleTimeSub";
             this.lblCardCycleTimeSub.Text      = "-0.4 จากเดือนก่อน";
 
             // ── Card 3: เกิน SLA (red) ────────────────────────────────────────────
             this.pnlCardOverdue.BackColor    = System.Drawing.Color.White;
             this.pnlCardOverdue.BorderStyle  = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlCardOverdue.Margin       = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.pnlCardOverdue.Margin       = new System.Windows.Forms.Padding(4, 0, 8, 8);
             this.pnlCardOverdue.Name         = "pnlCardOverdue";
-            this.pnlCardOverdue.Size         = new System.Drawing.Size(272, 84);
+            this.pnlCardOverdue.Dock         = System.Windows.Forms.DockStyle.Fill;
             this.pnlCardOverdue.Controls.Add(this.lblCardOverdueSub);
             this.pnlCardOverdue.Controls.Add(this.lblCardOverdueCount);
             this.pnlCardOverdue.Controls.Add(this.lblCardOverdueTitle);
@@ -328,39 +328,37 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblCardOverdueIcon.AutoSize  = true;
             this.lblCardOverdueIcon.Font      = new System.Drawing.Font("Segoe UI", 14F);
             this.lblCardOverdueIcon.ForeColor = System.Drawing.Color.FromArgb(194, 38, 54);
-            this.lblCardOverdueIcon.Location  = new System.Drawing.Point(14, 8);
+            this.lblCardOverdueIcon.Location  = new System.Drawing.Point(14, 10);
             this.lblCardOverdueIcon.Name      = "lblCardOverdueIcon";
             this.lblCardOverdueIcon.Text      = "⚠";
 
             this.lblCardOverdueTitle.AutoSize  = true;
             this.lblCardOverdueTitle.Font      = new System.Drawing.Font("Segoe UI", 9.5F);
             this.lblCardOverdueTitle.ForeColor = System.Drawing.Color.FromArgb(80, 90, 110);
-            this.lblCardOverdueTitle.Location  = new System.Drawing.Point(40, 12);
+            this.lblCardOverdueTitle.Location  = new System.Drawing.Point(40, 14);
             this.lblCardOverdueTitle.Name      = "lblCardOverdueTitle";
             this.lblCardOverdueTitle.Text      = "เกิน SLA";
 
-            this.lblCardOverdueCount.AutoSize  = false;
-            this.lblCardOverdueCount.Size      = new System.Drawing.Size(240, 32);
+            this.lblCardOverdueCount.AutoSize  = true;
             this.lblCardOverdueCount.Font      = new System.Drawing.Font("Segoe UI", 24F, System.Drawing.FontStyle.Bold);
             this.lblCardOverdueCount.ForeColor = System.Drawing.Color.FromArgb(194, 38, 54);
             this.lblCardOverdueCount.Location  = new System.Drawing.Point(14, 28);
             this.lblCardOverdueCount.Name      = "lblCardOverdueCount";
             this.lblCardOverdueCount.Text      = "18 / 211";
 
-            this.lblCardOverdueSub.AutoSize  = false;
-            this.lblCardOverdueSub.Size      = new System.Drawing.Size(240, 18);
+            this.lblCardOverdueSub.AutoSize  = true;
             this.lblCardOverdueSub.Font      = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblCardOverdueSub.ForeColor = System.Drawing.Color.FromArgb(194, 38, 54);
-            this.lblCardOverdueSub.Location  = new System.Drawing.Point(14, 60);
+            this.lblCardOverdueSub.Location  = new System.Drawing.Point(14, 68);
             this.lblCardOverdueSub.Name      = "lblCardOverdueSub";
             this.lblCardOverdueSub.Text      = "8.5% ของทั้งหมด";
 
             // ── Card 4: Workflow เสร็จสิ้น (amber) ───────────────────────────────
             this.pnlCardCompleted.BackColor    = System.Drawing.Color.White;
             this.pnlCardCompleted.BorderStyle  = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlCardCompleted.Margin       = new System.Windows.Forms.Padding(0, 0, 0, 0);
+            this.pnlCardCompleted.Margin       = new System.Windows.Forms.Padding(4, 0, 0, 8);
             this.pnlCardCompleted.Name         = "pnlCardCompleted";
-            this.pnlCardCompleted.Size         = new System.Drawing.Size(272, 84);
+            this.pnlCardCompleted.Dock         = System.Windows.Forms.DockStyle.Fill;
             this.pnlCardCompleted.Controls.Add(this.lblCardCompletedSub);
             this.pnlCardCompleted.Controls.Add(this.lblCardCompletedCount);
             this.pnlCardCompleted.Controls.Add(this.lblCardCompletedTitle);
@@ -369,37 +367,35 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblCardCompletedIcon.AutoSize  = true;
             this.lblCardCompletedIcon.Font      = new System.Drawing.Font("Segoe UI", 14F);
             this.lblCardCompletedIcon.ForeColor = System.Drawing.Color.FromArgb(197, 120, 16);
-            this.lblCardCompletedIcon.Location  = new System.Drawing.Point(14, 8);
+            this.lblCardCompletedIcon.Location  = new System.Drawing.Point(14, 10);
             this.lblCardCompletedIcon.Name      = "lblCardCompletedIcon";
             this.lblCardCompletedIcon.Text      = "⚑";
 
             this.lblCardCompletedTitle.AutoSize  = true;
             this.lblCardCompletedTitle.Font      = new System.Drawing.Font("Segoe UI", 9.5F);
             this.lblCardCompletedTitle.ForeColor = System.Drawing.Color.FromArgb(80, 90, 110);
-            this.lblCardCompletedTitle.Location  = new System.Drawing.Point(40, 12);
+            this.lblCardCompletedTitle.Location  = new System.Drawing.Point(40, 14);
             this.lblCardCompletedTitle.Name      = "lblCardCompletedTitle";
             this.lblCardCompletedTitle.Text      = "Workflow เสร็จสิ้น";
 
-            this.lblCardCompletedCount.AutoSize  = false;
-            this.lblCardCompletedCount.Size      = new System.Drawing.Size(240, 32);
+            this.lblCardCompletedCount.AutoSize  = true;
             this.lblCardCompletedCount.Font      = new System.Drawing.Font("Segoe UI", 24F, System.Drawing.FontStyle.Bold);
             this.lblCardCompletedCount.ForeColor = System.Drawing.Color.FromArgb(197, 120, 16);
             this.lblCardCompletedCount.Location  = new System.Drawing.Point(14, 28);
             this.lblCardCompletedCount.Name      = "lblCardCompletedCount";
             this.lblCardCompletedCount.Text      = "193";
 
-            this.lblCardCompletedSub.AutoSize  = false;
-            this.lblCardCompletedSub.Size      = new System.Drawing.Size(240, 18);
+            this.lblCardCompletedSub.AutoSize  = true;
             this.lblCardCompletedSub.Font      = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblCardCompletedSub.ForeColor = System.Drawing.Color.FromArgb(140, 150, 165);
-            this.lblCardCompletedSub.Location  = new System.Drawing.Point(14, 60);
+            this.lblCardCompletedSub.Location  = new System.Drawing.Point(14, 68);
             this.lblCardCompletedSub.Name      = "lblCardCompletedSub";
             this.lblCardCompletedSub.Text      = "เมษายน 2569 (MTD)";
 
-            this.flpCards.Controls.Add(this.pnlCardCompliance);
-            this.flpCards.Controls.Add(this.pnlCardCycleTime);
-            this.flpCards.Controls.Add(this.pnlCardOverdue);
-            this.flpCards.Controls.Add(this.pnlCardCompleted);
+            this.tlpCards.Controls.Add(this.pnlCardCompliance, 0, 0);
+            this.tlpCards.Controls.Add(this.pnlCardCycleTime, 1, 0);
+            this.tlpCards.Controls.Add(this.pnlCardOverdue, 2, 0);
+            this.tlpCards.Controls.Add(this.pnlCardCompleted, 3, 0);
 
             // ── tlpMainContent (2 cols × 2 rows) ────────────────────────────────
             this.tlpMainContent.BackColor   = System.Drawing.Color.White;

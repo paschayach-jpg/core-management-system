@@ -9,8 +9,10 @@ using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.Workflow.Presenters;
 using CMS.Presentation.Modules.Workflow.Presenters.Interfaces;
+using CMS.Presentation.Modules.Workflow.Dialogs;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
+using Newtonsoft.Json;
 
 namespace CMS.Presentation.Modules.Workflow
 {
@@ -19,6 +21,8 @@ namespace CMS.Presentation.Modules.Workflow
         // ── Dependencies ─────────────────────────────────────────────────────────
         private readonly WorkflowDesignerPresenter _presenter;
         private readonly UserContext _userContext;
+        private readonly IWorkflowTemplateService _templateService;
+        private readonly ILoggingService _loggingService;
         private int? _templateId;
 
         // ── Canvas state ─────────────────────────────────────────────────────────
@@ -77,6 +81,8 @@ namespace CMS.Presentation.Modules.Workflow
             InitializeComponent();
             _templateId   = templateId;
             _userContext  = userContext;
+            _templateService = templateService;
+            _loggingService  = loggingService;
 
             // Only create presenter if services are available
             if (templateService != null && loggingService != null && userContext != null)
@@ -104,6 +110,16 @@ namespace CMS.Presentation.Modules.Workflow
                 BuildPalette();
                 BuildStatusBar();
                 WireCanvasEvents();
+
+                // Reset defaults so we don't show hardcoded mock values
+                if (!_templateId.HasValue)
+                {
+                    lblBreadcrumb.Text = "CMS  ›  Workflow Engine  ›  Templates  ›  New Template";
+                    lblTitle.Text = "(ยังไม่ได้บันทึก Template ใหม่)";
+                    lblSubtitle.Text = "กรุณาออกแบบกระบวนการและคลิกปุ่มบันทึกบนเครื่องมือเพื่อตั้งชื่อเทมเพลต";
+                    lblStatusBadge.ForeColor = Color.FromArgb(120, 130, 150);
+                    lblStatusBadge.Text = "●  New Template (Draft)";
+                }
 
                 // Only load data if presenter is available
                 if (_presenter != null)
@@ -315,7 +331,7 @@ namespace CMS.Presentation.Modules.Workflow
                 case "grid":        ToggleGrid();    break;
                 case "autolayout":  AutoLayout();    break;
                 case "validate":    _presenter.ValidateTemplate(); break;
-                case "testrun":     ShowInfo("Test Run: ยังไม่ได้ Implement"); break;
+                case "testrun":     DoTestRun(); break;
             }
         }
 
@@ -730,7 +746,7 @@ namespace CMS.Presentation.Modules.Workflow
         private void pnlCanvas_DoubleClick(object sender, EventArgs e)
         {
             if (_selectedStep != null)
-                ShowInfo($"Step: {_selectedStep.StepName}\nType: {_selectedStep.StepType}");
+                EditStepConnection(_selectedStep);
         }
 
         private WorkflowStepDesignData HitTestStep(int x, int y)
@@ -803,7 +819,13 @@ namespace CMS.Presentation.Modules.Workflow
                 linkWorkInstruction.Text = "⇗  (ยังไม่ได้กำหนด)";
 
             // Conditions
-            txtConditions.Text = step.ConditionExpression ?? string.Empty;
+            var outgoingConnections = GetOutgoingConnections(step.WorkflowStepId);
+            var outgoingConnection = outgoingConnections.Count == 1 ? outgoingConnections[0] : null;
+            txtConditions.Text = outgoingConnection != null
+                ? (outgoingConnection.Condition ?? string.Empty)
+                : (outgoingConnections.Count > 1
+                    ? string.Format("มี {0} เส้นทางออก - ดับเบิลคลิกที่ Step เพื่อจัดการแต่ละเงื่อนไข", outgoingConnections.Count)
+                    : (step.ConditionExpression ?? string.Empty));
 
             // ── Wire save-back events (once) ─────────────────────────────────
             if (!_propEventsWired)
@@ -857,7 +879,15 @@ namespace CMS.Presentation.Modules.Workflow
                 txtConditions.TextChanged += (s, e) =>
                 {
                     if (_selectedStep != null)
-                        _selectedStep.ConditionExpression = txtConditions.Text;
+                    {
+                        var currentConnections = GetOutgoingConnections(_selectedStep.WorkflowStepId);
+                        var currentConnection = currentConnections.Count == 1 ? currentConnections[0] : null;
+                        if (currentConnection != null)
+                            currentConnection.Condition = txtConditions.Text;
+                        else if (currentConnections.Count == 0)
+                            _selectedStep.ConditionExpression = txtConditions.Text;
+                        pnlCanvas.Invalidate();
+                    }
                 };
             }
 
@@ -904,6 +934,121 @@ namespace CMS.Presentation.Modules.Workflow
             }
         }
 
+        private List<WorkflowConnectionDesignData> GetOutgoingConnections(int stepId)
+        {
+            return _conns.Where(c => c.FromStepId == stepId).ToList();
+        }
+
+        private WorkflowConnectionDesignData GetSingleOutgoingConnection(int stepId)
+        {
+            var connections = GetOutgoingConnections(stepId);
+            return connections.Count == 1 ? connections[0] : null;
+        }
+
+        private void EditStepConnection(WorkflowStepDesignData fromStep)
+        {
+            if (fromStep == null) return;
+
+            var targetSteps = _steps.Where(s => s.WorkflowStepId != fromStep.WorkflowStepId)
+                .OrderBy(s => s.WorkflowStepId)
+                .ToList();
+
+            if (targetSteps.Count == 0)
+            {
+                ShowError("ต้องมี Step อื่นอย่างน้อย 1 รายการเพื่อเชื่อมเส้นทาง");
+                return;
+            }
+
+            using (var dlg = new Form())
+            {
+                dlg.Text = "จัดการเส้นทาง";
+                dlg.ClientSize = new Size(420, 220);
+                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dlg.StartPosition = FormStartPosition.CenterParent;
+                dlg.MaximizeBox = false;
+                dlg.MinimizeBox = false;
+
+                var lblFrom = new Label { Text = "จาก Step", AutoSize = true, Location = new Point(18, 18) };
+                var txtFrom = new TextBox { Location = new Point(18, 38), Size = new Size(180, 24), ReadOnly = true, Text = fromStep.StepName };
+                var lblTo = new Label { Text = "ไป Step", AutoSize = true, Location = new Point(214, 18) };
+                var cmbTo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(214, 38), Size = new Size(182, 24) };
+                var lblCondition = new Label { Text = "Condition", AutoSize = true, Location = new Point(18, 76) };
+                var txtCondition = new TextBox { Location = new Point(18, 96), Size = new Size(378, 76), Multiline = true, ScrollBars = ScrollBars.Vertical };
+                var btnSave = new Button { Text = "บันทึก", DialogResult = DialogResult.OK, Location = new Point(158, 184), Size = new Size(76, 28) };
+                var btnRemove = new Button { Text = "ลบเส้น", Location = new Point(240, 184), Size = new Size(76, 28) };
+                var btnCancel = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Location = new Point(322, 184), Size = new Size(76, 28) };
+
+                cmbTo.DataSource = targetSteps;
+                cmbTo.DisplayMember = "StepName";
+                cmbTo.ValueMember = "WorkflowStepId";
+
+                var existingConnection = _conns.FirstOrDefault(c => c.FromStepId == fromStep.WorkflowStepId);
+                if (existingConnection != null)
+                {
+                    cmbTo.SelectedValue = existingConnection.ToStepId;
+                    txtCondition.Text = existingConnection.Condition ?? string.Empty;
+                }
+
+                EventHandler loadSelectedConnection = (s, e) =>
+                {
+                    var selectedTarget = cmbTo.SelectedItem as WorkflowStepDesignData;
+                    if (selectedTarget == null) return;
+                    var selectedConnection = _conns.FirstOrDefault(c =>
+                        c.FromStepId == fromStep.WorkflowStepId &&
+                        c.ToStepId == selectedTarget.WorkflowStepId);
+                    txtCondition.Text = selectedConnection != null ? selectedConnection.Condition ?? string.Empty : string.Empty;
+                };
+                cmbTo.SelectedIndexChanged += loadSelectedConnection;
+
+                btnRemove.Enabled = existingConnection != null;
+                btnRemove.Click += (s, e) =>
+                {
+                    var selectedTarget = cmbTo.SelectedItem as WorkflowStepDesignData;
+                    if (selectedTarget == null) return;
+                    var conn = _conns.FirstOrDefault(c =>
+                        c.FromStepId == fromStep.WorkflowStepId &&
+                        c.ToStepId == selectedTarget.WorkflowStepId);
+                    if (conn != null)
+                    {
+                        _conns.Remove(conn);
+                        pnlCanvas.Invalidate();
+                    }
+                    dlg.DialogResult = DialogResult.Cancel;
+                    dlg.Close();
+                };
+
+                dlg.Controls.AddRange(new Control[] { lblFrom, txtFrom, lblTo, cmbTo, lblCondition, txtCondition, btnSave, btnRemove, btnCancel });
+                dlg.AcceptButton = btnSave;
+                dlg.CancelButton = btnCancel;
+
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                var toStep = cmbTo.SelectedItem as WorkflowStepDesignData;
+                if (toStep == null) return;
+
+                var matchedConnection = _conns.FirstOrDefault(c =>
+                    c.FromStepId == fromStep.WorkflowStepId &&
+                    c.ToStepId == toStep.WorkflowStepId);
+
+                if (matchedConnection == null)
+                {
+                    _conns.Add(new WorkflowConnectionDesignData
+                    {
+                        FromStepId = fromStep.WorkflowStepId,
+                        ToStepId = toStep.WorkflowStepId,
+                        Condition = txtCondition.Text.Trim()
+                    });
+                }
+                else
+                {
+                    matchedConnection.Condition = txtCondition.Text.Trim();
+                }
+
+                pnlCanvas.Invalidate();
+                ShowStepProperties(fromStep);
+            }
+        }
+
         private void ToggleSnap()
         {
             _snapEnabled = !_snapEnabled;
@@ -938,6 +1083,23 @@ namespace CMS.Presentation.Modules.Workflow
                 ShowError("ยังไม่มี Step ใน Workflow");
                 return;
             }
+
+            // Prompt for Name and Description if this is a new template
+            if (!_templateId.HasValue)
+            {
+                using (var nameDlg = new CMS.Presentation.Modules.Workflow.Dialogs.TemplateNameDialog())
+                {
+                    if (nameDlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        lblTitle.Text = nameDlg.TemplateName;
+                        lblSubtitle.Text = nameDlg.TemplateDescription;
+                    }
+                    else
+                    {
+                        return; // User cancelled
+                    }
+                }
+            }
             
             if (_presenter != null)
                 _presenter.SaveTemplate(lblTitle.Text, lblSubtitle.Text);
@@ -959,6 +1121,129 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 lblStatusBadge.ForeColor = Color.FromArgb(23, 133, 49);
                 lblStatusBadge.Text      = "●  Published";
+            }
+        }
+
+        private void DoTestRun()
+        {
+            if (!_templateId.HasValue)
+            {
+                var confirm = MessageBox.Show(
+                    "กรุณาบันทึก Template ก่อนทำการทดสอบ Test Run\n\nต้องการบันทึกเดี๋ยวนี้เลยหรือไม่?",
+                    "บันทึก Template",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (confirm == DialogResult.Yes)
+                {
+                    DoSave();
+                    if (!_templateId.HasValue) return; // Save failed
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            if (_presenter == null)
+            {
+                ShowError("ไม่พบ Presenter สำหรับการตรวจสอบ");
+                return;
+            }
+
+            // Validate design first
+            if (!_presenter.ValidateTemplate())
+            {
+                return;
+            }
+
+            // Resolve WorkflowService from MDI Parent
+            IWorkflowService workflowService = null;
+            if (this.MdiParent is MDI_Container mdi)
+            {
+                workflowService = mdi.WorkflowService;
+            }
+
+            if (workflowService == null)
+            {
+                ShowError("ไม่พบ Workflow Service ในระบบ MDI Container");
+                return;
+            }
+
+            try
+            {
+                var currentTemplate = _templateService.GetTemplate(_templateId.Value, _userContext);
+                if (currentTemplate != null && !currentTemplate.IsActive)
+                {
+                    var activateConfirm = MessageBox.Show(
+                        "การทำ Test Run จำเป็นต้องเปิดใช้งาน (Activate) Template ก่อน\n\nต้องการเปิดใช้งาน Template นี้เพื่อเริ่มการทดสอบใช่หรือไม่?",
+                        "เปิดใช้งาน Template",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Question);
+
+                    if (activateConfirm == DialogResult.Yes)
+                    {
+                        var updateRequest = new UpdateTemplateRequest
+                        {
+                            WorkflowDefinitionId = _templateId.Value,
+                            Name = currentTemplate.Name,
+                            Description = currentTemplate.Description,
+                            IsActive = true,
+                            ChangeDescription = "Activated for Test Run"
+                        };
+                        _templateService.UpdateTemplate(updateRequest, _userContext);
+                        
+                        lblStatusBadge.ForeColor = Color.FromArgb(23, 133, 49);
+                        lblStatusBadge.Text      = "●  Active";
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+
+                using (var dialog = new WorkflowStartDialog(_templateService, _loggingService, _userContext))
+                {
+                    dialog.PreSelectedTemplateId = _templateId;
+
+                    if (dialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        var startRequest = new CreateWorkflowInstanceRequest
+                        {
+                            WorkflowDefinitionId = dialog.SelectedTemplateId,
+                            Description = dialog.InstanceDescription,
+                            Priority = dialog.Priority,
+                            InputParameters = "{}"
+                        };
+
+                        var result = workflowService.CreateWorkflowInstance(startRequest, _userContext);
+
+                        if (result != null && result.WorkflowInstanceId > 0)
+                        {
+                            MessageBox.Show(
+                                string.Format("เริ่มทดสอบกระบวนการ (Test Run) สำเร็จ!\n\nInstance ID: {0}\nสถานะ: {1}",
+                                    result.WorkflowInstanceId, result.Status),
+                                "Test Run สำเร็จ",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Information);
+
+                            // Redirect user to Workflow Dashboard or Workflow Monitor to track execution
+                            if (this.MdiParent is MDI_Container mdiContainer)
+                            {
+                                mdiContainer.OpenWorkflowDashboard();
+                            }
+                        }
+                        else
+                        {
+                            ShowError("เริ่มการทดสอบกระบวนการไม่สำเร็จ");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error("Test Run execution failed: " + ex.Message, ex);
+                ShowError("เกิดข้อผิดพลาดในการทำ Test Run: " + ex.Message);
             }
         }
 
@@ -995,8 +1280,25 @@ namespace CMS.Presentation.Modules.Workflow
         public void DisplayTemplate(WorkflowTemplateResult template)
         {
             if (template == null) return;
-            lblTitle.Text    = template.Name;
-            lblSubtitle.Text = template.Description ?? "";
+            var templateCode = string.Format("WFD-{0:D3}", template.WorkflowDefinitionId);
+            lblBreadcrumb.Text = string.Format("CMS  ›  Workflow Engine  ›  Templates  ›  {0} · {1}",
+                templateCode, template.Name ?? "Template");
+            lblTitle.Text    = string.Format("{0} · {1}", templateCode, template.Name ?? "Template");
+            lblSubtitle.Text = string.IsNullOrWhiteSpace(template.Description)
+                ? string.Format("เวอร์ชัน {0} · {1}", template.Version, template.StatusLabel)
+                : template.Description;
+            _templateId      = template.WorkflowDefinitionId;
+
+            if (template.IsActive)
+            {
+                lblStatusBadge.ForeColor = Color.FromArgb(23, 133, 49);
+                lblStatusBadge.Text      = "●  Active";
+            }
+            else
+            {
+                lblStatusBadge.ForeColor = Color.FromArgb(197, 80, 0);
+                lblStatusBadge.Text      = "●  Draft · ยังไม่ได้เผยแพร่";
+            }
         }
 
         public void DrawStep(WorkflowStepDesignData step)
@@ -1023,6 +1325,15 @@ namespace CMS.Presentation.Modules.Workflow
             _conns.Clear();
             _selectedStep = null;
             pnlCanvas.Invalidate();
+        }
+
+        public string GetTemplateDefinitionJson()
+        {
+            return JsonConvert.SerializeObject(new WorkflowDesignerTemplateDefinition
+            {
+                Steps = _steps,
+                Connections = _conns
+            }, Formatting.Indented);
         }
 
         public void ShowStepConfigDialog(WorkflowStepDesignData step) { }
@@ -1078,5 +1389,11 @@ namespace CMS.Presentation.Modules.Workflow
         public int    FromStepId { get; set; }
         public int    ToStepId   { get; set; }
         public string Condition  { get; set; }
+    }
+
+    public class WorkflowDesignerTemplateDefinition
+    {
+        public List<WorkflowStepDesignData> Steps { get; set; } = new List<WorkflowStepDesignData>();
+        public List<WorkflowConnectionDesignData> Connections { get; set; } = new List<WorkflowConnectionDesignData>();
     }
 }

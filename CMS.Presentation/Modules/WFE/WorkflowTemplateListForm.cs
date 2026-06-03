@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using CMS.Data.Models;
@@ -11,6 +12,7 @@ using CMS.Presentation.Modules.Workflow.Presenters;
 using CMS.Presentation.Modules.Workflow.Presenters.Interfaces;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
+using Newtonsoft.Json;
 
 namespace CMS.Presentation.Modules.Workflow
 {
@@ -24,10 +26,13 @@ namespace CMS.Presentation.Modules.Workflow
         private readonly UserContext _userContext;
         private readonly IWorkflowTemplateService _templateService;
         private readonly ILoggingService _loggingService;
+        private readonly IAuditService _auditService;
         private readonly List<WorkflowTemplateResult> _currentTemplates = new List<WorkflowTemplateResult>();
 
         private bool _searchPlaceholderActive = true;
         private int _totalCount = 0;
+        private int _currentPage = 1;
+        private int _pageSize = 50;
         private Label _activeTabLabel;
 
         // ── Ribbon toolbar panel references (for enable/disable) ─────────────
@@ -80,6 +85,7 @@ namespace CMS.Presentation.Modules.Workflow
             _userContext = userContext;
             _templateService = templateService;
             _loggingService = loggingService;
+            _auditService = auditService;
 
             _presenter = new WorkflowTemplateListPresenter(
                 this, templateService, auditService, loggingService, userContext);
@@ -137,6 +143,7 @@ namespace CMS.Presentation.Modules.Workflow
 
             BuildRibbonToolbar();
 
+            EnsurePaginationControls();
             SetActionButtonsEnabled(false, false, false);
             SetSubmitButtonEnabled(false);
             UpdateResultCountLabel();
@@ -151,6 +158,8 @@ namespace CMS.Presentation.Modules.Workflow
             _currentTemplates.Clear();
             _currentTemplates.AddRange(items);
             _totalCount = templates?.TotalCount > 0 ? templates.TotalCount : items.Count;
+            _currentPage = templates?.PageNumber > 0 ? templates.PageNumber : 1;
+            _pageSize = templates?.PageSize > 0 ? templates.PageSize : 50;
 
             var rows = items.Select(t => new WorkflowTemplateGridRow
             {
@@ -175,6 +184,16 @@ namespace CMS.Presentation.Modules.Workflow
             UpdateResultCountLabel();
             lblSelectionInfo.Text = string.Format("เลือก 0 รายการจาก {0}", _totalCount);
             SetActionButtonsEnabled(false, false, false);
+
+            // Update pagination UI state
+            int currentPage = templates?.PageNumber ?? 1;
+            int pageSize = templates?.PageSize ?? 50;
+            int totalPages = (int)Math.Ceiling((double)_totalCount / (pageSize > 0 ? pageSize : 50));
+            if (totalPages < 1) totalPages = 1;
+
+            lblPageInfo.Text = string.Format("หน้า {0} / {1}", currentPage, totalPages);
+            btnPrev.Enabled = currentPage > 1;
+            btnNext.Enabled = currentPage < totalPages;
         }
 
         public void ShowTemplateForm(WorkflowTemplateResult template = null)
@@ -188,19 +207,30 @@ namespace CMS.Presentation.Modules.Workflow
                     return;
                 }
 
-                // Edit existing template: open designer directly
-                int? templateId = (int?)template.WorkflowDefinitionId;
-                using (var designerForm = new WorkflowDesignerForm(
-                    templateId, _templateService, _loggingService, _userContext))
-                {
-                    designerForm.ShowDialog(this.MdiParent ?? this);
-                }
-                _presenter.LoadTemplates();
+                OpenDesignerForTemplate(template.WorkflowDefinitionId);
             }
             catch (Exception ex)
             {
                 _loggingService?.Error($"ShowTemplateForm Exception: {ex.GetType().Name} - {ex.Message}\nStackTrace: {ex.StackTrace}", ex);
                 ShowError($"ไม่สามารถเปิดหน้าจอ Workflow Template ได้:\n\n{ex.GetType().Name}\n{ex.Message}");
+            }
+        }
+
+        private void OpenDesignerForTemplate(int templateId)
+        {
+            var designerForm = new WorkflowDesignerForm(
+                templateId, _templateService, _loggingService, _userContext);
+
+            if (MdiParent != null)
+            {
+                designerForm.MdiParent = MdiParent;
+                designerForm.WindowState = FormWindowState.Normal;
+                designerForm.Show();
+                designerForm.Activate();
+            }
+            else
+            {
+                designerForm.Show(this);
             }
         }
 
@@ -375,8 +405,13 @@ namespace CMS.Presentation.Modules.Workflow
         {
             var selected = GetSelectedTemplate();
             if (selected == null) { ShowError("กรุณาเลือก Template ที่ต้องการ Publish"); return; }
-            ShowInfo(string.Format("Publish Template '{0}' v{1} เรียบร้อย", selected.Name, selected.Version));
-            _presenter.LoadTemplates();
+            if (MessageBox.Show(
+                    string.Format("ยืนยัน Publish Template '{0}' v{1} ?", selected.Name, selected.Version),
+                    "ยืนยันการ Publish", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                == DialogResult.Yes)
+            {
+                _presenter.PublishTemplate(selected);
+            }
         }
 
         private void btnDeactivate_Click(object sender, EventArgs e)
@@ -385,10 +420,10 @@ namespace CMS.Presentation.Modules.Workflow
             if (selected == null) { ShowError("กรุณาเลือก Template ที่ต้องการ Deactivate"); return; }
             if (MessageBox.Show(
                     string.Format("ยืนยัน Deactivate Template '{0}' ?", selected.Name),
-                    "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                    "ยืนยันการ Deactivate", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                 == DialogResult.Yes)
             {
-                _presenter.LoadTemplates();
+                _presenter.DeactivateTemplate(selected);
             }
         }
 
@@ -399,7 +434,9 @@ namespace CMS.Presentation.Modules.Workflow
                 dlg.Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*";
                 dlg.Title = "นำเข้า Template";
                 if (dlg.ShowDialog(this) == DialogResult.OK)
-                    ShowInfo("Import ไฟล์: " + dlg.FileName);
+                {
+                    _presenter.ImportTemplate(dlg.FileName);
+                }
             }
         }
 
@@ -413,8 +450,25 @@ namespace CMS.Presentation.Modules.Workflow
                 dlg.FileName = string.Format("WFD-{0:D3}_{1}.json",
                     selected.WorkflowDefinitionId, selected.Name);
                 if (dlg.ShowDialog(this) == DialogResult.OK)
-                    ShowInfo("Export ไปที่: " + dlg.FileName);
+                {
+                    _presenter.ExportTemplate(selected, dlg.FileName);
+                }
             }
+        }
+
+        private void btnPrev_Click(object sender, EventArgs e)
+        {
+            _presenter.PreviousPage();
+        }
+
+        private void btnNext_Click(object sender, EventArgs e)
+        {
+            _presenter.NextPage();
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            Close();
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -501,7 +555,8 @@ namespace CMS.Presentation.Modules.Workflow
                 _templateService,
                 null, // slaCalculator
                 _loggingService,
-                _userContext);
+                _userContext,
+                _auditService);
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -767,14 +822,16 @@ namespace CMS.Presentation.Modules.Workflow
                 }},
                 new { Header = "Approval", Items = new[]
                 {
-                    new { Icon = "?",              Text = "ส่งอนุมัติ",  Tag = "submit",     Primary = false },
+                    new { Icon = "", Text = "Publish",    Tag = "publish",    Primary = false },
+                    new { Icon = "", Text = "ส่งอนุมัติ",  Tag = "submit",     Primary = false },
                     new { Icon = "", Text = "Deactivate", Tag = "deactivate", Primary = false },
-                    new { Icon = "",   Text = "ประวัติ",   Tag = "versions",   Primary = false },
+                    new { Icon = "", Text = "ประวัติ",    Tag = "versions",   Primary = false },
                 }},
                 new { Header = "นำเข้า/ส่งออก", Items = new[]
                 {
                     new { Icon = "", Text = "Import", Tag = "import", Primary = false },
                     new { Icon = "", Text = "Export", Tag = "export", Primary = false },
+                    new { Icon = "✕", Text = "ปิด",    Tag = "close",  Primary = false },
                 }},
             };
 
@@ -886,6 +943,7 @@ namespace CMS.Presentation.Modules.Workflow
                 case "import":     btnImport_Click(null, EventArgs.Empty);      break;
                 case "export":     btnExport_Click(null, EventArgs.Empty);      break;
                 case "submit":     btnSubmitForApproval_Click(null, EventArgs.Empty); break;
+                case "close":      btnClose_Click(null, EventArgs.Empty);       break;
             }
         }
 
@@ -986,7 +1044,15 @@ namespace CMS.Presentation.Modules.Workflow
         // ════════════════════════════════════════════════════════════════════
         private void pnlPageHeader_Resize(object sender, EventArgs e)
         {
-            btnCreateNew.Left = pnlPageHeader.Width - btnCreateNew.Width - 16;
+            if (btnClose != null)
+            {
+                btnClose.Left = pnlPageHeader.Width - btnClose.Width - 16;
+                btnCreateNew.Left = btnClose.Left - btnCreateNew.Width - 8;
+            }
+            else
+            {
+                btnCreateNew.Left = pnlPageHeader.Width - btnCreateNew.Width - 16;
+            }
         }
 
         private void pnlFilters_Resize(object sender, EventArgs e)
@@ -996,7 +1062,23 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void pnlFooter_Resize(object sender, EventArgs e)
         {
-            lnkShowAll.Left = pnlFooter.Width - lnkShowAll.Width - 16;
+            if (lnkShowAll == null) return;
+            
+            int rightX = pnlFooter.Width - 16;
+            lnkShowAll.Left = rightX - lnkShowAll.Width;
+            lnkShowAll.Top = (pnlFooter.Height - lnkShowAll.Height) / 2;
+
+            if (btnNext != null && lblPageInfo != null && btnPrev != null)
+            {
+                btnNext.Left = lnkShowAll.Left - btnNext.Width - 16;
+                btnNext.Top = (pnlFooter.Height - btnNext.Height) / 2;
+
+                lblPageInfo.Left = btnNext.Left - lblPageInfo.Width - 8;
+                lblPageInfo.Top = (pnlFooter.Height - lblPageInfo.Height) / 2;
+
+                btnPrev.Left = lblPageInfo.Left - btnPrev.Width - 8;
+                btnPrev.Top = (pnlFooter.Height - btnPrev.Height) / 2;
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -1007,6 +1089,14 @@ namespace CMS.Presentation.Modules.Workflow
             lblResultCount.Text = string.Format("พบ {0} Template ทั้งหมด", _totalCount);
             // re-anchor after text change
             lblResultCount.Left = pnlFilters.Width - lblResultCount.Width - 16;
+        }
+
+        private void EnsurePaginationControls()
+        {
+            if (btnPrev != null) btnPrev.Enabled = false;
+            if (btnNext != null) btnNext.Enabled = false;
+            if (lblPageInfo != null) lblPageInfo.Text = "หน้า 1 / 1";
+            pnlFooter_Resize(this, EventArgs.Empty);
         }
 
         private WorkflowTemplateResult GetSelectedTemplate()

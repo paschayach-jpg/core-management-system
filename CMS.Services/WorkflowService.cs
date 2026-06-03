@@ -131,7 +131,7 @@ namespace CMS.Services
                 _loggingService.Info($"Workflow instance {instanceId} created by {userContext.ADUserName} from template {template.Name}");
 
                 // 10. Return result
-                return MapToResult(instance, steps);
+                return MapToResult(instance, template, steps);
             }
             catch (Exception ex)
             {
@@ -154,8 +154,9 @@ namespace CMS.Services
 
                 var template = _templateRepository.GetTemplate(instance.WorkflowDefinitionId);
                 var steps = _stepRepository.GetStepsByTemplate(instance.WorkflowDefinitionId).ToList();
+                var stepInstances = _stepInstanceRepository.GetStepInstancesByWorkflow(workflowInstanceId).ToList();
 
-                return MapToResult(instance, steps);
+                return MapToResult(instance, template, steps, stepInstances);
             }
             catch (Exception ex)
             {
@@ -183,8 +184,9 @@ namespace CMS.Services
 
                 var mappedItems = result.Items.Select(instance =>
                 {
+                    var template = _templateRepository.GetTemplate(instance.WorkflowDefinitionId);
                     var steps = _stepRepository.GetStepsByTemplate(instance.WorkflowDefinitionId).ToList();
-                    return MapToResult(instance, steps);
+                    return MapToResult(instance, template, steps);
                 }).ToList();
 
                 return new PagedResult<WorkflowInstanceResult>
@@ -355,8 +357,9 @@ namespace CMS.Services
                     AuditDate = DateTime.Now
                 });
 
+                var template = _templateRepository.GetTemplate(instance.WorkflowDefinitionId);
                 var steps = _stepRepository.GetStepsByTemplate(instance.WorkflowDefinitionId).ToList();
-                return MapToResult(instance, steps);
+                return MapToResult(instance, template, steps);
             }
             catch (Exception ex)
             {
@@ -385,8 +388,9 @@ namespace CMS.Services
                     AuditDate = DateTime.Now
                 });
 
+                var template = _templateRepository.GetTemplate(instance.WorkflowDefinitionId);
                 var steps = _stepRepository.GetStepsByTemplate(instance.WorkflowDefinitionId).ToList();
-                return MapToResult(instance, steps);
+                return MapToResult(instance, template, steps);
             }
             catch (Exception ex)
             {
@@ -400,7 +404,8 @@ namespace CMS.Services
             try
             {
                 var stepInstances = _stepInstanceRepository.GetStepInstancesByUser(userContext.ADUserName);
-                var workflowCache = new Dictionary<int, WorkflowInstance>();
+                var workflowCache  = new Dictionary<int, WorkflowInstance>();
+                var templateStepCache = new Dictionary<int, IList<CMS.Domain.Models.WorkflowStep>>();
                 var tasks = new List<WorkflowTaskResult>();
 
                 foreach (var stepInstance in stepInstances)
@@ -416,6 +421,12 @@ namespace CMS.Services
                     var step = _stepRepository.GetStep(stepInstance.WorkflowStepId);
                     var template = _templateRepository.GetTemplate(instance.WorkflowDefinitionId);
 
+                    if (!templateStepCache.TryGetValue(instance.WorkflowDefinitionId, out var templateSteps))
+                    {
+                        templateSteps = _stepRepository.GetStepsByTemplate(instance.WorkflowDefinitionId);
+                        templateStepCache[instance.WorkflowDefinitionId] = templateSteps;
+                    }
+
                     tasks.Add(new WorkflowTaskResult
                     {
                         WorkflowStepInstanceId = stepInstance.WorkflowStepInstanceId,
@@ -430,8 +441,12 @@ namespace CMS.Services
                         SLAStatus = stepInstance.SLAStatus,
                         CanDelegate = step?.AllowDelegation ?? false,
                         MaxDelegationDepth = step?.MaxDelegationDepth ?? 0,
-                        TimeRemainingMinutes = (int)(stepInstance.SLADeadline - DateTime.Now).TotalMinutes,
-                        InitiatedBy = instance.InitiatedBy
+                        TimeRemainingMinutes = stepInstance.SLADeadline == DateTime.MinValue
+                            ? (int?)null
+                            : (int)(stepInstance.SLADeadline - DateTime.Now).TotalMinutes,
+                        InitiatedBy = instance.InitiatedBy,
+                        StepOrder  = step?.SequenceNumber ?? 0,
+                        TotalSteps = templateSteps?.Count ?? 0
                     });
                 }
 
@@ -469,17 +484,22 @@ namespace CMS.Services
             return true;
         }
 
-        private WorkflowInstanceResult MapToResult(WorkflowInstance instance, List<WorkflowStep> steps)
+        private WorkflowInstanceResult MapToResult(WorkflowInstance instance, WorkflowDefinition template, List<WorkflowStep> steps, List<WorkflowStepInstance> stepInstances = null)
         {
             return new WorkflowInstanceResult
             {
                 WorkflowInstanceId = instance.WorkflowInstanceId,
                 WorkflowDefinitionId = instance.WorkflowDefinitionId,
+                WorkflowName = template?.Name,
+                TemplateName = template?.Name,
                 TemplateVersion = instance.TemplateVersion,
                 InitiatedBy = instance.InitiatedBy,
                 InitiatedDate = instance.InitiatedDate,
                 Status = instance.Status,
                 CurrentStepId = instance.CurrentStepId,
+                CurrentStepName = steps?.FirstOrDefault(s => s.WorkflowStepId == instance.CurrentStepId)?.StepName,
+                TotalStepCount = steps?.Count(s => !s.IsDeleted) ?? 0,
+                CompletedStepCount = stepInstances?.Count(si => si.Status == WorkflowStepInstanceStatus.Completed) ?? 0,
                 CompletedDate = instance.CompletedDate,
                 InputParameters = instance.InputParameters
             };

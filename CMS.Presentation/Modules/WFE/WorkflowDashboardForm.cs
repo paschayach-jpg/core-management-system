@@ -283,10 +283,26 @@ namespace CMS.Presentation.Modules.Workflow
         {
             try
             {
-                var dialog = new WorkflowStartDialog(null, null, null);
-                if (dialog.ShowDialog() == DialogResult.OK)
+                if (!(MdiParent is MDI_Container mdi) || mdi.WorkflowTemplateService == null)
                 {
-                    _presenter.RefreshDashboard();
+                    ShowError("Workflow Template service ไม่พร้อมใช้งาน กรุณาเปิดผ่านหน้าจอหลัก");
+                    return;
+                }
+
+                using (var dialog = new WorkflowStartDialog(mdi.WorkflowTemplateService, _loggingService, _userContext))
+                {
+                    if (dialog.ShowDialog(this) == DialogResult.OK)
+                    {
+                        _workflowService.CreateWorkflowInstance(new CreateWorkflowInstanceRequest
+                        {
+                            WorkflowDefinitionId = dialog.SelectedTemplateId,
+                            Description = dialog.InstanceDescription,
+                            Priority = dialog.Priority,
+                            InputParameters = dialog.InputParametersJson
+                        }, _userContext);
+
+                        _presenter.RefreshDashboard();
+                    }
                 }
             }
             catch (Exception ex)

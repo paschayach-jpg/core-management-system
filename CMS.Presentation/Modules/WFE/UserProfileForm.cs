@@ -3,6 +3,11 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using CMS.Domain.Models;
+using CMS.Services.Interfaces;
+using CMS.Infrastructure.Interfaces;
+using CMS.Services.DTOs;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CMS.Presentation.Modules.Workflow
 {
@@ -10,11 +15,53 @@ namespace CMS.Presentation.Modules.Workflow
     {
         // ── Dependencies ──────────────────────────────────────────────────────
         private readonly UserContext _userContext;
+        private readonly IWorkflowService _workflowService;
+        private readonly IWorkflowDelegationService _delegationService;
+        private readonly IEmployeeApiService _employeeApiService;
+        private readonly ILdapUserSearchService _ldapSearchService;
+        private readonly ILoggingService _loggingService;
+        private readonly IAuditService _auditService;
 
         // ── State ─────────────────────────────────────────────────────────────
         private Panel _activeNavItem;
         private Panel _activeTabPanel;
         private Panel _pnlTabContent;
+        private UserProfileSettings _settings = new UserProfileSettings();
+
+        // Active OOF Delegate
+        private string _oofDelegateUsername = "";
+        private string _oofDelegateDisplayName = "";
+        private string _oofDelegateTitle = "";
+        private string _oofDelegateDepartment = "";
+
+        // Controls from other tabs
+        private CheckBox chkNotifyEmail;
+        private CheckBox chkNotifySms;
+        private CheckBox chkNotifyWeekly;
+        private CheckBox chkNotifySla;
+
+        private TextBox txtPersonalPhone;
+        private TextBox txtPersonalEmail;
+        private TextBox txtPersonalNameTh;
+        private TextBox txtPersonalNameEn;
+
+        private TextBox txtCurrentPassword;
+        private TextBox txtNewPassword;
+        private TextBox txtConfirmPassword;
+        private CheckBox chkMfa;
+
+        // Out-of-Office controls
+        private CheckBox chkOofEnabled;
+        private TextBox txtOofStart;
+        private TextBox txtOofEnd;
+        private ComboBox cmbOofReason;
+        private TextBox txtOofReply;
+        private RadioButton rbOofAll;
+        private RadioButton rbOofSelected;
+        private RadioButton rbOofCategory;
+        private Panel pnlOofDelegate;
+        private Label lblOofDelegateName;
+        private Label lblOofDelegateInfo;
 
         // ── Colors ────────────────────────────────────────────────────────────
         private static readonly Color Blue       = Color.FromArgb(37,  99, 235);
@@ -28,10 +75,84 @@ namespace CMS.Presentation.Modules.Workflow
         // Constructor
         // ════════════════════════════════════════════════════════════════════════
 
-        public UserProfileForm(UserContext userContext)
+        public UserProfileForm(
+            UserContext userContext,
+            IWorkflowService workflowService = null,
+            IWorkflowDelegationService delegationService = null,
+            IEmployeeApiService employeeApiService = null,
+            ILdapUserSearchService ldapSearchService = null,
+            ILoggingService loggingService = null,
+            IAuditService auditService = null)
         {
             InitializeComponent();
             _userContext = userContext;
+            _workflowService = workflowService;
+            _delegationService = delegationService;
+            _employeeApiService = employeeApiService;
+            _ldapSearchService = ldapSearchService;
+            _loggingService = loggingService;
+            _auditService = auditService;
+
+            LoadSettings();
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // Settings Persistence Helpers
+        // ════════════════════════════════════════════════════════════════════════
+
+        private string GetSettingsFilePath()
+        {
+            return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "user_profile_settings.json");
+        }
+
+        private void LoadSettings()
+        {
+            var path = GetSettingsFilePath();
+            if (System.IO.File.Exists(path))
+            {
+                try
+                {
+                    var json = System.IO.File.ReadAllText(path);
+                    _settings = Newtonsoft.Json.JsonConvert.DeserializeObject<UserProfileSettings>(json) ?? new UserProfileSettings();
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.Error("Failed to load user settings: " + ex.Message, ex);
+                    _settings = new UserProfileSettings();
+                }
+            }
+            else
+            {
+                _settings = new UserProfileSettings();
+                if (_userContext != null)
+                {
+                    _settings.PersonalFullNameTh = GetDisplayName();
+                    _settings.PersonalContactEmail = ExtractEmail(_userContext.ADUserName);
+                }
+                _settings.OofStartDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                _settings.OofEndDate = DateTime.Now.AddDays(7).ToString("dd/MM/yyyy HH:mm");
+                _settings.OofAutoReplyText = "สวัสดีค่ะ/ครับ — ลาพักร้อน ระหว่างวันที่ " + _settings.OofStartDate + " ถึง " + _settings.OofEndDate + " · สำหรับงานเร่งด่วนกรุณาติดต่อผู้รับมอบหมายงานแทน ขอบคุณค่ะ/ครับ";
+            }
+
+            _oofDelegateUsername = _settings.OofDelegateUsername;
+            _oofDelegateDisplayName = _settings.OofDelegateDisplayName;
+            _oofDelegateTitle = _settings.OofDelegateTitle;
+            _oofDelegateDepartment = _settings.OofDelegateDepartment;
+        }
+
+        private void SaveSettings()
+        {
+            var path = GetSettingsFilePath();
+            try
+            {
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(_settings, Newtonsoft.Json.Formatting.Indented);
+                System.IO.File.WriteAllText(path, json);
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error("Failed to save user settings: " + ex.Message, ex);
+                MessageBox.Show("ไม่สามารถบันทึกไฟล์ตั้งค่าได้: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -330,13 +451,29 @@ namespace CMS.Presentation.Modules.Workflow
             inner.Controls.Add(new Label { Text = "สถิติของฉัน", Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(22, 36, 62), AutoSize = true, Location = new Point(0, y) });
             y += 22;
 
+            int totalTasks = 0;
+            int overdueTasks = 0;
+            if (_workflowService != null && _userContext != null)
+            {
+                try
+                {
+                    var myTasks = _workflowService.GetMyTasks(_userContext);
+                    totalTasks = myTasks.Count;
+                    overdueTasks = myTasks.Count(t => t.SLAStatus == CMS.Domain.Enums.SLAStatus.Overdue);
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.Error("Failed to fetch my tasks for stats: " + ex.Message, ex);
+                }
+            }
+
             var stats = new[]
             {
-                new { Label = "Workflow อนุมัติ",  Value = "142 ครั้ง (30 วัน)", Badge = (string)null },
-                new { Label = "เวลาเฉลี่ย",        Value = "1.8 วัน/งาน",        Badge = (string)null },
+                new { Label = "งานรอดำเนินการ",  Value = totalTasks + " รายการ", Badge = (string)null },
+                new { Label = "งานเกินกำหนด (SLA)", Value = overdueTasks + " รายการ", Badge = overdueTasks > 0 ? "Overdue" : (string)null },
                 new { Label = "SLA Compliance",     Value = "96.5%",              Badge = "96.5%"      },
-                new { Label = "Template ออกแบบ",   Value = "3 Templates",         Badge = (string)null },
-                new { Label = "เข้าสู่ระบบ",       Value = "วันนี้ 08:42",        Badge = (string)null },
+                new { Label = "เวลาเฉลี่ย (อนุมัติ)", Value = "1.8 วัน/งาน",        Badge = (string)null },
+                new { Label = "เข้าสู่ระบบล่าสุด",   Value = DateTime.Now.ToString("วันนี้ HH:mm"),        Badge = (string)null },
             };
 
             foreach (var stat in stats)
@@ -347,7 +484,8 @@ namespace CMS.Presentation.Modules.Workflow
                     inner.Controls.Add(new Label
                     {
                         Text = "● " + stat.Badge, Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                        ForeColor = GreenOk, BackColor = Color.FromArgb(220, 252, 231),
+                        ForeColor = overdueTasks > 0 && stat.Label.Contains("เกินกำหนด") ? OrangeWarn : GreenOk,
+                        BackColor = overdueTasks > 0 && stat.Label.Contains("เกินกำหนด") ? Color.FromArgb(254, 243, 199) : Color.FromArgb(220, 252, 231),
                         AutoSize = true, Padding = new Padding(4, 1, 4, 1),
                         Location = new Point(120, y - 1),
                     });
@@ -468,9 +606,9 @@ namespace CMS.Presentation.Modules.Workflow
             switch (tab)
             {
                 case "Out-of-Office": BuildOofTab();           break;
-                case "การแจ้งเตือน":   BuildPlaceholderTab("การแจ้งเตือน",   "🔔", "ตั้งค่าการแจ้งเตือนผ่าน Email และ In-App");           break;
-                case "ข้อมูลส่วนตัว":  BuildPlaceholderTab("ข้อมูลส่วนตัว",  "👤", "แก้ไขชื่อ ตำแหน่ง แผนก และรายละเอียดส่วนตัว");       break;
-                case "ความปลอดภัย":   BuildPlaceholderTab("ความปลอดภัย",    "🔐", "เปลี่ยนรหัสผ่าน ตั้งค่า 2FA และดูประวัติการเข้าสู่ระบบ"); break;
+                case "การแจ้งเตือน":   BuildNotificationsTab(); break;
+                case "ข้อมูลส่วนตัว":  BuildPersonalInfoTab();  break;
+                case "ความปลอดภัย":   BuildSecurityTab();      break;
             }
         }
 
@@ -496,20 +634,20 @@ namespace CMS.Presentation.Modules.Workflow
 
             banner.Controls.Add(new Label { Text = "⚠", Font = new Font("Segoe UI", 12F), ForeColor = Color.FromArgb(146, 64, 14), BackColor = Color.Transparent, AutoSize = true, Location = new Point(12, 18) });
             banner.Controls.Add(new Label { Text = "ตั้งค่า Out-of-Office ปัจจุบัน", Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(120, 53, 15), BackColor = Color.Transparent, AutoSize = true, Location = new Point(38, 10) });
-            banner.Controls.Add(new Label { Text = "ไม่ได้ใช้งาน · ไม่มีการมอบหมายงานอัตโนมัติ", Font = new Font("Segoe UI", 8.5F), ForeColor = Color.FromArgb(146, 64, 14), BackColor = Color.Transparent, AutoSize = true, Location = new Point(38, 30) });
+            banner.Controls.Add(new Label { Text = "มอบหมายงานแทนเมื่อคุณไม่อยู่สำนักงาน", Font = new Font("Segoe UI", 8.5F), ForeColor = Color.FromArgb(146, 64, 14), BackColor = Color.Transparent, AutoSize = true, Location = new Point(38, 30) });
 
-            var chkEnabled = new CheckBox
+            chkOofEnabled = new CheckBox
             {
                 Text     = "เปิดใช้",
                 Font     = new Font("Segoe UI", 8.5F),
                 ForeColor = Color.FromArgb(120, 53, 15),
                 BackColor = Color.Transparent,
-                Checked  = true,
+                Checked  = _settings.OofEnabled,
                 Anchor   = AnchorStyles.Top | AnchorStyles.Right,
                 AutoSize = true,
             };
-            chkEnabled.Location = new Point(banner.Width - chkEnabled.GetPreferredSize(Size.Empty).Width - 16, 20);
-            banner.Controls.Add(chkEnabled);
+            chkOofEnabled.Location = new Point(banner.Width - chkOofEnabled.GetPreferredSize(Size.Empty).Width - 16, 20);
+            banner.Controls.Add(chkOofEnabled);
             container.Controls.Add(banner);
             y += 68;
 
@@ -518,16 +656,16 @@ namespace CMS.Presentation.Modules.Workflow
             container.Controls.Add(MakeFieldLabel("ช่วงเวลา — สิ้นสุด", y, right: true));
             y += 20;
 
-            var txtStart = MakeTextBox("17/04/2569 09:00", y, 0, (container.Width - 72) / 2);
-            var txtEnd   = MakeTextBox("24/04/2569 17:00", y, (container.Width - 72) / 2 + 16, (container.Width - 72) / 2);
-            container.Controls.Add(txtStart);
-            container.Controls.Add(txtEnd);
+            txtOofStart = MakeTextBox(_settings.OofStartDate, y, 0, (container.Width - 72) / 2);
+            txtOofEnd   = MakeTextBox(_settings.OofEndDate, y, (container.Width - 72) / 2 + 16, (container.Width - 72) / 2);
+            container.Controls.Add(txtOofStart);
+            container.Controls.Add(txtOofEnd);
             y += 40;
 
             // ── Reason ────────────────────────────────────────────────────────
             container.Controls.Add(MakeFieldLabel("เหตุผล", y));
             y += 20;
-            var cmbReason = new ComboBox
+            cmbOofReason = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 FlatStyle     = FlatStyle.Flat,
@@ -537,24 +675,25 @@ namespace CMS.Presentation.Modules.Workflow
                 Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             };
             foreach (var r in new[] { "ลาพักร้อน", "ลาป่วย", "ลากิจ", "ไปราชการ", "อื่นๆ" })
-                cmbReason.Items.Add(r);
-            cmbReason.SelectedIndex = 0;
-            container.Controls.Add(cmbReason);
+                cmbOofReason.Items.Add(r);
+            cmbOofReason.SelectedItem = _settings.OofReason;
+            if (cmbOofReason.SelectedIndex < 0) cmbOofReason.SelectedIndex = 0;
+            container.Controls.Add(cmbOofReason);
             y += 40;
 
             // ── Delegate person ───────────────────────────────────────────────
             container.Controls.Add(MakeFieldLabel("มอบหมายงานระหว่างลาให้", y));
             y += 22;
 
-            var pnlDelegate = new Panel
+            pnlOofDelegate = new Panel
             {
                 Location  = new Point(0, y),
                 Size      = new Size(container.Width - 48, 48),
                 Anchor    = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 BackColor = Color.FromArgb(246, 248, 251),
             };
-            pnlDelegate.Paint += (s, pe) =>
-                pe.Graphics.DrawRectangle(new Pen(Separator), 0, 0, pnlDelegate.Width - 1, pnlDelegate.Height - 1);
+            pnlOofDelegate.Paint += (s, pe) =>
+                pe.Graphics.DrawRectangle(new Pen(Separator), 0, 0, pnlOofDelegate.Width - 1, pnlOofDelegate.Height - 1);
 
             // Avatar
             var delAvatar = new Panel { Location = new Point(10, 11), Size = new Size(26, 26), BackColor = Color.Transparent };
@@ -564,11 +703,21 @@ namespace CMS.Presentation.Modules.Workflow
                 pe.Graphics.FillEllipse(new SolidBrush(Color.FromArgb(20, 184, 166)), 0, 0, 25, 25);
                 using (var f  = new Font("Segoe UI", 8F, FontStyle.Bold))
                 using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
-                    pe.Graphics.DrawString("ส", f, Brushes.White, new RectangleF(0, 0, 26, 26), sf);
+                {
+                    string initial = "ส";
+                    if (!string.IsNullOrEmpty(_oofDelegateDisplayName))
+                        initial = _oofDelegateDisplayName.Substring(0, 1);
+                    pe.Graphics.DrawString(initial, f, Brushes.White, new RectangleF(0, 0, 26, 26), sf);
+                }
             };
-            pnlDelegate.Controls.Add(delAvatar);
-            pnlDelegate.Controls.Add(new Label { Text = "สิริพร พงศ์ชัย",                      Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(22, 36, 62),  BackColor = Color.Transparent, AutoSize = true, Location = new Point(42, 8)  });
-            pnlDelegate.Controls.Add(new Label { Text = "Sr. Legal Officer · สำนักกฎหมาย", Font = new Font("Segoe UI", 8F),               ForeColor = GrayText,                     BackColor = Color.Transparent, AutoSize = true, Location = new Point(42, 24) });
+            pnlOofDelegate.Controls.Add(delAvatar);
+
+            lblOofDelegateName = new Label { Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(22, 36, 62),  BackColor = Color.Transparent, AutoSize = true, Location = new Point(42, 8)  };
+            lblOofDelegateInfo = new Label { Font = new Font("Segoe UI", 8F),               ForeColor = GrayText,                     BackColor = Color.Transparent, AutoSize = true, Location = new Point(42, 24) };
+            UpdateOofDelegatePanel();
+
+            pnlOofDelegate.Controls.Add(lblOofDelegateName);
+            pnlOofDelegate.Controls.Add(lblOofDelegateInfo);
 
             var btnChange = new Button
             {
@@ -582,41 +731,40 @@ namespace CMS.Presentation.Modules.Workflow
                 Cursor    = Cursors.Hand,
             };
             btnChange.FlatAppearance.BorderColor = Separator;
-            btnChange.Click    += (s, e) => ShowInfo("เลือกผู้รับมอบหมาย: อยู่ระหว่างพัฒนา");
-            pnlDelegate.Controls.Add(btnChange);
-            pnlDelegate.Layout += (s, e) => btnChange.Location = new Point(pnlDelegate.Width - btnChange.Width - 10, 14);
-            container.Controls.Add(pnlDelegate);
+            btnChange.Click    += (s, e) => ChangeOofDelegate();
+            pnlOofDelegate.Controls.Add(btnChange);
+            pnlOofDelegate.Layout += (s, e) => btnChange.Location = new Point(pnlOofDelegate.Width - btnChange.Width - 10, 14);
+            container.Controls.Add(pnlOofDelegate);
             y += 60;
 
             // ── Scope ─────────────────────────────────────────────────────────
             container.Controls.Add(MakeFieldLabel("ขอบเขต", y));
             y += 22;
 
-            var rbAll      = MakeRadio("ทุก Workflow ของฉัน",              y, true);
-            var rbSelected = MakeRadio("เฉพาะ Template บางรายการ",          y + 26, false);
-            var rbCategory = MakeRadio("เฉพาะหมวดหมู่: Knowledge, Legal",  y + 52, false);
-            container.Controls.Add(rbAll);
-            container.Controls.Add(rbSelected);
-            container.Controls.Add(rbCategory);
+            rbOofAll      = MakeRadio("ทุก Workflow ของฉัน",              y, _settings.OofScope == 0);
+            rbOofSelected = MakeRadio("เฉพาะ Template บางรายการ",          y + 26, _settings.OofScope == 1);
+            rbOofCategory = MakeRadio("เฉพาะหมวดหมู่: Knowledge, Legal",  y + 52, _settings.OofScope == 2);
+            container.Controls.Add(rbOofAll);
+            container.Controls.Add(rbOofSelected);
+            container.Controls.Add(rbOofCategory);
             y += 88;
 
             // ── Auto-reply text ───────────────────────────────────────────────
             container.Controls.Add(MakeFieldLabel("ข้อความตอบอัตโนมัติ (Email / In-App)", y));
             y += 22;
 
-            var autoReply = "สวัสดีค่ะ/ครับ — ลาพักร้อน 17-24 เม.ย. 2569 · งานเร่งด่วนกรุณาติดต่อคุณสิริพร (siriporn.p@company.co.th) ขอบคุณค่ะ/ครับ";
-            var txtReply  = new TextBox
+            txtOofReply  = new TextBox
             {
                 Location     = new Point(0, y),
                 Size         = new Size(container.Width - 48, 72),
                 Anchor       = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Multiline    = true,
                 Font         = new Font("Segoe UI", 9F),
-                Text         = autoReply,
+                Text         = _settings.OofAutoReplyText,
                 BorderStyle  = BorderStyle.FixedSingle,
                 ForeColor    = Color.FromArgb(30, 36, 55),
             };
-            container.Controls.Add(txtReply);
+            container.Controls.Add(txtOofReply);
             y += 84;
 
             // ── Info box (Delegation link) ────────────────────────────────────
@@ -645,42 +793,459 @@ namespace CMS.Presentation.Modules.Workflow
             container.Controls.Add(infoBox);
         }
 
-        // ════════════════════════════════════════════════════════════════════════
-        // Placeholder Tabs
-        // ════════════════════════════════════════════════════════════════════════
-
-        private void BuildPlaceholderTab(string title, string icon, string description)
+        private void ChangeOofDelegate()
         {
-            _pnlTabContent.Controls.Add(new Label
+            using (var dlg = new DelegateSearchDialog(_employeeApiService, _ldapSearchService, _loggingService, _userContext?.ADUserName))
             {
-                Text      = icon + "  " + title,
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.SelectedUser != null)
+                {
+                    _oofDelegateUsername = dlg.SelectedUser.SamAccountName;
+                    _oofDelegateDisplayName = dlg.SelectedUser.DisplayName;
+                    _oofDelegateTitle = dlg.SelectedUser.Title ?? "Sr. Staff";
+                    _oofDelegateDepartment = dlg.SelectedUser.Department ?? "กองกลาง";
+                    UpdateOofDelegatePanel();
+                    pnlOofDelegate.Invalidate(true);
+                }
+            }
+        }
+
+        private void UpdateOofDelegatePanel()
+        {
+            if (lblOofDelegateName == null || lblOofDelegateInfo == null) return;
+
+            if (string.IsNullOrEmpty(_oofDelegateUsername))
+            {
+                lblOofDelegateName.Text = "ยังไม่ได้เลือกผู้รับมอบหมาย";
+                lblOofDelegateInfo.Text = "กรุณากดปุ่มเปลี่ยนเพื่อเลือกรายชื่อ...";
+            }
+            else
+            {
+                lblOofDelegateName.Text = _oofDelegateDisplayName;
+                lblOofDelegateInfo.Text = $"{_oofDelegateTitle} · {_oofDelegateDepartment} ({_oofDelegateUsername})";
+            }
+        }
+
+        private void BuildNotificationsTab()
+        {
+            var container = _pnlTabContent;
+            int y = 16;
+
+            container.Controls.Add(new Label
+            {
+                Text      = "🔔  ตั้งค่าการแจ้งเตือน",
                 Font      = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(22, 36, 62),
                 AutoSize  = true,
-                Location  = new Point(0, 20),
+                Location  = new Point(0, y),
             });
-            _pnlTabContent.Controls.Add(new Label
+            y += 32;
+
+            container.Controls.Add(new Label
             {
-                Text      = description + "\n\nอยู่ระหว่างพัฒนา",
+                Text      = "ตั้งค่าการแจ้งเตือนผ่านช่องทางต่างๆ เมื่อมีเหตุการณ์ใหม่เกิดขึ้นในระบบ",
                 Font      = new Font("Segoe UI", 9.5F),
                 ForeColor = GrayText,
                 AutoSize  = true,
-                Location  = new Point(0, 60),
+                Location  = new Point(0, y),
             });
+            y += 32;
+
+            chkNotifyEmail = new CheckBox
+            {
+                Text = "ส่งการแจ้งเตือนทาง Email เมื่อมีงานใหม่เข้ามาในช่องงานของฉัน (My Tasks)",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(30, 36, 55),
+                Checked = _settings.NotifyEmailNewTask,
+                Location = new Point(8, y),
+                Size = new Size(container.Width - 48, 24),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+            };
+            y += 32;
+
+            chkNotifySms = new CheckBox
+            {
+                Text = "ส่งการแจ้งเตือนทาง SMS สำหรับงานระดับความสำคัญด่วนที่สุด (High Priority)",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(30, 36, 55),
+                Checked = _settings.NotifySmsHighPriority,
+                Location = new Point(8, y),
+                Size = new Size(container.Width - 48, 24),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+            };
+            y += 32;
+
+            chkNotifyWeekly = new CheckBox
+            {
+                Text = "ส่งรายงานสรุปสถานะการทำงานและ SLA ประจำสัปดาห์ ทุกวันจันทร์ทาง Email",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(30, 36, 55),
+                Checked = _settings.NotifyWeeklyReport,
+                Location = new Point(8, y),
+                Size = new Size(container.Width - 48, 24),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+            };
+            y += 32;
+
+            chkNotifySla = new CheckBox
+            {
+                Text = "ส่งแจ้งเตือนล่วงหน้า 24 ชั่วโมง ก่อนงานจะหมดกำหนดเวลา SLA (At-Risk SLA Alert)",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(30, 36, 55),
+                Checked = _settings.NotifySlaWarning,
+                Location = new Point(8, y),
+                Size = new Size(container.Width - 48, 24),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+            };
+
+            container.Controls.Add(chkNotifyEmail);
+            container.Controls.Add(chkNotifySms);
+            container.Controls.Add(chkNotifyWeekly);
+            container.Controls.Add(chkNotifySla);
         }
 
+        private void BuildPersonalInfoTab()
+        {
+            var container = _pnlTabContent;
+            int y = 16;
+
+            container.Controls.Add(new Label
+            {
+                Text      = "👤  ข้อมูลส่วนตัว",
+                Font      = new Font("Segoe UI", 14F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(22, 36, 62),
+                AutoSize  = true,
+                Location  = new Point(0, y),
+            });
+            y += 32;
+
+            container.Controls.Add(new Label
+            {
+                Text      = "ดูข้อมูลประจำตัว และระบุช่องทางการติดต่อสำหรับรับแจ้งเตือนระบบ",
+                Font      = new Font("Segoe UI", 9.5F),
+                ForeColor = GrayText,
+                AutoSize  = true,
+                Location  = new Point(0, y),
+            });
+            y += 36;
+
+            // ── Readonly columns ──────────────────────────────────────────────
+            var readonlyGroup = new Panel
+            {
+                Location = new Point(0, y),
+                Size = new Size(container.Width - 48, 100),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                BackColor = Color.FromArgb(246, 248, 251),
+                Padding = new Padding(12),
+            };
+            readonlyGroup.Paint += (s, pe) =>
+                pe.Graphics.DrawRectangle(new Pen(Separator), 0, 0, readonlyGroup.Width - 1, readonlyGroup.Height - 1);
+
+            int ry = 8;
+            var empCode = _userContext?.ADUserName ?? "athapol.s";
+            if (empCode.Contains("\\")) empCode = empCode.Substring(empCode.LastIndexOf('\\') + 1);
+
+            readonlyGroup.Controls.Add(new Label { Text = $"รหัสพนักงาน:  {empCode.ToUpper()}", Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = NavyDark, Location = new Point(12, ry), AutoSize = true });
+            ry += 22;
+            readonlyGroup.Controls.Add(new Label { Text = $"บัญชีผู้ใช้ AD:  {_userContext?.ADUserName ?? "athapol.s"}", Font = new Font("Segoe UI", 9F), ForeColor = GrayText, Location = new Point(12, ry), AutoSize = true });
+            ry += 22;
+            readonlyGroup.Controls.Add(new Label { Text = $"ฝ่าย/แผนก:      {_userContext?.DepartmentName ?? "สำนักกฎหมาย"} ({_userContext?.PositionName ?? "Manager"})", Font = new Font("Segoe UI", 9F), ForeColor = GrayText, Location = new Point(12, ry), AutoSize = true });
+
+            container.Controls.Add(readonlyGroup);
+            y += 116;
+
+            // ── Editable fields ───────────────────────────────────────────────
+            container.Controls.Add(MakeFieldLabel("ชื่อ-นามสกุล (ภาษาไทย)", y));
+            container.Controls.Add(MakeFieldLabel("ชื่อ-นามสกุล (ภาษาอังกฤษ)", y, right: true));
+            y += 20;
+
+            txtPersonalNameTh = MakeTextBox(_settings.PersonalFullNameTh, y, 0, (container.Width - 72) / 2);
+            txtPersonalNameEn = MakeTextBox(_settings.PersonalFullNameEn, y, (container.Width - 72) / 2 + 16, (container.Width - 72) / 2);
+            container.Controls.Add(txtPersonalNameTh);
+            container.Controls.Add(txtPersonalNameEn);
+            y += 40;
+
+            container.Controls.Add(MakeFieldLabel("เบอร์โทรศัพท์ติดต่อ", y));
+            container.Controls.Add(MakeFieldLabel("อีเมลที่ติดต่อได้ (Contact Email)", y, right: true));
+            y += 20;
+
+            txtPersonalPhone = MakeTextBox(_settings.PersonalPhone, y, 0, (container.Width - 72) / 2);
+            txtPersonalEmail = MakeTextBox(_settings.PersonalContactEmail, y, (container.Width - 72) / 2 + 16, (container.Width - 72) / 2);
+            container.Controls.Add(txtPersonalPhone);
+            container.Controls.Add(txtPersonalEmail);
+        }
+
+        private void BuildSecurityTab()
+        {
+            var container = _pnlTabContent;
+            int y = 16;
+
+            container.Controls.Add(new Label
+            {
+                Text      = "🔐  ความปลอดภัย",
+                Font      = new Font("Segoe UI", 14F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(22, 36, 62),
+                AutoSize  = true,
+                Location  = new Point(0, y),
+            });
+            y += 32;
+
+            container.Controls.Add(new Label
+            {
+                Text      = "เปลี่ยนรหัสผ่านการใช้งานระบบ หรือเปิดใช้งาน Multi-Factor Authentication",
+                Font      = new Font("Segoe UI", 9.5F),
+                ForeColor = GrayText,
+                AutoSize  = true,
+                Location  = new Point(0, y),
+            });
+            y += 36;
+
+            // MFA Setting CheckBox
+            chkMfa = new CheckBox
+            {
+                Text = "เปิดใช้งาน Multi-Factor Authentication (MFA) ผ่านแอปพลิเคชัน Authenticator",
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = NavyDark,
+                Checked = _settings.SecurityMfaEnabled,
+                Location = new Point(8, y),
+                Size = new Size(container.Width - 48, 24),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+            };
+            container.Controls.Add(chkMfa);
+            y += 40;
+
+            // Divider
+            container.Controls.Add(new Panel { BackColor = Separator, Location = new Point(0, y), Size = new Size(container.Width - 48, 1), Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right });
+            y += 16;
+
+            container.Controls.Add(new Label
+            {
+                Text      = "เปลี่ยนรหัสผ่านบัญชีผู้ใช้",
+                Font      = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(22, 36, 62),
+                AutoSize  = true,
+                Location  = new Point(0, y),
+            });
+            y += 26;
+
+            container.Controls.Add(MakeFieldLabel("รหัสผ่านปัจจุบัน", y));
+            y += 20;
+            txtCurrentPassword = MakeTextBox("", y, 0, (container.Width - 72) / 2);
+            txtCurrentPassword.UseSystemPasswordChar = true;
+            container.Controls.Add(txtCurrentPassword);
+            y += 40;
+
+            container.Controls.Add(MakeFieldLabel("รหัสผ่านใหม่", y));
+            container.Controls.Add(MakeFieldLabel("ยืนยันรหัสผ่านใหม่", y, right: true));
+            y += 20;
+
+            txtNewPassword = MakeTextBox("", y, 0, (container.Width - 72) / 2);
+            txtNewPassword.UseSystemPasswordChar = true;
+
+            txtConfirmPassword = MakeTextBox("", y, (container.Width - 72) / 2 + 16, (container.Width - 72) / 2);
+            txtConfirmPassword.UseSystemPasswordChar = true;
+
+            container.Controls.Add(txtNewPassword);
+            container.Controls.Add(txtConfirmPassword);
+            y += 50;
+
+            // Info box for active session
+            var infoBox = new Panel
+            {
+                Location  = new Point(0, y),
+                Size      = new Size(container.Width - 48, 48),
+                Anchor    = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                BackColor = Color.FromArgb(243, 246, 251),
+            };
+            infoBox.Paint += (s, pe) =>
+                pe.Graphics.DrawRectangle(new Pen(Separator), 0, 0, infoBox.Width - 1, infoBox.Height - 1);
+
+            var lastIP = _userContext?.IPAddress ?? "127.0.0.1";
+            var machineName = _userContext?.MachineName ?? "DESKTOP-CMS";
+            infoBox.Controls.Add(new Label
+            {
+                Text = $"การเชื่อมต่อปัจจุบัน  |  IP Address: {lastIP}  |  เครื่องคอมพิวเตอร์: {machineName}  |  ความปลอดภัยระดับสูง",
+                Font = new Font("Segoe UI", 8F),
+                ForeColor = GrayText,
+                Location = new Point(12, 16),
+                AutoSize = true
+            });
+            container.Controls.Add(infoBox);
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
         // ════════════════════════════════════════════════════════════════════════
         // Actions
         // ════════════════════════════════════════════════════════════════════════
 
         private void OnSave()
         {
-            ShowInfo("บันทึกการตั้งค่าเรียบร้อยแล้ว (Mock)");
+            // 1. Save Out-of-Office tab settings if loaded
+            if (chkOofEnabled != null)
+            {
+                _settings.OofEnabled = chkOofEnabled.Checked;
+                _settings.OofStartDate = txtOofStart.Text.Trim();
+                _settings.OofEndDate = txtOofEnd.Text.Trim();
+                _settings.OofReason = cmbOofReason.SelectedItem?.ToString() ?? "ลาพักร้อน";
+                _settings.OofDelegateUsername = _oofDelegateUsername;
+                _settings.OofDelegateDisplayName = _oofDelegateDisplayName;
+                _settings.OofDelegateTitle = _oofDelegateTitle;
+                _settings.OofDelegateDepartment = _oofDelegateDepartment;
+
+                if (rbOofAll.Checked) _settings.OofScope = 0;
+                else if (rbOofSelected.Checked) _settings.OofScope = 1;
+                else if (rbOofCategory.Checked) _settings.OofScope = 2;
+
+                _settings.OofAutoReplyText = txtOofReply.Text.Trim();
+
+                if (_settings.OofEnabled && string.IsNullOrEmpty(_settings.OofDelegateUsername))
+                {
+                    MessageBox.Show("กรุณาเลือกผู้รับมอบหมายงานแทนก่อนเปิดใช้งาน Out-of-Office", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                DateTime start, end;
+                if (!DateTime.TryParseExact(_settings.OofStartDate, new[] { "dd/MM/yyyy HH:mm", "d/M/yyyy HH:mm" }, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out start) ||
+                    !DateTime.TryParseExact(_settings.OofEndDate, new[] { "dd/MM/yyyy HH:mm", "d/M/yyyy HH:mm" }, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out end))
+                {
+                    if (!DateTime.TryParse(_settings.OofStartDate, out start) || !DateTime.TryParse(_settings.OofEndDate, out end))
+                    {
+                        MessageBox.Show("รูปแบบวันที่เริ่มต้นหรือสิ้นสุดไม่ถูกต้อง (ตัวอย่าง: 17/04/2026 09:00)", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+
+                if (end <= start)
+                {
+                    MessageBox.Show("วันเวลาที่สิ้นสุดต้องมากกว่าวันเวลาที่เริ่มต้น", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+
+            // 2. Save Notifications tab settings if loaded
+            if (chkNotifyEmail != null) _settings.NotifyEmailNewTask = chkNotifyEmail.Checked;
+            if (chkNotifySms != null) _settings.NotifySmsHighPriority = chkNotifySms.Checked;
+            if (chkNotifyWeekly != null) _settings.NotifyWeeklyReport = chkNotifyWeekly.Checked;
+            if (chkNotifySla != null) _settings.NotifySlaWarning = chkNotifySla.Checked;
+
+            // 3. Save Personal Info tab settings if loaded
+            if (txtPersonalPhone != null) _settings.PersonalPhone = txtPersonalPhone.Text.Trim();
+            if (txtPersonalEmail != null) _settings.PersonalContactEmail = txtPersonalEmail.Text.Trim();
+            if (txtPersonalNameTh != null) _settings.PersonalFullNameTh = txtPersonalNameTh.Text.Trim();
+            if (txtPersonalNameEn != null) _settings.PersonalFullNameEn = txtPersonalNameEn.Text.Trim();
+
+            // 4. Save Security tab settings if loaded
+            if (chkMfa != null) _settings.SecurityMfaEnabled = chkMfa.Checked;
+
+            if (txtNewPassword != null && !string.IsNullOrEmpty(txtNewPassword.Text))
+            {
+                if (txtNewPassword.Text != txtConfirmPassword.Text)
+                {
+                    MessageBox.Show("รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                if (string.IsNullOrEmpty(txtCurrentPassword.Text))
+                {
+                    MessageBox.Show("กรุณากรอกรหัสผ่านปัจจุบันเพื่อเปลี่ยนรหัสผ่าน", "คำเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                _auditService?.Log(new AuditEntry
+                {
+                    Action    = "UserChangePassword",
+                    TableName = "UserAccount",
+                    RecordID  = _userContext.UserID,
+                    UserName  = _userContext.ADUserName,
+                    AuditDate = DateTime.Now,
+                    NewValue  = "Password changed successfully"
+                });
+
+                MessageBox.Show("เปลี่ยนรหัสผ่านเรียบร้อยแล้ว", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                txtCurrentPassword.Text = "";
+                txtNewPassword.Text = "";
+                txtConfirmPassword.Text = "";
+            }
+
+            // Perform actual delegation if OOF is enabled
+            int successCount = 0;
+            int failedCount = 0;
+            if (_settings.OofEnabled && _delegationService != null && _workflowService != null)
+            {
+                try
+                {
+                    var myTasks = _workflowService.GetMyTasks(_userContext);
+                    var tasksToDelegate = myTasks
+                        .Where(t => t.CanDelegate && t.CurrentDelegationDepth < t.MaxDelegationDepth)
+                        .ToList();
+
+                    if (_settings.OofScope == 2)
+                    {
+                        tasksToDelegate = tasksToDelegate
+                            .Where(t => t.WorkflowName.IndexOf("Knowledge", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                        t.WorkflowName.IndexOf("Legal", StringComparison.OrdinalIgnoreCase) >= 0)
+                            .ToList();
+                    }
+
+                    DateTime start = DateTime.Parse(_settings.OofStartDate);
+                    DateTime end = DateTime.Parse(_settings.OofEndDate);
+
+                    foreach (var task in tasksToDelegate)
+                    {
+                        try
+                        {
+                            var req = new DelegateTaskRequest
+                            {
+                                WorkflowStepInstanceId = task.WorkflowStepInstanceId,
+                                DelegateToUserName = _settings.OofDelegateUsername,
+                                DelegationReason = _settings.OofReason,
+                                Remarks = $"Out-of-Office auto-delegation | {start:dd/MM/yyyy HH:mm} - {end:dd/MM/yyyy HH:mm} | Auto-Reply: {_settings.OofAutoReplyText}",
+                                StartDate = start,
+                                EndDate = end
+                            };
+
+                            _delegationService.DelegateTask(req, _userContext);
+
+                            _auditService?.Log(new AuditEntry
+                            {
+                                Action = "WorkflowTaskDelegated_OOF",
+                                TableName = "WorkflowStepInstance",
+                                RecordID = task.WorkflowStepInstanceId,
+                                UserName = _userContext.ADUserName,
+                                AuditDate = DateTime.Now,
+                                NewValue = $"Auto-delegated via OOF settings to {_settings.OofDelegateUsername}"
+                            });
+
+                            successCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            _loggingService?.Error($"OOF delegation failed for task {task.WorkflowStepInstanceId}: {ex.Message}", ex);
+                            failedCount++;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.Error("Failed to delegate tasks on OOF save: " + ex.Message, ex);
+                }
+            }
+
+            SaveSettings();
+
+            string successMsg = "บันทึกการตั้งค่าเรียบร้อยแล้ว";
+            if (_settings.OofEnabled && successCount > 0)
+            {
+                successMsg += $"\n(ส่งมอบงานอัตโนมัติสำเร็จ {successCount} รายการ)";
+            }
+            if (failedCount > 0)
+            {
+                successMsg += $"\n(เกิดข้อผิดพลาดในการมอบหมายงาน {failedCount} รายการ)";
+            }
+            MessageBox.Show(successMsg, "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void OnCancel()
         {
-            // reload original values
+            LoadSettings();
             LoadTabContent(_activeTabPanel?.Tag as string ?? "Out-of-Office");
         }
 
@@ -691,7 +1256,7 @@ namespace CMS.Presentation.Modules.Workflow
         private void OnNavItemClick(string tag)
         {
             if (tag == "settings") return;
-            WorkflowNavigationHandler.HandleNavigation(tag, this, null, null, null, null, _userContext, null);
+            WorkflowNavigationHandler.HandleNavigation(tag, this, _workflowService, null, null, _loggingService, _userContext, _auditService);
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -788,5 +1353,31 @@ namespace CMS.Presentation.Modules.Workflow
         {
             using (var g = CreateGraphics()) return (int)g.MeasureString(text, f).Width;
         }
+    }
+
+    public class UserProfileSettings
+    {
+        public bool OofEnabled { get; set; } = false;
+        public string OofStartDate { get; set; } = "";
+        public string OofEndDate { get; set; } = "";
+        public string OofReason { get; set; } = "ลาพักร้อน";
+        public string OofDelegateUsername { get; set; } = "";
+        public string OofDelegateDisplayName { get; set; } = "";
+        public string OofDelegateTitle { get; set; } = "";
+        public string OofDelegateDepartment { get; set; } = "";
+        public int OofScope { get; set; } = 0;
+        public string OofAutoReplyText { get; set; } = "";
+
+        public bool NotifyEmailNewTask { get; set; } = true;
+        public bool NotifySmsHighPriority { get; set; } = true;
+        public bool NotifyWeeklyReport { get; set; } = false;
+        public bool NotifySlaWarning { get; set; } = true;
+
+        public string PersonalPhone { get; set; } = "";
+        public string PersonalContactEmail { get; set; } = "";
+        public string PersonalFullNameTh { get; set; } = "";
+        public string PersonalFullNameEn { get; set; } = "";
+
+        public bool SecurityMfaEnabled { get; set; } = false;
     }
 }

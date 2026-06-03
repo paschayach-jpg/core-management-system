@@ -23,6 +23,9 @@ namespace CMS.Presentation.Modules.Workflow
         private readonly Color _navHover = Color.FromArgb(245, 249, 255);
         private int _activeTabIndex = 0;
 
+        public string SourceNavTag { get; set; }
+        public int WorkflowInstanceId => _workflowInstanceId;
+
         public WorkflowDetailFormNew()
         {
             InitializeComponent();
@@ -562,6 +565,11 @@ namespace CMS.Presentation.Modules.Workflow
                     b.Invalidate();
                 }
             }
+            if (idx == 1)
+            {
+                WorkflowNavigationHandler.HandleNavigation("visualflow", this, _workflowService, _templateService, null, _loggingService, _userContext, null, _workflowInstanceId);
+                return;
+            }
             if (idx != 0)
                 MessageBox.Show("หน้า '" + new[] { "Timeline", "Visual Flow", "Audit Log" }[idx] + "' อยู่ระหว่างพัฒนา", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
@@ -618,6 +626,19 @@ namespace CMS.Presentation.Modules.Workflow
         {
             if (string.IsNullOrWhiteSpace(txtGlobalSearch.Text))
                 txtGlobalSearch.Text = "ค้นหา Workflow, Template, คำสั่ง...";
+        }
+
+        private void btnBack_Click(object sender, EventArgs e)
+        {
+            string targetTag = string.IsNullOrEmpty(SourceNavTag) ? "mytasks" : SourceNavTag;
+            WorkflowNavigationHandler.HandleNavigation(
+                targetTag,
+                this,
+                _workflowService,
+                _templateService,
+                null, // slaCalculator
+                _loggingService,
+                _userContext);
         }
     }
 }

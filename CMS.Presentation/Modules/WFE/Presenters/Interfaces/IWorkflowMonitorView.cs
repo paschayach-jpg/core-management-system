@@ -36,6 +36,11 @@ namespace CMS.Presentation.Modules.Workflow.Presenters.Interfaces
         void DisplayEscalationStats(EscalationStatistics stats);
 
         /// <summary>
+        /// Display system-wide workflow instances in the list
+        /// </summary>
+        void DisplayWorkflowInstances(List<WorkflowInstanceResult> instances);
+
+        /// <summary>
         /// Show error message
         /// </summary>
         void ShowError(string message);

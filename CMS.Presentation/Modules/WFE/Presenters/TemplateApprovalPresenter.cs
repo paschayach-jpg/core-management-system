@@ -58,11 +58,29 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 };
 
                 var result = _templateService.GetTemplates(filter, _userContext);
+                var pendingCount = result.TotalCount;
+
+                if (pendingCount == 0)
+                {
+                    var allFilter = new WorkflowTemplateFilter
+                    {
+                        PageNumber    = _currentPage,
+                        PageSize      = PageSize,
+                        SearchKeyword = _view.GetSearchFilter(),
+                        Category      = _view.GetCategoryFilter()
+                    };
+                    result = _templateService.GetTemplates(allFilter, _userContext);
+                    _loggingService.Info(string.Format("TemplateApproval: no pending templates, showing {0} templates in read-only mode", result.TotalCount));
+                }
+                else
+                {
+                    _loggingService.Info(string.Format("TemplateApproval: loaded {0} pending templates", pendingCount));
+                }
+
                 _pendingTemplates = new List<WorkflowTemplateResult>(result.Items);
 
                 _view.DisplayPendingTemplates(result);
-                _view.UpdatePendingCount(result.TotalCount);
-                _loggingService.Info(string.Format("TemplateApproval: loaded {0} pending templates", result.TotalCount));
+                _view.UpdatePendingCount(pendingCount);
             }
             catch (Exception ex)
             {

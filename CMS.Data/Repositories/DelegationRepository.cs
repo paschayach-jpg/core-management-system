@@ -39,6 +39,9 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@DelegatedTo",            delegation.DelegatedTo);
                     cmd.Parameters.AddWithValue("@DelegationReason",       delegation.DelegationReason);
                     cmd.Parameters.AddWithValue("@MaxDelegationDepth",     maxDelegationDepth);
+                    cmd.Parameters.AddWithValue("@StartDate",              (object)delegation.StartDate ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@EndDate",                (object)delegation.EndDate ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Remarks",                (object)delegation.Remarks ?? DBNull.Value);
 
                     var outParam = new SqlParameter("@NewWFDelegationId", SqlDbType.Int)
                     {
@@ -62,7 +65,8 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "SELECT WFDelegationId, WorkflowStepInstanceId, DelegatedFrom, DelegatedTo, " +
-                    "       DelegationReason, DelegationDate, DelegationDepth, IsActive, IsDeleted " +
+                    "       DelegationReason, DelegationDate, DelegationDepth, IsActive, IsDeleted, " +
+                    "       StartDate, EndDate, Remarks " +
                     "FROM   dbo.WFDelegation " +
                     "WHERE  WFDelegationId = @WFDelegationId " +
                     "  AND  IsDeleted = 0", conn))
@@ -106,7 +110,8 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "SELECT TOP 1 " +
                     "       WFDelegationId, WorkflowStepInstanceId, DelegatedFrom, DelegatedTo, " +
-                    "       DelegationReason, DelegationDate, DelegationDepth, IsActive, IsDeleted " +
+                    "       DelegationReason, DelegationDate, DelegationDepth, IsActive, IsDeleted, " +
+                    "       StartDate, EndDate, Remarks " +
                     "FROM   dbo.WFDelegation " +
                     "WHERE  WorkflowStepInstanceId = @WorkflowStepInstanceId " +
                     "  AND  IsActive  = 1 " +
@@ -195,11 +200,14 @@ namespace CMS.Data.Repositories
                 WorkflowStepInstanceId  = (int)reader["WorkflowStepInstanceId"],
                 DelegatedFrom           = (string)reader["DelegatedFrom"],
                 DelegatedTo             = (string)reader["DelegatedTo"],
-                DelegationReason        = (string)reader["DelegationReason"],
+                DelegationReason        = reader["DelegationReason"] == DBNull.Value ? null : (string)reader["DelegationReason"],
                 DelegationDate          = (DateTime)reader["DelegationDate"],
                 DelegationDepth         = (int)reader["DelegationDepth"],
                 IsActive                = (bool)reader["IsActive"],
-                IsDeleted               = (bool)reader["IsDeleted"]
+                IsDeleted               = (bool)reader["IsDeleted"],
+                StartDate               = reader["StartDate"] == DBNull.Value ? null : (DateTime?)reader["StartDate"],
+                EndDate                 = reader["EndDate"] == DBNull.Value ? null : (DateTime?)reader["EndDate"],
+                Remarks                 = reader["Remarks"] == DBNull.Value ? null : (string)reader["Remarks"]
             };
         }
     }

@@ -548,7 +548,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.btnCreateDelegation.TabIndex = 2;
             this.btnCreateDelegation.Text = "+ สร้าง Delegation";
             this.btnCreateDelegation.UseVisualStyleBackColor = false;
-            this.btnCreateDelegation.Click += new System.EventHandler(this.btnCancel_Click);
+            this.btnCreateDelegation.Click += new System.EventHandler(this.btnCreateDelegation_Click);
             // 
             // lblSubtitle
             // 

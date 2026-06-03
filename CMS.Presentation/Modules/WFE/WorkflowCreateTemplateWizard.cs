@@ -209,38 +209,15 @@ namespace CMS.Presentation.Modules.Workflow
 
         private string SerializeWizardState()
         {
-            var sb = new System.Text.StringBuilder();
-
-            // Starting Mode
-            if (_wizardState.StartingMode == "copy")
+            try
             {
-                sb.AppendLine($"StartingMode: copy");
-                sb.AppendLine($"CopiedFromTemplate: {_wizardState.CopyFromTemplateId} ({_wizardState.CopyFromTemplateName})");
-                sb.AppendLine();
+                return Newtonsoft.Json.JsonConvert.SerializeObject(_wizardState, Newtonsoft.Json.Formatting.Indented);
             }
-            else if (_wizardState.StartingMode == "import")
+            catch (Exception ex)
             {
-                sb.AppendLine($"StartingMode: import");
-                sb.AppendLine($"ImportedFrom: {_wizardState.ImportedFilePath}");
-                sb.AppendLine();
+                _loggingService?.Error($"Error serializing wizard state: {ex.Message}", ex);
+                return "{}";
             }
-            else
-            {
-                sb.AppendLine($"StartingMode: fresh");
-                sb.AppendLine();
-            }
-
-            sb.AppendLine("Steps:");
-            foreach (var step in _wizardState.Steps)
-            {
-                sb.AppendLine($"  - {step.StepNumber}: {step.StepName} ({step.Action}) -> {step.NextStep}");
-            }
-            sb.AppendLine("\nApprovers:");
-            foreach (var approver in _wizardState.Approvers)
-            {
-                sb.AppendLine($"  - {approver.StepName}: {approver.ApproverGroup} (Level: {approver.Level})");
-            }
-            return sb.ToString();
         }
     }
 }

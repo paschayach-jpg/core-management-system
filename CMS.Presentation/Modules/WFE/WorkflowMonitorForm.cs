@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
@@ -29,6 +30,15 @@ namespace CMS.Presentation.Modules.Workflow
         private int _currentPage = 1;
         private int _totalPages  = 1;
         private const int PageSize = 8;
+
+        // ── Tooltip (custom, avoids owner-draw flicker) ──────────────────────────
+        private readonly ToolTip _lvTooltip = new ToolTip { AutomaticDelay = 600, AutoPopDelay = 4000, ShowAlways = true };
+        private string _lastTooltip = null;
+
+        // ── Double-buffer for owner-draw ListView (eliminates WM_ERASEBKGND flicker) ──
+        [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+        private const uint LVM_SETEXTENDEDLISTVIEWSTYLE = 0x1036;
+        private const uint LVS_EX_DOUBLEBUFFER          = 0x00010000;
 
         public WorkflowMonitorForm(
             IWorkflowService workflowService,
@@ -234,11 +244,15 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void SetupListView()
         {
-            lvInstances.SmallImageList = new ImageList { ImageSize = new Size(1, 46) };
+            lvInstances.SmallImageList   = new ImageList { ImageSize = new Size(1, 46) };
+            lvInstances.ShowItemToolTips = false;   // prevent owner-draw flicker/disappear bug
+            SendMessage(lvInstances.Handle, LVM_SETEXTENDEDLISTVIEWSTYLE, (IntPtr)LVS_EX_DOUBLEBUFFER, (IntPtr)LVS_EX_DOUBLEBUFFER);
             lvInstances.DrawColumnHeader += LvInstances_DrawColumnHeader;
             lvInstances.DrawItem         += LvInstances_DrawItem;
             lvInstances.DrawSubItem      += LvInstances_DrawSubItem;
             lvInstances.SelectedIndexChanged += (s, e) => UpdateResultLabel();
+            lvInstances.MouseMove  += LvInstances_MouseMove;
+            lvInstances.MouseLeave += (s, e) => { _lvTooltip.Hide(lvInstances); _lastTooltip = null; };
 
             cmbFilterStatus.SelectedIndexChanged += (s, e) => ApplyLocalFilter();
             cmbFilterType.SelectedIndexChanged   += (s, e) => ApplyLocalFilter();
@@ -251,6 +265,18 @@ namespace CMS.Presentation.Modules.Workflow
             btnNext.Click         += (s, e) => GoPage(+1);
             btnRefresh.Click      += btnRefresh_Click;
             btnExport.Click       += (s, e) => MessageBox.Show("ฟังก์ชัน Export อยู่ระหว่างพัฒนา", "ข้อมูล");
+        }
+
+        private void LvInstances_MouseMove(object sender, MouseEventArgs e)
+        {
+            var item = lvInstances.GetItemAt(e.X, e.Y);
+            var row  = item?.Tag as MonitorRowItem;
+            if (row == null) { _lvTooltip.Hide(lvInstances); _lastTooltip = null; return; }
+
+            var tip = row.WorkflowName;
+            if (tip == _lastTooltip) return;
+            _lastTooltip = tip;
+            _lvTooltip.Show(tip, lvInstances, e.X + 12, e.Y + 12);
         }
 
         private void LvInstances_DrawColumnHeader(object sender, DrawListViewColumnHeaderEventArgs e)

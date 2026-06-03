@@ -10,6 +10,7 @@ using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.Workflow.Presenters;
 using CMS.Presentation.Modules.Workflow.Presenters.Interfaces;
 using CMS.Services.Interfaces;
+using CMS.Services.DTOs;
 
 namespace CMS.Presentation.Modules.Workflow
 {
@@ -22,6 +23,11 @@ namespace CMS.Presentation.Modules.Workflow
         // ── Chart data ───────────────────────────────────────────────────────────
         private List<SLATrendData> _trendData    = new List<SLATrendData>();
         private List<CycleTimeBar> _cycleTimeBars = new List<CycleTimeBar>();
+        private List<SLAMetricRow> _metricsList  = new List<SLAMetricRow>();
+
+        private DateTime _filterFromDate = DateTime.Today.AddDays(-30);
+        private DateTime _filterToDate = DateTime.Now;
+        private int? _filterTemplateId = null;
 
         // ── Template list UI refs ────────────────────────────────────────────────
         private Panel _pnlTemplateListContent;
@@ -86,6 +92,8 @@ namespace CMS.Presentation.Modules.Workflow
             BuildTrendChartPanel();
             BuildOverduePanel();
             BuildCycleChartPanel();
+
+            btnExportHeader.Click += (s, ev) => OnToolbarClick("excel");
 
             // Only load data if presenter is available
             if (_presenter != null)
@@ -272,9 +280,115 @@ namespace CMS.Presentation.Modules.Workflow
                     if (_presenter != null) _presenter.GenerateReport();
                     break;
                 case "excel":
-                    var dlg = new SaveFileDialog { Filter = "Excel (*.xlsx)|*.xlsx", DefaultExt = "xlsx" };
+                    var dlg = new SaveFileDialog { Filter = "CSV (*.csv)|*.csv", DefaultExt = "csv" };
                     if (dlg.ShowDialog() == DialogResult.OK && _presenter != null)
                         _presenter.ExportToExcel(dlg.FileName);
+                    break;
+                case "period":
+                    using (var form = new Form())
+                    {
+                        form.Text = "เลือกช่วงเวลาข้อมูล";
+                        form.Size = new Size(350, 180);
+                        form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        form.StartPosition = FormStartPosition.CenterParent;
+                        form.MaximizeBox = false;
+                        form.MinimizeBox = false;
+
+                        var lblStart = new Label { Text = "วันที่เริ่มต้น:", Location = new Point(20, 20), AutoSize = true };
+                        var dtpStart = new DateTimePicker { Location = new Point(130, 18), Width = 170, Format = DateTimePickerFormat.Short, Value = _filterFromDate };
+
+                        var lblEnd = new Label { Text = "วันที่สิ้นสุด:", Location = new Point(20, 55), AutoSize = true };
+                        var dtpEnd = new DateTimePicker { Location = new Point(130, 53), Width = 170, Format = DateTimePickerFormat.Short, Value = _filterToDate };
+
+                        var btnOk = new Button { Text = "ตกลง", DialogResult = DialogResult.OK, Location = new Point(130, 95), Width = 80 };
+                        var btnCancel = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Location = new Point(220, 95), Width = 80 };
+
+                        form.Controls.AddRange(new Control[] { lblStart, dtpStart, lblEnd, dtpEnd, btnOk, btnCancel });
+                        form.AcceptButton = btnOk;
+                        form.CancelButton = btnCancel;
+
+                        if (form.ShowDialog(this) == DialogResult.OK)
+                        {
+                            if (dtpEnd.Value < dtpStart.Value)
+                            {
+                                MessageBox.Show("วันสิ้นสุดต้องไม่น้อยกว่าวันเริ่มต้น", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                            }
+                            _filterFromDate = dtpStart.Value.Date;
+                            _filterToDate = dtpEnd.Value.Date.AddDays(1).AddSeconds(-1);
+                            if (_presenter != null) _presenter.GenerateReport();
+                        }
+                    }
+                    break;
+                case "filter":
+                    var templateService = (this.MdiParent as MDI_Container)?.WorkflowTemplateService;
+                    if (templateService == null)
+                    {
+                        MessageBox.Show("Template service is not available.", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    try
+                    {
+                        var templates = templateService.GetTemplates(
+                            new WorkflowTemplateFilter
+                            {
+                                PageNumber = 1,
+                                PageSize = 500,
+                                SortBy = "Name",
+                                SortDirection = "ASC"
+                            },
+                            _userContext);
+
+                        using (var form = new Form())
+                        {
+                            form.Text = "กรองตาม Template";
+                            form.Size = new Size(400, 160);
+                            form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                            form.StartPosition = FormStartPosition.CenterParent;
+                            form.MaximizeBox = false;
+                            form.MinimizeBox = false;
+
+                            var lblTemp = new Label { Text = "เลือก Template:", Location = new Point(20, 25), AutoSize = true };
+                            var cmbTemp = new ComboBox { Location = new Point(130, 22), Width = 230, DropDownStyle = ComboBoxStyle.DropDownList };
+
+                            cmbTemp.Items.Add(new TemplateComboOption { Id = null, Name = "ทุก Template" });
+                            foreach (var template in templates.Items ?? Enumerable.Empty<WorkflowTemplateResult>())
+                            {
+                                cmbTemp.Items.Add(new TemplateComboOption { Id = template.WorkflowDefinitionId, Name = template.Name });
+                            }
+
+                            // Select current filter
+                            cmbTemp.SelectedIndex = 0;
+                            if (_filterTemplateId.HasValue)
+                            {
+                                for (int idx = 0; idx < cmbTemp.Items.Count; idx++)
+                                {
+                                    if (((TemplateComboOption)cmbTemp.Items[idx]).Id == _filterTemplateId)
+                                    {
+                                        cmbTemp.SelectedIndex = idx;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            var btnOk = new Button { Text = "ตกลง", DialogResult = DialogResult.OK, Location = new Point(180, 75), Width = 80 };
+                            var btnCancel = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Location = new Point(270, 75), Width = 80 };
+
+                            form.Controls.AddRange(new Control[] { lblTemp, cmbTemp, btnOk, btnCancel });
+                            form.AcceptButton = btnOk;
+                            form.CancelButton = btnCancel;
+
+                            if (form.ShowDialog(this) == DialogResult.OK)
+                            {
+                                _filterTemplateId = ((TemplateComboOption)cmbTemp.SelectedItem).Id;
+                                if (_presenter != null) _presenter.GenerateReport();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("ไม่สามารถโหลดรายการ template ได้: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                     break;
                 default:
                     MessageBox.Show(string.Format("ฟังก์ชัน '{0}' อยู่ระหว่างพัฒนา", tag),
@@ -546,7 +660,8 @@ namespace CMS.Presentation.Modules.Workflow
         public void DisplayMetrics(List<SLAMetricRow> metrics)
         {
             if (InvokeRequired) { Invoke(new Action(() => DisplayMetrics(metrics))); return; }
-
+            _metricsList = metrics ?? new List<SLAMetricRow>();
+ 
             _pnlTemplateListContent.Controls.Clear();
 
             int y = 4;
@@ -683,7 +798,7 @@ namespace CMS.Presentation.Modules.Workflow
             lblCardComplianceSub.Text   = summary.ComplianceDelta;
             lblCardCycleTimeCount.Text  = string.Format("{0:F1} วัน", summary.AvgCycleTimeDays);
             lblCardCycleTimeSub.Text    = summary.CycleTimeDelta;
-            lblCardOverdueCount.Text    = string.Format("{0} / {1}", summary.OverdueCount, summary.TotalCount);
+            lblCardOverdueCount.Text = string.Format("{0} / {1}", summary.OverdueCount, summary.TotalCount);
             if (summary.TotalCount > 0)
                 lblCardOverdueSub.Text  = string.Format("{0:F1}% ของทั้งหมด",
                     (double)summary.OverdueCount / summary.TotalCount * 100);
@@ -703,13 +818,111 @@ namespace CMS.Presentation.Modules.Workflow
             _pnlOverdueContent?.Invalidate();
         }
 
+        public void ExportToExcel(string filePath)
+        {
+            try
+            {
+                using (var sw = new System.IO.StreamWriter(filePath, false, new System.Text.UTF8Encoding(true)))
+                {
+                    // Section 1: KPI Summary
+                    sw.WriteLine("=== SLA KPI SUMMARY ===");
+                    sw.WriteLine("Metric,Value,Detail");
+                    sw.WriteLine($"SLA Compliance,{lblCardComplianceCount.Text},{lblCardComplianceSub.Text}");
+                    sw.WriteLine($"Avg Cycle Time,{lblCardCycleTimeCount.Text},{lblCardCycleTimeSub.Text}");
+                    sw.WriteLine($"Overdue Tasks,{lblCardOverdueCount.Text},{lblCardOverdueSub.Text}");
+                    sw.WriteLine($"Completed MTD,{lblCardCompletedCount.Text},{lblCardCompletedSub.Text}");
+                    sw.WriteLine();
+
+                    // Section 2: SLA Compliance per Template
+                    sw.WriteLine("=== SLA COMPLIANCE PER TEMPLATE ===");
+                    sw.WriteLine("Template Code,Template Name,Total Tasks,Overdue Tasks,Compliance %");
+                    if (_metricsList != null)
+                    {
+                        foreach (var m in _metricsList)
+                        {
+                            sw.WriteLine($"\"{EscapeCsv(m.TemplateCode)}\",\"{EscapeCsv(m.TemplateName)}\",{m.Total},{m.Overdue},{m.CompliancePercent:F1}%");
+                        }
+                    }
+                    sw.WriteLine();
+
+                    // Section 3: Overdue by Person
+                    sw.WriteLine("=== OVERDUE BY PERSON ===");
+                    sw.WriteLine("User Name,Department,Overdue Count,Avg Overdue Days");
+                    if (_overdueRows != null)
+                    {
+                        foreach (var o in _overdueRows)
+                        {
+                            sw.WriteLine($"\"{EscapeCsv(o.UserName)}\",\"{EscapeCsv(o.Department)}\",{o.OverdueCount},{o.AvgOverdueDays:F1}");
+                        }
+                    }
+                    sw.WriteLine();
+
+                    // Section 4: SLA Trend Data
+                    sw.WriteLine("=== SLA TREND DATA ===");
+                    sw.WriteLine("Week,Compliance %");
+                    if (_trendData != null)
+                    {
+                        foreach (var t in _trendData)
+                        {
+                            sw.WriteLine($"\"{EscapeCsv(t.WeekLabel)}\",{t.CompliancePercent:F1}%");
+                        }
+                    }
+                    sw.WriteLine();
+
+                    // Section 5: Cycle Time Distribution
+                    sw.WriteLine("=== CYCLE TIME DISTRIBUTION ===");
+                    sw.WriteLine("Range,Count,Category");
+                    if (_cycleTimeBars != null)
+                    {
+                        foreach (var c in _cycleTimeBars)
+                        {
+                            sw.WriteLine($"\"{EscapeCsv(c.Label)}\",{c.Count},\"{EscapeCsv(c.Category)}\"");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("เกิดข้อผิดพลาดในการเขียนไฟล์: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private string EscapeCsv(string field)
+        {
+            if (string.IsNullOrEmpty(field)) return string.Empty;
+            return field.Replace("\"", "\"\"");
+        }
+ 
+        public void ShowError(string message) =>
+            MessageBox.Show(message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+ 
+        public void ShowInfo(string message) =>
+            MessageBox.Show(message, "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+ 
+        public void GetDateRange(out DateTime fromDate, out DateTime toDate)
+        {
+            fromDate = _filterFromDate;
+            toDate   = _filterToDate;
+        }
+ 
+        public int? GetTemplateFilter() => _filterTemplateId;
+        public string GetUserFilter()   => string.Empty;
+
+        private class TemplateComboOption
+        {
+            public int? Id { get; set; }
+            public string Name { get; set; }
+            public override string ToString() => Name;
+        }
+
         public void UpdateSubtitle(DateTime fromDate, DateTime toDate)
         {
             if (InvokeRequired) { Invoke(new Action(() => UpdateSubtitle(fromDate, toDate))); return; }
             int thaiFrom = fromDate.Year + 543;
             int thaiTo   = toDate.Year + 543;
-            lblSubtitle.Text = string.Format("ช่วงข้อมูล: {0:dd/MM}/{1} – {2:dd/MM}/{3} · ทุก Template · ทุกหน่วยงาน",
-                fromDate, thaiFrom, toDate, thaiTo);
+            string templateText = _filterTemplateId.HasValue ? "Template ID: " + _filterTemplateId.Value : "ทุก Template";
+            lblSubtitle.Text = string.Format("ช่วงข้อมูล: {0:dd/MM}/{1} – {2:dd/MM}/{3} · {4} · ทุกหน่วยงาน",
+                fromDate, thaiFrom, toDate, thaiTo, templateText);
         }
 
         public void DisplayComplianceTrendChart(List<SLATrendData> trendData)
@@ -749,27 +962,7 @@ namespace CMS.Presentation.Modules.Workflow
             // Legacy — superseded by DisplayCycleTimeDistribution
         }
 
-        public void ExportToExcel(string filePath)
-        {
-            MessageBox.Show("Export ไปยัง " + filePath + "\n(ฟังก์ชันนี้อยู่ระหว่างพัฒนา)",
-                "Export", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
 
-        public void ShowError(string message) =>
-            MessageBox.Show(message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-        public void ShowInfo(string message) =>
-            MessageBox.Show(message, "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-        public void GetDateRange(out DateTime fromDate, out DateTime toDate)
-        {
-            // Default: last 30 days (to match default "30 วัน" tab selection)
-            fromDate = DateTime.Today.AddDays(-30);
-            toDate   = DateTime.Now;
-        }
-
-        public int? GetTemplateFilter() => null;
-        public string GetUserFilter()   => string.Empty;
 
         // ════════════════════════════════════════════════════════════════════════
         // CHART PAINT HANDLERS

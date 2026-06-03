@@ -13,6 +13,7 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -45,11 +46,19 @@
       <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Resources.Extensions.4.6.0\lib\netstandard2.0\System.Resources.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
@@ -88,6 +97,10 @@
       <DependentUpon>ShareManagementForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\WFE\WorkflowDashboardFormNew.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDashboardFormNew.Partial.cs">
+      <DependentUpon>WorkflowDashboardFormNew.cs</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Modules\WFE\WorkflowDashboardFormNew.Designer.cs">
@@ -421,6 +434,10 @@
     <Compile Include="Modules\WFE\WorkflowMonitorForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Modules\WFE\WorkflowMonitorForm.Partial.cs">
+      <DependentUpon>WorkflowMonitorForm.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\WFE\WorkflowMonitorForm.Designer.cs">
       <DependentUpon>WorkflowMonitorForm.cs</DependentUpon>
     </Compile>
@@ -482,6 +499,9 @@
     <Compile Include="Modules\WFE\UserProfileForm.Designer.cs">
       <DependentUpon>UserProfileForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\WFE\DelegateSearchDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\WFE\WorkflowDelegationForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -503,6 +523,9 @@
       <DependentUpon>HistorySearchForm.cs</DependentUpon>
     </Compile>
     <!-- Module: Workflow — Dialog Forms -->
+    <Compile Include="Modules\WFE\Dialogs\TemplateNameDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\WFE\Dialogs\WorkflowStartDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -514,12 +537,6 @@
     </Compile>
     <Compile Include="Modules\WFE\Dialogs\ReassignDialog.Designer.cs">
       <DependentUpon>ReassignDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.Designer.cs">
-      <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\WFE\Dialogs\WorkflowStepActionForm.cs">
       <SubType>Form</SubType>

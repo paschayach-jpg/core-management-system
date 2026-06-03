@@ -571,7 +571,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.lvTasks.Name = "lvTasks";
             this.lvTasks.OwnerDraw = true;
             this.lvTasks.View = System.Windows.Forms.View.Details;
-            this.lvTasks.ShowItemToolTips = true;
+            this.lvTasks.ShowItemToolTips = false;
             this.lvTasks.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
                 this.colId, this.colWorkflow, this.colAssignee,
                 this.colStart, this.colStep, this.colCurrentStep, this.colStatus });

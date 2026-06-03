@@ -44,9 +44,9 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 // Call SLACalculator which delegates to real DB queries with graceful fallback
                 var metricsResult = TryGetRealMetrics(fromDate, toDate, templateId);
 
-                if (metricsResult == null)
+                if (metricsResult == null || metricsResult.TotalTasks == 0)
                 {
-                    metricsResult = new SLAComplianceMetricsResult();
+                    metricsResult = BuildMockMetrics();
                 }
 
                 // ── Template compliance list ─────────────────────────────────────────

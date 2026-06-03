@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Globalization;
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
@@ -88,7 +89,7 @@ namespace CMS.Data.Repositories
                     "       wsi.AssignedTo, wsi.AssignedDate, wsi.Status, wsi.CompletedDate, wsi.CompletedBy, " +
                     "       wsi.OutputData, wsi.SLADeadline, wsi.SLAStatus, wsi.IsDeleted " +
                     "FROM   WFE.t_WFStepInstance wsi " +
-                    "INNER JOIN dbo.WorkflowStep ws ON ws.WFStepId = wsi.WFStepId " +
+                    "INNER JOIN WFE.s_WFStep ws ON ws.WFStepId = wsi.WFStepId " +
                     "WHERE  wsi.WFInstanceId = @WorkflowInstanceId " +
                     "  AND  wsi.IsDeleted = 0 " +
                     "ORDER BY ws.SequenceNumber ASC, wsi.AssignedDate ASC", conn))
@@ -222,14 +223,17 @@ namespace CMS.Data.Repositories
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.Parameters.AddWithValue("@WorkflowStepInstanceId", instance.WorkflowStepInstanceId);
-                    cmd.Parameters.AddWithValue("@AssignedTo", instance.AssignedTo);
-                    cmd.Parameters.AddWithValue("@Status", (byte)instance.Status);
-                    cmd.Parameters.AddWithValue("@CompletedDate", (object)instance.CompletedDate ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@CompletedBy", (object)instance.CompletedBy ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@OutputData", (object)instance.OutputData ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@SLADeadline", instance.SLADeadline);
-                    cmd.Parameters.AddWithValue("@SLAStatus", (byte)instance.SLAStatus);
+                    cmd.Parameters.Add("@WorkflowStepInstanceId", SqlDbType.Int).Value = instance.WorkflowStepInstanceId;
+                    cmd.Parameters.Add("@AssignedTo", SqlDbType.NVarChar, 256).Value = (object)instance.AssignedTo ?? DBNull.Value;
+                    cmd.Parameters.Add("@Status", SqlDbType.TinyInt).Value = (byte)instance.Status;
+                    cmd.Parameters.Add("@CompletedDate", SqlDbType.DateTime).Value = (object)instance.CompletedDate ?? DBNull.Value;
+                    cmd.Parameters.Add("@CompletedBy", SqlDbType.NVarChar, 256).Value = (object)instance.CompletedBy ?? DBNull.Value;
+                    cmd.Parameters.Add("@OutputData", SqlDbType.NVarChar, -1).Value = (object)instance.OutputData ?? DBNull.Value;
+                    cmd.Parameters.Add("@SLADeadline", SqlDbType.DateTime).Value =
+                        instance.SLADeadline == DateTime.MinValue
+                            ? (object)DBNull.Value
+                            : instance.SLADeadline;
+                    cmd.Parameters.Add("@SLAStatus", SqlDbType.TinyInt).Value = (byte)instance.SLAStatus;
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -276,8 +280,15 @@ namespace CMS.Data.Repositories
                     }
                     catch (IndexOutOfRangeException)
                     {
-                        // try next key
-                        continue;
+                        continue; // column not in result set — try next alias
+                    }
+                    catch (FormatException)
+                    {
+                        return defaultValue; // column exists but value can't be converted (wrong DB type)
+                    }
+                    catch (InvalidCastException)
+                    {
+                        return defaultValue;
                     }
                 }
                 return defaultValue;

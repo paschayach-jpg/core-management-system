@@ -660,7 +660,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.lvInstances.Name           = "lvInstances";
             this.lvInstances.OwnerDraw      = true;
             this.lvInstances.View           = System.Windows.Forms.View.Details;
-            this.lvInstances.ShowItemToolTips = true;
+            this.lvInstances.ShowItemToolTips = false;
             this.lvInstances.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
                 this.colId, this.colWorkflow, this.colAssignee,
                 this.colStart, this.colStep, this.colCurrentStep, this.colStatus });

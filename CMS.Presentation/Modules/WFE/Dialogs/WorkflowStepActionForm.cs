@@ -75,6 +75,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
         {
             try
             {
+                FitDialogToOwner();
                 PopulateTitleBar();
                 PopulateInfoCards();
                 PopulateInstruction();
@@ -88,12 +89,45 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
                 pnlScrollContent.Width = pnlScrollOuter.ClientSize.Width - 2;
                 pnlScrollOuter.Resize += (s, ev) =>
                     pnlScrollContent.Width = pnlScrollOuter.ClientSize.Width - 2;
+                pnlFooter.Resize += (s, ev) => LayoutFooterButtons();
+                this.Resize += (s, ev) => LayoutFooterButtons();
+                LayoutFooterButtons();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("โหลดข้อมูลไม่สำเร็จ: " + ex.Message, "ข้อผิดพลาด",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void FitDialogToOwner()
+        {
+            var owner = this.Owner ?? (Application.OpenForms.Count > 0 ? Application.OpenForms[0] : null);
+            if (owner == null) return;
+
+            int maxWidth = Math.Max(MinimumSize.Width, owner.ClientSize.Width - 32);
+            int maxHeight = Math.Max(MinimumSize.Height, owner.ClientSize.Height - 32);
+
+            if (Width > maxWidth) Width = maxWidth;
+            if (Height > maxHeight) Height = maxHeight;
+
+            var ownerScreen = owner.RectangleToScreen(owner.ClientRectangle);
+            Left = ownerScreen.Left + Math.Max(0, (ownerScreen.Width - Width) / 2);
+            Top = ownerScreen.Top + Math.Max(0, (ownerScreen.Height - Height) / 2);
+        }
+
+        private void LayoutFooterButtons()
+        {
+            const int gap = 8;
+            const int rightMargin = 16;
+            int y = Math.Max(8, (pnlFooter.Height - btnConfirm.Height) / 2);
+
+            btnConfirm.Location = new Point(
+                Math.Max(rightMargin, pnlFooter.ClientSize.Width - rightMargin - btnConfirm.Width),
+                y);
+            btnCancel.Location = new Point(
+                Math.Max(rightMargin, btnConfirm.Left - gap - btnCancel.Width),
+                y);
         }
 
         // ════════════════════════════════════════════════════════════════════

@@ -36,7 +36,7 @@ namespace CMS.Data.Repositories
                     "       AssignedRole, AssignedUser, AssignedOrgUnit, SLAHours, SLADays, " +
                     "       AllowDelegation, MaxDelegationDepth, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFStep " +
-                    "WHERE  WorkflowStepId = @WorkflowStepId " +
+                    "WHERE  WFStepId = @WorkflowStepId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
@@ -60,7 +60,7 @@ namespace CMS.Data.Repositories
                     "       AssignedRole, AssignedUser, AssignedOrgUnit, SLAHours, SLADays, " +
                     "       AllowDelegation, MaxDelegationDepth, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFStep " +
-                    "WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
+                    "WHERE  WFDefinitionId = @WorkflowDefinitionId " +
                     "  AND  IsDeleted = 0 " +
                     "ORDER BY SequenceNumber ASC", conn))
                 {
@@ -122,7 +122,7 @@ namespace CMS.Data.Repositories
                     "       AllowDelegation    = @AllowDelegation, " +
                     "       MaxDelegationDepth = @MaxDelegationDepth, " +
                     "       SequenceNumber     = @SequenceNumber " +
-                    "WHERE  WorkflowStepId = @WorkflowStepId " +
+                    "WHERE  WFStepId = @WorkflowStepId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
@@ -141,7 +141,7 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "UPDATE WFE.s_WFStep " +
                     "SET    IsDeleted = 1 " +
-                    "WHERE  WorkflowStepId = @WorkflowStepId " +
+                    "WHERE  WFStepId = @WorkflowStepId " +
                     "  AND  IsDeleted = 0", conn))
                 {
                     cmd.CommandType = CommandType.Text;
@@ -165,7 +165,7 @@ namespace CMS.Data.Repositories
                     "SELECT WFConnectionId as WorkflowConnectionId, WFDefinitionId as WorkflowDefinitionId, FromStepId, ToStepId, " +
                     "       ConditionExpression, SequenceNumber, IsDeleted " +
                     "FROM   WFE.s_WFConnection " +
-                    "WHERE  WorkflowDefinitionId = @WorkflowDefinitionId " +
+                    "WHERE  WFDefinitionId = @WorkflowDefinitionId " +
                     "  AND  IsDeleted = 0 " +
                     "ORDER BY SequenceNumber ASC", conn))
                 {
