@@ -77,7 +77,7 @@ namespace CMS.Presentation.Modules.Workflow
                     return true;
 
                 case "detail":
-                    OpenWorkflowDetail(currentForm, workflowService, templateService, loggingService, userContext, workflowInstanceId);
+                    OpenWorkflowDetail(currentForm, workflowService, templateService, loggingService, userContext, workflowInstanceId, auditService);
                     return true;
 
                 default:
@@ -411,7 +411,8 @@ namespace CMS.Presentation.Modules.Workflow
             IWorkflowTemplateService templateService,
             ILoggingService loggingService,
             UserContext userContext,
-            int workflowInstanceId)
+            int workflowInstanceId,
+            IAuditService auditService = null)
         {
             if (currentForm is WorkflowDetailFormNew detail && detail.WorkflowInstanceId == workflowInstanceId)
                 return;
@@ -422,6 +423,7 @@ namespace CMS.Presentation.Modules.Workflow
                 if (templateService == null) templateService = mdi.WorkflowTemplateService;
                 if (loggingService  == null) loggingService  = mdi.Logger;
                 if (userContext     == null) userContext      = mdi.CurrentUser;
+                if (auditService    == null) auditService     = mdi.AuditService;
             }
 
             var form = new WorkflowDetailFormNew(
@@ -429,7 +431,8 @@ namespace CMS.Presentation.Modules.Workflow
                 workflowService,
                 templateService,
                 loggingService,
-                userContext);
+                userContext,
+                auditService);
 
             if (currentForm is WorkflowDashboardFormNew)
                 form.SourceNavTag = "mytasks";

@@ -1,4 +1,4 @@
-﻿using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Data.Interfaces;
@@ -2188,7 +2188,8 @@ namespace CMS.Presentation
                 _workflowService,
                 _workflowTemplateService,
                 _logger,
-                _currentUser));
+                _currentUser,
+                _auditService));
         }
 
         public void OpenWorkflowTemplateList()

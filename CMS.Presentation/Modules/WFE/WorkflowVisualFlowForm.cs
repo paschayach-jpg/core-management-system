@@ -447,6 +447,10 @@ namespace CMS.Presentation.Modules.Workflow
         {
             var groups = new[]
             {
+                new { Header = "นำทาง", Items = new[]
+                {
+                    new { Icon = "◀",  Text = "ย้อนกลับ", Tag = "back"   },
+                }},
                 new { Header = "มุมมอง", Items = new[]
                 {
                     new { Icon = "👁",  Text = "Visual",   Tag = "visual"   },
@@ -536,6 +540,9 @@ namespace CMS.Presentation.Modules.Workflow
         {
             switch (tag)
             {
+                case "back":
+                    WorkflowNavigationHandler.HandleNavigation("detail", this, _workflowService, _templateService, null, _loggingService, _userContext, null, _workflowInstanceId);
+                    break;
                 case "visual":   
                     break;
                 case "timeline": 
@@ -1467,6 +1474,34 @@ namespace CMS.Presentation.Modules.Workflow
                 _userContext,
                 null,
                 _workflowInstanceId);
+        }
+
+        private void btnBack_Click(object sender, EventArgs e)
+        {
+            if (_workflowInstanceId > 0)
+            {
+                WorkflowNavigationHandler.HandleNavigation(
+                    "detail",
+                    this,
+                    _workflowService,
+                    _templateService,
+                    null,
+                    _loggingService,
+                    _userContext,
+                    null,
+                    _workflowInstanceId);
+            }
+            else
+            {
+                WorkflowNavigationHandler.HandleNavigation(
+                    "monitor",
+                    this,
+                    _workflowService,
+                    _templateService,
+                    null,
+                    _loggingService,
+                    _userContext);
+            }
         }
 
         private void ShowInfo(string message)

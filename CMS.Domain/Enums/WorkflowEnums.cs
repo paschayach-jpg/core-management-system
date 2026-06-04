@@ -26,7 +26,8 @@ namespace CMS.Domain.Enums
         InProgress = 2,
         Completed  = 3,
         Rejected   = 4,
-        Suspended  = 5
+        Suspended  = 5,
+        Cancelled  = 6
     }
 
     /// <summary>

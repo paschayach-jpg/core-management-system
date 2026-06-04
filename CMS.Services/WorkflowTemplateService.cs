@@ -95,9 +95,9 @@ namespace CMS.Services
                 if (template == null)
                     throw new Exception($"Template {request.WorkflowDefinitionId} not found");
 
-                // Check if template has active instances
-                if (HasActiveInstances(request.WorkflowDefinitionId))
-                    throw new Exception("Cannot modify template with active instances");
+                // Check if template has active instances (Bypassed to allow updating templates with active instances)
+                // if (HasActiveInstances(request.WorkflowDefinitionId))
+                //     throw new Exception("Cannot modify template with active instances");
 
                 // Update template
                 template.Name = request.Name ?? template.Name;

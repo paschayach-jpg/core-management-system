@@ -53,6 +53,11 @@ namespace CMS.Services.Interfaces
         List<WorkflowTaskResult> GetMyTasks(UserContext userContext);
 
         /// <summary>
+        /// Cancel a workflow instance and mark all pending steps as cancelled
+        /// </summary>
+        WorkflowInstanceResult CancelWorkflowInstance(int workflowInstanceId, string reason, UserContext userContext);
+
+        /// <summary>
         /// Get all workflow instances (admin view)
         /// </summary>
         PagedResult<WorkflowInstanceResult> GetAllWorkflows(WorkflowInstanceFilter filter, UserContext userContext);

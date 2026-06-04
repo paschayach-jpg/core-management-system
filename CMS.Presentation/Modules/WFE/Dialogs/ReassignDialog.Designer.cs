@@ -12,7 +12,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
         private System.Windows.Forms.Button btnClose;
 
         // ── Scrollable body ──────────────────────────────────────────────────
-        private System.Windows.Forms.Panel pnlScrollOuter;
+        private NonAutoScrollPanel pnlScrollOuter;
         private System.Windows.Forms.Panel pnlScrollContent;
 
         // ── Section 1: Current assignee + reason ─────────────────────────────
@@ -64,7 +64,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.lblTitleText       = new System.Windows.Forms.Label();
             this.lblTitleSub        = new System.Windows.Forms.Label();
             this.btnClose           = new System.Windows.Forms.Button();
-            this.pnlScrollOuter     = new System.Windows.Forms.Panel();
+            this.pnlScrollOuter     = new NonAutoScrollPanel();
             this.pnlScrollContent   = new System.Windows.Forms.Panel();
             this.pnlSection1        = new System.Windows.Forms.Panel();
             this.pnlCurrentAssignee = new System.Windows.Forms.Panel();
@@ -92,7 +92,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
 
             // ── Form ─────────────────────────────────────────────────────────
             this.Text            = "Reassign / Escalate งาน";
-            this.ClientSize      = new System.Drawing.Size(780, 820);
+            this.ClientSize      = new System.Drawing.Size(780, 600);
             this.MinimumSize     = new System.Drawing.Size(680, 600);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.StartPosition   = System.Windows.Forms.FormStartPosition.CenterParent;
@@ -102,7 +102,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
 
             // ── Title bar ─────────────────────────────────────────────────────
             this.pnlTitleBar.Dock      = System.Windows.Forms.DockStyle.Top;
-            this.pnlTitleBar.Height    = 56;
+            this.pnlTitleBar.Size      = new System.Drawing.Size(780, 56);
             this.pnlTitleBar.BackColor = System.Drawing.Color.FromArgb(22, 36, 62);
             this.pnlTitleBar.Name      = "pnlTitleBar";
 
@@ -129,7 +129,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.lblTitleSub.AutoSize  = true;
             this.lblTitleSub.Name      = "lblTitleSub";
 
-            this.btnClose.Text      = "×";
+            this.btnClose.Text      = "✕";
             this.btnClose.Font      = new System.Drawing.Font("Segoe UI", 14F);
             this.btnClose.ForeColor = System.Drawing.Color.FromArgb(180, 200, 235);
             this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
@@ -147,7 +147,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
 
             // ── Footer ────────────────────────────────────────────────────────
             this.pnlFooter.Dock      = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlFooter.Height    = 56;
+            this.pnlFooter.Size      = new System.Drawing.Size(780, 56);
             this.pnlFooter.BackColor = System.Drawing.Color.White;
             this.pnlFooter.Name      = "pnlFooter";
 
@@ -157,7 +157,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCancel.BackColor = System.Drawing.Color.White;
             this.btnCancel.Anchor    = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            this.btnCancel.Location  = new System.Drawing.Point(560, 12);
+            this.btnCancel.Location  = new System.Drawing.Point(500, 12);
             this.btnCancel.Size      = new System.Drawing.Size(88, 32);
             this.btnCancel.Name      = "btnCancel";
             this.btnCancel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(210, 215, 225);
@@ -169,7 +169,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.btnConfirm.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnConfirm.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
             this.btnConfirm.Anchor    = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            this.btnConfirm.Location  = new System.Drawing.Point(656, 12);
+            this.btnConfirm.Location  = new System.Drawing.Point(596, 12);
             this.btnConfirm.Size      = new System.Drawing.Size(168, 32);
             this.btnConfirm.Name      = "btnConfirm";
             this.btnConfirm.FlatAppearance.BorderSize = 0;
@@ -178,30 +178,31 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.pnlFooter.Controls.Add(this.btnConfirm);
 
             // ── Scrollable body ───────────────────────────────────────────────
-            this.pnlScrollOuter.Dock       = System.Windows.Forms.DockStyle.Fill;
+            this.pnlScrollOuter.Location   = new System.Drawing.Point(0, 0);
+            this.pnlScrollOuter.Size       = new System.Drawing.Size(780, 544);
+            this.pnlScrollOuter.Anchor     = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.pnlScrollOuter.AutoScroll = true;
             this.pnlScrollOuter.BackColor  = System.Drawing.Color.FromArgb(248, 249, 252);
             this.pnlScrollOuter.Name       = "pnlScrollOuter";
 
-            this.pnlScrollContent.AutoSize     = true;
-            this.pnlScrollContent.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.pnlScrollContent.BackColor    = System.Drawing.Color.FromArgb(248, 249, 252);
+            this.pnlScrollContent.AutoSize  = false;
+            this.pnlScrollContent.BackColor = System.Drawing.Color.FromArgb(248, 249, 252);
             this.pnlScrollContent.Padding      = new System.Windows.Forms.Padding(16, 14, 16, 14);
             this.pnlScrollContent.Name         = "pnlScrollContent";
 
             // ── Section 1: Current assignee + reason ─────────────────────────
-            this.pnlSection1.Location  = new System.Drawing.Point(0, 0);
-            this.pnlSection1.Size      = new System.Drawing.Size(740, 100);
+            this.pnlSection1.Location  = new System.Drawing.Point(16, 70);
+            this.pnlSection1.Size      = new System.Drawing.Size(720, 100);
             this.pnlSection1.BackColor = System.Drawing.Color.Transparent;
             this.pnlSection1.Name      = "pnlSection1";
 
             this.pnlCurrentAssignee.Location  = new System.Drawing.Point(0, 0);
-            this.pnlCurrentAssignee.Size      = new System.Drawing.Size(360, 96);
+            this.pnlCurrentAssignee.Size      = new System.Drawing.Size(350, 96);
             this.pnlCurrentAssignee.BackColor = System.Drawing.Color.White;
             this.pnlCurrentAssignee.Name      = "pnlCurrentAssignee";
 
-            this.pnlReasonBox.Location  = new System.Drawing.Point(368, 0);
-            this.pnlReasonBox.Size      = new System.Drawing.Size(372, 96);
+            this.pnlReasonBox.Location  = new System.Drawing.Point(358, 0);
+            this.pnlReasonBox.Size      = new System.Drawing.Size(362, 96);
             this.pnlReasonBox.BackColor = System.Drawing.Color.White;
             this.pnlReasonBox.Name      = "pnlReasonBox";
 
@@ -224,7 +225,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.cmbReason.FlatStyle     = System.Windows.Forms.FlatStyle.Flat;
             this.cmbReason.Font          = new System.Drawing.Font("Segoe UI", 9.5F);
             this.cmbReason.Location      = new System.Drawing.Point(12, 32);
-            this.cmbReason.Size          = new System.Drawing.Size(348, 28);
+            this.cmbReason.Size          = new System.Drawing.Size(338, 28);
             this.cmbReason.Name          = "cmbReason";
             this.cmbReason.Items.AddRange(new object[] {
                 "ผู้รับผิดชอบไม่สามารถดำเนินการได้",
@@ -243,12 +244,12 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.lblModeHeader.Text      = "รูปแบบการ REASSIGN";
             this.lblModeHeader.Font      = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.lblModeHeader.ForeColor = System.Drawing.Color.FromArgb(30, 36, 55);
-            this.lblModeHeader.Location  = new System.Drawing.Point(0, 112);
+            this.lblModeHeader.Location  = new System.Drawing.Point(16, 186);
             this.lblModeHeader.AutoSize  = true;
             this.lblModeHeader.Name      = "lblModeHeader";
-
-            this.pnlModes.Location  = new System.Drawing.Point(0, 132);
-            this.pnlModes.Size      = new System.Drawing.Size(740, 72);
+ 
+            this.pnlModes.Location  = new System.Drawing.Point(16, 206);
+            this.pnlModes.Size      = new System.Drawing.Size(720, 72);
             this.pnlModes.BackColor = System.Drawing.Color.Transparent;
             this.pnlModes.Name      = "pnlModes";
 
@@ -256,12 +257,12 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.lblCandidateHeader.Text      = "เลือกผู้รับผิดชอบใหม่";
             this.lblCandidateHeader.Font      = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.lblCandidateHeader.ForeColor = System.Drawing.Color.FromArgb(30, 36, 55);
-            this.lblCandidateHeader.Location  = new System.Drawing.Point(0, 216);
+            this.lblCandidateHeader.Location  = new System.Drawing.Point(16, 294);
             this.lblCandidateHeader.AutoSize  = true;
             this.lblCandidateHeader.Name      = "lblCandidateHeader";
-
-            this.pnlSearchRow.Location  = new System.Drawing.Point(0, 236);
-            this.pnlSearchRow.Size      = new System.Drawing.Size(740, 36);
+ 
+            this.pnlSearchRow.Location  = new System.Drawing.Point(16, 314);
+            this.pnlSearchRow.Size      = new System.Drawing.Size(720, 36);
             this.pnlSearchRow.BackColor = System.Drawing.Color.Transparent;
             this.pnlSearchRow.Name      = "pnlSearchRow";
 
@@ -270,20 +271,20 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.txtSearch.ForeColor   = System.Drawing.Color.FromArgb(140, 150, 165);
             this.txtSearch.Text        = "🔍  ค้นหาชื่อหรือ AD Group...";
             this.txtSearch.Location    = new System.Drawing.Point(0, 4);
-            this.txtSearch.Size        = new System.Drawing.Size(380, 28);
+            this.txtSearch.Size        = new System.Drawing.Size(360, 28);
             this.txtSearch.Name        = "txtSearch";
 
             this.cmbRole.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbRole.FlatStyle     = System.Windows.Forms.FlatStyle.Flat;
             this.cmbRole.Font          = new System.Drawing.Font("Segoe UI", 9F);
-            this.cmbRole.Location      = new System.Drawing.Point(388, 4);
+            this.cmbRole.Location      = new System.Drawing.Point(368, 4);
             this.cmbRole.Size          = new System.Drawing.Size(180, 28);
             this.cmbRole.Name          = "cmbRole";
 
             this.chkSortByMatch.Text      = "เรียงตาม Match Score";
             this.chkSortByMatch.Font      = new System.Drawing.Font("Segoe UI", 9F);
             this.chkSortByMatch.ForeColor = System.Drawing.Color.FromArgb(44, 52, 70);
-            this.chkSortByMatch.Location  = new System.Drawing.Point(576, 6);
+            this.chkSortByMatch.Location  = new System.Drawing.Point(556, 6);
             this.chkSortByMatch.AutoSize  = true;
             this.chkSortByMatch.Checked   = true;
             this.chkSortByMatch.Name      = "chkSortByMatch";
@@ -292,8 +293,8 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.pnlSearchRow.Controls.Add(this.cmbRole);
             this.pnlSearchRow.Controls.Add(this.chkSortByMatch);
 
-            this.pnlCandidateList.Location  = new System.Drawing.Point(0, 280);
-            this.pnlCandidateList.Size      = new System.Drawing.Size(740, 10);
+            this.pnlCandidateList.Location  = new System.Drawing.Point(16, 358);
+            this.pnlCandidateList.Size      = new System.Drawing.Size(720, 10);
             this.pnlCandidateList.BackColor = System.Drawing.Color.Transparent;
             this.pnlCandidateList.AutoSize  = true;
             this.pnlCandidateList.Name      = "pnlCandidateList";
@@ -302,7 +303,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.lblMessageHeader.Text      = "ข้อความถึงผู้รับใหม่";
             this.lblMessageHeader.Font      = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.lblMessageHeader.ForeColor = System.Drawing.Color.FromArgb(30, 36, 55);
-            this.lblMessageHeader.Location  = new System.Drawing.Point(0, 560);
+            this.lblMessageHeader.Location  = new System.Drawing.Point(16, 560);
             this.lblMessageHeader.AutoSize  = true;
             this.lblMessageHeader.Name      = "lblMessageHeader";
 
@@ -310,13 +311,13 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.txtMessage.Font        = new System.Drawing.Font("Segoe UI", 9.5F);
             this.txtMessage.Multiline   = true;
             this.txtMessage.ScrollBars  = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtMessage.Location    = new System.Drawing.Point(0, 580);
-            this.txtMessage.Size        = new System.Drawing.Size(740, 80);
+            this.txtMessage.Location    = new System.Drawing.Point(16, 580);
+            this.txtMessage.Size        = new System.Drawing.Size(720, 80);
             this.txtMessage.Name        = "txtMessage";
 
             // ── Section 5: Info banner ────────────────────────────────────────
-            this.pnlInfoBanner.Location  = new System.Drawing.Point(0, 672);
-            this.pnlInfoBanner.Size      = new System.Drawing.Size(740, 44);
+            this.pnlInfoBanner.Location  = new System.Drawing.Point(16, 672);
+            this.pnlInfoBanner.Size      = new System.Drawing.Size(720, 44);
             this.pnlInfoBanner.BackColor = System.Drawing.Color.FromArgb(240, 245, 255);
             this.pnlInfoBanner.Name      = "pnlInfoBanner";
 
@@ -324,7 +325,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.lblInfoBanner.Font      = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblInfoBanner.ForeColor = System.Drawing.Color.FromArgb(37, 99, 235);
             this.lblInfoBanner.Location  = new System.Drawing.Point(12, 12);
-            this.lblInfoBanner.Size      = new System.Drawing.Size(716, 20);
+            this.lblInfoBanner.Size      = new System.Drawing.Size(696, 20);
             this.lblInfoBanner.AutoEllipsis = true;
             this.lblInfoBanner.Name      = "lblInfoBanner";
             this.pnlInfoBanner.Controls.Add(this.lblInfoBanner);
@@ -343,9 +344,9 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.pnlScrollOuter.Controls.Add(this.pnlScrollContent);
 
             // ── Form controls ─────────────────────────────────────────────────
-            this.Controls.Add(this.pnlScrollOuter);
-            this.Controls.Add(this.pnlFooter);
             this.Controls.Add(this.pnlTitleBar);
+            this.Controls.Add(this.pnlFooter);
+            this.Controls.Add(this.pnlScrollOuter);
 
             this.ResumeLayout(false);
         }

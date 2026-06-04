@@ -336,6 +336,30 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
         }
 
         /// <summary>
+        /// Expose the workflow service
+        /// </summary>
+        public IWorkflowService WorkflowService => _workflowService;
+
+        /// <summary>
+        /// Cancel a workflow instance and refresh the monitor
+        /// </summary>
+        public void CancelWorkflow(int workflowInstanceId, string reason)
+        {
+            try
+            {
+                _workflowService.CancelWorkflowInstance(workflowInstanceId, reason, _userContext);
+                _loggingService.Info($"Workflow instance {workflowInstanceId} cancelled by {_userContext.ADUserName}. Reason: {reason}");
+                _view.ShowInfo("ยกเลิก Workflow เรียบร้อยแล้ว");
+                RefreshMonitor();
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"Error cancelling workflow {workflowInstanceId}: {ex.Message}", ex);
+                _view.ShowError($"ไม่สามารถยกเลิกได้: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Calculate system-wide metrics
         /// </summary>
         private WorkflowMonitorMetrics CalculateMetrics(List<WorkflowInstanceResult> instances)

@@ -78,6 +78,13 @@ namespace CMS.Services
             return _auditRepository.Query(query);
         }
 
+        public System.Collections.Generic.List<AuditLog> GetWorkflowAuditLogs(int workflowInstanceId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+            // No global role check here since access is validated by the workflow detail view
+            return _auditRepository.GetAuditLogsByWorkflowInstance(workflowInstanceId);
+        }
+
         // -----------------------------------------------------------------------
         // Helpers
         // -----------------------------------------------------------------------

@@ -315,12 +315,18 @@ namespace CMS.Presentation
         {
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
+            // วาดเส้นแบ่งระหว่างข้อมูลธุรกิจและฟอร์ม Login
+            using (var pen = new Pen(Color.FromArgb(235, 240, 250), 1.5f))
+            {
+                e.Graphics.DrawLine(pen, 30, 66, 290, 66);
+            }
+
             // วาดกรอบและเงาให้ TextBox Username
-            Rectangle rectUser = new Rectangle(28, 35, 264, 30);
+            Rectangle rectUser = new Rectangle(28, 95, 264, 30);
             DrawTextBoxBackground(e.Graphics, rectUser);
 
             // วาดกรอบและเงาให้ TextBox Password
-            Rectangle rectPass = new Rectangle(28, 97, 264, 30);
+            Rectangle rectPass = new Rectangle(28, 157, 264, 30);
             DrawTextBoxBackground(e.Graphics, rectPass);
         }
 

@@ -23,7 +23,9 @@ namespace CMS.Presentation.Modules.Workflow
         private readonly UserContext _userContext;
         private readonly IWorkflowTemplateService _templateService;
         private readonly ILoggingService _loggingService;
-        private int? _templateId;
+        private int?   _templateId;
+        private string _templateName;
+        private string _templateDescription;
 
         // ── Canvas state ─────────────────────────────────────────────────────────
         private List<WorkflowStepDesignData> _steps       = new List<WorkflowStepDesignData>();
@@ -514,6 +516,13 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void WireCanvasEvents()
         {
+            // Eliminate flicker during drag by enabling double-buffering on the owner-draw panel
+            typeof(Panel).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.SetProperty |
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic,
+                null, pnlCanvas, new object[] { true });
+
             pnlCanvas.Paint      += pnlCanvas_Paint;
             pnlCanvas.MouseDown  += pnlCanvas_MouseDown;
             pnlCanvas.MouseMove  += pnlCanvas_MouseMove;
@@ -961,32 +970,193 @@ namespace CMS.Presentation.Modules.Workflow
 
             using (var dlg = new Form())
             {
-                dlg.Text = "จัดการเส้นทาง";
-                dlg.ClientSize = new Size(420, 220);
-                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.StartPosition = FormStartPosition.CenterParent;
-                dlg.MaximizeBox = false;
-                dlg.MinimizeBox = false;
+                dlg.Text            = "";
+                dlg.FormBorderStyle = FormBorderStyle.None;
+                dlg.ClientSize      = new Size(460, 320);
+                dlg.StartPosition   = FormStartPosition.CenterParent;
+                dlg.BackColor       = Color.FromArgb(235, 238, 245);
+                dlg.Paint += (s, pe) =>
+                    pe.Graphics.DrawRectangle(new Pen(Color.FromArgb(180, 190, 210)), 0, 0, dlg.Width - 1, dlg.Height - 1);
 
-                var lblFrom = new Label { Text = "จาก Step", AutoSize = true, Location = new Point(18, 18) };
-                var txtFrom = new TextBox { Location = new Point(18, 38), Size = new Size(180, 24), ReadOnly = true, Text = fromStep.StepName };
-                var lblTo = new Label { Text = "ไป Step", AutoSize = true, Location = new Point(214, 18) };
-                var cmbTo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(214, 38), Size = new Size(182, 24) };
-                var lblCondition = new Label { Text = "Condition", AutoSize = true, Location = new Point(18, 76) };
-                var txtCondition = new TextBox { Location = new Point(18, 96), Size = new Size(378, 76), Multiline = true, ScrollBars = ScrollBars.Vertical };
-                var btnSave = new Button { Text = "บันทึก", DialogResult = DialogResult.OK, Location = new Point(158, 184), Size = new Size(76, 28) };
-                var btnRemove = new Button { Text = "ลบเส้น", Location = new Point(240, 184), Size = new Size(76, 28) };
-                var btnCancel = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Location = new Point(322, 184), Size = new Size(76, 28) };
+                // ── Title bar ─────────────────────────────────────────────────
+                var pnlTitleBar = new Panel { Dock = DockStyle.Top, Height = 44, BackColor = _navyDark };
+                var lblDlgTitle = new Label
+                {
+                    Text      = "  จัดการเส้นทาง  ·  " + fromStep.StepName,
+                    Font      = new Font("Segoe UI", 10F, FontStyle.Bold),
+                    ForeColor = Color.White,
+                    Dock      = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding   = new Padding(12, 0, 0, 0),
+                };
+                var btnX = new Button
+                {
+                    Text      = "✕",
+                    Dock      = DockStyle.Right,
+                    Width     = 44,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.Transparent,
+                    ForeColor = Color.FromArgb(160, 200, 245),
+                    Font      = new Font("Segoe UI", 11F),
+                    Cursor    = Cursors.Hand,
+                };
+                btnX.FlatAppearance.BorderSize         = 0;
+                btnX.FlatAppearance.MouseOverBackColor = Color.FromArgb(185, 40, 40);
+                btnX.Click += (s, e) => { dlg.DialogResult = DialogResult.Cancel; dlg.Close(); };
 
-                cmbTo.DataSource = targetSteps;
+                // drag-to-move on title bar
+                Point dragPt  = Point.Empty;
+                bool  dlgDrag = false;
+                MouseEventHandler titleDown = (s, e) => { dlgDrag = true;  dragPt = e.Location; };
+                MouseEventHandler titleUp   = (s, e) => { dlgDrag = false; };
+                MouseEventHandler titleMove = (s, e) =>
+                {
+                    if (!dlgDrag) return;
+                    dlg.Location = new Point(dlg.Left + e.X - dragPt.X, dlg.Top + e.Y - dragPt.Y);
+                };
+                foreach (Control c in new Control[] { pnlTitleBar, lblDlgTitle })
+                {
+                    c.MouseDown += titleDown;
+                    c.MouseUp   += titleUp;
+                    c.MouseMove += titleMove;
+                }
+
+                pnlTitleBar.Controls.Add(lblDlgTitle);
+                pnlTitleBar.Controls.Add(btnX);
+
+                // ── Card body ─────────────────────────────────────────────────
+                var pnlCard = new Panel { BackColor = Color.White, Location = new Point(12, 56), Size = new Size(436, 200) };
+                pnlCard.Paint += (s, pe) =>
+                    pe.Graphics.DrawRectangle(new Pen(Color.FromArgb(220, 225, 235)), 0, 0, pnlCard.Width - 1, pnlCard.Height - 1);
+
+                var lblFrom = new Label
+                {
+                    Text      = "จาก Step",
+                    Font      = new Font("Segoe UI", 8F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(100, 110, 130),
+                    Location  = new Point(16, 16),
+                    AutoSize  = true,
+                };
+                var txtFrom = new TextBox
+                {
+                    Location    = new Point(16, 34),
+                    Size        = new Size(186, 28),
+                    ReadOnly    = true,
+                    Text        = fromStep.StepName,
+                    Font        = new Font("Segoe UI", 9F),
+                    BackColor   = Color.FromArgb(245, 248, 255),
+                    BorderStyle = BorderStyle.FixedSingle,
+                };
+                var lblArrow = new Label
+                {
+                    Text      = "→",
+                    Font      = new Font("Segoe UI", 13F),
+                    ForeColor = _navyDark,
+                    Location  = new Point(206, 35),
+                    Size      = new Size(22, 24),
+                    TextAlign = ContentAlignment.MiddleCenter,
+                };
+                var lblTo = new Label
+                {
+                    Text      = "ไป Step",
+                    Font      = new Font("Segoe UI", 8F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(100, 110, 130),
+                    Location  = new Point(232, 16),
+                    AutoSize  = true,
+                };
+                var cmbTo = new ComboBox
+                {
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    Location      = new Point(232, 34),
+                    Size          = new Size(188, 28),
+                    Font          = new Font("Segoe UI", 9F),
+                };
+                var lblCondition = new Label
+                {
+                    Text      = "Condition Expression  (ว่างเปล่า = ผ่านเสมอ)",
+                    Font      = new Font("Segoe UI", 8F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(100, 110, 130),
+                    Location  = new Point(16, 74),
+                    AutoSize  = true,
+                };
+                var txtCondition = new TextBox
+                {
+                    Location    = new Point(16, 92),
+                    Size        = new Size(404, 92),
+                    Multiline   = true,
+                    ScrollBars  = ScrollBars.Vertical,
+                    Font        = new Font("Segoe UI", 9F),
+                    BorderStyle = BorderStyle.FixedSingle,
+                };
+                pnlCard.Controls.AddRange(new Control[] { lblFrom, txtFrom, lblArrow, lblTo, cmbTo, lblCondition, txtCondition });
+
+                // ── Footer ────────────────────────────────────────────────────
+                var pnlFooter = new Panel { BackColor = Color.FromArgb(247, 249, 252), Location = new Point(12, 264), Size = new Size(436, 44) };
+                pnlFooter.Paint += (s, pe) =>
+                    pe.Graphics.DrawLine(new Pen(Color.FromArgb(220, 225, 235)), 0, 0, pnlFooter.Width, 0);
+
+                var btnSave = new Button
+                {
+                    Text         = "บันทึกเส้นทาง",
+                    Size         = new Size(116, 28),
+                    Location     = new Point(196, 8),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = _navyDark,
+                    ForeColor    = Color.White,
+                    Font         = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    Cursor       = Cursors.Hand,
+                    DialogResult = DialogResult.OK,
+                };
+                btnSave.FlatAppearance.BorderSize         = 0;
+                btnSave.FlatAppearance.MouseOverBackColor = Color.FromArgb(44, 75, 130);
+
+                var btnRemove = new Button
+                {
+                    Text      = "ลบเส้นทาง",
+                    Size      = new Size(96, 28),
+                    Location  = new Point(8, 8),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(185, 40, 40),
+                    Font      = new Font("Segoe UI", 9F),
+                    Cursor    = Cursors.Hand,
+                };
+                btnRemove.FlatAppearance.BorderColor        = Color.FromArgb(220, 160, 160);
+                btnRemove.FlatAppearance.MouseOverBackColor = Color.FromArgb(255, 245, 245);
+
+                var btnCancel = new Button
+                {
+                    Text         = "ยกเลิก",
+                    Size         = new Size(80, 28),
+                    Location     = new Point(348, 8),
+                    FlatStyle    = FlatStyle.Flat,
+                    BackColor    = Color.White,
+                    ForeColor    = Color.FromArgb(80, 90, 110),
+                    Font         = new Font("Segoe UI", 9F),
+                    Cursor       = Cursors.Hand,
+                    DialogResult = DialogResult.Cancel,
+                };
+                btnCancel.FlatAppearance.BorderColor        = Color.FromArgb(210, 215, 225);
+                btnCancel.FlatAppearance.MouseOverBackColor = Color.FromArgb(245, 248, 255);
+
+                pnlFooter.Controls.AddRange(new Control[] { btnRemove, btnSave, btnCancel });
+
+                dlg.Controls.Add(pnlTitleBar);
+                dlg.Controls.Add(pnlCard);
+                dlg.Controls.Add(pnlFooter);
+                dlg.AcceptButton = btnSave;
+                dlg.CancelButton = btnCancel;
+
+                // ── Data binding ──────────────────────────────────────────────
+                cmbTo.DataSource    = targetSteps;
                 cmbTo.DisplayMember = "StepName";
-                cmbTo.ValueMember = "WorkflowStepId";
+                cmbTo.ValueMember   = "WorkflowStepId";
 
                 var existingConnection = _conns.FirstOrDefault(c => c.FromStepId == fromStep.WorkflowStepId);
                 if (existingConnection != null)
                 {
                     cmbTo.SelectedValue = existingConnection.ToStepId;
-                    txtCondition.Text = existingConnection.Condition ?? string.Empty;
+                    txtCondition.Text   = existingConnection.Condition ?? string.Empty;
                 }
 
                 EventHandler loadSelectedConnection = (s, e) =>
@@ -995,7 +1165,7 @@ namespace CMS.Presentation.Modules.Workflow
                     if (selectedTarget == null) return;
                     var selectedConnection = _conns.FirstOrDefault(c =>
                         c.FromStepId == fromStep.WorkflowStepId &&
-                        c.ToStepId == selectedTarget.WorkflowStepId);
+                        c.ToStepId   == selectedTarget.WorkflowStepId);
                     txtCondition.Text = selectedConnection != null ? selectedConnection.Condition ?? string.Empty : string.Empty;
                 };
                 cmbTo.SelectedIndexChanged += loadSelectedConnection;
@@ -1007,7 +1177,7 @@ namespace CMS.Presentation.Modules.Workflow
                     if (selectedTarget == null) return;
                     var conn = _conns.FirstOrDefault(c =>
                         c.FromStepId == fromStep.WorkflowStepId &&
-                        c.ToStepId == selectedTarget.WorkflowStepId);
+                        c.ToStepId   == selectedTarget.WorkflowStepId);
                     if (conn != null)
                     {
                         _conns.Remove(conn);
@@ -1017,10 +1187,6 @@ namespace CMS.Presentation.Modules.Workflow
                     dlg.Close();
                 };
 
-                dlg.Controls.AddRange(new Control[] { lblFrom, txtFrom, lblTo, cmbTo, lblCondition, txtCondition, btnSave, btnRemove, btnCancel });
-                dlg.AcceptButton = btnSave;
-                dlg.CancelButton = btnCancel;
-
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
                 var toStep = cmbTo.SelectedItem as WorkflowStepDesignData;
@@ -1028,15 +1194,15 @@ namespace CMS.Presentation.Modules.Workflow
 
                 var matchedConnection = _conns.FirstOrDefault(c =>
                     c.FromStepId == fromStep.WorkflowStepId &&
-                    c.ToStepId == toStep.WorkflowStepId);
+                    c.ToStepId   == toStep.WorkflowStepId);
 
                 if (matchedConnection == null)
                 {
                     _conns.Add(new WorkflowConnectionDesignData
                     {
                         FromStepId = fromStep.WorkflowStepId,
-                        ToStepId = toStep.WorkflowStepId,
-                        Condition = txtCondition.Text.Trim()
+                        ToStepId   = toStep.WorkflowStepId,
+                        Condition  = txtCondition.Text.Trim()
                     });
                 }
                 else
@@ -1091,8 +1257,11 @@ namespace CMS.Presentation.Modules.Workflow
                 {
                     if (nameDlg.ShowDialog(this) == DialogResult.OK)
                     {
-                        lblTitle.Text = nameDlg.TemplateName;
-                        lblSubtitle.Text = nameDlg.TemplateDescription;
+                        // Store raw name/description — never embed the "WFD-XXX · " display prefix
+                        _templateName        = nameDlg.TemplateName;
+                        _templateDescription = nameDlg.TemplateDescription;
+                        lblTitle.Text        = nameDlg.TemplateName;
+                        lblSubtitle.Text     = nameDlg.TemplateDescription;
                     }
                     else
                     {
@@ -1100,9 +1269,9 @@ namespace CMS.Presentation.Modules.Workflow
                     }
                 }
             }
-            
+
             if (_presenter != null)
-                _presenter.SaveTemplate(lblTitle.Text, lblSubtitle.Text);
+                _presenter.SaveTemplate(_templateName ?? lblTitle.Text, _templateDescription);
             else
                 ShowError("ไม่สามารถบันทึกได้ เนื่องจากไม่มีการเชื่อมต่อกับระบบ");
         }
@@ -1281,12 +1450,17 @@ namespace CMS.Presentation.Modules.Workflow
         {
             if (template == null) return;
             var templateCode = string.Format("WFD-{0:D3}", template.WorkflowDefinitionId);
+
+            // Store raw name/description so DoSave() never accidentally writes the display label back
+            _templateName        = template.Name ?? "Template";
+            _templateDescription = template.Description;
+
             lblBreadcrumb.Text = string.Format("CMS  ›  Workflow Engine  ›  Templates  ›  {0} · {1}",
-                templateCode, template.Name ?? "Template");
-            lblTitle.Text    = string.Format("{0} · {1}", templateCode, template.Name ?? "Template");
-            lblSubtitle.Text = string.IsNullOrWhiteSpace(template.Description)
+                templateCode, _templateName);
+            lblTitle.Text    = string.Format("{0} · {1}", templateCode, _templateName);
+            lblSubtitle.Text = string.IsNullOrWhiteSpace(_templateDescription)
                 ? string.Format("เวอร์ชัน {0} · {1}", template.Version, template.StatusLabel)
-                : template.Description;
+                : _templateDescription;
             _templateId      = template.WorkflowDefinitionId;
 
             if (template.IsActive)

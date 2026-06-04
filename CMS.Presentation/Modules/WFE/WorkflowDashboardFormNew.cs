@@ -33,6 +33,8 @@ namespace CMS.Presentation.Modules.Workflow
         private const int PageSize = 10;
         private Timer _refreshTimer;
         private int _hotItemIndex = -1;
+        private string _activeStatusTab = "";   // "" = all, "pending" = not done, "done" = done
+        private Button[] _statusTabButtons;
 
         // ── Win32 double-buffer for native ListView ───────────────────────────────
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
@@ -68,6 +70,7 @@ namespace CMS.Presentation.Modules.Workflow
                 pnlSidebarContainer, "mytasks", OnNavItemClick, out initialNav);
             _activeNavItem = initialNav;
             SetupListView();
+            BuildStatusTabs();
             LoadRealData();
             StartAutoRefresh();
         }
@@ -145,7 +148,7 @@ namespace CMS.Presentation.Modules.Workflow
                     new { Icon = "✔", Text = "ดำเนินการ", Tag = "execute"   },
                     new { Icon = "👁", Text = "รายละเอียด",Tag = "detail"    },
                     new { Icon = "→", Text = "ส่งต่อ",    Tag = "forward"   },
-                    new { Icon = "↺", Text = "เริ่มใหม่", Tag = "refresh"   },
+                    new { Icon = "↺", Text = "คัดใหม่",   Tag = "refresh"   },
                 }},
                 new { Header = "Workflow",   Items = new[]
                 {
@@ -272,6 +275,18 @@ namespace CMS.Presentation.Modules.Workflow
                 case "filter": txtSearch.Focus(); break;
                 case "execute": ExecuteSelectedTask(); break;
                 case "detail":  OpenSelectedDetail();  break;
+                case "forward": ForwardSelectedTask(); break;
+                case "delegation":
+                    WorkflowNavigationHandler.HandleNavigation("delegation", this, _workflowService, _templateService, _slaCalculator, _loggingService, _userContext);
+                    break;
+                case "list":
+                    WorkflowNavigationHandler.HandleNavigation("monitor", this, _workflowService, _templateService, _slaCalculator, _loggingService, _userContext);
+                    break;
+                case "calendar":
+                    MessageBox.Show("ระบบปฏิทินงานอยู่ระหว่างการพัฒนาร่วมกับระบบตารางนัดหมาย", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    break;
+                case "excel": ExportTasksToExcel(); break;
+                case "print": PrintTasksList(); break;
                 default:
                     MessageBox.Show(string.Format("ฟังก์ชัน '{0}' อยู่ระหว่างพัฒนา", tag),
                         "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -289,6 +304,13 @@ namespace CMS.Presentation.Modules.Workflow
             { MessageBox.Show("ไม่พบข้อมูลงาน", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
 
             var task = item.OriginalResult;
+            if (task.Status == WorkflowStepInstanceStatus.Completed ||
+                task.Status == WorkflowStepInstanceStatus.Rejected)
+            {
+                MessageBox.Show("งานนี้ดำเนินการเสร็จสิ้นแล้ว ไม่สามารถดำเนินการซ้ำได้",
+                    "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             using (var actionForm = new CMS.Presentation.Modules.Workflow.Dialogs.WorkflowStepActionForm(task))
             {
                 actionForm.AllowForward = task.CanDelegate;
@@ -349,6 +371,197 @@ namespace CMS.Presentation.Modules.Workflow
                 workflowInstanceId: item.WorkflowInstanceId);
         }
 
+        private void ForwardSelectedTask()
+        {
+            if (lvTasks.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("กรุณาเลือกรายการก่อน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var item = lvTasks.SelectedItems[0].Tag as WorkflowTaskItem;
+            if (item?.OriginalResult == null) return;
+            var task = item.OriginalResult;
+
+            if (task.Status == WorkflowStepInstanceStatus.Completed || task.Status == WorkflowStepInstanceStatus.Rejected)
+            {
+                MessageBox.Show("งานนี้ดำเนินการเสร็จสิ้นแล้ว ไม่สามารถส่งต่อได้", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            CMS.Services.Interfaces.IWorkflowDelegationService delegationService = null;
+            if (this.MdiParent is MDI_Container mdi)
+            {
+                delegationService = mdi.WorkflowDelegationService;
+            }
+
+            if (delegationService == null)
+            {
+                MessageBox.Show("Delegation service ไม่พร้อมใช้งาน", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dialog = new CMS.Presentation.Modules.Workflow.Dialogs.ReassignDialog(task))
+            {
+                bool isOverSla = task.SLAStatus == CMS.Domain.Enums.SLAStatus.Overdue;
+                int daysOver = isOverSla ? Math.Max(0, (DateTime.Now - task.SLADeadline).Days) : 0;
+
+                dialog.CurrentAssignee = new CMS.Presentation.Modules.Workflow.Dialogs.ReassignDialog.AssigneeInfo
+                {
+                    Name = ExtractDisplayName(_userContext?.ADUserName) ?? "ผู้รับผิดชอบ",
+                    Role = _userContext?.PositionName ?? "Officer",
+                    Dept = _userContext?.DepartmentName ?? "Legal",
+                    IsOverSLA = isOverSla,
+                    SLADaysOver = daysOver
+                };
+
+                dialog.Candidates = new List<CMS.Presentation.Modules.Workflow.Dialogs.ReassignDialog.CandidateInfo>
+                {
+                    new CMS.Presentation.Modules.Workflow.Dialogs.ReassignDialog.CandidateInfo { UserId = "สมชาย", Name = "สมชาย กาญจนา", Role = "Staff", MatchScore = 90 },
+                    new CMS.Presentation.Modules.Workflow.Dialogs.ReassignDialog.CandidateInfo { UserId = "วิชัย", Name = "วิชัย มีสุข", Role = "Manager", MatchScore = 75 }
+                };
+                dialog.RoleOptions = new List<string> { "ทั้งหมด", "Officer", "Manager" };
+
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    try
+                    {
+                        string delegateTo = !string.IsNullOrWhiteSpace(dialog.SelectedUserId)
+                            ? dialog.SelectedUserId
+                            : dialog.SelectedUserName;
+
+                        delegationService.DelegateTask(new DelegateTaskRequest
+                        {
+                            WorkflowStepInstanceId = task.WorkflowStepInstanceId,
+                            DelegateToUserName = delegateTo,
+                            DelegationReason = dialog.ReassignReason,
+                            Remarks = dialog.MessageToNew
+                        }, _userContext);
+
+                        MessageBox.Show("ส่งต่องานสำเร็จ", "Workflow", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        _currentPage = 1;
+                        LoadRealData();
+                    }
+                    catch (Exception ex)
+                    {
+                        _loggingService?.Error("Failed to delegate task from dashboard", ex);
+                        MessageBox.Show("ส่งต่องานไม่สำเร็จ: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void ExportTasksToExcel()
+        {
+            if (_allTasks == null || _allTasks.Count == 0)
+            {
+                MessageBox.Show("ไม่มีข้อมูลงานสำหรับส่งออก", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var sfd = new SaveFileDialog())
+            {
+                sfd.Filter = "CSV File (*.csv)|*.csv";
+                sfd.FileName = string.Format("workflow-tasks-{0:dd-MM-yyyy}.csv", DateTime.Now);
+                sfd.Title = "ส่งออกข้อมูลงาน Workflow";
+
+                if (sfd.ShowDialog(this) == DialogResult.OK)
+                {
+                    try
+                    {
+                        using (var sw = new System.IO.StreamWriter(sfd.FileName, false, System.Text.Encoding.UTF8))
+                        {
+                            sw.Write('\uFEFF'); // Write BOM for UTF-8
+                            sw.WriteLine("รหัส,Workflow/Step,ผู้รับผิดชอบ,กำหนด,SLA %,สถานะ");
+
+                            foreach (var task in _allTasks)
+                            {
+                                string titleAndStep = string.Format("{0} - {1}", task.WorkflowTitle, task.WorkflowStep);
+                                sw.WriteLine(string.Format("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4:F1}%\",\"{5}\"",
+                                    EscapeCsv(task.WorkflowId),
+                                    EscapeCsv(titleAndStep),
+                                    EscapeCsv(task.AssigneeName),
+                                    task.DueDate,
+                                    task.SlaPercent,
+                                    EscapeCsv(task.Status)));
+                            }
+                        }
+                        MessageBox.Show("ส่งออกข้อมูลสำเร็จ", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("ส่งออกข้อมูลไม่สำเร็จ: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private string EscapeCsv(string field)
+        {
+            if (string.IsNullOrEmpty(field)) return string.Empty;
+            return field.Replace("\"", "\"\"");
+        }
+
+        private void PrintTasksList()
+        {
+            if (_allTasks == null || _allTasks.Count == 0)
+            {
+                MessageBox.Show("ไม่มีข้อมูลสำหรับพิมพ์", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var pd = new System.Drawing.Printing.PrintDocument())
+            {
+                pd.DocumentName = "Workflow Tasks List";
+                pd.PrintPage += (sender, ev) =>
+                {
+                    var g = ev.Graphics;
+                    var fontTitle = new Font("Segoe UI", 14F, FontStyle.Bold);
+                    var fontHeader = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    var fontRow = new Font("Segoe UI", 9F);
+                    var brush = Brushes.Black;
+
+                    int y = 50;
+                    g.DrawString("รายการงาน Workflow ของฉัน", fontTitle, brush, 50, y);
+                    y += 40;
+
+                    // Headers
+                    g.DrawString("รหัส", fontHeader, brush, 50, y);
+                    g.DrawString("Workflow / Step", fontHeader, brush, 150, y);
+                    g.DrawString("ผู้รับผิดชอบ", fontHeader, brush, 450, y);
+                    g.DrawString("สถานะ", fontHeader, brush, 650, y);
+                    g.DrawLine(Pens.Black, 50, y + 20, 750, y + 20);
+                    y += 30;
+
+                    // Rows
+                    foreach (var task in _allTasks)
+                    {
+                        if (y > ev.MarginBounds.Bottom - 50)
+                        {
+                            ev.HasMorePages = true;
+                            return;
+                        }
+
+                        g.DrawString(task.WorkflowId, fontRow, brush, 50, y);
+                        string text = task.WorkflowTitle;
+                        if (text.Length > 35) text = text.Substring(0, 32) + "...";
+                        g.DrawString(text + "\n↳ " + task.WorkflowStep, fontRow, brush, 150, y);
+                        g.DrawString(task.AssigneeName, fontRow, brush, 450, y);
+                        g.DrawString(task.Status, fontRow, brush, 650, y);
+                        y += 40;
+                    }
+                    ev.HasMorePages = false;
+                };
+
+                using (var ppd = new PrintPreviewDialog())
+                {
+                    ppd.Document = pd;
+                    ppd.WindowState = FormWindowState.Maximized;
+                    ppd.ShowDialog(this);
+                }
+            }
+        }
+
         // ════════════════════════════════════════════════════════════════════════
         // SIDEBAR NAVIGATION
         // ════════════════════════════════════════════════════════════════════════
@@ -375,6 +588,95 @@ namespace CMS.Presentation.Modules.Workflow
                 _slaCalculator,
                 _loggingService,
                 _userContext);
+        }
+
+        // ════════════════════════════════════════════════════════════════════════
+        // STATUS TAB STRIP
+        // ════════════════════════════════════════════════════════════════════════
+
+        private void BuildStatusTabs()
+        {
+            pnlStatusTabs.Controls.Clear();
+
+            var tabDefs = new[]
+            {
+                new { Key = "",        Label = "ทั้งหมด" },
+                new { Key = "pending", Label = "รอดำเนินการ" },
+                new { Key = "done",    Label = "เสร็จแล้ว" },
+            };
+
+            _statusTabButtons = new Button[tabDefs.Length];
+            int x = 8;
+            for (int i = 0; i < tabDefs.Length; i++)
+            {
+                string key   = tabDefs[i].Key;
+                string label = tabDefs[i].Label;
+                bool active  = key == _activeStatusTab;
+
+                var btn = new Button
+                {
+                    Text      = label,
+                    Tag       = key,
+                    Location  = new Point(x, 0),
+                    Size      = new Size(140, 38),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.Transparent,
+                    ForeColor = active ? _navyDark : Color.FromArgb(110, 120, 140),
+                    Font      = active
+                        ? new Font("Segoe UI", 9F, FontStyle.Bold)
+                        : new Font("Segoe UI", 9F),
+                    Cursor    = Cursors.Hand,
+                    TabStop   = false,
+                };
+                btn.FlatAppearance.BorderSize         = 0;
+                btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 244, 250);
+                btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(230, 238, 250);
+
+                if (active)
+                    btn.Paint += (s, pe) =>
+                        pe.Graphics.FillRectangle(new SolidBrush(_navyDark), 0, btn.Height - 2, btn.Width, 2);
+
+                string capturedKey = key;
+                btn.Click += (s, e) =>
+                {
+                    _activeStatusTab = capturedKey;
+                    _currentPage = 1;
+                    BuildStatusTabs();
+                    ApplyFilter();
+                };
+
+                _statusTabButtons[i] = btn;
+                pnlStatusTabs.Controls.Add(btn);
+                x += btn.Width + 2;
+            }
+
+            // Bottom separator line
+            pnlStatusTabs.Controls.Add(new Panel
+            {
+                BackColor = Color.FromArgb(220, 225, 235),
+                Dock      = DockStyle.Bottom,
+                Height    = 1,
+            });
+        }
+
+        private void UpdateStatusTabCounts()
+        {
+            if (_statusTabButtons == null || _statusTabButtons.Length < 3) return;
+
+            int total   = _allTasks.Count;
+            int pending = _allTasks.Count(t => t.Status != "เสร็จ");
+            int done    = _allTasks.Count(t => t.Status == "เสร็จ");
+
+            string[] labels =
+            {
+                string.Format("ทั้งหมด  ({0})", total),
+                string.Format("รอดำเนินการ  ({0})", pending),
+                string.Format("เสร็จแล้ว  ({0})", done),
+            };
+
+            for (int i = 0; i < labels.Length; i++)
+                if (_statusTabButtons[i] != null)
+                    _statusTabButtons[i].Text = labels[i];
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -761,9 +1063,12 @@ namespace CMS.Presentation.Modules.Workflow
                 slaPercent = Math.Min(100, (int)elapsedPercent);
             }
 
-            var statusText = result.SLAStatus == SLAStatus.Overdue ? "เกิน SLA"
-                           : result.Status == WorkflowStepInstanceStatus.Pending ? "รอดำเนินการ"
-                           : result.Status == WorkflowStepInstanceStatus.Completed ? "เสร็จ"
+            // Completion/Rejection always wins over SLA status —
+            // a finished step that was late should show "เสร็จ", not "เกิน SLA".
+            var statusText = result.Status == WorkflowStepInstanceStatus.Completed ? "เสร็จ"
+                           : result.Status == WorkflowStepInstanceStatus.Rejected  ? "ปฏิเสธ"
+                           : result.SLAStatus == SLAStatus.Overdue                 ? "เกิน SLA"
+                           : result.Status == WorkflowStepInstanceStatus.Pending   ? "รอดำเนินการ"
                            : "รอ";
 
             return new WorkflowTaskItem
@@ -802,6 +1107,12 @@ namespace CMS.Presentation.Modules.Workflow
         private void ApplyFilter()
         {
             var filtered = _allTasks.AsEnumerable();
+
+            // Status tab filter (applied first, before other filters)
+            if (_activeStatusTab == "pending")
+                filtered = filtered.Where(t => t.Status != "เสร็จ");
+            else if (_activeStatusTab == "done")
+                filtered = filtered.Where(t => t.Status == "เสร็จ");
 
             string rawQ = txtSearch.Text.Trim();
             string q = (rawQ == "ค้นหา..." || rawQ == "") ? "" : rawQ.ToLower();
@@ -844,6 +1155,7 @@ namespace CMS.Presentation.Modules.Workflow
             lblCardPendingCount.Text = result.Count(t => t.Status != "เสร็จ").ToString();
             lblCardSLACount.Text = result.Count(t => t.Status == "เกิน SLA").ToString();
             lblCardDoneCount.Text = result.Count(t => t.Status == "เสร็จ" && t.CompletedDate.HasValue && t.CompletedDate.Value.Date == DateTime.Today).ToString();
+            UpdateStatusTabCounts();
             UpdateSelectionInfo();
         }
 

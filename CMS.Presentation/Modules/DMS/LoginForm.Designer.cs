@@ -19,6 +19,8 @@ namespace CMS.Presentation
             this.lblTitle = new System.Windows.Forms.Label();
             this.lblWelcome = new System.Windows.Forms.Label();
             this.pnlContent = new System.Windows.Forms.Panel();
+            this.lblInsuranceSectors = new System.Windows.Forms.Label();
+            this.lblDomainTag = new System.Windows.Forms.Label();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.lblUsernameCaption = new System.Windows.Forms.Label();
             this.txtUsername = new System.Windows.Forms.TextBox();
@@ -111,12 +113,14 @@ namespace CMS.Presentation
             this.lblWelcome.Name = "lblWelcome";
             this.lblWelcome.Size = new System.Drawing.Size(320, 24);
             this.lblWelcome.TabIndex = 2;
-            this.lblWelcome.Text = "ระบบจัดการเอกสารประกันภัยอิเล็กทรอนิกส์";
+            this.lblWelcome.Text = "ระบบจัดการเอกสารสำหรับธุรกิจประกันภัย";
             this.lblWelcome.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // pnlContent
             // 
             this.pnlContent.BackColor = System.Drawing.Color.White;
+            this.pnlContent.Controls.Add(this.lblInsuranceSectors);
+            this.pnlContent.Controls.Add(this.lblDomainTag);
             this.pnlContent.Controls.Add(this.checkBox1);
             this.pnlContent.Controls.Add(this.lblUsernameCaption);
             this.pnlContent.Controls.Add(this.txtUsername);
@@ -131,15 +135,37 @@ namespace CMS.Presentation
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(0, 168);
             this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Size = new System.Drawing.Size(320, 342);
+            this.pnlContent.Size = new System.Drawing.Size(320, 402);
             this.pnlContent.TabIndex = 1;
             this.pnlContent.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlContent_Paint);
+            // 
+            // lblInsuranceSectors
+            // 
+            this.lblInsuranceSectors.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblInsuranceSectors.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(90)))), ((int)(((byte)(115)))));
+            this.lblInsuranceSectors.Location = new System.Drawing.Point(30, 12);
+            this.lblInsuranceSectors.Name = "lblInsuranceSectors";
+            this.lblInsuranceSectors.Size = new System.Drawing.Size(260, 22);
+            this.lblInsuranceSectors.TabIndex = 12;
+            this.lblInsuranceSectors.Text = "🚗 Motor | 🏥 Health | 🏠 Property | 🛡️ Life";
+            this.lblInsuranceSectors.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lblDomainTag
+            // 
+            this.lblDomainTag.Font = new System.Drawing.Font("Segoe UI", 7.5F, System.Drawing.FontStyle.Bold);
+            this.lblDomainTag.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(197)))), ((int)(((byte)(160)))), ((int)(((byte)(89)))));
+            this.lblDomainTag.Location = new System.Drawing.Point(30, 36);
+            this.lblDomainTag.Name = "lblDomainTag";
+            this.lblDomainTag.Size = new System.Drawing.Size(260, 16);
+            this.lblDomainTag.TabIndex = 13;
+            this.lblDomainTag.Text = "ขอบเขตธุรกิจ: ประกันภัย (INSURANCE)";
+            this.lblDomainTag.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // checkBox1
             // 
             this.checkBox1.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.checkBox1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.checkBox1.Location = new System.Drawing.Point(220, 242);
+            this.checkBox1.Location = new System.Drawing.Point(220, 302);
             this.checkBox1.Name = "checkBox1";
             this.checkBox1.Size = new System.Drawing.Size(88, 20);
             this.checkBox1.TabIndex = 11;
@@ -149,7 +175,7 @@ namespace CMS.Presentation
             // 
             this.lblUsernameCaption.Font = new System.Drawing.Font("Segoe UI", 7.5F, System.Drawing.FontStyle.Bold);
             this.lblUsernameCaption.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(18)))), ((int)(((byte)(38)))), ((int)(((byte)(76)))));
-            this.lblUsernameCaption.Location = new System.Drawing.Point(30, 20);
+            this.lblUsernameCaption.Location = new System.Drawing.Point(30, 80);
             this.lblUsernameCaption.Name = "lblUsernameCaption";
             this.lblUsernameCaption.Size = new System.Drawing.Size(260, 14);
             this.lblUsernameCaption.TabIndex = 0;
@@ -159,7 +185,7 @@ namespace CMS.Presentation
             // 
             this.txtUsername.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtUsername.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.txtUsername.Location = new System.Drawing.Point(35, 41);
+            this.txtUsername.Location = new System.Drawing.Point(35, 101);
             this.txtUsername.Name = "txtUsername";
             this.txtUsername.Size = new System.Drawing.Size(250, 18);
             this.txtUsername.TabIndex = 1;
@@ -169,7 +195,7 @@ namespace CMS.Presentation
             // 
             this.lblPasswordCaption.Font = new System.Drawing.Font("Segoe UI", 7.5F, System.Drawing.FontStyle.Bold);
             this.lblPasswordCaption.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(18)))), ((int)(((byte)(38)))), ((int)(((byte)(76)))));
-            this.lblPasswordCaption.Location = new System.Drawing.Point(30, 82);
+            this.lblPasswordCaption.Location = new System.Drawing.Point(30, 142);
             this.lblPasswordCaption.Name = "lblPasswordCaption";
             this.lblPasswordCaption.Size = new System.Drawing.Size(260, 14);
             this.lblPasswordCaption.TabIndex = 2;
@@ -179,7 +205,7 @@ namespace CMS.Presentation
             // 
             this.txtPassword.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtPassword.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.txtPassword.Location = new System.Drawing.Point(35, 103);
+            this.txtPassword.Location = new System.Drawing.Point(35, 163);
             this.txtPassword.Name = "txtPassword";
             this.txtPassword.PasswordChar = '●';
             this.txtPassword.Size = new System.Drawing.Size(250, 18);
@@ -190,7 +216,7 @@ namespace CMS.Presentation
             // 
             this.chkRemember.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.chkRemember.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.chkRemember.Location = new System.Drawing.Point(30, 148);
+            this.chkRemember.Location = new System.Drawing.Point(30, 208);
             this.chkRemember.Name = "chkRemember";
             this.chkRemember.Size = new System.Drawing.Size(150, 20);
             this.chkRemember.TabIndex = 4;
@@ -205,7 +231,7 @@ namespace CMS.Presentation
             this.btnLogin.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnLogin.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnLogin.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(18)))), ((int)(((byte)(38)))), ((int)(((byte)(76)))));
-            this.btnLogin.Location = new System.Drawing.Point(30, 184);
+            this.btnLogin.Location = new System.Drawing.Point(30, 244);
             this.btnLogin.Name = "btnLogin";
             this.btnLogin.Size = new System.Drawing.Size(260, 40);
             this.btnLogin.TabIndex = 6;
@@ -218,7 +244,7 @@ namespace CMS.Presentation
             // 
             this.lblOr.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblOr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(150)))), ((int)(((byte)(150)))));
-            this.lblOr.Location = new System.Drawing.Point(30, 242);
+            this.lblOr.Location = new System.Drawing.Point(30, 302);
             this.lblOr.Name = "lblOr";
             this.lblOr.Size = new System.Drawing.Size(260, 18);
             this.lblOr.TabIndex = 7;
@@ -229,7 +255,7 @@ namespace CMS.Presentation
             // 
             this.lblDontHave.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblDontHave.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(100)))));
-            this.lblDontHave.Location = new System.Drawing.Point(10, 276);
+            this.lblDontHave.Location = new System.Drawing.Point(10, 336);
             this.lblDontHave.Name = "lblDontHave";
             this.lblDontHave.Size = new System.Drawing.Size(168, 18);
             this.lblDontHave.TabIndex = 8;
@@ -240,7 +266,7 @@ namespace CMS.Presentation
             // 
             this.lnkRegister.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lnkRegister.LinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(197)))), ((int)(((byte)(160)))), ((int)(((byte)(89)))));
-            this.lnkRegister.Location = new System.Drawing.Point(184, 276);
+            this.lnkRegister.Location = new System.Drawing.Point(184, 336);
             this.lnkRegister.Name = "lnkRegister";
             this.lnkRegister.Size = new System.Drawing.Size(120, 18);
             this.lnkRegister.TabIndex = 9;
@@ -251,7 +277,7 @@ namespace CMS.Presentation
             // 
             this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblStatus.ForeColor = System.Drawing.Color.Red;
-            this.lblStatus.Location = new System.Drawing.Point(30, 306);
+            this.lblStatus.Location = new System.Drawing.Point(30, 366);
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Size = new System.Drawing.Size(260, 20);
             this.lblStatus.TabIndex = 10;
@@ -261,7 +287,7 @@ namespace CMS.Presentation
             // 
             this.AcceptButton = this.btnLogin;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(320, 510);
+            this.ClientSize = new System.Drawing.Size(320, 570);
             this.Controls.Add(this.pnlContent);
             this.Controls.Add(this.pnlHeader);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
@@ -285,6 +311,8 @@ namespace CMS.Presentation
         private System.Windows.Forms.Label     lblTitle;
         private System.Windows.Forms.Label     lblWelcome;
         private System.Windows.Forms.Panel     pnlContent;
+        private System.Windows.Forms.Label     lblInsuranceSectors;
+        private System.Windows.Forms.Label     lblDomainTag;
         private System.Windows.Forms.Label     lblUsernameCaption;
         private System.Windows.Forms.TextBox   txtUsername;
         private System.Windows.Forms.Label     lblPasswordCaption;

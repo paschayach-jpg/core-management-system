@@ -15,6 +15,7 @@ namespace CMS.Presentation.Modules.Workflow
                 _displayRows = (instances ?? new List<WorkflowInstanceResult>())
                     .Select(i => new MonitorRowItem
                     {
+                        WorkflowInstanceId = i.WorkflowInstanceId,
                         InstanceId = $"WFI-{i.WorkflowInstanceId:D5}",
                         WorkflowName = i.WorkflowName ?? "-",
                         AssigneeName = i.InitiatedBy ?? "-",

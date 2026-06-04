@@ -69,6 +69,9 @@ namespace CMS.Presentation.Modules.Workflow
         private System.Windows.Forms.Button btnSearch;
         private System.Windows.Forms.Button btnClearFilter;
 
+        // ── Status tab strip ────────────────────────────────────────────────────
+        private System.Windows.Forms.Panel pnlStatusTabs;
+
         // ── Task list ───────────────────────────────────────────────────────────
         private System.Windows.Forms.ListView lvTasks;
         private System.Windows.Forms.ColumnHeader colId;
@@ -149,6 +152,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.btnSearch = new System.Windows.Forms.Button();
             this.btnClearFilter = new System.Windows.Forms.Button();
 
+            this.pnlStatusTabs = new System.Windows.Forms.Panel();
             this.lvTasks = new System.Windows.Forms.ListView();
             this.colId = new System.Windows.Forms.ColumnHeader();
             this.colWorkflow = new System.Windows.Forms.ColumnHeader();
@@ -293,8 +297,16 @@ namespace CMS.Presentation.Modules.Workflow
             this.pnlDashboard.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlDashboard.Name = "pnlDashboard";
             this.pnlDashboard.Padding = new System.Windows.Forms.Padding(16, 8, 16, 0);
+            // ── pnlStatusTabs ──────────────────────────────────────────────────
+            this.pnlStatusTabs.BackColor = System.Drawing.Color.White;
+            this.pnlStatusTabs.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlStatusTabs.Height = 40;
+            this.pnlStatusTabs.Name = "pnlStatusTabs";
+            this.pnlStatusTabs.Padding = new System.Windows.Forms.Padding(8, 0, 8, 0);
+
             this.pnlDashboard.Controls.Add(this.lvTasks);
             this.pnlDashboard.Controls.Add(this.pnlPagination);
+            this.pnlDashboard.Controls.Add(this.pnlStatusTabs);
             this.pnlDashboard.Controls.Add(this.pnlFilterBar);
             this.pnlDashboard.Controls.Add(this.flpCards);
 
