@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -11,14 +11,8 @@ namespace CMS.Data.Repositories
     {
         private readonly string _connectionString;
 
-        // ตรงกับ query ที่ถูกต้อง:
-        // SELECT a.MappingID, a.DivisionID, c.DivisionName, a.DepartmentID, d.DepartmentName,
-        //        a.PositionID, b.PositionName, a.HeadCount, e.LevelCode
-        // FROM HR_PositionMapping a
-        // INNER JOIN HR_Position b ON a.PositionID = b.PositionID
-        // INNER JOIN HR_Division c ON a.DivisionID = c.DivisionID
-        // INNER JOIN HR_Department d ON a.DepartmentID = d.DepartmentID
-        // INNER JOIN HR_Position e ON a.PositionID = e.PositionID  ← LevelCode
+        // HR_Position (เดิม) ถูก rename เป็น HR_Role
+        // HR_Position_level (เดิม) ถูก rename เป็น HR_Position
         private const string _selectSql =
             @"SELECT
                 m.MappingID,
@@ -28,10 +22,10 @@ namespace CMS.Data.Repositories
                 m.PositionID,   p.PositionCode,  p.PositionName,
                 m.HeadCount,    m.IsActive,       m.CreatedDate,
                 ISNULL(p.Level,'') AS LevelCode
-              FROM core.HR_PositionMapping m
-              INNER JOIN core.HR_Position   p ON p.PositionID   = m.PositionID
-              INNER JOIN core.HR_Division   v ON v.DivisionID   = m.DivisionID
-              INNER JOIN core.HR_Department d ON d.DepartmentID = m.DepartmentID
+              FROM EMS.m_PositionMapping m
+              INNER JOIN EMS.m_Role       p ON p.PositionID   = m.PositionID
+              INNER JOIN EMS.m_Division   v ON v.DivisionID   = m.DivisionID
+              INNER JOIN EMS.m_Department d ON d.DepartmentID = m.DepartmentID
               WHERE m.IsActive = 1";
 
         public HrPositionMappingRepository(IConfigManager configManager)
@@ -66,7 +60,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(sql, conn))
                 {
-                    addParams?.Invoke(cmd);
+                    if (addParams != null) addParams(cmd);
                     using (var r = cmd.ExecuteReader())
                         while (r.Read()) results.Add(Map(r));
                 }
@@ -96,3 +90,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

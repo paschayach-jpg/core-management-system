@@ -335,6 +335,8 @@ namespace CMS.Presentation.Modules.Workflow
             this.Controls.Add(this.pnlRibbonBorder);
             this.Controls.Add(this.pnlRibbonTabs);
 
+            this.Load += new System.EventHandler(this.TemplateApprovalForm_Load);
+
             this.ResumeLayout(false);
         }
     }

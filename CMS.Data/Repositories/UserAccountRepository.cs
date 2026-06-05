@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -22,7 +22,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_GetUserAccountByADUserName", conn))
+                using (var cmd = new SqlCommand("EMS.sp_GetUserAccountByADUserName", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@ADUserName", adUserName);
@@ -40,7 +40,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_GetUserAccountByID", conn))
+                using (var cmd = new SqlCommand("EMS.sp_GetUserAccountByID", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@UserID", userId);
@@ -59,7 +59,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_GetUserAccountsByRole", conn))
+                using (var cmd = new SqlCommand("EMS.sp_GetUserAccountsByRole", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@AppRole", (byte)appRole);
@@ -78,7 +78,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_GetAllUserAccounts", conn))
+                using (var cmd = new SqlCommand("EMS.sp_GetAllUserAccounts", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     using (var reader = cmd.ExecuteReader())
@@ -95,7 +95,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_InsertUserAccount", conn))
+                using (var cmd = new SqlCommand("EMS.sp_InsertUserAccount", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@ADUserName",  account.ADUserName);
@@ -115,7 +115,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-                    UPDATE core.UserAccount SET
+                    UPDATE EMS.UserAccount SET
                         DisplayName     = @DisplayName,
                         AppRole         = @AppRole,
                         OrgUnitID       = @OrgUnitID,
@@ -154,7 +154,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_UpdateLastLogin", conn))
+                using (var cmd = new SqlCommand("EMS.sp_UpdateLastLogin", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@UserID", userId);
@@ -172,7 +172,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-                    UPDATE core.UserAccount
+                    UPDATE EMS.UserAccount
                     SET    LastLoginDate = GETUTCDATE(),
                            LastLoginIP   = @IPAddress,
                            UpdatedAt     = GETUTCDATE()
@@ -199,7 +199,7 @@ namespace CMS.Data.Repositories
                 // ตรวจว่ามีอยู่แล้วหรือไม่
                 int existingId = 0;
                 using (var chk = new SqlCommand(
-                    "SELECT UserID FROM core.UserAccount WHERE ADUserName = @ADUserName", conn))
+                    "SELECT UserID FROM EMS.UserAccount WHERE ADUserName = @ADUserName", conn))
                 {
                     chk.Parameters.AddWithValue("@ADUserName", account.ADUserName);
                     var result = chk.ExecuteScalar();
@@ -211,7 +211,7 @@ namespace CMS.Data.Repositories
                 {
                     // Update: DisplayName, Email, EmployeeCode, IP, UpdatedAt
                     using (var upd = new SqlCommand(@"
-                        UPDATE core.UserAccount SET
+                        UPDATE EMS.UserAccount SET
                             DisplayName   = @DisplayName,
                             Email         = @Email,
                             EmployeeCode  = @EmployeeCode,
@@ -234,7 +234,7 @@ namespace CMS.Data.Repositories
                 {
                     // Insert ใหม่
                     using (var ins = new SqlCommand(@"
-                        INSERT INTO core.UserAccount
+                        INSERT INTO EMS.UserAccount
                             (ADUserName, DisplayName, Email, AppRole, OrgUnitID,
                              EmployeeCode, IsActive, ConsentGiven,
                              LastLoginDate, LastLoginIP, CreatedDate, UpdatedAt)
@@ -263,7 +263,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_UpdateUserConsent", conn))
+                using (var cmd = new SqlCommand("EMS.sp_UpdateUserConsent", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@UserID",       userId);
@@ -279,7 +279,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_DeactivateUserAccount", conn))
+                using (var cmd = new SqlCommand("EMS.sp_DeactivateUserAccount", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@UserID", userId);
@@ -295,7 +295,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT * FROM core.UserAccount WHERE DepartmentId = @DepartmentId AND IsActive = 1", conn))
+                    "SELECT * FROM EMS.UserAccount WHERE DepartmentId = @DepartmentId AND IsActive = 1", conn))
                 {
                     cmd.Parameters.AddWithValue("@DepartmentId", departmentId);
                     using (var reader = cmd.ExecuteReader())
@@ -314,7 +314,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "SELECT DISTINCT PositionName " +
-                    "FROM core.UserAccount " +
+                    "FROM EMS.UserAccount " +
                     "WHERE DepartmentCode = @DepartmentCode " +
                     "  AND IsActive = 1 " +
                     "  AND PositionName IS NOT NULL AND PositionName <> '' " +
@@ -336,7 +336,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT * FROM core.UserAccount WHERE DivisionId = @DivisionId AND IsActive = 1", conn))
+                    "SELECT * FROM EMS.UserAccount WHERE DivisionId = @DivisionId AND IsActive = 1", conn))
                 {
                     cmd.Parameters.AddWithValue("@DivisionId", divisionId);
                     using (var reader = cmd.ExecuteReader())
@@ -358,7 +358,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-                    UPDATE core.UserAccount SET
+                    UPDATE EMS.UserAccount SET
                         EmployeeCode        = @EmployeeCode,
                         EmployeeTitleNameEn = @TitleNameEn,
                         EmployeeFirstNameEn = @FirstNameEn,
@@ -443,3 +443,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

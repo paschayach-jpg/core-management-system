@@ -87,6 +87,32 @@ namespace CMS.Data.Repositories
             };
         }
 
+        public List<AuditLog> GetAuditLogsByWorkflowInstance(int workflowInstanceId)
+        {
+            var results = new List<AuditLog>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "SELECT AuditID, AuditDate, UserID, UserName, UserRole, Module, Action, TableName, RecordID, " +
+                    "       OldValue, NewValue, IPAddress, MachineName, SessionID, Result, ErrorMessage " +
+                    "FROM   audit.AuditLog " +
+                    "WHERE  (TableName = 'WorkflowInstance' AND RecordID = @WorkflowInstanceId) " +
+                    "   OR  (TableName = 'WorkflowStepInstance' AND RecordID IN (SELECT WFStepInstanceId FROM WFE.t_WFStepInstance WHERE WFInstanceId = @WorkflowInstanceId)) " +
+                    "ORDER BY AuditDate ASC", conn))
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("@WorkflowInstanceId", workflowInstanceId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            results.Add(MapAuditLog(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
         private static AuditLog MapAuditLog(SqlDataReader reader)
         {
             return new AuditLog

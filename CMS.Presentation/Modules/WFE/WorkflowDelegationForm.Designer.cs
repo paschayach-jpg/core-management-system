@@ -468,7 +468,8 @@ namespace CMS.Presentation.Modules.Workflow
             // 
             // cmbDelegateTo
             // 
-            this.cmbDelegateTo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbDelegateTo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDown;
+            this.cmbDelegateTo.SelectionChangeCommitted += new System.EventHandler(this.cmbDelegateTo_SelectionChangeCommitted);
             this.cmbDelegateTo.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cmbDelegateTo.FormattingEnabled = true;
             this.cmbDelegateTo.Location = new System.Drawing.Point(358, 78);
@@ -485,7 +486,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblTo.Name = "lblTo";
             this.lblTo.Size = new System.Drawing.Size(104, 15);
             this.lblTo.TabIndex = 3;
-            this.lblTo.Text = "ถึง (ผู้รับมอบหมาย)";
+            this.lblTo.Text = "ถึง (ผู้รับมอบหมาย)  —  ค้นหาจาก AD";
             // 
             // txtFromUser
             // 
@@ -547,7 +548,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.btnCreateDelegation.TabIndex = 2;
             this.btnCreateDelegation.Text = "+ สร้าง Delegation";
             this.btnCreateDelegation.UseVisualStyleBackColor = false;
-            this.btnCreateDelegation.Click += new System.EventHandler(this.btnCancel_Click);
+            this.btnCreateDelegation.Click += new System.EventHandler(this.btnCreateDelegation_Click);
             // 
             // lblSubtitle
             // 

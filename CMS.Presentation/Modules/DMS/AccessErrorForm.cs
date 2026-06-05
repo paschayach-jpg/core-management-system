@@ -33,7 +33,7 @@ namespace CMS.Presentation
                              ? username.Substring(username.LastIndexOf('\\') + 1)
                              : username);
             string u = raw.ToUpperInvariant().PadRight(3).Substring(0, 3);
-            return string.Format("CMS-{0}-{1}-{2:D4}",
+            return string.Format("DMS-{0}-{1}-{2:D4}",
                 DateTime.Now.ToString("yyyyMMdd-HHmm"), u,
                 new Random().Next(1000, 9999));
         }
@@ -56,11 +56,11 @@ namespace CMS.Presentation
                 ? string.Format("ผู้ใช้งาน  \"{0}\"  ยังไม่ได้รับสิทธิ์เข้าใช้งานระบบนี้", username)
                 : string.Format("ผู้ใช้งาน  \"{0}\"  สามารถ Login ได้\nแต่ยังไม่มีสิทธิ์ Menu ที่กำหนดในระบบ", username);
             string actionText = isCase1
-                ? "กรุณาติดต่อ  แผนก HR\nเพื่อขอสิทธิ์เข้าใช้งานระบบ CMS"
+                ? "กรุณาติดต่อ  แผนก HR\nเพื่อขอสิทธิ์เข้าใช้งานระบบ DMS Insurance"
                 : "กรุณาติดต่อผู้ดูแลระบบ  หรือแจ้งผ่าน  IT Helpdesk\nเพื่อขอเพิ่มสิทธิ์ Menu การใช้งาน";
 
             // ── Form properties ────────────────────────────────────────────
-            Text            = "CMS — ไม่สามารถเข้าใช้งานได้";
+            Text            = "DMS Insurance — ไม่สามารถเข้าใช้งานได้";
             ClientSize      = new Size(488, 342);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox     = false;

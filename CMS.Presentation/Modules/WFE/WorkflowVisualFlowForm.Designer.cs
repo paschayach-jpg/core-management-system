@@ -25,6 +25,7 @@ namespace CMS.Presentation.Modules.Workflow
         private System.Windows.Forms.Label lblSubtitle;
         private System.Windows.Forms.Label lblStepBadge;
         private System.Windows.Forms.Button btnExportPng;
+        private System.Windows.Forms.Button btnBack;
         private System.Windows.Forms.Panel pnlTitleBorder;
 
         // ── Designer body (canvas + right panel) ─────────────────────────────
@@ -72,6 +73,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblSubtitle        = new System.Windows.Forms.Label();
             this.lblStepBadge       = new System.Windows.Forms.Label();
             this.btnExportPng       = new System.Windows.Forms.Button();
+            this.btnBack            = new System.Windows.Forms.Button();
             this.pnlTitleBorder     = new System.Windows.Forms.Panel();
             this.pnlDesignerBody    = new System.Windows.Forms.Panel();
             this.pnlCanvasOuter     = new System.Windows.Forms.Panel();
@@ -199,6 +201,21 @@ namespace CMS.Presentation.Modules.Workflow
             this.btnExportPng.Name      = "btnExportPng";
             this.btnExportPng.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(210, 215, 225);
 
+            // 
+            // btnBack
+            // 
+            this.btnBack.Text           = "⇦  ย้อนกลับ";
+            this.btnBack.Font           = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnBack.ForeColor      = System.Drawing.Color.FromArgb(44, 62, 100);
+            this.btnBack.FlatStyle      = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBack.BackColor      = System.Drawing.Color.White;
+            this.btnBack.Anchor         = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            this.btnBack.Location       = new System.Drawing.Point(810, 18);
+            this.btnBack.Size           = new System.Drawing.Size(90, 26);
+            this.btnBack.Name           = "btnBack";
+            this.btnBack.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(210, 215, 225);
+            this.btnBack.Click          += new System.EventHandler(this.btnBack_Click);
+
             this.pnlTitleBorder.Dock      = System.Windows.Forms.DockStyle.Bottom;
             this.pnlTitleBorder.Height    = 1;
             this.pnlTitleBorder.BackColor = System.Drawing.Color.FromArgb(220, 225, 235);
@@ -206,6 +223,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.pnlTitleBar.Controls.Add(this.lblTitle);
             this.pnlTitleBar.Controls.Add(this.lblSubtitle);
             this.pnlTitleBar.Controls.Add(this.lblStepBadge);
+            this.pnlTitleBar.Controls.Add(this.btnBack);
             this.pnlTitleBar.Controls.Add(this.btnExportPng);
             this.pnlTitleBar.Controls.Add(this.pnlTitleBorder);
 

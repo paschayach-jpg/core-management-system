@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 
-namespace CMS.Presentation
+namespace CMS.Services
 {
-    internal static class MenuActionKeyCatalog
+    public static class MenuActionKeyCatalog
     {
         private static readonly string[] BuiltInActionKeys =
         {
@@ -49,7 +49,11 @@ namespace CMS.Presentation
             "WorkflowDesigner",
             "WorkflowDelegation",
             "SLAReport",
-            "WorkflowVisualFlow"
+            "WorkflowVisualFlow",
+            "QuotaConfig",
+            "QuotaRequest",
+            "QuotaApproval",
+            "FolderUsageReport"
         };
 
         public static string[] GetAvailableActionKeys()
@@ -75,7 +79,6 @@ namespace CMS.Presentation
             if (string.IsNullOrEmpty(normalized))
                 return null;
 
-            // Support symbol-style configured value such as #sym:WorkflowDashboardFormNew
             if (string.Equals(normalized, "workflowdashboardformnew", StringComparison.OrdinalIgnoreCase))
                 return "WorkflowDashboard";
             if (string.Equals(normalized, "workflowdetailformnew", StringComparison.OrdinalIgnoreCase))
@@ -90,6 +93,14 @@ namespace CMS.Presentation
                 return "SLAReport";
             if (string.Equals(normalized, "workflowvisualflowform", StringComparison.OrdinalIgnoreCase))
                 return "WorkflowVisualFlow";
+            if (string.Equals(normalized, "folderquotaconfigform", StringComparison.OrdinalIgnoreCase))
+                return "QuotaConfig";
+            if (string.Equals(normalized, "folderquotarequestform", StringComparison.OrdinalIgnoreCase))
+                return "QuotaRequest";
+            if (string.Equals(normalized, "folderquotaapprovalform", StringComparison.OrdinalIgnoreCase))
+                return "QuotaApproval";
+            if (string.Equals(normalized, "folderusagereportform", StringComparison.OrdinalIgnoreCase))
+                return "FolderUsageReport";
 
             foreach (var builtIn in BuiltInActionKeys)
             {

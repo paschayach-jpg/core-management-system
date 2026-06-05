@@ -94,6 +94,8 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.Text            = "เริ่มใช้งาน Workflow";
             this.ClientSize      = new System.Drawing.Size(1020, 720);
             this.MinimumSize     = new System.Drawing.Size(900, 640);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleMode   = System.Windows.Forms.AutoScaleMode.Font;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.StartPosition   = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Font            = new System.Drawing.Font("Segoe UI", 9F);
@@ -102,7 +104,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
 
             // ── Title bar ─────────────────────────────────────────────────────
             this.pnlTitleBar.Dock      = System.Windows.Forms.DockStyle.Top;
-            this.pnlTitleBar.Height    = 52;
+            this.pnlTitleBar.Size      = new System.Drawing.Size(1020, 52);
             this.pnlTitleBar.BackColor = System.Drawing.Color.FromArgb(22, 36, 62);
             this.pnlTitleBar.Name      = "pnlTitleBar";
 
@@ -148,7 +150,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
 
             // ── Footer ────────────────────────────────────────────────────────
             this.pnlFooter.Dock      = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlFooter.Height    = 56;
+            this.pnlFooter.Size      = new System.Drawing.Size(1020, 56);
             this.pnlFooter.BackColor = System.Drawing.Color.FromArgb(248, 249, 252);
             this.pnlFooter.Name      = "pnlFooter";
 

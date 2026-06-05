@@ -66,6 +66,11 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
         {
             InitializeComponent();
             Task = task;
+
+            // Fix docking Z-order to prevent pnlScrollOuter from overlapping pnlTitleBar
+            this.pnlScrollOuter.SendToBack();
+            this.pnlTitleBar.BringToFront();
+            this.pnlFooter.BringToFront();
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -88,6 +93,12 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
                 pnlScrollContent.Width = pnlScrollOuter.ClientSize.Width - 2;
                 pnlScrollOuter.Resize += (s, ev) =>
                     pnlScrollContent.Width = pnlScrollOuter.ClientSize.Width - 2;
+
+                // Reset AutoScrollPosition to (0, 0) when form is shown to override automatic focus scrolling
+                this.Shown += (s, ev) =>
+                {
+                    pnlScrollOuter.AutoScrollPosition = new Point(0, 0);
+                };
             }
             catch (Exception ex)
             {
@@ -378,7 +389,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             bool isSelected = _selectedCandidate != null && _selectedCandidate.UserId == c.UserId;
             var pnl = new Panel
             {
-                Size      = new Size(740, 64),
+                Size      = new Size(720, 64),
                 BackColor = isSelected ? SelectedBg : Color.White,
                 Cursor    = Cursors.Hand,
                 Tag       = c,
@@ -445,7 +456,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             });
 
             // Workload + Match (right side)
-            int rx = 420;
+            int rx = 400;
             pnl.Controls.Add(new Label
             {
                 Text      = string.Format("Workload {0} Active", c.WorkloadActive),
@@ -548,9 +559,12 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
         private void RecalcLayout()
         {
             int candidateBottom = pnlCandidateList.Location.Y + pnlCandidateList.Height + 16;
-            lblMessageHeader.Location = new Point(0, candidateBottom);
-            txtMessage.Location       = new Point(0, candidateBottom + 20);
-            pnlInfoBanner.Location    = new Point(0, candidateBottom + 112);
+            lblMessageHeader.Location = new Point(16, candidateBottom);
+            txtMessage.Location       = new Point(16, candidateBottom + 20);
+            pnlInfoBanner.Location    = new Point(16, candidateBottom + 112);
+
+            int contentHeight = pnlInfoBanner.Location.Y + pnlInfoBanner.Height + 14;
+            pnlScrollContent.Height = Math.Max(contentHeight, pnlScrollOuter.ClientSize.Height);
         }
 
         // ════════════════════════════════════════════════════════════════════
@@ -619,6 +633,14 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             public int    WorkloadActive { get; set; }
             public double AvgDays       { get; set; }
             public int    MatchScore    { get; set; }  // 0–100
+        }
+    }
+
+    public class NonAutoScrollPanel : System.Windows.Forms.Panel
+    {
+        protected override System.Drawing.Point ScrollToControl(System.Windows.Forms.Control activeControl)
+        {
+            return this.AutoScrollPosition;
         }
     }
 }

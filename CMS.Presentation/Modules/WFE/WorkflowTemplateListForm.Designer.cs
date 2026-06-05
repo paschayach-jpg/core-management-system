@@ -72,6 +72,10 @@ namespace CMS.Presentation.Modules.Workflow
         private System.Windows.Forms.LinkLabel lnkShowAll;
         private System.Windows.Forms.Panel pnlSearch;
         private System.Windows.Forms.Label lblSearchIcon;
+        private System.Windows.Forms.Button btnClose;
+        private System.Windows.Forms.Button btnPrev;
+        private System.Windows.Forms.Button btnNext;
+        private System.Windows.Forms.Label lblPageInfo;
 
         protected override void Dispose(bool disposing)
         {
@@ -155,6 +159,10 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblIconConfig      = new System.Windows.Forms.Label();
             this.pnlSearch          = new System.Windows.Forms.Panel();
             this.lblSearchIcon      = new System.Windows.Forms.Label();
+            this.btnClose           = new System.Windows.Forms.Button();
+            this.btnPrev           = new System.Windows.Forms.Button();
+            this.btnNext           = new System.Windows.Forms.Button();
+            this.lblPageInfo       = new System.Windows.Forms.Label();
 
             this.pnlRibbon.SuspendLayout();
             this.pnlSearch.SuspendLayout();
@@ -293,7 +301,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.pnlPageHeader.Height    = 72;
             this.pnlPageHeader.Name      = "pnlPageHeader";
             this.pnlPageHeader.Controls.AddRange(new System.Windows.Forms.Control[] {
-                this.lblPageTitle, this.lblPageSubtitle, this.btnCreateNew });
+                this.lblPageTitle, this.lblPageSubtitle, this.btnCreateNew, this.btnClose });
             this.pnlPageHeader.Resize += new System.EventHandler(this.pnlPageHeader_Resize);
 
             this.lblPageTitle.AutoSize  = true;
@@ -322,6 +330,19 @@ namespace CMS.Presentation.Modules.Workflow
             this.btnCreateNew.Text        = "+ สร้าง Template ใหม่";
             this.btnCreateNew.Cursor      = System.Windows.Forms.Cursors.Hand;
             this.btnCreateNew.Click      += new System.EventHandler(this.btnCreate_Click);
+
+            this.btnClose.Anchor         = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            this.btnClose.BackColor      = System.Drawing.Color.White;
+            this.btnClose.FlatStyle      = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClose.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(209, 213, 219);
+            this.btnClose.Font           = new System.Drawing.Font("Segoe UI", 9.5F);
+            this.btnClose.ForeColor      = System.Drawing.Color.FromArgb(55, 65, 81);
+            this.btnClose.Location       = new System.Drawing.Point(1006, 18);
+            this.btnClose.Size           = new System.Drawing.Size(90, 36);
+            this.btnClose.Name           = "btnClose";
+            this.btnClose.Text           = "ปิด";
+            this.btnClose.Cursor         = System.Windows.Forms.Cursors.Hand;
+            this.btnClose.Click         += new System.EventHandler(this.btnClose_Click);
 
             // ── pnlFilters ───────────────────────────────────────────────────
             this.pnlFilters.BackColor = System.Drawing.Color.White;
@@ -413,7 +434,7 @@ namespace CMS.Presentation.Modules.Workflow
             cellStyle.BackColor          = System.Drawing.Color.White;
             cellStyle.Font               = new System.Drawing.Font("Segoe UI", 9F);
             cellStyle.ForeColor          = System.Drawing.Color.FromArgb(55, 65, 81);
-            cellStyle.SelectionBackColor = System.Drawing.Color.FromArgb(238, 242, 255);
+            cellStyle.SelectionBackColor = System.Drawing.Color.FromArgb(191, 219, 254);
             cellStyle.SelectionForeColor = System.Drawing.Color.FromArgb(29, 78, 216);
             cellStyle.Padding            = new System.Windows.Forms.Padding(4, 0, 4, 0);
 
@@ -512,7 +533,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.pnlFooter.Height    = 36;
             this.pnlFooter.Name      = "pnlFooter";
             this.pnlFooter.Controls.AddRange(new System.Windows.Forms.Control[] {
-                this.lblSelectionInfo, this.lnkShowAll });
+                this.lblSelectionInfo, this.lnkShowAll, this.btnPrev, this.lblPageInfo, this.btnNext });
             this.pnlFooter.Paint  += new System.Windows.Forms.PaintEventHandler(this.pnlFooter_Paint);
             this.pnlFooter.Resize += new System.EventHandler(this.pnlFooter_Resize);
 
@@ -530,6 +551,44 @@ namespace CMS.Presentation.Modules.Workflow
             this.lnkShowAll.Name        = "lnkShowAll";
             this.lnkShowAll.Text        = "แสดงทั้งหมด";
             this.lnkShowAll.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.lnkShowAll_LinkClicked);
+
+            // 
+            // btnPrev
+            // 
+            this.btnPrev.BackColor = System.Drawing.Color.White;
+            this.btnPrev.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnPrev.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(209, 213, 219);
+            this.btnPrev.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnPrev.ForeColor = System.Drawing.Color.FromArgb(55, 65, 81);
+            this.btnPrev.Size = new System.Drawing.Size(76, 26);
+            this.btnPrev.Text = "← ก่อนหน้า";
+            this.btnPrev.Name = "btnPrev";
+            this.btnPrev.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnPrev.Click += new System.EventHandler(this.btnPrev_Click);
+
+            // 
+            // lblPageInfo
+            // 
+            this.lblPageInfo.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblPageInfo.ForeColor = System.Drawing.Color.FromArgb(55, 65, 81);
+            this.lblPageInfo.Size = new System.Drawing.Size(80, 26);
+            this.lblPageInfo.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblPageInfo.Text = "หน้า 1";
+            this.lblPageInfo.Name = "lblPageInfo";
+
+            // 
+            // btnNext
+            // 
+            this.btnNext.BackColor = System.Drawing.Color.White;
+            this.btnNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnNext.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(209, 213, 219);
+            this.btnNext.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnNext.ForeColor = System.Drawing.Color.FromArgb(55, 65, 81);
+            this.btnNext.Size = new System.Drawing.Size(76, 26);
+            this.btnNext.Text = "ถัดไป →";
+            this.btnNext.Name = "btnNext";
+            this.btnNext.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnNext.Click += new System.EventHandler(this.btnNext_Click);
 
             // ── Form ─────────────────────────────────────────────────────────
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);

@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Windows.Forms;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
+using CMS.Presentation.Modules.Workflow.Dialogs;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 
@@ -16,12 +19,17 @@ namespace CMS.Presentation.Modules.Workflow
         private readonly IWorkflowTemplateService _templateService;
         private readonly ILoggingService _loggingService;
         private readonly UserContext _userContext;
+        private readonly IAuditService _auditService;
         private int _workflowInstanceId;
+        private int _pendingStepInstanceId = 0;
 
         private Panel _activeNavItem;
         private readonly Color _navyDark = Color.FromArgb(31, 56, 100);
         private readonly Color _navHover = Color.FromArgb(245, 249, 255);
         private int _activeTabIndex = 0;
+
+        public string SourceNavTag { get; set; }
+        public int WorkflowInstanceId => _workflowInstanceId;
 
         public WorkflowDetailFormNew()
         {
@@ -33,13 +41,15 @@ namespace CMS.Presentation.Modules.Workflow
             IWorkflowService workflowService,
             IWorkflowTemplateService templateService,
             ILoggingService loggingService,
-            UserContext userContext)
+            UserContext userContext,
+            IAuditService auditService = null)
         {
             _workflowInstanceId = workflowInstanceId;
             _workflowService = workflowService;
             _templateService = templateService;
             _loggingService = loggingService;
             _userContext = userContext;
+            _auditService = auditService;
             InitializeComponent();
         }
 
@@ -280,24 +290,228 @@ namespace CMS.Presentation.Modules.Workflow
         private void OnToolbarClick(string tag)
         {
             if (tag == "approve") { btnApproveAction(); return; }
+            if (tag == "cancel")  { CancelWorkflowAction(); return; }
             MessageBox.Show(string.Format("ฟังก์ชัน '{0}' อยู่ระหว่างพัฒนา", tag), "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void btnApproveAction()
         {
-            if (MessageBox.Show("ยืนยันการอนุมัติขั้นตอนนี้?", "ยืนยันการอนุมัติ", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (_workflowService == null)
             {
+                MessageBox.Show("Workflow service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (_pendingStepInstanceId <= 0)
+            {
+                MessageBox.Show("ไม่มีขั้นตอนที่รอดำเนินการสำหรับคุณในงานนี้",
+                    "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var taskInfo = new WorkflowTaskResult
+            {
+                WorkflowStepInstanceId = _pendingStepInstanceId,
+                WorkflowInstanceId     = _workflowInstanceId,
+                WorkflowName           = lblTitle.Text,
+                StepName               = lblCurrentStepValue.Text,
+                InitiatedBy            = lblInitiatorValue.Text
+            };
+
+            using (var actionForm = new WorkflowStepActionForm(taskInfo))
+            {
+                actionForm.InitiatorName = lblInitiatorValue.Text;
+
+                if (actionForm.ShowDialog(this) != DialogResult.OK)
+                    return;
+
                 try
                 {
-                    MessageBox.Show("อนุมัติขั้นตอนเรียบร้อยแล้ว", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    if (_workflowService != null) LoadFromService(); else LoadMockData();
+                    string action   = actionForm.SelectedAction;
+                    string comments = actionForm.Comments;
+
+                    if (string.Equals(action, "Reject", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _workflowService.RejectWorkflowStep(new RejectWorkflowStepRequest
+                        {
+                            WorkflowInstanceId     = _workflowInstanceId,
+                            WorkflowStepInstanceId = _pendingStepInstanceId,
+                            RejectionReason        = comments,
+                            Remarks                = comments
+                        }, _userContext);
+                    }
+                    else
+                    {
+                        _workflowService.CompleteWorkflowStep(new CompleteWorkflowStepRequest
+                        {
+                            WorkflowInstanceId     = _workflowInstanceId,
+                            WorkflowStepInstanceId = _pendingStepInstanceId,
+                            OutputData             = null,
+                            Remarks                = comments
+                        }, _userContext);
+                    }
+
+                    MessageBox.Show("ดำเนินการเสร็จสิ้น", "สำเร็จ",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    LoadFromService();
                 }
                 catch (Exception ex)
                 {
-                    _loggingService?.Error("Error approving step: " + ex.Message, ex);
-                    MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _loggingService?.Error("Error processing workflow step: " + ex.Message, ex);
+                    MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ข้อผิดพลาด",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        private void CancelWorkflowAction()
+        {
+            if (_workflowService == null)
+            {
+                MessageBox.Show("Workflow service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Show a modern cancel-reason dialog matching the app's navy/card style
+            string reason = ShowCancelReasonDialog();
+            if (reason == null) return; // user pressed Cancel
+
+            try
+            {
+                _workflowService.CancelWorkflowInstance(_workflowInstanceId, reason, _userContext);
+                MessageBox.Show("ยกเลิก Workflow เรียบร้อยแล้ว", "สำเร็จ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadFromService();
+            }
+            catch (InvalidOperationException ioe)
+            {
+                MessageBox.Show(ioe.Message, "ไม่สามารถยกเลิกได้",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error("Error cancelling workflow: " + ex.Message, ex);
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // Returns the reason string entered, or null when the user dismissed without confirming.
+        private string ShowCancelReasonDialog()
+        {
+            var navyDark  = Color.FromArgb(31,  56, 100);
+            var navyBtn   = Color.FromArgb(41,  71, 120);
+            var redBtn    = Color.FromArgb(192,  57,  43);
+
+            var dlg = new Form
+            {
+                Text            = "",
+                FormBorderStyle = FormBorderStyle.None,
+                StartPosition   = FormStartPosition.CenterParent,
+                Size            = new Size(480, 300),
+                BackColor       = Color.White,
+                MinimumSize     = new Size(480, 300),
+            };
+
+            // Title bar
+            var titleBar = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = navyDark };
+            var lblDlgTitle = new Label
+            {
+                Text      = "ยกเลิก Workflow",
+                ForeColor = Color.White,
+                Font      = new Font("Segoe UI", 11f, FontStyle.Bold),
+                AutoSize  = false,
+                Dock      = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding   = new Padding(16, 0, 0, 0)
+            };
+            titleBar.Controls.Add(lblDlgTitle);
+
+            // Drag support
+            bool dragging = false; Point dragStart = Point.Empty;
+            titleBar.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { dragging = true; dragStart = e.Location; } };
+            titleBar.MouseMove += (s, e) => { if (dragging) dlg.Location = new Point(dlg.Location.X + e.X - dragStart.X, dlg.Location.Y + e.Y - dragStart.Y); };
+            titleBar.MouseUp   += (s, e) => dragging = false;
+            lblDlgTitle.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { dragging = true; dragStart = e.Location; } };
+            lblDlgTitle.MouseMove += (s, e) => { if (dragging) dlg.Location = new Point(dlg.Location.X + e.X - dragStart.X, dlg.Location.Y + e.Y - dragStart.Y); };
+            lblDlgTitle.MouseUp   += (s, e) => dragging = false;
+
+            // Body
+            var body = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
+
+            var lblPrompt = new Label
+            {
+                Text      = "ระบุเหตุผลในการยกเลิก (ไม่บังคับ):",
+                Font      = new Font("Segoe UI", 9.5f),
+                ForeColor = Color.FromArgb(60, 70, 90),
+                AutoSize  = false,
+                Size      = new Size(440, 22),
+                Location  = new Point(20, 20)
+            };
+
+            var txtReason = new TextBox
+            {
+                Multiline   = true,
+                ScrollBars  = ScrollBars.Vertical,
+                Font        = new Font("Segoe UI", 9.5f),
+                Size        = new Size(440, 90),
+                Location    = new Point(20, 48),
+                BorderStyle = BorderStyle.FixedSingle,
+                MaxLength   = 500
+            };
+
+            var lblWarning = new Label
+            {
+                Text      = "⚠  การยกเลิกไม่สามารถเรียกคืนได้",
+                Font      = new Font("Segoe UI", 9f, FontStyle.Italic),
+                ForeColor = Color.FromArgb(180, 60, 40),
+                AutoSize  = false,
+                Size      = new Size(440, 22),
+                Location  = new Point(20, 150)
+            };
+
+            var btnConfirm = new Button
+            {
+                Text      = "ยืนยันการยกเลิก",
+                Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = redBtn,
+                FlatStyle = FlatStyle.Flat,
+                Size      = new Size(150, 34),
+                Location  = new Point(310, 190),
+                DialogResult = DialogResult.OK
+            };
+            btnConfirm.FlatAppearance.BorderSize = 0;
+
+            var btnClose = new Button
+            {
+                Text      = "ปิด",
+                Font      = new Font("Segoe UI", 9.5f),
+                ForeColor = Color.White,
+                BackColor = navyBtn,
+                FlatStyle = FlatStyle.Flat,
+                Size      = new Size(90, 34),
+                Location  = new Point(210, 190),
+                DialogResult = DialogResult.Cancel
+            };
+            btnClose.FlatAppearance.BorderSize = 0;
+
+            body.Controls.AddRange(new Control[] { lblPrompt, txtReason, lblWarning, btnConfirm, btnClose });
+            dlg.Controls.Add(body);
+            dlg.Controls.Add(titleBar);
+            dlg.AcceptButton = btnConfirm;
+            dlg.CancelButton = btnClose;
+
+            // Border
+            dlg.Paint += (s, pe) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(200, 210, 225), 1))
+                    pe.Graphics.DrawRectangle(pen, 0, 0, dlg.Width - 1, dlg.Height - 1);
+            };
+
+            return dlg.ShowDialog(this) == DialogResult.OK ? txtReason.Text.Trim() : null;
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -343,59 +557,78 @@ namespace CMS.Presentation.Modules.Workflow
 
                 int pct = instance.TotalStepCount > 0
                     ? (int)((double)instance.CompletedStepCount / instance.TotalStepCount * 100) : 0;
+                // Guard: never show 100% while the workflow is still running — prevents misleading "done" state.
+                if (pct >= 100 && instance.Status != WorkflowInstanceStatus.Completed
+                                && instance.Status != WorkflowInstanceStatus.Cancelled)
+                    pct = 99;
                 lblStepBadge.Text = string.Format("Step {0}/{1}", instance.CompletedStepCount, instance.TotalStepCount);
                 prgProgress.Value = Math.Min(pct, 100);
                 lblProgressPct.Text = pct + "%";
                 lblCurrentStepValue.Text = instance.CurrentStepName ?? "-";
 
                 UpdateSlaBar(pct, Color.FromArgb(197, 120, 16));
+
+                // Resolve pending step instance for the current user
+                _pendingStepInstanceId = 0;
+                try
+                {
+                    var myTasks = _workflowService.GetMyTasks(_userContext);
+                    var pendingTask = myTasks?.FirstOrDefault(t =>
+                        t.WorkflowInstanceId == _workflowInstanceId &&
+                        (t.Status == WorkflowStepInstanceStatus.Pending ||
+                         t.Status == WorkflowStepInstanceStatus.InProgress));
+                    _pendingStepInstanceId = pendingTask?.WorkflowStepInstanceId ?? 0;
+                }
+                catch { /* non-fatal: approve button will show "no pending task" */ }
+
+                PopulateTimeline(instance);
             }
             catch (Exception ex) { _loggingService?.Error(ex.Message, ex); LoadMockData(); }
         }
 
         private void LoadMockData()
         {
-            lblTitle.Text = "WFI-2569-00012 · อนุมัติ KB Article";
-            lblSubtitle.Text = "Instance ของ Template WFD-003 v1 · Frozen Snapshot";
-            lblBreadcrumb.Text = "CMS  ›  Workflow Engine  ›  Monitor  ›  WFI-2569-00012";
+            lblTitle.Text = "ไม่มีข้อมูล";
+            lblSubtitle.Text = "ไม่พบเวิร์กโฟลว์หรือบริการไม่พร้อมใช้งาน";
+            lblBreadcrumb.Text = "CMS  ›  Workflow Engine  ›  Monitor";
 
-            lblWFIDValue.Text = "WFI-2569-00012";
-            lblTemplateValue.Text = "WFD-003 · อนุมัติ KB Article  v1";
-            lblInitiatorValue.Text = "สมชาย กาญจนา";
-            lblInitiatorRoleValue.Text = "Officer · IT";
-            lblStartDateValue.Text = "15/04/2569 09:30";
-            lblDueDateValue.Text = "22/04/2569 17:00 (รวม)";
-            lblLinkedDocValue.Text = "🔗  KBArticle#1234  คู่มือ PDPA";
-            lblCRAFValue.Text = "● 3NC · General";
+            lblWFIDValue.Text = "-";
+            lblTemplateValue.Text = "-";
+            lblInitiatorValue.Text = "-";
+            lblInitiatorRoleValue.Text = "-";
+            lblStartDateValue.Text = "-";
+            lblDueDateValue.Text = "-";
+            lblLinkedDocValue.Text = "-";
+            lblCRAFValue.Text = "-";
 
-            lblStepBadge.Text = "Step 2/3";
-            prgProgress.Value = 55;
-            lblProgressPct.Text = "55%";
-            lblCurrentStepValue.Text = "ผู้จัดการตรวจสอบเนื้อหา";
-            lblAssigneeValue.Text = "วิชัย มีสุข";
-            lblAssigneeRoleValue.Text = "Manager · Legal";
-            lblDeadlineValue.Text = "20/04/2569 17:00";
-            lblSLAValue.Text = "เหลือ 3 วัน";
-            lblStartedValue.Text = "15/04/2569 09:32";
+            lblStepBadge.Text = "Step 0/0";
+            prgProgress.Value = 0;
+            lblProgressPct.Text = "0%";
+            lblCurrentStepValue.Text = "-";
+            lblAssigneeValue.Text = "-";
+            lblAssigneeRoleValue.Text = "-";
+            lblDeadlineValue.Text = "-";
+            lblSLAValue.Text = "-";
+            lblStartedValue.Text = "-";
 
-            lblStatusBadge.Text = "● กำลังดำเนินการ";
+            lblStatusBadge.Text = "● ไม่มีข้อมูล";
 
-            // Initiator avatar: สมชาย กาญจนา → "สก" orange
-            pnlInitiatorAvatar.Tag = "สก|230,115,0";
+            // Initiator avatar: -
+            pnlInitiatorAvatar.Tag = "-|120,130,150";
             pnlInitiatorAvatar.Invalidate();
 
-            // Assignee avatar: วิชัย มีสุข → "วม" blue
-            pnlAssigneeAvatar.Tag = "วม|41,128,185";
+            // Assignee avatar: -
+            pnlAssigneeAvatar.Tag = "-|120,130,150";
             pnlAssigneeAvatar.Invalidate();
 
-            // Ribbon avatar: อรวรรณ สุวรรณ → "AS" navy
-            pnlRibbonAvatar.Tag = "AS|90,120,170";
+            // Ribbon avatar: -
+            pnlRibbonAvatar.Tag = "-|120,130,150";
             pnlRibbonAvatar.Invalidate();
 
-            // SLA bar: 40% orange
-            UpdateSlaBar(40, Color.FromArgb(197, 120, 16));
+            // SLA bar: 0%
+            UpdateSlaBar(0, Color.FromArgb(120, 130, 150));
 
-            LoadMockTimeline();
+            RenderTimeline(new TimelineStep[0]);
         }
 
         private void UpdateSlaBar(int percent, Color barColor)
@@ -428,6 +661,115 @@ namespace CMS.Presentation.Modules.Workflow
             RenderTimeline(steps);
         }
 
+        private void PopulateTimeline(WorkflowInstanceResult instance)
+        {
+            if (instance == null) return;
+            
+            if (instance.StepHistory == null || instance.StepHistory.Count == 0)
+            {
+                RenderTimeline(new TimelineStep[0]);
+                return;
+            }
+
+            var timelineSteps = new List<TimelineStep>();
+            foreach (var step in instance.StepHistory)
+            {
+                var timelineStep = new TimelineStep();
+                timelineStep.Title = step.StepName;
+                timelineStep.StepType = step.StepType.ToString();
+                timelineStep.Remark = step.Remarks ?? "";
+
+                // Actor Formatting
+                if (step.Status == WorkflowStepInstanceStatus.Completed)
+                {
+                    timelineStep.Actor = !string.IsNullOrEmpty(step.CompletedBy) 
+                        ? step.CompletedBy 
+                        : (!string.IsNullOrEmpty(step.AssignedTo) ? step.AssignedTo : "ระบบ");
+                }
+                else
+                {
+                    timelineStep.Actor = !string.IsNullOrEmpty(step.AssignedTo) ? step.AssignedTo : "ระบบ";
+                }
+
+                // Status tag & color & Icon
+                switch (step.Status)
+                {
+                    case WorkflowStepInstanceStatus.Completed:
+                        timelineStep.Icon = "✓";
+                        timelineStep.IconColor = Color.FromArgb(34, 139, 34); // Forest Green
+                        timelineStep.StatusTag = "อนุมัติ";
+                        timelineStep.StatusColor = Color.FromArgb(34, 139, 34);
+                        break;
+
+                    case WorkflowStepInstanceStatus.Rejected:
+                        timelineStep.Icon = "✘";
+                        timelineStep.IconColor = Color.FromArgb(192, 57, 43); // Alizarin Red
+                        timelineStep.StatusTag = "ปฏิเสธ";
+                        timelineStep.StatusColor = Color.FromArgb(192, 57, 43);
+                        break;
+
+                    case WorkflowStepInstanceStatus.InProgress:
+                        timelineStep.Icon = "●";
+                        timelineStep.IconColor = Color.FromArgb(230, 115, 0); // Orange
+                        timelineStep.StatusTag = "กำลังดำเนินการ";
+                        timelineStep.StatusColor = Color.FromArgb(230, 115, 0);
+                        break;
+
+                    case WorkflowStepInstanceStatus.Delegated:
+                        timelineStep.Icon = "→";
+                        timelineStep.IconColor = Color.FromArgb(0, 102, 204); // Blue
+                        timelineStep.StatusTag = "มอบหมาย";
+                        timelineStep.StatusColor = Color.FromArgb(0, 102, 204);
+                        break;
+
+                    case WorkflowStepInstanceStatus.Pending:
+                    default:
+                        timelineStep.Icon = "○";
+                        timelineStep.IconColor = Color.FromArgb(180, 185, 195); // Light Gray
+                        timelineStep.StatusTag = "ยังไม่เริ่ม";
+                        timelineStep.StatusColor = Color.FromArgb(180, 185, 195);
+                        break;
+                }
+
+                // Date/Deadline Info
+                if (step.Status == WorkflowStepInstanceStatus.Completed || step.Status == WorkflowStepInstanceStatus.Rejected)
+                {
+                    timelineStep.DateInfo = step.CompletedDate.HasValue 
+                        ? step.CompletedDate.Value.ToString("dd/MM/yyyy HH:mm") 
+                        : "-";
+                }
+                else if (step.Status == WorkflowStepInstanceStatus.InProgress)
+                {
+                    if (step.SLADeadline == DateTime.MinValue || step.SLADeadline.Year < 2000)
+                    {
+                        timelineStep.DateInfo = "กำหนด -";
+                    }
+                    else
+                    {
+                        var remaining = step.SLADeadline - DateTime.Now;
+                        if (remaining.TotalSeconds > 0)
+                        {
+                            int days = (int)Math.Ceiling(remaining.TotalDays);
+                            timelineStep.DateInfo = string.Format("กำหนด {0} · คงเหลือ {1} วัน", step.SLADeadline.ToString("dd/MM/yyyy HH:mm"), days);
+                        }
+                        else
+                        {
+                            int days = (int)Math.Ceiling(Math.Abs(remaining.TotalDays));
+                            timelineStep.DateInfo = string.Format("กำหนด {0} · เกินกำหนด {1} วัน", step.SLADeadline.ToString("dd/MM/yyyy HH:mm"), days);
+                        }
+                    }
+                }
+                else
+                {
+                    timelineStep.DateInfo = "— รอ Step ก่อนหน้า";
+                }
+
+                timelineSteps.Add(timelineStep);
+            }
+
+            RenderTimeline(timelineSteps.ToArray());
+        }
+
         private void RenderTimeline(TimelineStep[] steps)
         {
             pnlTimelineContent.Controls.Clear();
@@ -448,6 +790,7 @@ namespace CMS.Presentation.Modules.Workflow
             bool isActive = step.Icon == "●";
             int rowH = (isActive || hasRemark) ? 80 : 56;
             var row = new Panel { Size = new Size(pnlTimelineContent.Width - 24, rowH), BackColor = isActive ? Color.FromArgb(255, 251, 242) : Color.White };
+            row.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
 
             // Left accent bar
             row.Controls.Add(new Panel { Location = new Point(0, 4), Size = new Size(3, rowH - 8), BackColor = step.IconColor });
@@ -458,6 +801,7 @@ namespace CMS.Presentation.Modules.Workflow
 
             // Title
             var titleLbl = new Label { Text = step.Title, Font = new Font("Segoe UI", 9.5F, FontStyle.Bold), ForeColor = Color.FromArgb(30, 36, 55), Location = new Point(46, 10), Size = new Size(270, 20), BackColor = Color.Transparent, AutoEllipsis = true };
+            titleLbl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             row.Controls.Add(titleLbl);
 
             // Step type badge
@@ -469,11 +813,13 @@ namespace CMS.Presentation.Modules.Workflow
 
             // Actor
             var actorLbl = new Label { Text = "⬤  " + step.Actor, Font = new Font("Segoe UI", 8.5F), ForeColor = Color.FromArgb(70, 80, 100), Location = new Point(46, 30), Size = new Size(300, 16), BackColor = Color.Transparent };
+            actorLbl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             row.Controls.Add(actorLbl);
 
             // Date
             int dateY = (isActive || hasRemark) ? 50 : 30;
             var dateLbl = new Label { Text = step.DateInfo, Font = new Font("Segoe UI", 8F), ForeColor = Color.FromArgb(120, 130, 150), Location = new Point(46, dateY), Size = new Size(380, 16), BackColor = Color.Transparent };
+            dateLbl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             row.Controls.Add(dateLbl);
 
             // Status badge (pill)
@@ -510,6 +856,7 @@ namespace CMS.Presentation.Modules.Workflow
             if (hasRemark)
             {
                 var remarkLbl = new Label { Text = "\"" + step.Remark + "\"", Font = new Font("Segoe UI", 8.5F, FontStyle.Italic), ForeColor = Color.FromArgb(100, 110, 130), Location = new Point(46, 48), Size = new Size(row.Width - 160, 24), BackColor = Color.Transparent, AutoEllipsis = true };
+                remarkLbl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
                 row.Controls.Add(remarkLbl);
             }
             return row;
@@ -562,8 +909,229 @@ namespace CMS.Presentation.Modules.Workflow
                     b.Invalidate();
                 }
             }
-            if (idx != 0)
-                MessageBox.Show("หน้า '" + new[] { "Timeline", "Visual Flow", "Audit Log" }[idx] + "' อยู่ระหว่างพัฒนา", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (idx == 1)
+            {
+                WorkflowNavigationHandler.HandleNavigation("visualflow", this, _workflowService, _templateService, null, _loggingService, _userContext, null, _workflowInstanceId);
+                return;
+            }
+            if (idx == 0)
+            {
+                pnlTimelineScroll.Visible = true;
+                if (pnlAuditLogScroll != null) pnlAuditLogScroll.Visible = false;
+            }
+            else if (idx == 2)
+            {
+                pnlTimelineScroll.Visible = false;
+                ShowAuditLogView();
+            }
+        }
+
+        private Panel pnlAuditLogScroll;
+        private Panel pnlAuditLogContent;
+
+        private void ShowAuditLogView()
+        {
+            if (pnlAuditLogScroll == null)
+            {
+                pnlAuditLogScroll = new Panel
+                {
+                    AutoScroll = true,
+                    BackColor = Color.White,
+                    Dock = DockStyle.Fill,
+                    Name = "pnlAuditLogScroll"
+                };
+                pnlAuditLogContent = new Panel
+                {
+                    BackColor = Color.White,
+                    Dock = DockStyle.Top,
+                    Height = 400,
+                    Name = "pnlAuditLogContent"
+                };
+                pnlAuditLogScroll.Controls.Add(pnlAuditLogContent);
+                pnlTimelineCard.Controls.Add(pnlAuditLogScroll);
+                pnlAuditLogScroll.BringToFront();
+            }
+
+            pnlAuditLogScroll.Visible = true;
+            pnlAuditLogScroll.BringToFront();
+
+            LoadAuditLogs();
+        }
+
+        private void LoadAuditLogs()
+        {
+            try
+            {
+                pnlAuditLogContent.Controls.Clear();
+                if (_auditService == null || _workflowInstanceId <= 0)
+                {
+                    var lblEmpty = new Label
+                    {
+                        Text = "ไม่มีข้อมูล Audit Log (บริการไม่พร้อมใช้งาน)",
+                        Font = new Font("Segoe UI", 9.5F, FontStyle.Italic),
+                        ForeColor = Color.Gray,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Dock = DockStyle.Fill
+                    };
+                    pnlAuditLogContent.Controls.Add(lblEmpty);
+                    pnlAuditLogContent.Height = 100;
+                    return;
+                }
+
+                var logs = _auditService.GetWorkflowAuditLogs(_workflowInstanceId, _userContext);
+                if (logs == null || logs.Count == 0)
+                {
+                    var lblEmpty = new Label
+                    {
+                        Text = "ไม่พบประวัติการแก้ไขใน Audit Log",
+                        Font = new Font("Segoe UI", 9.5F, FontStyle.Italic),
+                        ForeColor = Color.Gray,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Dock = DockStyle.Fill
+                    };
+                    pnlAuditLogContent.Controls.Add(lblEmpty);
+                    pnlAuditLogContent.Height = 100;
+                    return;
+                }
+
+                int y = 8;
+                foreach (var log in logs)
+                {
+                    var row = BuildAuditLogRow(log);
+                    row.Location = new Point(12, y);
+                    pnlAuditLogContent.Controls.Add(row);
+                    y += row.Height + 4;
+                }
+                pnlAuditLogContent.Height = y + 8;
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error("Error loading audit logs: " + ex.Message, ex);
+                MessageBox.Show("ไม่สามารถโหลด Audit Log ได้: " + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private Panel BuildAuditLogRow(AuditLog log)
+        {
+            Color outcomeColor = Color.FromArgb(34, 139, 34); // Success green
+            if (log.Result == 2) outcomeColor = Color.FromArgb(192, 57, 43); // Failure red
+            else if (log.Result == 3) outcomeColor = Color.FromArgb(230, 115, 0); // Denied orange
+
+            string details = log.NewValue ?? log.OldValue ?? "";
+            bool hasDetails = !string.IsNullOrEmpty(details);
+            int rowH = hasDetails ? 80 : 56;
+
+            var row = new Panel
+            {
+                Size = new Size(pnlAuditLogContent.Width - 24, rowH),
+                BackColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+
+            // Left accent bar
+            row.Controls.Add(new Panel { Location = new Point(0, 4), Size = new Size(3, rowH - 8), BackColor = outcomeColor });
+
+            // Action / Event Type
+            string actionText = log.Action;
+            if (actionText == "WorkflowInstanceCreated") actionText = "สร้าง Workflow";
+            else if (actionText == "WorkflowStepCompleted") actionText = "ดำเนินการขั้นตอนเสร็จสิ้น";
+            else if (actionText == "WorkflowStepRejected") actionText = "ปฏิเสธขั้นตอน";
+            else if (actionText == "WorkflowInstanceCancelled") actionText = "ยกเลิก Workflow";
+            else if (actionText == "WorkflowInstanceSuspended") actionText = "ระงับ Workflow";
+            else if (actionText == "WorkflowInstanceResumed") actionText = "ให้ Workflow ทำงานต่อ";
+
+            var actionLbl = new Label
+            {
+                Text = actionText,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 36, 55),
+                Location = new Point(14, 10),
+                Size = new Size(300, 20),
+                BackColor = Color.Transparent,
+                AutoEllipsis = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            row.Controls.Add(actionLbl);
+
+            // User / Actor
+            var userLbl = new Label
+            {
+                Text = "⬤  ผู้ดำเนินการ: " + (log.UserName ?? "ระบบ"),
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(70, 80, 100),
+                Location = new Point(14, 30),
+                Size = new Size(300, 16),
+                BackColor = Color.Transparent,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            row.Controls.Add(userLbl);
+
+            // Timestamp / IP / Machine Info
+            int dateY = hasDetails ? 50 : 30;
+            string dateInfo = log.AuditDate.ToString("dd/MM/yyyy HH:mm:ss");
+            if (!string.IsNullOrEmpty(log.IPAddress)) dateInfo += "  ·  IP: " + log.IPAddress;
+            var dateLbl = new Label
+            {
+                Text = dateInfo,
+                Font = new Font("Segoe UI", 8F),
+                ForeColor = Color.FromArgb(120, 130, 150),
+                Location = new Point(14, dateY),
+                Size = new Size(380, 16),
+                BackColor = Color.Transparent,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            row.Controls.Add(dateLbl);
+
+            // Outcome Badge
+            string outcomeText = log.Outcome;
+            if (outcomeText == "Success") outcomeText = "สำเร็จ";
+            else if (outcomeText == "Failure") outcomeText = "ล้มเหลว";
+            else if (outcomeText == "Denied") outcomeText = "ถูกปฏิเสธ";
+
+            var outcomeLbl = new Label
+            {
+                Text = outcomeText,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = outcomeColor,
+                BackColor = Color.Transparent,
+                Location = new Point(row.Width - 120, 12),
+                Size = new Size(106, 22),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            outcomeLbl.Paint += (s, pe) =>
+            {
+                pe.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                var r2 = new Rectangle(0, 0, outcomeLbl.Width - 1, outcomeLbl.Height - 1);
+                using (var br = new SolidBrush(Color.FromArgb(30, outcomeColor)))
+                using (var path = RoundedRect(r2, 4)) pe.Graphics.FillPath(br, path);
+                using (var pen = new Pen(Color.FromArgb(80, outcomeColor)))
+                using (var path = RoundedRect(r2, 4)) pe.Graphics.DrawPath(pen, path);
+                pe.Graphics.DrawString(outcomeLbl.Text, outcomeLbl.Font, new SolidBrush(outcomeColor),
+                    new RectangleF(0, 0, outcomeLbl.Width, outcomeLbl.Height),
+                    new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
+            };
+            row.Controls.Add(outcomeLbl);
+
+            // Details/NewValue Description
+            if (hasDetails)
+            {
+                var detailsLbl = new Label
+                {
+                    Text = "\"" + details + "\"",
+                    Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
+                    ForeColor = Color.FromArgb(100, 110, 130),
+                    Location = new Point(14, 48),
+                    Size = new Size(row.Width - 160, 24),
+                    BackColor = Color.Transparent,
+                    AutoEllipsis = true,
+                    Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                };
+                row.Controls.Add(detailsLbl);
+            }
+
+            return row;
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -587,6 +1155,7 @@ namespace CMS.Presentation.Modules.Workflow
             lblProgressPct.Text = pct + "%";
             lblCurrentStepValue.Text = instance.CurrentStepName ?? "-";
             UpdateSlaBar(pct, Color.FromArgb(197, 120, 16));
+            PopulateTimeline(instance);
         }
 
         public void ShowError(string message) => MessageBox.Show(message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -618,6 +1187,19 @@ namespace CMS.Presentation.Modules.Workflow
         {
             if (string.IsNullOrWhiteSpace(txtGlobalSearch.Text))
                 txtGlobalSearch.Text = "ค้นหา Workflow, Template, คำสั่ง...";
+        }
+
+        private void btnBack_Click(object sender, EventArgs e)
+        {
+            string targetTag = string.IsNullOrEmpty(SourceNavTag) ? "mytasks" : SourceNavTag;
+            WorkflowNavigationHandler.HandleNavigation(
+                targetTag,
+                this,
+                _workflowService,
+                _templateService,
+                null, // slaCalculator
+                _loggingService,
+                _userContext);
         }
     }
 }

@@ -44,6 +44,11 @@ namespace CMS.Services.DTOs
         public DateTime AssignedDate { get; set; }
 
         /// <summary>
+        /// Date task was completed
+        /// </summary>
+        public DateTime? CompletedDate { get; set; }
+
+        /// <summary>
         /// SLA deadline
         /// </summary>
         public DateTime SLADeadline { get; set; }
@@ -87,5 +92,11 @@ namespace CMS.Services.DTOs
         /// Workflow instance description
         /// </summary>
         public string WorkflowDescription { get; set; }
+
+        /// <summary>Sequence number of this step within the template (1-based).</summary>
+        public int StepOrder { get; set; }
+
+        /// <summary>Total number of steps in the workflow template.</summary>
+        public int TotalSteps { get; set; }
     }
 }

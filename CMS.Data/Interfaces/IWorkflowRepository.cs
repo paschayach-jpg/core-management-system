@@ -46,7 +46,9 @@ namespace CMS.Data.Interfaces
         public byte?  Status               { get; set; }
         public System.DateTime? FromDate   { get; set; }
         public System.DateTime? ToDate     { get; set; }
-        public int    PageNumber           { get; set; } = 1;
-        public int    PageSize             { get; set; } = 50;
+        public int    PageNumber           { get; set; }
+        public int    PageSize             { get; set; }
+
+        public WorkflowInstanceFilter() { PageNumber = 1; PageSize = 50; }
     }
 }

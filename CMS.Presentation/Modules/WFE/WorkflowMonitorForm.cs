@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
@@ -17,6 +18,8 @@ namespace CMS.Presentation.Modules.Workflow
     {
         private readonly WorkflowMonitorPresenter _presenter;
         private readonly UserContext _userContext;
+        private readonly IWorkflowService _workflowService;
+        private readonly ILoggingService _loggingService;
         private Timer _autoRefreshTimer;
 
         // ── Nav state ────────────────────────────────────────────────────────────
@@ -30,6 +33,15 @@ namespace CMS.Presentation.Modules.Workflow
         private int _totalPages  = 1;
         private const int PageSize = 8;
 
+        // ── Tooltip (custom, avoids owner-draw flicker) ──────────────────────────
+        private readonly ToolTip _lvTooltip = new ToolTip { AutomaticDelay = 600, AutoPopDelay = 4000, ShowAlways = true };
+        private string _lastTooltip = null;
+
+        // ── Double-buffer for owner-draw ListView (eliminates WM_ERASEBKGND flicker) ──
+        [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+        private const uint LVM_SETEXTENDEDLISTVIEWSTYLE = 0x1036;
+        private const uint LVS_EX_DOUBLEBUFFER          = 0x00010000;
+
         public WorkflowMonitorForm(
             IWorkflowService workflowService,
             ILoggingService loggingService,
@@ -37,6 +49,8 @@ namespace CMS.Presentation.Modules.Workflow
         {
             InitializeComponent();
             _userContext = userContext;
+            _workflowService = workflowService;
+            _loggingService = loggingService;
             
             // Only create presenter if services are available
             if (workflowService != null && loggingService != null && userContext != null)
@@ -185,7 +199,10 @@ namespace CMS.Presentation.Modules.Workflow
             switch (tag)
             {
                 case "detail":
-                    if (lvInstances.SelectedItems.Count == 0) { MessageBox.Show("กรุณาเลือกรายการก่อน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+                    OpenSelectedDetail();
+                    break;
+                case "cancel":
+                    CancelSelectedWorkflow();
                     break;
                 case "slaonly":
                     cmbFilterStatus.SelectedIndex = 2; // "เกิน SLA"
@@ -197,6 +214,196 @@ namespace CMS.Presentation.Modules.Workflow
                     MessageBox.Show(string.Format("ฟังก์ชัน '{0}' อยู่ระหว่างพัฒนา", tag), "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     break;
             }
+        }
+
+        private void OpenSelectedDetail()
+        {
+            if (lvInstances.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("กรุณาเลือกรายการก่อน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var item = lvInstances.SelectedItems[0].Tag as MonitorRowItem;
+            if (item == null || item.WorkflowInstanceId <= 0) return;
+
+            IWorkflowTemplateService templateService = null;
+            IAuditService auditService = null;
+            if (this.MdiParent is MDI_Container mdi)
+            {
+                templateService = mdi.WorkflowTemplateService;
+                auditService = mdi.AuditService;
+            }
+
+            WorkflowNavigationHandler.HandleNavigation(
+                "detail", this, _workflowService, templateService,
+                null, _loggingService, _userContext, auditService,
+                workflowInstanceId: item.WorkflowInstanceId);
+        }
+
+        private void CancelSelectedWorkflow()
+        {
+            if (lvInstances.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("กรุณาเลือกรายการก่อน", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var item = lvInstances.SelectedItems[0].Tag as MonitorRowItem;
+            if (item == null || item.WorkflowInstanceId <= 0) return;
+
+            if (item.StatusText == "Completed")
+            {
+                MessageBox.Show("ไม่สามารถยกเลิก workflow ที่เสร็จสิ้นแล้ว", "ไม่สามารถยกเลิกได้", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (item.StatusText == "Cancelled")
+            {
+                MessageBox.Show("Workflow นี้ถูกยกเลิกไปแล้ว", "ไม่สามารถยกเลิกได้", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string reason = ShowCancelReasonDialog();
+            if (reason == null) return; // User cancelled
+
+            if (_presenter != null)
+            {
+                _presenter.CancelWorkflow(item.WorkflowInstanceId, reason);
+            }
+            else
+            {
+                try
+                {
+                    if (_workflowService == null)
+                    {
+                        MessageBox.Show("Service ไม่พร้อมใช้งาน", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    _workflowService.CancelWorkflowInstance(item.WorkflowInstanceId, reason, _userContext);
+                    MessageBox.Show("ยกเลิก Workflow เรียบร้อยแล้ว", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if (_presenter != null) _presenter.RefreshMonitor();
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.Error($"Error cancelling workflow {item.WorkflowInstanceId}: {ex.Message}", ex);
+                    MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private string ShowCancelReasonDialog()
+        {
+            var navyDark  = Color.FromArgb(31,  56, 100);
+            var navyBtn   = Color.FromArgb(41,  71, 120);
+            var redBtn    = Color.FromArgb(192,  57,  43);
+
+            var dlg = new Form
+            {
+                Text            = "",
+                FormBorderStyle = FormBorderStyle.None,
+                StartPosition   = FormStartPosition.CenterParent,
+                Size            = new Size(480, 300),
+                BackColor       = Color.White,
+                MinimumSize     = new Size(480, 300),
+            };
+
+            // Title bar
+            var titleBar = new Panel { Dock = DockStyle.Top, Height = 48, BackColor = navyDark };
+            var lblDlgTitle = new Label
+            {
+                Text      = "ยกเลิก Workflow",
+                ForeColor = Color.White,
+                Font      = new Font("Segoe UI", 11f, FontStyle.Bold),
+                AutoSize  = false,
+                Dock      = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding   = new Padding(16, 0, 0, 0)
+            };
+            titleBar.Controls.Add(lblDlgTitle);
+
+            // Drag support
+            bool dragging = false; Point dragStart = Point.Empty;
+            titleBar.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { dragging = true; dragStart = e.Location; } };
+            titleBar.MouseMove += (s, e) => { if (dragging) dlg.Location = new Point(dlg.Location.X + e.X - dragStart.X, dlg.Location.Y + e.Y - dragStart.Y); };
+            titleBar.MouseUp   += (s, e) => dragging = false;
+            lblDlgTitle.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { dragging = true; dragStart = e.Location; } };
+            lblDlgTitle.MouseMove += (s, e) => { if (dragging) dlg.Location = new Point(dlg.Location.X + e.X - dragStart.X, dlg.Location.Y + e.Y - dragStart.Y); };
+            lblDlgTitle.MouseUp   += (s, e) => dragging = false;
+
+            // Body
+            var body = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
+
+            var lblPrompt = new Label
+            {
+                Text      = "ระบุเหตุผลในการยกเลิก (ไม่บังคับ):",
+                Font      = new Font("Segoe UI", 9.5f),
+                ForeColor = Color.FromArgb(60, 70, 90),
+                AutoSize  = false,
+                Size      = new Size(440, 22),
+                Location  = new Point(20, 20)
+            };
+
+            var txtReason = new TextBox
+            {
+                Multiline   = true,
+                ScrollBars  = ScrollBars.Vertical,
+                Font        = new Font("Segoe UI", 9.5f),
+                Size        = new Size(440, 90),
+                Location    = new Point(20, 48),
+                BorderStyle = BorderStyle.FixedSingle,
+                MaxLength   = 500
+            };
+
+            var lblWarning = new Label
+            {
+                Text      = "⚠  การยกเลิกไม่สามารถเรียกคืนได้",
+                Font      = new Font("Segoe UI", 9f, FontStyle.Italic),
+                ForeColor = Color.FromArgb(180, 60, 40),
+                AutoSize  = false,
+                Size      = new Size(440, 22),
+                Location  = new Point(20, 150)
+            };
+
+            var btnConfirm = new Button
+            {
+                Text      = "ยืนยันการยกเลิก",
+                Font      = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = redBtn,
+                FlatStyle = FlatStyle.Flat,
+                Size      = new Size(150, 34),
+                Location  = new Point(310, 190),
+                DialogResult = DialogResult.OK
+            };
+            btnConfirm.FlatAppearance.BorderSize = 0;
+
+            var btnClose = new Button
+            {
+                Text      = "ปิด",
+                Font      = new Font("Segoe UI", 9.5f),
+                ForeColor = Color.White,
+                BackColor = navyBtn,
+                FlatStyle = FlatStyle.Flat,
+                Size      = new Size(90, 34),
+                Location  = new Point(210, 190),
+                DialogResult = DialogResult.Cancel
+            };
+            btnClose.FlatAppearance.BorderSize = 0;
+
+            body.Controls.AddRange(new Control[] { lblPrompt, txtReason, lblWarning, btnConfirm, btnClose });
+            dlg.Controls.Add(body);
+            dlg.Controls.Add(titleBar);
+            dlg.AcceptButton = btnConfirm;
+            dlg.CancelButton = btnClose;
+
+            // Border
+            dlg.Paint += (s, pe) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(200, 210, 225), 1))
+                    pe.Graphics.DrawRectangle(pen, 0, 0, dlg.Width - 1, dlg.Height - 1);
+            };
+
+            return dlg.ShowDialog(this) == DialogResult.OK ? txtReason.Text.Trim() : null;
         }
 
         // ════════════════════════════════════════════════════════════════════════
@@ -234,11 +441,16 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void SetupListView()
         {
-            lvInstances.SmallImageList = new ImageList { ImageSize = new Size(1, 46) };
+            lvInstances.SmallImageList   = new ImageList { ImageSize = new Size(1, 46) };
+            lvInstances.ShowItemToolTips = false;   // prevent owner-draw flicker/disappear bug
+            SendMessage(lvInstances.Handle, LVM_SETEXTENDEDLISTVIEWSTYLE, (IntPtr)LVS_EX_DOUBLEBUFFER, (IntPtr)LVS_EX_DOUBLEBUFFER);
             lvInstances.DrawColumnHeader += LvInstances_DrawColumnHeader;
             lvInstances.DrawItem         += LvInstances_DrawItem;
             lvInstances.DrawSubItem      += LvInstances_DrawSubItem;
             lvInstances.SelectedIndexChanged += (s, e) => UpdateResultLabel();
+            lvInstances.MouseMove  += LvInstances_MouseMove;
+            lvInstances.MouseLeave += (s, e) => { _lvTooltip.Hide(lvInstances); _lastTooltip = null; };
+            lvInstances.DoubleClick += (s, e) => OpenSelectedDetail();
 
             cmbFilterStatus.SelectedIndexChanged += (s, e) => ApplyLocalFilter();
             cmbFilterType.SelectedIndexChanged   += (s, e) => ApplyLocalFilter();
@@ -251,6 +463,18 @@ namespace CMS.Presentation.Modules.Workflow
             btnNext.Click         += (s, e) => GoPage(+1);
             btnRefresh.Click      += btnRefresh_Click;
             btnExport.Click       += (s, e) => MessageBox.Show("ฟังก์ชัน Export อยู่ระหว่างพัฒนา", "ข้อมูล");
+        }
+
+        private void LvInstances_MouseMove(object sender, MouseEventArgs e)
+        {
+            var item = lvInstances.GetItemAt(e.X, e.Y);
+            var row  = item?.Tag as MonitorRowItem;
+            if (row == null) { _lvTooltip.Hide(lvInstances); _lastTooltip = null; return; }
+
+            var tip = row.WorkflowName;
+            if (tip == _lastTooltip) return;
+            _lastTooltip = tip;
+            _lvTooltip.Show(tip, lvInstances, e.X + 12, e.Y + 12);
         }
 
         private void LvInstances_DrawColumnHeader(object sender, DrawListViewColumnHeaderEventArgs e)
@@ -355,6 +579,7 @@ namespace CMS.Presentation.Modules.Workflow
             { "รอ",               Color.FromArgb(60,  120, 200) },
             { "Completed",        Color.FromArgb(23,  133,  49) },
             { "Rejected",         Color.FromArgb(194,  38,  54) },
+            { "Cancelled",        Color.FromArgb(120, 130, 150) },
             { "รอ Review สุดท้าย", Color.FromArgb(60,  120, 200) },
         };
 
@@ -604,6 +829,7 @@ namespace CMS.Presentation.Modules.Workflow
     // ── Display row model ───────────────────────────────────────────────────────
     public class MonitorRowItem
     {
+        public int WorkflowInstanceId { get; set; }
         public string InstanceId      { get; set; }
         public string WorkflowName    { get; set; }
         public string AssigneeName    { get; set; }

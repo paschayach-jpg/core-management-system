@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 
 namespace CMS.Domain.Models
 {
-    /// <summary>ข้อมูลคณะอนุกรรมการ จาก core.m_SubCommittee</summary>
+    /// <summary>ข้อมูลคณะอนุกรรมการ จาก EMS.m_SubCommittee</summary>
     public class SubCommittee
     {
         public int      SubCommitteeID   { get; set; }
@@ -15,3 +15,4 @@ namespace CMS.Domain.Models
         public DateTime CreatedDate      { get; set; }
     }
 }
+

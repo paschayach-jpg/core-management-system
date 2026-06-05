@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CMS.Domain.Enums;
 
 namespace CMS.Services.DTOs
 {
@@ -84,15 +85,48 @@ namespace CMS.Services.DTOs
         public string OwnerDepartment { get; set; }
 
         /// <summary>
-        /// Status label: Active, Draft, Inactive, or Deprecated
+        /// Approval lifecycle status enum value.
+        /// </summary>
+        public WorkflowTemplateStatus ApprovalStatus { get; set; }
+
+        /// <summary>
+        /// Explicit status string: Active, Draft, PendingApproval, Inactive, Deprecated.
+        /// When not set, derived from ApprovalStatus / IsActive.
+        /// </summary>
+        public string Status { get; set; }
+
+        /// <summary>
+        /// Status label derived from ApprovalStatus or Status override.
         /// </summary>
         public string StatusLabel
         {
             get
             {
-                if (!IsActive) return "Inactive";
-                return "Active";
+                if (!string.IsNullOrWhiteSpace(Status)) return Status;
+                switch (ApprovalStatus)
+                {
+                    case WorkflowTemplateStatus.PendingApproval: return "PendingApproval";
+                    case WorkflowTemplateStatus.Active:          return "Active";
+                    case WorkflowTemplateStatus.Inactive:        return "Inactive";
+                    case WorkflowTemplateStatus.Deprecated:      return "Deprecated";
+                    default:                                     return "Draft";
+                }
             }
         }
+
+        /// <summary>AD username of who submitted the template for approval.</summary>
+        public string SubmittedBy { get; set; }
+
+        /// <summary>Date the template was submitted for approval.</summary>
+        public DateTime? SubmittedDate { get; set; }
+
+        /// <summary>AD username of who approved/rejected.</summary>
+        public string ApprovedBy { get; set; }
+
+        /// <summary>Date the approval decision was made.</summary>
+        public DateTime? ApprovedDate { get; set; }
+
+        /// <summary>Rejection reason (when returned to Draft after reject).</summary>
+        public string RejectionReason { get; set; }
     }
 }

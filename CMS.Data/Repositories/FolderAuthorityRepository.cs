@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -23,7 +23,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_GetAllFolderAuthorityConfigs", conn))
+                using (var cmd = new SqlCommand("EMS.sp_GetAllFolderAuthorityConfigs", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     using (var r = cmd.ExecuteReader())
@@ -39,7 +39,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_ResolveFolderAuthority", conn))
+                using (var cmd = new SqlCommand("EMS.sp_ResolveFolderAuthority", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@LevelCode",      (object)levelCode      ?? DBNull.Value);
@@ -58,7 +58,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_InsertFolderAuthorityConfig", conn))
+                using (var cmd = new SqlCommand("EMS.sp_InsertFolderAuthorityConfig", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     AddParams(cmd, c);
@@ -73,7 +73,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_UpdateFolderAuthorityConfig", conn))
+                using (var cmd = new SqlCommand("EMS.sp_UpdateFolderAuthorityConfig", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@ConfigID", c.ConfigID);
@@ -89,7 +89,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_DeleteFolderAuthorityConfig", conn))
+                using (var cmd = new SqlCommand("EMS.sp_DeleteFolderAuthorityConfig", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@ConfigLabel", configLabel ?? "");
@@ -153,3 +153,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

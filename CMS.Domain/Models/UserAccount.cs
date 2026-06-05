@@ -5,7 +5,7 @@ namespace CMS.Domain.Models
 {
     /// <summary>
     /// CMS user account linked to Active Directory and Employee API.
-    /// Maps to core.UserAccount in SCS database.
+    /// Maps to EMS.UserAccount in SCS database.
     /// </summary>
     public class UserAccount
     {

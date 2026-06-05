@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using CMS.Data.Interfaces;
@@ -92,7 +92,7 @@ namespace CMS.Services
                             user.ADUserName);
                     }
 
-                    Log(user, "OrgStructure", "CREATE", "core.OrgUnit", newId, 1,
+                    Log(user, "OrgStructure", "CREATE", "EMS.OrgUnit", newId, 1,
                         string.Format("Created OrgUnit '{0}' (type {1}).", orgUnit.OrgUnitNameTH, orgUnit.OrgUnitType));
 
                     return orgUnit;
@@ -143,7 +143,7 @@ namespace CMS.Services
 
             _orgUnitRepository.Update(existing);
 
-            Log(user, "OrgStructure", "UPDATE", "core.OrgUnit", existing.OrgUnitID, 1,
+            Log(user, "OrgStructure", "UPDATE", "EMS.OrgUnit", existing.OrgUnitID, 1,
                 string.Format("Updated OrgUnit name to '{0}'.", existing.OrgUnitNameTH));
 
             return existing;
@@ -175,7 +175,7 @@ namespace CMS.Services
 
             _orgUnitRepository.Update(existing);
 
-            Log(user, "OrgStructure", "MOVE", "core.OrgUnit", existing.OrgUnitID, 1,
+            Log(user, "OrgStructure", "MOVE", "EMS.OrgUnit", existing.OrgUnitID, 1,
                 string.Format("Moved OrgUnit '{0}' from parent {1} to parent {2}.", 
                     existing.OrgUnitNameTH, oldParentId ?? 0, request.ParentOrgUnitID ?? 0));
 
@@ -204,7 +204,7 @@ namespace CMS.Services
 
             _orgUnitRepository.Deactivate(orgUnitId);
 
-            Log(user, "OrgStructure", "DELETE", "core.OrgUnit", orgUnitId, 1,
+            Log(user, "OrgStructure", "DELETE", "EMS.OrgUnit", orgUnitId, 1,
                 string.Format("Deactivated OrgUnit '{0}'.", existing.OrgUnitNameTH));
         }
 
@@ -230,7 +230,7 @@ namespace CMS.Services
 
             _orgUnitRepository.SoftDelete(orgUnitId, user.UserID);
 
-            Log(user, "OrgStructure", "DELETE", "core.OrgUnit", orgUnitId, 1,
+            Log(user, "OrgStructure", "DELETE", "EMS.OrgUnit", orgUnitId, 1,
                 string.Format("Deleted OrgUnit '{0}'.", existing.OrgUnitNameTH));
         }
 
@@ -250,7 +250,7 @@ namespace CMS.Services
 
             _orgUnitRepository.ForceDeleteWithDependents(orgUnitId, user.UserID);
 
-            Log(user, "OrgStructure", "FORCE_DELETE", "core.OrgUnit", orgUnitId, 1,
+            Log(user, "OrgStructure", "FORCE_DELETE", "EMS.OrgUnit", orgUnitId, 1,
                 string.Format("Force-deleted OrgUnit '{0}' with all dependents.", existing.OrgUnitNameTH));
         }
 
@@ -389,7 +389,7 @@ namespace CMS.Services
 
             _orgUnitRepository.LinkDivisionToSubCommittee(divisionId, subCommitteeId, user.UserID);
 
-            Log(user, "OrgStructure", "LINK", "core.OrgUnitRelationship", divisionId, 1,
+            Log(user, "OrgStructure", "LINK", "EMS.OrgUnitRelationship", divisionId, 1,
                 string.Format("Linked Division '{0}' to SubCommittee '{1}'.",
                     division.OrgUnitNameTH, subCommittee.OrgUnitNameTH));
         }

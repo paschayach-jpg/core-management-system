@@ -1,4 +1,4 @@
-﻿using CMS.Controllers.DMS.Document;
+using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Data.Interfaces;
@@ -10,6 +10,7 @@ using CMS.Presentation.Modules.ImportFile;
 using CMS.Presentation.Modules.KMS;
 using CMS.Presentation.Modules.Workflow;
 using CMS.Presentation.Services;
+using CMS.Services;
 using CMS.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -36,6 +37,7 @@ namespace CMS.Presentation
         private readonly IOrgStructureService _orgStructureService;
         private readonly IFolderService _folderService;
         private readonly IConfigManager _configManager;
+        private readonly CMS.Services.Interfaces.IFolderQuotaService _quotaService;
         private readonly IPermissionService _permissionService;
         private readonly IFilePermissionService _filePermissionService;
         private readonly IFolderTemplateController _folderTemplateController;
@@ -85,8 +87,17 @@ namespace CMS.Presentation
         private readonly IWorkflowService _workflowService;
         private readonly ISLACalculator _slaCalculator;
         private readonly CMS.Services.Interfaces.IWorkflowTemplateService _workflowTemplateService;
+        private CMS.Services.Interfaces.IWorkflowDelegationService _workflowDelegationService;
+        private CMS.Services.Interfaces.ILdapUserSearchService _ldapUserSearchService;
         public CMS.Services.Interfaces.IWorkflowTemplateService WorkflowTemplateService => _workflowTemplateService;
+        public IWorkflowService WorkflowService => _workflowService;
+        public ISLACalculator SlaCalculator    => _slaCalculator;
         public IAuditService AuditService => _auditService;
+        public ILoggingService Logger => _logger;
+        public UserContext CurrentUser => _currentUser;
+        public CMS.Services.Interfaces.IWorkflowDelegationService WorkflowDelegationService => _workflowDelegationService;
+        public CMS.Services.Interfaces.IEmployeeApiService EmployeeApiService => _employeeApiService;
+        public CMS.Services.Interfaces.ILdapUserSearchService LdapUserSearchService => _ldapUserSearchService;
 
         // Notification inbox controls (built programmatically)
         private Panel _notificationPanel;
@@ -205,6 +216,8 @@ namespace CMS.Presentation
             IWorkflowService workflowService = null,
             ISLACalculator slaCalculator = null,
             CMS.Services.Interfaces.IWorkflowTemplateService workflowTemplateService = null,
+            CMS.Services.Interfaces.IWorkflowDelegationService workflowDelegationService = null,
+            CMS.Services.Interfaces.ILdapUserSearchService ldapUserSearchService = null,
             CMS.Data.Interfaces.IKBVersionRepository kbVersionRepository = null,
             CMS.Services.Interfaces.IKBDashboardService kbDashboardService = null,
             CMS.Data.Interfaces.IKBCategoryRepository kbCategoryRepository = null,
@@ -212,7 +225,8 @@ namespace CMS.Presentation
             CMS.Data.Interfaces.IKBArticleLinkRepository kbArticleLinkRepository = null,
             CMS.Data.Interfaces.ISubCommitteeRepository  subCommitteeRepository  = null,
             CMS.Data.Interfaces.IHrDivisionRepository   hrDivisionRepository    = null,
-            CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepository  = null)
+            CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepository  = null,
+            CMS.Services.Interfaces.IFolderQuotaService quotaService = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -229,6 +243,7 @@ namespace CMS.Presentation
             _orgStructureService = orgStructureService;
             _folderService = folderService;
             _configManager = configManager;
+            _quotaService  = quotaService;
             _permissionService = permissionService;
             _filePermissionService = filePermissionService;
             _folderTemplateController = folderTemplateController;
@@ -269,6 +284,8 @@ namespace CMS.Presentation
             _employeeDirectoryController = employeeDirectoryController;
             _userOrgVisibilityController = userOrgVisibilityController;
             _employeeApiService = employeeApiService;
+            _workflowDelegationService = workflowDelegationService;
+            _ldapUserSearchService     = ldapUserSearchService;
             _kbCategoryService = kbCategoryService;
             _kbArticleService = kbArticleService;
             _workflowService = workflowService;
@@ -733,6 +750,7 @@ namespace CMS.Presentation
             dms.Nodes.Add(new TreeNode("🔗 แชร์กับฉัน") { Tag = "SharedWithMe" });
             dms.Nodes.Add(new TreeNode("📤 จัดการการแชร์") { Tag = "ShareManagement" });
             dms.Nodes.Add(new TreeNode("✅ รออนุมัติ") { Tag = "ApprovalInbox" });
+            dms.Nodes.Add(new TreeNode("📊 รายงานพื้นที่ Folder") { Tag = "FolderUsageReport" });
             dms.Nodes.Add(new TreeNode("🗑️ ถังขยะ") { Tag = "RecycleBin" });
 
             var admin = new TreeNode("⚙️ ผู้ดูแลระบบ");
@@ -1284,7 +1302,7 @@ namespace CMS.Presentation
                         UserID = _currentUser.UserID,
                         UserName = _currentUser.ADUserName ?? string.Empty,
                         UserRole = _currentUser.AppRole,
-                        TableName = "core.UserAccount",
+                        TableName = "EMS.UserAccount",
                         RecordID = _currentUser.UserID,
                         MachineName = _currentUser.MachineName,
                         IPAddress = _currentUser.IPAddress,
@@ -1581,7 +1599,8 @@ namespace CMS.Presentation
                     userAccountLookupController: _userAccountLookupController,
                     userAdminController: _userAdminController,
                     userOrgVisibilityController: _userOrgVisibilityController,
-                    folderReadLookupController: _folderReadLookupController
+                    folderReadLookupController: _folderReadLookupController,
+                    folderQuotaService: _quotaService
                 );
 
                 // Wire event handlers
@@ -2031,7 +2050,8 @@ namespace CMS.Presentation
                 userAdminController: _userAdminController,
                 userOrgVisibilityController: _userOrgVisibilityController,
                 folderReadLookupController: _folderReadLookupController,
-                employeeApiService: _employeeApiService);
+                employeeApiService: _employeeApiService,
+                folderQuotaService: _quotaService);
             folderForm.OpenPermissionRequested += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file) => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged += (s, ev) => UpdateMoveControlsState();
@@ -2052,6 +2072,18 @@ namespace CMS.Presentation
                     return true;
                 case "AuthorityConfig":
                     OpenAuthorityConfig();
+                    return true;
+                case "QuotaConfig":
+                    OpenQuotaConfig();
+                    return true;
+                case "QuotaRequest":
+                    OpenQuotaRequest();
+                    return true;
+                case "QuotaApproval":
+                    OpenQuotaApproval();
+                    return true;
+                case "FolderUsageReport":
+                    OpenFolderUsageReport();
                     return true;
                 case "SyncEmployee":
                     SyncEmployeeFromApi();
@@ -2145,7 +2177,8 @@ namespace CMS.Presentation
                 _slaCalculator,
                 _logger,
                 _currentUser,
-                _workflowTemplateService));
+                _workflowTemplateService,
+                _workflowDelegationService));
         }
 
         public void OpenWorkflowDetail()
@@ -2155,17 +2188,18 @@ namespace CMS.Presentation
                 _workflowService,
                 _workflowTemplateService,
                 _logger,
-                _currentUser));
+                _currentUser,
+                _auditService));
         }
 
         public void OpenWorkflowTemplateList()
         {
-            OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowTemplateListForm(
-                _workflowTemplateService,
-                _auditService,
-                _logger,
-                _currentUser));
-
+            ActivateOrOpenChild<CMS.Presentation.Modules.Workflow.WorkflowTemplateListForm>(
+                () => new CMS.Presentation.Modules.Workflow.WorkflowTemplateListForm(
+                    _workflowTemplateService,
+                    _auditService,
+                    _logger,
+                    _currentUser));
         }
 
         public void OpenWorkflowDesigner(int? templateId = null)
@@ -2186,7 +2220,22 @@ namespace CMS.Presentation
 
         public void OpenWorkflowDelegation()
         {
-            OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowDelegationForm());
+            if (_workflowDelegationService == null || _workflowService == null || _employeeApiService == null)
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    "Delegation service ไม่พร้อมใช้งาน กรุณาตรวจสอบการตั้งค่า",
+                    "Workflow Delegation", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Warning);
+                return;
+            }
+
+            OpenChildForm(new CMS.Presentation.Modules.Workflow.WorkflowDelegationForm(
+                _workflowDelegationService,
+                _workflowService,
+                _employeeApiService,
+                _logger,
+                _auditService,
+                _currentUser,
+                _ldapUserSearchService));
         }
 
         public void OpenSLAReport()
@@ -2254,6 +2303,56 @@ namespace CMS.Presentation
             else
                 MessageBox.Show("FolderAuthority service ไม่พร้อมใช้งาน", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        public void OpenQuotaConfig()
+        {
+            if (_quotaService == null || _orgStructureService == null)
+            {
+                MessageBox.Show("Quota service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new FolderQuotaConfigForm(_quotaService, _currentUser,
+                _folderReadLookupController, _fileBrowseController));
+        }
+
+        public void OpenQuotaRequest()
+        {
+            if (_quotaService == null || _orgStructureService == null)
+            {
+                MessageBox.Show("Quota service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new FolderQuotaRequestForm(_quotaService, _orgStructureService, _currentUser));
+        }
+
+        public void OpenQuotaApproval()
+        {
+            if (_quotaService == null)
+            {
+                MessageBox.Show("Quota service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            OpenChildForm(new FolderQuotaApprovalForm(_quotaService, _currentUser));
+        }
+
+        public void OpenFolderUsageReport()
+        {
+            if (_folderReadLookupController == null)
+            {
+                MessageBox.Show("Folder lookup service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            OpenChildForm(new FolderUsageReportForm(
+                _folderReadLookupController,
+                _quotaService,
+                _orgStructureService,
+                _currentUser), true);
         }
 
         private void OpenKBCategorySettings()
@@ -2631,6 +2730,20 @@ namespace CMS.Presentation
         /// <summary>
         /// Opens a form as an MDI child. Multiple instances may be open concurrently.
         /// </summary>
+        private void ActivateOrOpenChild<T>(Func<T> factory, bool maximize = false) where T : Form
+        {
+            foreach (Form child in MdiChildren)
+            {
+                if (child is T existing && !existing.IsDisposed)
+                {
+                    existing.WindowState = FormWindowState.Normal;
+                    existing.Activate();
+                    return;
+                }
+            }
+            OpenChildForm(factory(), maximize);
+        }
+
         private void OpenChildForm(Form childForm, bool maximize = false)
         {
             if (childForm == null)
@@ -4749,3 +4862,4 @@ namespace CMS.Presentation
         }
     }
 }
+

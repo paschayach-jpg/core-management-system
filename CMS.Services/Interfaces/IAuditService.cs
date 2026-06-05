@@ -19,5 +19,10 @@ namespace CMS.Services.Interfaces
         /// Caller must have Manager or Admin role (Req 9.5).
         /// </summary>
         CMS.Data.Models.PagedResult<AuditLog> Query(AuditQuery query, UserContext user);
+
+        /// <summary>
+        /// Returns all AuditLog records related to a specific workflow instance.
+        /// </summary>
+        System.Collections.Generic.List<AuditLog> GetWorkflowAuditLogs(int workflowInstanceId, UserContext user);
     }
 }

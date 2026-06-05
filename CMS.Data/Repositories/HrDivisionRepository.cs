@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -25,7 +25,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "SELECT DivisionID, DivisionCode, DivisionName, IsActive, CreatedDate " +
-                    "FROM core.HR_Division WHERE IsActive = 1 ORDER BY DivisionCode", conn))
+                    "FROM EMS.m_Division WHERE IsActive = 1 ORDER BY DivisionCode", conn))
                 {
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -50,3 +50,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

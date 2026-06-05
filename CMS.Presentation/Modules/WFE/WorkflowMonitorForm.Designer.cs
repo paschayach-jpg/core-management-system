@@ -513,16 +513,20 @@ namespace CMS.Presentation.Modules.Workflow
             this.lblCardPendingSub.Name      = "lblCardPendingSub";
 
             // ── Hidden legacy labels (not shown in UI) ──────────────────────────
-            foreach (var lbl in new System.Windows.Forms.Label[]
-            {
-                this.lblTotalInstancesLabel, this.lblCompletedLabel, this.lblFailedLabel,
-                this.lblInProgressLabel, this.lblInProgress, this.lblSuspendedLabel,
-                this.lblAverageCompletionTimeLabel
-            })
-            {
-                lbl.Visible  = false;
-                lbl.Location = new System.Drawing.Point(-200, -200);
-            }
+            this.lblTotalInstancesLabel.Visible  = false;
+            this.lblTotalInstancesLabel.Location = new System.Drawing.Point(-200, -200);
+            this.lblCompletedLabel.Visible  = false;
+            this.lblCompletedLabel.Location = new System.Drawing.Point(-200, -200);
+            this.lblFailedLabel.Visible  = false;
+            this.lblFailedLabel.Location = new System.Drawing.Point(-200, -200);
+            this.lblInProgressLabel.Visible  = false;
+            this.lblInProgressLabel.Location = new System.Drawing.Point(-200, -200);
+            this.lblInProgress.Visible  = false;
+            this.lblInProgress.Location = new System.Drawing.Point(-200, -200);
+            this.lblSuspendedLabel.Visible  = false;
+            this.lblSuspendedLabel.Location = new System.Drawing.Point(-200, -200);
+            this.lblAverageCompletionTimeLabel.Visible  = false;
+            this.lblAverageCompletionTimeLabel.Location = new System.Drawing.Point(-200, -200);
 
             // ── pnlFilterBar ────────────────────────────────────────────────────
             this.pnlFilterBar.BackColor = System.Drawing.Color.White;
@@ -656,7 +660,7 @@ namespace CMS.Presentation.Modules.Workflow
             this.lvInstances.Name           = "lvInstances";
             this.lvInstances.OwnerDraw      = true;
             this.lvInstances.View           = System.Windows.Forms.View.Details;
-            this.lvInstances.ShowItemToolTips = true;
+            this.lvInstances.ShowItemToolTips = false;
             this.lvInstances.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
                 this.colId, this.colWorkflow, this.colAssignee,
                 this.colStart, this.colStep, this.colCurrentStep, this.colStatus });
