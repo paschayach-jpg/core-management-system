@@ -30,11 +30,11 @@ namespace CMS.Data.Repositories
                                SELECT '|' + ISNULL(lu._desc, l.EntityID)
                                FROM   KMS.t_KBArticleLink l
                                LEFT JOIN (
-                                   SELECT SubCommitteeCode AS code, SubCommitteeNameTH AS _desc FROM [core].[m_SubCommittee]
+                                   SELECT SubCommitteeCode AS code, SubCommitteeNameTH AS _desc FROM [EMS].[m_SubCommittee]
                                    UNION ALL
-                                   SELECT DivisionCode,    DivisionName    FROM [core].[HR_Division]
+                                   SELECT DivisionCode,    DivisionName    FROM [EMS].[m_Division]
                                    UNION ALL
-                                   SELECT DepartmentCode,  DepartmentName  FROM [core].[HR_Department]
+                                   SELECT DepartmentCode,  DepartmentName  FROM [EMS].[m_Department]
                                ) lu ON lu.code = l.EntityID
                                WHERE  l.ArticleID = a.ArticleID AND EntityType = 6
                                ORDER BY l.CreatedDate DESC
@@ -64,11 +64,11 @@ namespace CMS.Data.Repositories
                                SELECT '|' + ISNULL(lu._desc, l.EntityID)
                                FROM   KMS.t_KBArticleLink l
                                LEFT JOIN (
-                                   SELECT SubCommitteeCode AS code, SubCommitteeNameTH AS _desc FROM [core].[m_SubCommittee]
+                                   SELECT SubCommitteeCode AS code, SubCommitteeNameTH AS _desc FROM [EMS].[m_SubCommittee]
                                    UNION ALL
-                                   SELECT DivisionCode,    DivisionName    FROM [core].[HR_Division]
+                                   SELECT DivisionCode,    DivisionName    FROM [EMS].[m_Division]
                                    UNION ALL
-                                   SELECT DepartmentCode,  DepartmentName  FROM [core].[HR_Department]
+                                   SELECT DepartmentCode,  DepartmentName  FROM [EMS].[m_Department]
                                ) lu ON lu.code = l.EntityID
                                WHERE  l.ArticleID = a.ArticleID AND EntityType = 6
                                ORDER BY l.CreatedDate DESC
@@ -102,11 +102,11 @@ namespace CMS.Data.Repositories
                                SELECT '|' + ISNULL(lu._desc, l.EntityID)
                                FROM   KMS.t_KBArticleLink l
                                LEFT JOIN (
-                                   SELECT SubCommitteeCode AS code, SubCommitteeNameTH AS _desc FROM [core].[m_SubCommittee]
+                                   SELECT SubCommitteeCode AS code, SubCommitteeNameTH AS _desc FROM [EMS].[m_SubCommittee]
                                    UNION ALL
-                                   SELECT DivisionCode,    DivisionName    FROM [core].[HR_Division]
+                                   SELECT DivisionCode,    DivisionName    FROM [EMS].[m_Division]
                                    UNION ALL
-                                   SELECT DepartmentCode,  DepartmentName  FROM [core].[HR_Department]
+                                   SELECT DepartmentCode,  DepartmentName  FROM [EMS].[m_Department]
                                ) lu ON lu.code = l.EntityID
                                WHERE  l.ArticleID = a.ArticleID
                                ORDER BY l.CreatedDate DESC
