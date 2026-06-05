@@ -30,6 +30,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.DirectoryServices">
+      <HintPath>$(ProgramFiles(x86))\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5\System.DirectoryServices.dll</HintPath>
+    </Reference>
+    <Reference Include="System.DirectoryServices.AccountManagement">
+      <HintPath>$(ProgramFiles(x86))\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5\System.DirectoryServices.AccountManagement.dll</HintPath>
+    </Reference>
     <Reference Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
       <HintPath>..\packages\Portable.BouncyCastle.1.8.9\lib\net40\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
@@ -76,11 +83,16 @@
     <Compile Include="DTOs\UpdateOrgUnitRequest.cs" />
     <Compile Include="DTOs\AdAuthResult.cs" />
     <Compile Include="DTOs\AdLoginResponse.cs" />
+    <Compile Include="SessionContext.cs" />
+    <Compile Include="MenuAction.cs" />
+    <Compile Include="GlobalData.cs" />
+    <Compile Include="MenuActions\MenuActionKeyCatalog.cs" />
     <Compile Include="Interfaces\IAdAuthService.cs" />
     <Compile Include="Interfaces\IMenuApiService.cs" />
     <Compile Include="MenuApiService.cs" />
     <Compile Include="AdAuthService.cs" />
     <Compile Include="Interfaces\IEmployeeApiService.cs" />
+    <Compile Include="Interfaces\ILdapUserSearchService.cs" />
     <Compile Include="Interfaces\IApprovalService.cs" />
     <Compile Include="Interfaces\IAuditService.cs" />
     <Compile Include="Interfaces\IFileService.cs" />
@@ -111,6 +123,7 @@
     <Compile Include="UserOrgVisibilityService.cs" />
     <Compile Include="QuickAccessService.cs" />
     <Compile Include="EmployeeApiService.cs" />
+    <Compile Include="LdapUserSearchService.cs" />
     <Compile Include="ApprovalService.cs" />
     <Compile Include="NotificationService.cs" />
     <Compile Include="AuditService.cs" />
@@ -156,6 +169,7 @@
     <Compile Include="DTOs\CreateTemplateRequest.cs" />
     <Compile Include="DTOs\UpdateTemplateRequest.cs" />
     <Compile Include="DTOs\DelegateTaskRequest.cs" />
+    <Compile Include="DTOs\LdapUserResult.cs" />
     <Compile Include="DTOs\WFDelegationResult.cs" />
     <Compile Include="DTOs\ValidationResult.cs" />
     <Compile Include="DTOs\ConditionEvaluationResult.cs" />
@@ -163,7 +177,10 @@
     <Compile Include="DTOs\WorkflowTemplateFilter.cs" />
     <Compile Include="DTOs\SLAMetricsFilter.cs" />
     <Compile Include="DTOs\SLAComplianceMetricsResult.cs" />
+    <Compile Include="DTOs\QuotaDTOs.cs" />
+    <Compile Include="FolderQuotaService.cs" />
     <Compile Include="DTOs\TemplateComparisonResult.cs" />
+    <Compile Include="Interfaces\IFolderQuotaService.cs" />
     <Compile Include="Interfaces\IWorkflowIntegrationService.cs" />
     <Compile Include="WorkflowIntegrationService.cs" />
     <Compile Include="Integrations\AuditAdapter.cs" />
@@ -177,6 +194,7 @@
     <Compile Include="BackgroundJobs\WFESLABackgroundJob.cs" />
     <Compile Include="BackgroundJobs\WorkflowBackgroundJobConfiguration.cs" />
     <Compile Include="Exceptions\WorkflowException.cs" />
+    <Compile Include="Exceptions\QuotaException.cs" />
     <Compile Include="Exceptions\WorkflowValidationException.cs" />
     <Compile Include="Exceptions\WorkflowPermissionException.cs" />
     <Compile Include="Exceptions\WorkflowStateException.cs" />
@@ -187,6 +205,29 @@
     <Compile Include="Validators\ConditionExpressionValidator.cs" />
     <Compile Include="Validators\DelegationValidator.cs" />
     <Compile Include="NotificationClient.cs" />
+    <!-- WFE v2.0 Engine — DO NOT mix with v1.0 WorkflowService -->
+    <Compile Include="Workflow\DTOs\ServiceResult.cs" />
+    <Compile Include="Workflow\DTOs\WfeInstanceDtos.cs" />
+    <Compile Include="Workflow\DTOs\WfeDashboardDtos.cs" />
+    <Compile Include="Workflow\Plugins\IWorkflowPlugin.cs" />
+    <Compile Include="Workflow\Plugins\IPluginRegistry.cs" />
+    <Compile Include="Workflow\Plugins\PluginRegistry.cs" />
+    <Compile Include="Workflow\Plugins\Builtin\SendNotificationPlugin.cs" />
+    <Compile Include="Workflow\Plugins\Builtin\CallRiscServerPlugin.cs" />
+    <Compile Include="Workflow\Plugins\Builtin\CalcPremiumPlugin.cs" />
+    <Compile Include="Workflow\Plugins\Builtin\SendOicReportPlugin.cs" />
+    <Compile Include="Workflow\Rules\IConditionEvaluator.cs" />
+    <Compile Include="Workflow\Rules\ConditionEvaluator.cs" />
+    <Compile Include="Workflow\Definition\DefinitionParser.cs" />
+    <Compile Include="Workflow\Definition\DefinitionValidator.cs" />
+    <Compile Include="Workflow\Definition\StepGraphCache.cs" />
+    <Compile Include="Workflow\Engine\ConcurrencyGuard.cs" />
+    <Compile Include="Workflow\Engine\IWfeRepository.cs" />
+    <Compile Include="Workflow\Engine\WorkflowOrchestrator.cs" />
+    <Compile Include="Workflow\Interfaces\IWorkflowServiceV2.cs" />
+    <Compile Include="Workflow\Interfaces\IDefinitionService.cs" />
+    <Compile Include="Workflow\WorkflowServiceV2.cs" />
+    <Compile Include="Workflow\DefinitionService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -26,7 +26,8 @@ namespace CMS.Domain.Enums
         InProgress = 2,
         Completed  = 3,
         Rejected   = 4,
-        Suspended  = 5
+        Suspended  = 5,
+        Cancelled  = 6
     }
 
     /// <summary>
@@ -63,5 +64,19 @@ namespace CMS.Domain.Enums
         IncreasePriority = 2,
         Reassign         = 3,
         AutoReject       = 4
+    }
+
+    /// <summary>
+    /// Approval lifecycle status of a workflow template definition.
+    /// Stored in WorkflowDefinition.ApprovalStatus column (tinyint).
+    /// Draft → PendingApproval → Active (or back to Draft on reject).
+    /// </summary>
+    public enum WorkflowTemplateStatus : byte
+    {
+        Draft           = 0,
+        PendingApproval = 1,
+        Active          = 2,
+        Inactive        = 3,
+        Deprecated      = 4
     }
 }

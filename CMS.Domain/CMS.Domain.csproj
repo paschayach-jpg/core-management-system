@@ -99,7 +99,11 @@
     <Compile Include="Models\WFDelegation.cs" />
     <Compile Include="Models\WFSLARule.cs" />
     <Compile Include="Enums\WorkflowEnums.cs" />
+    <Compile Include="Enums\QuotaEnums.cs" />
     <Compile Include="Models\MenuDto.cs" />
+    <Compile Include="Models\Workflow\StepGraph.cs" />
+    <Compile Include="Models\FolderQuotaConfig.cs" />
+    <Compile Include="Models\FolderQuotaChangeRequest.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

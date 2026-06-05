@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 
@@ -47,12 +47,13 @@ namespace CMS.Data.Interfaces
         // ── m_SubCommittee ─────────────────────────────────────────────────────
 
         /// <summary>
-        /// Insert ข้อมูล SubCommittee เข้า m_SubCommittee (เรียกหลัง Insert core.OrgUnit สำเร็จ)
+        /// Insert ข้อมูล SubCommittee เข้า m_SubCommittee (เรียกหลัง Insert EMS.OrgUnit สำเร็จ)
         /// createdByADUser ใช้ ADUserName (string snapshot) ตาม Audit Stamp rule
         /// </summary>
         void InsertSubCommitteeRecord(int orgUnitId, string code, string nameTH, string nameEN, string createdByADUser);
 
-        /// <summary>Sync soft-delete ของ m_SubCommittee ให้ตรงกับ core.OrgUnit</summary>
+        /// <summary>Sync soft-delete ของ m_SubCommittee ให้ตรงกับ EMS.OrgUnit</summary>
         void SoftDeleteSubCommitteeRecord(int orgUnitId, string deletedByADUser);
     }
 }
+

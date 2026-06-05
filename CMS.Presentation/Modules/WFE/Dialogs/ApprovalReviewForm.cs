@@ -27,16 +27,22 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
 
         private void InitializeControls()
         {
-            // TODO: Initialize controls
-            // - Document/request details display
-            // - Approval criteria display
-            // - Approve/Reject buttons
-            // - Reason field for rejection
+            txtRejectionReason.Visible = false;
+            lblRejectionReason.Visible = false;
         }
 
         private void DisplayApprovalDetails()
         {
-            // TODO: Display approval details
+            if (StepInstance == null) return;
+
+            lblStepNameValue.Text = StepInstance.StepName ?? "-";
+            lblAssignedToValue.Text = StepInstance.AssignedTo ?? "-";
+            lblAssignedDateValue.Text = StepInstance.AssignedDate != DateTime.MinValue
+                ? StepInstance.AssignedDate.ToString("dd/MM/yyyy HH:mm")
+                : "-";
+            lblSLADeadlineValue.Text = StepInstance.SLADeadline != DateTime.MinValue
+                ? StepInstance.SLADeadline.ToString("dd/MM/yyyy HH:mm")
+                : "-";
         }
 
         private void btnApprove_Click(object sender, EventArgs e)
@@ -48,6 +54,9 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
 
         private void btnReject_Click(object sender, EventArgs e)
         {
+            txtRejectionReason.Visible = true;
+            lblRejectionReason.Visible = true;
+
             if (ValidateRejectionReason())
             {
                 IsApproved = false;
@@ -57,16 +66,27 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             }
         }
 
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            DialogResult = DialogResult.Cancel;
+            Close();
+        }
+
         private bool ValidateRejectionReason()
         {
-            // TODO: Validate rejection reason is provided
+            if (string.IsNullOrWhiteSpace(txtRejectionReason.Text))
+            {
+                MessageBox.Show("Please provide a rejection reason", "Validation Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtRejectionReason.Focus();
+                return false;
+            }
             return true;
         }
 
         private string GetRejectionReason()
         {
-            // TODO: Get rejection reason from textbox
-            return string.Empty;
+            return txtRejectionReason.Text.Trim();
         }
     }
 }

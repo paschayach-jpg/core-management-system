@@ -1,6 +1,6 @@
-namespace CMS.Domain.Models
+﻿namespace CMS.Domain.Models
 {
-    /// <summary>ระดับตำแหน่ง จาก core.HR_PositionLevel</summary>
+    /// <summary>ระดับตำแหน่ง จาก EMS.m_PositionLevel</summary>
     public class HrPositionLevel
     {
         public int    LevelID   { get; set; }
@@ -16,3 +16,4 @@ namespace CMS.Domain.Models
         }
     }
 }
+

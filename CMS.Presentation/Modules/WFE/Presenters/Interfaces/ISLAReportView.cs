@@ -9,13 +9,23 @@ namespace CMS.Presentation.Modules.Workflow.Presenters.Interfaces
         void DisplayKpiSummary(SlaKpiSummary summary);
         void DisplayComplianceTrendChart(List<SLATrendData> trendData);
         void DisplayCycleTimeDistribution(List<CycleTimeBar> bars);
+        void DisplayOverdueByPerson(List<OverduePersonRow> rows);
         void DisplayStatusDistributionChart(List<SLADistributionData> distributionData);
+        void UpdateSubtitle(DateTime fromDate, DateTime toDate);
         void ExportToExcel(string filePath);
         void ShowError(string message);
         void ShowInfo(string message);
         void GetDateRange(out DateTime fromDate, out DateTime toDate);
         int? GetTemplateFilter();
         string GetUserFilter();
+    }
+
+    public class OverduePersonRow
+    {
+        public string UserName     { get; set; }
+        public string Department   { get; set; }
+        public int    OverdueCount { get; set; }
+        public double AvgOverdueDays { get; set; }
     }
 
     public class SLAMetricRow

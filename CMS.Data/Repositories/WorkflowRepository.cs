@@ -35,12 +35,12 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand("WFE.sp_CreateWFInstance", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@WorkflowDefinitionId", instance.WorkflowDefinitionId);
+                    cmd.Parameters.AddWithValue("@WFDefinitionId", instance.WorkflowDefinitionId);
                     cmd.Parameters.AddWithValue("@TemplateVersion",      instance.TemplateVersion);
                     cmd.Parameters.AddWithValue("@InitiatedBy",          instance.InitiatedBy);
                     cmd.Parameters.AddWithValue("@InputParameters",      (object)instance.InputParameters ?? DBNull.Value);
 
-                    var outParam = new SqlParameter("@NewWorkflowInstanceId", SqlDbType.Int)
+                    var outParam = new SqlParameter("@NewWFInstanceId", SqlDbType.Int)
                     {
                         Direction = ParameterDirection.Output
                     };
@@ -184,13 +184,19 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("WFE.sp_UpdateWFInstanceStatus", conn))
+                using (var cmd = new SqlCommand(
+                    "UPDATE WFE.t_WFInstance " +
+                    "SET    Status = @Status, " +
+                    "       CurrentStepId = @CurrentStepId, " +
+                    "       CompletedDate = @CompletedDate " +
+                    "WHERE  WFInstanceId = @WorkflowInstanceId " +
+                    "  AND  IsDeleted = 0", conn))
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@WorkflowInstanceId", instance.WorkflowInstanceId);
-                    cmd.Parameters.AddWithValue("@Status",             (byte)instance.Status);
-                    cmd.Parameters.AddWithValue("@CurrentStepId",      (object)instance.CurrentStepId ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@CompletedDate",      (object)instance.CompletedDate ?? DBNull.Value);
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.Add("@WorkflowInstanceId", SqlDbType.Int).Value = instance.WorkflowInstanceId;
+                    cmd.Parameters.Add("@Status", SqlDbType.TinyInt).Value = (byte)instance.Status;
+                    cmd.Parameters.Add("@CurrentStepId", SqlDbType.Int).Value = (object)instance.CurrentStepId ?? DBNull.Value;
+                    cmd.Parameters.Add("@CompletedDate", SqlDbType.DateTime).Value = (object)instance.CompletedDate ?? DBNull.Value;
                     cmd.ExecuteNonQuery();
                 }
             }

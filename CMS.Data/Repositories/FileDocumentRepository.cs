@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -300,7 +300,7 @@ namespace CMS.Data.Repositories
                     SELECT fd.*, f.FolderName, ou.OrgUnitNameTH AS OrgUnitName
                     FROM   storage.FileDocument fd
                     INNER JOIN storage.Folder  f  ON fd.FolderID = f.FolderID
-                    INNER JOIN core.OrgUnit    ou ON f.OrgUnitID = ou.OrgUnitID
+                    INNER JOIN EMS.OrgUnit    ou ON f.OrgUnitID = ou.OrgUnitID
                     WHERE  fd.FileStatus = 3
                     AND   (@OrgUnitID IS NULL OR f.OrgUnitID = @OrgUnitID)
                     ORDER BY fd.DeletedDate DESC";
@@ -389,3 +389,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

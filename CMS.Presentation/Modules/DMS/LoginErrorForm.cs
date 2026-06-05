@@ -25,12 +25,12 @@ namespace CMS.Presentation
             bool isEmpty = errorType == LoginErrorType.EmptyCredentials;
 
             Color headerColor = isEmpty
-                ? Color.FromArgb(155, 115, 0)   // Amber — กรอกไม่ครบ
-                : Color.FromArgb(35, 75, 130);   // Navy Blue — ผิดพลาด
+                ? Color.FromArgb(197, 160, 89)   // Premium Gold — กรอกไม่ครบ
+                : Color.FromArgb(18, 38, 76);    // Deep Navy — ผิดพลาด
 
             Color accentColor = isEmpty
-                ? Color.FromArgb(130, 95, 0)
-                : Color.FromArgb(25, 60, 110);
+                ? Color.FromArgb(170, 130, 60)
+                : Color.FromArgb(25, 50, 95);
 
             string iconText   = isEmpty ? "📝" : "🔒";
             string titleText  = isEmpty ? "กรุณากรอกข้อมูลให้ครบ" : "เข้าสู่ระบบไม่สำเร็จ";
@@ -45,7 +45,7 @@ namespace CMS.Presentation
                 : "ตรวจสอบ Username และ Password ให้ถูกต้อง\nหากลืม Password กรุณาติดต่อ IT Helpdesk";
 
             // ── Form ───────────────────────────────────────────────────────
-            Text            = "CMS — เข้าสู่ระบบ";
+            Text            = "DMS Insurance — เข้าสู่ระบบ";
             ClientSize      = new Size(440, 278);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox     = false;

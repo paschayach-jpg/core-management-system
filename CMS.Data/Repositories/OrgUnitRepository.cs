@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -25,7 +25,7 @@ namespace CMS.Data.Repositories
                 using (var conn = new SqlConnection(_connectionString))
                 {
                     conn.Open();
-                    using (var cmd = new SqlCommand("core.sp_InsertOrgUnit", conn))
+                    using (var cmd = new SqlCommand("EMS.sp_InsertOrgUnit", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@OrgUnitCode",    orgUnit.OrgUnitCode);
@@ -56,7 +56,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_UpdateOrgUnit", conn))
+                using (var cmd = new SqlCommand("EMS.sp_UpdateOrgUnit", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@OrgUnitID",     orgUnit.OrgUnitID);
@@ -73,7 +73,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_GetOrgUnitByID", conn))
+                using (var cmd = new SqlCommand("EMS.sp_GetOrgUnitByID", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
@@ -91,7 +91,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("SELECT * FROM core.OrgUnit WHERE OrgUnitCode = @OrgUnitCode AND IsDeleted = 0", conn))
+                using (var cmd = new SqlCommand("SELECT * FROM EMS.OrgUnit WHERE OrgUnitCode = @OrgUnitCode AND IsDeleted = 0", conn))
                 {
                     cmd.Parameters.AddWithValue("@OrgUnitCode", orgUnitCode);
                     using (var reader = cmd.ExecuteReader())
@@ -108,7 +108,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM core.OrgUnit WHERE OrgUnitCode = @OrgUnitCode AND IsDeleted = 0", conn))
+                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM EMS.OrgUnit WHERE OrgUnitCode = @OrgUnitCode AND IsDeleted = 0", conn))
                 {
                     cmd.Parameters.AddWithValue("@OrgUnitCode", orgUnitCode);
                     return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
@@ -119,7 +119,7 @@ namespace CMS.Data.Repositories
         public bool ExistsByNameUnderParent(string nameTH, int? parentId, int? excludeOrgUnitId = null)
         {
             const string sql = @"
-                SELECT COUNT(*) FROM core.OrgUnit
+                SELECT COUNT(*) FROM EMS.OrgUnit
                 WHERE OrgUnitNameTH = @OrgUnitNameTH
                   AND IsDeleted = 0
                   AND (
@@ -147,7 +147,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_GetOrgUnitHierarchy", conn))
+                using (var cmd = new SqlCommand("EMS.sp_GetOrgUnitHierarchy", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     using (var reader = cmd.ExecuteReader())
@@ -165,7 +165,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_GetOrgUnitByConfidentialityLevel", conn))
+                using (var cmd = new SqlCommand("EMS.sp_GetOrgUnitByConfidentialityLevel", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@ConfidentialityLevel", (int)level);
@@ -183,7 +183,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_HasActiveDependents", conn))
+                using (var cmd = new SqlCommand("EMS.sp_HasActiveDependents", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
@@ -197,7 +197,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_SoftDeleteOrgUnit", conn))
+                using (var cmd = new SqlCommand("EMS.sp_SoftDeleteOrgUnit", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
@@ -231,13 +231,13 @@ namespace CMS.Data.Repositories
                         cmdFolders.Parameters.AddWithValue("@DeletedBy", deletedBy);
                         cmdFolders.ExecuteNonQuery();
 
-                        // 2. core.UserAccount.OrgUnitID เป็น NOT NULL — ไม่สามารถ set เป็น NULL ได้
+                        // 2. EMS.UserAccount.OrgUnitID เป็น NOT NULL — ไม่สามารถ set เป็น NULL ได้
                         // ผู้ใช้งานยังคง reference ไปยัง OrgUnit นี้ แต่เนื่องจาก OrgUnit
                         // จะถูก soft-delete (IsDeleted=1) ระบบจะ filter ออกเองเมื่อ query หน่วยงาน active
                         // บัญชีผู้ใช้งานยังคงใช้งานได้ปกติ
 
                         // 3. Soft-delete the OrgUnit itself
-                        var cmdOrg = new SqlCommand("core.sp_SoftDeleteOrgUnit", conn, tx);
+                        var cmdOrg = new SqlCommand("EMS.sp_SoftDeleteOrgUnit", conn, tx);
                         cmdOrg.CommandType = CommandType.StoredProcedure;
                         cmdOrg.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
                         cmdOrg.Parameters.AddWithValue("@DeletedBy", deletedBy);
@@ -263,7 +263,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 try
                 {
-                    using (var cmd = new SqlCommand("core.sp_AddOrgUnitRelationship", conn))
+                    using (var cmd = new SqlCommand("EMS.sp_AddOrgUnitRelationship", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@SubCommitteeID", subCommitteeId);
@@ -284,10 +284,10 @@ namespace CMS.Data.Repositories
                         throw;
 
                     const string fallbackSql = @"
-IF EXISTS (SELECT 1 FROM core.OrgUnitRelationship
+IF EXISTS (SELECT 1 FROM EMS.OrgUnitRelationship
            WHERE SubCommitteeID = @SubCommitteeID AND DivisionID = @DivisionID)
 BEGIN
-    UPDATE core.OrgUnitRelationship
+    UPDATE EMS.OrgUnitRelationship
     SET IsActive = 1,
         CreatedBy = @CreatedBy,
         CreatedDate = ISNULL(CreatedDate, GETDATE())
@@ -295,7 +295,7 @@ BEGIN
 END
 ELSE
 BEGIN
-    INSERT INTO core.OrgUnitRelationship
+    INSERT INTO EMS.OrgUnitRelationship
         (SubCommitteeID, DivisionID, IsActive, CreatedBy, CreatedDate)
     VALUES
         (@SubCommitteeID, @DivisionID, 1, @CreatedBy, GETDATE());
@@ -316,7 +316,7 @@ END";
         public bool IsDivisionLinkedToSubCommittee(int divisionId, int subCommitteeId)
         {
             const string sql = @"
-                SELECT COUNT(*) FROM core.OrgUnitRelationship
+                SELECT COUNT(*) FROM EMS.OrgUnitRelationship
                 WHERE DivisionID = @DivisionID AND SubCommitteeID = @SubCommitteeID AND IsActive = 1";
             using (var conn = new SqlConnection(_connectionString))
             {
@@ -334,7 +334,7 @@ END";
         {
             const string sql = @"
                 SELECT RelationshipID, SubCommitteeID, DivisionID, IsActive
-                FROM core.OrgUnitRelationship WHERE IsActive = 1";
+                FROM EMS.OrgUnitRelationship WHERE IsActive = 1";
             var results = new List<OrgUnitRelationship>();
             using (var conn = new SqlConnection(_connectionString))
             {
@@ -412,3 +412,4 @@ END";
         }
     }
 }
+

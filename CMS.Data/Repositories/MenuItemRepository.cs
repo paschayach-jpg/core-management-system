@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -29,7 +29,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("SELECT * FROM core.MenuItem ORDER BY DisplayOrder ASC", conn))
+                using (var cmd = new SqlCommand("SELECT * FROM EMS.MenuItem ORDER BY DisplayOrder ASC", conn))
                 {
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -54,7 +54,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT * FROM core.MenuItem WHERE ParentMenuItemID IS NULL ORDER BY DisplayOrder ASC", conn))
+                    "SELECT * FROM EMS.MenuItem WHERE ParentMenuItemID IS NULL ORDER BY DisplayOrder ASC", conn))
                 {
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -83,7 +83,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT * FROM core.MenuItem WHERE ParentMenuItemID = @ParentID ORDER BY DisplayOrder ASC", conn))
+                    "SELECT * FROM EMS.MenuItem WHERE ParentMenuItemID = @ParentID ORDER BY DisplayOrder ASC", conn))
                 {
                     cmd.Parameters.AddWithValue("@ParentID", parentMenuItemID);
                     using (var reader = cmd.ExecuteReader())
@@ -111,7 +111,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT * FROM core.MenuItem WHERE MenuItemID = @ID", conn))
+                    "SELECT * FROM EMS.MenuItem WHERE MenuItemID = @ID", conn))
                 {
                     cmd.Parameters.AddWithValue("@ID", menuItemID);
                     using (var reader = cmd.ExecuteReader())
@@ -135,7 +135,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT * FROM core.MenuItem WHERE MenuKey = @Key", conn))
+                    "SELECT * FROM EMS.MenuItem WHERE MenuKey = @Key", conn))
                 {
                     cmd.Parameters.AddWithValue("@Key", menuKey);
                     using (var reader = cmd.ExecuteReader())
@@ -158,7 +158,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(@"
-                    SELECT * FROM core.MenuItem 
+                    SELECT * FROM EMS.MenuItem 
                     WHERE IsActive = 1 
                     AND (RequiredAppRole IS NULL OR RequiredAppRole <= @Role)
                     ORDER BY DisplayOrder ASC", conn))
@@ -189,7 +189,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_CreateMenuItem", conn))
+                using (var cmd = new SqlCommand("EMS.sp_CreateMenuItem", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@ParentMenuItemID", (object)menuItem.ParentMenuItemID ?? DBNull.Value);
@@ -216,7 +216,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_UpdateMenuItem", conn))
+                using (var cmd = new SqlCommand("EMS.sp_UpdateMenuItem", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@MenuItemID", menuItem.MenuItemID);
@@ -243,7 +243,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_DeleteMenuItem", conn))
+                using (var cmd = new SqlCommand("EMS.sp_DeleteMenuItem", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@MenuItemID", menuItemID);
@@ -258,7 +258,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "UPDATE core.MenuItem SET DisplayOrder = @Order WHERE MenuItemID = @ID", conn))
+                    "UPDATE EMS.MenuItem SET DisplayOrder = @Order WHERE MenuItemID = @ID", conn))
                 {
                     cmd.Parameters.AddWithValue("@Order", newDisplayOrder);
                     cmd.Parameters.AddWithValue("@ID", menuItemID);
@@ -278,7 +278,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 using (var cmd = new SqlCommand(
-                    "SELECT COUNT(*) FROM core.MenuItem WHERE MenuKey = @Key", conn))
+                    "SELECT COUNT(*) FROM EMS.MenuItem WHERE MenuKey = @Key", conn))
                 {
                     cmd.Parameters.AddWithValue("@Key", menuKey);
                     int count = (int)cmd.ExecuteScalar();
@@ -337,3 +337,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

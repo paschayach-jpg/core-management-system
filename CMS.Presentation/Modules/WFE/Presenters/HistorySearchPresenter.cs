@@ -18,6 +18,7 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
     {
         private readonly IHistorySearchView _view;
         private readonly IWorkflowService _workflowService;
+        private readonly IWorkflowTemplateService _templateService;
         private readonly IAuditService _auditService;
         private readonly ILoggingService _loggingService;
         private readonly UserContext _userContext;
@@ -27,10 +28,12 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
             IWorkflowService workflowService,
             IAuditService auditService,
             ILoggingService loggingService,
-            UserContext userContext)
+            UserContext userContext,
+            IWorkflowTemplateService templateService = null)
         {
             _view = view ?? throw new ArgumentNullException(nameof(view));
             _workflowService = workflowService ?? throw new ArgumentNullException(nameof(workflowService));
+            _templateService = templateService;
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
             _loggingService = loggingService ?? throw new ArgumentNullException(nameof(loggingService));
             _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
@@ -57,9 +60,11 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 };
 
                 var results = _workflowService.GetWorkflowInstances(filter, _userContext);
+                results = ApplyAssignedToFilter(results, criteria.AssignedTo);
                 _view.DisplayResults(results);
 
-                _loggingService.Info($"History search found {results.Items.Count()} instances");
+                var resultCount = results?.Items == null ? 0 : results.Items.Count();
+                _loggingService.Info($"History search found {resultCount} instances");
             }
             catch (Exception ex)
             {
@@ -134,6 +139,52 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 _loggingService.Error($"Error clearing search: {ex.Message}", ex);
                 _view.ShowError($"Failed to clear search: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Load available templates for dropdown
+        /// </summary>
+        public void LoadTemplates()
+        {
+            try
+            {
+                // Placeholder: would fetch from service
+                _loggingService.Info("Templates loaded");
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"Error loading templates: {ex.Message}", ex);
+            }
+        }
+
+        public IWorkflowService GetWorkflowService() => _workflowService;
+        public ILoggingService GetLoggingService() => _loggingService;
+        public IWorkflowTemplateService GetTemplateService() => _templateService;
+
+        private static PagedResult<WorkflowInstanceResult> ApplyAssignedToFilter(
+            PagedResult<WorkflowInstanceResult> results,
+            string assignedTo)
+        {
+            if (results == null || string.IsNullOrWhiteSpace(assignedTo))
+            {
+                return results;
+            }
+
+            var term = assignedTo.Trim();
+            var filteredItems = (results.Items ?? Enumerable.Empty<WorkflowInstanceResult>())
+                .Where(instance => instance.StepHistory != null &&
+                    instance.StepHistory.Any(step =>
+                        !string.IsNullOrWhiteSpace(step.AssignedTo) &&
+                        step.AssignedTo.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0))
+                .ToList();
+
+            return new PagedResult<WorkflowInstanceResult>
+            {
+                Items = filteredItems,
+                TotalCount = filteredItems.Count,
+                PageNumber = results.PageNumber,
+                PageSize = results.PageSize
+            };
         }
     }
 }

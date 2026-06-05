@@ -39,6 +39,10 @@ namespace CMS.Presentation.Modules.Workflow
         public List<WorkflowApproverData> Approvers { get; set; }
         public bool IsPublished { get; set; }
 
+        // Phase 2: Approval Flow
+        // True = ส่งเข้า Approval Queue, False = บันทึก Draft เท่านั้น
+        public bool SubmitForApproval { get; set; }
+
         public WorkflowWizardState()
         {
             Steps = new List<WorkflowStepData>();

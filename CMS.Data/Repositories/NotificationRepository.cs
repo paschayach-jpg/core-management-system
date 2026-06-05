@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -22,7 +22,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_InsertNotification", conn))
+                using (var cmd = new SqlCommand("EMS.sp_InsertNotification", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@RecipientUserId", notification.RecipientUserId);
@@ -41,7 +41,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_GetUnreadNotificationsByUser", conn))
+                using (var cmd = new SqlCommand("EMS.sp_GetUnreadNotificationsByUser", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@UserId", userId);
@@ -60,7 +60,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("core.sp_MarkNotificationRead", conn))
+                using (var cmd = new SqlCommand("EMS.sp_MarkNotificationRead", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@NotificationId", notificationId);
@@ -85,3 +85,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

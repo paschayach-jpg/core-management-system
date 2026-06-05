@@ -1,6 +1,7 @@
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
+using CMS.Services;
 using CMS.Services.DTOs;
 using System;
 using System.Collections.Generic;
@@ -114,13 +115,13 @@ namespace CMS.Presentation
                 username = "khanitthac";
                 password = "KnidK@1412";
             }
-            //else
-            //{
-            //    username = "pitakpong";
-            //    password = "P@takpong0132";
-            //    //username = "athika";
-            //    //password = "Aple1712!";
-            //}
+            else
+            {
+                username = "pitakpong";
+                password = "P@takpong0132";
+                //username = "athika";
+                //password = "Aple1712!";
+            }
 
             if (string.IsNullOrWhiteSpace(username))
             {
@@ -314,19 +315,25 @@ namespace CMS.Presentation
         {
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
+            // วาดเส้นแบ่งระหว่างข้อมูลธุรกิจและฟอร์ม Login
+            using (var pen = new Pen(Color.FromArgb(235, 240, 250), 1.5f))
+            {
+                e.Graphics.DrawLine(pen, 30, 66, 290, 66);
+            }
+
             // วาดกรอบและเงาให้ TextBox Username
-            Rectangle rectUser = new Rectangle(28, 35, 264, 30);
+            Rectangle rectUser = new Rectangle(28, 95, 264, 30);
             DrawTextBoxBackground(e.Graphics, rectUser);
 
             // วาดกรอบและเงาให้ TextBox Password
-            Rectangle rectPass = new Rectangle(28, 97, 264, 30);
+            Rectangle rectPass = new Rectangle(28, 157, 264, 30);
             DrawTextBoxBackground(e.Graphics, rectPass);
         }
 
         private void pnlHeader_Paint(object sender, PaintEventArgs e)
         {
-            // วาดเส้นขอบสีทองที่ด้านล่างสุดของ pnlHeader
-            using (var pen = new Pen(Color.FromArgb(218, 165, 32), 3f)) // สีทอง (Goldenrod) ความหนา 3px
+            // วาดเส้นขอบสีทองพรีเมียมที่ด้านล่างสุดของ pnlHeader
+            using (var pen = new Pen(Color.FromArgb(197, 160, 89), 3f)) // สีทองพรีเมียม ความหนา 3px
             {
                 e.Graphics.DrawLine(pen, 0, pnlHeader.Height - 1, pnlHeader.Width, pnlHeader.Height - 1);
             }

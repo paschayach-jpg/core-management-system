@@ -5,7 +5,7 @@ namespace CMS.Domain.Models
 {
     /// <summary>
     /// Organizational unit — 3-tier hierarchy: SubCommittee(1) -> Division(2) -> Department(3).
-    /// Maps to core.OrgUnit in SCS database.
+    /// Maps to EMS.OrgUnit in SCS database.
     /// </summary>
     public class OrgUnit
     {

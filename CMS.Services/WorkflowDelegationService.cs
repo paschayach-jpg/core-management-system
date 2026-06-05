@@ -65,7 +65,10 @@ namespace CMS.Services
                     DelegationDate = DateTime.Now,
                     DelegationDepth = currentDepth + 1,
                     IsActive = true,
-                    IsDeleted = false
+                    IsDeleted = false,
+                    StartDate = request.StartDate,
+                    EndDate = request.EndDate,
+                    Remarks = request.Remarks
                 };
 
                 var delegationId = _delegationRepository.CreateDelegation(delegation, delegation.DelegationDepth);
@@ -238,7 +241,10 @@ namespace CMS.Services
                 DelegationReason = delegation.DelegationReason,
                 DelegationDate = delegation.DelegationDate,
                 DelegationDepth = delegation.DelegationDepth,
-                IsActive = delegation.IsActive
+                IsActive = delegation.IsActive,
+                StartDate = delegation.StartDate,
+                EndDate = delegation.EndDate,
+                Remarks = delegation.Remarks
             };
         }
     }

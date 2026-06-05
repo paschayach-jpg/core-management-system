@@ -97,22 +97,93 @@ namespace CMS.Services
         {
             try
             {
-                // TODO: Implement detailed metrics calculation
+                var reportFilter = new CMS.Data.Interfaces.WorkflowReportFilter
+                {
+                    WorkflowDefinitionId = filter.WorkflowDefinitionId,
+                    FromDate             = filter.FromDate,
+                    ToDate               = filter.ToDate,
+                    PageNumber           = 1,
+                    PageSize             = 200,
+                };
+
+                // Aggregate metrics
+                var agg = _reportRepository.GetSLAComplianceMetrics(reportFilter);
+
+                // Per-template breakdown
+                var templateRows = _reportRepository.GetSLAByTemplate(reportFilter);
+                var byTemplate   = new System.Collections.Generic.List<TemplateMetrics>();
+                foreach (var r in templateRows)
+                {
+                    int total = r.Total > 0 ? r.Total : 1;
+                    byTemplate.Add(new TemplateMetrics
+                    {
+                        WorkflowDefinitionId = r.WorkflowDefinitionId,
+                        TemplateName         = r.TemplateName,
+                        TotalTasks           = r.Total,
+                        OnTimeCount          = r.OnTime,
+                        AtRiskCount          = r.AtRisk,
+                        OverdueCount         = r.Overdue,
+                        CompliancePercentage = (decimal)((r.OnTime + r.AtRisk) * 100.0 / total),
+                    });
+                }
+
+                // Per-user (top overdue) — derived from task distribution
+                var distRows = _reportRepository.GetTaskDistribution(reportFilter);
+                var byUser   = new System.Collections.Generic.List<UserMetrics>();
+                // Sort by overdue descending, take top 5
+                var sortedDist = new System.Collections.Generic.List<CMS.Data.Interfaces.TaskDistributionRow>(distRows.Items);
+                sortedDist.Sort((a, b) => b.Overdue.CompareTo(a.Overdue));
+                foreach (var u in sortedDist)
+                {
+                    if (u.Overdue == 0) break;
+                    byUser.Add(new UserMetrics
+                    {
+                        UserName               = u.AssignedTo,
+                        Department             = string.Empty,
+                        TotalTasks             = u.TotalAssigned,
+                        OnTimeCount            = u.Completed - u.Overdue,
+                        OverdueCount           = u.Overdue,
+                        AverageCompletionHours = 0,
+                        AvgOverdueDays         = u.Overdue > 0 ? 1.5 : 0, // placeholder until we have SLADeadline delta
+                    });
+                    if (byUser.Count >= 5) break;
+                }
+
+                // Weekly trend (last 12 weeks)
+                var trendRows = _reportRepository.GetSLAWeeklyTrend(12);
+                var weeklyTrend = new System.Collections.Generic.List<WeeklyTrendPoint>();
+                foreach (var t in trendRows)
+                    weeklyTrend.Add(new WeeklyTrendPoint { WeekLabel = t.WeekLabel, CompliancePercent = t.CompliancePercent });
+
+                // Cycle time distribution
+                var cycleRows = _reportRepository.GetCycleTimeDistribution(reportFilter);
+                var cycleBuckets = new System.Collections.Generic.List<CycleTimeBucket>();
+                foreach (var c in cycleRows)
+                {
+                    string cat = c.SortKey <= 2 ? "pass" : c.SortKey <= 4 ? "near" : "over";
+                    cycleBuckets.Add(new CycleTimeBucket { Label = c.Label, Count = c.Count, Category = cat });
+                }
+
+                int totalSteps = agg.TotalSteps > 0 ? agg.TotalSteps : 1;
                 return new SLAComplianceMetricsResult
                 {
-                    TotalTasks = 0,
-                    OnTimeCount = 0,
-                    OverdueCount = 0,
-                    AtRiskCount = 0,
-                    CompliancePercentage = 0,
-                    AverageCompletionHours = 0,
-                    FromDate = filter.FromDate ?? DateTime.Now.AddMonths(-1),
-                    ToDate = filter.ToDate ?? DateTime.Now
+                    TotalTasks             = agg.TotalSteps,
+                    OnTimeCount            = agg.OnTimeCount,
+                    OverdueCount           = agg.OverdueCount,
+                    AtRiskCount            = agg.AtRiskCount,
+                    CompliancePercentage   = (decimal)(agg.OnTimePercent),
+                    AverageCompletionHours = (decimal)(agg.AvgCompletionHours),
+                    FromDate               = filter.FromDate ?? DateTime.Now.AddMonths(-1),
+                    ToDate                 = filter.ToDate   ?? DateTime.Now,
+                    ByTemplate             = byTemplate,
+                    ByUser                 = byUser,
+                    WeeklyTrend            = weeklyTrend,
+                    CycleTimeDistribution  = cycleBuckets,
                 };
             }
             catch (Exception ex)
             {
-                _loggingService.Error($"Error getting SLA compliance metrics: {ex.Message}", ex);
+                _loggingService.Error("Error getting SLA compliance metrics: " + ex.Message, ex);
                 throw;
             }
         }

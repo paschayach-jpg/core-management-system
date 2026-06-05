@@ -1,8 +1,8 @@
-namespace CMS.Domain.Models
+﻿namespace CMS.Domain.Models
 {
     /// <summary>
     /// Many-to-many link between SubCommittee and Division.
-    /// Maps to core.OrgUnitRelationship.
+    /// Maps to EMS.OrgUnitRelationship.
     /// </summary>
     public class OrgUnitRelationship
     {
@@ -12,3 +12,4 @@ namespace CMS.Domain.Models
         public bool IsActive       { get; set; }
     }
 }
+

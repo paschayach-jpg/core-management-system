@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -8,7 +8,7 @@ using CMS.Infrastructure.Interfaces;
 namespace CMS.Data.Repositories
 {
     /// <summary>
-    /// ดึง Level ที่ unique จาก core.HR_Position.Level
+    /// ดึง Level ที่ unique จาก EMS.m_Position.Level
     /// (ไม่มีตาราง HR_PositionLevel แยกต่างหาก)
     /// </summary>
     public class HrPositionLevelRepository : IHrPositionLevelRepository
@@ -28,7 +28,7 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 using (var cmd = new SqlCommand(
                     "SELECT LevelCode, COUNT(*) AS PositionCount " +
-                    "FROM core.HR_Position " +
+                    "FROM EMS.m_Position " +
                     "WHERE IsActive = 1 " +
                     "  AND LevelCode IS NOT NULL AND LevelCode <> '' " +
                     "GROUP BY LevelCode " +
@@ -57,3 +57,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

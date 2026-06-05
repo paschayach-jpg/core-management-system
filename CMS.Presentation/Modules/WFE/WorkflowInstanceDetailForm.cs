@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
 using CMS.Data.Models;
 using CMS.Domain.Models;
@@ -47,27 +48,83 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void InitializeControls()
         {
-            // TODO: Initialize controls
-            // - Instance info labels
-            // - Step history DataGridView with columns: StepName, AssignedTo, Status, CompletedDate
-            // - Current step details panel
-            // - Action buttons: Suspend, Resume, Cancel
+            pnlContent.Controls.Clear();
+            pnlContent.BackColor = System.Drawing.Color.FromArgb(248, 249, 250);
+
+            var pnlInfo = new Panel { Dock = DockStyle.Top, Height = 120, BackColor = System.Drawing.Color.White };
+            var lblInstanceId = new Label { Text = "Instance ID:", Location = new System.Drawing.Point(15, 10), AutoSize = true };
+            var lblInstanceIdValue = new Label { Name = "lblInstanceIdValue", Location = new System.Drawing.Point(150, 10), AutoSize = true };
+            var lblTemplate = new Label { Text = "Template:", Location = new System.Drawing.Point(15, 35), AutoSize = true };
+            var lblTemplateValue = new Label { Name = "lblTemplateValue", Location = new System.Drawing.Point(150, 35), AutoSize = true };
+            var lblStatus = new Label { Text = "Status:", Location = new System.Drawing.Point(15, 60), AutoSize = true };
+            var lblStatusValue = new Label { Name = "lblStatusValue", Location = new System.Drawing.Point(150, 60), AutoSize = true };
+            var lblInitiatedBy = new Label { Text = "Initiated By:", Location = new System.Drawing.Point(15, 85), AutoSize = true };
+            var lblInitiatedByValue = new Label { Name = "lblInitiatedByValue", Location = new System.Drawing.Point(150, 85), AutoSize = true };
+
+            pnlInfo.Controls.AddRange(new Control[] { lblInstanceId, lblInstanceIdValue, lblTemplate, lblTemplateValue, lblStatus, lblStatusValue, lblInitiatedBy, lblInitiatedByValue });
+            pnlContent.Controls.Add(pnlInfo);
+
+            var grdHistory = new DataGridView
+            {
+                Name = "grdHistory",
+                Dock = DockStyle.Fill,
+                AutoGenerateColumns = false,
+                AllowUserToAddRows = false,
+                ReadOnly = true
+            };
+            grdHistory.Columns.Add("StepName", "Step Name");
+            grdHistory.Columns.Add("AssignedTo", "Assigned To");
+            grdHistory.Columns.Add("Status", "Status");
+            grdHistory.Columns.Add("CompletedDate", "Completed");
+            grdHistory.Columns[0].Width = 200;
+            grdHistory.Columns[1].Width = 150;
+            grdHistory.Columns[2].Width = 100;
+            grdHistory.Columns[3].Width = 150;
+
+            pnlContent.Controls.Add(grdHistory);
         }
 
         public void DisplayInstanceDetails(WorkflowInstanceResult instance)
         {
-            // TODO: Display instance information
-            // - ID, Template, Status, InitiatedBy, InitiatedDate
+            if (instance == null) return;
+
+            var lblInstanceIdValue = pnlContent.Controls["lblInstanceIdValue"] as Label;
+            var lblTemplateValue = pnlContent.Controls["lblTemplateValue"] as Label;
+            var lblStatusValue = pnlContent.Controls["lblStatusValue"] as Label;
+            var lblInitiatedByValue = pnlContent.Controls["lblInitiatedByValue"] as Label;
+
+            if (lblInstanceIdValue != null) lblInstanceIdValue.Text = $"WFI-{instance.WorkflowInstanceId:D6}";
+            if (lblTemplateValue != null) lblTemplateValue.Text = $"{instance.WorkflowName ?? "-"} v{instance.TemplateVersion}";
+            if (lblStatusValue != null) lblStatusValue.Text = instance.Status.ToString();
+            if (lblInitiatedByValue != null) lblInitiatedByValue.Text = instance.InitiatedBy ?? "-";
+
+            lblTitle.Text = $"WFI-{instance.WorkflowInstanceId:D6} · {instance.WorkflowName}";
         }
 
         public void DisplayStepHistory(List<WorkflowStepInstanceResult> history)
         {
-            // TODO: Bind step history to DataGridView
+            var grd = pnlContent.Controls["grdHistory"] as DataGridView;
+            if (grd == null) return;
+
+            grd.Rows.Clear();
+            if (history == null || history.Count == 0) return;
+
+            foreach (var step in history)
+            {
+                int rowIdx = grd.Rows.Add();
+                grd.Rows[rowIdx].Cells[0].Value = step.StepName ?? "-";
+                grd.Rows[rowIdx].Cells[1].Value = step.AssignedTo ?? "-";
+                grd.Rows[rowIdx].Cells[2].Value = step.Status.ToString();
+                grd.Rows[rowIdx].Cells[3].Value = step.CompletedDate?.ToString("dd/MM/yyyy HH:mm") ?? "-";
+            }
         }
 
         public void DisplayCurrentStep(WorkflowStepInstanceResult currentStep)
         {
-            // TODO: Display current step details
+            if (currentStep == null) return;
+
+            MessageBox.Show($"Current Step: {currentStep.StepName}\nAssigned To: {currentStep.AssignedTo}\nStatus: {currentStep.Status}",
+                "Current Step Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         public void SetActionButtonsEnabled(bool canSuspend, bool canResume, bool canCancel)

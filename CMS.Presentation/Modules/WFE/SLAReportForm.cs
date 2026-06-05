@@ -10,6 +10,7 @@ using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.Workflow.Presenters;
 using CMS.Presentation.Modules.Workflow.Presenters.Interfaces;
 using CMS.Services.Interfaces;
+using CMS.Services.DTOs;
 
 namespace CMS.Presentation.Modules.Workflow
 {
@@ -22,10 +23,18 @@ namespace CMS.Presentation.Modules.Workflow
         // ── Chart data ───────────────────────────────────────────────────────────
         private List<SLATrendData> _trendData    = new List<SLATrendData>();
         private List<CycleTimeBar> _cycleTimeBars = new List<CycleTimeBar>();
+        private List<SLAMetricRow> _metricsList  = new List<SLAMetricRow>();
+
+        private DateTime _filterFromDate = DateTime.Today.AddDays(-30);
+        private DateTime _filterToDate = DateTime.Now;
+        private int? _filterTemplateId = null;
 
         // ── Template list UI refs ────────────────────────────────────────────────
         private Panel _pnlTemplateListContent;
         private Button _btnPeriod30;
+        private Label _lblTemplateFootnote;
+        private Label _lblYoy;
+        private Label _lblCycleTimeSubtitle;
 
         // ── Trend/cycle chart panel refs ─────────────────────────────────────────
         private Panel _pnlTrendContent;
@@ -47,15 +56,8 @@ namespace CMS.Presentation.Modules.Workflow
             Color.FromArgb(41, 128, 185), Color.FromArgb(230, 126, 34),
         };
 
-        // ── Overdue mock data ────────────────────────────────────────────────────
-        private struct OverdueRow { public string Name; public string Dept; public int Count; public double AvgDays; }
-        private static readonly OverdueRow[] OverdueData =
-        {
-            new OverdueRow { Name="วิชัย ม.",   Dept="Legal", Count=5, AvgDays=2.1 },
-            new OverdueRow { Name="ปริดา ส.",   Dept="Legal", Count=3, AvgDays=1.4 },
-            new OverdueRow { Name="ธนพล ภ.",    Dept="IT",    Count=2, AvgDays=3.2 },
-            new OverdueRow { Name="สุนิสา ร.", Dept="QA",    Count=2, AvgDays=1.1 },
-        };
+        // ── Overdue data (populated from presenter) ───────────────────────────────
+        private List<OverduePersonRow> _overdueRows = new List<OverduePersonRow>();
 
         // ── Nav ──────────────────────────────────────────────────────────────────
         private Panel _activeNavItem;
@@ -90,6 +92,8 @@ namespace CMS.Presentation.Modules.Workflow
             BuildTrendChartPanel();
             BuildOverduePanel();
             BuildCycleChartPanel();
+
+            btnExportHeader.Click += (s, ev) => OnToolbarClick("excel");
 
             // Only load data if presenter is available
             if (_presenter != null)
@@ -276,9 +280,115 @@ namespace CMS.Presentation.Modules.Workflow
                     if (_presenter != null) _presenter.GenerateReport();
                     break;
                 case "excel":
-                    var dlg = new SaveFileDialog { Filter = "Excel (*.xlsx)|*.xlsx", DefaultExt = "xlsx" };
+                    var dlg = new SaveFileDialog { Filter = "CSV (*.csv)|*.csv", DefaultExt = "csv" };
                     if (dlg.ShowDialog() == DialogResult.OK && _presenter != null)
                         _presenter.ExportToExcel(dlg.FileName);
+                    break;
+                case "period":
+                    using (var form = new Form())
+                    {
+                        form.Text = "เลือกช่วงเวลาข้อมูล";
+                        form.Size = new Size(350, 180);
+                        form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        form.StartPosition = FormStartPosition.CenterParent;
+                        form.MaximizeBox = false;
+                        form.MinimizeBox = false;
+
+                        var lblStart = new Label { Text = "วันที่เริ่มต้น:", Location = new Point(20, 20), AutoSize = true };
+                        var dtpStart = new DateTimePicker { Location = new Point(130, 18), Width = 170, Format = DateTimePickerFormat.Short, Value = _filterFromDate };
+
+                        var lblEnd = new Label { Text = "วันที่สิ้นสุด:", Location = new Point(20, 55), AutoSize = true };
+                        var dtpEnd = new DateTimePicker { Location = new Point(130, 53), Width = 170, Format = DateTimePickerFormat.Short, Value = _filterToDate };
+
+                        var btnOk = new Button { Text = "ตกลง", DialogResult = DialogResult.OK, Location = new Point(130, 95), Width = 80 };
+                        var btnCancel = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Location = new Point(220, 95), Width = 80 };
+
+                        form.Controls.AddRange(new Control[] { lblStart, dtpStart, lblEnd, dtpEnd, btnOk, btnCancel });
+                        form.AcceptButton = btnOk;
+                        form.CancelButton = btnCancel;
+
+                        if (form.ShowDialog(this) == DialogResult.OK)
+                        {
+                            if (dtpEnd.Value < dtpStart.Value)
+                            {
+                                MessageBox.Show("วันสิ้นสุดต้องไม่น้อยกว่าวันเริ่มต้น", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                            }
+                            _filterFromDate = dtpStart.Value.Date;
+                            _filterToDate = dtpEnd.Value.Date.AddDays(1).AddSeconds(-1);
+                            if (_presenter != null) _presenter.GenerateReport();
+                        }
+                    }
+                    break;
+                case "filter":
+                    var templateService = (this.MdiParent as MDI_Container)?.WorkflowTemplateService;
+                    if (templateService == null)
+                    {
+                        MessageBox.Show("Template service is not available.", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    try
+                    {
+                        var templates = templateService.GetTemplates(
+                            new WorkflowTemplateFilter
+                            {
+                                PageNumber = 1,
+                                PageSize = 500,
+                                SortBy = "Name",
+                                SortDirection = "ASC"
+                            },
+                            _userContext);
+
+                        using (var form = new Form())
+                        {
+                            form.Text = "กรองตาม Template";
+                            form.Size = new Size(400, 160);
+                            form.FormBorderStyle = FormBorderStyle.FixedDialog;
+                            form.StartPosition = FormStartPosition.CenterParent;
+                            form.MaximizeBox = false;
+                            form.MinimizeBox = false;
+
+                            var lblTemp = new Label { Text = "เลือก Template:", Location = new Point(20, 25), AutoSize = true };
+                            var cmbTemp = new ComboBox { Location = new Point(130, 22), Width = 230, DropDownStyle = ComboBoxStyle.DropDownList };
+
+                            cmbTemp.Items.Add(new TemplateComboOption { Id = null, Name = "ทุก Template" });
+                            foreach (var template in templates.Items ?? Enumerable.Empty<WorkflowTemplateResult>())
+                            {
+                                cmbTemp.Items.Add(new TemplateComboOption { Id = template.WorkflowDefinitionId, Name = template.Name });
+                            }
+
+                            // Select current filter
+                            cmbTemp.SelectedIndex = 0;
+                            if (_filterTemplateId.HasValue)
+                            {
+                                for (int idx = 0; idx < cmbTemp.Items.Count; idx++)
+                                {
+                                    if (((TemplateComboOption)cmbTemp.Items[idx]).Id == _filterTemplateId)
+                                    {
+                                        cmbTemp.SelectedIndex = idx;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            var btnOk = new Button { Text = "ตกลง", DialogResult = DialogResult.OK, Location = new Point(180, 75), Width = 80 };
+                            var btnCancel = new Button { Text = "ยกเลิก", DialogResult = DialogResult.Cancel, Location = new Point(270, 75), Width = 80 };
+
+                            form.Controls.AddRange(new Control[] { lblTemp, cmbTemp, btnOk, btnCancel });
+                            form.AcceptButton = btnOk;
+                            form.CancelButton = btnCancel;
+
+                            if (form.ShowDialog(this) == DialogResult.OK)
+                            {
+                                _filterTemplateId = ((TemplateComboOption)cmbTemp.SelectedItem).Id;
+                                if (_presenter != null) _presenter.GenerateReport();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("ไม่สามารถโหลดรายการ template ได้: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                     break;
                 default:
                     MessageBox.Show(string.Format("ฟังก์ชัน '{0}' อยู่ระหว่างพัฒนา", tag),
@@ -386,14 +496,15 @@ namespace CMS.Presentation.Modules.Workflow
                 Height    = 28,
                 BackColor = Color.FromArgb(250, 251, 253),
             };
-            pnlNote.Controls.Add(new Label
+            _lblTemplateFootnote = new Label
             {
-                Text      = "ⓘ  เป้าหมาย 90% · 2 Templates ต่ำกว่าเป้า",
+                Text      = "ⓘ  เป้าหมาย 90% · กำลังคำนวณ...",
                 Font      = new Font("Segoe UI", 8F),
                 ForeColor = Color.FromArgb(120, 130, 150),
                 Location  = new Point(12, 6),
                 AutoSize  = true,
-            });
+            };
+            pnlNote.Controls.Add(_lblTemplateFootnote);
 
             pnlTemplateListOuter.Controls.Add(_pnlTemplateListContent);
             pnlTemplateListOuter.Controls.Add(pnlNote);
@@ -417,17 +528,18 @@ namespace CMS.Presentation.Modules.Workflow
                 AutoSize  = true,
             });
             // YoY badge
-            var lblYoy = new Label
+            _lblYoy = new Label
             {
-                Text      = "+17 pts YoY",
+                Text      = "0.0 pts YoY",
                 Font      = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = _clrGreen,
                 BackColor = Color.FromArgb(220, 248, 228),
                 Location  = new Point(230, 12),
-                Size      = new Size(84, 20),
+                Size      = new Size(120, 20),
                 TextAlign = ContentAlignment.MiddleCenter,
+                Visible   = false,
             };
-            pnlHeader.Controls.Add(lblYoy);
+            pnlHeader.Controls.Add(_lblYoy);
             pnlHeader.Controls.Add(new Panel
                 { BackColor = Color.FromArgb(220, 224, 232), Dock = DockStyle.Bottom, Height = 1 });
 
@@ -518,14 +630,15 @@ namespace CMS.Presentation.Modules.Workflow
                 Location  = new Point(12, 12),
                 AutoSize  = true,
             });
-            pnlHeader.Controls.Add(new Label
+            _lblCycleTimeSubtitle = new Label
             {
-                Text      = "เฉลี่ย 2.8 วัน · Median 2.1",
+                Text      = "กำลังคำนวณ...",
                 Font      = new Font("Segoe UI", 8F),
                 ForeColor = Color.FromArgb(120, 130, 150),
                 Location  = new Point(200, 14),
                 AutoSize  = true,
-            });
+            };
+            pnlHeader.Controls.Add(_lblCycleTimeSubtitle);
             pnlHeader.Controls.Add(new Panel
                 { BackColor = Color.FromArgb(220, 224, 232), Dock = DockStyle.Bottom, Height = 1 });
 
@@ -547,7 +660,8 @@ namespace CMS.Presentation.Modules.Workflow
         public void DisplayMetrics(List<SLAMetricRow> metrics)
         {
             if (InvokeRequired) { Invoke(new Action(() => DisplayMetrics(metrics))); return; }
-
+            _metricsList = metrics ?? new List<SLAMetricRow>();
+ 
             _pnlTemplateListContent.Controls.Clear();
 
             int y = 4;
@@ -660,6 +774,19 @@ namespace CMS.Presentation.Modules.Workflow
 
                 double avgCompliance = metrics.Average(m => m.CompliancePercent);
                 lblCardComplianceCount.Text = string.Format("{0:F1}%", avgCompliance);
+
+                int underTargetCount = metrics.Count(m => m.CompliancePercent < 90);
+                if (_lblTemplateFootnote != null)
+                {
+                    _lblTemplateFootnote.Text = string.Format("ⓘ  เป้าหมาย 90% · {0} Templates ต่ำกว่าเป้า", underTargetCount);
+                }
+            }
+            else
+            {
+                if (_lblTemplateFootnote != null)
+                {
+                    _lblTemplateFootnote.Text = "ⓘ  เป้าหมาย 90% · ไม่มีข้อมูล";
+                }
             }
         }
 
@@ -671,12 +798,131 @@ namespace CMS.Presentation.Modules.Workflow
             lblCardComplianceSub.Text   = summary.ComplianceDelta;
             lblCardCycleTimeCount.Text  = string.Format("{0:F1} วัน", summary.AvgCycleTimeDays);
             lblCardCycleTimeSub.Text    = summary.CycleTimeDelta;
-            lblCardOverdueCount.Text    = string.Format("{0} / {1}", summary.OverdueCount, summary.TotalCount);
+            lblCardOverdueCount.Text = string.Format("{0} / {1}", summary.OverdueCount, summary.TotalCount);
             if (summary.TotalCount > 0)
                 lblCardOverdueSub.Text  = string.Format("{0:F1}% ของทั้งหมด",
                     (double)summary.OverdueCount / summary.TotalCount * 100);
             lblCardCompletedCount.Text  = summary.CompletedMtd.ToString();
             lblCardCompletedSub.Text    = summary.PeriodLabel;
+
+            if (_lblCycleTimeSubtitle != null)
+            {
+                _lblCycleTimeSubtitle.Text = string.Format("เฉลี่ย {0:F1} วัน", summary.AvgCycleTimeDays);
+            }
+        }
+
+        public void DisplayOverdueByPerson(List<OverduePersonRow> rows)
+        {
+            if (InvokeRequired) { Invoke(new Action(() => DisplayOverdueByPerson(rows))); return; }
+            _overdueRows = rows ?? new List<OverduePersonRow>();
+            _pnlOverdueContent?.Invalidate();
+        }
+
+        public void ExportToExcel(string filePath)
+        {
+            try
+            {
+                using (var sw = new System.IO.StreamWriter(filePath, false, new System.Text.UTF8Encoding(true)))
+                {
+                    // Section 1: KPI Summary
+                    sw.WriteLine("=== SLA KPI SUMMARY ===");
+                    sw.WriteLine("Metric,Value,Detail");
+                    sw.WriteLine($"SLA Compliance,{lblCardComplianceCount.Text},{lblCardComplianceSub.Text}");
+                    sw.WriteLine($"Avg Cycle Time,{lblCardCycleTimeCount.Text},{lblCardCycleTimeSub.Text}");
+                    sw.WriteLine($"Overdue Tasks,{lblCardOverdueCount.Text},{lblCardOverdueSub.Text}");
+                    sw.WriteLine($"Completed MTD,{lblCardCompletedCount.Text},{lblCardCompletedSub.Text}");
+                    sw.WriteLine();
+
+                    // Section 2: SLA Compliance per Template
+                    sw.WriteLine("=== SLA COMPLIANCE PER TEMPLATE ===");
+                    sw.WriteLine("Template Code,Template Name,Total Tasks,Overdue Tasks,Compliance %");
+                    if (_metricsList != null)
+                    {
+                        foreach (var m in _metricsList)
+                        {
+                            sw.WriteLine($"\"{EscapeCsv(m.TemplateCode)}\",\"{EscapeCsv(m.TemplateName)}\",{m.Total},{m.Overdue},{m.CompliancePercent:F1}%");
+                        }
+                    }
+                    sw.WriteLine();
+
+                    // Section 3: Overdue by Person
+                    sw.WriteLine("=== OVERDUE BY PERSON ===");
+                    sw.WriteLine("User Name,Department,Overdue Count,Avg Overdue Days");
+                    if (_overdueRows != null)
+                    {
+                        foreach (var o in _overdueRows)
+                        {
+                            sw.WriteLine($"\"{EscapeCsv(o.UserName)}\",\"{EscapeCsv(o.Department)}\",{o.OverdueCount},{o.AvgOverdueDays:F1}");
+                        }
+                    }
+                    sw.WriteLine();
+
+                    // Section 4: SLA Trend Data
+                    sw.WriteLine("=== SLA TREND DATA ===");
+                    sw.WriteLine("Week,Compliance %");
+                    if (_trendData != null)
+                    {
+                        foreach (var t in _trendData)
+                        {
+                            sw.WriteLine($"\"{EscapeCsv(t.WeekLabel)}\",{t.CompliancePercent:F1}%");
+                        }
+                    }
+                    sw.WriteLine();
+
+                    // Section 5: Cycle Time Distribution
+                    sw.WriteLine("=== CYCLE TIME DISTRIBUTION ===");
+                    sw.WriteLine("Range,Count,Category");
+                    if (_cycleTimeBars != null)
+                    {
+                        foreach (var c in _cycleTimeBars)
+                        {
+                            sw.WriteLine($"\"{EscapeCsv(c.Label)}\",{c.Count},\"{EscapeCsv(c.Category)}\"");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("เกิดข้อผิดพลาดในการเขียนไฟล์: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private string EscapeCsv(string field)
+        {
+            if (string.IsNullOrEmpty(field)) return string.Empty;
+            return field.Replace("\"", "\"\"");
+        }
+ 
+        public void ShowError(string message) =>
+            MessageBox.Show(message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+ 
+        public void ShowInfo(string message) =>
+            MessageBox.Show(message, "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+ 
+        public void GetDateRange(out DateTime fromDate, out DateTime toDate)
+        {
+            fromDate = _filterFromDate;
+            toDate   = _filterToDate;
+        }
+ 
+        public int? GetTemplateFilter() => _filterTemplateId;
+        public string GetUserFilter()   => string.Empty;
+
+        private class TemplateComboOption
+        {
+            public int? Id { get; set; }
+            public string Name { get; set; }
+            public override string ToString() => Name;
+        }
+
+        public void UpdateSubtitle(DateTime fromDate, DateTime toDate)
+        {
+            if (InvokeRequired) { Invoke(new Action(() => UpdateSubtitle(fromDate, toDate))); return; }
+            int thaiFrom = fromDate.Year + 543;
+            int thaiTo   = toDate.Year + 543;
+            string templateText = _filterTemplateId.HasValue ? "Template ID: " + _filterTemplateId.Value : "ทุก Template";
+            lblSubtitle.Text = string.Format("ช่วงข้อมูล: {0:dd/MM}/{1} – {2:dd/MM}/{3} · {4} · ทุกหน่วยงาน",
+                fromDate, thaiFrom, toDate, thaiTo, templateText);
         }
 
         public void DisplayComplianceTrendChart(List<SLATrendData> trendData)
@@ -684,6 +930,24 @@ namespace CMS.Presentation.Modules.Workflow
             if (InvokeRequired) { Invoke(new Action(() => DisplayComplianceTrendChart(trendData))); return; }
             _trendData = trendData ?? new List<SLATrendData>();
             _pnlTrendContent?.Invalidate();
+
+            if (_lblYoy != null)
+            {
+                if (_trendData.Count >= 2)
+                {
+                    double first = _trendData[0].CompliancePercent;
+                    double last = _trendData[_trendData.Count - 1].CompliancePercent;
+                    double diff = last - first;
+                    _lblYoy.Text = string.Format("{0:+0.0;-0.0;0.0} pts เทียบช่วงแรก", diff);
+                    _lblYoy.BackColor = diff >= 0 ? Color.FromArgb(220, 248, 228) : Color.FromArgb(254, 224, 224);
+                    _lblYoy.ForeColor = diff >= 0 ? _clrGreen : _clrRed;
+                    _lblYoy.Visible = true;
+                }
+                else
+                {
+                    _lblYoy.Visible = false;
+                }
+            }
         }
 
         public void DisplayCycleTimeDistribution(List<CycleTimeBar> bars)
@@ -698,27 +962,7 @@ namespace CMS.Presentation.Modules.Workflow
             // Legacy — superseded by DisplayCycleTimeDistribution
         }
 
-        public void ExportToExcel(string filePath)
-        {
-            MessageBox.Show("Export ไปยัง " + filePath + "\n(ฟังก์ชันนี้อยู่ระหว่างพัฒนา)",
-                "Export", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
 
-        public void ShowError(string message) =>
-            MessageBox.Show(message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
-
-        public void ShowInfo(string message) =>
-            MessageBox.Show(message, "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-        public void GetDateRange(out DateTime fromDate, out DateTime toDate)
-        {
-            // TODO: wire up date picker controls
-            fromDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            toDate   = DateTime.Now;
-        }
-
-        public int? GetTemplateFilter() => null;
-        public string GetUserFilter()   => string.Empty;
 
         // ════════════════════════════════════════════════════════════════════════
         // CHART PAINT HANDLERS
@@ -894,58 +1138,60 @@ namespace CMS.Presentation.Modules.Workflow
             int rowH = 44;
             int y    = 4;
 
-            for (int i = 0; i < OverdueData.Length; i++)
+            if (_overdueRows == null || _overdueRows.Count == 0)
             {
-                var row = OverdueData[i];
+                using (var fEmpty = new Font("Segoe UI", 9F))
+                    g.DrawString("ไม่มีข้อมูลเกิน SLA ในช่วงเวลานี้", fEmpty,
+                        new SolidBrush(Color.FromArgb(140, 150, 165)), 12, 12);
+                return;
+            }
 
-                // Alternate background
+            for (int i = 0; i < _overdueRows.Count; i++)
+            {
+                var row = _overdueRows[i];
+
                 if (i % 2 == 1)
                     g.FillRectangle(new SolidBrush(Color.FromArgb(250, 251, 253)),
                         0, y, pnl.Width, rowH);
 
                 // Avatar circle
-                int avSz = 28;
-                int avX  = 12;
-                int avY  = y + (rowH - avSz) / 2;
-                var avColor = AvatarColors[Math.Abs(row.Name.GetHashCode()) % AvatarColors.Length];
+                int avSz    = 28;
+                int avX     = 12;
+                int avY     = y + (rowH - avSz) / 2;
+                var avColor = AvatarColors[Math.Abs(row.UserName.GetHashCode()) % AvatarColors.Length];
                 using (var avBrush = new SolidBrush(avColor))
-                using (var avPath = RoundedRect(new Rectangle(avX, avY, avSz, avSz), avSz / 2))
+                using (var avPath  = RoundedRect(new Rectangle(avX, avY, avSz, avSz), avSz / 2))
                     g.FillPath(avBrush, avPath);
 
-                var initials = GetInitials(row.Name);
+                var initials = GetInitials(row.UserName);
                 g.DrawString(initials, new Font("Segoe UI", 9F, FontStyle.Bold), Brushes.White,
                     new RectangleF(avX, avY, avSz, avSz),
                     new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
 
-                // Name
                 using (var fName = new Font("Segoe UI", 9F))
-                    g.DrawString(row.Name, fName, new SolidBrush(Color.FromArgb(30, 36, 55)),
-                        avX + avSz + 6, y + 12);
+                    g.DrawString(row.UserName, fName,
+                        new SolidBrush(Color.FromArgb(30, 36, 55)), avX + avSz + 6, y + 12);
 
                 // Dept badge
-                int deptX = 200;
-                Color deptColor = row.Dept == "Legal" ? Color.FromArgb(80, 130, 200)
-                                : row.Dept == "IT"    ? Color.FromArgb(22, 160, 133)
-                                : row.Dept == "QA"    ? Color.FromArgb(155, 89, 182)
-                                :                       Color.FromArgb(120, 130, 150);
+                string dept     = string.IsNullOrEmpty(row.Department) ? "—" : row.Department;
+                Color deptColor = dept == "Legal" ? Color.FromArgb(80, 130, 200)
+                                : dept == "IT"    ? Color.FromArgb(22, 160, 133)
+                                : dept == "QA"    ? Color.FromArgb(155, 89, 182)
+                                :                   Color.FromArgb(120, 130, 150);
                 using (var fDept = new Font("Segoe UI", 8F))
-                {
-                    g.DrawString("● " + row.Dept, fDept,
-                        new SolidBrush(deptColor), deptX, y + 14);
-                }
+                    g.DrawString("● " + dept, fDept, new SolidBrush(deptColor), 200, y + 14);
 
-                // Count
+                // Overdue count
                 using (var fCount = new Font("Segoe UI", 9F, FontStyle.Bold))
-                    g.DrawString(row.Count.ToString(), fCount,
+                    g.DrawString(row.OverdueCount.ToString(), fCount,
                         new SolidBrush(Color.FromArgb(30, 36, 55)), 295, y + 13);
 
-                // Avg days
-                Color dayColor = row.AvgDays > 2.0 ? _clrRed : _clrAmber;
+                // Avg overdue days
+                Color dayColor = row.AvgOverdueDays > 2.0 ? _clrRed : _clrAmber;
                 using (var fDays = new Font("Segoe UI", 9F, FontStyle.Bold))
-                    g.DrawString(string.Format("{0:F1} วัน", row.AvgDays), fDays,
+                    g.DrawString(string.Format("{0:F1} วัน", row.AvgOverdueDays), fDays,
                         new SolidBrush(dayColor), 340, y + 13);
 
-                // Row separator
                 g.DrawLine(new Pen(Color.FromArgb(235, 238, 244)),
                     0, y + rowH - 1, pnl.Width, y + rowH - 1);
 

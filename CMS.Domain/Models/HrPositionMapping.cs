@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 
 namespace CMS.Domain.Models
 {
     /// <summary>
     /// ผูก Position กับ Department/Division
-    /// จาก core.HR_PositionMapping
+    /// จาก EMS.m_PositionMapping
     /// </summary>
     public class HrPositionMapping
     {
@@ -26,3 +26,4 @@ namespace CMS.Domain.Models
         public string DivisionName   { get; set; }
     }
 }
+

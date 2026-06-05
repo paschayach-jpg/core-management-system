@@ -98,12 +98,14 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
 
             // ── Form ─────────────────────────────────────────────────────────
             this.Text            = "ดำเนินการ Step";
-            this.ClientSize      = new System.Drawing.Size(760, 820);
-            this.MinimumSize     = new System.Drawing.Size(680, 600);
+            this.ClientSize      = new System.Drawing.Size(760, 640);
+            this.MinimumSize     = new System.Drawing.Size(680, 520);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.StartPosition   = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Font            = new System.Drawing.Font("Segoe UI", 9F);
             this.BackColor       = System.Drawing.Color.White;
+            this.AcceptButton    = this.btnConfirm;
+            this.CancelButton    = this.btnCancel;
             this.Load           += new System.EventHandler(this.WorkflowStepActionForm_Load);
 
             // ── Title bar ─────────────────────────────────────────────────────
@@ -175,7 +177,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCancel.BackColor = System.Drawing.Color.White;
             this.btnCancel.Anchor    = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            this.btnCancel.Location  = new System.Drawing.Point(560, 12);
+            this.btnCancel.Location  = new System.Drawing.Point(460, 12);
             this.btnCancel.Size      = new System.Drawing.Size(88, 32);
             this.btnCancel.Name      = "btnCancel";
             this.btnCancel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(210, 215, 225);
@@ -187,7 +189,7 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.btnConfirm.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnConfirm.BackColor = System.Drawing.Color.FromArgb(37, 99, 235);
             this.btnConfirm.Anchor    = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            this.btnConfirm.Location  = new System.Drawing.Point(656, 12);
+            this.btnConfirm.Location  = new System.Drawing.Point(556, 12);
             this.btnConfirm.Size      = new System.Drawing.Size(188, 32);
             this.btnConfirm.Name      = "btnConfirm";
             this.btnConfirm.FlatAppearance.BorderSize = 0;
@@ -363,6 +365,8 @@ namespace CMS.Presentation.Modules.Workflow.Dialogs
             this.Controls.Add(this.pnlScrollOuter);
             this.Controls.Add(this.pnlFooter);
             this.Controls.Add(this.pnlTitleBar);
+            this.pnlTitleBar.BringToFront();
+            this.pnlFooter.BringToFront();
 
             this.ResumeLayout(false);
         }

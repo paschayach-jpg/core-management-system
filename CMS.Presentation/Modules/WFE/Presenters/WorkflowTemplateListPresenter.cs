@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CMS.Data.Models;
 using CMS.Domain.Models;
+using CMS.Domain.Enums;
 using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.Workflow.Presenters.Interfaces;
 using CMS.Services.DTOs;
@@ -264,6 +265,232 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 _loggingService.Error($"Error duplicating template: {ex.Message}", ex);
                 _view.ShowError($"Failed to duplicate template: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Submit a Draft template into the Approval Queue.
+        /// </summary>
+        public void SubmitForApproval(WorkflowTemplateResult template)
+        {
+            try
+            {
+                if (template == null)
+                {
+                    _view.ShowError("กรุณาเลือก Template ที่ต้องการส่งอนุมัติ");
+                    return;
+                }
+
+                if (template.StatusLabel != "Draft")
+                {
+                    _view.ShowError($"เฉพาะ Template ที่เป็น Draft เท่านั้นที่สามารถส่งอนุมัติได้\n(สถานะปัจจุบัน: {template.StatusLabel})");
+                    return;
+                }
+
+                _templateService.SubmitForApproval(template.WorkflowDefinitionId, _userContext);
+
+                _auditService?.Log(new AuditEntry
+                {
+                    Action    = "WorkflowTemplateSubmittedFromList",
+                    TableName = "WorkflowDefinition",
+                    RecordID  = template.WorkflowDefinitionId,
+                    UserName  = _userContext.ADUserName,
+                    AuditDate = DateTime.Now,
+                    NewValue  = $"Submitted template '{template.Name}' for approval"
+                });
+
+                _view.ShowInfo($"✔  ส่ง Template '{template.Name}' เข้า Approval Queue เรียบร้อยแล้ว\n\nสถานะเปลี่ยนเป็น: รออนุมัติ");
+                LoadTemplates();
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"SubmitForApproval error: {ex.Message}", ex);
+                _view.ShowError($"ส่งอนุมัติไม่สำเร็จ: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Publish the selected template (sets ApprovalStatus = Active, IsActive = true)
+        /// </summary>
+        public void PublishTemplate(WorkflowTemplateResult template)
+        {
+            try
+            {
+                if (template == null)
+                {
+                    _view.ShowError("กรุณาเลือก Template ที่ต้องการ Publish");
+                    return;
+                }
+
+                _templateService.PublishTemplate(template.WorkflowDefinitionId, _userContext);
+
+                _auditService?.Log(new AuditEntry
+                {
+                    Action = "WorkflowTemplatePublishedFromList",
+                    TableName = "WorkflowDefinition",
+                    RecordID = template.WorkflowDefinitionId,
+                    UserName = _userContext.ADUserName,
+                    AuditDate = DateTime.Now,
+                    NewValue = $"Published template '{template.Name}'"
+                });
+
+                _view.ShowInfo($"Publish Template '{template.Name}' v{template.Version} เรียบร้อย");
+                LoadTemplates();
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"PublishTemplate error: {ex.Message}", ex);
+                _view.ShowError($"Publish ไม่สำเร็จ: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Deactivate the selected template (sets ApprovalStatus = Inactive, IsActive = false)
+        /// </summary>
+        public void DeactivateTemplate(WorkflowTemplateResult template)
+        {
+            try
+            {
+                if (template == null)
+                {
+                    _view.ShowError("กรุณาเลือก Template ที่ต้องการ Deactivate");
+                    return;
+                }
+
+                _templateService.DeactivateTemplate(template.WorkflowDefinitionId, _userContext);
+
+                _auditService?.Log(new AuditEntry
+                {
+                    Action = "WorkflowTemplateDeactivatedFromList",
+                    TableName = "WorkflowDefinition",
+                    RecordID = template.WorkflowDefinitionId,
+                    UserName = _userContext.ADUserName,
+                    AuditDate = DateTime.Now,
+                    NewValue = $"Deactivated template '{template.Name}'"
+                });
+
+                _view.ShowInfo($"Deactivate Template '{template.Name}' เรียบร้อย");
+                LoadTemplates();
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"DeactivateTemplate error: {ex.Message}", ex);
+                _view.ShowError($"Deactivate ไม่สำเร็จ: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Export selected template metadata to a JSON file
+        /// </summary>
+        public void ExportTemplate(WorkflowTemplateResult template, string filePath)
+        {
+            try
+            {
+                if (template == null)
+                {
+                    _view.ShowError("กรุณาเลือก Template ที่ต้องการ Export");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(filePath))
+                {
+                    _view.ShowError("Path สำหรับบันทึกไฟล์ไม่ถูกต้อง");
+                    return;
+                }
+
+                var exportData = new ExportedTemplateDto
+                {
+                    Name = template.Name,
+                    Description = template.Description,
+                    Category = template.Category,
+                    Version = template.Version,
+                    IsActive = template.IsActive,
+                    ApprovalStatus = template.ApprovalStatus,
+                    TemplateDefinition = template.TemplateDefinition
+                };
+
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(exportData, Newtonsoft.Json.Formatting.Indented);
+                System.IO.File.WriteAllText(filePath, json, System.Text.Encoding.UTF8);
+
+                _auditService?.Log(new AuditEntry
+                {
+                    Action = "WorkflowTemplateExported",
+                    TableName = "WorkflowDefinition",
+                    RecordID = template.WorkflowDefinitionId,
+                    UserName = _userContext.ADUserName,
+                    AuditDate = DateTime.Now,
+                    NewValue = $"Exported template '{template.Name}' to {filePath}"
+                });
+
+                _view.ShowInfo($"Export Template '{template.Name}' ไปที่ {System.IO.Path.GetFileName(filePath)} เรียบร้อยแล้ว");
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"ExportTemplate error: {ex.Message}", ex);
+                _view.ShowError($"Export ไม่สำเร็จ: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Import template metadata from a JSON file and save as a new draft
+        /// </summary>
+        public void ImportTemplate(string filePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath) || !System.IO.File.Exists(filePath))
+                {
+                    _view.ShowError("ไฟล์ไม่ถูกต้องหรือไม่พบไฟล์");
+                    return;
+                }
+
+                var json = System.IO.File.ReadAllText(filePath, System.Text.Encoding.UTF8);
+                var importData = Newtonsoft.Json.JsonConvert.DeserializeObject<ExportedTemplateDto>(json);
+
+                if (importData == null || string.IsNullOrWhiteSpace(importData.Name))
+                {
+                    _view.ShowError("โครงสร้างไฟล์ JSON ไม่ถูกต้อง ไม่พบข้อมูล Template");
+                    return;
+                }
+
+                var request = new CreateTemplateRequest
+                {
+                    Name = $"{importData.Name} (Imported)",
+                    Description = importData.Description ?? "Imported from file",
+                    TemplateDefinition = importData.TemplateDefinition ?? "{}",
+                    IsActive = false
+                };
+
+                var newTemplate = _templateService.CreateTemplate(request, _userContext);
+
+                _auditService?.Log(new AuditEntry
+                {
+                    Action = "WorkflowTemplateImported",
+                    TableName = "WorkflowDefinition",
+                    RecordID = newTemplate.WorkflowDefinitionId,
+                    UserName = _userContext.ADUserName,
+                    AuditDate = DateTime.Now,
+                    NewValue = $"Imported template as '{request.Name}' from {filePath}"
+                });
+
+                _view.ShowInfo($"นำเข้า Template '{importData.Name}' เรียบร้อยแล้ว\n(สร้างเป็น '{request.Name}' ในสถานะ Draft)");
+                LoadTemplates();
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"ImportTemplate error: {ex.Message}", ex);
+                _view.ShowError($"Import ไม่สำเร็จ: {ex.Message}");
+            }
+        }
+
+        private class ExportedTemplateDto
+        {
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public string Category { get; set; }
+            public int Version { get; set; }
+            public bool IsActive { get; set; }
+            public WorkflowTemplateStatus ApprovalStatus { get; set; }
+            public string TemplateDefinition { get; set; }
         }
 
         /// <summary>

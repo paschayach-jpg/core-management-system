@@ -1,20 +1,70 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
+using CMS.Data.Models;
+using CMS.Domain.Models;
+using CMS.Infrastructure.Interfaces;
+using CMS.Services.DTOs;
+using CMS.Services.Interfaces;
 
 namespace CMS.Presentation.Modules.Workflow
 {
     /// <summary>
-    /// Delegation settings page in WFE style.
+    /// Delegation settings page — delegate tasks to another user for a date range.
     /// </summary>
     public partial class WorkflowDelegationForm : Form
     {
+        private readonly IWorkflowDelegationService _delegationService;
+        private readonly IWorkflowService _workflowService;
+        private readonly IEmployeeApiService _employeeApiService;
+        private readonly ILdapUserSearchService _ldapSearchService;
+        private readonly ILoggingService _loggingService;
+        private readonly IAuditService _auditService;
+        private readonly UserContext _userContext;
+
         private readonly Color _navyDark = Color.FromArgb(31, 56, 100);
         private readonly Color _navHover = Color.FromArgb(245, 249, 255);
 
-        public WorkflowDelegationForm()
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, string lParam);
+        private const int EM_SETCUEBANNER = 0x1501;
+
+        private List<EmployeeSummary> _employees = new List<EmployeeSummary>();
+        private List<WorkflowTaskResult> _myTasks = new List<WorkflowTaskResult>();
+
+        private List<CMS.Services.DTOs.LdapUserResult> _ldapResults = new List<CMS.Services.DTOs.LdapUserResult>();
+        private CMS.Services.DTOs.LdapUserResult _selectedLdapUser = null;
+
+        private System.Windows.Forms.Timer _searchTimer;
+
+        // Search TextBox + results ListBox (replaces cmbDelegateTo which has uncontrollable native autocomplete)
+        private TextBox _txtSearch;
+        private ListBox _lstResults;
+        private Panel   _pnlResults;
+
+        private Panel _pnlUserDetail;
+        private Label _lblUserDetailName;
+        private Label _lblUserDetailInfo;
+
+        public WorkflowDelegationForm(
+            IWorkflowDelegationService delegationService,
+            IWorkflowService workflowService,
+            IEmployeeApiService employeeApiService,
+            ILoggingService loggingService,
+            IAuditService auditService,
+            UserContext userContext,
+            ILdapUserSearchService ldapSearchService = null)
         {
             InitializeComponent();
+            _delegationService  = delegationService  ?? throw new ArgumentNullException(nameof(delegationService));
+            _workflowService    = workflowService    ?? throw new ArgumentNullException(nameof(workflowService));
+            _employeeApiService = employeeApiService ?? throw new ArgumentNullException(nameof(employeeApiService));
+            _loggingService     = loggingService     ?? throw new ArgumentNullException(nameof(loggingService));
+            _auditService       = auditService       ?? throw new ArgumentNullException(nameof(auditService));
+            _userContext        = userContext         ?? throw new ArgumentNullException(nameof(userContext));
+            _ldapSearchService  = ldapSearchService; // optional — falls back to EmployeeApi
         }
 
         private void WorkflowDelegationForm_Load(object sender, EventArgs e)
@@ -25,58 +75,560 @@ namespace CMS.Presentation.Modules.Workflow
             WorkflowNavigationBuilder.BuildSidebar(
                 pnlSidebarContainer, "delegation", OnNavItemClick, out initialNav);
 
+            LoadEmployees();
+            LoadMyTasks();
+            BuildUserDetailPanel();
+            ReplaceComboWithSearchBox();
             InitializeFormData();
             LoadHistoryRows();
         }
 
+        // ─── Data loading ────────────────────────────────────────────────────────
+
+        private void LoadEmployees()
+        {
+            try
+            {
+                _employees = _employeeApiService
+                    .GetAllEmployees()
+                    .Where(emp => emp.EmployeeCode != _userContext.ADUserName)
+                    .OrderBy(emp => emp.DisplayName)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"Error loading employees: {ex.Message}", ex);
+                _employees = new List<EmployeeSummary>();
+            }
+        }
+
+        private void LoadMyTasks()
+        {
+            try
+            {
+                _myTasks = _workflowService.GetMyTasks(_userContext);
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"Error loading my tasks: {ex.Message}", ex);
+                _myTasks = new List<WorkflowTaskResult>();
+            }
+        }
+
         private void InitializeFormData()
         {
-            txtFromUser.Text = "วินัย มีสุข (Manager - Legal)";
+            // From-user: read-only, built from UserContext
+            var fromDisplay = _userContext.ADUserName;
+            if (!string.IsNullOrEmpty(_userContext.PositionName))
+                fromDisplay += " (" + _userContext.PositionName;
+            if (!string.IsNullOrEmpty(_userContext.DepartmentName))
+                fromDisplay += " - " + _userContext.DepartmentName;
+            if (!string.IsNullOrEmpty(_userContext.PositionName))
+                fromDisplay += ")";
+            txtFromUser.Text = fromDisplay;
 
-            cmbDelegateTo.Items.Clear();
-            cmbDelegateTo.Items.AddRange(new object[]
-            {
-                "สิทธิพร พงศ์ชัย (Sr. Legal Officer)",
-                "ธนพล ภักดี (Legal Officer)",
-                "สุโขภา รัตน์ (Legal Officer)"
-            });
-            cmbDelegateTo.SelectedIndex = 0;
+            // Reset search box
+            if (_txtSearch != null) _txtSearch.Text = string.Empty;
+            HideResults();
+            _lastSearchKeyword = string.Empty;
+            _selectedLdapUser  = null;
+            HideUserDetail();
 
+            // Scope dropdown: all + unique workflow names from current tasks
             cmbScope.Items.Clear();
-            cmbScope.Items.AddRange(new object[]
-            {
-                "ทุก Workflow ของฉัน",
-                "เฉพาะ WFD-003 (KB)",
-                "เฉพาะ WFD-005 (ลา)"
-            });
+            cmbScope.Items.Add("ทุก Workflow ของฉัน");
+            var names = _myTasks
+                .Select(t => t.WorkflowName)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Distinct()
+                .OrderBy(n => n);
+            foreach (var name in names)
+                cmbScope.Items.Add(name);
             cmbScope.SelectedIndex = 0;
 
-            dtpStart.Value = new DateTime(2026, 4, 17, 9, 0, 0);
-            dtpEnd.Value = new DateTime(2026, 4, 24, 17, 0, 0);
+            dtpStart.Value = DateTime.Now;
+            dtpEnd.Value   = DateTime.Now.AddDays(7);
 
-            chkEmail.Checked = true;
-            chkOutOfOffice.Checked = true;
+            chkEmail.Checked         = true;
+            chkOutOfOffice.Checked   = true;
             chkRequireReason.Checked = false;
 
-            txtReason.Text = "ลาพักร้อน 7 วัน - ติดต่อคุณสิทธิพรสำหรับงานเร่งด่วน";
+            txtReason.Text = string.Empty;
         }
 
         private void LoadHistoryRows()
         {
             dgvDelegations.Rows.Clear();
-            dgvDelegations.Rows.Add("วินัย มีสุข (ฉัน) → สิทธิพร พงศ์ชัย", "ทุก Workflow", "17/04/69", "24/04/69", "กำลังใช้งาน", "ลาพักร้อน - ติดต่อแทน");
-            dgvDelegations.Rows.Add("วินัย มีสุข (ฉัน) → ธนพล ภักดี", "เฉพาะ WFD-003 (KB)", "01/05/69", "15/05/69", "กำหนดไว้", "ลาป่วยล่วงหน้า");
-            dgvDelegations.Rows.Add("วินัย มีสุข (ฉัน) → สุโขภา รัตน์", "WFD-005 (ลา)", "01/04/69", "10/04/69", "สิ้นสุดแล้ว", "-");
+
+            if (_myTasks.Count == 0)
+                return;
+
+            try
+            {
+                var allDelegations = new List<WFDelegationResult>();
+
+                foreach (var task in _myTasks)
+                {
+                    try
+                    {
+                        var history = _delegationService.GetDelegationHistory(task.WorkflowStepInstanceId);
+                        if (history != null)
+                            allDelegations.AddRange(history);
+                    }
+                    catch { /* skip individual step errors */ }
+                }
+
+                foreach (var d in allDelegations.OrderByDescending(d => d.DelegationDate))
+                {
+                    string status;
+                    if (!d.IsActive)
+                        status = "สิ้นสุดแล้ว";
+                    else if (d.StartDate.HasValue && d.StartDate.Value > DateTime.Now)
+                        status = "กำหนดไว้";
+                    else if (d.EndDate.HasValue && d.EndDate.Value < DateTime.Now)
+                        status = "สิ้นสุดแล้ว";
+                    else
+                        status = "กำลังใช้งาน";
+
+                    string displayStart = d.StartDate.HasValue ? d.StartDate.Value.ToString("dd/MM/yy HH:mm") : d.DelegationDate.ToString("dd/MM/yy HH:mm");
+                    string displayEnd = d.EndDate.HasValue ? d.EndDate.Value.ToString("dd/MM/yy HH:mm") : "-";
+
+                    int rowIndex = dgvDelegations.Rows.Add(
+                        string.Format("{0} → {1}", d.DelegatedFrom, d.DelegatedTo),
+                        d.Remarks ?? "-",
+                        displayStart,
+                        displayEnd,
+                        status,
+                        d.DelegationReason ?? "-"
+                    );
+                    dgvDelegations.Rows[rowIndex].Tag = d;
+                }
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Error($"Error loading delegation history: {ex.Message}", ex);
+            }
         }
+
+        // ─── Button handlers ─────────────────────────────────────────────────────
+
+        // ─── Delegate-to AD search panel ────────────────────────────────────────
+
+        private void BuildUserDetailPanel()
+        {
+            // Float on pnlContent so it never overlaps card children
+            int panelW = cmbDelegateTo.Width;
+            _pnlUserDetail = new Panel
+            {
+                Size        = new Size(panelW, 48),
+                BackColor   = Color.FromArgb(235, 245, 255),
+                BorderStyle = BorderStyle.FixedSingle,
+                Visible     = false,
+            };
+
+            _lblUserDetailName = new Label
+            {
+                Location  = new Point(8, 4),
+                Size      = new Size(panelW - 16, 20),
+                Font      = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(22, 36, 62),
+            };
+            _lblUserDetailInfo = new Label
+            {
+                Location  = new Point(8, 26),
+                Size      = new Size(panelW - 16, 18),
+                Font      = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(80, 90, 120),
+            };
+
+            _pnlUserDetail.Controls.Add(_lblUserDetailName);
+            _pnlUserDetail.Controls.Add(_lblUserDetailInfo);
+            pnlContent.Controls.Add(_pnlUserDetail);
+            _pnlUserDetail.BringToFront();
+        }
+
+        private void ShowUserDetail(CMS.Services.DTOs.LdapUserResult user)
+        {
+            if (_pnlUserDetail == null) return;
+            _lblUserDetailName.Text = user.DisplayName ?? user.SamAccountName;
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(user.Title))      parts.Add(user.Title);
+            if (!string.IsNullOrEmpty(user.Department)) parts.Add(user.Department);
+            if (!string.IsNullOrEmpty(user.Mail))       parts.Add(user.Mail);
+            _lblUserDetailInfo.Text = string.Join("  |  ", parts);
+
+            // Position: directly below _txtSearch, converted to pnlContent coordinates
+            var anchor = _txtSearch ?? (Control)cmbDelegateTo;
+            var screenPt = anchor.PointToScreen(new Point(0, anchor.Height + 2));
+            _pnlUserDetail.Location = pnlContent.PointToClient(screenPt);
+            _pnlUserDetail.Visible  = true;
+            _pnlUserDetail.BringToFront();
+        }
+
+        private void HideUserDetail()
+        {
+            if (_pnlUserDetail != null)
+                _pnlUserDetail.Visible = false;
+        }
+
+        // ─── Delegate-to: TextBox + floating ListBox (no native ComboBox autocomplete) ──
+
+        private string _lastSearchKeyword = string.Empty;
+
+        private void ReplaceComboWithSearchBox()
+        {
+            // Hide native ComboBox (kept in Designer for compatibility)
+            cmbDelegateTo.Visible = false;
+
+            // TextBox at same position/size
+            _txtSearch = new TextBox
+            {
+                Location    = cmbDelegateTo.Location,
+                Size        = new Size(cmbDelegateTo.Width, cmbDelegateTo.Height),
+                Font        = cmbDelegateTo.Font,
+                BorderStyle = BorderStyle.FixedSingle,
+            };
+            SendMessage(_txtSearch.Handle, EM_SETCUEBANNER, (IntPtr)1,
+                "พิมพ์ชื่อ หรือ Username เพื่อค้นหาจาก AD...");
+            _txtSearch.TextChanged += TxtSearch_TextChanged;
+            _txtSearch.Leave       += TxtSearch_Leave;
+            _txtSearch.KeyDown     += TxtSearch_KeyDown;
+            pnlDelegationCard.Controls.Add(_txtSearch);
+            _txtSearch.BringToFront();
+
+            // Floating results panel on pnlContent (so it overlays other controls)
+            _pnlResults = new Panel
+            {
+                Size        = new Size(cmbDelegateTo.Width, 0),
+                BackColor   = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Visible     = false,
+            };
+            _lstResults = new ListBox
+            {
+                Dock        = DockStyle.Fill,
+                Font        = new Font("Segoe UI", 9F),
+                BorderStyle = BorderStyle.None,
+                ItemHeight  = 22,
+            };
+            _lstResults.Click          += LstResults_Click;
+            _lstResults.KeyDown        += LstResults_KeyDown;
+            _pnlResults.Controls.Add(_lstResults);
+            pnlContent.Controls.Add(_pnlResults);
+            _pnlResults.BringToFront();
+        }
+
+        private void TxtSearch_TextChanged(object sender, EventArgs e)
+        {
+            string keyword = _txtSearch.Text.Trim();
+            if (keyword == _lastSearchKeyword) return;
+            _lastSearchKeyword = keyword;
+
+            _selectedLdapUser = null;
+            HideUserDetail();
+
+            if (_searchTimer != null) { _searchTimer.Stop(); _searchTimer.Dispose(); _searchTimer = null; }
+
+            if (keyword.Length < 2) { HideResults(); return; }
+
+            var captured = keyword;
+            _searchTimer = new System.Windows.Forms.Timer { Interval = 350 };
+            _searchTimer.Tick += (s, ev) =>
+            {
+                _searchTimer.Stop(); _searchTimer.Dispose(); _searchTimer = null;
+                PerformLdapSearch(captured);
+            };
+            _searchTimer.Start();
+        }
+
+        private void TxtSearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Down && _pnlResults.Visible)
+            {
+                _lstResults.Focus();
+                if (_lstResults.Items.Count > 0) _lstResults.SelectedIndex = 0;
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Escape)
+            {
+                HideResults();
+                e.Handled = true;
+            }
+        }
+
+        private void TxtSearch_Leave(object sender, EventArgs e)
+        {
+            // Delay so ListBox click can fire before we hide
+            var t = new System.Windows.Forms.Timer { Interval = 200 };
+            t.Tick += (s, ev) => { ((System.Windows.Forms.Timer)s).Stop(); HideResults(); };
+            t.Start();
+        }
+
+        private void PerformLdapSearch(string keyword)
+        {
+            var displayItems = new List<string>();
+
+            if (_ldapSearchService != null)
+            {
+                try
+                {
+                    _ldapResults = _ldapSearchService.Search(keyword, maxResults: 30);
+                    foreach (var u in _ldapResults)
+                        displayItems.Add(u.SamAccountName);
+                }
+                catch (Exception ex)
+                {
+                    _loggingService.Error($"LDAP search error: {ex.Message}", ex);
+                    _ldapResults = new List<CMS.Services.DTOs.LdapUserResult>();
+                }
+            }
+            else
+            {
+                _ldapResults = new List<CMS.Services.DTOs.LdapUserResult>();
+                displayItems = _employees
+                    .Where(emp =>
+                        emp.DropdownLabel.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        emp.DisplayName.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        emp.EmployeeCode.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .Select(emp => emp.DropdownLabel)
+                    .ToList();
+            }
+
+            _lstResults.BeginUpdate();
+            _lstResults.Items.Clear();
+            foreach (var item in displayItems) _lstResults.Items.Add(item);
+            _lstResults.EndUpdate();
+
+            if (displayItems.Count > 0)
+            {
+                var screenPt = _txtSearch.PointToScreen(new Point(0, _txtSearch.Height));
+                _pnlResults.Location = pnlContent.PointToClient(screenPt);
+                int h = Math.Min(displayItems.Count * 22 + 4, 180);
+                _pnlResults.Size = new Size(_txtSearch.Width, h);
+                _pnlResults.Visible = true;
+                _pnlResults.BringToFront();
+            }
+            else
+            {
+                HideResults();
+            }
+        }
+
+        private void LstResults_Click(object sender, EventArgs e)
+        {
+            SelectResult(_lstResults.SelectedIndex);
+        }
+
+        private void LstResults_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Return)
+                SelectResult(_lstResults.SelectedIndex);
+            else if (e.KeyCode == Keys.Escape)
+                HideResults();
+        }
+
+        private void SelectResult(int idx)
+        {
+            if (idx < 0 || idx >= _ldapResults.Count) return;
+            _selectedLdapUser  = _ldapResults[idx];
+            _lastSearchKeyword = _selectedLdapUser.SamAccountName;
+            _txtSearch.Text    = _selectedLdapUser.SamAccountName;
+            HideResults();
+            ShowUserDetail(_selectedLdapUser);
+            _txtSearch.Focus();
+        }
+
+        private void HideResults()
+        {
+            if (_pnlResults != null) _pnlResults.Visible = false;
+        }
+
+        // Keep stub — wired in Designer; cmbDelegateTo is now hidden
+        private void cmbDelegateTo_SelectionChangeCommitted(object sender, EventArgs e) { }
+
+        private string GetDelegateToUsername()
+        {
+            if (_selectedLdapUser != null)
+                return _selectedLdapUser.SamAccountName;
+
+            string text = (_txtSearch != null ? _txtSearch.Text : cmbDelegateTo.Text).Trim();
+            if (string.IsNullOrEmpty(text)) return null;
+
+            var emp = _employees.FirstOrDefault(e2 =>
+                string.Equals(e2.DropdownLabel, text, StringComparison.OrdinalIgnoreCase));
+            return emp?.EmployeeCode;
+        }
+
+        private string GetDelegateToDisplayName()
+        {
+            if (_selectedLdapUser != null)
+                return _selectedLdapUser.DisplayName;
+
+            string text = (_txtSearch != null ? _txtSearch.Text : cmbDelegateTo.Text).Trim();
+            var emp = _employees.FirstOrDefault(e2 =>
+                string.Equals(e2.DropdownLabel, text, StringComparison.OrdinalIgnoreCase));
+            return emp?.DisplayName ?? text;
+        }
+
+        // ─── Button handlers ─────────────────────────────────────────────────────
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            // Validate
+            string delegateToUsername = GetDelegateToUsername();
+            if (string.IsNullOrEmpty(delegateToUsername))
+            {
+                MessageBox.Show(
+                    "กรุณาเลือกผู้รับมอบหมายให้ถูกต้อง\n(พิมพ์ชื่อหรือ Username แล้วเลือกจากรายการ)",
+                    "ข้อมูลไม่ครบ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                cmbDelegateTo.Focus();
+                return;
+            }
+            string delegateToDisplay = GetDelegateToDisplayName();
+
+            if (string.IsNullOrWhiteSpace(txtReason.Text))
+            {
+                MessageBox.Show("กรุณากรอกเหตุผลการมอบหมาย", "ข้อมูลไม่ครบ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtReason.Focus();
+                return;
+            }
+
+            if (dtpEnd.Value <= dtpStart.Value)
+            {
+                MessageBox.Show("วันสิ้นสุดต้องมากกว่าวันเริ่มต้น", "ข้อมูลไม่ถูกต้อง",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                dtpEnd.Focus();
+                return;
+            }
+
+            bool scopeAll = cmbScope.SelectedIndex == 0;
+            string scopeName = scopeAll ? null : cmbScope.SelectedItem.ToString();
+
+            // Filter tasks that can be delegated and match scope
+            var tasksToDelegate = _myTasks
+                .Where(t => t.CanDelegate &&
+                            t.CurrentDelegationDepth < t.MaxDelegationDepth &&
+                            (scopeAll || t.WorkflowName == scopeName))
+                .ToList();
+
+            if (tasksToDelegate.Count == 0)
+            {
+                MessageBox.Show(
+                    "ไม่มีงานที่สามารถมอบหมายได้ในขอบเขตที่เลือก\n" +
+                    "(อาจถึงขีดจำกัดการมอบหมายแล้ว หรือไม่มีงานที่ยังค้างอยู่)",
+                    "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                string.Format(
+                    "ยืนยันมอบหมาย {0} รายการ\nถึง: {1} [{2}]\nช่วง: {3} - {4}",
+                    tasksToDelegate.Count,
+                    delegateToDisplay,
+                    delegateToUsername,
+                    dtpStart.Value.ToString("dd/MM/yyyy"),
+                    dtpEnd.Value.ToString("dd/MM/yyyy")),
+                "ยืนยันการมอบหมาย",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes)
+                return;
+
+            int success = 0;
+            int failed  = 0;
+            string remarks = string.Format("ช่วงเวลา: {0} - {1}",
+                dtpStart.Value.ToString("dd/MM/yyyy HH:mm"),
+                dtpEnd.Value.ToString("dd/MM/yyyy HH:mm"));
+
+            if (chkEmail.Checked)
+                remarks += " | แจ้ง Email";
+            if (chkOutOfOffice.Checked)
+                remarks += " | Out-of-Office";
+            if (chkRequireReason.Checked)
+                remarks += " | ต้องยืนยัน";
+
+            foreach (var task in tasksToDelegate)
+            {
+                try
+                {
+                    var request = new DelegateTaskRequest
+                    {
+                        WorkflowStepInstanceId = task.WorkflowStepInstanceId,
+                        DelegateToUserName     = delegateToUsername,
+                        DelegationReason       = txtReason.Text.Trim(),
+                        Remarks                = remarks,
+                        StartDate              = dtpStart.Value,
+                        EndDate                = dtpEnd.Value
+                    };
+
+                    _delegationService.DelegateTask(request, _userContext);
+
+                    _auditService.Log(new AuditEntry
+                    {
+                        Action    = "WorkflowTaskDelegated",
+                        TableName = "WorkflowStepInstance",
+                        RecordID  = task.WorkflowStepInstanceId,
+                        UserName  = _userContext.ADUserName,
+                        AuditDate = DateTime.Now,
+                        NewValue  = string.Format("Delegated to {0} ({1}): {2}",
+                            delegateToUsername, delegateToDisplay, txtReason.Text.Trim())
+                    });
+
+                    success++;
+                }
+                catch (Exception ex)
+                {
+                    _loggingService.Error(
+                        $"Error delegating task {task.WorkflowStepInstanceId}: {ex.Message}", ex);
+                    failed++;
+                }
+            }
+
+            _loggingService.Info(
+                $"Delegation complete: {success} succeeded, {failed} failed. To: {delegateToUsername}");
+
+            if (failed == 0)
+            {
+                MessageBox.Show(
+                    $"มอบหมายงานสำเร็จ {success} รายการ",
+                    "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show(
+                    $"มอบหมายสำเร็จ {success} รายการ  |  ล้มเหลว {failed} รายการ\nดูรายละเอียดใน Application Log",
+                    "ผลลัพธ์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
+            // Reload to reflect new state
+            LoadMyTasks();
+            LoadHistoryRows();
+        }
+
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            InitializeFormData();
+        }
+
+        private void btnCreateDelegation_Click(object sender, EventArgs e)
+        {
+            InitializeFormData();
+            if (_txtSearch != null)
+                _txtSearch.Focus();
+        }
+
+        // ─── Ribbon / Toolbar ────────────────────────────────────────────────────
 
         private void BuildRibbonTabs()
         {
             var tabs = new[]
             {
-                new { Text = "แฟ้ม", Active = false },
+                new { Text = "แฟ้ม",    Active = false },
                 new { Text = "หน้าแรก", Active = false },
                 new { Text = "ดำเนินการ", Active = false },
-                new { Text = "มุมมอง", Active = false },
+                new { Text = "มุมมอง",  Active = false },
                 new { Text = "เครื่องมือ", Active = true },
                 new { Text = "ช่วยเหลือ", Active = false },
             };
@@ -86,19 +638,19 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 var btn = new Button
                 {
-                    Text = t.Text,
-                    Location = new Point(x, 0),
-                    Size = new Size(MeasureTabWidth(t.Text) + 24, 32),
+                    Text      = t.Text,
+                    Location  = new Point(x, 0),
+                    Size      = new Size(MeasureTabWidth(t.Text) + 24, 32),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.Transparent,
                     ForeColor = t.Active ? Color.White : Color.FromArgb(190, 210, 245),
-                    Font = t.Active ? new Font("Segoe UI", 9.5F, FontStyle.Bold) : new Font("Segoe UI", 9.5F),
-                    Cursor = Cursors.Hand,
-                    TabStop = false,
+                    Font      = t.Active ? new Font("Segoe UI", 9.5F, FontStyle.Bold) : new Font("Segoe UI", 9.5F),
+                    Cursor    = Cursors.Hand,
+                    TabStop   = false,
                 };
-                btn.FlatAppearance.BorderSize = 0;
-                btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(50, 80, 130);
-                btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(40, 70, 120);
+                btn.FlatAppearance.BorderSize             = 0;
+                btn.FlatAppearance.MouseOverBackColor     = Color.FromArgb(50, 80, 130);
+                btn.FlatAppearance.MouseDownBackColor     = Color.FromArgb(40, 70, 120);
 
                 if (t.Active)
                 {
@@ -124,14 +676,14 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 new { Header = "เพิ่ม", Items = new[]
                 {
-                    new { Icon = "+", Text = "สร้างใหม่", Tag = "new" },
-                    new { Icon = "✎", Text = "แก้ไข", Tag = "edit" },
-                    new { Icon = "⌫", Text = "ยกเลิก", Tag = "cancel" },
+                    new { Icon = "+", Text = "สร้างใหม่", Tag = "new"     },
+                    new { Icon = "✎", Text = "แก้ไข",    Tag = "edit"    },
+                    new { Icon = "⌫", Text = "ยกเลิก",   Tag = "cancel"  },
                 }},
                 new { Header = "มุมมอง", Items = new[]
                 {
                     new { Icon = "◷", Text = "ประวัติ", Tag = "history" },
-                    new { Icon = "✓", Text = "Active", Tag = "active" },
+                    new { Icon = "✓", Text = "Active",  Tag = "active"  },
                 }},
             };
 
@@ -144,41 +696,41 @@ namespace CMS.Presentation.Modules.Workflow
                     var tag = item.Tag;
                     var pnlBtn = new Panel
                     {
-                        Location = new Point(x, 2),
-                        Size = new Size(58, 60),
+                        Location  = new Point(x, 2),
+                        Size      = new Size(58, 60),
                         BackColor = Color.White,
-                        Cursor = Cursors.Hand,
-                        Tag = tag,
+                        Cursor    = Cursors.Hand,
+                        Tag       = tag,
                     };
 
                     var lblIcon = new Label
                     {
-                        Text = item.Icon,
-                        Font = new Font("Segoe UI", 16F),
+                        Text      = item.Icon,
+                        Font      = new Font("Segoe UI", 16F),
                         ForeColor = _navyDark,
                         TextAlign = ContentAlignment.MiddleCenter,
-                        Location = new Point(0, 6),
-                        Size = new Size(58, 30),
+                        Location  = new Point(0, 6),
+                        Size      = new Size(58, 30),
                     };
                     var lblText = new Label
                     {
-                        Text = item.Text,
-                        Font = new Font("Segoe UI", 7.5F),
+                        Text      = item.Text,
+                        Font      = new Font("Segoe UI", 7.5F),
                         ForeColor = Color.FromArgb(55, 65, 90),
                         TextAlign = ContentAlignment.MiddleCenter,
-                        Location = new Point(0, 36),
-                        Size = new Size(58, 20),
+                        Location  = new Point(0, 36),
+                        Size      = new Size(58, 20),
                     };
 
                     EventHandler enter = (s, ev) =>
                     {
-                        pnlBtn.BackColor = _navHover;
+                        pnlBtn.BackColor  = _navHover;
                         lblIcon.BackColor = _navHover;
                         lblText.BackColor = _navHover;
                     };
                     EventHandler leave = (s, ev) =>
                     {
-                        pnlBtn.BackColor = Color.White;
+                        pnlBtn.BackColor  = Color.White;
                         lblIcon.BackColor = Color.White;
                         lblText.BackColor = Color.White;
                     };
@@ -186,7 +738,7 @@ namespace CMS.Presentation.Modules.Workflow
 
                     pnlBtn.MouseEnter += enter; lblIcon.MouseEnter += enter; lblText.MouseEnter += enter;
                     pnlBtn.MouseLeave += leave; lblIcon.MouseLeave += leave; lblText.MouseLeave += leave;
-                    pnlBtn.Click += click; lblIcon.Click += click; lblText.Click += click;
+                    pnlBtn.Click      += click; lblIcon.Click      += click; lblText.Click      += click;
 
                     pnlBtn.Controls.Add(lblIcon);
                     pnlBtn.Controls.Add(lblText);
@@ -196,12 +748,12 @@ namespace CMS.Presentation.Modules.Workflow
 
                 var lblGroup = new Label
                 {
-                    Text = group.Header,
-                    Font = new Font("Segoe UI", 7.5F),
+                    Text      = group.Header,
+                    Font      = new Font("Segoe UI", 7.5F),
                     ForeColor = Color.FromArgb(120, 130, 150),
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Location = new Point(groupStartX, 62),
-                    Size = new Size(x - groupStartX, 10),
+                    Location  = new Point(groupStartX, 62),
+                    Size      = new Size(x - groupStartX, 10),
                 };
                 pnlToolbarContainer.Controls.Add(lblGroup);
 
@@ -210,8 +762,8 @@ namespace CMS.Presentation.Modules.Workflow
                     pnlToolbarContainer.Controls.Add(new Panel
                     {
                         BackColor = Color.FromArgb(220, 225, 235),
-                        Location = new Point(x + 2, 8),
-                        Size = new Size(1, 54),
+                        Location  = new Point(x + 2, 8),
+                        Size      = new Size(1, 54),
                     });
                     x += 10;
                 }
@@ -220,8 +772,8 @@ namespace CMS.Presentation.Modules.Workflow
             pnlToolbarContainer.Controls.Add(new Panel
             {
                 BackColor = Color.FromArgb(220, 225, 235),
-                Dock = DockStyle.Bottom,
-                Height = 1,
+                Dock      = DockStyle.Bottom,
+                Height    = 1,
             });
         }
 
@@ -231,9 +783,49 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 case "new":
                     InitializeFormData();
+                    if (_txtSearch != null) _txtSearch.Focus();
                     break;
                 case "history":
+                    LoadHistoryRows();
                     dgvDelegations.Focus();
+                    break;
+                case "cancel":
+                    if (dgvDelegations.SelectedRows.Count == 0)
+                    {
+                        MessageBox.Show("กรุณาเลือกรายการ Delegation ในตารางที่ต้องการยกเลิก",
+                            "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    var selectedRow = dgvDelegations.SelectedRows[0];
+                    var del = selectedRow.Tag as WFDelegationResult;
+                    if (del == null) return;
+
+                    if (!del.IsActive)
+                    {
+                        MessageBox.Show("รายการนี้ได้สิ้นสุดหรือถูกยกเลิกไปแล้ว",
+                            "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    var confirmCancel = MessageBox.Show(
+                        "คุณต้องการยกเลิกการมอบหมายงานนี้ใช่หรือไม่?",
+                        "ยืนยันการยกเลิก", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (confirmCancel != DialogResult.Yes) return;
+
+                    try
+                    {
+                        _delegationService.DeactivateDelegation(del.WFDelegationId, _userContext);
+                        MessageBox.Show("ยกเลิกการมอบหมายสำเร็จ", "สำเร็จ",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        LoadMyTasks();
+                        LoadHistoryRows();
+                    }
+                    catch (Exception ex)
+                    {
+                        _loggingService.Error($"Error deactivating delegation: {ex.Message}", ex);
+                        MessageBox.Show($"เกิดข้อผิดพลาดในการยกเลิกการมอบหมาย: {ex.Message}",
+                            "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                     break;
                 default:
                     MessageBox.Show(string.Format("ฟังก์ชัน '{0}' อยู่ระหว่างพัฒนา", tag),
@@ -244,56 +836,33 @@ namespace CMS.Presentation.Modules.Workflow
 
         private void OnNavItemClick(string tag)
         {
-            // Handle local navigation first
             if (tag == "delegation")
-            {
-                // Already on this page
                 return;
-            }
 
-            // Delegate to navigation handler for other forms
             WorkflowNavigationHandler.HandleNavigation(
                 tag,
                 this,
-                null, // workflowService
-                null, // templateService
-                null, // slaCalculator
-                null, // loggingService
-                null); // userContext
-        }
-
-        private void btnSave_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show("บันทึกการมอบหมายสำเร็จ", "สำเร็จ",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            LoadHistoryRows();
-        }
-
-        private void btnCancel_Click(object sender, EventArgs e)
-        {
-            InitializeFormData();
+                _workflowService,
+                null,
+                null,
+                _loggingService,
+                _userContext,
+                _auditService);
         }
 
         private void dgvDelegations_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex != colStatus.Index || e.Value == null)
-            {
                 return;
-            }
 
             var status = Convert.ToString(e.Value);
             if (status == "กำลังใช้งาน")
-            {
                 e.CellStyle.ForeColor = Color.FromArgb(23, 133, 49);
-            }
             else if (status == "กำหนดไว้")
-            {
                 e.CellStyle.ForeColor = Color.FromArgb(197, 120, 16);
-            }
             else
-            {
                 e.CellStyle.ForeColor = Color.FromArgb(107, 114, 128);
-            }
+
             e.CellStyle.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -25,7 +25,7 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand(
                     "SELECT SubCommitteeID, OrgUnitID, SubCommitteeCode, SubCommitteeNameTH, " +
                     "       ISNULL(SubCommitteeNameEN,'') AS SubCommitteeNameEN, IsActive, IsDeleted, CreatedDate " +
-                    "FROM core.m_SubCommittee " +
+                    "FROM EMS.m_SubCommittee " +
                     "WHERE IsActive = 1 AND IsDeleted = 0", conn))
                 {
                     using (var reader = cmd.ExecuteReader())
@@ -51,3 +51,4 @@ namespace CMS.Data.Repositories
         }
     }
 }
+

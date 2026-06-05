@@ -50,9 +50,15 @@ namespace CMS.Data.Interfaces
     /// <summary>Filter parameters for querying workflow templates.</summary>
     public class WorkflowTemplateFilter
     {
-        public bool?   IsActive    { get; set; }
-        public string  NameContains { get; set; }
-        public int     PageNumber  { get; set; } = 1;
-        public int     PageSize    { get; set; } = 50;
+        public bool?   IsActive      { get; set; }
+        public string  NameContains  { get; set; }
+        public int     PageNumber    { get; set; }
+        public int     PageSize      { get; set; }
+        /// <summary>Filter by ApprovalStatus value (tinyint). Null = no filter.</summary>
+        public byte?   ApprovalStatus { get; set; }
+        /// <summary>Filter by Category string. Null = no filter.</summary>
+        public string  Category      { get; set; }
+
+        public WorkflowTemplateFilter() { PageNumber = 1; PageSize = 50; }
     }
 }

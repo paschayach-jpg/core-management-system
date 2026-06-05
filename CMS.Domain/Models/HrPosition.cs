@@ -1,6 +1,6 @@
-namespace CMS.Domain.Models
+﻿namespace CMS.Domain.Models
 {
-    /// <summary>ตำแหน่งงาน จาก core.HR_Position</summary>
+    /// <summary>ตำแหน่งงาน จาก EMS.m_Position</summary>
     public class HrPosition
     {
         public int    PositionID    { get; set; }
@@ -32,3 +32,4 @@ namespace CMS.Domain.Models
         }
     }
 }
+

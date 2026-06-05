@@ -13,6 +13,7 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -45,11 +46,19 @@
       <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Resources.Extensions.4.6.0\lib\netstandard2.0\System.Resources.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
@@ -84,7 +93,14 @@
     <Compile Include="Modules\DMS\ShareManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Modules\DMS\ShareManagementForm.Designer.cs">
+      <DependentUpon>ShareManagementForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\WFE\WorkflowDashboardFormNew.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowDashboardFormNew.Partial.cs">
+      <DependentUpon>WorkflowDashboardFormNew.cs</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Modules\WFE\WorkflowDashboardFormNew.Designer.cs">
@@ -103,9 +119,7 @@
       <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
-    <Compile Include="Modules\DMS\LoginManager.cs" />
-    <Compile Include="Modules\DMS\MenuControl.cs" />
-    <Compile Include="Modules\DMS\MenuModel.cs" />
+    <Compile Include="MenuControl.cs" />
     <Compile Include="Modules\DMS\LoginErrorForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -148,6 +162,30 @@
     </Compile>
     <Compile Include="Modules\DMS\AuditLogForm.Designer.cs">
       <DependentUpon>AuditLogForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaConfigForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaConfigForm.Designer.cs">
+      <DependentUpon>FolderQuotaConfigForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\ExecutiveDashboardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\QuotaUsageChartForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaRequestForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaRequestForm.Designer.cs">
+      <DependentUpon>FolderQuotaRequestForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaApprovalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderQuotaApprovalForm.Designer.cs">
+      <DependentUpon>FolderQuotaApprovalForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\DMS\AuthorityConfigForm.cs">
       <SubType>Form</SubType>
@@ -245,6 +283,15 @@
     <Compile Include="Modules\DMS\FolderTemplateForm.Designer.cs">
       <DependentUpon>FolderTemplateForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\FolderUsageReportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderDetailForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\OrgUnitFolderDetailForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <!-- Module: KMS — Forms -->
     <Compile Include="Modules\KMS\KBCategoryForm.cs">
       <SubType>Form</SubType>
@@ -312,7 +359,7 @@
     <Compile Include="Modules\DMS\OrgUnitSelectorDialog.Designer.cs">
       <DependentUpon>OrgUnitSelectorDialog.cs</DependentUpon>
     </Compile>
-    <Compile Include="Modules\DMS\PdfSecurityHelper.cs" />
+    <Compile Include="PdfSecurityHelper.cs" />
     <Compile Include="Modules\DMS\PdpaConsentDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -353,9 +400,8 @@
       <DependentUpon>UserManagementForm.cs</DependentUpon>
     </Compile>
     <!-- Module: ImportFile — Presenters (ย้ายไปไว้ใน CMS.Controllers แล้ว) -->
-    <Compile Include="Modules\DMS\MenuActions\MenuActionContext.cs" />
-    <Compile Include="Modules\DMS\MenuActions\MenuActionKeyCatalog.cs" />
-    <Compile Include="Modules\DMS\MenuActions\MenuActionRegistry.cs" />
+    <Compile Include="MenuActions\MenuActionContext.cs" />
+    <Compile Include="MenuActions\MenuActionRegistry.cs" />
     <Compile Include="Modules\DMS\MenuManagementForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -365,7 +411,7 @@
     <Compile Include="Modules\DMS\ParentMenuPickerDialog.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Modules\DMS\MenuTreeViewManager.cs" />
+    <Compile Include="MenuTreeViewManager.cs" />
     <!-- Module: Workflow — Forms -->
     <Compile Include="Modules\WFE\WorkflowDashboardForm.cs">
       <SubType>Form</SubType>
@@ -374,6 +420,10 @@
       <DependentUpon>WorkflowDashboardForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\WFE\WorkflowMonitorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\WorkflowMonitorForm.Partial.cs">
+      <DependentUpon>WorkflowMonitorForm.cs</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Modules\WFE\WorkflowMonitorForm.Designer.cs">
@@ -431,6 +481,15 @@
     </Compile>
     <Compile Include="Modules\WFE\Presenters\TemplateApprovalPresenter.cs" />
     <Compile Include="Modules\WFE\Presenters\Interfaces\ITemplateApprovalView.cs" />
+    <Compile Include="Modules\WFE\UserProfileForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\WFE\UserProfileForm.Designer.cs">
+      <DependentUpon>UserProfileForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\WFE\DelegateSearchDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\WFE\WorkflowDelegationForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -452,6 +511,9 @@
       <DependentUpon>HistorySearchForm.cs</DependentUpon>
     </Compile>
     <!-- Module: Workflow — Dialog Forms -->
+    <Compile Include="Modules\WFE\Dialogs\TemplateNameDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\WFE\Dialogs\WorkflowStartDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -463,12 +525,6 @@
     </Compile>
     <Compile Include="Modules\WFE\Dialogs\ReassignDialog.Designer.cs">
       <DependentUpon>ReassignDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Modules\WFE\WorkflowVisualFlowForm.Designer.cs">
-      <DependentUpon>WorkflowVisualFlowForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\WFE\Dialogs\WorkflowStepActionForm.cs">
       <SubType>Form</SubType>
@@ -543,6 +599,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\DMS\ApprovalInboxForm.resx">
       <DependentUpon>ApprovalInboxForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\DMS\ShareManagementForm.resx">
+      <DependentUpon>ShareManagementForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\DMS\UserPermissionSummaryForm.resx">
       <DependentUpon>UserPermissionSummaryForm.cs</DependentUpon>

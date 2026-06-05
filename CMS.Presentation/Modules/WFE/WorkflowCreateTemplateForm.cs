@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using CMS.Domain.Models;
@@ -67,13 +68,61 @@ namespace CMS.Presentation.Modules.Workflow
 
                 // Wire up radio button change events
                 if (rdoFresh != null)
-                    rdoFresh.CheckedChanged += (s, ev) => OnModeChanged();
+                    rdoFresh.CheckedChanged += (s, ev) => HandleRadioCheckedChanged(rdoFresh);
 
                 if (rdoCopy != null)
-                    rdoCopy.CheckedChanged += (s, ev) => OnModeChanged();
+                    rdoCopy.CheckedChanged += (s, ev) => HandleRadioCheckedChanged(rdoCopy);
 
                 if (rdoImport != null)
-                    rdoImport.CheckedChanged += (s, ev) => OnModeChanged();
+                    rdoImport.CheckedChanged += (s, ev) => HandleRadioCheckedChanged(rdoImport);
+
+                // Wire up panel card click events to select the radio buttons
+                Action selectFresh = () => { if (!rdoFresh.Checked) rdoFresh.Checked = true; };
+                if (pnlRadioFresh != null) pnlRadioFresh.Click += (s, ev) => selectFresh();
+                if (lblFreshTitle != null) lblFreshTitle.Click += (s, ev) => selectFresh();
+                if (lblFreshDesc != null) lblFreshDesc.Click += (s, ev) => selectFresh();
+
+                Action selectCopy = () => { if (rdoCopy.Enabled && !rdoCopy.Checked) rdoCopy.Checked = true; };
+                if (pnlRadioCopy != null) pnlRadioCopy.Click += (s, ev) => selectCopy();
+                if (lblCopyTitle != null) lblCopyTitle.Click += (s, ev) => selectCopy();
+                if (lblCopyDesc != null) lblCopyDesc.Click += (s, ev) => selectCopy();
+
+                Action selectImport = () => { if (!rdoImport.Checked) rdoImport.Checked = true; };
+                if (pnlRadioImport != null) pnlRadioImport.Click += (s, ev) => selectImport();
+                if (lblImportTitle != null) lblImportTitle.Click += (s, ev) => selectImport();
+                if (lblImportDesc != null) lblImportDesc.Click += (s, ev) => selectImport();
+
+                // Wire up custom paint events for panels to draw the premium selected blue border
+                if (pnlRadioFresh != null)
+                {
+                    pnlRadioFresh.Paint += (s, pe) => {
+                        if (rdoFresh.Checked) {
+                            using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(37, 99, 235), 2)) {
+                                pe.Graphics.DrawRectangle(pen, 0, 0, pnlRadioFresh.Width - 1, pnlRadioFresh.Height - 1);
+                            }
+                        }
+                    };
+                }
+                if (pnlRadioCopy != null)
+                {
+                    pnlRadioCopy.Paint += (s, pe) => {
+                        if (rdoCopy.Checked) {
+                            using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(37, 99, 235), 2)) {
+                                pe.Graphics.DrawRectangle(pen, 0, 0, pnlRadioCopy.Width - 1, pnlRadioCopy.Height - 1);
+                            }
+                        }
+                    };
+                }
+                if (pnlRadioImport != null)
+                {
+                    pnlRadioImport.Paint += (s, pe) => {
+                        if (rdoImport.Checked) {
+                            using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(37, 99, 235), 2)) {
+                                pe.Graphics.DrawRectangle(pen, 0, 0, pnlRadioImport.Width - 1, pnlRadioImport.Height - 1);
+                            }
+                        }
+                    };
+                }
 
                 // Load data and template list
                 _loggingService?.Info("WorkflowCreateTemplateForm_Load: Calling InitializeDropdownData");
@@ -178,7 +227,8 @@ namespace CMS.Presentation.Modules.Workflow
                 {
                     cmbCopyFrom.DataSource = result.Items;
                     cmbCopyFrom.DisplayMember = "Name";
-                    cmbCopyFrom.ValueMember = "TemplateId";
+                    cmbCopyFrom.ValueMember = "WorkflowDefinitionId";
+                    cmbCopyFrom.SelectedIndexChanged += cmbCopyFrom_SelectedIndexChanged;
                 }
             }
             catch (Exception ex)
@@ -280,6 +330,215 @@ namespace CMS.Presentation.Modules.Workflow
 
             UpdateCardStyles();
             ShowConditionalPanels();
+
+            if (rdoCopy != null && rdoCopy.Checked)
+            {
+                cmbCopyFrom_SelectedIndexChanged(null, null);
+            }
+        }
+
+        private bool _isChangingMode = false;
+
+        private void HandleRadioCheckedChanged(RadioButton selectedRadio)
+        {
+            if (_isChangingMode) return;
+            if (!selectedRadio.Checked) return;
+
+            _isChangingMode = true;
+            try
+            {
+                if (selectedRadio == rdoFresh)
+                {
+                    if (rdoCopy != null) rdoCopy.Checked = false;
+                    if (rdoImport != null) rdoImport.Checked = false;
+                }
+                else if (selectedRadio == rdoCopy)
+                {
+                    if (rdoFresh != null) rdoFresh.Checked = false;
+                    if (rdoImport != null) rdoImport.Checked = false;
+                }
+                else if (selectedRadio == rdoImport)
+                {
+                    if (rdoFresh != null) rdoFresh.Checked = false;
+                    if (rdoCopy != null) rdoCopy.Checked = false;
+                }
+            }
+            finally
+            {
+                _isChangingMode = false;
+            }
+
+            OnModeChanged();
+        }
+
+        private void cmbCopyFrom_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cmbCopyFrom == null || !rdoCopy.Checked)
+                return;
+
+            var selectedTemplate = cmbCopyFrom.SelectedItem as WorkflowTemplateResult;
+            if (selectedTemplate != null)
+            {
+                txtTemplateName.Text = selectedTemplate.Name + " (Copy)";
+                txtDescription.Text = selectedTemplate.Description ?? "";
+                
+                SetComboValue(cmbCategory, selectedTemplate.Category, "งานบุคคล (HR)");
+                SetComboValue(cmbOwner, selectedTemplate.OwnerDepartment, "AD Group: HR-Process-Owners");
+                
+                // Load steps and approvers of this template from the DB into _wizardState
+                LoadStepsAndApproversFromCopiedTemplate(selectedTemplate.WorkflowDefinitionId);
+            }
+        }
+
+        private void LoadStepsAndApproversFromCopiedTemplate(int copyFromTemplateId)
+        {
+            var selectedTemplate = cmbCopyFrom.SelectedItem as WorkflowTemplateResult;
+            if (selectedTemplate != null && !string.IsNullOrWhiteSpace(selectedTemplate.TemplateDefinition) && selectedTemplate.TemplateDefinition.Trim().StartsWith("{"))
+            {
+                try
+                {
+                    var copiedState = Newtonsoft.Json.JsonConvert.DeserializeObject<WorkflowWizardState>(selectedTemplate.TemplateDefinition);
+                    if (copiedState != null)
+                    {
+                        _wizardState.Steps.Clear();
+                        if (copiedState.Steps != null)
+                            _wizardState.Steps.AddRange(copiedState.Steps);
+
+                        _wizardState.Approvers.Clear();
+                        if (copiedState.Approvers != null)
+                            _wizardState.Approvers.AddRange(copiedState.Approvers);
+
+                        _wizardState.FormSections.Clear();
+                        if (copiedState.FormSections != null)
+                            _wizardState.FormSections.AddRange(copiedState.FormSections);
+
+                        _wizardState.FormFields.Clear();
+                        if (copiedState.FormFields != null)
+                            _wizardState.FormFields.AddRange(copiedState.FormFields);
+
+                        _wizardState.FormTitle = copiedState.FormTitle;
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _loggingService?.Warn($"Failed to deserialize TemplateDefinition JSON, falling back to database query: {ex.Message}");
+                }
+            }
+
+            var connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["CmsDb"]?.ConnectionString;
+            if (string.IsNullOrWhiteSpace(connectionString))
+                return;
+
+            try
+            {
+                using (var conn = new System.Data.SqlClient.SqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    // 1. Fetch steps
+                    var steps = new List<WorkflowStepData>();
+                    var stepIds = new Dictionary<int, string>(); // WFStepId -> StepName
+
+                    string stepsSql = "SELECT WFStepId, StepName, StepType, SequenceNumber FROM WFE.s_WFStep WHERE WFDefinitionId = @WFDefinitionId AND IsDeleted = 0 ORDER BY SequenceNumber";
+                    using (var cmd = new System.Data.SqlClient.SqlCommand(stepsSql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@WFDefinitionId", copyFromTemplateId);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int stepId = Convert.ToInt32(reader["WFStepId"]);
+                                string stepName = Convert.ToString(reader["StepName"]);
+                                int stepTypeByte = Convert.ToInt32(reader["StepType"]);
+                                int seqNo = Convert.ToInt32(reader["SequenceNumber"]);
+
+                                stepIds[stepId] = stepName;
+
+                                string actionStr = "Approve";
+                                if (stepTypeByte == 2) actionStr = "Approve";
+                                else if (stepTypeByte == 3) actionStr = "Review";
+                                else if (stepTypeByte == 4) actionStr = "Notify";
+                                else if (stepTypeByte == 8) actionStr = "End";
+                                else actionStr = "System Task";
+
+                                steps.Add(new WorkflowStepData
+                                {
+                                    StepNumber = seqNo,
+                                    StepName = stepName,
+                                    Action = actionStr,
+                                    NextStep = "End" // Will resolve below
+                                });
+                            }
+                        }
+                    }
+
+                    // 2. Fetch connections to resolve NextStep
+                    string connSql = "SELECT FromStepId, ToStepId FROM WFE.s_WFConnection WHERE WFDefinitionId = @WFDefinitionId AND IsDeleted = 0";
+                    var connections = new Dictionary<int, int>(); // FromStepId -> ToStepId
+                    using (var cmd = new System.Data.SqlClient.SqlCommand(connSql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@WFDefinitionId", copyFromTemplateId);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int fromId = Convert.ToInt32(reader["FromStepId"]);
+                                int toId = Convert.ToInt32(reader["ToStepId"]);
+                                connections[fromId] = toId;
+                            }
+                        }
+                    }
+
+                    // Resolve NextStep for each step using connections
+                    for (int i = 0; i < steps.Count; i++)
+                    {
+                        // Find stepId matching the stepName
+                        int stepId = stepIds.FirstOrDefault(x => x.Value == steps[i].StepName).Key;
+                        if (stepId > 0 && connections.TryGetValue(stepId, out int nextStepId))
+                        {
+                            if (stepIds.TryGetValue(nextStepId, out string nextStepName))
+                            {
+                                steps[i].NextStep = nextStepName;
+                            }
+                        }
+                    }
+
+                    // 3. Clear and pre-populate steps in wizard state
+                    _wizardState.Steps.Clear();
+                    _wizardState.Steps.AddRange(steps);
+
+                    // 4. Pre-populate approvers for steps that have assigned roles/users
+                    var approvers = new List<WorkflowApproverData>();
+                    string approversSql = "SELECT StepName, AssignedRole FROM WFE.s_WFStep WHERE WFDefinitionId = @WFDefinitionId AND IsDeleted = 0 AND AssignedRole IS NOT NULL AND AssignedRole <> '' ORDER BY SequenceNumber";
+                    using (var cmd = new System.Data.SqlClient.SqlCommand(approversSql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@WFDefinitionId", copyFromTemplateId);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string stepName = Convert.ToString(reader["StepName"]);
+                                string assignedRole = Convert.ToString(reader["AssignedRole"]);
+
+                                approvers.Add(new WorkflowApproverData
+                                {
+                                    StepName = stepName,
+                                    ApproverGroup = assignedRole,
+                                    Level = "1"
+                                });
+                            }
+                        }
+                    }
+
+                    _wizardState.Approvers.Clear();
+                    _wizardState.Approvers.AddRange(approvers);
+                }
+            }
+            catch (Exception ex)
+            {
+                _loggingService?.Error($"LoadStepsAndApproversFromCopiedTemplate error: {ex.Message}", ex);
+            }
         }
 
         private void UpdateCardStyles()
@@ -289,45 +548,36 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 pnlRadioFresh.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(239)))), ((int)(((byte)(246)))), ((int)(((byte)(255))))); // #EFF6FF
                 pnlRadioFresh.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-                using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(99)))), ((int)(((byte)(235))))), 2)) // #2563EB
-                {
-                    pnlRadioFresh.Invalidate();
-                }
             }
             else
             {
                 pnlRadioFresh.BackColor = System.Drawing.Color.White;
             }
+            pnlRadioFresh.Invalidate();
 
             // Update Copy card
             if (rdoCopy.Checked)
             {
                 pnlRadioCopy.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(239)))), ((int)(((byte)(246)))), ((int)(((byte)(255)))));
                 pnlRadioCopy.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-                using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(99)))), ((int)(((byte)(235))))), 2))
-                {
-                    pnlRadioCopy.Invalidate();
-                }
             }
             else
             {
                 pnlRadioCopy.BackColor = System.Drawing.Color.White;
             }
+            pnlRadioCopy.Invalidate();
 
             // Update Import card
             if (rdoImport.Checked)
             {
                 pnlRadioImport.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(239)))), ((int)(((byte)(246)))), ((int)(((byte)(255)))));
                 pnlRadioImport.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-                using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(99)))), ((int)(((byte)(235))))), 2))
-                {
-                    pnlRadioImport.Invalidate();
-                }
             }
             else
             {
                 pnlRadioImport.BackColor = System.Drawing.Color.White;
             }
+            pnlRadioImport.Invalidate();
         }
 
         private void ShowConditionalPanels()

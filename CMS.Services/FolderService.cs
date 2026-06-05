@@ -135,6 +135,7 @@ namespace CMS.Services
         private readonly IApprovalRepository _approvalRepository;
         private readonly IUserOrgVisibilityService _visibilityService;
         private readonly IUserAccountRepository _userAccountRepository;
+        private readonly IFolderQuotaService _quotaService;
 
         // Session-level folder cache: key = orgUnitId (null = all), value = folder list
         // ลด DB calls ซ้ำเมื่อ navigate ไปมาใน session เดียวกัน
@@ -165,7 +166,8 @@ namespace CMS.Services
             IFolderTemplateRepository folderTemplateRepository = null,
             IApprovalRepository approvalRepository = null,
             IUserOrgVisibilityService visibilityService = null,
-            IUserAccountRepository userAccountRepository = null)
+            IUserAccountRepository userAccountRepository = null,
+            IFolderQuotaService quotaService = null)
         {
             if (folderRepository == null) throw new ArgumentNullException("folderRepository");
             if (fileDocumentRepository == null) throw new ArgumentNullException("fileDocumentRepository");
@@ -184,6 +186,7 @@ namespace CMS.Services
             _approvalRepository = approvalRepository;
             _visibilityService = visibilityService;
             _userAccountRepository = userAccountRepository;
+            _quotaService = quotaService;
         }
 
         public Folder CreateFolder(CreateFolderRequest request, UserContext user)
@@ -284,6 +287,12 @@ namespace CMS.Services
                 CreatedBy = user.UserID,
                 CreatedDate = DateTime.Now
             };
+
+            if (_quotaService != null)
+            {
+                _quotaService.EnforceQuota(folder.OrgUnitID);
+                _quotaService.SendAlertIfNeeded(folder.OrgUnitID);
+            }
 
             int newId = _folderRepository.Insert(folder);
             folder.FolderID = newId;

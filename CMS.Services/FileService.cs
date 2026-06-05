@@ -35,6 +35,7 @@ namespace CMS.Services
         private readonly ILoggingService _loggingService;
         private readonly IPermissionRepository _permissionRepository;
         private readonly IFilePermissionRepository _filePermissionRepository;
+        private readonly IFolderQuotaService _folderQuotaService;
 
         public FileService(
             IFileDocumentRepository fileDocumentRepository,
@@ -48,7 +49,8 @@ namespace CMS.Services
             IUserAccountRepository userAccountRepository,
             ILoggingService loggingService,
             IPermissionRepository permissionRepository = null,
-            IFilePermissionRepository filePermissionRepository = null)
+            IFilePermissionRepository filePermissionRepository = null,
+            IFolderQuotaService folderQuotaService = null)
         {
             if (fileDocumentRepository == null) throw new ArgumentNullException("fileDocumentRepository");
             if (folderRepository == null) throw new ArgumentNullException("folderRepository");
@@ -73,6 +75,7 @@ namespace CMS.Services
             _loggingService = loggingService;
             _permissionRepository = permissionRepository;
             _filePermissionRepository = filePermissionRepository;
+            _folderQuotaService = folderQuotaService;
         }
 
         // -----------------------------------------------------------------------
@@ -110,10 +113,78 @@ namespace CMS.Services
                         "User {0} does not have permission to upload to folder {1}.", user.UserID, folderId));
             }
 
+            var quotaBlockMessage = ValidateBatchAgainstOrgQuota(fileList, folder);
+            if (!string.IsNullOrEmpty(quotaBlockMessage))
+                return fileList.Select(f => Fail(f.FileName, quotaBlockMessage)).ToList();
+
             foreach (var request in fileList)
                 results.Add(UploadSingleFile(request, folder, user));
 
             return results;
+        }
+
+        private string ValidateBatchAgainstOrgQuota(IEnumerable<FileUploadRequest> files, Folder folder)
+        {
+            if (_folderQuotaService == null || files == null || folder == null)
+                return null;
+
+            var usage = _folderQuotaService.GetUsage(folder.OrgUnitID);
+            if (usage == null || usage.QuotaBytes <= 0)
+                return null;
+
+            long deltaBytes = 0;
+            foreach (var request in files)
+            {
+                if (request == null)
+                    continue;
+
+                long existingSize = 0;
+                if (request.OverwriteExisting && !string.IsNullOrEmpty(request.FileName))
+                {
+                    var existing = _fileDocumentRepository.GetByOriginalName(request.FileName, folder.FolderID);
+                    existingSize = existing != null ? existing.FileSizeBytes : 0;
+                }
+
+                deltaBytes += Math.Max(0, request.FileSizeBytes - existingSize);
+            }
+
+            long remaining = usage.QuotaBytes - usage.UsedBytes;
+            if (deltaBytes <= remaining)
+                return null;
+
+            return string.Format(
+                "ไม่สามารถอัปโหลดได้ เนื่องจากพื้นที่คงเหลือ {0} แต่ไฟล์ที่เลือกมีขนาดรวม {1} (ใช้ไป {2} จาก quota {3})",
+                FormatBytes(Math.Max(0, remaining)),
+                FormatBytes(deltaBytes),
+                FormatBytes(usage.UsedBytes),
+                FormatBytes(usage.QuotaBytes));
+        }
+
+        private string ValidateIncomingBytesAgainstOrgQuota(Folder folder, long incomingBytes, string actionName)
+        {
+            if (_folderQuotaService == null || folder == null || incomingBytes <= 0)
+                return null;
+
+            var usage = _folderQuotaService.GetUsage(folder.OrgUnitID);
+            if (usage == null || usage.QuotaBytes <= 0)
+                return null;
+
+            long remaining = usage.QuotaBytes - usage.UsedBytes;
+            if (incomingBytes <= remaining)
+                return null;
+
+            return BuildQuotaExceededMessage(actionName, usage, incomingBytes);
+        }
+
+        private static string BuildQuotaExceededMessage(string actionName, QuotaUsageResult usage, long incomingBytes)
+        {
+            return string.Format(
+                "ไม่สามารถ{0}ไฟล์ได้ในระบบ เนื่องจากพื้นที่คงเหลือ {1} แต่ไฟล์ที่จะ{0}มีขนาดรวม {2} (ใช้ไป {3} จาก quota {4})",
+                actionName,
+                FormatBytes(Math.Max(0, usage.QuotaBytes - usage.UsedBytes)),
+                FormatBytes(Math.Max(0, incomingBytes)),
+                FormatBytes(usage.UsedBytes),
+                FormatBytes(usage.QuotaBytes));
         }
 
         // -----------------------------------------------------------------------
@@ -621,6 +692,20 @@ namespace CMS.Services
                         string.Format("ไม่มีสิทธิ์เขียนใน Folder ปลายทาง '{0}'", destFolder.FolderName));
             }
 
+            long existingDestSize = 0;
+            if (overwrite && !string.IsNullOrEmpty(source.OriginalFileName))
+            {
+                var existingForQuota = _fileDocumentRepository.GetByOriginalName(source.OriginalFileName, destinationFolderId);
+                existingDestSize = existingForQuota != null ? existingForQuota.FileSizeBytes : 0;
+            }
+
+            var quotaBlockMessage = ValidateIncomingBytesAgainstOrgQuota(
+                destFolder,
+                Math.Max(0, source.FileSizeBytes - existingDestSize),
+                "วาง");
+            if (!string.IsNullOrEmpty(quotaBlockMessage))
+                throw new InvalidOperationException(quotaBlockMessage);
+
             string ext = source.FileExtension ?? Path.GetExtension(source.OriginalFileName ?? "");
             if (!ext.StartsWith(".")) ext = "." + ext;
 
@@ -698,6 +783,10 @@ namespace CMS.Services
             };
 
             int newId = _fileDocumentRepository.Insert(newDoc);
+            destFolder.FolderSizeBytes = Math.Max(0, destFolder.FolderSizeBytes - existingDestSize) + source.FileSizeBytes;
+            if (!overwrite || existingDestSize <= 0)
+                destFolder.FileCount += 1;
+            _folderRepository.Update(destFolder);
             RefreshFolderFileCounts(destinationFolderId);
 
             _auditService.Log(new AuditEntry
@@ -983,6 +1072,17 @@ namespace CMS.Services
         private static UploadResult Fail(string fileName, string message)
         {
             return new UploadResult { OriginalFileName = fileName, Success = false, ErrorMessage = message };
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes >= 1024L * 1024 * 1024)
+                return string.Format("{0:N2} GB", bytes / 1073741824.0);
+            if (bytes >= 1024L * 1024)
+                return string.Format("{0:N1} MB", bytes / 1048576.0);
+            if (bytes >= 1024L)
+                return string.Format("{0:N1} KB", bytes / 1024.0);
+            return string.Format("{0:N0} bytes", bytes);
         }
 
         public IEnumerable<string> FindDuplicateNames(IEnumerable<string> fileNames, int folderId, UserContext user)

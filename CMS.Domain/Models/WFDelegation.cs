@@ -46,5 +46,14 @@ namespace CMS.Domain.Models
 
         /// <summary>Soft-delete flag. True when this delegation record has been logically deleted.</summary>
         public bool IsDeleted { get; set; }
+
+        /// <summary>Start date of delegation</summary>
+        public DateTime? StartDate { get; set; }
+
+        /// <summary>End date of delegation</summary>
+        public DateTime? EndDate { get; set; }
+
+        /// <summary>Remarks for delegation</summary>
+        public string Remarks { get; set; }
     }
 }

@@ -32,16 +32,16 @@ namespace CMS.Presentation.Modules.Workflow
 
     public static class WorkflowNavigationBuilder
     {
-        // ── Standardized colors (dark navy theme) ────────────────────────────
-        private static readonly Color SidebarBg = Color.FromArgb(26, 35, 67);
-        private static readonly Color ActiveBg = Color.FromArgb(59, 91, 219);
-        private static readonly Color ActiveFg = Color.White;
-        private static readonly Color InactiveFg = Color.FromArgb(196, 207, 232);
-        private static readonly Color HeaderFg = Color.FromArgb(136, 146, 164);
-        private static readonly Color HoverBg = Color.FromArgb(38, 50, 90);
-        private static readonly Color AccentBar = Color.FromArgb(59, 91, 219);
-        private static readonly Color OrangeBadge = Color.FromArgb(230, 115, 0);
-        private static readonly Color SeparatorColor = Color.FromArgb(42, 55, 95);
+        // ── Standardized colors (white sidebar / blue active theme) ──────────
+        private static readonly Color SidebarBg      = Color.White;
+        private static readonly Color ActiveBg       = Color.FromArgb(59,  91,  219);
+        private static readonly Color ActiveFg       = Color.White;
+        private static readonly Color InactiveFg     = Color.FromArgb(44,  52,   70);
+        private static readonly Color HeaderFg       = Color.FromArgb(100, 110,  130);
+        private static readonly Color HoverBg        = Color.FromArgb(235, 242,  255);
+        private static readonly Color AccentBar      = Color.FromArgb(59,  91,  219);
+        private static readonly Color OrangeBadge    = Color.FromArgb(230, 115,    0);
+        private static readonly Color SeparatorColor = Color.FromArgb(230, 233,  240);
 
         // ── Canonical menu definition (single source of truth) ───────────────
         /// <summary>
@@ -49,9 +49,9 @@ namespace CMS.Presentation.Modules.Workflow
         /// This is the only place the menu is defined; all forms reference this.
         /// </summary>
         public static WfeNavSection[] GetDefaultSections(
-            int myTasksBadge = 8,
-            int monitorBadge = 24,
-            int approvalBadge = 3)
+            int myTasksBadge  = 0,
+            int monitorBadge  = 0,
+            int approvalBadge = 0)
         {
             return new[]
             {
@@ -99,12 +99,23 @@ namespace CMS.Presentation.Modules.Workflow
             Panel container,
             string activeTag,
             NavClickHandler onNavClick,
-            out Panel initialActivePanel)
+            out Panel initialActivePanel,
+            int myTasksBadge  = 0,
+            int monitorBadge  = 0,
+            int approvalBadge = 0)
         {
             container.BackColor = SidebarBg;
             container.Controls.Clear();
 
-            var sections = GetDefaultSections();
+            var border = new Panel
+            {
+                Dock = DockStyle.Right,
+                Width = 1,
+                BackColor = SeparatorColor,
+            };
+            container.Controls.Add(border);
+
+            var sections = GetDefaultSections(myTasksBadge, monitorBadge, approvalBadge);
             Panel activePanel = null;
             int y = 4;
 
@@ -199,7 +210,7 @@ namespace CMS.Presentation.Modules.Workflow
             var pnl = new Panel
             {
                 Size = new Size(containerWidth, 34),
-                BackColor = Color.White,
+                BackColor = SidebarBg,
                 Cursor = Cursors.Hand,
                 Tag = item.Tag,
             };
@@ -216,6 +227,8 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 Text = item.Icon,
                 Font = new Font("Segoe UI", 11F),
+                BackColor = SidebarBg,
+                ForeColor = InactiveFg,
                 Location = new Point(14, 7),
                 Size = new Size(22, 22),
                 TextAlign = ContentAlignment.MiddleCenter,
@@ -225,7 +238,8 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 Text = item.Text,
                 Font = new Font("Segoe UI", 9.5F),
-                ForeColor = Color.FromArgb(44, 52, 70),
+                BackColor = SidebarBg,
+                ForeColor = InactiveFg,
                 Location = new Point(40, 8),
                 Size = new Size(containerWidth - 110, 20),
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -283,27 +297,42 @@ namespace CMS.Presentation.Modules.Workflow
 
             EventHandler enterH = (s, e) =>
             {
-                applyState(HoverBg, InactiveFg, false);
+                if (pnl.BackColor != ActiveBg)
+                    applyState(HoverBg, InactiveFg, false);
             };
             EventHandler leaveH = (s, e) =>
             {
                 if (pnl.BackColor != ActiveBg)
-                    applyState(Color.White, Color.FromArgb(44, 52, 70), false);
+                    applyState(SidebarBg, InactiveFg, false);
             };
             EventHandler clickH = (s, e) =>
             {
-                // Find parent container and set active
                 Control parent = pnl.Parent;
-                if (parent != null)
+                if (parent == null) return;
+
+                // Capture current active panel before changing it
+                Panel previousActive = null;
+                foreach (Control ctrl in parent.Controls)
                 {
-                    foreach (Control sibling in parent.Controls)
+                    if (ctrl is Panel sp && sp != pnl && sp.Tag is string && sp.BackColor == ActiveBg)
                     {
-                        if (sibling is Panel sib && sib != pnl)
-                            applyState(Color.White, Color.FromArgb(44, 52, 70), false);
+                        previousActive = sp;
+                        break;
                     }
-                    SetActiveNav(parent as Panel, pnl);
                 }
+
+                SetActiveNav(parent as Panel, pnl);
                 onNavClick?.Invoke(tag);
+
+                // If pnl is still alive after nav handler returned → no cross-form navigation occurred.
+                // Revert to previousActive when a WIP/MessageBox item was clicked without navigating.
+                if (previousActive != null
+                    && !pnl.IsDisposed
+                    && pnl.Parent != null
+                    && !previousActive.IsDisposed)
+                {
+                    SetActiveNav(parent as Panel, previousActive);
+                }
             };
 
             foreach (Control c in pnl.Controls)
@@ -326,12 +355,17 @@ namespace CMS.Presentation.Modules.Workflow
             {
                 if (ctrl is Panel p && p != navPanel && p.Tag is string)
                 {
-                    p.BackColor = Color.White;
+                    p.BackColor = SidebarBg;
                     foreach (Control c in p.Controls)
                     {
-                        if (c.Name != "accent") c.BackColor = Color.White;
-                        if (c is Label lbl && c.Name != "accent") lbl.ForeColor = Color.FromArgb(44, 52, 70);
-                        if (c.Name == "accent") c.BackColor = Color.Transparent;
+                        if (c.Name == "accent") { c.BackColor = Color.Transparent; continue; }
+                        c.BackColor = SidebarBg;
+                        if (c is Label lbl)
+                        {
+                            lbl.ForeColor = InactiveFg;
+                            if (lbl.Text.Length > 2)
+                                lbl.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+                        }
                     }
                 }
             }

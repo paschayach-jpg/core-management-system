@@ -53,6 +53,11 @@ namespace CMS.Presentation.Modules.Workflow.Presenters.Interfaces
         /// Show info message
         /// </summary>
         void ShowInfo(string message);
+
+        /// <summary>
+        /// Return current visual design as TemplateDefinition JSON.
+        /// </summary>
+        string GetTemplateDefinitionJson();
     }
 
     /// <summary>

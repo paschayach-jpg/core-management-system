@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CMS.Data.Models;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 using CMS.Presentation.Modules.Workflow.Presenters.Interfaces;
 using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
+using Newtonsoft.Json;
 
 namespace CMS.Presentation.Modules.Workflow.Presenters
 {
@@ -43,8 +45,8 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 var template = _templateService.GetTemplate(templateId, _userContext);
                 _view.DisplayTemplate(template);
                 _view.ClearCanvas();
+                LoadTemplateDefinition(template);
 
-                // TODO: Load steps and connections from repository
                 _loggingService.Info($"Loaded template {templateId} for editing");
             }
             catch (Exception ex)
@@ -143,16 +145,43 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
         /// </summary>
         public bool ValidateTemplate()
         {
+            return ValidateTemplate(true, false);
+        }
+
+        public bool ValidateTemplate(bool showSuccessMsg, bool isSavingNew)
+        {
             try
             {
                 var errors = new List<string>();
+                var definition = GetCurrentDesignerDefinition();
 
-                // TODO: Implement validation logic
-                // - Check for Start step
-                // - Check for End step
-                // - Check for orphaned steps
-                // - Check for cycles
-                // - Check for missing connections
+                if (!_currentTemplateId.HasValue)
+                {
+                    if (!isSavingNew)
+                    {
+                        errors.Add("No template loaded");
+                    }
+                }
+                else
+                {
+                    var template = _templateService.GetTemplate(_currentTemplateId.Value, _userContext);
+                    if (template == null)
+                        errors.Add("Template not found");
+                }
+
+                if (definition.Steps.Count == 0)
+                {
+                    errors.Add("Template has no steps");
+                }
+                else
+                {
+                    var hasStart = definition.Steps.Any(s => string.Equals(s.StepType, "Start", StringComparison.OrdinalIgnoreCase));
+                    var hasEnd = definition.Steps.Any(s => string.Equals(s.StepType, "End", StringComparison.OrdinalIgnoreCase));
+                    if (!hasStart)
+                        errors.Add("Template requires a Start step");
+                    if (!hasEnd)
+                        errors.Add("Template requires an End step");
+                }
 
                 if (errors.Count > 0)
                 {
@@ -160,7 +189,10 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                     return false;
                 }
 
-                _view.ShowInfo("Template validation passed");
+                if (showSuccessMsg)
+                {
+                    _view.ShowInfo("Template validation passed");
+                }
                 return true;
             }
             catch (Exception ex)
@@ -178,7 +210,8 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
         {
             try
             {
-                if (!ValidateTemplate())
+                bool isSavingNew = !_currentTemplateId.HasValue;
+                if (!ValidateTemplate(showSuccessMsg: false, isSavingNew: isSavingNew))
                     return;
 
                 if (_currentTemplateId.HasValue)
@@ -189,6 +222,7 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                         WorkflowDefinitionId = _currentTemplateId.Value,
                         Name = templateName,
                         Description = description,
+                        TemplateDefinition = _view.GetTemplateDefinitionJson(),
                         IsActive = true,
                         ChangeDescription = "Updated via designer"
                     };
@@ -203,6 +237,7 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                     {
                         Name = templateName,
                         Description = description,
+                        TemplateDefinition = _view.GetTemplateDefinitionJson(),
                         IsActive = false
                     };
 
@@ -212,11 +247,106 @@ namespace CMS.Presentation.Modules.Workflow.Presenters
                 }
 
                 _loggingService.Info($"Template {templateName} saved successfully");
+
+                // Reload template to sync the view and update labels/IDs
+                if (_currentTemplateId.HasValue)
+                {
+                    LoadTemplate(_currentTemplateId.Value);
+                }
             }
             catch (Exception ex)
             {
                 _loggingService.Error($"Error saving template: {ex.Message}", ex);
                 _view.ShowError($"Failed to save template: {ex.Message}");
+            }
+        }
+
+        private void LoadTemplateDefinition(WorkflowTemplateResult template)
+        {
+            if (template == null || string.IsNullOrWhiteSpace(template.TemplateDefinition))
+                return;
+
+            try
+            {
+                var json = template.TemplateDefinition.Trim();
+                if (!json.StartsWith("{")) return;
+
+                var designerDefinition = JsonConvert.DeserializeObject<WorkflowDesignerTemplateDefinition>(json);
+                if (designerDefinition != null && designerDefinition.Steps != null && designerDefinition.Steps.Count > 0)
+                {
+                    foreach (var step in designerDefinition.Steps.OrderBy(s => s.WorkflowStepId))
+                        _view.DrawStep(step);
+
+                    if (designerDefinition.Connections != null)
+                    {
+                        foreach (var conn in designerDefinition.Connections)
+                            _view.DrawConnection(conn.FromStepId, conn.ToStepId, conn.Condition);
+                    }
+                    return;
+                }
+
+                var wizardState = JsonConvert.DeserializeObject<WorkflowWizardState>(json);
+                if (wizardState?.Steps == null || wizardState.Steps.Count == 0)
+                    return;
+
+                var stepMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                var orderedSteps = wizardState.Steps.OrderBy(s => s.StepNumber).ToList();
+                for (int i = 0; i < orderedSteps.Count; i++)
+                {
+                    var wizardStep = orderedSteps[i];
+                    var stepId = i + 1;
+                    stepMap[wizardStep.StepName ?? string.Empty] = stepId;
+                    _view.DrawStep(new WorkflowStepDesignData
+                    {
+                        WorkflowStepId = stepId,
+                        StepName = string.IsNullOrWhiteSpace(wizardStep.StepName) ? $"Step {stepId}" : wizardStep.StepName,
+                        StepType = MapWizardActionToDesignerType(wizardStep.Action),
+                        CanvasX = 60 + i * 160,
+                        CanvasY = 120,
+                        Description = wizardStep.Action
+                    });
+                }
+
+                foreach (var wizardStep in orderedSteps)
+                {
+                    if (string.IsNullOrWhiteSpace(wizardStep.NextStep)) continue;
+                    if (!stepMap.TryGetValue(wizardStep.StepName ?? string.Empty, out var fromId)) continue;
+                    if (!stepMap.TryGetValue(wizardStep.NextStep, out var toId)) continue;
+                    _view.DrawConnection(fromId, toId, string.Empty);
+                }
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Warn($"TemplateDefinition could not be loaded into designer: {ex.Message}");
+            }
+        }
+
+        private static string MapWizardActionToDesignerType(string action)
+        {
+            if (string.IsNullOrWhiteSpace(action)) return "Approval";
+            if (action.IndexOf("review", StringComparison.OrdinalIgnoreCase) >= 0) return "Review";
+            if (action.IndexOf("notify", StringComparison.OrdinalIgnoreCase) >= 0) return "Notification";
+            if (action.IndexOf("decision", StringComparison.OrdinalIgnoreCase) >= 0) return "Decision";
+            if (action.IndexOf("start", StringComparison.OrdinalIgnoreCase) >= 0) return "Start";
+            if (action.IndexOf("end", StringComparison.OrdinalIgnoreCase) >= 0) return "End";
+            return "Approval";
+        }
+
+        private WorkflowDesignerTemplateDefinition GetCurrentDesignerDefinition()
+        {
+            try
+            {
+                var json = _view.GetTemplateDefinitionJson();
+                if (string.IsNullOrWhiteSpace(json))
+                    return new WorkflowDesignerTemplateDefinition();
+
+                var definition = JsonConvert.DeserializeObject<WorkflowDesignerTemplateDefinition>(json);
+                return definition ?? new WorkflowDesignerTemplateDefinition();
+            }
+            catch (Exception ex)
+            {
+                _loggingService.Warn($"Unable to read current designer definition: {ex.Message}");
+                return new WorkflowDesignerTemplateDefinition();
             }
         }
     }

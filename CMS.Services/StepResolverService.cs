@@ -38,14 +38,22 @@ namespace CMS.Services
                 if (template == null)
                     throw new ArgumentNullException(nameof(template));
 
+                var allSteps = _stepRepository.GetStepsByTemplate(template.WorkflowDefinitionId)
+                                              .ToDictionary(s => s.WorkflowStepId);
+
+                var outgoingConnections = _stepRepository.GetConnectionsFromStep(currentStep.WorkflowStepId);
+
                 var nextSteps = new List<WorkflowStep>();
+                foreach (var conn in outgoingConnections)
+                {
+                    if (!EvaluateConditions(conn.ConditionExpression, outputData))
+                        continue;
 
-                // Get all steps in template
-                var allSteps = _stepRepository.GetStepsByTemplate(template.WorkflowDefinitionId);
-
-                // Find connections from current step
-                // TODO: Get connections from repository
-                // For now, return empty list (connections need to be fetched from DB)
+                    if (allSteps.TryGetValue(conn.ToStepId, out var targetStep))
+                        nextSteps.Add(targetStep);
+                    else
+                        _loggingService.Error($"Connection {conn.WorkflowConnectionId} points to missing step {conn.ToStepId}");
+                }
 
                 return nextSteps;
             }
@@ -106,15 +114,15 @@ namespace CMS.Services
                 if (template == null)
                     throw new ArgumentNullException(nameof(template));
 
-                var nextSteps = new List<WorkflowStep>();
+                var allSteps = _stepRepository.GetStepsByTemplate(template.WorkflowDefinitionId)
+                                              .ToDictionary(s => s.WorkflowStepId);
 
-                // Get all steps in template
-                var allSteps = _stepRepository.GetStepsByTemplate(template.WorkflowDefinitionId);
+                var outgoingConnections = _stepRepository.GetConnectionsFromStep(currentStep.WorkflowStepId);
 
-                // TODO: Get connections from repository and find next steps
-                // For now, return empty list
-
-                return nextSteps;
+                return outgoingConnections
+                    .Where(c => allSteps.ContainsKey(c.ToStepId))
+                    .Select(c => allSteps[c.ToStepId])
+                    .ToList();
             }
             catch (Exception ex)
             {

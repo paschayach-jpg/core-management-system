@@ -156,22 +156,45 @@ namespace CMS.Presentation.Modules.Workflow
                     return;
                 }
 
+                // Step 1: Always create as Draft first (IsActive = false)
                 var request = new CreateTemplateRequest
                 {
-                    Name = _wizardState.TemplateName,
-                    Description = _wizardState.Description,
-                    IsActive = _wizardState.IsPublished,
+                    Name               = _wizardState.TemplateName,
+                    Description        = _wizardState.Description,
+                    IsActive           = false,
                     TemplateDefinition = SerializeWizardState(),
-                    ChangeDescription = "Created via Workflow Template Wizard"
+                    ChangeDescription  = "Created via Workflow Template Wizard"
                 };
 
-                _templateService.CreateTemplate(request, _userContext);
+                var created = _templateService.CreateTemplate(request, _userContext);
 
-                MessageBox.Show(
-                    $"✓ Workflow Template '{_wizardState.TemplateName}' สร้างเสร็จแล้ว!\n\nสถานะ: {(_wizardState.IsPublished ? "เผยแพร่" : "Draft")}\n\nสามารถใช้งาน workflow template นี้ได้ทันที",
-                    "สร้างสำเร็จ",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                // Step 2: If user chose "ส่งอนุมัติ", submit to Approval Queue
+                if (_wizardState.SubmitForApproval)
+                {
+                    _templateService.SubmitForApproval(created.WorkflowDefinitionId, _userContext);
+
+                    MessageBox.Show(
+                        string.Format(
+                            "✓ Template '{0}' สร้างและส่งเข้า Approval Queue เรียบร้อยแล้ว!\n\n" +
+                            "สถานะ: รออนุมัติ (PendingApproval)\n\n" +
+                            "Workflow Owner Committee จะได้รับ Notification เพื่ออนุมัติต่อไป",
+                            _wizardState.TemplateName),
+                        "ส่งอนุมัติสำเร็จ",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show(
+                        string.Format(
+                            "✓ Template '{0}' บันทึกเป็น Draft เรียบร้อยแล้ว\n\n" +
+                            "สถานะ: Draft\n\n" +
+                            "สามารถส่งอนุมัติได้ภายหลังจากหน้า จัดการ Template",
+                            _wizardState.TemplateName),
+                        "บันทึก Draft สำเร็จ",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                }
             }
             catch (Exception ex)
             {
@@ -186,38 +209,15 @@ namespace CMS.Presentation.Modules.Workflow
 
         private string SerializeWizardState()
         {
-            var sb = new System.Text.StringBuilder();
-
-            // Starting Mode
-            if (_wizardState.StartingMode == "copy")
+            try
             {
-                sb.AppendLine($"StartingMode: copy");
-                sb.AppendLine($"CopiedFromTemplate: {_wizardState.CopyFromTemplateId} ({_wizardState.CopyFromTemplateName})");
-                sb.AppendLine();
+                return Newtonsoft.Json.JsonConvert.SerializeObject(_wizardState, Newtonsoft.Json.Formatting.Indented);
             }
-            else if (_wizardState.StartingMode == "import")
+            catch (Exception ex)
             {
-                sb.AppendLine($"StartingMode: import");
-                sb.AppendLine($"ImportedFrom: {_wizardState.ImportedFilePath}");
-                sb.AppendLine();
+                _loggingService?.Error($"Error serializing wizard state: {ex.Message}", ex);
+                return "{}";
             }
-            else
-            {
-                sb.AppendLine($"StartingMode: fresh");
-                sb.AppendLine();
-            }
-
-            sb.AppendLine("Steps:");
-            foreach (var step in _wizardState.Steps)
-            {
-                sb.AppendLine($"  - {step.StepNumber}: {step.StepName} ({step.Action}) -> {step.NextStep}");
-            }
-            sb.AppendLine("\nApprovers:");
-            foreach (var approver in _wizardState.Approvers)
-            {
-                sb.AppendLine($"  - {approver.StepName}: {approver.ApproverGroup} (Level: {approver.Level})");
-            }
-            return sb.ToString();
         }
     }
 }

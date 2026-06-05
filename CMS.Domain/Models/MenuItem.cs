@@ -59,9 +59,14 @@ namespace CMS.Domain.Models
         public int? ModifiedByUserID { get; set; }
 
         /// <summary>Navigation property for child menu items</summary>
-        public virtual List<MenuItem> ChildMenuItems { get; set; } = new List<MenuItem>();
+        public virtual List<MenuItem> ChildMenuItems { get; set; }
 
         /// <summary>Navigation property for parent menu item</summary>
         public virtual MenuItem ParentMenuItem { get; set; }
+
+        public MenuItem()
+        {
+            ChildMenuItems = new List<MenuItem>();
+        }
     }
 }

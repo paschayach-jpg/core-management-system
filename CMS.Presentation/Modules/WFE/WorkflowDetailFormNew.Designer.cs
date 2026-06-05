@@ -1,4 +1,4 @@
-﻿namespace CMS.Presentation.Modules.Workflow
+namespace CMS.Presentation.Modules.Workflow
 {
     partial class WorkflowDetailFormNew
     {
@@ -77,6 +77,7 @@
         private System.Windows.Forms.Panel pnlSlaBar;
         private System.Windows.Forms.Button btnMoreActions;
         private System.Windows.Forms.Label lblStartedValue;
+        private System.Windows.Forms.Button btnBack;
 
         // ── Timeline card ────────────────────────────────────────────────────
         private System.Windows.Forms.Panel pnlTimelineCard;
@@ -107,6 +108,7 @@
             this.pnlContent = new System.Windows.Forms.Panel();
             this.pnlBreadcrumb = new System.Windows.Forms.Panel();
             this.lblBreadcrumb = new System.Windows.Forms.Label();
+            this.btnBack = new System.Windows.Forms.Button();
             this.pnlTitleBar = new System.Windows.Forms.Panel();
             this.lblTitle = new System.Windows.Forms.Label();
             this.lblSubtitle = new System.Windows.Forms.Label();
@@ -258,10 +260,25 @@
             this.pnlBreadcrumb.Name = "pnlBreadcrumb";
             this.pnlBreadcrumb.Padding = new System.Windows.Forms.Padding(20, 0, 16, 0);
             this.pnlBreadcrumb.Controls.Add(this.lblBreadcrumb);
+            this.pnlBreadcrumb.Controls.Add(this.btnBack);
+
+            // btnBack
+            this.btnBack.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnBack.Size = new System.Drawing.Size(88, 28);
+            this.btnBack.Text = "← ย้อนกลับ";
+            this.btnBack.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBack.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.btnBack.ForeColor = System.Drawing.Color.FromArgb(0, 102, 204);
+            this.btnBack.BackColor = System.Drawing.Color.White;
+            this.btnBack.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(200, 210, 230);
+            this.btnBack.FlatAppearance.BorderSize = 1;
+            this.btnBack.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnBack.Click += new System.EventHandler(this.btnBack_Click);
 
             this.lblBreadcrumb.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblBreadcrumb.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.lblBreadcrumb.ForeColor = System.Drawing.Color.FromArgb(100, 110, 130);
+            this.lblBreadcrumb.Padding = new System.Windows.Forms.Padding(12, 0, 0, 0);
             this.lblBreadcrumb.Name = "lblBreadcrumb";
             this.lblBreadcrumb.Text = "CMS  ›  Workflow Engine  ›  Monitor  ›  WFI-2569-00012";
             this.lblBreadcrumb.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
