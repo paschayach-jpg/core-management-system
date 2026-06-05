@@ -304,36 +304,57 @@ namespace CMS.Presentation.Modules.Workflow
                     return;
 
                 var designerDef = JsonConvert.DeserializeObject<WorkflowDesignerTemplateDefinition>(templateRecord.TemplateDefinition);
-                if (designerDef?.Steps == null || designerDef.Steps.Count <= _definitionSteps.Count)
+                if (designerDef?.Steps == null)
                     return;
 
-                // Replace step list with full set from designer JSON
-                _definitionSteps = designerDef.Steps.Select(s => new WorkflowStep
+                // Keep copy of DB steps currently loaded to match step names with Design IDs
+                var dbSteps = _definitionSteps != null ? _definitionSteps.ToList() : new List<WorkflowStep>();
+                var designToSqlMap = new Dictionary<int, int>();
+
+                // Replace step list with full set from designer JSON mapping to DB IDs
+                var parsedSteps = new List<WorkflowStep>();
+                foreach (var s in designerDef.Steps)
                 {
-                    WorkflowStepId       = s.WorkflowStepId,
-                    WorkflowDefinitionId = workflowDefinitionId,
-                    StepName             = s.StepName,
-                    StepType             = ParseDesignerStepType(s.StepType),
-                    SequenceNumber       = s.WorkflowStepId,
-                    SLADays              = s.SLADays > 0 ? (int?)s.SLADays : null,
-                    AllowDelegation      = false,
-                    IsDeleted            = false
-                }).ToList();
+                    var matchedDbStep = dbSteps.FirstOrDefault(db => string.Equals((db.StepName ?? "").Trim(), (s.StepName ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
+                    int mappedId = matchedDbStep != null ? matchedDbStep.WorkflowStepId : s.WorkflowStepId;
+                    designToSqlMap[s.WorkflowStepId] = mappedId;
+
+                    parsedSteps.Add(new WorkflowStep
+                    {
+                        WorkflowStepId       = mappedId,
+                        WorkflowDefinitionId = workflowDefinitionId,
+                        StepName             = s.StepName,
+                        StepType             = ParseDesignerStepType(s.StepType),
+                        SequenceNumber       = s.WorkflowStepId,
+                        SLADays              = s.SLADays > 0 ? (int?)s.SLADays : null,
+                        AllowDelegation      = false,
+                        IsDeleted            = false
+                    });
+                }
+                _definitionSteps = parsedSteps;
 
                 _definitionConnections = (designerDef.Connections ?? new List<WorkflowConnectionDesignData>())
-                    .Select(c => new WorkflowConnection
+                    .Select(c =>
                     {
-                        WorkflowDefinitionId = workflowDefinitionId,
-                        FromStepId           = c.FromStepId,
-                        ToStepId             = c.ToStepId,
-                        ConditionExpression  = c.Condition,
-                        IsDeleted            = false
+                        int fromId = designToSqlMap.TryGetValue(c.FromStepId, out int fId) ? fId : c.FromStepId;
+                        int toId = designToSqlMap.TryGetValue(c.ToStepId, out int tId) ? tId : c.ToStepId;
+                        return new WorkflowConnection
+                        {
+                            WorkflowDefinitionId = workflowDefinitionId,
+                            FromStepId           = fromId,
+                            ToStepId             = toId,
+                            ConditionExpression  = c.Condition,
+                            IsDeleted            = false
+                        };
                     }).ToList();
 
                 // Use designer canvas positions directly — no auto-layout needed
                 _nodeBounds.Clear();
                 foreach (var s in designerDef.Steps)
-                    _nodeBounds[s.WorkflowStepId] = new Rectangle(s.CanvasX, s.CanvasY, 110, 44);
+                {
+                    int stepId = designToSqlMap.TryGetValue(s.WorkflowStepId, out int mappedId) ? mappedId : s.WorkflowStepId;
+                    _nodeBounds[stepId] = new Rectangle(s.CanvasX, s.CanvasY, 110, 44);
+                }
             }
             catch { /* fallback: use s_WFStep data and CalculateAutoLayout */ }
         }

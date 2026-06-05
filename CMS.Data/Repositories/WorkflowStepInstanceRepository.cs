@@ -89,10 +89,10 @@ namespace CMS.Data.Repositories
                     "       wsi.AssignedTo, wsi.AssignedDate, wsi.Status, wsi.CompletedDate, wsi.CompletedBy, " +
                     "       wsi.OutputData, wsi.SLADeadline, wsi.SLAStatus, wsi.IsDeleted " +
                     "FROM   WFE.t_WFStepInstance wsi " +
-                    "INNER JOIN WFE.s_WFStep ws ON ws.WFStepId = wsi.WFStepId " +
+                    "LEFT JOIN WFE.s_WFStep ws ON ws.WFStepId = wsi.WFStepId " +
                     "WHERE  wsi.WFInstanceId = @WorkflowInstanceId " +
                     "  AND  wsi.IsDeleted = 0 " +
-                    "ORDER BY ws.SequenceNumber ASC, wsi.AssignedDate ASC", conn))
+                    "ORDER BY COALESCE(ws.SequenceNumber, 999) ASC, wsi.AssignedDate ASC", conn))
                 {
                     cmd.CommandType = CommandType.Text;
                     cmd.Parameters.AddWithValue("@WorkflowInstanceId", workflowInstanceId);

@@ -1382,7 +1382,7 @@ namespace CMS.Presentation.Modules.Workflow
                             WorkflowDefinitionId = dialog.SelectedTemplateId,
                             Description = dialog.InstanceDescription,
                             Priority = dialog.Priority,
-                            InputParameters = "{}"
+                            InputParameters = dialog.InputParametersJson
                         };
 
                         var result = workflowService.CreateWorkflowInstance(startRequest, _userContext);
