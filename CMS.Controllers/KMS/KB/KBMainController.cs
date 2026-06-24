@@ -125,6 +125,13 @@ namespace CMS.Controllers.KMS.KB
                 articles = _articleService.SearchByType(keyword, catId, statusFilter, typeFilter, searchFieldId);
 
                 var list = articles.ToList();
+
+                if (!string.IsNullOrEmpty(titleFilter))
+                    list = list.Where(a => string.Equals(
+                        (a.Title ?? string.Empty).Trim(),
+                        titleFilter.Trim(),
+                        StringComparison.OrdinalIgnoreCase)).ToList();
+
                 foreach (var article in list)
                     ResolveLatestVersion(article);
 
