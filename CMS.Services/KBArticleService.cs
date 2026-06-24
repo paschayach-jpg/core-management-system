@@ -81,8 +81,16 @@ namespace CMS.Services
                         (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
                 case 4:
                     return results.Where(a =>
-                        a.Summary != null &&
-                        a.Summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0);
+                    {
+                        if (string.IsNullOrEmpty(a.Summary))
+                            return false;
+
+                        var summary = new string(
+                            a.Summary.Where(c => !char.IsWhiteSpace(c))
+                                     .ToArray());
+
+                        return summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+                    });
                 default:
                     return results;
             }
