@@ -213,6 +213,11 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (BackRequested != null)
                 BackRequested(this, EventArgs.Empty);
+            else
+            {
+                DialogResult = DialogResult.Cancel;
+                Close();
+            }
         }
 
         private void BtnCancel_Click(object sender, EventArgs e)

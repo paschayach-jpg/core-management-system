@@ -849,7 +849,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             int    count = articleCounts.ContainsKey(cat.CategoryID) ? articleCounts[cat.CategoryID] : 0;
             string label = count > 0
-                ? string.Format("📁 {0} ({1})", cat.CategoryName, count)
+                ? string.Format("📁 {0}", cat.CategoryName)
                 : string.Format("📁 {0}", cat.CategoryName);
 
             var node = new TreeNode(label)
@@ -1013,9 +1013,11 @@ namespace CMS.Presentation.Modules.KMS
             {
                 Name = "colCategory",
                 HeaderText = "หมวดหมู่",
+                //Width = 0,
                 ReadOnly = true,
-                DefaultCellStyle = lft,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                Visible = false
+                //DefaultCellStyle = lft,
+                //AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
                 Name = "colTitle", 

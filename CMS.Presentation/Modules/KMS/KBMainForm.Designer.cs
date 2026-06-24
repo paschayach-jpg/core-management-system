@@ -44,7 +44,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblPageSizeLabel = new System.Windows.Forms.Label();
             this.cboSortBy = new System.Windows.Forms.ComboBox();
             this.lblSortByLabel = new System.Windows.Forms.Label();
-            this.lblFilterLabel = new System.Windows.Forms.Label();
             this.txtToolbarSearch = new System.Windows.Forms.TextBox();
             this.lblToolbarSearchLabel = new System.Windows.Forms.Label();
             this.pnlToolbar = new System.Windows.Forms.Panel();
@@ -104,7 +103,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnDashboard.FlatAppearance.BorderSize = 0;
             this.btnDashboard.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(74)))), ((int)(((byte)(111)))));
             this.btnDashboard.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnDashboard.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnDashboard.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDashboard.ForeColor = System.Drawing.Color.White;
             this.btnDashboard.Location = new System.Drawing.Point(1464, 0);
             this.btnDashboard.Name = "btnDashboard";
@@ -122,7 +121,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnSettings.FlatAppearance.BorderSize = 0;
             this.btnSettings.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(74)))), ((int)(((byte)(111)))));
             this.btnSettings.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSettings.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnSettings.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSettings.ForeColor = System.Drawing.Color.White;
             this.btnSettings.Location = new System.Drawing.Point(1633, 0);
             this.btnSettings.Name = "btnSettings";
@@ -135,7 +134,7 @@ namespace CMS.Presentation.Modules.KMS
             // lblTitle
             // 
             this.lblTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.lblTitle.ForeColor = System.Drawing.Color.White;
             this.lblTitle.Location = new System.Drawing.Point(0, 0);
             this.lblTitle.Name = "lblTitle";
@@ -182,13 +181,13 @@ namespace CMS.Presentation.Modules.KMS
             this.treeCategories.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
             this.treeCategories.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.treeCategories.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.treeCategories.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.treeCategories.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.treeCategories.FullRowSelect = true;
             this.treeCategories.HotTracking = true;
             this.treeCategories.Indent = 16;
             this.treeCategories.Location = new System.Drawing.Point(0, 32);
             this.treeCategories.Name = "treeCategories";
-            this.treeCategories.Size = new System.Drawing.Size(328, 576);
+            this.treeCategories.Size = new System.Drawing.Size(328, 566);
             this.treeCategories.TabIndex = 0;
             this.treeCategories.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeCategories_AfterSelect);
             // 
@@ -198,10 +197,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlLeftFooter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlLeftFooter.Controls.Add(this.btnNewCategory);
             this.pnlLeftFooter.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlLeftFooter.Location = new System.Drawing.Point(0, 608);
+            this.pnlLeftFooter.Location = new System.Drawing.Point(0, 598);
             this.pnlLeftFooter.Name = "pnlLeftFooter";
             this.pnlLeftFooter.Padding = new System.Windows.Forms.Padding(6, 5, 6, 5);
-            this.pnlLeftFooter.Size = new System.Drawing.Size(328, 40);
+            this.pnlLeftFooter.Size = new System.Drawing.Size(328, 50);
             this.pnlLeftFooter.TabIndex = 1;
             // 
             // btnNewCategory
@@ -212,11 +211,11 @@ namespace CMS.Presentation.Modules.KMS
             this.btnNewCategory.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
             this.btnNewCategory.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
             this.btnNewCategory.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNewCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnNewCategory.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnNewCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
             this.btnNewCategory.Location = new System.Drawing.Point(6, 5);
             this.btnNewCategory.Name = "btnNewCategory";
-            this.btnNewCategory.Size = new System.Drawing.Size(314, 28);
+            this.btnNewCategory.Size = new System.Drawing.Size(314, 38);
             this.btnNewCategory.TabIndex = 0;
             this.btnNewCategory.Text = "⚙️ จัดการหมวดหมู่";
             this.btnNewCategory.UseVisualStyleBackColor = false;
@@ -236,7 +235,7 @@ namespace CMS.Presentation.Modules.KMS
             // lblCategoryHeader
             // 
             this.lblCategoryHeader.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblCategoryHeader.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblCategoryHeader.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.lblCategoryHeader.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblCategoryHeader.Location = new System.Drawing.Point(0, 0);
             this.lblCategoryHeader.Name = "lblCategoryHeader";
@@ -265,11 +264,11 @@ namespace CMS.Presentation.Modules.KMS
             this.tabArticles.Controls.Add(this.tabPage1);
             this.tabArticles.Controls.Add(this.tabPage2);
             this.tabArticles.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabArticles.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.tabArticles.Location = new System.Drawing.Point(0, 109);
+            this.tabArticles.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.tabArticles.Location = new System.Drawing.Point(0, 125);
             this.tabArticles.Name = "tabArticles";
             this.tabArticles.SelectedIndex = 0;
-            this.tabArticles.Size = new System.Drawing.Size(1391, 499);
+            this.tabArticles.Size = new System.Drawing.Size(1391, 473);
             this.tabArticles.TabIndex = 4;
             this.tabArticles.SelectedIndexChanged += new System.EventHandler(this.TabArticles_SelectedIndexChanged);
             // 
@@ -277,10 +276,10 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tabPage1.BackColor = System.Drawing.Color.White;
             this.tabPage1.Controls.Add(this.dgvArticles);
-            this.tabPage1.Location = new System.Drawing.Point(4, 28);
+            this.tabPage1.Location = new System.Drawing.Point(4, 37);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(1383, 467);
+            this.tabPage1.Size = new System.Drawing.Size(1383, 432);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "📋 ตารางบทความ";
             // 
@@ -303,17 +302,17 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvArticles.RowHeadersVisible = false;
             this.dgvArticles.RowHeadersWidth = 51;
             this.dgvArticles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.dgvArticles.Size = new System.Drawing.Size(1377, 461);
+            this.dgvArticles.Size = new System.Drawing.Size(1377, 426);
             this.dgvArticles.TabIndex = 0;
             // 
             // tabPage2
             // 
             this.tabPage2.BackColor = System.Drawing.Color.White;
             this.tabPage2.Controls.Add(this.pnlArticleList);
-            this.tabPage2.Location = new System.Drawing.Point(4, 28);
+            this.tabPage2.Location = new System.Drawing.Point(4, 37);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(1383, 467);
+            this.tabPage2.Size = new System.Drawing.Size(1383, 432);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "🃏 การ์ดบทความ";
             // 
@@ -326,7 +325,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlArticleList.Location = new System.Drawing.Point(3, 3);
             this.pnlArticleList.Name = "pnlArticleList";
             this.pnlArticleList.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.pnlArticleList.Size = new System.Drawing.Size(1377, 461);
+            this.pnlArticleList.Size = new System.Drawing.Size(1377, 426);
             this.pnlArticleList.TabIndex = 0;
             // 
             // flpArticles
@@ -337,7 +336,7 @@ namespace CMS.Presentation.Modules.KMS
             this.flpArticles.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpArticles.Location = new System.Drawing.Point(10, 8);
             this.flpArticles.Name = "flpArticles";
-            this.flpArticles.Size = new System.Drawing.Size(1357, 445);
+            this.flpArticles.Size = new System.Drawing.Size(1357, 410);
             this.flpArticles.TabIndex = 0;
             this.flpArticles.WrapContents = false;
             // 
@@ -354,14 +353,13 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlFilterBar.Controls.Add(this.label3);
             this.pnlFilterBar.Controls.Add(this.cboType);
             this.pnlFilterBar.Controls.Add(this.pnlFilterRight);
-            this.pnlFilterBar.Controls.Add(this.lblFilterLabel);
             this.pnlFilterBar.Controls.Add(this.txtToolbarSearch);
             this.pnlFilterBar.Controls.Add(this.lblToolbarSearchLabel);
             this.pnlFilterBar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlFilterBar.Location = new System.Drawing.Point(0, 68);
+            this.pnlFilterBar.Location = new System.Drawing.Point(0, 78);
             this.pnlFilterBar.Name = "pnlFilterBar";
             this.pnlFilterBar.Padding = new System.Windows.Forms.Padding(10, 5, 10, 5);
-            this.pnlFilterBar.Size = new System.Drawing.Size(1391, 41);
+            this.pnlFilterBar.Size = new System.Drawing.Size(1391, 47);
             this.pnlFilterBar.TabIndex = 2;
             // 
             // cboDepartment
@@ -376,7 +374,7 @@ namespace CMS.Presentation.Modules.KMS
             "รับประกันภัย",
             "กฎหมาย",
             "IT"});
-            this.cboDepartment.Location = new System.Drawing.Point(896, 5);
+            this.cboDepartment.Location = new System.Drawing.Point(854, 5);
             this.cboDepartment.Name = "cboDepartment";
             this.cboDepartment.Size = new System.Drawing.Size(150, 27);
             this.cboDepartment.TabIndex = 2;
@@ -389,12 +387,12 @@ namespace CMS.Presentation.Modules.KMS
             this.btnClearFilter.Dock = System.Windows.Forms.DockStyle.Left;
             this.btnClearFilter.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnClearFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnClearFilter.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.btnClearFilter.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnClearFilter.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.btnClearFilter.Location = new System.Drawing.Point(822, 5);
+            this.btnClearFilter.Location = new System.Drawing.Point(780, 5);
             this.btnClearFilter.Margin = new System.Windows.Forms.Padding(0);
             this.btnClearFilter.Name = "btnClearFilter";
-            this.btnClearFilter.Size = new System.Drawing.Size(74, 29);
+            this.btnClearFilter.Size = new System.Drawing.Size(74, 35);
             this.btnClearFilter.TabIndex = 1;
             this.btnClearFilter.Text = "ล้าง";
             this.btnClearFilter.UseVisualStyleBackColor = false;
@@ -405,7 +403,7 @@ namespace CMS.Presentation.Modules.KMS
             this.label1.Dock = System.Windows.Forms.DockStyle.Left;
             this.label1.Font = new System.Drawing.Font("Segoe UI", 8F);
             this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.label1.Location = new System.Drawing.Point(817, 5);
+            this.label1.Location = new System.Drawing.Point(775, 5);
             this.label1.Name = "label1";
             this.label1.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
             this.label1.Size = new System.Drawing.Size(5, 19);
@@ -416,11 +414,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.cboSearchField.Dock = System.Windows.Forms.DockStyle.Left;
             this.cboSearchField.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboSearchField.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.cboSearchField.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cboSearchField.FormattingEnabled = true;
-            this.cboSearchField.Location = new System.Drawing.Point(688, 5);
+            this.cboSearchField.Location = new System.Drawing.Point(646, 5);
             this.cboSearchField.Name = "cboSearchField";
-            this.cboSearchField.Size = new System.Drawing.Size(129, 27);
+            this.cboSearchField.Size = new System.Drawing.Size(129, 36);
             this.cboSearchField.TabIndex = 2;
             // 
             // label2
@@ -429,7 +427,7 @@ namespace CMS.Presentation.Modules.KMS
             this.label2.Dock = System.Windows.Forms.DockStyle.Left;
             this.label2.Font = new System.Drawing.Font("Segoe UI", 8F);
             this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.label2.Location = new System.Drawing.Point(683, 5);
+            this.label2.Location = new System.Drawing.Point(641, 5);
             this.label2.Name = "label2";
             this.label2.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
             this.label2.Size = new System.Drawing.Size(5, 19);
@@ -440,11 +438,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.cboStatus.Dock = System.Windows.Forms.DockStyle.Left;
             this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cboStatus.FormattingEnabled = true;
-            this.cboStatus.Location = new System.Drawing.Point(563, 5);
+            this.cboStatus.Location = new System.Drawing.Point(521, 5);
             this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(120, 27);
+            this.cboStatus.Size = new System.Drawing.Size(120, 36);
             this.cboStatus.TabIndex = 3;
             this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboFilter_SelectedIndexChanged);
             // 
@@ -454,7 +452,7 @@ namespace CMS.Presentation.Modules.KMS
             this.label3.Dock = System.Windows.Forms.DockStyle.Left;
             this.label3.Font = new System.Drawing.Font("Segoe UI", 8F);
             this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.label3.Location = new System.Drawing.Point(558, 5);
+            this.label3.Location = new System.Drawing.Point(516, 5);
             this.label3.Name = "label3";
             this.label3.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
             this.label3.Size = new System.Drawing.Size(5, 19);
@@ -465,18 +463,18 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.cboType.Dock = System.Windows.Forms.DockStyle.Left;
             this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboType.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.cboType.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cboType.FormattingEnabled = true;
-            this.cboType.ItemHeight = 19;
+            this.cboType.ItemHeight = 28;
             this.cboType.Items.AddRange(new object[] {
             "ประเภท ▼",
             "SOP",
             "FAQ",
             "Wiki",
             "แนวทาง"});
-            this.cboType.Location = new System.Drawing.Point(438, 5);
+            this.cboType.Location = new System.Drawing.Point(396, 5);
             this.cboType.Name = "cboType";
-            this.cboType.Size = new System.Drawing.Size(120, 27);
+            this.cboType.Size = new System.Drawing.Size(120, 36);
             this.cboType.TabIndex = 4;
             this.cboType.SelectedIndexChanged += new System.EventHandler(this.cboType_SelectedIndexChanged);
             // 
@@ -488,7 +486,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlFilterRight.Dock = System.Windows.Forms.DockStyle.Right;
             this.pnlFilterRight.Location = new System.Drawing.Point(1051, 5);
             this.pnlFilterRight.Name = "pnlFilterRight";
-            this.pnlFilterRight.Size = new System.Drawing.Size(328, 29);
+            this.pnlFilterRight.Size = new System.Drawing.Size(328, 35);
             this.pnlFilterRight.TabIndex = 0;
             this.pnlFilterRight.Visible = false;
             // 
@@ -499,7 +497,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblPageSizeLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblPageSizeLabel.Location = new System.Drawing.Point(268, 0);
             this.lblPageSizeLabel.Name = "lblPageSizeLabel";
-            this.lblPageSizeLabel.Size = new System.Drawing.Size(60, 29);
+            this.lblPageSizeLabel.Size = new System.Drawing.Size(60, 35);
             this.lblPageSizeLabel.TabIndex = 1;
             this.lblPageSizeLabel.Text = "แสดง:";
             this.lblPageSizeLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -527,43 +525,30 @@ namespace CMS.Presentation.Modules.KMS
             this.lblSortByLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblSortByLabel.Location = new System.Drawing.Point(0, 0);
             this.lblSortByLabel.Name = "lblSortByLabel";
-            this.lblSortByLabel.Size = new System.Drawing.Size(70, 29);
+            this.lblSortByLabel.Size = new System.Drawing.Size(70, 35);
             this.lblSortByLabel.TabIndex = 3;
             this.lblSortByLabel.Text = "เรียงตาม:";
             this.lblSortByLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lblFilterLabel
-            // 
-            this.lblFilterLabel.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblFilterLabel.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.lblFilterLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblFilterLabel.Location = new System.Drawing.Point(378, 5);
-            this.lblFilterLabel.Name = "lblFilterLabel";
-            this.lblFilterLabel.Padding = new System.Windows.Forms.Padding(5, 0, 0, 0);
-            this.lblFilterLabel.Size = new System.Drawing.Size(60, 29);
-            this.lblFilterLabel.TabIndex = 5;
-            this.lblFilterLabel.Text = "ฟิลเตอร์:";
-            this.lblFilterLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // txtToolbarSearch
             // 
             this.txtToolbarSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtToolbarSearch.Dock = System.Windows.Forms.DockStyle.Left;
-            this.txtToolbarSearch.Font = new System.Drawing.Font("Segoe UI", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtToolbarSearch.Location = new System.Drawing.Point(58, 5);
+            this.txtToolbarSearch.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtToolbarSearch.Location = new System.Drawing.Point(76, 5);
             this.txtToolbarSearch.Name = "txtToolbarSearch";
-            this.txtToolbarSearch.Size = new System.Drawing.Size(320, 30);
+            this.txtToolbarSearch.Size = new System.Drawing.Size(320, 34);
             this.txtToolbarSearch.TabIndex = 0;
             this.txtToolbarSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearch_KeyDown);
             // 
             // lblToolbarSearchLabel
             // 
             this.lblToolbarSearchLabel.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblToolbarSearchLabel.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblToolbarSearchLabel.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblToolbarSearchLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblToolbarSearchLabel.Location = new System.Drawing.Point(10, 5);
             this.lblToolbarSearchLabel.Name = "lblToolbarSearchLabel";
-            this.lblToolbarSearchLabel.Size = new System.Drawing.Size(48, 29);
+            this.lblToolbarSearchLabel.Size = new System.Drawing.Size(66, 35);
             this.lblToolbarSearchLabel.TabIndex = 1;
             this.lblToolbarSearchLabel.Text = "ค้นหา:";
             this.lblToolbarSearchLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -580,7 +565,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlToolbar.Location = new System.Drawing.Point(0, 32);
             this.pnlToolbar.Name = "pnlToolbar";
             this.pnlToolbar.Padding = new System.Windows.Forms.Padding(10, 4, 10, 4);
-            this.pnlToolbar.Size = new System.Drawing.Size(1391, 36);
+            this.pnlToolbar.Size = new System.Drawing.Size(1391, 46);
             this.pnlToolbar.TabIndex = 1;
             // 
             // btnTestNotification
@@ -591,11 +576,11 @@ namespace CMS.Presentation.Modules.KMS
             this.btnTestNotification.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnTestNotification.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
             this.btnTestNotification.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnTestNotification.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnTestNotification.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnTestNotification.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
             this.btnTestNotification.Location = new System.Drawing.Point(360, 4);
             this.btnTestNotification.Name = "btnTestNotification";
-            this.btnTestNotification.Size = new System.Drawing.Size(140, 26);
+            this.btnTestNotification.Size = new System.Drawing.Size(140, 36);
             this.btnTestNotification.TabIndex = 4;
             this.btnTestNotification.Text = "🔔 Test Notification";
             this.btnTestNotification.UseVisualStyleBackColor = false;
@@ -609,11 +594,11 @@ namespace CMS.Presentation.Modules.KMS
             this.btnExportPdf.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnExportPdf.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
             this.btnExportPdf.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnExportPdf.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnExportPdf.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnExportPdf.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
             this.btnExportPdf.Location = new System.Drawing.Point(250, 4);
             this.btnExportPdf.Name = "btnExportPdf";
-            this.btnExportPdf.Size = new System.Drawing.Size(110, 26);
+            this.btnExportPdf.Size = new System.Drawing.Size(110, 36);
             this.btnExportPdf.TabIndex = 1;
             this.btnExportPdf.Text = "📊 Export PDF";
             this.btnExportPdf.UseVisualStyleBackColor = false;
@@ -627,11 +612,11 @@ namespace CMS.Presentation.Modules.KMS
             this.btnImportExcel.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnImportExcel.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
             this.btnImportExcel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnImportExcel.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnImportExcel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnImportExcel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
             this.btnImportExcel.Location = new System.Drawing.Point(130, 4);
             this.btnImportExcel.Name = "btnImportExcel";
-            this.btnImportExcel.Size = new System.Drawing.Size(120, 26);
+            this.btnImportExcel.Size = new System.Drawing.Size(120, 36);
             this.btnImportExcel.TabIndex = 2;
             this.btnImportExcel.Text = "📥 Import Excel";
             this.btnImportExcel.UseVisualStyleBackColor = false;
@@ -645,11 +630,11 @@ namespace CMS.Presentation.Modules.KMS
             this.btnNewArticle.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
             this.btnNewArticle.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(38)))), ((int)(((byte)(104)))), ((int)(((byte)(165)))));
             this.btnNewArticle.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNewArticle.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.btnNewArticle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnNewArticle.ForeColor = System.Drawing.Color.White;
             this.btnNewArticle.Location = new System.Drawing.Point(10, 4);
             this.btnNewArticle.Name = "btnNewArticle";
-            this.btnNewArticle.Size = new System.Drawing.Size(120, 26);
+            this.btnNewArticle.Size = new System.Drawing.Size(120, 36);
             this.btnNewArticle.TabIndex = 3;
             this.btnNewArticle.Text = "+ สร้างบทความ";
             this.btnNewArticle.UseVisualStyleBackColor = false;
@@ -670,7 +655,7 @@ namespace CMS.Presentation.Modules.KMS
             // lblArticleTitle
             // 
             this.lblArticleTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblArticleTitle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblArticleTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblArticleTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblArticleTitle.Location = new System.Drawing.Point(8, 0);
             this.lblArticleTitle.Name = "lblArticleTitle";
@@ -686,10 +671,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlPagination.Controls.Add(this.pnlPaginationButtons);
             this.pnlPagination.Controls.Add(this.lblPageInfo);
             this.pnlPagination.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlPagination.Location = new System.Drawing.Point(0, 608);
+            this.pnlPagination.Location = new System.Drawing.Point(0, 598);
             this.pnlPagination.Name = "pnlPagination";
             this.pnlPagination.Padding = new System.Windows.Forms.Padding(10, 6, 10, 6);
-            this.pnlPagination.Size = new System.Drawing.Size(1391, 40);
+            this.pnlPagination.Size = new System.Drawing.Size(1391, 50);
             this.pnlPagination.TabIndex = 3;
             // 
             // pnlPaginationButtons
@@ -701,9 +686,9 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlPaginationButtons.Controls.Add(this.btnPrevPage);
             this.pnlPaginationButtons.Controls.Add(this.cboPageSize);
             this.pnlPaginationButtons.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlPaginationButtons.Location = new System.Drawing.Point(1040, 6);
+            this.pnlPaginationButtons.Location = new System.Drawing.Point(794, 6);
             this.pnlPaginationButtons.Name = "pnlPaginationButtons";
-            this.pnlPaginationButtons.Size = new System.Drawing.Size(339, 26);
+            this.pnlPaginationButtons.Size = new System.Drawing.Size(585, 36);
             this.pnlPaginationButtons.TabIndex = 1;
             // 
             // btnNextPage
@@ -713,10 +698,10 @@ namespace CMS.Presentation.Modules.KMS
             this.btnNextPage.Dock = System.Windows.Forms.DockStyle.Left;
             this.btnNextPage.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnNextPage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnNextPage.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.btnNextPage.Location = new System.Drawing.Point(266, 0);
+            this.btnNextPage.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.btnNextPage.Location = new System.Drawing.Point(459, 0);
             this.btnNextPage.Name = "btnNextPage";
-            this.btnNextPage.Size = new System.Drawing.Size(70, 26);
+            this.btnNextPage.Size = new System.Drawing.Size(124, 36);
             this.btnNextPage.TabIndex = 4;
             this.btnNextPage.Text = "ถัดไป »";
             this.btnNextPage.UseVisualStyleBackColor = false;
@@ -728,10 +713,10 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPage3.Dock = System.Windows.Forms.DockStyle.Left;
             this.btnPage3.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnPage3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnPage3.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.btnPage3.Location = new System.Drawing.Point(234, 0);
+            this.btnPage3.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.btnPage3.Location = new System.Drawing.Point(398, 0);
             this.btnPage3.Name = "btnPage3";
-            this.btnPage3.Size = new System.Drawing.Size(32, 26);
+            this.btnPage3.Size = new System.Drawing.Size(61, 36);
             this.btnPage3.TabIndex = 3;
             this.btnPage3.Text = "3";
             this.btnPage3.UseVisualStyleBackColor = false;
@@ -743,10 +728,10 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPage2.Dock = System.Windows.Forms.DockStyle.Left;
             this.btnPage2.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnPage2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnPage2.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.btnPage2.Location = new System.Drawing.Point(202, 0);
+            this.btnPage2.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.btnPage2.Location = new System.Drawing.Point(337, 0);
             this.btnPage2.Name = "btnPage2";
-            this.btnPage2.Size = new System.Drawing.Size(32, 26);
+            this.btnPage2.Size = new System.Drawing.Size(61, 36);
             this.btnPage2.TabIndex = 2;
             this.btnPage2.Text = "2";
             this.btnPage2.UseVisualStyleBackColor = false;
@@ -758,11 +743,11 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPage1.Dock = System.Windows.Forms.DockStyle.Left;
             this.btnPage1.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
             this.btnPage1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnPage1.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.btnPage1.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.btnPage1.ForeColor = System.Drawing.Color.White;
-            this.btnPage1.Location = new System.Drawing.Point(170, 0);
+            this.btnPage1.Location = new System.Drawing.Point(276, 0);
             this.btnPage1.Name = "btnPage1";
-            this.btnPage1.Size = new System.Drawing.Size(32, 26);
+            this.btnPage1.Size = new System.Drawing.Size(61, 36);
             this.btnPage1.TabIndex = 1;
             this.btnPage1.Text = "1";
             this.btnPage1.UseVisualStyleBackColor = false;
@@ -774,10 +759,10 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPrevPage.Dock = System.Windows.Forms.DockStyle.Left;
             this.btnPrevPage.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
             this.btnPrevPage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnPrevPage.Font = new System.Drawing.Font("Segoe UI", 8F);
-            this.btnPrevPage.Location = new System.Drawing.Point(100, 0);
+            this.btnPrevPage.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.btnPrevPage.Location = new System.Drawing.Point(150, 0);
             this.btnPrevPage.Name = "btnPrevPage";
-            this.btnPrevPage.Size = new System.Drawing.Size(70, 26);
+            this.btnPrevPage.Size = new System.Drawing.Size(126, 36);
             this.btnPrevPage.TabIndex = 0;
             this.btnPrevPage.Text = "« ก่อนหน้า";
             this.btnPrevPage.UseVisualStyleBackColor = false;
@@ -786,7 +771,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.cboPageSize.Dock = System.Windows.Forms.DockStyle.Left;
             this.cboPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboPageSize.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.cboPageSize.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.cboPageSize.FormattingEnabled = true;
             this.cboPageSize.Items.AddRange(new object[] {
             "20 รายการ",
@@ -794,17 +779,17 @@ namespace CMS.Presentation.Modules.KMS
             "100 รายการ"});
             this.cboPageSize.Location = new System.Drawing.Point(0, 0);
             this.cboPageSize.Name = "cboPageSize";
-            this.cboPageSize.Size = new System.Drawing.Size(100, 25);
+            this.cboPageSize.Size = new System.Drawing.Size(150, 36);
             this.cboPageSize.TabIndex = 0;
             // 
             // lblPageInfo
             // 
             this.lblPageInfo.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblPageInfo.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblPageInfo.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblPageInfo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblPageInfo.Location = new System.Drawing.Point(10, 6);
             this.lblPageInfo.Name = "lblPageInfo";
-            this.lblPageInfo.Size = new System.Drawing.Size(200, 26);
+            this.lblPageInfo.Size = new System.Drawing.Size(200, 36);
             this.lblPageInfo.TabIndex = 0;
             this.lblPageInfo.Text = "แสดง 1-20 จาก 36 รายการ";
             this.lblPageInfo.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -882,7 +867,6 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ComboBox        cboDepartment;
         private System.Windows.Forms.ComboBox        cboStatus;
         private System.Windows.Forms.ComboBox        cboType;
-        private System.Windows.Forms.Label           lblFilterLabel;
         private System.Windows.Forms.TabControl      tabArticles;
         private System.Windows.Forms.TabPage         tabPage1;
         private System.Windows.Forms.DataGridView    dgvArticles;
