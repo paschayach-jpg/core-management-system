@@ -16,6 +16,7 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string ContentHTML { get; set; }
         string Tags { get; set; }
         int SelectedCrafLevelCode { get; set; }
+        System.DateTime? EffectiveDate { get; set; }
         System.DateTime? ExpiryDate { get; set; }
         int SelectedCategoryId { get; set; }
         byte SelectedArticleType { get; set; }

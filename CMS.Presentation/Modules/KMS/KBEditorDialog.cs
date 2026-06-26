@@ -359,6 +359,12 @@ namespace CMS.Presentation.Modules.KMS
             set { }
         }
 
+        public DateTime? EffectiveDate
+        {
+            get { return dtpEffective.Value; }
+            set { if (value.HasValue) dtpEffective.Value = value.Value; }
+        }
+
         public DateTime? ExpiryDate
         {
             get { return dtpExpiry.Value; }
@@ -612,13 +618,10 @@ namespace CMS.Presentation.Modules.KMS
                     lblStatusInfo.Text = "📝 Draft";
                     break;
                 case 2:
-                    lblStatusInfo.Text = "🔍 รอ Review";
+                    lblStatusInfo.Text = "✅ Active";
                     break;
                 case 3:
-                    lblStatusInfo.Text = "✅ Published";
-                    break;
-                case 4:
-                    lblStatusInfo.Text = "📦 Archived";
+                    lblStatusInfo.Text = "📦 Expire";
                     break;
                 default:
                     lblStatusInfo.Text = "—";

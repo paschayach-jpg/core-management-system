@@ -178,7 +178,7 @@ namespace CMS.Data.Repositories
                          Tags, ConfidentialityLevel, CreatedBy, CreatedDate, ViewCount, LikeCount)
                     VALUES
                         (@ArticleCode, @Title, @ContentHTML, @Summary, @CategoryID, @ArticleType,
-                         @Status, 1, @PublishedDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
+                         @Status, 1, @EffectiveDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
                          @Tags, @ConfidentialityLevel, @CreatedBy, GETDATE(), 0, 0);
                     SELECT SCOPE_IDENTITY();";
                 using (var cmd = new SqlCommand(sql, conn))
@@ -202,6 +202,7 @@ namespace CMS.Data.Repositories
                         CategoryID           = @CategoryID,
                         ArticleType          = @ArticleType,
                         Status               = @Status,
+                        PublishedDate        = @EffectiveDate,
                         ExpiryDate           = @ExpiryDate,
                         ReviewDueDate        = @ReviewDueDate,
                         IsOfficialPolicy     = @IsOfficialPolicy,
@@ -304,7 +305,7 @@ namespace CMS.Data.Repositories
             cmd.Parameters.AddWithValue("@CategoryID",       a.CategoryID);
             cmd.Parameters.AddWithValue("@ArticleType",      a.ArticleType);
             cmd.Parameters.AddWithValue("@Status",           a.Status);
-            cmd.Parameters.AddWithValue("@PublishedDate",     (object)a.PublishedDate    ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@EffectiveDate",    (object)a.EffectiveDate    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ExpiryDate",       (object)a.ExpiryDate       ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ReviewDueDate",    (object)a.ReviewDueDate    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@IsOfficialPolicy", a.IsOfficialPolicy);
@@ -327,6 +328,7 @@ namespace CMS.Data.Repositories
                 Status           = r.IsDBNull(r.GetOrdinal("Status"))       ? (byte)1 : r.GetByte(r.GetOrdinal("Status")),
                 CurrentVersion   = r.IsDBNull(r.GetOrdinal("CurrentVersion")) ? 1 : r.GetInt32(r.GetOrdinal("CurrentVersion")),
                 PublishedDate    = r.IsDBNull(r.GetOrdinal("PublishedDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("PublishedDate")),
+                EffectiveDate    = r.IsDBNull(r.GetOrdinal("PublishedDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("PublishedDate")),
                 ExpiryDate       = r.IsDBNull(r.GetOrdinal("ExpiryDate"))     ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("ExpiryDate")),
                 ReviewDueDate    = r.IsDBNull(r.GetOrdinal("ReviewDueDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("ReviewDueDate")),
                 ViewCount        = r.IsDBNull(r.GetOrdinal("ViewCount"))   ? 0 : r.GetInt32(r.GetOrdinal("ViewCount")),

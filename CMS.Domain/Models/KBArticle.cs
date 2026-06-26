@@ -19,6 +19,7 @@ namespace CMS.Domain.Models
         public byte     Status           { get; set; }   // 1=Draft 2=Review 3=Published 4=Archived
         public int      CurrentVersion   { get; set; }
         public DateTime? PublishedDate   { get; set; }
+        public DateTime? EffectiveDate   { get; set; }   // dtpEffective
         public DateTime? ExpiryDate      { get; set; }
         public DateTime? ReviewDueDate   { get; set; }
         public int      ViewCount        { get; set; }
