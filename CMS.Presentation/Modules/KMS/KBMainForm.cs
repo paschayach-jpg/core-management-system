@@ -841,7 +841,7 @@ namespace CMS.Presentation.Modules.KMS
 
             var rootNode = new TreeNode(rootLabel) { Tag = null };
             rootNode.ForeColor = Color.FromArgb(0, 51, 102);
-            rootNode.NodeFont  = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            rootNode.NodeFont  = new Font("Segoe UI", 12f, FontStyle.Bold);
             treeCategories.Nodes.Add(rootNode);
 
             var roots = categories
@@ -888,7 +888,7 @@ namespace CMS.Presentation.Modules.KMS
             {
                 foreach (var kvp in titleMap.OrderBy(x => x.Key, NaturalStringComparer.Instance))
                 {
-                    string nodeLabel = string.Format("📄 {0} ({1})", kvp.Key, kvp.Value);
+                    string nodeLabel = string.Format("📄 {0}", kvp.Key);
                     var titleNode = new TreeNode(nodeLabel)
                     {
                         Tag       = new TitleNode
