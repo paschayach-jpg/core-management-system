@@ -42,8 +42,13 @@ namespace CMS.Presentation.Modules.KMS
         private IList<KBImportRow> _allRows     = new List<KBImportRow>();
         private int                _gridPage    = 0;
 
+        // Preview grid filter (task 1)
+        private IList<KBImportRow> _filteredRows = new List<KBImportRow>();
+
         // Step 3 — skipped/failed grid paging
         private IList<KBImportRow> _errAllRows;
+        private IList<KBImportRow> _errSkipRows;
+        private IList<KBImportRow> _errSuccessRows;
         private int                _errCurrentPage;
         private const int          ErrPageSize = 20;
 
@@ -109,8 +114,15 @@ namespace CMS.Presentation.Modules.KMS
             DistributePillWidths();
             DistributeStatWidths();
 
-            // Resize all step panels to match the content container
-            // (no longer needed — vertical scroll layout uses DockStyle.Top)
+            // Wire summary pill click filters (task 1)
+            AddClickRecursive(pnlPillTotal, (s, ev) => ApplyPreviewFilter("Total"));
+            AddClickRecursive(pnlPillValid, (s, ev) => ApplyPreviewFilter("Valid"));
+            AddClickRecursive(pnlPillError, (s, ev) => ApplyPreviewFilter("Error"));
+
+            // Wire stat panel click filters (task 2)
+            AddClickRecursive(pnlStatTotal,   (s, ev) => ApplyStatFilter("Total"));
+            AddClickRecursive(pnlStatSuccess, (s, ev) => ApplyStatFilter("Success"));
+            AddClickRecursive(pnlStatSkip,    (s, ev) => ApplyStatFilter("Skip"));
 
             ShowStep(1);
         }
@@ -150,7 +162,7 @@ namespace CMS.Presentation.Modules.KMS
 
             lblTotalCount.Text = result.TotalRecords.ToString();
             lblValidCount.Text = result.ValidRecords.ToString();
-            lblWarnCount.Text  = result.WarningRecords.ToString();
+            //lblWarnCount.Text  = result.WarningRecords.ToString();
             lblErrorCount.Text = result.ErrorRecords.ToString();
 
             btnImport.Text = string.Format(
@@ -172,7 +184,7 @@ namespace CMS.Presentation.Modules.KMS
 
             lblCompleteTotalNum.Text   = summary.TotalRecords.ToString();
             lblCompleteSuccessNum.Text = summary.ValidRecords.ToString();
-            lblCompleteWarnNum.Text    = summary.WarningRecords.ToString();
+            //lblCompleteWarnNum.Text    = summary.WarningRecords.ToString();
             lblCompleteSkipNum.Text    = summary.ErrorRecords.ToString();
 
             var skipped = summary.SkippedRows      ?? new List<KBImportRow>();
@@ -181,18 +193,28 @@ namespace CMS.Presentation.Modules.KMS
             var allProblemRows = new List<KBImportRow>(skipped);
             allProblemRows.AddRange(failed);
 
+            // Derive success rows for stat filter (task 2)
+            _errSkipRows = allProblemRows;
+            var problemNums = new HashSet<int>(allProblemRows.Select(r => r.RowNumber));
+            _errSuccessRows = (_allRows ?? new List<KBImportRow>())
+                .Where(r => !problemNums.Contains(r.RowNumber))
+                .ToList();
+
             bool hasProblemRows = allProblemRows.Count > 0;
 
             if (hasProblemRows)
             {
                 lblCompleteIcon.Text  = "⚠️";
                 lblCompleteTitle.Text = string.Format(
-                    "นำเข้าสำเร็จ {0} รายการ  /  ข้าม (ก่อนนำเข้า) {1} รายการ  /  ล้มเหลวระหว่างนำเข้า {2} รายการ",
-                    summary.ValidRecords, skipped.Count, failed.Count);
+                    "นำเข้าสำเร็จ {0} รายการ  /  ข้าม {1} รายการ",
+                    summary.ValidRecords, allProblemRows.Count);
                 lblCompleteTitle.ForeColor = Color.FromArgb(192, 57, 43);
                 lblCompleteSub.Text        = "รายการด้านล่างถูกข้ามหรือล้มเหลว — ตรวจสอบสาเหตุและแก้ไขไฟล์ก่อนนำเข้าใหม่";
 
                 PopulateErrorGrid(allProblemRows);
+                SetPillActive(pnlStatTotal,   false);
+                SetPillActive(pnlStatSuccess, false);
+                SetPillActive(pnlStatSkip,    true);
                 pnlErrorDetail.Visible = true;
                 pnlStep3.Height        = 800;
             }
@@ -294,6 +316,7 @@ namespace CMS.Presentation.Modules.KMS
 
             pnlUploadedFile.Visible = false;
             pnlUploadZone.Visible   = true;
+            pnlUploadSection.Height = 316;
             btnNext.Enabled         = false;
             lblFileHint.Visible     = true;
             SetStatus("ลบไฟล์แล้ว");
@@ -301,7 +324,33 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnDownloadTemplate_Click(object sender, EventArgs e)
         {
-            SetStatus("กำลังดาวน์โหลด Template... (ฟีเจอร์อยู่ระหว่างพัฒนา)");
+            using (var dlg = new SaveFileDialog())
+            {
+                dlg.Title            = "บันทึก Template";
+                dlg.FileName         = "template.xlsx";
+                dlg.Filter           = "Excel Workbook (*.xlsx)|*.xlsx";
+                dlg.DefaultExt       = "xlsx";
+
+                if (dlg.ShowDialog() != DialogResult.OK) return;
+
+                var resourceName = "CMS.Presentation.template.xlsx";
+                using (var src = System.Reflection.Assembly.GetExecutingAssembly()
+                                       .GetManifestResourceStream(resourceName))
+                {
+                    if (src == null)
+                    {
+                        MessageBox.Show("ไม่พบไฟล์ Template ในระบบ\n\nกรุณาติดต่อผู้ดูแลระบบ",
+                            "ไม่พบไฟล์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    var buf = new byte[src.Length];
+                    src.Read(buf, 0, buf.Length);
+                    System.IO.File.WriteAllBytes(dlg.FileName, buf);
+                }
+
+                SetStatus(string.Format("✅  บันทึก Template ไปที่ \"{0}\" เรียบร้อย", dlg.FileName));
+            }
         }
 
         private void BtnDemo_Click(object sender, EventArgs e)
@@ -354,10 +403,8 @@ namespace CMS.Presentation.Modules.KMS
                 string.Format(
                     "ต้องการนำเข้าข้อมูล {0} รายการ ใช่หรือไม่?\n\n" +
                     "✅  พร้อมนำเข้า :  {1} รายการ\n" +
-                    "⚠️  มีคำเตือน  :  {2} รายการ\n" +
-                    "⛔  ข้อผิดพลาด :  {3} รายการ (จะข้าม)",
-                    lblTotalCount.Text, lblValidCount.Text,
-                    lblWarnCount.Text,  lblErrorCount.Text),
+                    "⛔  ข้อผิดพลาด :  {2} รายการ (จะข้าม)",
+                    lblTotalCount.Text, lblValidCount.Text, lblErrorCount.Text),
                 "ยืนยันการนำเข้า", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (confirm != DialogResult.Yes) return;
 
@@ -407,17 +454,27 @@ namespace CMS.Presentation.Modules.KMS
 
             pnlUploadedFile.Visible = false;
             pnlUploadZone.Visible   = true;
+            pnlUploadSection.Height = 316;
             btnNext.Enabled         = false;
             lblFileHint.Visible     = true;
-            _allRows  = new List<KBImportRow>();
-            _gridPage = 0;
+            _allRows      = new List<KBImportRow>();
+            _filteredRows = new List<KBImportRow>();
+            _gridPage     = 0;
             dgvPreview.Rows.Clear();
             UpdatePagerLabels();
 
             pnlStep3.Height        = 460;
             pnlErrorDetail.Visible = false;
             _errAllRows            = null;
+            _errSkipRows           = null;
+            _errSuccessRows        = null;
             _errCurrentPage        = 0;
+            SetPillActive(pnlPillTotal,   false);
+            SetPillActive(pnlPillValid,   false);
+            SetPillActive(pnlPillError,   false);
+            SetPillActive(pnlStatTotal,   false);
+            SetPillActive(pnlStatSuccess, false);
+            SetPillActive(pnlStatSkip,    false);
 
             ShowStep(1);
         }
@@ -613,7 +670,6 @@ namespace CMS.Presentation.Modules.KMS
             SetValItem(1, "⏳", "รูปแบบไฟล์",          "รอการตรวจสอบ...", false);
             SetValItem(2, "⏳", "โครงสร้าง Template",   "รอการตรวจสอบ...", false);
             SetValItem(3, "⏳", "แถวที่มีข้อผิดพลาด",   "รอการตรวจสอบ...", false);
-            SetValItem(4, "⏳", "คำเตือน",              "รอการตรวจสอบ...", false);
             SetValItem(5, "⏳", "วันที่ (R/S)",          "รอการตรวจสอบ...", false);
         }
 
@@ -650,31 +706,6 @@ namespace CMS.Presentation.Modules.KMS
                          : string.Format("{0} แถวมีข้อผิดพลาด (ดูรายละเอียดใน Gridview)", errorCount),
                 noErrors);
 
-            // Item 4 — Warnings
-            int warnCount = result.WarningRecords;
-            bool noWarns  = warnCount == 0;
-            string warnDetail;
-            if (noWarns)
-            {
-                warnDetail = "ไม่พบคำเตือน — ข้อมูลทุกแถวสมบูรณ์";
-            }
-            else
-            {
-                var warnNotes = new System.Text.StringBuilder();
-                foreach (var r in rows)
-                    if (r.Status == "Warn" && !string.IsNullOrEmpty(r.StatusNote))
-                        warnNotes.AppendFormat("แถวที่ {0}: {1}  |  ", r.RowNumber, r.StatusNote);
-                string notes = warnNotes.ToString().TrimEnd(' ', '|', ' ');
-                warnDetail = string.IsNullOrEmpty(notes)
-                    ? string.Format("พบ {0} แถวที่มีคำเตือน", warnCount)
-                    : notes;
-            }
-            SetValItem(4,
-                noWarns ? "✅" : "⚠️",
-                noWarns ? "ไม่พบคำเตือน" : string.Format("พบ {0} คำเตือน", warnCount),
-                warnDetail,
-                noWarns);
-
             // Item 5 — Date parse errors: rows with unparseable PublishedDate or ExpiryDate
             int dateBadCount = 0;
             foreach (var r in rows)
@@ -703,7 +734,6 @@ namespace CMS.Presentation.Modules.KMS
                 case 1: lblIcon=lblValItem1Icon; lblTitle=lblValItem1Title; lblDetail=lblValItem1Detail; stripe=pnlValItem1Stripe; break;
                 case 2: lblIcon=lblValItem2Icon; lblTitle=lblValItem2Title; lblDetail=lblValItem2Detail; stripe=pnlValItem2Stripe; break;
                 case 3: lblIcon=lblValItem3Icon; lblTitle=lblValItem3Title; lblDetail=lblValItem3Detail; stripe=pnlValItem3Stripe; break;
-                case 4: lblIcon=lblValItem4Icon; lblTitle=lblValItem4Title; lblDetail=lblValItem4Detail; stripe=pnlValItem4Stripe; break;
                 case 5: lblIcon=lblValItem5Icon; lblTitle=lblValItem5Title; lblDetail=lblValItem5Detail; stripe=pnlValItem5Stripe; break;
                 default: lblIcon=lblValItem6Icon; lblTitle=lblValItem6Title; lblDetail=lblValItem6Detail; stripe=pnlValItem6Stripe; break;
             }
@@ -724,7 +754,6 @@ namespace CMS.Presentation.Modules.KMS
                 case 1: pnl = pnlValItem1; break;
                 case 2: pnl = pnlValItem2; break;
                 case 3: pnl = pnlValItem3; break;
-                case 4: pnl = pnlValItem4; break;
                 case 5: pnl = pnlValItem5; break;
                 default: pnl = pnlValItem6; break;
             }
@@ -838,6 +867,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             pnlUploadZone.Visible   = false;
             pnlUploadedFile.Visible = true;
+            pnlUploadSection.Height = 36 + 4 + 60 + 46; // hdr + pad + file + template
 
             lblUploadedFileName.Text = _uploadedFileName;
             lblUploadedFileMeta.Text = string.Format(
@@ -879,8 +909,12 @@ namespace CMS.Presentation.Modules.KMS
                 .OrderBy(r => StatusSortOrder(r.Status))
                 .ThenBy(r => r.RowNumber)
                 .ToList();
+            _filteredRows = _allRows;
             _gridPage = 0;
             RefreshGridPage();
+            SetPillActive(pnlPillTotal, false);
+            SetPillActive(pnlPillValid, false);
+            SetPillActive(pnlPillError, false);
         }
 
         private void RefreshGridPage()
@@ -891,11 +925,11 @@ namespace CMS.Presentation.Modules.KMS
             try
             {
                 int start = _gridPage * GridPageSize;
-                int end   = Math.Min(start + GridPageSize, _allRows.Count);
+                int end   = Math.Min(start + GridPageSize, _filteredRows.Count);
 
                 for (int i = start; i < end; i++)
                 {
-                    var r = _allRows[i];
+                    var r = _filteredRows[i];
                     try
                     {
                         int idx = dgvPreview.Rows.Add(
@@ -952,10 +986,10 @@ namespace CMS.Presentation.Modules.KMS
 
         private void UpdatePagerLabels()
         {
-            int gridTotal = TotalPages(_allRows.Count, GridPageSize);
+            int gridTotal = TotalPages(_filteredRows.Count, GridPageSize);
 
             lblGridPage.Text = string.Format("หน้า {0} / {1}  ({2} รายการ)",
-                _gridPage + 1, gridTotal, _allRows.Count);
+                _gridPage + 1, gridTotal, _filteredRows.Count);
 
             btnGridPrev.Enabled = _gridPage > 0;
             btnGridNext.Enabled = _gridPage < gridTotal - 1;
@@ -1031,7 +1065,7 @@ namespace CMS.Presentation.Modules.KMS
             // Pills use DockStyle.Left, so order matters: Total → Valid → Warn → Error
             pnlPillTotal.Width = quarter;
             pnlPillValid.Width = quarter;
-            pnlPillWarn.Width  = quarter;
+            //pnlPillWarn.Width  = quarter;
             pnlPillError.Width = quarter + remainder;
         }
 
@@ -1044,14 +1078,71 @@ namespace CMS.Presentation.Modules.KMS
             int total     = pnlCompleteStats.ClientSize.Width;
             if (total <= 0) return;
 
-            int quarter   = total / 4;
-            int remainder = total - quarter * 4;   // absorb rounding in the last panel
+            int third     = total / 3;
+            int remainder = total - third * 3;
 
-            // Stat panels use DockStyle.Left: Total → Success → Warn → Skip
-            pnlStatTotal.Width   = quarter;
-            pnlStatSuccess.Width = quarter;
-            pnlStatWarn.Width    = quarter;
-            pnlStatSkip.Width    = quarter + remainder;
+            // Stat panels use DockStyle.Left: Total → Success → Skip
+            pnlStatTotal.Width   = third;
+            pnlStatSuccess.Width = third;
+            pnlStatSkip.Width    = third + remainder;
+        }
+
+        // ── Pill / Stat click-to-filter helpers ─────────────────────────────
+
+        private static void AddClickRecursive(Control ctrl, EventHandler handler)
+        {
+            ctrl.Click  += handler;
+            ctrl.Cursor  = Cursors.Hand;
+            foreach (Control child in ctrl.Controls)
+                AddClickRecursive(child, handler);
+        }
+
+        private static void SetPillActive(Panel pnl, bool active)
+        {
+            pnl.BorderStyle = active ? BorderStyle.FixedSingle : BorderStyle.None;
+        }
+
+        private void ApplyPreviewFilter(string filter)
+        {
+            switch (filter)
+            {
+                case "Valid":
+                    _filteredRows = _allRows.Where(r => r.Status != "Error").ToList();
+                    break;
+                case "Error":
+                    _filteredRows = _allRows.Where(r => r.Status == "Error").ToList();
+                    break;
+                default: // Total
+                    _filteredRows = _allRows;
+                    break;
+            }
+            _gridPage = 0;
+            RefreshGridPage();
+            SetPillActive(pnlPillTotal, filter == "Total");
+            SetPillActive(pnlPillValid, filter == "Valid");
+            SetPillActive(pnlPillError, filter == "Error");
+        }
+
+        private void ApplyStatFilter(string filter)
+        {
+            switch (filter)
+            {
+                case "Success":
+                    _errAllRows = _errSuccessRows ?? new List<KBImportRow>();
+                    break;
+                case "Skip":
+                    _errAllRows = _errSkipRows ?? new List<KBImportRow>();
+                    break;
+                default: // Total
+                    var all = new List<KBImportRow>(_errSuccessRows ?? new List<KBImportRow>());
+                    all.AddRange(_errSkipRows ?? new List<KBImportRow>());
+                    _errAllRows = all.OrderBy(r => r.RowNumber).ToList();
+                    break;
+            }
+            ShowErrorPage(0);
+            SetPillActive(pnlStatTotal,   filter == "Total");
+            SetPillActive(pnlStatSuccess, filter == "Success");
+            SetPillActive(pnlStatSkip,    filter == "Skip");
         }
 
         // Step 3 — skipped/failed row grid with paging
@@ -1080,7 +1171,12 @@ namespace CMS.Presentation.Modules.KMS
                 var row = _errAllRows[i];
                 string reason, relatedData;
 
-                if (row.Status == "Warn")
+                if (row.Status == "Valid")
+                {
+                    reason      = "✅ นำเข้าสำเร็จ";
+                    relatedData = string.Empty;
+                }
+                else if (row.Status == "Warn")
                 {
                     reason      = "⚠️ ข้ามตามตัวเลือก";
                     relatedData = S(row.StatusNote ?? string.Empty, 300);
@@ -1117,9 +1213,11 @@ namespace CMS.Presentation.Modules.KMS
                     relatedData,
                     reason);
 
-                Color rowColor = row.Status == "Warn"
-                    ? Color.FromArgb(254, 249, 231)
-                    : Color.FromArgb(253, 237, 236);
+                Color rowColor = row.Status == "Valid"
+                    ? Color.FromArgb(240, 255, 244)
+                    : row.Status == "Warn"
+                        ? Color.FromArgb(254, 249, 231)
+                        : Color.FromArgb(253, 237, 236);
                 dgvFailedRows.Rows[idx].DefaultCellStyle.BackColor = rowColor;
             }
 

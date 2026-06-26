@@ -197,6 +197,23 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.Initialize();
         }
 
+        // work around bug scrollbar in right on Form
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool ShowScrollBar(IntPtr hWnd, int wBar, bool bShow);
+        private const int SB_BOTH = 3;
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            BeginInvoke(new Action(() =>
+            {
+                var mdiClient = MdiParent != null
+                    ? MdiParent.Controls.OfType<MdiClient>().FirstOrDefault()
+                    : null;
+                if (mdiClient != null && mdiClient.IsHandleCreated)
+                    ShowScrollBar(mdiClient.Handle, SB_BOTH, false);
+            }));
+        }
         private void KBMainForm_Resize(object sender, EventArgs e) { ResizeArticleCards(); }
 
         // ── IKBMainView ───────────────────────────────────────────────────
@@ -824,7 +841,7 @@ namespace CMS.Presentation.Modules.KMS
 
             var rootNode = new TreeNode(rootLabel) { Tag = null };
             rootNode.ForeColor = Color.FromArgb(0, 51, 102);
-            rootNode.NodeFont  = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            rootNode.NodeFont  = new Font("Segoe UI", 12f, FontStyle.Bold);
             treeCategories.Nodes.Add(rootNode);
 
             var roots = categories
@@ -849,7 +866,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             int    count = articleCounts.ContainsKey(cat.CategoryID) ? articleCounts[cat.CategoryID] : 0;
             string label = count > 0
-                ? string.Format("📁 {0} ({1})", cat.CategoryName, count)
+                ? string.Format("📁 {0}", cat.CategoryName)
                 : string.Format("📁 {0}", cat.CategoryName);
 
             var node = new TreeNode(label)
@@ -871,7 +888,7 @@ namespace CMS.Presentation.Modules.KMS
             {
                 foreach (var kvp in titleMap.OrderBy(x => x.Key, NaturalStringComparer.Instance))
                 {
-                    string nodeLabel = string.Format("📄 {0} ({1})", kvp.Key, kvp.Value);
+                    string nodeLabel = string.Format("📄 {0}", kvp.Key);
                     var titleNode = new TreeNode(nodeLabel)
                     {
                         Tag       = new TitleNode
@@ -1013,9 +1030,11 @@ namespace CMS.Presentation.Modules.KMS
             {
                 Name = "colCategory",
                 HeaderText = "หมวดหมู่",
+                //Width = 0,
                 ReadOnly = true,
-                DefaultCellStyle = lft,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                Visible = false
+                //DefaultCellStyle = lft,
+                //AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
                 Name = "colTitle", 
@@ -1123,7 +1142,7 @@ namespace CMS.Presentation.Modules.KMS
                 DefaultCellStyle = new DataGridViewCellStyle {
                     BackColor = Color.FromArgb(46, 116, 181), 
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 8f),
+                    //Font = new Font("Segoe UI", 8f),
                     Alignment = DataGridViewContentAlignment.MiddleCenter 
                 },
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
@@ -1137,7 +1156,7 @@ namespace CMS.Presentation.Modules.KMS
                 DefaultCellStyle = new DataGridViewCellStyle {
                     BackColor = Color.FromArgb(204, 92, 30), 
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 8f),
+                    //Font = new Font("Segoe UI", 8f),
                     Alignment = DataGridViewContentAlignment.MiddleCenter 
                 },
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
@@ -1151,7 +1170,7 @@ namespace CMS.Presentation.Modules.KMS
                 DefaultCellStyle = new DataGridViewCellStyle {
                     BackColor = Color.FromArgb(40, 140, 210), 
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 8f),
+                    //Font = new Font("Segoe UI", 8f),
                     Alignment = DataGridViewContentAlignment.MiddleCenter 
                 },
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
@@ -1165,7 +1184,7 @@ namespace CMS.Presentation.Modules.KMS
                 DefaultCellStyle = new DataGridViewCellStyle {
                     BackColor = Color.FromArgb(39, 174, 96), 
                     ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 8f),
+                    //Font = new Font("Segoe UI", 8f),
                     Alignment = DataGridViewContentAlignment.MiddleCenter 
                 },
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells

@@ -15,14 +15,14 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle9 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle10 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle11 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle12 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle14 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle15 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle16 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblHeader = new System.Windows.Forms.Label();
             this.pnlToolbar = new System.Windows.Forms.Panel();
@@ -216,6 +216,8 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingHeader = new System.Windows.Forms.Panel();
             this.btnCollapseMappingPanel = new System.Windows.Forms.Button();
             this.lblMappingHeader = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
+            this.dtpEffective = new System.Windows.Forms.DateTimePicker();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             this.flpToolbarLeft.SuspendLayout();
@@ -389,7 +391,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnSaveDraft.Name = "btnSaveDraft";
             this.btnSaveDraft.Size = new System.Drawing.Size(116, 28);
             this.btnSaveDraft.TabIndex = 0;
-            this.btnSaveDraft.Text = "💾 บันทึก Draft";
+            this.btnSaveDraft.Text = "💾 บันทึก";
             this.btnSaveDraft.UseVisualStyleBackColor = false;
             this.btnSaveDraft.Click += new System.EventHandler(this.BtnSaveDraft_Click);
             // 
@@ -637,7 +639,9 @@ namespace CMS.Presentation.Modules.KMS
             this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 21.83253F));
             this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 27.53178F));
             this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25.03288F));
-            this.tlpGenInfo.Controls.Add(this.lblExpiry, 2, 5);
+            this.tlpGenInfo.Controls.Add(this.dtpEffective, 2, 6);
+            this.tlpGenInfo.Controls.Add(this.label1, 2, 5);
+            this.tlpGenInfo.Controls.Add(this.lblExpiry, 3, 5);
             this.tlpGenInfo.Controls.Add(this.lblTags, 0, 5);
             this.tlpGenInfo.Controls.Add(this.flpTags, 0, 6);
             this.tlpGenInfo.Controls.Add(this.lblCode, 0, 0);
@@ -654,7 +658,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tlpGenInfo.Controls.Add(this.cboCategory, 2, 4);
             this.tlpGenInfo.Controls.Add(this.lblCraf, 3, 3);
             this.tlpGenInfo.Controls.Add(this.cboCraf, 3, 4);
-            this.tlpGenInfo.Controls.Add(this.dtpExpiry, 2, 6);
+            this.tlpGenInfo.Controls.Add(this.dtpExpiry, 3, 6);
             this.tlpGenInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpGenInfo.Location = new System.Drawing.Point(0, 28);
             this.tlpGenInfo.Name = "tlpGenInfo";
@@ -676,12 +680,12 @@ namespace CMS.Presentation.Modules.KMS
             this.lblExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lblExpiry.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblExpiry.Location = new System.Drawing.Point(559, 120);
+            this.lblExpiry.Location = new System.Drawing.Point(877, 120);
             this.lblExpiry.Margin = new System.Windows.Forms.Padding(2, 10, 2, 0);
             this.lblExpiry.Name = "lblExpiry";
-            this.lblExpiry.Size = new System.Drawing.Size(314, 23);
+            this.lblExpiry.Size = new System.Drawing.Size(287, 23);
             this.lblExpiry.TabIndex = 32;
-            this.lblExpiry.Text = "วันหมดอายุ (Review Due)";
+            this.lblExpiry.Text = "วันที่ยกเลิก";
             // 
             // lblTags
             // 
@@ -835,7 +839,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.cboStatus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboStatus.Enabled = false;
+            this.cboStatus.Enabled = true;
             this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.cboStatus.FormattingEnabled = true;
             this.cboStatus.Items.AddRange(new object[] {
@@ -938,9 +942,9 @@ namespace CMS.Presentation.Modules.KMS
             this.dtpExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.dtpExpiry.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpExpiry.Location = new System.Drawing.Point(560, 146);
+            this.dtpExpiry.Location = new System.Drawing.Point(878, 146);
             this.dtpExpiry.Name = "dtpExpiry";
-            this.dtpExpiry.Size = new System.Drawing.Size(312, 26);
+            this.dtpExpiry.Size = new System.Drawing.Size(285, 26);
             this.dtpExpiry.TabIndex = 34;
             // 
             // pnlGenInfoHeader
@@ -1492,11 +1496,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colView
             // 
-            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
-            this.colView.DefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle9.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle9.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle9.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle9.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
+            this.colView.DefaultCellStyle = dataGridViewCellStyle9;
             this.colView.HeaderText = "ดูไฟล์";
             this.colView.MinimumWidth = 6;
             this.colView.Name = "colView";
@@ -1506,11 +1510,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDelete
             // 
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDelete.DefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle10.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle10.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle10.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle10.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDelete.DefaultCellStyle = dataGridViewCellStyle10;
             this.colDelete.HeaderText = "ลบไฟล์";
             this.colDelete.MinimumWidth = 6;
             this.colDelete.Name = "colDelete";
@@ -1767,11 +1771,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colRelatedLinkedDelete
             // 
-            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colRelatedLinkedDelete.DefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle11.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle11.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle11.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle11.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colRelatedLinkedDelete.DefaultCellStyle = dataGridViewCellStyle11;
             this.colRelatedLinkedDelete.HeaderText = "ลบ";
             this.colRelatedLinkedDelete.MinimumWidth = 6;
             this.colRelatedLinkedDelete.Name = "colRelatedLinkedDelete";
@@ -2011,11 +2015,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colWorkflowLinkedDelete
             // 
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle4.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colWorkflowLinkedDelete.DefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle12.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle12.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle12.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle12.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colWorkflowLinkedDelete.DefaultCellStyle = dataGridViewCellStyle12;
             this.colWorkflowLinkedDelete.HeaderText = "ลบ";
             this.colWorkflowLinkedDelete.MinimumWidth = 6;
             this.colWorkflowLinkedDelete.Name = "colWorkflowLinkedDelete";
@@ -2253,11 +2257,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colProgramsLinkedDelete
             // 
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colProgramsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle13.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle13.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle13.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle13.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colProgramsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle13;
             this.colProgramsLinkedDelete.HeaderText = "ลบ";
             this.colProgramsLinkedDelete.MinimumWidth = 6;
             this.colProgramsLinkedDelete.Name = "colProgramsLinkedDelete";
@@ -2495,11 +2499,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDocsLinkedView
             // 
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle6.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
-            this.colDocsLinkedView.DefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle14.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle14.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle14.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle14.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
+            this.colDocsLinkedView.DefaultCellStyle = dataGridViewCellStyle14;
             this.colDocsLinkedView.HeaderText = "ดู";
             this.colDocsLinkedView.MinimumWidth = 6;
             this.colDocsLinkedView.Name = "colDocsLinkedView";
@@ -2509,11 +2513,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDocsLinkedDelete
             // 
-            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle7.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle7.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDocsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle15.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle15.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle15.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle15.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDocsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle15;
             this.colDocsLinkedDelete.HeaderText = "ลบ";
             this.colDocsLinkedDelete.MinimumWidth = 6;
             this.colDocsLinkedDelete.Name = "colDocsLinkedDelete";
@@ -2605,11 +2609,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDeptDelete
             // 
-            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle8.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDeptDelete.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle16.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle16.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle16.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle16.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDeptDelete.DefaultCellStyle = dataGridViewCellStyle16;
             this.colDeptDelete.HeaderText = "ลบ";
             this.colDeptDelete.MinimumWidth = 6;
             this.colDeptDelete.Name = "colDeptDelete";
@@ -2670,6 +2674,28 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader.TabIndex = 0;
             this.lblMappingHeader.Text = "Mapping รายการที่เกี่ยวข้อง";
             this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // label1
+            // 
+            this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.label1.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.label1.Location = new System.Drawing.Point(559, 120);
+            this.label1.Margin = new System.Windows.Forms.Padding(2, 10, 2, 0);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(314, 23);
+            this.label1.TabIndex = 36;
+            this.label1.Text = "วันที่มีผล";
+            // 
+            // dtpEffective
+            // 
+            this.dtpEffective.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dtpEffective.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.dtpEffective.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpEffective.Location = new System.Drawing.Point(560, 146);
+            this.dtpEffective.Name = "dtpEffective";
+            this.dtpEffective.Size = new System.Drawing.Size(312, 26);
+            this.dtpEffective.TabIndex = 37;
             // 
             // KBEditorDialog
             // 
@@ -2985,5 +3011,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.TextBox txtTagInput;
         private System.Windows.Forms.DateTimePicker dtpExpiry;
         private System.Windows.Forms.Label lblLikeCount;
+        private System.Windows.Forms.DateTimePicker dtpEffective;
+        private System.Windows.Forms.Label label1;
     }
 }
