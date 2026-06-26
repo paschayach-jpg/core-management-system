@@ -316,6 +316,7 @@ namespace CMS.Presentation.Modules.KMS
 
             pnlUploadedFile.Visible = false;
             pnlUploadZone.Visible   = true;
+            pnlUploadSection.Height = 316;
             btnNext.Enabled         = false;
             lblFileHint.Visible     = true;
             SetStatus("ลบไฟล์แล้ว");
@@ -323,7 +324,33 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnDownloadTemplate_Click(object sender, EventArgs e)
         {
-            SetStatus("กำลังดาวน์โหลด Template... (ฟีเจอร์อยู่ระหว่างพัฒนา)");
+            using (var dlg = new SaveFileDialog())
+            {
+                dlg.Title            = "บันทึก Template";
+                dlg.FileName         = "template.xlsx";
+                dlg.Filter           = "Excel Workbook (*.xlsx)|*.xlsx";
+                dlg.DefaultExt       = "xlsx";
+
+                if (dlg.ShowDialog() != DialogResult.OK) return;
+
+                var resourceName = "CMS.Presentation.template.xlsx";
+                using (var src = System.Reflection.Assembly.GetExecutingAssembly()
+                                       .GetManifestResourceStream(resourceName))
+                {
+                    if (src == null)
+                    {
+                        MessageBox.Show("ไม่พบไฟล์ Template ในระบบ\n\nกรุณาติดต่อผู้ดูแลระบบ",
+                            "ไม่พบไฟล์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    var buf = new byte[src.Length];
+                    src.Read(buf, 0, buf.Length);
+                    System.IO.File.WriteAllBytes(dlg.FileName, buf);
+                }
+
+                SetStatus(string.Format("✅  บันทึก Template ไปที่ \"{0}\" เรียบร้อย", dlg.FileName));
+            }
         }
 
         private void BtnDemo_Click(object sender, EventArgs e)
@@ -427,6 +454,7 @@ namespace CMS.Presentation.Modules.KMS
 
             pnlUploadedFile.Visible = false;
             pnlUploadZone.Visible   = true;
+            pnlUploadSection.Height = 316;
             btnNext.Enabled         = false;
             lblFileHint.Visible     = true;
             _allRows      = new List<KBImportRow>();
@@ -839,6 +867,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             pnlUploadZone.Visible   = false;
             pnlUploadedFile.Visible = true;
+            pnlUploadSection.Height = 36 + 4 + 60 + 46; // hdr + pad + file + template
 
             lblUploadedFileName.Text = _uploadedFileName;
             lblUploadedFileMeta.Text = string.Format(
