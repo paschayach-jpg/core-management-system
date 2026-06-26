@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_design__read_file",
+      "mcp__claude_design__finalize_plan"
+    ]
+  }
+}

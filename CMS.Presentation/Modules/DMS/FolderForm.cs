@@ -128,11 +128,24 @@ namespace CMS.Presentation
         // Invalidated when permissions change (see InvalidateViewAccessCache).
         private readonly Dictionary<int, bool> _viewAccessCache = new Dictionary<int, bool>();
 
+        // Form-level folder list cache — keyed by orgUnitId (null = all).
+        // Populated by GetFoldersCached(); invalidated by InvalidateFolderListCache() after CUD ops.
+        // Supplements the service-level cache for call sites that bypass the presenter.
+        private readonly Dictionary<int, List<Folder>> _folderListCacheByOrg = new Dictionary<int, List<Folder>>();
+        private List<Folder> _folderListCacheAll = null;
+
         // Drop zone overlay — shown when content list is empty to prompt drag-and-drop upload
         private Panel _pnlDropHint;
         private bool _isDragOverContent = false;
         private Panel _pnlFolderUsageSummary;
         private Label _lblFolderUsageSummary;
+
+        // Static ImageList instances — built once per AppDomain on the UI thread, reused on every form open.
+        private static ImageList _sFolderList16;
+        private static ImageList _sConfList16;
+        private static ImageList _sMainMenuList16;
+        private static ImageList _sListSmall16;
+        private static ImageList _sListLarge48;
 
         // Allowed extensions for folder-drop extraction (BR-003-02)
         private static readonly HashSet<string> _folderDropAllowedExt = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -3618,33 +3631,7 @@ namespace CMS.Presentation
             pnlContentHeader.Visible = true;
             pnlContentHeader.Height = 36;
 
-            // Set up folder open/closed icons from Resources (shared ImageList)
-            var folderImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
-            folderImageList.Images.Add("folder", Properties.Resources.folder);
-            folderImageList.Images.Add("open_folder", Properties.Resources.open_folder);
-            folderImageList.Images.Add("organization", Properties.Resources.organization);
-
-            // Try to load lightning_bolt1, fallback to book_red if not available
-            try
-            {
-                if (Properties.Resources.lightning_bolt1 != null)
-                {
-                    folderImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1);
-                }
-                else
-                {
-                    folderImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
-                }
-            }
-            catch
-            {
-                folderImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
-            }
-
-            folderImageList.Images.Add("book_red", Properties.Resources.lightning_bolt1);
-            folderImageList.Images.Add("book_orange", Properties.Resources.book_orange);
-            folderImageList.Images.Add("book_bule", Properties.Resources.book_bule);
-            folderImageList.Images.Add("book_green", Properties.Resources.book_green);
+            var folderImageList = GetOrBuildFolderList16();
 
             // TreeView — closed/open on expand/collapse
             folderTreeView.ImageList = folderImageList;
@@ -3671,33 +3658,8 @@ namespace CMS.Presentation
             treeOrgUnit.BeforeExpand += (s, ev) => { if (ev.Node.ImageKey != "organization") ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder"; };
             treeOrgUnit.BeforeCollapse += (s, ev) => { if (ev.Node.ImageKey != "organization") ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder"; };
 
-            // Confidentiality TreeView — same image list (WinForms requires a SEPARATE ImageList instance per TreeView)
-            var confImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
-            confImageList.Images.Add("folder", Properties.Resources.folder);
-            confImageList.Images.Add("open_folder", Properties.Resources.open_folder);
-            confImageList.Images.Add("organization", Properties.Resources.organization);
-
-            // Try to load lightning_bolt1, fallback to book_red if not available
-            try
-            {
-                if (Properties.Resources.lightning_bolt1 != null)
-                {
-                    confImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1);
-                }
-                else
-                {
-                    confImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
-                }
-            }
-            catch
-            {
-                confImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
-            }
-
-            confImageList.Images.Add("book_red", Properties.Resources.lightning_bolt);
-            confImageList.Images.Add("book_orange", Properties.Resources.book_orange);
-            confImageList.Images.Add("book_bule", Properties.Resources.book_bule);
-            confImageList.Images.Add("book_green", Properties.Resources.book_green1);
+            // Confidentiality TreeView — separate static instance (different book_red/book_green resources)
+            var confImageList = GetOrBuildConfList16();
             _treeConfidentiality.ImageList = confImageList;
             _treeConfidentiality.ImageKey = "folder";
             _treeConfidentiality.SelectedImageKey = "open_folder";
@@ -3714,50 +3676,17 @@ namespace CMS.Presentation
             };
 
             // Main Menu TreeView — dedicated icon list for modern left-nav appearance
-            var mainMenuImageList = new ImageList { ImageSize = new Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
-            mainMenuImageList.Images.Add("folder", Properties.Resources.folder);
-            mainMenuImageList.Images.Add("open_folder", Properties.Resources.open_folder);
-            mainMenuImageList.Images.Add("organization", Properties.Resources.organization);
-            mainMenuImageList.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
-            mainMenuImageList.Images.Add("book_red", Properties.Resources.book_red);
-            mainMenuImageList.Images.Add("book_orange", Properties.Resources.book_orange);
-            mainMenuImageList.Images.Add("book_blue", Properties.Resources.book_bule);
-            mainMenuImageList.Images.Add("book_green", Properties.Resources.book_green);
-            mainMenuImageList.Images.Add("cat_trash", MenuCategoryIcons.CreateTrashIcon());
-            try
-            {
-                mainMenuImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1);
-            }
-            catch
-            {
-                mainMenuImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap());
-            }
+            var mainMenuImageList = GetOrBuildMainMenuList16();
             _treeMainMenu.ImageList = mainMenuImageList;
             _treeMainMenu.ImageKey = "folder";
             _treeMainMenu.SelectedImageKey = "open_folder";
 
             // ListView needs its own separate ImageList (WinForms does not allow sharing with TreeView)
-            var listImageList = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
-            listImageList.Images.Add("folder", Properties.Resources.folder);
-            try { listImageList.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1); }
-            catch { listImageList.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap()); }
-            listImageList.Images.Add("book_red", Properties.Resources.book_red1.ToBitmap());
-            listImageList.Images.Add("book_orange", Properties.Resources.book_orange);
-            listImageList.Images.Add("book_bule", Properties.Resources.book_bule);
-            listImageList.Images.Add("book_green", Properties.Resources.book_green);
-            listImageList.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
+            var listImageList = GetOrBuildListSmall16();
             contentsListView.SmallImageList = listImageList;
 
             // ── LargeImageList (48×48) for Large Icon view ────────────────────
-            var largeImageList = new ImageList { ImageSize = new Size(48, 48), ColorDepth = ColorDepth.Depth32Bit };
-            largeImageList.Images.Add("folder", new Bitmap(Properties.Resources.folder, 48, 48));
-            try { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.lightning_bolt1, 48, 48)); }
-            catch { largeImageList.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.book_red1.ToBitmap(), 48, 48)); }
-            largeImageList.Images.Add("book_red", new Bitmap(Properties.Resources.lightning_bolt1, 48, 48));
-            largeImageList.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange, 48, 48));
-            largeImageList.Images.Add("book_bule", new Bitmap(Properties.Resources.book_bule, 48, 48));
-            largeImageList.Images.Add("book_green", new Bitmap(Properties.Resources.book_green, 48, 48));
-            largeImageList.Images.Add("file_docs", new Bitmap(Properties.Resources.File_docs.ToBitmap(), 48, 48));
+            var largeImageList = GetOrBuildListLarge48();
             contentsListView.LargeImageList = largeImageList;
 
             // ── View toggle buttons (Details / Tile / Large Icons) ───────────
@@ -3914,14 +3843,113 @@ namespace CMS.Presentation
             SetDoubleBuffered(splitMain);
         }
 
+        private static readonly System.Reflection.PropertyInfo _doubleBufferedProp =
+            typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+
         private static void SetDoubleBuffered(Control control)
         {
             if (control == null)
                 return;
 
-            var prop = typeof(Control).GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (prop != null)
-                prop.SetValue(control, true, null);
+            if (_doubleBufferedProp != null)
+                _doubleBufferedProp.SetValue(control, true, null);
+        }
+
+        private static ImageList GetOrBuildFolderList16()
+        {
+            if (_sFolderList16 != null) return _sFolderList16;
+            var list = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
+            list.Images.Add("folder", Properties.Resources.folder);
+            list.Images.Add("open_folder", Properties.Resources.open_folder);
+            list.Images.Add("organization", Properties.Resources.organization);
+            try
+            {
+                list.Images.Add("lightning_bolt",
+                    Properties.Resources.lightning_bolt1 != null
+                        ? (Image)Properties.Resources.lightning_bolt1
+                        : Properties.Resources.book_red1.ToBitmap());
+            }
+            catch { list.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap()); }
+            list.Images.Add("book_red", Properties.Resources.lightning_bolt1);
+            list.Images.Add("book_orange", Properties.Resources.book_orange);
+            list.Images.Add("book_bule", Properties.Resources.book_bule);
+            list.Images.Add("book_green", Properties.Resources.book_green);
+            _sFolderList16 = list;
+            return list;
+        }
+
+        private static ImageList GetOrBuildConfList16()
+        {
+            if (_sConfList16 != null) return _sConfList16;
+            var list = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
+            list.Images.Add("folder", Properties.Resources.folder);
+            list.Images.Add("open_folder", Properties.Resources.open_folder);
+            list.Images.Add("organization", Properties.Resources.organization);
+            try
+            {
+                list.Images.Add("lightning_bolt",
+                    Properties.Resources.lightning_bolt1 != null
+                        ? (Image)Properties.Resources.lightning_bolt1
+                        : Properties.Resources.book_red1.ToBitmap());
+            }
+            catch { list.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap()); }
+            list.Images.Add("book_red", Properties.Resources.lightning_bolt);
+            list.Images.Add("book_orange", Properties.Resources.book_orange);
+            list.Images.Add("book_bule", Properties.Resources.book_bule);
+            list.Images.Add("book_green", Properties.Resources.book_green1);
+            _sConfList16 = list;
+            return list;
+        }
+
+        private static ImageList GetOrBuildMainMenuList16()
+        {
+            if (_sMainMenuList16 != null) return _sMainMenuList16;
+            var list = new ImageList { ImageSize = new Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
+            list.Images.Add("folder", Properties.Resources.folder);
+            list.Images.Add("open_folder", Properties.Resources.open_folder);
+            list.Images.Add("organization", Properties.Resources.organization);
+            list.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
+            list.Images.Add("book_red", Properties.Resources.book_red);
+            list.Images.Add("book_orange", Properties.Resources.book_orange);
+            list.Images.Add("book_blue", Properties.Resources.book_bule);
+            list.Images.Add("book_green", Properties.Resources.book_green);
+            list.Images.Add("cat_trash", MenuCategoryIcons.CreateTrashIcon());
+            try { list.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1); }
+            catch { list.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap()); }
+            _sMainMenuList16 = list;
+            return list;
+        }
+
+        private static ImageList GetOrBuildListSmall16()
+        {
+            if (_sListSmall16 != null) return _sListSmall16;
+            var list = new ImageList { ImageSize = new System.Drawing.Size(16, 16), ColorDepth = ColorDepth.Depth32Bit };
+            list.Images.Add("folder", Properties.Resources.folder);
+            try { list.Images.Add("lightning_bolt", Properties.Resources.lightning_bolt1); }
+            catch { list.Images.Add("lightning_bolt", Properties.Resources.book_red1.ToBitmap()); }
+            list.Images.Add("book_red", Properties.Resources.book_red1.ToBitmap());
+            list.Images.Add("book_orange", Properties.Resources.book_orange);
+            list.Images.Add("book_bule", Properties.Resources.book_bule);
+            list.Images.Add("book_green", Properties.Resources.book_green);
+            list.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
+            _sListSmall16 = list;
+            return list;
+        }
+
+        private static ImageList GetOrBuildListLarge48()
+        {
+            if (_sListLarge48 != null) return _sListLarge48;
+            var list = new ImageList { ImageSize = new Size(48, 48), ColorDepth = ColorDepth.Depth32Bit };
+            list.Images.Add("folder", new Bitmap(Properties.Resources.folder, 48, 48));
+            try { list.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.lightning_bolt1, 48, 48)); }
+            catch { list.Images.Add("lightning_bolt", new Bitmap(Properties.Resources.book_red1.ToBitmap(), 48, 48)); }
+            list.Images.Add("book_red", new Bitmap(Properties.Resources.lightning_bolt1, 48, 48));
+            list.Images.Add("book_orange", new Bitmap(Properties.Resources.book_orange, 48, 48));
+            list.Images.Add("book_bule", new Bitmap(Properties.Resources.book_bule, 48, 48));
+            list.Images.Add("book_green", new Bitmap(Properties.Resources.book_green, 48, 48));
+            list.Images.Add("file_docs", new Bitmap(Properties.Resources.File_docs.ToBitmap(), 48, 48));
+            _sListLarge48 = list;
+            return list;
         }
 
         // -----------------------------------------------------------------------
@@ -3930,6 +3958,9 @@ namespace CMS.Presentation
 
         public void ShowFolderTree(IEnumerable<Folder> rootFolders)
         {
+            // Presenter calls this after every load/CUD — form cache is now stale.
+            InvalidateFolderListCache();
+
             // Accept either a flat list of all folders OR roots-only list.
             // Build an in-memory parent→children map so no per-node DB calls are needed.
             var allFolders = rootFolders == null
@@ -6175,7 +6206,7 @@ namespace CMS.Presentation
             {
                 try
                 {
-                    var dbFolders = _folderReadLookupController.GetAllFolders(_selectedOrgUnitId, _user);
+                    var dbFolders = GetFoldersCached(_selectedOrgUnitId);
                     if (dbFolders != null && dbFolders.Any(f => !f.IsDeleted && !f.IsArchived))
                         return; // มีอยู่แล้วใน DB
                 }
@@ -6610,7 +6641,7 @@ namespace CMS.Presentation
         private IEnumerable<CMS.Domain.Models.OrgUnit> GetOrgUnits()
         {
             if (_orgLookupController == null) return Enumerable.Empty<CMS.Domain.Models.OrgUnit>();
-            try { return _orgLookupController.GetHierarchy(); }
+            try { return _orgLookupController.GetVisibleHierarchy(_user); }
             catch { return Enumerable.Empty<CMS.Domain.Models.OrgUnit>(); }
         }
 
@@ -8256,7 +8287,7 @@ namespace CMS.Presentation
                 if (_folderReadLookupController == null) return false;
 
                 // ใช้ service เพื่อตรวจสอบความถูกต้อง
-                var allFolders = _folderReadLookupController.GetAllFolders(null, _user);
+                var allFolders = GetFoldersCached(null);
 
                 if (parentFolderId.HasValue)
                 {
@@ -8776,6 +8807,44 @@ namespace CMS.Presentation
         private void InvalidateViewAccessCache(int folderId)
         {
             _viewAccessCache.Remove(folderId);
+        }
+
+        /// <summary>
+        /// Returns folders from form-level cache; falls through to controller on miss.
+        /// Caller must NOT mutate the returned list.
+        /// </summary>
+        private IList<Folder> GetFoldersCached(int? orgUnitId)
+        {
+            if (_folderReadLookupController == null || _user == null)
+                return new List<Folder>();
+
+            if (orgUnitId.HasValue)
+            {
+                List<Folder> cached;
+                if (!_folderListCacheByOrg.TryGetValue(orgUnitId.Value, out cached))
+                {
+                    cached = _folderReadLookupController.GetAllFolders(orgUnitId, _user).ToList();
+                    _folderListCacheByOrg[orgUnitId.Value] = cached;
+                }
+                return cached;
+            }
+
+            if (_folderListCacheAll == null)
+                _folderListCacheAll = _folderReadLookupController.GetAllFolders(null, _user).ToList();
+            return _folderListCacheAll;
+        }
+
+        /// <summary>
+        /// Invalidates form-level folder list cache after create/rename/delete/move operations.
+        /// Pass orgUnitId to clear only that org's cache; null clears everything.
+        /// </summary>
+        private void InvalidateFolderListCache(int? orgUnitId = null)
+        {
+            _folderListCacheAll = null;
+            if (orgUnitId.HasValue)
+                _folderListCacheByOrg.Remove(orgUnitId.Value);
+            else
+                _folderListCacheByOrg.Clear();
         }
 
         /// <summary>

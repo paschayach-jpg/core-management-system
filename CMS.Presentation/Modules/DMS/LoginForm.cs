@@ -107,21 +107,13 @@ namespace CMS.Presentation
             // กำหนด username/password ตาม dev/test/prod
             string username = txtUsername.Text.Trim();
             string password = txtPassword.Text;
-            // Dev/Test block (ไม่ลบ)
-            //string username = "pitakpong";
-            //string password = "P@takpong01714";
+          
             if (checkBox1.Checked)
             {
                 username = "khanitthac";
                 password = "KnidK@1412";
             }
-            else
-            {
-                username = "pitakpong";
-                password = "P@takpong0132";
-                //username = "athika";
-                //password = "Aple1712!";
-            }
+            
 
             if (string.IsNullOrWhiteSpace(username))
             {

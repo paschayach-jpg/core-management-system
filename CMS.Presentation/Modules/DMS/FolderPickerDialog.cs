@@ -94,6 +94,23 @@ namespace CMS.Presentation
                     .ToList()
                 : new List<OrgUnit>();
 
+            // Compute connected OrgUnit IDs — BFS from true roots (no parent).
+            // Orphaned units (parent missing from list) excluded, matching left-panel behavior.
+            var connectedOrgUnitIds = new HashSet<int>(
+                _orgUnits.Where(u => !u.ParentOrgUnitID.HasValue).Select(u => u.OrgUnitID));
+            bool expanded = true;
+            while (expanded)
+            {
+                expanded = false;
+                foreach (var u in _orgUnits)
+                {
+                    if (u.ParentOrgUnitID.HasValue
+                        && connectedOrgUnitIds.Contains(u.ParentOrgUnitID.Value)
+                        && connectedOrgUnitIds.Add(u.OrgUnitID))
+                        expanded = true;
+                }
+            }
+
             ExcludedFolderIds = excludedIds != null
                 ? new HashSet<int>(excludedIds)
                 : new HashSet<int>();
@@ -105,7 +122,9 @@ namespace CMS.Presentation
             _pathMap = BuildPathMap(_folderMap);
 
             var visible = _folderMap.Values
-                .Where(f => !ExcludedFolderIds.Contains(f.FolderID) && !f.IsDeleted && !f.IsArchived)
+                .Where(f => !ExcludedFolderIds.Contains(f.FolderID) && !f.IsDeleted && !f.IsArchived
+                         && (f.OrgUnitID == 0 || connectedOrgUnitIds.Count == 0
+                             || connectedOrgUnitIds.Contains(f.OrgUnitID)))
                 .ToList();
 
             _visibleList = visible;
@@ -197,11 +216,11 @@ namespace CMS.Presentation
                     return ouNode;
                 };
 
-                // Start from SubCommittee roots (no parent or parent not in list)
-                var ouIds = new HashSet<int>(includedOrgUnitIds);
+                // Start from true roots only (no parent) — matches left-panel OrgUnit tree behavior.
+                // Orphaned units (parent missing) are excluded, not promoted to root.
                 var roots = _orgUnits
                     .Where(u => includedOrgUnitIds.Contains(u.OrgUnitID)
-                             && (!u.ParentOrgUnitID.HasValue || !ouIds.Contains(u.ParentOrgUnitID.Value)))
+                             && !u.ParentOrgUnitID.HasValue)
                     .OrderBy(u => u.Name);
 
                 foreach (var sc in roots)
