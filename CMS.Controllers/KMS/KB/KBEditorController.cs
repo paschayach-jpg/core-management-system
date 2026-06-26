@@ -123,6 +123,9 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedArticleType = (byte)a.ArticleType;
             _view.SelectedStatus      = a.Status;
 
+            if (a.EffectiveDate.HasValue)
+                _view.EffectiveDate = a.EffectiveDate.Value;
+
             if (a.ExpiryDate.HasValue)
                 _view.ExpiryDate = a.ExpiryDate.Value;
 
@@ -200,9 +203,10 @@ namespace CMS.Controllers.KMS.KB
                     ContentHTML          = _view.ContentHTML,
                     CategoryID           = _view.SelectedCategoryId,
                     ArticleType          = _view.SelectedArticleType,
-                    Status               = 1,  // Always save as Draft
+                    Status               = _view.SelectedStatus,
                     ConfidentialityLevel = _view.SelectedCrafLevelCode,
                     Tags                 = _view.Tags,
+                    EffectiveDate        = _view.EffectiveDate,
                     ExpiryDate           = _view.ExpiryDate,
                     CreatedBy            = _user.AdIdentity,
                 };
@@ -234,7 +238,7 @@ namespace CMS.Controllers.KMS.KB
                 // Save article links
                 SaveArticleLinks(articleId);
 
-                _view.ShowInfo("บันทึก Draft เรียบร้อยแล้ว");
+                _view.ShowInfo("บันทึกเรียบร้อยแล้ว");
             }
             catch (Exception ex)
             {
@@ -260,6 +264,7 @@ namespace CMS.Controllers.KMS.KB
                     Status           = 2,  // Send for Review
                     ConfidentialityLevel = _view.SelectedCrafLevelCode,
                     Tags             = _view.Tags,
+                    EffectiveDate    = _view.EffectiveDate,
                     ExpiryDate       = _view.ExpiryDate,
                     CreatedBy        = _user.AdIdentity,
                 };

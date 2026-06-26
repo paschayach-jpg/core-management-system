@@ -62,6 +62,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlStripe.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
             this.pnlStripe.Dock = System.Windows.Forms.DockStyle.Left;
+            this.pnlStripe.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pnlStripe.Location = new System.Drawing.Point(0, 0);
             this.pnlStripe.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlStripe.Name = "pnlStripe";
@@ -78,6 +79,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContent.Controls.Add(this.pnlMeta);
             this.pnlContent.Controls.Add(this.pHeaderRight);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlContent.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pnlContent.Location = new System.Drawing.Point(5, 0);
             this.pnlContent.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlContent.Name = "pnlContent";
@@ -93,6 +95,7 @@ namespace CMS.Presentation.Modules.KMS
             this.panelFooter.Controls.Add(this.panelButton);
             this.panelFooter.Controls.Add(this.pnlStats);
             this.panelFooter.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panelFooter.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.panelFooter.Location = new System.Drawing.Point(12, 97);
             this.panelFooter.Name = "panelFooter";
             this.panelFooter.Size = new System.Drawing.Size(846, 39);
@@ -105,6 +108,7 @@ namespace CMS.Presentation.Modules.KMS
             this.panelButton.Controls.Add(this.btnEdit);
             this.panelButton.Controls.Add(this.btnRead);
             this.panelButton.Dock = System.Windows.Forms.DockStyle.Right;
+            this.panelButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.panelButton.Location = new System.Drawing.Point(406, 0);
             this.panelButton.Name = "panelButton";
             this.panelButton.Size = new System.Drawing.Size(440, 39);
@@ -119,7 +123,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnSendReview.FlatAppearance.BorderSize = 0;
             this.btnSendReview.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(82)))), ((int)(((byte)(190)))), ((int)(((byte)(128)))));
             this.btnSendReview.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSendReview.Font = new System.Drawing.Font("Segoe UI", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSendReview.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSendReview.ForeColor = System.Drawing.Color.White;
             this.btnSendReview.Location = new System.Drawing.Point(299, 0);
             this.btnSendReview.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
@@ -140,7 +144,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnShare.FlatAppearance.BorderSize = 0;
             this.btnShare.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(93)))), ((int)(((byte)(173)))), ((int)(((byte)(226)))));
             this.btnShare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnShare.Font = new System.Drawing.Font("Segoe UI", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnShare.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnShare.ForeColor = System.Drawing.Color.White;
             this.btnShare.Location = new System.Drawing.Point(214, 0);
             this.btnShare.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
@@ -160,7 +164,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnEdit.FlatAppearance.BorderSize = 0;
             this.btnEdit.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(176)))), ((int)(((byte)(65)))));
             this.btnEdit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnEdit.Font = new System.Drawing.Font("Segoe UI", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnEdit.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnEdit.ForeColor = System.Drawing.Color.White;
             this.btnEdit.Location = new System.Drawing.Point(109, 0);
             this.btnEdit.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
@@ -180,7 +184,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnRead.FlatAppearance.BorderSize = 0;
             this.btnRead.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(88)))), ((int)(((byte)(144)))), ((int)(((byte)(196)))));
             this.btnRead.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRead.Font = new System.Drawing.Font("Segoe UI", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRead.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnRead.ForeColor = System.Drawing.Color.White;
             this.btnRead.Location = new System.Drawing.Point(0, 0);
             this.btnRead.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
@@ -200,6 +204,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStats.Controls.Add(this.lblTagsIcon);
             this.pnlStats.Controls.Add(this.lblTags);
             this.pnlStats.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlStats.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pnlStats.Location = new System.Drawing.Point(0, 0);
             this.pnlStats.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlStats.Name = "pnlStats";
@@ -215,13 +220,13 @@ namespace CMS.Presentation.Modules.KMS
             this.lblViewIcon.AutoSize = true;
             this.lblViewIcon.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
             this.lblViewIcon.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblViewIcon.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblViewIcon.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblViewIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
             this.lblViewIcon.Location = new System.Drawing.Point(0, 0);
             this.lblViewIcon.Margin = new System.Windows.Forms.Padding(0);
             this.lblViewIcon.Name = "lblViewIcon";
             this.lblViewIcon.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblViewIcon.Size = new System.Drawing.Size(41, 37);
+            this.lblViewIcon.Size = new System.Drawing.Size(42, 41);
             this.lblViewIcon.TabIndex = 0;
             this.lblViewIcon.Text = "👁";
             this.lblViewIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -234,13 +239,13 @@ namespace CMS.Presentation.Modules.KMS
             this.lblViewCount.AutoSize = true;
             this.lblViewCount.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
             this.lblViewCount.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblViewCount.Font = new System.Drawing.Font("Segoe UI Semibold", 9.5F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblViewCount.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblViewCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(130)))), ((int)(((byte)(180)))));
-            this.lblViewCount.Location = new System.Drawing.Point(41, 0);
+            this.lblViewCount.Location = new System.Drawing.Point(42, 0);
             this.lblViewCount.Margin = new System.Windows.Forms.Padding(0);
             this.lblViewCount.Name = "lblViewCount";
             this.lblViewCount.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblViewCount.Size = new System.Drawing.Size(28, 37);
+            this.lblViewCount.Size = new System.Drawing.Size(32, 41);
             this.lblViewCount.TabIndex = 1;
             this.lblViewCount.Text = "0";
             this.lblViewCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -257,13 +262,13 @@ namespace CMS.Presentation.Modules.KMS
             this.btnLike.FlatAppearance.BorderSize = 0;
             this.btnLike.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
             this.btnLike.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnLike.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnLike.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnLike.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.btnLike.Location = new System.Drawing.Point(69, 0);
+            this.btnLike.Location = new System.Drawing.Point(74, 0);
             this.btnLike.Margin = new System.Windows.Forms.Padding(0);
             this.btnLike.Name = "btnLike";
             this.btnLike.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.btnLike.Size = new System.Drawing.Size(49, 37);
+            this.btnLike.Size = new System.Drawing.Size(50, 41);
             this.btnLike.TabIndex = 2;
             this.btnLike.Text = "👍";
             this.btnLike.UseVisualStyleBackColor = false;
@@ -274,13 +279,13 @@ namespace CMS.Presentation.Modules.KMS
             this.lblLikeCount.AutoSize = true;
             this.lblLikeCount.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(248)))));
             this.lblLikeCount.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblLikeCount.Font = new System.Drawing.Font("Segoe UI Semibold", 9.5F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblLikeCount.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblLikeCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.lblLikeCount.Location = new System.Drawing.Point(118, 0);
+            this.lblLikeCount.Location = new System.Drawing.Point(124, 0);
             this.lblLikeCount.Margin = new System.Windows.Forms.Padding(0);
             this.lblLikeCount.Name = "lblLikeCount";
             this.lblLikeCount.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblLikeCount.Size = new System.Drawing.Size(28, 37);
+            this.lblLikeCount.Size = new System.Drawing.Size(32, 41);
             this.lblLikeCount.TabIndex = 3;
             this.lblLikeCount.Text = "0";
             this.lblLikeCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -292,13 +297,13 @@ namespace CMS.Presentation.Modules.KMS
             this.lblTagsIcon.AutoSize = true;
             this.lblTagsIcon.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(248)))), ((int)(((byte)(250)))));
             this.lblTagsIcon.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblTagsIcon.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTagsIcon.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTagsIcon.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(150)))), ((int)(((byte)(100)))));
-            this.lblTagsIcon.Location = new System.Drawing.Point(146, 0);
+            this.lblTagsIcon.Location = new System.Drawing.Point(156, 0);
             this.lblTagsIcon.Margin = new System.Windows.Forms.Padding(0);
             this.lblTagsIcon.Name = "lblTagsIcon";
             this.lblTagsIcon.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblTagsIcon.Size = new System.Drawing.Size(41, 37);
+            this.lblTagsIcon.Size = new System.Drawing.Size(42, 41);
             this.lblTagsIcon.TabIndex = 4;
             this.lblTagsIcon.Text = "🏷";
             this.lblTagsIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -311,13 +316,13 @@ namespace CMS.Presentation.Modules.KMS
             this.lblTags.AutoSize = true;
             this.lblTags.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(248)))), ((int)(((byte)(250)))));
             this.lblTags.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTags.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTags.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTags.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(150)))), ((int)(((byte)(100)))));
-            this.lblTags.Location = new System.Drawing.Point(187, 0);
+            this.lblTags.Location = new System.Drawing.Point(198, 0);
             this.lblTags.Margin = new System.Windows.Forms.Padding(0);
             this.lblTags.Name = "lblTags";
             this.lblTags.Padding = new System.Windows.Forms.Padding(6, 3, 3, 3);
-            this.lblTags.Size = new System.Drawing.Size(24, 37);
+            this.lblTags.Size = new System.Drawing.Size(28, 41);
             this.lblTags.TabIndex = 5;
             this.lblTags.Text = "-";
             this.lblTags.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -329,6 +334,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlActions.Controls.Add(this.panelArticelItem);
             this.pnlActions.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlActions.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pnlActions.Location = new System.Drawing.Point(12, 64);
             this.pnlActions.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlActions.Name = "pnlActions";
@@ -340,6 +346,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.panelArticelItem.Controls.Add(this.lblContent);
             this.panelArticelItem.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelArticelItem.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.panelArticelItem.Location = new System.Drawing.Point(0, 3);
             this.panelArticelItem.Name = "panelArticelItem";
             this.panelArticelItem.Size = new System.Drawing.Size(846, 30);
@@ -348,7 +355,7 @@ namespace CMS.Presentation.Modules.KMS
             // lblContent
             // 
             this.lblContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblContent.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblContent.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblContent.Location = new System.Drawing.Point(0, 0);
             this.lblContent.Name = "lblContent";
             this.lblContent.Size = new System.Drawing.Size(846, 30);
@@ -367,6 +374,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMeta.Controls.Add(this.lblMetaSep1);
             this.pnlMeta.Controls.Add(this.lblSummary);
             this.pnlMeta.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlMeta.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pnlMeta.Location = new System.Drawing.Point(12, 39);
             this.pnlMeta.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlMeta.Name = "pnlMeta";
@@ -380,12 +388,12 @@ namespace CMS.Presentation.Modules.KMS
             // lblStatus
             // 
             this.lblStatus.AutoSize = true;
-            this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
             this.lblStatus.Location = new System.Drawing.Point(0, 2);
             this.lblStatus.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(40, 19);
+            this.lblStatus.Size = new System.Drawing.Size(53, 25);
             this.lblStatus.TabIndex = 2;
             this.lblStatus.Text = "Draft";
             this.lblStatus.Visible = false;
@@ -396,12 +404,12 @@ namespace CMS.Presentation.Modules.KMS
             // lblMetaSep3
             // 
             this.lblMetaSep3.AutoSize = true;
-            this.lblMetaSep3.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblMetaSep3.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblMetaSep3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(195)))), ((int)(((byte)(205)))));
-            this.lblMetaSep3.Location = new System.Drawing.Point(40, 2);
+            this.lblMetaSep3.Location = new System.Drawing.Point(53, 2);
             this.lblMetaSep3.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblMetaSep3.Name = "lblMetaSep3";
-            this.lblMetaSep3.Size = new System.Drawing.Size(28, 19);
+            this.lblMetaSep3.Size = new System.Drawing.Size(37, 25);
             this.lblMetaSep3.TabIndex = 5;
             this.lblMetaSep3.Text = "  |  ";
             this.lblMetaSep3.Visible = false;
@@ -412,12 +420,12 @@ namespace CMS.Presentation.Modules.KMS
             // lblArticleType
             // 
             this.lblArticleType.AutoSize = true;
-            this.lblArticleType.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblArticleType.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblArticleType.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblArticleType.Location = new System.Drawing.Point(68, 2);
+            this.lblArticleType.Location = new System.Drawing.Point(90, 2);
             this.lblArticleType.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblArticleType.Name = "lblArticleType";
-            this.lblArticleType.Size = new System.Drawing.Size(35, 19);
+            this.lblArticleType.Size = new System.Drawing.Size(55, 25);
             this.lblArticleType.TabIndex = 0;
             this.lblArticleType.Text = "SOP";
             this.lblArticleType.Visible = false;
@@ -428,12 +436,12 @@ namespace CMS.Presentation.Modules.KMS
             // lblCategory
             // 
             this.lblCategory.AutoSize = true;
-            this.lblCategory.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblCategory.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblCategory.Location = new System.Drawing.Point(103, 2);
+            this.lblCategory.Location = new System.Drawing.Point(145, 2);
             this.lblCategory.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblCategory.Name = "lblCategory";
-            this.lblCategory.Size = new System.Drawing.Size(15, 19);
+            this.lblCategory.Size = new System.Drawing.Size(19, 25);
             this.lblCategory.TabIndex = 6;
             this.lblCategory.Text = "-";
             this.lblCategory.Click += new System.EventHandler(this.OnCardClick);
@@ -443,12 +451,12 @@ namespace CMS.Presentation.Modules.KMS
             // lblMetaSep2
             // 
             this.lblMetaSep2.AutoSize = true;
-            this.lblMetaSep2.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblMetaSep2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblMetaSep2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(195)))), ((int)(((byte)(205)))));
-            this.lblMetaSep2.Location = new System.Drawing.Point(118, 2);
+            this.lblMetaSep2.Location = new System.Drawing.Point(164, 2);
             this.lblMetaSep2.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblMetaSep2.Name = "lblMetaSep2";
-            this.lblMetaSep2.Size = new System.Drawing.Size(28, 19);
+            this.lblMetaSep2.Size = new System.Drawing.Size(37, 25);
             this.lblMetaSep2.TabIndex = 3;
             this.lblMetaSep2.Text = "  |  ";
             this.lblMetaSep2.Click += new System.EventHandler(this.OnCardClick);
@@ -458,12 +466,12 @@ namespace CMS.Presentation.Modules.KMS
             // lblVersion
             // 
             this.lblVersion.AutoSize = true;
-            this.lblVersion.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblVersion.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblVersion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblVersion.Location = new System.Drawing.Point(146, 2);
+            this.lblVersion.Location = new System.Drawing.Point(201, 2);
             this.lblVersion.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblVersion.Name = "lblVersion";
-            this.lblVersion.Size = new System.Drawing.Size(66, 19);
+            this.lblVersion.Size = new System.Drawing.Size(95, 25);
             this.lblVersion.TabIndex = 4;
             this.lblVersion.Text = "Version 1";
             this.lblVersion.Click += new System.EventHandler(this.OnCardClick);
@@ -473,12 +481,12 @@ namespace CMS.Presentation.Modules.KMS
             // lblMetaSep1
             // 
             this.lblMetaSep1.AutoSize = true;
-            this.lblMetaSep1.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblMetaSep1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblMetaSep1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(195)))), ((int)(((byte)(205)))));
-            this.lblMetaSep1.Location = new System.Drawing.Point(212, 2);
+            this.lblMetaSep1.Location = new System.Drawing.Point(296, 2);
             this.lblMetaSep1.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblMetaSep1.Name = "lblMetaSep1";
-            this.lblMetaSep1.Size = new System.Drawing.Size(28, 19);
+            this.lblMetaSep1.Size = new System.Drawing.Size(37, 25);
             this.lblMetaSep1.TabIndex = 1;
             this.lblMetaSep1.Text = "  |  ";
             this.lblMetaSep1.Click += new System.EventHandler(this.OnCardClick);
@@ -488,12 +496,12 @@ namespace CMS.Presentation.Modules.KMS
             // lblSummary
             // 
             this.lblSummary.AutoSize = true;
-            this.lblSummary.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblSummary.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblSummary.Location = new System.Drawing.Point(240, 2);
+            this.lblSummary.Location = new System.Drawing.Point(333, 2);
             this.lblSummary.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblSummary.Name = "lblSummary";
-            this.lblSummary.Size = new System.Drawing.Size(84, 19);
+            this.lblSummary.Size = new System.Drawing.Size(116, 25);
             this.lblSummary.TabIndex = 2;
             this.lblSummary.Text = "สรุปบทความ...";
             this.lblSummary.Click += new System.EventHandler(this.OnCardClick);
@@ -510,6 +518,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pHeaderRight.Controls.Add(this.label3);
             this.pHeaderRight.Controls.Add(this.lblExpiryDate);
             this.pHeaderRight.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pHeaderRight.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pHeaderRight.Location = new System.Drawing.Point(12, 6);
             this.pHeaderRight.Name = "pHeaderRight";
             this.pHeaderRight.Padding = new System.Windows.Forms.Padding(0, 5, 5, 0);
@@ -520,12 +529,12 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.label4.AutoSize = true;
             this.label4.Dock = System.Windows.Forms.DockStyle.Right;
-            this.label4.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.label4.Location = new System.Drawing.Point(428, 5);
+            this.label4.Location = new System.Drawing.Point(271, 5);
             this.label4.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(102, 19);
+            this.label4.Size = new System.Drawing.Size(141, 25);
             this.label4.TabIndex = 11;
             this.label4.Text = "Org./Div./Dept.";
             // 
@@ -533,13 +542,13 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.lblShowEntity.AutoSize = true;
             this.lblShowEntity.Dock = System.Windows.Forms.DockStyle.Right;
-            this.lblShowEntity.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblShowEntity.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblShowEntity.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblShowEntity.Location = new System.Drawing.Point(530, 5);
+            this.lblShowEntity.Location = new System.Drawing.Point(412, 5);
             this.lblShowEntity.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblShowEntity.Name = "lblShowEntity";
             this.lblShowEntity.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
-            this.lblShowEntity.Size = new System.Drawing.Size(31, 19);
+            this.lblShowEntity.Size = new System.Drawing.Size(42, 25);
             this.lblShowEntity.TabIndex = 10;
             this.lblShowEntity.Text = "xx";
             // 
@@ -547,12 +556,12 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.lblTitle.AutoSize = true;
             this.lblTitle.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
             this.lblTitle.Location = new System.Drawing.Point(0, 5);
             this.lblTitle.Margin = new System.Windows.Forms.Padding(0);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(95, 23);
+            this.lblTitle.Size = new System.Drawing.Size(93, 25);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "ชื่อบทความ";
             this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -564,12 +573,12 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.label2.AutoSize = true;
             this.label2.Dock = System.Windows.Forms.DockStyle.Right;
-            this.label2.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.label2.Location = new System.Drawing.Point(561, 5);
+            this.label2.Location = new System.Drawing.Point(454, 5);
             this.label2.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(72, 19);
+            this.label2.Size = new System.Drawing.Size(101, 25);
             this.label2.TabIndex = 7;
             this.label2.Text = "วันที่เผยแพร่";
             // 
@@ -577,13 +586,13 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.lblPublishedDate.AutoSize = true;
             this.lblPublishedDate.Dock = System.Windows.Forms.DockStyle.Right;
-            this.lblPublishedDate.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblPublishedDate.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblPublishedDate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblPublishedDate.Location = new System.Drawing.Point(633, 5);
+            this.lblPublishedDate.Location = new System.Drawing.Point(555, 5);
             this.lblPublishedDate.Margin = new System.Windows.Forms.Padding(0);
             this.lblPublishedDate.Name = "lblPublishedDate";
             this.lblPublishedDate.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
-            this.lblPublishedDate.Size = new System.Drawing.Size(78, 19);
+            this.lblPublishedDate.Size = new System.Drawing.Size(106, 25);
             this.lblPublishedDate.TabIndex = 1;
             this.lblPublishedDate.Text = "published";
             this.lblPublishedDate.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -592,12 +601,12 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.label3.AutoSize = true;
             this.label3.Dock = System.Windows.Forms.DockStyle.Right;
-            this.label3.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.label3.Location = new System.Drawing.Point(711, 5);
+            this.label3.Location = new System.Drawing.Point(661, 5);
             this.label3.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(85, 19);
+            this.label3.Size = new System.Drawing.Size(115, 25);
             this.label3.TabIndex = 8;
             this.label3.Text = "วันที่เผยยกเลิก";
             // 
@@ -605,12 +614,12 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.lblExpiryDate.AutoSize = true;
             this.lblExpiryDate.Dock = System.Windows.Forms.DockStyle.Right;
-            this.lblExpiryDate.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblExpiryDate.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblExpiryDate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblExpiryDate.Location = new System.Drawing.Point(796, 5);
+            this.lblExpiryDate.Location = new System.Drawing.Point(776, 5);
             this.lblExpiryDate.Margin = new System.Windows.Forms.Padding(0);
             this.lblExpiryDate.Name = "lblExpiryDate";
-            this.lblExpiryDate.Size = new System.Drawing.Size(45, 19);
+            this.lblExpiryDate.Size = new System.Drawing.Size(65, 25);
             this.lblExpiryDate.TabIndex = 9;
             this.lblExpiryDate.Text = "expire";
             this.lblExpiryDate.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;

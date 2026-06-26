@@ -213,6 +213,11 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (BackRequested != null)
                 BackRequested(this, EventArgs.Empty);
+            else
+            {
+                DialogResult = DialogResult.Cancel;
+                Close();
+            }
         }
 
         private void BtnCancel_Click(object sender, EventArgs e)
@@ -352,6 +357,12 @@ namespace CMS.Presentation.Modules.KMS
         {
             get { return true; }
             set { }
+        }
+
+        public DateTime? EffectiveDate
+        {
+            get { return dtpEffective.Value; }
+            set { if (value.HasValue) dtpEffective.Value = value.Value; }
         }
 
         public DateTime? ExpiryDate
@@ -607,13 +618,10 @@ namespace CMS.Presentation.Modules.KMS
                     lblStatusInfo.Text = "📝 Draft";
                     break;
                 case 2:
-                    lblStatusInfo.Text = "🔍 รอ Review";
+                    lblStatusInfo.Text = "✅ Active";
                     break;
                 case 3:
-                    lblStatusInfo.Text = "✅ Published";
-                    break;
-                case 4:
-                    lblStatusInfo.Text = "📦 Archived";
+                    lblStatusInfo.Text = "📦 Expire";
                     break;
                 default:
                     lblStatusInfo.Text = "—";

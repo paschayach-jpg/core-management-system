@@ -221,7 +221,7 @@ namespace CMS.Services
                         Summary          = row.Summary,
                         CategoryID       = row.ResolvedCategoryID,
                         ArticleType      = 5,
-                        Status           = 1,
+                        Status           = 2,
                         CurrentVersion   = 1,
                         PublishedDate    = row.PublishedDateParsed,
                         ExpiryDate       = row.ExpiryDateParsed,
