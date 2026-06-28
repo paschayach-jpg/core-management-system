@@ -112,8 +112,13 @@ namespace CMS.Presentation
             {
                 username = "khanitthac";
                 password = "KnidK@1412";
+            }else  
+            {
+                username = "pitakpong";
+                password = "P@takpong0132";
             }
             
+
 
             if (string.IsNullOrWhiteSpace(username))
             {

@@ -41,13 +41,14 @@ namespace CMS.Data.Repositories
             }
             catch (SqlException ex)
             {
-                // Handle duplicate key constraint violations
-                if (ex.Number == 2627 || ex.Number == 2601) // Unique constraint violation
+                // Unique constraint (index) OR stored-procedure RAISERROR code-dup check
+                if (ex.Number == 2627 || ex.Number == 2601 ||
+                    ex.Message.IndexOf("มีอยู่ในระบบแล้ว", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     throw new InvalidOperationException(string.Format(
                         "รหัสหน่วยงาน '{0}' มีอยู่ในระบบแล้ว กรุณาใช้รหัสอื่น", orgUnit.OrgUnitCode), ex);
                 }
-                throw; // Re-throw other SQL exceptions
+                throw;
             }
         }
 
@@ -63,6 +64,26 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@OrgUnitNameTH", orgUnit.OrgUnitNameTH);
                     cmd.Parameters.AddWithValue("@OrgUnitNameEN", (object)orgUnit.OrgUnitNameEN ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@SortOrder",     orgUnit.SortOrder);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void UpdateTypeAndParent(int orgUnitId, int newType, int? newParentId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    UPDATE EMS.OrgUnit
+                    SET    OrgUnitType     = @NewType,
+                           ParentOrgUnitID = @NewParentId
+                    WHERE  OrgUnitID = @OrgUnitID";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@OrgUnitID",   orgUnitId);
+                    cmd.Parameters.AddWithValue("@NewType",      newType);
+                    cmd.Parameters.AddWithValue("@NewParentId",  (object)newParentId ?? DBNull.Value);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -111,6 +132,25 @@ namespace CMS.Data.Repositories
                 using (var cmd = new SqlCommand("SELECT COUNT(*) FROM EMS.OrgUnit WHERE OrgUnitCode = @OrgUnitCode AND IsDeleted = 0", conn))
                 {
                     cmd.Parameters.AddWithValue("@OrgUnitCode", orgUnitCode);
+                    return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+            }
+        }
+
+        public bool ExistsByCodeUnderParent(string orgUnitCode, int? parentId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT COUNT(*) FROM EMS.OrgUnit
+                    WHERE OrgUnitCode = @Code AND IsDeleted = 0
+                      AND ((@ParentId IS NULL AND ParentOrgUnitID IS NULL)
+                        OR ParentOrgUnitID = @ParentId)";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Code", orgUnitCode);
+                    cmd.Parameters.AddWithValue("@ParentId", (object)parentId ?? DBNull.Value);
                     return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
                 }
             }
@@ -387,6 +427,48 @@ END";
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@OrgUnitID",  orgUnitId);
                     cmd.Parameters.AddWithValue("@DeletedBy",  deletedByADUser);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        // ── User view preferences ────────────────────────────────────────────────
+
+        public IEnumerable<int> GetHiddenOrgUnitIds(int userId)
+        {
+            var results = new List<int>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("EMS.sp_GetHiddenOrgUnitIds", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            results.Add((int)reader["OrgUnitId"]);
+                    }
+                }
+            }
+            return results;
+        }
+
+        public void SaveHiddenOrgUnitIds(int userId, IEnumerable<int> orgUnitIds)
+        {
+            var ids = orgUnitIds == null ? new List<int>() : new List<int>(orgUnitIds);
+            string xmlIds = ids.Count > 0
+                ? "<ids>" + string.Join("", System.Linq.Enumerable.Select(ids, i => "<id>" + i + "</id>")) + "</ids>"
+                : null;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("EMS.sp_SaveHiddenOrgUnitIds", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.AddWithValue("@XmlIds", (object)xmlIds ?? DBNull.Value);
                     cmd.ExecuteNonQuery();
                 }
             }

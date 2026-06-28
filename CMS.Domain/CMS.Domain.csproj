@@ -43,6 +43,7 @@
     <Compile Include="Enums\PermissionState.cs" />
     <Compile Include="Enums\UserRole.cs" />
     <Compile Include="Enums\OrgUnitTier.cs" />
+    <Compile Include="Enums\OrgStructurePattern.cs" />
     <Compile Include="Enums\ApprovalStatus.cs" />
     <Compile Include="Enums\PrincipalType.cs" />
     <Compile Include="Enums\FormFieldType.cs" />

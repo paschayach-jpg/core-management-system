@@ -331,6 +331,18 @@ namespace CMS.Controllers.DMS.Document
             }
         }
 
+        public IEnumerable<int> GetHiddenOrgUnitIds()
+        {
+            try   { return _service.GetHiddenOrgUnitIds(_user.UserID); }
+            catch { return new List<int>(); }
+        }
+
+        public void SaveHiddenOrgUnitIds(IEnumerable<int> orgUnitIds)
+        {
+            try { _service.SaveHiddenOrgUnitIds(_user.UserID, orgUnitIds); }
+            catch { /* ไม่ block UI ถ้า save ล้มเหลว */ }
+        }
+
         private void RefreshCurrentView()
         {
             if (_isConfidentialityView)

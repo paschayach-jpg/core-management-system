@@ -23,5 +23,11 @@ namespace CMS.Services.Interfaces
 
         /// <summary>ดึง relationship ที่ active ทั้งหมด (ใช้ build tree)</summary>
         IEnumerable<OrgUnitRelationship> GetAllActiveRelationships();
+
+        /// <summary>ดึง OrgUnitId ที่ user ซ่อนไว้ใน OrgStructureForm</summary>
+        IEnumerable<int> GetHiddenOrgUnitIds(int userId);
+
+        /// <summary>บันทึก OrgUnitId ที่ซ่อน (แทนที่ทั้งหมดของ user นี้)</summary>
+        void SaveHiddenOrgUnitIds(int userId, IEnumerable<int> orgUnitIds);
     }
 }

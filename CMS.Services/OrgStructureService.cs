@@ -42,20 +42,44 @@ namespace CMS.Services
             if (string.IsNullOrWhiteSpace(request.OrgUnitNameTH))
                 throw new ArgumentException("OrgUnit name (TH) is required.");
 
-            // Server-side code generation fallback if code is empty or conflicts
-            if (string.IsNullOrWhiteSpace(request.OrgUnitCode) || _orgUnitRepository.ExistsByCode(request.OrgUnitCode))
+            // LevelZeroOnly: if code already exists, promote/reassign existing unit to requested type+parent.
+            // HR Division → SubCommittee (no parent), HR Department → Division (parent=SubCommittee).
+            if (request.StructurePattern == OrgStructurePattern.LevelZeroOnly
+                && !string.IsNullOrWhiteSpace(request.OrgUnitCode)
+                && _orgUnitRepository.ExistsByCode(request.OrgUnitCode))
+            {
+                var existing = _orgUnitRepository.GetByCode(request.OrgUnitCode);
+                if (existing != null && !existing.IsDeleted)
+                {
+                    _orgUnitRepository.UpdateTypeAndParent(existing.OrgUnitID, request.OrgUnitType, request.ParentOrgUnitID);
+                    existing.OrgUnitType     = request.OrgUnitType;
+                    existing.ParentOrgUnitID = request.ParentOrgUnitID;
+                    if (request.OrgUnitType == (int)OrgUnitTier.SubCommittee)
+                    {
+                        try { _orgUnitRepository.InsertSubCommitteeRecord(
+                            existing.OrgUnitID, existing.OrgUnitCode,
+                            existing.OrgUnitNameTH, existing.OrgUnitNameEN, user.ADUserName); }
+                        catch { /* record already exists */ }
+                    }
+                    Log(user, "OrgStructure", "PROMOTE", "EMS.OrgUnit", existing.OrgUnitID, 1,
+                        string.Format("Level0 promote '{0}' → type {1}.", existing.OrgUnitCode, request.OrgUnitType));
+                    return existing;
+                }
+            }
+
+            // Code uniqueness is scoped to (code, parentId): same code allowed under different parents.
+            bool codeConflict = string.IsNullOrWhiteSpace(request.OrgUnitCode)
+                || _orgUnitRepository.ExistsByCodeUnderParent(request.OrgUnitCode, request.ParentOrgUnitID);
+            if (codeConflict)
             {
                 if (!string.IsNullOrWhiteSpace(request.OrgUnitCode))
-                {
-                    // Log the conflict for debugging
                     System.Diagnostics.Debug.WriteLine($"Code conflict detected: {request.OrgUnitCode} already exists. Generating new code.");
-                }
-                
+
                 request.OrgUnitCode = GenerateUniqueCode(request.OrgUnitType);
                 System.Diagnostics.Debug.WriteLine($"Server-side generated code: {request.OrgUnitCode}");
             }
 
-            ValidateParentTier(request.OrgUnitType, request.ParentOrgUnitID);
+            ValidateParentTierForPattern(request.StructurePattern, request.OrgUnitType, request.ParentOrgUnitID);
             ValidateNameUnique(request.OrgUnitNameTH.Trim(), request.ParentOrgUnitID, excludeId: null);
 
             var orgUnit = new OrgUnit
@@ -302,6 +326,74 @@ namespace CMS.Services
             }
         }
 
+        private void ValidateParentTierForPattern(OrgStructurePattern pattern, int orgUnitType, int? parentId)
+        {
+            switch (pattern)
+            {
+                case OrgStructurePattern.DivisionToDepartment:
+                    // 3-tier: SubCommittee (root) → Division → Department
+                    if (orgUnitType == (int)OrgUnitTier.SubCommittee)
+                    {
+                        // SubCommittee must be root
+                        if (parentId.HasValue)
+                            throw new ArgumentException("รูปแบบ Sub→Div→Dep: SubCommittee ต้องอยู่ที่ root (ไม่มี parent)");
+                    }
+                    else if (orgUnitType == (int)OrgUnitTier.Division)
+                    {
+                        // Division must have SubCommittee parent
+                        if (!parentId.HasValue)
+                            throw new ArgumentException("รูปแบบ Sub→Div→Dep: Division ต้องระบุ SubCommittee เป็น parent");
+
+                        var parent = _orgUnitRepository.GetById(parentId.Value);
+                        if (parent == null)
+                            throw new ArgumentException(string.Format("Parent OrgUnit ID {0} ไม่พบในระบบ", parentId.Value));
+                        if (!parent.IsActive)
+                            throw new ArgumentException(string.Format("Parent OrgUnit '{0}' ไม่ได้ใช้งาน", parent.OrgUnitNameTH));
+                        if (parent.OrgUnitType != (int)OrgUnitTier.SubCommittee)
+                            throw new ArgumentException(string.Format(
+                                "รูปแบบ Sub→Div→Dep: Division ต้องอยู่ใต้ SubCommittee เท่านั้น. " +
+                                "Parent '{0}' เป็น type {1}", parent.OrgUnitNameTH, parent.OrgUnitType));
+                    }
+                    else if (orgUnitType == (int)OrgUnitTier.Department)
+                    {
+                        // Department must have Division parent
+                        if (!parentId.HasValue)
+                            throw new ArgumentException("รูปแบบ Sub→Div→Dep: Department ต้องระบุ Division เป็น parent");
+
+                        var parent = _orgUnitRepository.GetById(parentId.Value);
+                        if (parent == null)
+                            throw new ArgumentException(string.Format("Parent OrgUnit ID {0} ไม่พบในระบบ", parentId.Value));
+                        if (!parent.IsActive)
+                            throw new ArgumentException(string.Format("Parent OrgUnit '{0}' ไม่ได้ใช้งาน", parent.OrgUnitNameTH));
+                        if (parent.OrgUnitType != (int)OrgUnitTier.Division)
+                            throw new ArgumentException(string.Format(
+                                "รูปแบบ Sub→Div→Dep: Department ต้องอยู่ใต้ Division เท่านั้น. " +
+                                "Parent '{0}' เป็น type {1}", parent.OrgUnitNameTH, parent.OrgUnitType));
+                    }
+                    else
+                    {
+                        throw new ArgumentException(string.Format("OrgUnitType {0} ไม่รองรับในรูปแบบ Sub→Div→Dep", orgUnitType));
+                    }
+                    break;
+
+                case OrgStructurePattern.LevelZeroOnly:
+                    // Tier-shift: HR Division → SubCommittee (no parent), HR Department → Division (under SubCommittee).
+                    // Only Department (type 3) is not allowed as final output type.
+                    if (orgUnitType == (int)OrgUnitTier.Department)
+                        throw new ArgumentException(
+                            "รูปแบบ Level 0: ไม่อนุญาต Department tier — ใช้ SubCommittee หรือ Division เท่านั้น");
+                    if (orgUnitType == (int)OrgUnitTier.SubCommittee && parentId.HasValue)
+                        throw new ArgumentException(
+                            "รูปแบบ Level 0: SubCommittee ต้องอยู่ที่ root (ไม่มี parent)");
+                    break;
+
+                default:
+                    // Original 3-tier validation (backward compat)
+                    ValidateParentTier(orgUnitType, parentId);
+                    break;
+            }
+        }
+
         private void ValidateParentTier(int orgUnitType, int? parentId)
         {
             switch (orgUnitType)
@@ -397,6 +489,16 @@ namespace CMS.Services
         public IEnumerable<OrgUnitRelationship> GetAllActiveRelationships()
         {
             return _orgUnitRepository.GetAllActiveRelationships();
+        }
+
+        public IEnumerable<int> GetHiddenOrgUnitIds(int userId)
+        {
+            return _orgUnitRepository.GetHiddenOrgUnitIds(userId);
+        }
+
+        public void SaveHiddenOrgUnitIds(int userId, IEnumerable<int> orgUnitIds)
+        {
+            _orgUnitRepository.SaveHiddenOrgUnitIds(userId, orgUnitIds);
         }
 
         /// <summary>Server-side code generation with database-level uniqueness guarantee</summary>

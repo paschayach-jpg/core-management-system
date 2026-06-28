@@ -20,9 +20,11 @@ namespace CMS.Data.Interfaces
 
         int Insert(OrgUnit orgUnit);
         void Update(OrgUnit orgUnit);
+        void UpdateTypeAndParent(int orgUnitId, int newType, int? newParentId);
         OrgUnit GetById(int orgUnitId);
         OrgUnit GetByCode(string orgUnitCode);
         bool ExistsByCode(string orgUnitCode);
+        bool ExistsByCodeUnderParent(string orgUnitCode, int? parentId);
 
         /// <summary>
         /// ตรวจสอบว่ามีชื่อ OrgUnitNameTH ซ้ำกันภายใต้ Parent เดียวกันหรือไม่
@@ -54,6 +56,14 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Sync soft-delete ของ m_SubCommittee ให้ตรงกับ EMS.OrgUnit</summary>
         void SoftDeleteSubCommitteeRecord(int orgUnitId, string deletedByADUser);
+
+        // ── User view preferences ────────────────────────────────────────────────
+
+        /// <summary>ดึง OrgUnitId ที่ user ซ่อนไว้ใน OrgStructureForm</summary>
+        IEnumerable<int> GetHiddenOrgUnitIds(int userId);
+
+        /// <summary>บันทึก OrgUnitId ที่ซ่อน (แทนที่ทั้งหมดของ user นี้)</summary>
+        void SaveHiddenOrgUnitIds(int userId, IEnumerable<int> orgUnitIds);
     }
 }
 

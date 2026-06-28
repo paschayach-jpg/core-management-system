@@ -1554,7 +1554,11 @@ namespace CMS.Presentation
         private void OpenOrgStructure()
         {
             if (_orgStructureService != null)
-                OpenChildForm(new OrgStructureForm(_orgStructureService, _currentUser, _authorityOrgLookupController));
+            {
+                var form = new OrgStructureForm(_orgStructureService, _currentUser, _authorityOrgLookupController);
+                form.HiddenNodesChanged += (s, e) => LoadDashboardFolderTree(force: true);
+                OpenChildForm(form);
+            }
             else
                 MessageBox.Show("Org Structure service is not available.", "MOD-001",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -3638,8 +3642,15 @@ namespace CMS.Presentation
                 if (allUnits.Count == 0)
                     return;
 
+                HashSet<int> hiddenIds;
+                try
+                {
+                    hiddenIds = new HashSet<int>(_orgStructureService.GetHiddenOrgUnitIds(_currentUser.UserID));
+                }
+                catch { hiddenIds = new HashSet<int>(); }
+
                 var subCommittees = allUnits
-                    .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive)
+                    .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive && !hiddenIds.Contains(u.OrgUnitId))
                     .OrderBy(u => u.Name);
 
                 treeViewFolders.BeginUpdate();

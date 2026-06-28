@@ -7,6 +7,7 @@ using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
+using CMS.Services.DTOs;
 
 namespace CMS.Presentation
 {
@@ -25,6 +26,15 @@ namespace CMS.Presentation
 
         // ตัวเลือกมุมมองปัจจุบัน: false = ตามองค์กร, true = ตามความลับ
         private bool _isConfView = false;
+
+        // รูปแบบโครงสร้างที่เลือกไว้ — เก็บตลอด session ไม่ต้องเลือกใหม่ทุกครั้งที่กด เพิ่ม
+        private OrgStructurePattern? _currentPattern;
+
+        // ซ่อน/แสดง root nodes — เก็บ OrgUnitId ที่ถูกซ่อน
+        private readonly HashSet<int> _hiddenOrgUnitIds = new HashSet<int>();
+
+        /// <summary>ยิงเมื่อ hidden node IDs เปลี่ยน — MDI_Container ใช้ reload Folder Explorer</summary>
+        public event EventHandler HiddenNodesChanged;
 
         public OrgStructureForm(CMS.Services.Interfaces.IOrgStructureService service, UserContext user,
             IAuthorityOrgLookupController authorityOrgLookupController = null)
@@ -55,26 +65,35 @@ namespace CMS.Presentation
             treeView.SelectedImageKey = "open_folder";
             treeView.BeforeExpand  += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "open_folder"; };
             treeView.BeforeCollapse += (s, ev) => { ev.Node.ImageKey = ev.Node.SelectedImageKey = "folder"; };
+            treeView.DrawMode = TreeViewDrawMode.OwnerDrawText;
+            treeView.DrawNode += TvDrawNodeNoFocusRect;
 
             // ── Admin-only: ปุ่มแก้ไขโครงสร้างเปิดได้เฉพาะ Admin (AppRole == 4) ──
             bool isAdmin = _currentUser != null && _currentUser.AppRole == 4;
-            btnCreate.Enabled     = isAdmin;
-            btnEdit.Enabled       = isAdmin;
-            btnMove.Enabled       = isAdmin;
-            btnDelete.Enabled     = isAdmin;
-            btnDeactivate.Enabled = isAdmin;
-            btnClose.Enabled      = true;
+            btnSelectPattern.Enabled = isAdmin;
+            btnCreate.Enabled        = isAdmin;
+            btnEdit.Enabled          = isAdmin;
+            btnMove.Enabled          = isAdmin;
+            btnDelete.Enabled        = isAdmin;
+            btnDeactivate.Enabled    = isAdmin;
+            btnClose.Enabled         = true;
 
             if (!isAdmin)
             {
-                btnCreate.ToolTipText     = "เฉพาะ Admin เท่านั้น";
-                btnEdit.ToolTipText       = "เฉพาะ Admin เท่านั้น";
-                btnMove.ToolTipText       = "เฉพาะ Admin เท่านั้น";
-                btnDelete.ToolTipText     = "เฉพาะ Admin เท่านั้น";
-                btnDeactivate.ToolTipText = "เฉพาะ Admin เท่านั้น";
+                btnSelectPattern.ToolTipText = "เฉพาะ Admin เท่านั้น";
+                btnCreate.ToolTipText        = "เฉพาะ Admin เท่านั้น";
+                btnEdit.ToolTipText          = "เฉพาะ Admin เท่านั้น";
+                btnMove.ToolTipText          = "เฉพาะ Admin เท่านั้น";
+                btnDelete.ToolTipText        = "เฉพาะ Admin เท่านั้น";
+                btnDeactivate.ToolTipText    = "เฉพาะ Admin เท่านั้น";
             }
 
             SetupTreeViewContextMenu(isAdmin);
+
+            // โหลด hidden node IDs จาก DB
+            foreach (var id in _presenter.GetHiddenOrgUnitIds())
+                _hiddenOrgUnitIds.Add(id);
+            UpdateShowAllButton();
 
             // placeholder สี
             txtSearch.ForeColor = Color.Gray;
@@ -170,21 +189,41 @@ namespace CMS.Presentation
                 treeView.Nodes.Add(scNode);
             }
 
-            // ฝ่ายที่ไม่มี parent ใดๆ (standalone)
+            // Level 0: ฝ่ายที่ไม่มี parent (standalone / LevelZeroOnly pattern)
             var standaloneDivisions = _allUnits
                 .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == null)
-                .OrderBy(u => u.Name);
+                .OrderBy(u => u.Name)
+                .ToList();
 
-            foreach (var div in standaloneDivisions)
+            if (standaloneDivisions.Any())
             {
-                var divNode = BuildDivisionNode(div);
-                divNode.Text      = "🔗 " + divNode.Text;
-                divNode.ForeColor = Color.FromArgb(0, 100, 0);
-                divNode.NodeFont  = new Font(SystemFonts.DefaultFont, FontStyle.Bold);
-                treeView.Nodes.Add(divNode);
+                var headerNode = new TreeNode("≡  Level 0 (ระดับเดียว)")
+                {
+                    ForeColor = Color.FromArgb(80, 80, 80),
+                    NodeFont  = new Font(SystemFonts.DefaultFont, FontStyle.Bold | FontStyle.Italic),
+                    Tag       = null
+                };
+                foreach (var div in standaloneDivisions)
+                {
+                    var divNode = BuildDivisionNode(div);
+                    divNode.ForeColor = Color.FromArgb(0, 100, 0);
+                    divNode.NodeFont  = new Font(SystemFonts.DefaultFont, FontStyle.Bold);
+                    headerNode.Nodes.Add(divNode);
+                }
+                treeView.Nodes.Add(headerNode);
+                headerNode.Expand();
             }
 
-            treeView.ExpandAll();
+            if (_hiddenOrgUnitIds.Count > 0)
+            {
+                foreach (TreeNode node in treeView.Nodes.Cast<TreeNode>().ToList())
+                {
+                    if (node.Tag is OrgUnit u && _hiddenOrgUnitIds.Contains(u.OrgUnitId))
+                        treeView.Nodes.Remove(node);
+                }
+            }
+
+            treeView.CollapseAll();
             treeView.EndUpdate();
         }
 
@@ -273,7 +312,7 @@ namespace CMS.Presentation
                 treeView.Nodes.Add(groupNode);
             }
 
-            treeView.ExpandAll();
+            treeView.CollapseAll();
             treeView.EndUpdate();
         }
 
@@ -327,53 +366,183 @@ namespace CMS.Presentation
         // Toolbar button handlers
         // -----------------------------------------------------------------------
 
+        private void btnSelectPattern_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new OrgStructurePatternDialog())
+            {
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                _currentPattern = dlg.SelectedPattern.Value;
+                UpdatePatternLabel();
+            }
+        }
+
+        private void UpdatePatternLabel()
+        {
+            if (!_currentPattern.HasValue)
+            {
+                lblPatternStatus.Text      = "(ยังไม่เลือก)";
+                lblPatternStatus.ForeColor = System.Drawing.SystemColors.GrayText;
+                return;
+            }
+            switch (_currentPattern.Value)
+            {
+                case OrgStructurePattern.DivisionToDepartment:
+                    lblPatternStatus.Text      = "Sub→Div→Dep";
+                    lblPatternStatus.ForeColor = System.Drawing.Color.FromArgb(0, 51, 102);
+                    break;
+                case OrgStructurePattern.LevelZeroOnly:
+                    lblPatternStatus.Text      = "Level 0";
+                    lblPatternStatus.ForeColor = System.Drawing.Color.FromArgb(0, 120, 60);
+                    break;
+                default:
+                    lblPatternStatus.Text      = "(ไม่ระบุ)";
+                    lblPatternStatus.ForeColor = System.Drawing.SystemColors.GrayText;
+                    break;
+            }
+        }
+
         private void btnCreate_Click(object sender, EventArgs e)
         {
+            // Step 0: ใช้ pattern ที่เก็บไว้ — ถ้ายังไม่เลือกให้เลือกก่อน
+            if (!_currentPattern.HasValue)
+            {
+                using (var patternDlg = new OrgStructurePatternDialog())
+                {
+                    if (patternDlg.ShowDialog(this) != DialogResult.OK) return;
+                    _currentPattern = patternDlg.SelectedPattern.Value;
+                    UpdatePatternLabel();
+                }
+            }
+            OrgStructurePattern pattern = _currentPattern.Value;
+
             // Step 1: ตรวจสอบ selected node เพื่อกำหนด context
             TreeNode selectedNode = treeView.SelectedNode;
             OrgUnit selectedOrgUnit = null;
-            
+
             if (selectedNode?.Tag is OrgUnit unit)
-            {
                 selectedOrgUnit = unit;
-            }
 
-            // Step 2: เลือกประเภทหน่วยงานที่ต้องการสร้าง (ตาม context ของ parent)
-            OrgUnitTier? selectedTier = PromptForTier(selectedOrgUnit);
-            if (!selectedTier.HasValue) return;
+            // Step 2: กำหนด tier และ parent ตาม pattern
+            OrgUnitTier? selectedTier;
+            OrgUnit parentForDialog;
 
-            // Step 3: ตรวจสอบว่ามี parent ที่จำเป็นหรือไม่ (เฉพาะ Department เท่านั้น)
-            if (selectedTier.Value == OrgUnitTier.Department)
+            if (pattern == OrgStructurePattern.LevelZeroOnly)
             {
-                var divisions = _allUnits.Where(u => u.Tier == OrgUnitTier.Division && u.IsActive).ToList();
-                if (divisions.Count == 0)
+                // Level 0: Division ที่ root เท่านั้น — ไม่ต้องเลือก tier
+                selectedTier    = OrgUnitTier.Division;
+                parentForDialog = null;
+            }
+            else if (pattern == OrgStructurePattern.DivisionToDepartment)
+            {
+                // Sub→Div→Dep: context-aware based on selected node
+                if (selectedOrgUnit == null)
                 {
-                    ShowError("ยังไม่มีฝ่ายในระบบ\nกรุณาสร้างฝ่ายก่อนสร้างแผนก");
+                    // Nothing selected → create SubCommittee as root
+                    selectedTier    = OrgUnitTier.SubCommittee;
+                    parentForDialog = null;
+                }
+                else if (selectedOrgUnit.Tier == OrgUnitTier.SubCommittee)
+                {
+                    // SubCommittee selected → ask: Division under it, or new SubCommittee root?
+                    var choice = MessageBox.Show(
+                        string.Format(
+                            "เลือกสิ่งที่ต้องการสร้าง:\n\n" +
+                            "  [Yes]  สร้าง Division ใต้ \"{0}\"\n" +
+                            "  [No]   สร้าง SubCommittee ใหม่ที่ root",
+                            selectedOrgUnit.OrgUnitNameTH),
+                        "เลือกประเภทที่ต้องการสร้าง",
+                        MessageBoxButtons.YesNoCancel,
+                        MessageBoxIcon.Question);
+                    if (choice == DialogResult.Cancel) return;
+                    if (choice == DialogResult.Yes)
+                    {
+                        selectedTier    = OrgUnitTier.Division;
+                        parentForDialog = selectedOrgUnit;
+                    }
+                    else
+                    {
+                        selectedTier    = OrgUnitTier.SubCommittee;
+                        parentForDialog = null;
+                    }
+                }
+                else if (selectedOrgUnit.Tier == OrgUnitTier.Division)
+                {
+                    // Division selected → add Department under it
+                    selectedTier    = OrgUnitTier.Department;
+                    parentForDialog = selectedOrgUnit;
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "กรุณาเลือก SubCommittee หรือ Division เพื่อเพิ่มหน่วยงานใหม่\n" +
+                        "หรือยกเลิกการเลือกทั้งหมดเพื่อสร้าง SubCommittee ใหม่",
+                        "ไม่สามารถเพิ่มได้", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
+            else
+            {
+                // Legacy: ให้ user เลือก tier เอง
+                selectedTier = PromptForTier(selectedOrgUnit, pattern);
+                if (!selectedTier.HasValue) return;
+                parentForDialog = selectedTier.Value == OrgUnitTier.SubCommittee ? null : selectedOrgUnit;
+            }
 
-            // Step 4: เปิด dialog สร้างหน่วยงาน — SubCommittee ไม่มี parent ให้ nullify context
-            OrgUnit parentForDialog = selectedTier.Value == OrgUnitTier.SubCommittee ? null : selectedOrgUnit;
+            // Step 3: เปิด dialog สร้างหน่วยงาน
             using (var dlg = new CreateOrgUnitDialog(_allUnits, null, selectedTier,
                 selectedParent: parentForDialog,
                 authorityOrgLookupController: _authorityOrgLookupController))
             {
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
+                // ใส่ pattern ใน request ก่อนส่ง presenter
                 if (dlg.HierarchicalResult != null)
-                    _presenter.CreateDivisionWithDepartments(
-                        dlg.HierarchicalResult.DivisionRequest,
-                        dlg.HierarchicalResult.DepartmentRequests);
+                {
+                    if (pattern == OrgStructurePattern.LevelZeroOnly)
+                    {
+                        // Level0: shift tiers up by 1 — HR Division → SubCommittee, HR Department → Division
+                        var divReq = dlg.HierarchicalResult.DivisionRequest;
+                        divReq.OrgUnitType     = (int)OrgUnitTier.SubCommittee;
+                        divReq.ParentOrgUnitID = null;
+                        divReq.StructurePattern = pattern;
+
+                        var deptRequests = dlg.HierarchicalResult.DepartmentRequests
+                                           ?? new List<CreateOrgUnitRequest>();
+                        foreach (var r in deptRequests)
+                        {
+                            r.OrgUnitType      = (int)OrgUnitTier.Division;
+                            r.ParentOrgUnitID  = null;  // presenter fills after SubCommittee created
+                            r.StructurePattern = pattern;
+                        }
+                        _presenter.CreateDivisionWithDepartments(divReq, deptRequests);
+                    }
+                    else
+                    {
+                        dlg.HierarchicalResult.DivisionRequest.StructurePattern = pattern;
+                        if (dlg.HierarchicalResult.DepartmentRequests != null)
+                            foreach (var r in dlg.HierarchicalResult.DepartmentRequests)
+                                r.StructurePattern = pattern;
+                        _presenter.CreateDivisionWithDepartments(
+                            dlg.HierarchicalResult.DivisionRequest,
+                            dlg.HierarchicalResult.DepartmentRequests);
+                    }
+                }
                 else if (dlg.BatchResults != null && dlg.BatchResults.Count > 0)
+                {
+                    foreach (var r in dlg.BatchResults) r.StructurePattern = pattern;
                     _presenter.CreateOrgUnitBatch(dlg.BatchResults);
+                }
                 else if (dlg.Result != null)
+                {
+                    dlg.Result.StructurePattern = pattern;
                     _presenter.CreateOrgUnitBatch(new[] { dlg.Result });
+                }
             }
         }
 
-        /// <summary>แสดง dialog เลือกประเภทหน่วยงาน</summary>
-        private OrgUnitTier? PromptForTier(OrgUnit selectedParent = null)
+        /// <summary>แสดง dialog เลือกประเภทหน่วยงาน กรองตาม pattern ที่เลือก</summary>
+        private OrgUnitTier? PromptForTier(OrgUnit selectedParent = null,
+            OrgStructurePattern pattern = OrgStructurePattern.Legacy)
         {
             using (var dlg = new Form())
             {
@@ -392,13 +561,11 @@ namespace CMS.Presentation
                     Height    = 44,
                     BackColor = Color.FromArgb(0, 51, 102)
                 };
-                
+
                 string headerText = "เลือกประเภทหน่วยงานที่ต้องการสร้าง";
                 if (selectedParent != null)
-                {
-                    headerText = $"สร้างหน่วยงานใต้: {selectedParent.Name}";
-                }
-                
+                    headerText = string.Format("สร้างหน่วยงานใต้: {0}", selectedParent.Name);
+
                 pnlHdr.Controls.Add(new Label
                 {
                     Text      = headerText,
@@ -410,36 +577,45 @@ namespace CMS.Presentation
                 });
                 dlg.Controls.Add(pnlHdr);
 
-                OrgUnitTier result = OrgUnitTier.SubCommittee;
+                OrgUnitTier result = OrgUnitTier.Division;
                 int yPos = 60;
 
-                // กำหนดตัวเลือกตาม parent type
+                // กำหนดตัวเลือกตาม parent type และ pattern
                 List<OrgUnitTier> availableTiers = new List<OrgUnitTier>();
-                
+
                 if (selectedParent == null)
                 {
-                    // ไม่ได้เลือก parent - แสดงทุกตัวเลือก
-                    availableTiers.Add(OrgUnitTier.SubCommittee);
-                    availableTiers.Add(OrgUnitTier.Division);
-                    availableTiers.Add(OrgUnitTier.Department);
+                    if (pattern == OrgStructurePattern.DivisionToDepartment)
+                    {
+                        // Sub→Div→Dep: Sub เป็น root — ต้องสร้าง SubCommittee ก่อน
+                        availableTiers.Add(OrgUnitTier.SubCommittee);
+                        result = OrgUnitTier.SubCommittee;
+                    }
+                    else
+                    {
+                        // Legacy: แสดงทุกตัวเลือก
+                        availableTiers.Add(OrgUnitTier.SubCommittee);
+                        availableTiers.Add(OrgUnitTier.Division);
+                        availableTiers.Add(OrgUnitTier.Department);
+                        result = OrgUnitTier.SubCommittee;
+                    }
                 }
                 else if (selectedParent.Tier == OrgUnitTier.SubCommittee)
                 {
-                    // Parent เป็น SubCommittee - สร้างฝ่ายใต้ SubCommittee นี้ หรือสร้าง SubCommittee ใหม่
                     availableTiers.Add(OrgUnitTier.Division);
-                    availableTiers.Add(OrgUnitTier.SubCommittee);
-                    result = OrgUnitTier.Division; // Set default เป็น Division
+                    if (pattern != OrgStructurePattern.DivisionToDepartment)
+                        availableTiers.Add(OrgUnitTier.SubCommittee);
+                    result = OrgUnitTier.Division;
                 }
                 else if (selectedParent.Tier == OrgUnitTier.Division)
                 {
-                    // Parent เป็น Division - สร้างได้ทั้ง SubCommittee และ Department
-                    availableTiers.Add(OrgUnitTier.SubCommittee);
+                    if (pattern != OrgStructurePattern.DivisionToDepartment)
+                        availableTiers.Add(OrgUnitTier.SubCommittee);
                     availableTiers.Add(OrgUnitTier.Department);
-                    result = OrgUnitTier.Department; // Set default เป็น Department
+                    result = OrgUnitTier.Department;
                 }
                 else
                 {
-                    // Parent เป็น Department - ไม่สามารถสร้างอะไรใต้ได้
                     ShowError("ไม่สามารถสร้างหน่วยงานใต้แผนกได้");
                     return null;
                 }
@@ -646,6 +822,22 @@ namespace CMS.Presentation
             treeView.EndUpdate();
         }
 
+        private void btnShowAll_Click(object sender, EventArgs e)
+        {
+            _hiddenOrgUnitIds.Clear();
+            _presenter.SaveHiddenOrgUnitIds(_hiddenOrgUnitIds);
+            _presenter.LoadOrganizationView();
+            UpdateShowAllButton();
+            HiddenNodesChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void UpdateShowAllButton()
+        {
+            int count = _hiddenOrgUnitIds.Count;
+            btnShowAll.Enabled = count > 0;
+            btnShowAll.Text = count > 0 ? $"👁 แสดงทั้งหมด ({count})" : "👁 แสดงทั้งหมด";
+        }
+
         private void btnClose_Click(object sender, EventArgs e)
         {
             this.Close();
@@ -709,11 +901,7 @@ namespace CMS.Presentation
             string parentInfo = "";
             if (unit.Tier == OrgUnitTier.Division && unit.ParentId == null)
             {
-                parentInfo = " (Many-to-Many)";
-            }
-            else if (unit.ParentId.HasValue)
-            {
-                parentInfo = $" (Parent: {unit.ParentId})";
+                parentInfo = " [Level 0]";
             }
 
             string label = string.Format("{0} [{1}]{2}{3}",
@@ -940,6 +1128,29 @@ namespace CMS.Presentation
             mnuDeactivate.ForeColor = isAdmin ? Color.Firebrick : SystemColors.GrayText;
             mnuDeactivate.Click    += (s, e) => btnDeactivate_Click(s, e);
 
+            var mnuHideNode = new ToolStripMenuItem("🙈 ซ่อน node นี้");
+            var mnuShowAllCtx = new ToolStripMenuItem("👁 แสดงทั้งหมด");
+            mnuHideNode.Click += (s, e) =>
+            {
+                var node = treeView.SelectedNode;
+                if (node != null && node.Level == 0 && node.Tag is OrgUnit unit)
+                {
+                    _hiddenOrgUnitIds.Add(unit.OrgUnitId);
+                    treeView.Nodes.Remove(node);
+                    _presenter.SaveHiddenOrgUnitIds(_hiddenOrgUnitIds);
+                    UpdateShowAllButton();
+                    HiddenNodesChanged?.Invoke(this, EventArgs.Empty);
+                }
+            };
+            mnuShowAllCtx.Click += (s, e) =>
+            {
+                _hiddenOrgUnitIds.Clear();
+                _presenter.SaveHiddenOrgUnitIds(_hiddenOrgUnitIds);
+                _presenter.LoadOrganizationView();
+                UpdateShowAllButton();
+                HiddenNodesChanged?.Invoke(this, EventArgs.Empty);
+            };
+
             ctx.Items.Add(mnuAdd);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuEdit);
@@ -947,6 +1158,9 @@ namespace CMS.Presentation
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuDelete);
             ctx.Items.Add(mnuDeactivate);
+            ctx.Items.Add(new ToolStripSeparator());
+            ctx.Items.Add(mnuHideNode);
+            ctx.Items.Add(mnuShowAllCtx);
 
             // เลือก node ที่ right-click ก่อนเปิด menu
             treeView.NodeMouseClick += (s, e) =>
@@ -959,10 +1173,19 @@ namespace CMS.Presentation
             ctx.Opening += (s, e) =>
             {
                 bool hasSelection = treeView.SelectedNode?.Tag is OrgUnit;
-                mnuEdit.Enabled      = isAdmin && hasSelection;
-                mnuMove.Enabled      = isAdmin && hasSelection;
-                mnuDelete.Enabled    = isAdmin && hasSelection;
+                bool isRootOrgUnit = hasSelection && treeView.SelectedNode.Level == 0;
+                mnuEdit.Enabled       = isAdmin && hasSelection;
+                mnuMove.Enabled       = isAdmin && hasSelection;
+                mnuDelete.Enabled     = isAdmin && hasSelection;
                 mnuDeactivate.Enabled = isAdmin && hasSelection;
+                mnuHideNode.Enabled   = isRootOrgUnit;
+                mnuHideNode.Text      = isRootOrgUnit
+                    ? $"🙈 ซ่อน \"{((OrgUnit)treeView.SelectedNode.Tag).Name}\""
+                    : "🙈 ซ่อน node นี้";
+                mnuShowAllCtx.Enabled = _hiddenOrgUnitIds.Count > 0;
+                mnuShowAllCtx.Text    = _hiddenOrgUnitIds.Count > 0
+                    ? $"👁 แสดงทั้งหมด ({_hiddenOrgUnitIds.Count})"
+                    : "👁 แสดงทั้งหมด";
             };
 
             treeView.ContextMenuStrip = ctx;
@@ -1002,6 +1225,20 @@ namespace CMS.Presentation
             catch (Exception ex)
             {
                 ShowError("ไม่สามารถกรองข้อมูลตามระดับได้: " + ex.Message);
+            }
+        }
+
+        private void TvDrawNodeNoFocusRect(object sender, DrawTreeNodeEventArgs e)
+        {
+            e.DrawDefault = true;
+            if ((e.State & TreeNodeStates.Focused) != 0)
+            {
+                Color bg = e.Node.IsSelected
+                    ? (treeView.Focused ? SystemColors.Highlight : SystemColors.Control)
+                    : (e.Node.BackColor != Color.Empty ? e.Node.BackColor : treeView.BackColor);
+                using (var p = new Pen(bg))
+                    e.Graphics.DrawRectangle(p, e.Bounds.X, e.Bounds.Y,
+                        e.Bounds.Width - 1, e.Bounds.Height - 1);
             }
         }
     }

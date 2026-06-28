@@ -46,5 +46,12 @@ namespace CMS.Services.DTOs
         /// ไม่ได้สร้าง OrgUnit ใหม่
         /// </summary>
         public int? LinkExistingOrgUnitId { get; set; }
+
+        /// <summary>
+        /// Pattern used when creating this node. Selected by user via dialog before create.
+        /// Default = DivisionToDepartment for backward compatibility.
+        /// </summary>
+        public CMS.Domain.Enums.OrgStructurePattern StructurePattern { get; set; }
+            = CMS.Domain.Enums.OrgStructurePattern.Legacy;
     }
 }

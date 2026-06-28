@@ -16,6 +16,9 @@ namespace CMS.Presentation
             this.pnlBreadcrumb = new System.Windows.Forms.Panel();
             this.lblBreadcrumb = new System.Windows.Forms.Label();
             this.toolStrip = new System.Windows.Forms.ToolStrip();
+            this.btnSelectPattern = new System.Windows.Forms.ToolStripButton();
+            this.lblPatternStatus = new System.Windows.Forms.ToolStripLabel();
+            this.separator0 = new System.Windows.Forms.ToolStripSeparator();
             this.btnCreate = new System.Windows.Forms.ToolStripButton();
             this.btnEdit = new System.Windows.Forms.ToolStripButton();
             this.btnMove = new System.Windows.Forms.ToolStripButton();
@@ -25,6 +28,7 @@ namespace CMS.Presentation
             this.separator2 = new System.Windows.Forms.ToolStripSeparator();
             this.btnExpandAll = new System.Windows.Forms.ToolStripButton();
             this.btnCollapseAll = new System.Windows.Forms.ToolStripButton();
+            this.btnShowAll = new System.Windows.Forms.ToolStripButton();
             this.separator3 = new System.Windows.Forms.ToolStripSeparator();
             this.btnClose = new System.Windows.Forms.ToolStripButton();
             this.splitterMain = new System.Windows.Forms.Splitter();
@@ -82,6 +86,9 @@ namespace CMS.Presentation
             this.toolStrip.BackColor = System.Drawing.Color.White;
             this.toolStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.toolStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.btnSelectPattern,
+            this.lblPatternStatus,
+            this.separator0,
             this.btnCreate,
             this.btnEdit,
             this.btnMove,
@@ -91,15 +98,33 @@ namespace CMS.Presentation
             this.separator2,
             this.btnExpandAll,
             this.btnCollapseAll,
+            this.btnShowAll,
             this.separator3,
             this.btnClose});
             this.toolStrip.Location = new System.Drawing.Point(0, 43);
             this.toolStrip.Name = "toolStrip";
             this.toolStrip.Size = new System.Drawing.Size(1333, 27);
             this.toolStrip.TabIndex = 0;
-            // 
+            //
+            // btnSelectPattern
+            //
+            this.btnSelectPattern.Name = "btnSelectPattern";
+            this.btnSelectPattern.Text = "⚙ รูปแบบ";
+            this.btnSelectPattern.ToolTipText = "เลือกหรือเปลี่ยนรูปแบบโครงสร้าง";
+            this.btnSelectPattern.Click += new System.EventHandler(this.btnSelectPattern_Click);
+            //
+            // lblPatternStatus
+            //
+            this.lblPatternStatus.Name = "lblPatternStatus";
+            this.lblPatternStatus.Text = "(ยังไม่เลือก)";
+            this.lblPatternStatus.ForeColor = System.Drawing.SystemColors.GrayText;
+            //
+            // separator0
+            //
+            this.separator0.Name = "separator0";
+            //
             // btnCreate
-            // 
+            //
             this.btnCreate.Name = "btnCreate";
             this.btnCreate.Size = new System.Drawing.Size(49, 24);
             this.btnCreate.Text = "+ เพิ่ม";
@@ -165,6 +190,14 @@ namespace CMS.Presentation
             this.btnCollapseAll.Text = "➖ ย่อทั้งหมด";
             this.btnCollapseAll.ToolTipText = "ย่อรายการทั้งหมด";
             this.btnCollapseAll.Click += new System.EventHandler(this.btnCollapseAll_Click);
+            //
+            // btnShowAll
+            //
+            this.btnShowAll.Name = "btnShowAll";
+            this.btnShowAll.Text = "👁 แสดงทั้งหมด";
+            this.btnShowAll.ToolTipText = "แสดง node ที่ซ่อนอยู่ทั้งหมด";
+            this.btnShowAll.Enabled = false;
+            this.btnShowAll.Click += new System.EventHandler(this.btnShowAll_Click);
             //
             // separator3
             //
@@ -434,6 +467,9 @@ namespace CMS.Presentation
         private System.Windows.Forms.Panel              pnlBreadcrumb;
         private System.Windows.Forms.Label              lblBreadcrumb;
         private System.Windows.Forms.ToolStrip          toolStrip;
+        private System.Windows.Forms.ToolStripButton    btnSelectPattern;
+        private System.Windows.Forms.ToolStripLabel     lblPatternStatus;
+        private System.Windows.Forms.ToolStripSeparator separator0;
         private System.Windows.Forms.ToolStripButton    btnCreate;
         private System.Windows.Forms.ToolStripButton    btnEdit;
         private System.Windows.Forms.ToolStripButton    btnMove;
@@ -443,6 +479,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ToolStripSeparator separator2;
         private System.Windows.Forms.ToolStripButton    btnExpandAll;
         private System.Windows.Forms.ToolStripButton    btnCollapseAll;
+        private System.Windows.Forms.ToolStripButton    btnShowAll;
         private System.Windows.Forms.ToolStripSeparator separator3;
         private System.Windows.Forms.ToolStripButton    btnClose;
         private System.Windows.Forms.Splitter           splitterMain;

@@ -291,17 +291,32 @@ namespace CMS.Presentation
             if (cboParent.SelectedItem is OrgUnitItem pi && pi.OrgUnit != null)
                 subCommitteeId = pi.OrgUnit.OrgUnitId;
 
-            // สร้าง lookup sets ของ code และ name ที่มีอยู่แล้วใต้ SubCommittee นี้
-            // (match ทั้ง OrgUnitCode และ OrgUnitNameTH เพื่อรองรับกรณีที่ code ไม่ตรงกับ HR)
+            // สร้าง lookup sets ของ code และ name ที่มีอยู่แล้ว
             var existingDivCodes = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var existingDivNames = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (subCommitteeId.HasValue)
             {
+                // มี parent SubCommittee → check Divisions ใต้มัน
                 foreach (var eu in _allUnits)
                 {
                     if (!eu.IsActive || eu.IsDeleted) continue;
                     if (eu.Tier != OrgUnitTier.Division) continue;
                     if (eu.ParentId != subCommitteeId.Value) continue;
+                    if (!string.IsNullOrEmpty(eu.OrgUnitCode))
+                        existingDivCodes.Add(eu.OrgUnitCode.Trim());
+                    if (!string.IsNullOrEmpty(eu.OrgUnitNameTH))
+                        existingDivNames.Add(eu.OrgUnitNameTH.Trim());
+                    if (!string.IsNullOrEmpty(eu.OrgUnitNameEN))
+                        existingDivNames.Add(eu.OrgUnitNameEN.Trim());
+                }
+            }
+            else
+            {
+                // Level 0 root creation → check SubCommittees ที่มีอยู่แล้วที่ root (no parent)
+                foreach (var eu in _allUnits)
+                {
+                    if (!eu.IsActive || eu.IsDeleted) continue;
+                    if (eu.Tier != OrgUnitTier.SubCommittee) continue;
                     if (!string.IsNullOrEmpty(eu.OrgUnitCode))
                         existingDivCodes.Add(eu.OrgUnitCode.Trim());
                     if (!string.IsNullOrEmpty(eu.OrgUnitNameTH))
@@ -418,15 +433,15 @@ namespace CMS.Presentation
                 // สร้าง TreeNode สำหรับแต่ละ Division
                 foreach (var div in hrDivisions)
                 {
-                    bool divAlreadyExists = subCommitteeId.HasValue && (
+                    bool divAlreadyExists =
                         (!string.IsNullOrEmpty(div.DivisionCode) && existingDivCodes.Contains(div.DivisionCode.Trim())) ||
-                        (!string.IsNullOrEmpty(div.DivisionName) && existingDivNames.Contains(div.DivisionName.Trim())));
+                        (!string.IsNullOrEmpty(div.DivisionName) && existingDivNames.Contains(div.DivisionName.Trim()));
 
                     var divNode = new TreeNode(
                         string.Format("{0}  {1}{2}",
                             div.DivisionCode ?? "",
                             div.DivisionName ?? "",
-                            divAlreadyExists ? "  (มีอยู่แล้ว — เลือกไม่ได้)" : ""))
+                            divAlreadyExists ? "  (มีอยู่แล้ว)" : ""))
                     {
                         Tag = new OrgUnitData {
                             Type = "ฝ่าย",
@@ -470,20 +485,8 @@ namespace CMS.Presentation
                     tv.Nodes.Add(divNode);
                 }
 
-                // ── BeforeCheck: ป้องกันการเลือกรายการที่มีอยู่แล้ว (ก่อน AfterCheck) ──
-                tv.BeforeCheck += (s, e2) => {
-                    if (e2.Node.Level == 0)
-                    {
-                        var data = e2.Node.Tag as OrgUnitData;
-                        if (data != null && data.AlreadyExistsInParent && e2.Node.Checked == false)
-                        {
-                            e2.Cancel = true;
-                            MessageBox.Show(
-                                string.Format("ฝ่าย '{0}' มีอยู่ในสังกัดนี้แล้ว ไม่สามารถเลือกซ้ำได้", data.Code),
-                                "พบข้อมูลซ้ำ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        }
-                    }
-                };
+                // ── BeforeCheck: อนุญาตให้เลือกได้ทุกรายการ รวมถึงที่มีอยู่แล้ว ──
+                tv.BeforeCheck += (s, e2) => { };
 
                 // ── TreeView check logic: single Division, cascade to Departments ──
                 bool suppressCheck = false;
@@ -887,14 +890,11 @@ namespace CMS.Presentation
                         if (cboParent.SelectedItem is OrgUnitItem cpi && cpi.OrgUnit != null)
                             parentId = cpi.OrgUnit.OrgUnitId;
 
-                        bool dup = (parentId.HasValue && _allUnits.Any(u =>
-                                u.IsActive && !u.IsDeleted &&
-                                u.Tier == OrgUnitTier.Department &&
-                                u.ParentId == parentId.Value &&
-                                string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase))) ||
-                            _allUnits.Any(u =>
-                                string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase)
-                                && u.IsActive && !u.IsDeleted);
+                        bool dup = parentId.HasValue && _allUnits.Any(u =>
+                            u.IsActive && !u.IsDeleted &&
+                            u.Tier == OrgUnitTier.Department &&
+                            u.ParentId == parentId.Value &&
+                            string.Equals(u.OrgUnitCode, d.Code, StringComparison.OrdinalIgnoreCase));
 
                         if (dup) existing.Add(d.Code);
                         else     toCreate.Add(d);
