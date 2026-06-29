@@ -30,6 +30,7 @@ namespace CMS.Presentation
         private ListView _lvVisibility;
         private Button _btnGrantVisibility;
         private Button _btnRevokeVisibility;
+        private Button _btnAutoGrantFromOrgUnit;
         private Label _lblVisibilityStatus;
         private Label _lblVisibilityUser;
 
@@ -110,15 +111,24 @@ namespace CMS.Presentation
                 Enabled = false
             };
 
+            _btnAutoGrantFromOrgUnit = new Button
+            {
+                Text = "⚡ เพิ่มหน่วยงานอัตโนมัติ",
+                Location = new Point(236, 8),
+                Size = new Size(170, 28),
+                Enabled = false
+            };
+
             _lblVisibilityStatus = new Label
             {
-                Location = new Point(240, 14),
-                Size = new Size(500, 23),
+                Location = new Point(415, 14),
+                Size = new Size(400, 23),
                 ForeColor = Color.Gray
             };
 
             pnlVisBtns.Controls.Add(_btnGrantVisibility);
             pnlVisBtns.Controls.Add(_btnRevokeVisibility);
+            pnlVisBtns.Controls.Add(_btnAutoGrantFromOrgUnit);
             pnlVisBtns.Controls.Add(_lblVisibilityStatus);
 
             _tabVisibility.Controls.Add(_lvVisibility);
@@ -165,6 +175,7 @@ namespace CMS.Presentation
             };
             _btnGrantVisibility.Click += BtnGrantVisibility_Click;
             _btnRevokeVisibility.Click += BtnRevokeVisibility_Click;
+            _btnAutoGrantFromOrgUnit.Click += BtnAutoGrantFromOrgUnit_Click;
 
             tabControl.SelectedIndexChanged += (s, e) =>
             {
@@ -441,6 +452,8 @@ namespace CMS.Presentation
                 user.DisplayName ?? user.ADUserName);
             _btnGrantVisibility.Enabled = _visibilityController != null;
             _btnRevokeVisibility.Enabled = false;
+            if (_btnAutoGrantFromOrgUnit != null)
+                _btnAutoGrantFromOrgUnit.Enabled = _visibilityController != null && user.OrgUnitID > 0;
 
             _lvVisibility.BeginUpdate();
             _lvVisibility.Items.Clear();
@@ -577,6 +590,7 @@ namespace CMS.Presentation
                 _lblVisibilityUser.Text = "เลือกผู้ใช้จากแท็บ 'สิทธิ์ผู้ใช้' เพื่อดูสิทธิ์";
             if (_btnGrantVisibility != null) _btnGrantVisibility.Enabled = false;
             if (_btnRevokeVisibility != null) _btnRevokeVisibility.Enabled = false;
+            if (_btnAutoGrantFromOrgUnit != null) _btnAutoGrantFromOrgUnit.Enabled = false;
         }
 
         private void BtnGrantVisibility_Click(object sender, EventArgs e)
@@ -626,6 +640,76 @@ namespace CMS.Presentation
                 MessageBox.Show("เพิ่มสิทธิ์ไม่สำเร็จบางรายการ:\n" + string.Join("\n", errors),
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 SetStatus(_lblVisibilityStatus, "เพิ่มสิทธิ์บางรายการไม่สำเร็จ", Color.OrangeRed);
+            }
+        }
+
+        private void BtnAutoGrantFromOrgUnit_Click(object sender, EventArgs e)
+        {
+            var user = GetSelectedUser();
+            if (user == null || _visibilityController == null || user.OrgUnitID <= 0) return;
+
+            var alreadyGrantedIds = new HashSet<int>();
+            try
+            {
+                foreach (var g in _visibilityController.GetExplicitGrantsForUser(user.UserID, _currentUser))
+                    alreadyGrantedIds.Add(g.OrgUnitID);
+            }
+            catch { }
+
+            var chain = GetAncestorChain(user.OrgUnitID);
+            var toGrant = chain.Where(o => !alreadyGrantedIds.Contains(o.OrgUnitID)).ToList();
+
+            if (toGrant.Count == 0)
+            {
+                MessageBox.Show("หน่วยงานตามสังกัดถูกเพิ่มแล้วทั้งหมด", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string orgList = string.Join("\n", toGrant.Select(o => "• " + (o.OrgUnitNameTH ?? o.OrgUnitCode)));
+            string confirmMsg = string.Format(
+                "เพิ่มสิทธิ์มองเห็นหน่วยงานตามสังกัดให้ '{0}' จำนวน {1} รายการ:\n\n{2}\n\nดำเนินการต่อหรือไม่?",
+                user.DisplayName ?? user.ADUserName, toGrant.Count, orgList);
+
+            if (MessageBox.Show(confirmMsg, "ยืนยันเพิ่มอัตโนมัติ",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+
+            var errors = new List<string>();
+            foreach (var org in toGrant)
+            {
+                try
+                {
+                    _visibilityController.GrantVisibility(user.UserID, org.OrgUnitID, _currentUser);
+                    if (_auditLogController != null)
+                        _auditLogController.Log(new AuditEntry
+                        {
+                            Module = "UserAccess",
+                            Action = "GRANT_VISIBILITY",
+                            UserID = _currentUser.UserID,
+                            TableName = "UserOrgVisibility",
+                            RecordID = user.UserID,
+                            NewValue = string.Format("TargetUser:{0} OrgUnitID:{1} OrgName:{2} AutoGrant:true",
+                                             user.ADUserName, org.OrgUnitID, org.OrgUnitNameTH ?? org.OrgUnitCode),
+                            MachineName = _currentUser.MachineName,
+                            IPAddress = _currentUser.IPAddress,
+                            SessionID = _currentUser.SessionID,
+                            Result = 1,
+                            AuditDate = DateTime.Now
+                        });
+                }
+                catch (Exception ex) { errors.Add(string.Format("{0}: {1}", org.OrgUnitNameTH ?? org.OrgUnitCode, ex.Message)); }
+            }
+
+            LoadVisibilityList(user);
+
+            if (errors.Count == 0)
+                SetStatus(_lblVisibilityStatus,
+                    string.Format("เพิ่มอัตโนมัติ {0} หน่วยงานเรียบร้อย", toGrant.Count), Color.DarkGreen);
+            else
+            {
+                MessageBox.Show("เพิ่มสิทธิ์ไม่สำเร็จบางรายการ:\n" + string.Join("\n", errors),
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                SetStatus(_lblVisibilityStatus, "เพิ่มอัตโนมัติบางรายการไม่สำเร็จ", Color.OrangeRed);
             }
         }
 
@@ -822,6 +906,30 @@ namespace CMS.Presentation
                 }
                 tree.ExpandAll();
                 tree.EndUpdate();
+
+                // Scroll to user's own OrgUnit node for quick navigation
+                var scrollTarget = GetSelectedUser();
+                if (scrollTarget != null && scrollTarget.OrgUnitID > 0)
+                {
+                    TreeNode targetNode = null;
+                    Action<TreeNodeCollection> findNode = null;
+                    findNode = (nodes) =>
+                    {
+                        foreach (TreeNode n in nodes)
+                        {
+                            if (targetNode != null) return;
+                            var o = n.Tag as OrgUnit;
+                            if (o != null && o.OrgUnitID == scrollTarget.OrgUnitID) { targetNode = n; return; }
+                            findNode(n.Nodes);
+                        }
+                    };
+                    findNode(tree.Nodes);
+                    if (targetNode != null)
+                    {
+                        tree.SelectedNode = targetNode;
+                        targetNode.EnsureVisible();
+                    }
+                }
 
                 // Guard against re-entrant cascade calls
                 bool _cascading = false;
@@ -1840,11 +1948,64 @@ namespace CMS.Presentation
                         user.DisplayName ?? user.ADUserName,
                         chosen.OrgUnitNameTH ?? chosen.OrgUnitCode),
                     Color.DarkGreen);
+                OfferAutoGrantAfterOrgChange(user, chosen);
             }
             catch (Exception ex)
             {
                 user.OrgUnitID = oldOrgId;
                 SetStatus(_lblOrgStatus, "บันทึกไม่สำเร็จ: " + ex.Message, Color.Red);
+            }
+        }
+
+        private void OfferAutoGrantAfterOrgChange(UserAccount user, OrgUnit newOrg)
+        {
+            if (_visibilityController == null || newOrg == null) return;
+
+            var chain = GetAncestorChain(newOrg.OrgUnitID);
+            if (chain.Count == 0) return;
+
+            var alreadyGrantedIds = new HashSet<int>();
+            try
+            {
+                foreach (var g in _visibilityController.GetExplicitGrantsForUser(user.UserID, _currentUser))
+                    alreadyGrantedIds.Add(g.OrgUnitID);
+            }
+            catch { return; }
+
+            var toGrant = chain.Where(o => !alreadyGrantedIds.Contains(o.OrgUnitID)).ToList();
+            if (toGrant.Count == 0) return;
+
+            string orgList = string.Join("\n", toGrant.Select(o => "• " + (o.OrgUnitNameTH ?? o.OrgUnitCode)));
+            string msg = string.Format(
+                "ต้องการเพิ่มสิทธิ์มองเห็นหน่วยงานใหม่ให้ '{0}' อัตโนมัติด้วยไหม?\n\n{1}",
+                user.DisplayName ?? user.ADUserName, orgList);
+
+            if (MessageBox.Show(msg, "เพิ่มสิทธิ์อัตโนมัติ",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+
+            foreach (var org in toGrant)
+            {
+                try
+                {
+                    _visibilityController.GrantVisibility(user.UserID, org.OrgUnitID, _currentUser);
+                    if (_auditLogController != null)
+                        _auditLogController.Log(new AuditEntry
+                        {
+                            Module = "UserAccess",
+                            Action = "GRANT_VISIBILITY",
+                            UserID = _currentUser.UserID,
+                            TableName = "UserOrgVisibility",
+                            RecordID = user.UserID,
+                            NewValue = string.Format("TargetUser:{0} OrgUnitID:{1} OrgName:{2} AutoGrant:true",
+                                             user.ADUserName, org.OrgUnitID, org.OrgUnitNameTH ?? org.OrgUnitCode),
+                            MachineName = _currentUser.MachineName,
+                            IPAddress = _currentUser.IPAddress,
+                            SessionID = _currentUser.SessionID,
+                            Result = 1,
+                            AuditDate = DateTime.Now
+                        });
+                }
+                catch { }
             }
         }
 
@@ -1913,6 +2074,21 @@ namespace CMS.Presentation
                 current = _allOrgs.FirstOrDefault(o => o.OrgUnitID == current.ParentOrgUnitID);
             }
             return string.Join("  ›  ", parts);
+        }
+
+        private List<OrgUnit> GetAncestorChain(int orgUnitId)
+        {
+            var chain = new List<OrgUnit>();
+            var visited = new HashSet<int>();
+            var current = _allOrgs.FirstOrDefault(o => o.OrgUnitID == orgUnitId);
+            while (current != null && !visited.Contains(current.OrgUnitID))
+            {
+                visited.Add(current.OrgUnitID);
+                chain.Add(current);
+                if (!current.ParentOrgUnitID.HasValue || current.ParentOrgUnitID == 0) break;
+                current = _allOrgs.FirstOrDefault(o => o.OrgUnitID == current.ParentOrgUnitID.Value);
+            }
+            return chain;
         }
 
         private static string RoleName(int appRole)
