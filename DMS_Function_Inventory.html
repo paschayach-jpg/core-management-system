@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DMS Function Inventory — CMS Import</title>
+  <style>
+    :root{--ink:#172033;--muted:#657089;--line:#dce2ec;--paper:#fff;--bg:#f4f7fb;--blue:#3157d5;--cyan:#0b8f9c;--amber:#b87500;--red:#b8324b;--green:#25815b}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 "Segoe UI",Tahoma,sans-serif}
+    header{padding:54px max(24px,calc((100% - 1180px)/2));color:white;background:linear-gradient(125deg,#17265a,#3157d5 58%,#0795a1)}
+    header h1{margin:0 0 8px;font-size:clamp(30px,5vw,54px);letter-spacing:-1px} header p{margin:0;max-width:780px;color:#e8efff;font-size:17px}
+    main{max-width:1180px;margin:0 auto;padding:28px 24px 70px}.meta{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0 28px}.pill{background:#e8edff;color:#2848af;border-radius:999px;padding:5px 11px;font-weight:600}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.stat,.card,.panel{background:var(--paper);border:1px solid var(--line);border-radius:15px;box-shadow:0 6px 22px #20325a0b}.stat{padding:20px}.stat .icon{font-size:28px;margin-bottom:6px;display:block}.stat b{font-size:32px;color:var(--blue);display:block}.stat span{color:var(--muted)}
+    h2{margin:38px 0 14px;font-size:25px}h3{margin:0 0 7px;font-size:18px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{padding:20px;border-top:4px solid var(--blue)}.card:nth-child(3n+2){border-top-color:var(--cyan)}.card:nth-child(3n){border-top-color:#7b52c7}.card p{margin:0;color:var(--muted)}.card ul{margin:10px 0 0;padding-left:20px}.tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--green);background:#e8f6ef;border-radius:5px;padding:2px 7px;margin-bottom:8px}
+    .tag.sec{color:#7c3aed;background:#f3f0ff}.tag.wf{color:#b87500;background:#fff8e9}.tag.adm{color:#0b8f9c;background:#e6f8fa}.tag.gov{color:#b8324b;background:#fff1f3}.tag.lc{color:#25815b;background:#e8f6ef}.tag.prod{color:#3157d5;background:#e8edff}.tag.cap{color:#555;background:#f1f5f9}.tag.comm{color:#b87500;background:#fff8e9}.tag.int{color:#0b8f9c;background:#e6f8fa}
+    .panel{padding:22px;overflow:auto}.flow{display:flex;align-items:stretch;gap:8px;min-width:720px}.flow div{flex:1;padding:16px;text-align:center;background:#f5f7ff;border:1px solid #dce3ff;border-radius:10px}.flow .ficon{font-size:24px;display:block;margin-bottom:4px}.flow b{display:block;color:var(--blue)}.arrow{display:flex!important;align-items:center;background:transparent!important;border:0!important;flex:0!important;font-size:25px!important;color:#8b96ad}
+    table{width:100%;border-collapse:collapse;background:white}th,td{text-align:left;vertical-align:top;padding:12px 13px;border-bottom:1px solid var(--line)}th{background:#eef2fb;color:#38445e;position:sticky;top:0}code{font-family:Consolas,monospace;font-size:12px;color:#2848af}input{width:100%;padding:11px 14px;border:1px solid #cbd3e2;border-radius:9px;font:inherit;margin-bottom:12px}
+    .warn{border-left:5px solid var(--amber);background:#fff8e9;padding:15px 18px;border-radius:8px;margin:13px 0}.risk{border-left-color:var(--red);background:#fff1f3}.ok{border-left-color:var(--green);background:#eefaf4}.small{color:var(--muted);font-size:13px}footer{margin-top:35px;color:var(--muted);text-align:center}
+    .gi{font-size:20px;margin-right:5px;vertical-align:middle}
+    td .gi{font-size:16px;margin-right:4px}
+    @media(max-width:850px){.summary{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:480px){.summary{grid-template-columns:1fr}}
+    @media print{body{background:white}header{padding:28px;color:#172033;background:white;border-bottom:3px solid #3157d5}header p{color:#657089}.card,.panel,.stat{box-shadow:none;break-inside:avoid}input{display:none}}
+  </style>
+</head>
+<body>
+<header><h1>📦 DMS Function Inventory</h1><p>สรุปความสามารถของระบบจัดการเอกสาร (DMS) ในโปรเจกต์ CMS Import จากการตรวจสอบ source code แบบ static analysis</p></header>
+<main>
+  <div class="meta"><span class="pill">📅 ตรวจเมื่อ 29 มิ.ย. 2026</span><span class="pill">🔎 ขอบเขต: Controller + UI + Domain + Data</span><span class="pill">⚙️ ภาษา: C# / WinForms</span></div>
+  <section class="summary">
+    <div class="stat"><span class="icon">🧩</span><b>44</b><span>Controller / Presenter files</span></div>
+    <div class="stat"><span class="icon">🔌</span><b>44</b><span>Controller &amp; View interfaces</span></div>
+    <div class="stat"><span class="icon">🖥️</span><b>55</b><span>DMS UI code files (ไม่รวม Designer)</span></div>
+    <div class="stat"><span class="icon">⚙️</span><b>15</b><span>กลุ่มความสามารถหลัก</span></div>
+  </section>
+
+  <h2>🏗️ สถาปัตยกรรมที่พบ</h2>
+  <div class="panel"><div class="flow">
+    <div><span class="ficon">🖥️</span><b>WinForms UI</b><code>CMS.Presentation/Modules/DMS</code></div>
+    <div class="arrow">→</div>
+    <div><span class="ficon">🧩</span><b>Controller / Presenter</b><code>CMS.Controllers/DMS/Document</code></div>
+    <div class="arrow">→</div>
+    <div><span class="ficon">🗄️</span><b>Repository</b><code>CMS.Data/Repositories</code></div>
+    <div class="arrow">→</div>
+    <div><span class="ficon">💾</span><b>Domain / DB</b><code>CMS.Domain</code> + schema <code>dms</code></div>
+  </div></div>
+
+  <h2>⚡ ฟังก์ชันหลักที่มีใน DMS</h2>
+  <section class="grid">
+
+    <article class="card">
+      <span class="tag">⚙️ CORE</span>
+      <h3><span class="gi">📁</span>1. Folder Management</h3>
+      <p>จัดการโครงสร้างโฟลเดอร์และระดับความลับ</p>
+      <ul>
+        <li>➕ สร้าง / ✏️ แก้ชื่อ / 🔀 ย้าย / 📦 Archive / 🗑️ ลบ / ♻️ กู้คืน</li>
+        <li>📋 คัดลอกโครงสร้างและดูโฟลเดอร์ลูก</li>
+        <li>🔒 เปลี่ยน Confidentiality Level</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag">⚙️ CORE</span>
+      <h3><span class="gi">📄</span>2. File Management</h3>
+      <p>จัดการเอกสารในโฟลเดอร์</p>
+      <ul>
+        <li>🔍 Browse / ⬇️ Download / ✏️ Rename / 🔀 Move / 📋 Copy / 🗑️ Delete</li>
+        <li>👁️ ซ่อน / 🔓 ยกเลิกซ่อนไฟล์</li>
+        <li>🖼️ Preview และแสดงไฟล์ตาม Folder/Org Unit</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag">⚙️ CORE</span>
+      <h3><span class="gi">⬆️</span>3. Upload</h3>
+      <p>อัปโหลดเอกสารพร้อมการควบคุมสถานะ</p>
+      <ul>
+        <li>🔍 ตรวจชื่อไฟล์ซ้ำและแสดง progress</li>
+        <li>💾 ตรวจ quota และแจ้งเตือน</li>
+        <li>🔖 Upload checkpoint สำหรับทำต่อภายหลัง</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag sec">🔐 SECURITY</span>
+      <h3><span class="gi">🔐</span>4. Permission &amp; ACL</h3>
+      <p>สิทธิ์ระดับ Folder และ File</p>
+      <ul>
+        <li>📊 คำนวณ Effective Permission</li>
+        <li>➕ เพิ่ม / ➖ ถอน ACL และ sync สิทธิ์ Folder → File</li>
+        <li>⚡ Preload ACL และตรวจ permission ราย action</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag sec">🔐 SECURITY</span>
+      <h3><span class="gi">🔗</span>5. Sharing</h3>
+      <p>แชร์ภายในและภายนอกองค์กร</p>
+      <ul>
+        <li>🏢 Internal share ผ่าน File Permission</li>
+        <li>🌐 External share ด้วย token/password</li>
+        <li>🔄 เปิด/ปิด, อนุมัติ, ปฏิเสธ, ถอน และ access log</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag wf">🔄 WORKFLOW</span>
+      <h3><span class="gi">✅</span>6. Approval</h3>
+      <p>ขั้นตอนอนุมัติการใช้งานเอกสาร</p>
+      <ul>
+        <li>📥 Inbox สำหรับผู้อนุมัติ</li>
+        <li>✅ Approve / ❌ Reject และ 📤 escalation</li>
+        <li>🗑️ อนุมัติลบ Folder และ ⬇️ ขอ Download ไฟล์</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag adm">🛠️ ADMIN</span>
+      <h3><span class="gi">🏢</span>7. Organization</h3>
+      <p>โครงสร้างองค์กรและการมองเห็นข้อมูล</p>
+      <ul>
+        <li>🌳 Hierarchy ของ Org Unit</li>
+        <li>🗂️ Division/Department/Position mapping</li>
+        <li>👁️ กำหนด Org Unit ที่ผู้ใช้มองเห็นได้</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag adm">🛠️ ADMIN</span>
+      <h3><span class="gi">👤</span>8. User &amp; Authentication</h3>
+      <p>บัญชีผู้ใช้และการเข้าสู่ระบบ</p>
+      <ul>
+        <li>🔑 AD Login แบบ async</li>
+        <li>✏️ Register/update account และ last-login IP</li>
+        <li>➕ สร้าง / ✏️ แก้ไข / 🚫 ปิดใช้งาน และ 🔍 ค้นหาพนักงาน</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag adm">🛠️ ADMIN</span>
+      <h3><span class="gi">📋</span>9. Menu Management</h3>
+      <p>เมนูตามสิทธิ์และเมนูสำหรับผู้ดูแล</p>
+      <ul>
+        <li>⬇️ โหลด User Menu จาก access token</li>
+        <li>➕✏️🗑️ CRUD เมนูและลำดับ Parent/Child</li>
+        <li>📊 สถิติเมนูและเมนูที่มองเห็นได้</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag gov">⚖️ GOVERNANCE</span>
+      <h3><span class="gi">🔍</span>10. Audit &amp; PDPA</h3>
+      <p>ตรวจสอบกิจกรรมและงานกำกับดูแล</p>
+      <ul>
+        <li>📝 บันทึกและค้นหา Audit Log แบบแบ่งหน้า</li>
+        <li>📋 ดูรายละเอียด / 📤 ส่งออกผล</li>
+        <li>🛡️ มีหน้าจอ PDPA consent และ report</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag lc">♻️ LIFECYCLE</span>
+      <h3><span class="gi">🗑️</span>11. Recycle Bin</h3>
+      <p>ถังขยะสำหรับ Folder และ File</p>
+      <ul>
+        <li>🏢 กรองตามหน่วยงาน / 👤 กรองตามผู้ลบ / 📂 กรองตามประเภท</li>
+        <li>♻️ Restore ไปตำแหน่งเดิม/ตำแหน่งใหม่</li>
+        <li>🚫 ลบถาวร (เฉพาะเจ้าของ หรือ Admin)</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag prod">⚡ PRODUCTIVITY</span>
+      <h3><span class="gi">⚡</span>12. Template &amp; Quick Access</h3>
+      <p>สร้างโครงสร้างมาตรฐานและทางลัด</p>
+      <ul>
+        <li>➕✏️🗑️ CRUD Folder Template และรายการย่อย</li>
+        <li>🚀 Apply template ให้ Folder หรือ Org Unit</li>
+        <li>📌 ปัก / 📌➖ ถอน Quick Access ของผู้ใช้</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag cap">💾 CAPACITY</span>
+      <h3><span class="gi">💾</span>13. Quota &amp; Usage</h3>
+      <p>ควบคุมพื้นที่จัดเก็บ</p>
+      <ul>
+        <li>⚙️ กำหนด Folder quota</li>
+        <li>📤 คำขอและขั้นตอนอนุมัติเปลี่ยน quota</li>
+        <li>📊 Usage report, chart และรายละเอียดหน่วยงาน</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag comm">📢 COMMUNICATION</span>
+      <h3><span class="gi">🔔</span>14. Notification</h3>
+      <p>การแจ้งเตือนในระบบ</p>
+      <ul>
+        <li>🔔 ดึงรายการที่ยังไม่อ่าน</li>
+        <li>✅ Mark as read</li>
+        <li>📦 รองรับ domain model ของ notification request/DTO</li>
+      </ul>
+    </article>
+
+    <article class="card">
+      <span class="tag int">🔗 INTEGRATION</span>
+      <h3><span class="gi">📚</span>15. Knowledge Base</h3>
+      <p>Controller สำหรับหมวดหมู่และบทความ KB</p>
+      <ul>
+        <li>➕✏️🗑️ CRUD/Deactivate หมวดหมู่</li>
+        <li>🔍 ค้นหาและกรองบทความ</li>
+        <li>👁️ นับจำนวนการเปิดอ่าน</li>
+      </ul>
+    </article>
+
+  </section>
+
+  <h2>🧩 Controller API Inventory</h2>
+  <div class="panel"><input id="q" placeholder="ค้นหา เช่น upload, permission, folder, user..." oninput="filterRows()"><table id="api"><thead><tr><th>กลุ่ม</th><th>Interface / Controller</th><th>ความสามารถสำคัญ</th></tr></thead><tbody>
+    <tr><td><span class="gi">🔑</span>Access</td><td><code>IAccessShareController</code></td><td>ตรวจ token/password, ให้สิทธิ์เข้าถึง, นับ download</td></tr>
+    <tr><td><span class="gi">✅</span>Approval</td><td><code>IApprovalFolderController</code></td><td>ขอลบ Folder, ขอ Download, ใช้สิทธิ์ Download ที่อนุมัติแล้ว</td></tr>
+    <tr><td><span class="gi">✅</span>Approval</td><td><code>IApprovalInboxController</code></td><td>รายการรออนุมัติ, Approve/Reject, escalation</td></tr>
+    <tr><td><span class="gi">🔍</span>Audit</td><td><code>IAuditLogController</code></td><td>Log และ Query แบบ paged result</td></tr>
+    <tr><td><span class="gi">⚖️</span>Authority</td><td><code>IAuthorityConfigController</code></td><td>CRUD ค่า authority config</td></tr>
+    <tr><td><span class="gi">👥</span>Employee</td><td><code>IEmployeeDirectoryController</code></td><td>พนักงาน, Department, Division</td></tr>
+    <tr><td><span class="gi">📄</span>File</td><td><code>IFileBrowseController</code></td><td>Browse ตาม Folder/Org, Download</td></tr>
+    <tr><td><span class="gi">📄</span>File</td><td><code>IFileCommandController</code></td><td>Rename/Delete/Move/Copy/Hide/Unhide</td></tr>
+    <tr><td><span class="gi">🔐</span>File ACL</td><td><code>IFilePermissionAclController</code></td><td>อ่าน เพิ่ม ถอน File permission</td></tr>
+    <tr><td><span class="gi">⬆️</span>Upload</td><td><code>IFileUploadController</code></td><td>Upload/Download, ตรวจชื่อซ้ำ</td></tr>
+    <tr><td><span class="gi">📁</span>Folder</td><td><code>IFolderCommandController</code></td><td>Create/Rename/Move/Archive/Delete/Restore/Template</td></tr>
+    <tr><td><span class="gi">📁</span>Folder</td><td><code>IFolderReadLookupController</code></td><td>อ่าน tree, root, children และ accessible folders พร้อม cache</td></tr>
+    <tr><td><span class="gi">📋</span>Template</td><td><code>IFolderTemplateController</code></td><td>CRUD template, apply ให้ Folder/Org Unit</td></tr>
+    <tr><td><span class="gi">📚</span>KB</td><td><code>IKBController</code></td><td>หมวดหมู่, บทความ, search, view count</td></tr>
+    <tr><td><span class="gi">🔑</span>Login</td><td><code>ILoginAuthController</code></td><td>AD authentication</td></tr>
+    <tr><td><span class="gi">📋</span>Menu</td><td><code>IMenuManagementController</code></td><td>CRUD menu, visible menu, statistics</td></tr>
+    <tr><td><span class="gi">🔔</span>Notification</td><td><code>INotificationController</code></td><td>Unread และ mark read</td></tr>
+    <tr><td><span class="gi">🔐</span>Permission</td><td><code>IPermissionCheckController</code></td><td>Effective permission, check, preload ACL</td></tr>
+    <tr><td><span class="gi">⚡</span>Quick Access</td><td><code>IQuickAccessController</code></td><td>อ่าน/เพิ่ม/ถอน Folder ทางลัด</td></tr>
+    <tr><td><span class="gi">🗑️</span>Recycle Bin</td><td><code>IRecycleBinController</code></td><td>ดู/กู้คืน/ลบถาวร Folder และ File</td></tr>
+    <tr><td><span class="gi">🔗</span>Share</td><td><code>IShareCommandController</code></td><td>แชร์ภายใน/ภายนอก, Folder permission, ขออนุมัติแชร์</td></tr>
+    <tr><td><span class="gi">🔗</span>Share</td><td><code>IShareManagementController</code></td><td>จัดการ share, approve/reject/revoke/toggle, access log</td></tr>
+    <tr><td><span class="gi">🔖</span>Upload</td><td><code>IUploadCheckpointController</code></td><td>Save/Load/Delete checkpoint และล้างรายการหมดอายุ</td></tr>
+    <tr><td><span class="gi">👤</span>User</td><td><code>IUserAdminController</code></td><td>CRUD ผู้ใช้และข้อมูลโครงสร้าง HR</td></tr>
+    <tr><td><span class="gi">👁️</span>Visibility</td><td><code>IUserOrgVisibilityController</code></td><td>Grant/Revoke หน่วยงานที่ผู้ใช้มองเห็น</td></tr>
+  </tbody></table></div>
+
+  <h2>📋 ข้อสังเกตและสถานะ</h2>
+  <div class="warn ok"><b>✅ DMS Module หลักมี implementation รองรับ</b><br>พบ class ฝั่ง Controller/Presenter คู่กับ interface และมีหน้าจอใช้งานครอบคลุมกลุ่มหลักข้างต้น อย่างไรก็ตามรายงานนี้ไม่ได้ยืนยันด้วย integration test หรือการเชื่อมต่อฐานข้อมูลจริง</div>
+  <div class="warn"><b>⚠️ Folder tree move ยังไม่สมบูรณ์</b><br><code>CMS.Presentation/Modules/DMS/FolderForm.cs</code> มี comment ระบุว่ายังไม่ implement การ move สำหรับ Folder tree (บริเวณบรรทัด 1344 ณ วันที่ตรวจ)</div>
+  <div class="warn risk"><b>🚨 KMS ↔ DMS ยังมี mock</b><br>ปุ่มเลือกเอกสารจาก DMS และข้อมูลเอกสารบางส่วนใน <code>CMS.Presentation/Modules/KMS/KBEditorDialog.cs</code> ยังแสดง sample/mock และระบุว่ายังไม่ได้เชื่อม DMS Module จริง จึงไม่ควรนับว่า integration สมบูรณ์</div>
+  <div class="warn"><b>ℹ️ ขอบเขตของคำว่า "มี"</b><br>หมายถึงพบ API, class, form หรือ repository ใน source code ไม่ได้หมายความว่าทุก flow เปิดใช้ใน production หรือผ่าน UAT แล้ว</div>
+
+  <h2>📂 ไฟล์สำคัญสำหรับตรวจต่อ</h2>
+  <div class="panel"><table><thead><tr><th>ตำแหน่ง</th><th>หน้าที่</th></tr></thead><tbody>
+    <tr><td><code>🔌 CMS.Controllers/DMS/Document/Interfaces</code></td><td>สัญญา API ของ DMS และรายการ method ที่ระบบเปิดให้ UI ใช้</td></tr>
+    <tr><td><code>🧩 CMS.Controllers/DMS/Document</code></td><td>Controller/Presenter ที่ประสาน business flow</td></tr>
+    <tr><td><code>🖥️ CMS.Presentation/Modules/DMS</code></td><td>หน้าจอ ฟอร์ม และ dialog ของผู้ใช้</td></tr>
+    <tr><td><code>🗄️ CMS.Data/Repositories</code></td><td>อ่าน/เขียนข้อมูล Folder, File, Permission, Share, Approval, Audit, Quota ฯลฯ</td></tr>
+    <tr><td><code>💾 CMS.Domain/Models</code></td><td>โมเดลหลัก เช่น Folder, FileDocument, ApprovalRequest, ExternalShare</td></tr>
+  </tbody></table></div>
+  <footer>📦 Generated from repository source inspection • CMS Import / DMS</footer>
+</main>
+<script>function filterRows(){const q=document.getElementById('q').value.toLowerCase();document.querySelectorAll('#api tbody tr').forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?'':'none')}</script>
+</body></html>

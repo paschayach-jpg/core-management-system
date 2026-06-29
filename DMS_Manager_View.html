@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>DMS — มุมมอง Manager</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0f2444;
+  --blue:#1d4ed8;
+  --teal:#0d9488;
+  --amber:#d97706;
+  --red:#dc2626;
+  --green:#16a34a;
+  --purple:#7c3aed;
+  --bg:#f1f5f9;
+  --card:#ffffff;
+  --text:#1e293b;
+  --muted:#64748b;
+  --border:#e2e8f0;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6}
+
+/* ── HERO ── */
+.hero{
+  background:linear-gradient(135deg,#0f2444 0%,#1d3a6e 50%,#1d4ed8 100%);
+  color:#fff;padding:64px 48px 56px;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.hero-badge{
+  display:inline-block;background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.3);border-radius:20px;
+  padding:4px 16px;font-size:12px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;margin-bottom:20px;
+}
+.hero h1{font-size:38px;font-weight:800;line-height:1.2;margin-bottom:12px}
+.hero h1 span{color:#60a5fa}
+.hero p{font-size:17px;opacity:.8;max-width:620px;margin-bottom:32px}
+.hero-stats{display:flex;gap:32px;flex-wrap:wrap}
+.hero-stat{text-align:center}
+.hero-stat .num{font-size:32px;font-weight:800;color:#60a5fa}
+.hero-stat .lbl{font-size:12px;opacity:.7;margin-top:2px}
+
+/* ── SECTION ── */
+section{padding:52px 48px}
+section:nth-child(even){background:#fff}
+.section-eyebrow{
+  font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+  color:var(--blue);margin-bottom:8px;
+}
+.section-title{font-size:26px;font-weight:800;color:var(--navy);margin-bottom:8px}
+.section-sub{font-size:15px;color:var(--muted);margin-bottom(36px)}
+
+/* ── PILLAR CARDS ── */
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:32px}
+.pillar{
+  background:var(--card);border-radius:16px;padding:28px;
+  border:1px solid var(--border);
+  box-shadow:0 4px 16px rgba(0,0,0,.06);
+  position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.pillar:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.1)}
+.pillar::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:4px;
+  border-radius:16px 16px 0 0;
+}
+.pillar.p1::before{background:linear-gradient(90deg,#1d4ed8,#3b82f6)}
+.pillar.p2::before{background:linear-gradient(90deg,#7c3aed,#a78bfa)}
+.pillar.p3::before{background:linear-gradient(90deg,#0d9488,#2dd4bf)}
+.pillar-icon{font-size:36px;margin-bottom:14px}
+.pillar-rank{
+  font-size:10px;font-weight:800;letter-spacing:1px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px;
+}
+.pillar h3{font-size:17px;font-weight:800;color:var(--navy);margin-bottom:8px}
+.pillar p{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px}
+.pillar ul{list-style:none}
+.pillar ul li{
+  font-size:13px;color:var(--text);padding:5px 0;
+  border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;
+}
+.pillar ul li:last-child{border-bottom:none}
+.pillar ul li::before{content:'✓';color:var(--green);font-weight:800;flex-shrink:0;margin-top:1px}
+
+/* ── STORY FLOW ── */
+.story{display:flex;flex-direction:column;gap:0;margin-top:36px}
+.story-step{
+  display:grid;grid-template-columns:56px 1fr;gap:0;
+  position:relative;
+}
+.story-step:not(:last-child) .step-line{
+  position:absolute;left:27px;top:56px;bottom:0;
+  width:2px;background:linear-gradient(180deg,var(--blue),transparent);
+}
+.step-num{
+  width:56px;height:56px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:800;color:#fff;flex-shrink:0;
+  position:relative;z-index:1;box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+.step-num.s1{background:linear-gradient(135deg,#1d4ed8,#3b82f6)}
+.step-num.s2{background:linear-gradient(135deg,#7c3aed,#a78bfa)}
+.step-num.s3{background:linear-gradient(135deg,#dc2626,#f87171)}
+.step-num.s4{background:linear-gradient(135deg,#0d9488,#2dd4bf)}
+.step-body{
+  background:var(--card);border-radius:12px;padding:22px 24px;
+  margin:0 0 20px 20px;border:1px solid var(--border);
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.step-body h3{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.step-body p{font-size:14px;color:var(--muted);margin-bottom:12px}
+.step-tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{
+  font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;
+}
+.tag-blue{background:#dbeafe;color:#1e40af}
+.tag-purple{background:#ede9fe;color:#5b21b6}
+.tag-red{background:#fee2e2;color:#991b1b}
+.tag-green{background:#dcfce7;color:#166534}
+.tag-teal{background:#ccfbf1;color:#0f766e}
+.tag-amber{background:#fef3c7;color:#92400e}
+
+/* ── ROLE COMPARISON ── */
+.role-table{
+  width:100%;border-collapse:collapse;margin-top:28px;
+  background:var(--card);border-radius:12px;overflow:hidden;
+  border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.role-table th{
+  background:var(--navy);color:#fff;padding:12px 18px;
+  font-size:12px;font-weight:700;text-align:left;
+}
+.role-table td{
+  padding:11px 18px;font-size:13px;border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
+.role-table tr:last-child td{border-bottom:none}
+.role-table tr:hover td{background:#f8fafc}
+.role-table td:first-child{font-weight:700;color:var(--navy)}
+.dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;
+  vertical-align:middle;
+}
+.dot-yes{background:var(--green)}
+.dot-partial{background:var(--amber)}
+.dot-no{background:#cbd5e1}
+.check-yes{color:var(--green);font-weight:800}
+.check-partial{color:var(--amber);font-weight:800}
+.check-no{color:#cbd5e1;font-weight:800}
+
+/* ── AUDIT BLOCK ── */
+.audit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:28px}
+.audit-card{
+  background:var(--card);border-radius:12px;padding:22px;
+  border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.04);
+  display:flex;gap:16px;align-items:flex-start;
+}
+.audit-icon{
+  width:44px;height:44px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+}
+.audit-icon.red{background:#fee2e2}
+.audit-icon.blue{background:#dbeafe}
+.audit-icon.purple{background:#ede9fe}
+.audit-icon.amber{background:#fef3c7}
+.audit-body h4{font-size:14px;font-weight:800;color:var(--navy);margin-bottom:4px}
+.audit-body p{font-size:13px;color:var(--muted);line-height:1.5}
+.audit-body code{
+  font-size:11px;background:#f1f5f9;padding:1px 6px;border-radius:4px;
+  color:var(--blue);font-family:monospace;
+}
+
+/* ── APPROVAL FLOW ── */
+.approval-flow{
+  display:flex;align-items:center;gap:0;margin-top:28px;flex-wrap:wrap;
+}
+.flow-node{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px 20px;text-align:center;min-width:150px;flex:1;
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+.flow-node .icon{font-size:26px;margin-bottom:8px}
+.flow-node .label{font-size:12px;font-weight:800;color:var(--navy)}
+.flow-node .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.flow-arrow{
+  font-size:20px;color:var(--blue);padding:0 8px;flex-shrink:0;
+}
+.flow-node.highlight{
+  background:linear-gradient(135deg,#eff6ff,#dbeafe);
+  border-color:#93c5fd;
+}
+.flow-node.highlight .label{color:var(--blue)}
+
+/* ── QUOTA METER ── */
+.quota-demo{
+  background:var(--navy);border-radius:16px;padding:28px 32px;
+  color:#fff;margin-top:28px;
+}
+.quota-demo h4{font-size:16px;font-weight:700;margin-bottom:20px;opacity:.9}
+.quota-row{margin-bottom:16px}
+.quota-label{
+  display:flex;justify-content:space-between;
+  font-size:13px;margin-bottom:6px;opacity:.85;
+}
+.quota-bar{height:10px;background:rgba(255,255,255,.15);border-radius:10px;overflow:hidden}
+.quota-fill{height:100%;border-radius:10px;transition:width .8s}
+.fill-ok{background:linear-gradient(90deg,#34d399,#10b981)}
+.fill-warn{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+.fill-crit{background:linear-gradient(90deg,#f87171,#ef4444)}
+.quota-legend{
+  display:flex;gap:20px;margin-top:16px;font-size:11px;opacity:.7;
+}
+.quota-legend span{display:flex;align-items:center;gap:5px}
+.legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* ── CTA ── */
+.cta{
+  background:linear-gradient(135deg,#0f2444 0%,#1d4ed8 100%);
+  color:#fff;padding:52px 48px;text-align:center;
+}
+.cta h2{font-size:28px;font-weight:800;margin-bottom:12px}
+.cta p{font-size:16px;opacity:.8;max-width:540px;margin:0 auto 28px}
+.cta-pills{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.cta-pill{
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  border-radius:30px;padding:8px 22px;font-size:14px;font-weight:700;
+}
+
+/* ── NAV DOT ── */
+.nav-dots{
+  position:fixed;right:20px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:8px;z-index:99;
+}
+.nav-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:rgba(30,41,59,.25);cursor:pointer;transition:.2s;
+  border:none;
+}
+.nav-dot:hover,.nav-dot.active{background:var(--blue);transform:scale(1.3)}
+
+@media(max-width:768px){
+  .hero{padding:40px 24px}
+  section{padding:36px 24px}
+  .pillars{grid-template-columns:1fr}
+  .audit-grid{grid-template-columns:1fr}
+  .approval-flow{flex-direction:column}
+  .flow-arrow{transform:rotate(90deg)}
+  .hero h1{font-size:26px}
+  .nav-dots{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV DOTS -->
+<div class="nav-dots">
+  <button class="nav-dot active" onclick="scrollTo(0)" title="Hero"></button>
+  <button class="nav-dot" onclick="document.getElementById('pillars').scrollIntoView({behavior:'smooth'})" title="3 มุมหลัก"></button>
+  <button class="nav-dot" onclick="document.getElementById('story').scrollIntoView({behavior:'smooth'})" title="Story Flow"></button>
+  <button class="nav-dot" onclick="document.getElementById('access').scrollIntoView({behavior:'smooth'})" title="Permission"></button>
+  <button class="nav-dot" onclick="document.getElementById('approval').scrollIntoView({behavior:'smooth'})" title="Approval"></button>
+  <button class="nav-dot" onclick="document.getElementById('audit').scrollIntoView({behavior:'smooth'})" title="Audit"></button>
+  <button class="nav-dot" onclick="document.getElementById('quota').scrollIntoView({behavior:'smooth'})" title="Quota"></button>
+</div>
+
+<!-- ══════════════ HERO ══════════════ -->
+<div class="hero">
+  <div class="hero-badge">DMS — Manager Perspective</div>
+  <h1>ควบคุม <span>เอกสารองค์กร</span><br/>ได้ในมือคุณ</h1>
+  <p>ระบบจัดการเอกสารดิจิทัล (DMS) ออกแบบให้ Manager มองเห็น ควบคุม และอนุมัติได้แบบ Real-time — โดยไม่ต้องพึ่ง IT ทุกครั้ง</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num">4</div><div class="lbl">ระดับความลับ</div></div>
+    <div class="hero-stat"><div class="num">2</div><div class="lbl">ชั้น Access Control</div></div>
+    <div class="hero-stat"><div class="num">30</div><div class="lbl">วัน Recycle Bin</div></div>
+    <div class="hero-stat"><div class="num">100%</div><div class="lbl">Audit Trail</div></div>
+  </div>
+</div>
+
+<!-- ══════════════ 3 PILLARS ══════════════ -->
+<section id="pillars">
+  <div class="section-eyebrow">สิ่งที่ Manager ต้องการ</div>
+  <div class="section-title">3 มุมหลักสำหรับ Manager</div>
+  <div class="pillars">
+
+    <div class="pillar p1">
+      <div class="pillar-icon">🏗️</div>
+      <div class="pillar-rank">Priority 1 &nbsp;·&nbsp; STRUCTURE</div>
+      <h3>โครงสร้างที่ชัดเจน</h3>
+      <p>แผนกมี Folder อะไรบ้าง ระดับความลับชัดเจน ไม่มีการสร้าง Folder มั่วซั่ว</p>
+      <ul>
+        <li>Confidentiality Level HC / SC / NC / PC</li>
+        <li>ลำดับชั้น Folder ชัดเจน ดูได้ทันที</li>
+        <li>HC Folder ต้องขออนุมัติก่อนสร้าง</li>
+        <li>Archive เมื่อเอกสารหมดอายุใช้งาน</li>
+      </ul>
+    </div>
+
+    <div class="pillar p2">
+      <div class="pillar-icon">🔐</div>
+      <div class="pillar-rank">Priority 2 &nbsp;·&nbsp; CONTROL</div>
+      <h3>กำหนดสิทธิ์เองได้</h3>
+      <p>Manager กำหนดว่าใครเข้าถึง Folder/File ได้ระดับไหน — ไม่ต้องรอ IT</p>
+      <ul>
+        <li>Permission Authority ตาม Position/แผนก</li>
+        <li>ACL ระดับ File — GRANT หรือ DENY เฉพาะ User</li>
+        <li>Effective Permission คำนวณอัตโนมัติ</li>
+        <li>ซ่อนไฟล์ชั่วคราวโดยไม่ต้องลบ</li>
+      </ul>
+    </div>
+
+    <div class="pillar p3">
+      <div class="pillar-icon">✅</div>
+      <div class="pillar-rank">Priority 3 &nbsp;·&nbsp; OVERSIGHT</div>
+      <h3>มองเห็น + ตรวจสอบได้</h3>
+      <p>รู้ทันทีว่าใครลบอะไร ใครขออะไร Quota ใช้ไปเท่าไหร่</p>
+      <ul>
+        <li>Approval Inbox — รออนุมัติทั้งหมดในที่เดียว</li>
+        <li>Recycle Bin แสดง "ลบโดย" ครบถ้วน</li>
+        <li>Storage Quota report ต่อแผนก</li>
+        <li>Audit Trail ทุก action มี timestamp</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ STORY FLOW ══════════════ -->
+<section id="story" style="background:#fff">
+  <div class="section-eyebrow">วิธีเล่าเรื่อง</div>
+  <div class="section-title">Narrative Flow สำหรับ Manager</div>
+  <p style="color:var(--muted);margin-bottom:0">เรียง story 4 ขั้น ให้ Manager เห็นคุณค่าตั้งแต่ต้นจนจบ</p>
+
+  <div class="story" style="margin-top:36px">
+
+    <div class="story-step">
+      <div class="step-line"></div>
+      <div class="step-num s1">1</div>
+      <div class="step-body">
+        <h3>โครงสร้างชัด — ไม่มี Folder ลักไก่</h3>
+        <p>แผนกมี Root Folder 4 ระดับ (HC→PC) ระบบบังคับขออนุมัติก่อนสร้าง HC Folder — Manager ไม่ต้องกังวลว่าจะมีเอกสารลับหลุดไปผิด Folder</p>
+        <div class="step-tags">
+          <span class="tag tag-blue">Folder Hierarchy</span>
+          <span class="tag tag-red">HC = ต้องอนุมัติ</span>
+          <span class="tag tag-teal">4 Confidentiality Levels</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="story-step">
+      <div class="step-line"></div>
+      <div class="step-num s2">2</div>
+      <div class="step-body">
+        <h3>กำหนดสิทธิ์ได้เอง — ไม่ต้องรอ IT</h3>
+        <p>Manager ตั้ง Permission ได้โดยตรง ทั้งระดับ Folder (Authority by Position/แผนก) และระดับ File (ACL — GRANT/DENY เฉพาะ User) พร้อมกำหนดวันหมดอายุสิทธิ์</p>
+        <div class="step-tags">
+          <span class="tag tag-purple">FolderAuthorityConfig</span>
+          <span class="tag tag-purple">File ACL</span>
+          <span class="tag tag-amber">ExpiryDate</span>
+          <span class="tag tag-blue">GRANT / DENY</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="story-step">
+      <div class="step-line"></div>
+      <div class="step-num s3">3</div>
+      <div class="step-body">
+        <h3>อนุมัติไม่หาย — มี Inbox + Escalation</h3>
+        <p>คำขอทุกอย่าง (สร้าง HC Folder, Download ไฟล์ลับ, เพิ่ม Quota) รวมอยู่ใน Inbox ของ Manager อนุมัติ/ปฏิเสธได้ในคลิกเดียว ถ้าไม่ดำเนินการภายในเวลากำหนด ระบบ Escalate อัตโนมัติ</p>
+        <div class="step-tags">
+          <span class="tag tag-red">Approval Inbox</span>
+          <span class="tag tag-red">Escalation</span>
+          <span class="tag tag-amber">Quota Request</span>
+          <span class="tag tag-blue">Approve / Reject</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="story-step">
+      <div class="step-num s4">4</div>
+      <div class="step-body">
+        <h3>ตรวจสอบย้อนหลังได้ทุก action</h3>
+        <p>ใครลบอะไร เมื่อไหร่ — ดูได้จาก Recycle Bin (แสดง "ลบโดย" ทุกรายการ) ไม่มีการสูญหายเงียบ ลบถาวรได้เฉพาะเจ้าของรายการ หรือ Admin เท่านั้น</p>
+        <div class="step-tags">
+          <span class="tag tag-teal">Recycle Bin 30 วัน</span>
+          <span class="tag tag-teal">DeletedBy Tracking</span>
+          <span class="tag tag-green">Ownership Guard</span>
+          <span class="tag tag-blue">Audit Trail</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ PERMISSION MATRIX ══════════════ -->
+<section id="access">
+  <div class="section-eyebrow">Access Control</div>
+  <div class="section-title">สิทธิ์แต่ละ Role — Manager เห็นอะไร ทำอะไรได้</div>
+
+  <table class="role-table">
+    <thead>
+      <tr>
+        <th>ความสามารถ</th>
+        <th>Officer</th>
+        <th>Sr. Officer</th>
+        <th>Manager ⭐</th>
+        <th>Admin</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Browse / Download ไฟล์ใน Folder ที่มีสิทธิ์</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+      </tr>
+      <tr>
+        <td>อัปโหลด / เปลี่ยนชื่อ / ย้ายไฟล์</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+      </tr>
+      <tr>
+        <td>ลบไฟล์ตัวเอง (เจ้าของ)</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+      </tr>
+      <tr>
+        <td>สร้าง Folder NC/PC</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-partial">~ ขึ้นกับ Authority</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+      </tr>
+      <tr>
+        <td>กำหนด Permission ระดับ File (ACL)</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+      </tr>
+      <tr>
+        <td>ลบถาวรใน Recycle Bin (เฉพาะของตัวเอง)</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ทุกรายการ</td>
+      </tr>
+      <tr>
+        <td>อนุมัติ HC Folder / Download Request</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+      </tr>
+      <tr>
+        <td>ดู Storage Report ทั้งแผนก</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+      </tr>
+      <tr>
+        <td>อนุมัติคำขอเพิ่ม Quota</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-partial">~ ส่งคำขอได้</td>
+        <td class="check-yes">✓ อนุมัติได้</td>
+      </tr>
+      <tr>
+        <td>ลบ / Archive Folder ทั้งแผนก</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-no">✗ ไม่</td>
+        <td class="check-yes">✓ ใช่</td>
+        <td class="check-yes">✓ ใช่</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ══════════════ APPROVAL FLOW ══════════════ -->
+<section id="approval" style="background:#fff">
+  <div class="section-eyebrow">Workflow</div>
+  <div class="section-title">Approval Flow — Manager คือ checkpoint หลัก</div>
+  <p style="color:var(--muted)">ทุกคำขอที่ผ่านระบบ ไม่มีทางหลุดจาก Manager</p>
+
+  <div class="approval-flow">
+    <div class="flow-node">
+      <div class="icon">👤</div>
+      <div class="label">Officer / Staff</div>
+      <div class="sub">ส่งคำขอ</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node highlight">
+      <div class="icon">📥</div>
+      <div class="label">Manager Inbox</div>
+      <div class="sub">รออนุมัติ</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="background:#dcfce7;border-color:#86efac">
+      <div class="icon">✅</div>
+      <div class="label">Approved</div>
+      <div class="sub">ดำเนินการต่อ</div>
+    </div>
+    <div class="flow-arrow" style="color:#dc2626">→</div>
+    <div class="flow-node" style="background:#fee2e2;border-color:#fca5a5">
+      <div class="icon">🔔</div>
+      <div class="label">Escalation</div>
+      <div class="sub">ถ้าไม่ตอบกลับ</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px">
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:18px">
+      <div style="font-size:22px;margin-bottom:8px">🏗️</div>
+      <div style="font-weight:800;font-size:14px;color:#1e40af;margin-bottom:4px">HC Folder Request</div>
+      <div style="font-size:13px;color:var(--muted)">Staff ขอสร้าง Folder ระดับ Highly Confidential — Manager อนุมัติก่อนจึงสร้างได้</div>
+    </div>
+    <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:18px">
+      <div style="font-size:22px;margin-bottom:8px">📥</div>
+      <div style="font-weight:800;font-size:14px;color:#92400e;margin-bottom:4px">Download Request</div>
+      <div style="font-size:13px;color:var(--muted)">ขอ Download ไฟล์ในระดับ HC — ต้องให้ Manager อนุมัติก่อนได้รับลิงก์</div>
+    </div>
+    <div style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:10px;padding:18px">
+      <div style="font-size:22px;margin-bottom:8px">💾</div>
+      <div style="font-weight:800;font-size:14px;color:#5b21b6;margin-bottom:4px">Quota Increase</div>
+      <div style="font-size:13px;color:var(--muted)">แผนกขอเพิ่ม Storage Quota — Manager ส่งคำขอ → Admin อนุมัติ</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ AUDIT / RECYCLE BIN ══════════════ -->
+<section id="audit">
+  <div class="section-eyebrow">Audit & Transparency</div>
+  <div class="section-title">ตรวจสอบได้ทุก action — ไม่มีอะไรหายเงียบ</div>
+
+  <div class="audit-grid">
+    <div class="audit-card">
+      <div class="audit-icon red">🗑️</div>
+      <div class="audit-body">
+        <h4>Recycle Bin — แสดง "ลบโดย"</h4>
+        <p>ทุกรายการที่ถูกลบแสดงชื่อผู้ลบ <code>DeletedBy</code> + วันที่ลบ คงเหลืออีกกี่วัน Manager กรองดูเฉพาะรายการของแต่ละคนได้</p>
+      </div>
+    </div>
+    <div class="audit-card">
+      <div class="audit-icon blue">🔒</div>
+      <div class="audit-body">
+        <h4>Ownership Guard</h4>
+        <p>ลบถาวรได้เฉพาะของตัวเอง — ถ้า non-Admin พยายามลบของคนอื่น ระบบ Throw <code>UnauthorizedAccessException</code> ทั้ง UI และ Controller</p>
+      </div>
+    </div>
+    <div class="audit-card">
+      <div class="audit-icon purple">🔍</div>
+      <div class="audit-body">
+        <h4>Filter by ลบโดย / ประเภท</h4>
+        <p>Manager กรอง Recycle Bin ตามชื่อผู้ลบ หรือแยกประเภท <code>Folder</code> vs <code>File</code> ได้ทันที ไม่ต้อง scroll ดูทั้งหมด</p>
+      </div>
+    </div>
+    <div class="audit-card">
+      <div class="audit-icon amber">📋</div>
+      <div class="audit-body">
+        <h4>File Permission Log</h4>
+        <p>ทุก GRANT/DENY บันทึก <code>GrantedBy</code>, <code>GrantedDate</code>, <code>RevokedDate</code>, <code>RevokeReason</code> — ตรวจสอบย้อนหลังได้ครบ</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ QUOTA ══════════════ -->
+<section id="quota" style="background:#fff">
+  <div class="section-eyebrow">Storage Governance</div>
+  <div class="section-title">Quota Dashboard — รู้ก่อนที่จะเต็ม</div>
+  <p style="color:var(--muted)">Manager ดูสถานการณ์การใช้พื้นที่ได้ทันที ระบบแจ้งเตือนอัตโนมัติก่อนถึง Limit</p>
+
+  <div class="quota-demo">
+    <h4>Storage Usage — แผนกเทคโนโลยีสารสนเทศ</h4>
+
+    <div class="quota-row">
+      <div class="quota-label"><span>📂 Folder เอกสารลับ (HC)</span><span>4.2 GB / 10 GB</span></div>
+      <div class="quota-bar"><div class="quota-fill fill-ok" style="width:42%"></div></div>
+    </div>
+    <div class="quota-row">
+      <div class="quota-label"><span>📂 Folder เอกสารทั่วไป (NC)</span><span>7.8 GB / 10 GB</span></div>
+      <div class="quota-bar"><div class="quota-fill fill-warn" style="width:78%"></div></div>
+    </div>
+    <div class="quota-row">
+      <div class="quota-label"><span>📂 Folder Public (PC)</span><span>9.6 GB / 10 GB</span></div>
+      <div class="quota-bar"><div class="quota-fill fill-crit" style="width:96%"></div></div>
+    </div>
+
+    <div class="quota-legend">
+      <span><span class="legend-dot" style="background:#10b981"></span>ปกติ (&lt;70%)</span>
+      <span><span class="legend-dot" style="background:#f59e0b"></span>เตือน (70-90%)</span>
+      <span><span class="legend-dot" style="background:#ef4444"></span>วิกฤต (&gt;90%) — ขอเพิ่มได้ทันที</span>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center">
+      <div style="font-size:28px;font-weight:800;color:var(--blue)">CheckAlert()</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Normal / Warning / Critical / Full</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center">
+      <div style="font-size:28px;font-weight:800;color:var(--amber)">SendAlertIfNeeded()</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Notify อัตโนมัติเมื่อเกิน Warning Threshold</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center">
+      <div style="font-size:28px;font-weight:800;color:var(--green)">SubmitChangeRequest()</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">ขอเพิ่ม Quota ผ่าน Workflow</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CTA ══════════════ -->
+<div class="cta">
+  <h2>Manager พร้อม — ระบบก็พร้อม</h2>
+  <p>DMS ให้ Manager ควบคุมเอกสารองค์กรได้ครบในที่เดียว ทั้งโครงสร้าง สิทธิ์ อนุมัติ และตรวจสอบ</p>
+  <div class="cta-pills">
+    <div class="cta-pill">🏗️ Structure</div>
+    <div class="cta-pill">🔐 Access Control</div>
+    <div class="cta-pill">✅ Approval</div>
+    <div class="cta-pill">🔍 Audit Trail</div>
+    <div class="cta-pill">💾 Quota Management</div>
+  </div>
+</div>
+
+<script>
+// Nav dot highlight on scroll
+const sections = ['hero','pillars','story','access','approval','audit','quota'];
+const dots = document.querySelectorAll('.nav-dot');
+window.addEventListener('scroll', () => {
+  const y = window.scrollY + window.innerHeight/2;
+  let active = 0;
+  const ids = [document.querySelector('.hero'), ...sections.slice(1).map(id => document.getElementById(id))];
+  ids.forEach((el,i) => { if(el && el.offsetTop <= y) active = i; });
+  dots.forEach((d,i) => d.classList.toggle('active', i === active));
+});
+
+// Animate quota bars on scroll
+const fills = document.querySelectorAll('.quota-fill');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting) { e.target.style.width = e.target.style.width; }
+  });
+}, {threshold: 0.3});
+fills.forEach(f => { const w = f.style.width; f.style.width='0'; setTimeout(()=>f.style.width=w, 300); obs.observe(f); });
+</script>
+
+</body>
+</html>

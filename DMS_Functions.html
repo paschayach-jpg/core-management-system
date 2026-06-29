@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DMS — Function Reference</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; font-size: 14px; background: #f0f2f5; color: #222; }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #1a3a5c 0%, #2563a8 100%);
+      color: #fff; padding: 28px 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    header h1 { font-size: 24px; font-weight: 700; letter-spacing: .5px; }
+    header p  { font-size: 13px; opacity: .75; margin-top: 6px; }
+
+    /* Nav tabs */
+    nav {
+      display: flex; gap: 4px;
+      background: #1a3a5c; padding: 0 40px;
+    }
+    nav button {
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,.65); font-size: 13px; font-weight: 600;
+      padding: 10px 18px; border-bottom: 3px solid transparent;
+      transition: .15s;
+    }
+    nav button:hover  { color: #fff; }
+    nav button.active { color: #fff; border-bottom-color: #60a5fa; }
+
+    /* Summary bar */
+    .summary-bar {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      padding: 16px 40px; background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .stat-chip {
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 20px; padding: 4px 14px;
+      font-size: 12px; font-weight: 600; color: #1e40af;
+    }
+
+    /* Content */
+    .content { padding: 28px 40px; display: none; }
+    .content.active { display: block; }
+
+    /* Section */
+    .section { margin-bottom: 32px; }
+    .section-title {
+      font-size: 15px; font-weight: 700; color: #1a3a5c;
+      border-left: 4px solid #2563a8; padding-left: 10px;
+      margin-bottom: 14px;
+    }
+    .section-desc { font-size: 12px; color: #6b7280; margin-bottom: 14px; }
+
+    /* Class card */
+    .class-card {
+      background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 8px; margin-bottom: 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      overflow: hidden;
+    }
+    .class-header {
+      background: #f8fafc; border-bottom: 1px solid #e5e7eb;
+      padding: 10px 16px; display: flex; align-items: center; gap: 10px;
+      cursor: pointer; user-select: none;
+    }
+    .class-header:hover { background: #eff6ff; }
+    .class-name   { font-weight: 700; font-size: 14px; color: #1e40af; }
+    .class-file   { font-size: 11px; color: #9ca3af; margin-left: auto; font-family: monospace; }
+    .chevron      { font-size: 12px; color: #6b7280; transition: transform .2s; }
+    .class-card.open .chevron { transform: rotate(90deg); }
+
+    /* Method table */
+    .method-table { display: none; }
+    .class-card.open .method-table { display: block; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: #f1f5f9; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .4px;
+      color: #64748b; padding: 7px 14px; text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    tbody tr { border-bottom: 1px solid #f1f5f9; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #fafafa; }
+    tbody td { padding: 8px 14px; font-size: 13px; vertical-align: top; }
+    td.sig  { font-family: monospace; color: #1a3a5c; font-size: 12px; }
+    td.ret  { font-family: monospace; color: #7c3aed; font-size: 11px; white-space: nowrap; }
+    td.desc { color: #374151; line-height: 1.5; }
+
+    /* Badge */
+    .badge {
+      display: inline-block; border-radius: 4px; padding: 1px 7px;
+      font-size: 10px; font-weight: 700; vertical-align: middle; margin-left: 6px;
+    }
+    .badge-svc  { background: #dcfce7; color: #166534; }
+    .badge-ctl  { background: #dbeafe; color: #1e40af; }
+    .badge-repo { background: #fef9c3; color: #854d0e; }
+    .badge-dom  { background: #fce7f3; color: #9d174d; }
+
+    /* Domain model */
+    .domain-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+    .domain-card {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+      padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .domain-card h3 { font-size: 14px; font-weight: 700; color: #1e40af; margin-bottom: 6px; }
+    .domain-card .file-path { font-size: 11px; color: #9ca3af; font-family: monospace; margin-bottom: 8px; }
+    .domain-card .desc { font-size: 12px; color: #6b7280; margin-bottom: 10px; }
+    .props-list { list-style: none; }
+    .props-list li {
+      font-size: 11px; font-family: monospace; color: #374151;
+      background: #f8fafc; border-radius: 4px; padding: 3px 8px;
+      margin-bottom: 4px; border-left: 2px solid #e5e7eb;
+    }
+
+    /* Features */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .feature-item {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+      padding: 14px 16px; display: flex; align-items: flex-start; gap: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .feature-icon { font-size: 22px; flex-shrink: 0; }
+    .feature-text { font-size: 13px; color: #374151; line-height: 1.5; }
+    .feature-text strong { color: #1a3a5c; display: block; margin-bottom: 2px; }
+
+    /* Search */
+    .search-bar { margin-bottom: 18px; }
+    .search-bar input {
+      width: 100%; max-width: 480px; padding: 8px 14px;
+      border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;
+      outline: none;
+    }
+    .search-bar input:focus { border-color: #2563a8; box-shadow: 0 0 0 3px rgba(37,99,168,.15); }
+
+    .no-results { color: #9ca3af; font-style: italic; font-size: 13px; padding: 10px 0; }
+
+    @media (max-width: 600px) {
+      header, nav, .summary-bar, .content { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>DMS — Document Management System</h1>
+  <p>Function Reference &nbsp;|&nbsp; CMS Project &nbsp;|&nbsp; Generated 2026-06-29</p>
+</header>
+
+<nav>
+  <button class="active" onclick="switchTab('overview')">Overview</button>
+  <button onclick="switchTab('services')">Services</button>
+  <button onclick="switchTab('controllers')">Controllers</button>
+  <button onclick="switchTab('repositories')">Repositories</button>
+  <button onclick="switchTab('domain')">Domain Models</button>
+</nav>
+
+<div class="summary-bar">
+  <span class="stat-chip">4 Services &nbsp;|&nbsp; 58 Methods</span>
+  <span class="stat-chip">8 Controllers &nbsp;|&nbsp; 36 Methods</span>
+  <span class="stat-chip">6 Repositories &nbsp;|&nbsp; 75 Methods</span>
+  <span class="stat-chip">7 Domain Models</span>
+  <span class="stat-chip">รวม 169 Public Methods</span>
+</div>
+
+<!-- ======================== OVERVIEW ======================== -->
+<div id="tab-overview" class="content active">
+  <div class="section">
+    <div class="section-title">Key Features</div>
+    <div class="feature-grid">
+      <div class="feature-item"><span class="feature-icon">📁</span><div class="feature-text"><strong>Folder Hierarchy</strong>รองรับ Folder ลึกหลายชั้น พร้อม Confidentiality Level (HC / SC / NC / PC)</div></div>
+      <div class="feature-item"><span class="feature-icon">📄</span><div class="feature-text"><strong>File Upload / Download</strong>ตรวจสอบ SHA256 Checksum + Virus Scan Status + Audit Log</div></div>
+      <div class="feature-item"><span class="feature-icon">🔐</span><div class="feature-text"><strong>Two-tier Access Control</strong>Authority-based (FolderAuthorityConfig) + ACL (FilePermission)</div></div>
+      <div class="feature-item"><span class="feature-icon">🗑️</span><div class="feature-text"><strong>Recycle Bin</strong>Soft-delete พร้อม 30-day retention, restore, permanent delete พร้อม ownership guard</div></div>
+      <div class="feature-item"><span class="feature-icon">💾</span><div class="feature-text"><strong>Quota Management</strong>ตั้ง Quota ต่อ OrgUnit, Alert (Warning / Critical / Full), ขอเพิ่ม Quota workflow</div></div>
+      <div class="feature-item"><span class="feature-icon">📋</span><div class="feature-text"><strong>Folder Template</strong>สร้าง Folder Structure จาก Template ทีเดียวทั้ง OrgUnit</div></div>
+      <div class="feature-item"><span class="feature-icon">🔗</span><div class="feature-text"><strong>File Sharing</strong>แชร์ไฟล์เฉพาะเจาะจง GRANT / DENY ต่อ User หรือ Role</div></div>
+      <div class="feature-item"><span class="feature-icon">⚡</span><div class="feature-text"><strong>Session Cache</strong>Cache Folder list ระดับ Session เพื่อลด DB call</div></div>
+      <div class="feature-item"><span class="feature-icon">👤</span><div class="feature-text"><strong>Owner Delete</strong>เจ้าของไฟล์ลบไฟล์ตัวเองได้ / เจ้าของรายการ RecycleBin ลบถาวรได้เฉพาะของตัวเอง</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Architecture Layers</div>
+    <table style="background:#fff;border-radius:8px;border:1px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;">
+      <thead>
+        <tr>
+          <th>Layer</th><th>Classes</th><th>Methods</th><th>Responsibility</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="badge badge-svc">Service</span></td><td>4</td><td>58</td><td>Business logic, Permission checks, Quota enforcement</td></tr>
+        <tr><td><span class="badge badge-ctl">Controller</span></td><td>8</td><td>36</td><td>Presentation adapter, aggregates services for UI/API</td></tr>
+        <tr><td><span class="badge badge-repo">Repository</span></td><td>6</td><td>75</td><td>Data access — CRUD, Query, Async variants</td></tr>
+        <tr><td><span class="badge badge-dom">Domain</span></td><td>7</td><td>—</td><td>Core entities (Folder, FileDocument, Permission, Quota…)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ======================== SERVICES ======================== -->
+<div id="tab-services" class="content">
+  <div class="search-bar"><input type="text" placeholder="ค้นหา method..." onkeyup="filterMethods(this,'tab-services')" /></div>
+
+  <!-- FileService -->
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)">
+      <span class="chevron">▶</span>
+      <span class="class-name">FileService</span><span class="badge badge-svc">Service</span>
+      <span class="class-file">CMS.Services/FileService.cs</span>
+    </div>
+    <div class="method-table">
+      <table>
+        <thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="sig">UploadFiles(IEnumerable&lt;FileUploadRequest&gt; files, int folderId, UserContext user)</td><td class="ret">IEnumerable&lt;UploadResult&gt;</td><td class="desc">อัปโหลดหลายไฟล์ไปยัง Folder — ตรวจสิทธิ์, Quota, Virus Scan</td></tr>
+          <tr><td>2</td><td class="sig">DownloadFile(int fileId, UserContext user)</td><td class="ret">FileDownloadResult</td><td class="desc">ดาวน์โหลดไฟล์พร้อมตรวจ SHA256 Checksum และบันทึก Audit Log</td></tr>
+          <tr><td>3</td><td class="sig">DeleteFile(int fileId, UserContext user)</td><td class="ret">void</td><td class="desc">Soft-delete ไฟล์ — ตรวจ FolderAuthorityConfig, FolderPermission, และ File Ownership</td></tr>
+          <tr><td>4</td><td class="sig">HideFiles(List&lt;int&gt; fileIds, UserContext user)</td><td class="ret">void</td><td class="desc">ซ่อนไฟล์โดยไม่ลบ</td></tr>
+          <tr><td>5</td><td class="sig">UnhideFiles(List&lt;int&gt; fileIds, UserContext user)</td><td class="ret">void</td><td class="desc">คืนสถานะไฟล์ที่ซ่อนอยู่</td></tr>
+          <tr><td>6</td><td class="sig">GetFilesInFolder(int folderId, UserContext user)</td><td class="ret">IEnumerable&lt;FileDocument&gt;</td><td class="desc">แสดงไฟล์ active ใน Folder — กรองตาม Authority และ ACL</td></tr>
+          <tr><td>7</td><td class="sig">GetStorageReport(int orgUnitId, UserContext user)</td><td class="ret">StorageUsageReport</td><td class="desc">รายงานการใช้พื้นที่ของ OrgUnit</td></tr>
+          <tr><td>8</td><td class="sig">GetAllFilesGroupedByFolder(UserContext user)</td><td class="ret">IEnumerable&lt;FileDocument&gt;</td><td class="desc">ดึงไฟล์ทั้งหมดจัดกลุ่มตาม Folder (Admin/Manager only)</td></tr>
+          <tr><td>9</td><td class="sig">GetFilesByOrgUnit(int orgUnitId, UserContext user)</td><td class="ret">IEnumerable&lt;FileDocument&gt;</td><td class="desc">ดึงไฟล์ทั้งหมดของ OrgUnit (Manager+ only)</td></tr>
+          <tr><td>10</td><td class="sig">RenameFile(int fileId, string newName, UserContext user)</td><td class="ret">void</td><td class="desc">เปลี่ยนชื่อไฟล์ — ตรวจ FolderAuthorityConfig/ACL Write permission</td></tr>
+          <tr><td>11</td><td class="sig">MoveFiles(MoveFileRequest request, UserContext user)</td><td class="ret">void</td><td class="desc">ย้ายไฟล์ระหว่าง Folder — ตรวจสิทธิ์ทั้ง Source และ Destination</td></tr>
+          <tr><td>12</td><td class="sig">CopyFile(int fileId, int destinationFolderId, UserContext user, bool overwrite = false)</td><td class="ret">int</td><td class="desc">คัดลอกไฟล์ไปยัง Folder ปลายทาง รองรับ Overwrite mode</td></tr>
+          <tr><td>13</td><td class="sig">FindDuplicateNames(IEnumerable&lt;string&gt; fileNames, int folderId, UserContext user)</td><td class="ret">IEnumerable&lt;string&gt;</td><td class="desc">หาชื่อไฟล์ที่ซ้ำใน Folder</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FilePermissionService -->
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)">
+      <span class="chevron">▶</span>
+      <span class="class-name">FilePermissionService</span><span class="badge badge-svc">Service</span>
+      <span class="class-file">CMS.Services/FilePermissionService.cs</span>
+    </div>
+    <div class="method-table">
+      <table>
+        <thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="sig">SetFilePermission(SetFilePermissionRequest request, UserContext user)</td><td class="ret">void</td><td class="desc">กำหนด File-level Permission (GRANT/DENY) ให้ Principal (User/Role) — ต้อง Manager+</td></tr>
+          <tr><td>2</td><td class="sig">RevokeFilePermission(int filePermissionId, UserContext user, string reason = null)</td><td class="ret">void</td><td class="desc">ยกเลิก File Permission — ต้อง Manager+</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FolderService -->
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)">
+      <span class="chevron">▶</span>
+      <span class="class-name">FolderService</span><span class="badge badge-svc">Service</span>
+      <span class="class-file">CMS.Services/FolderService.cs</span>
+    </div>
+    <div class="method-table">
+      <table>
+        <thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="sig">CreateFolder(CreateFolderRequest request, UserContext user)</td><td class="ret">Folder</td><td class="desc">สร้าง Folder ใหม่ — ตรวจชื่อซ้ำ, Confidentiality, Depth, Quota</td></tr>
+          <tr><td>2</td><td class="sig">CreateHCFolderAfterApproval(ApprovalRequest approvalRequest, UserContext user)</td><td class="ret">Folder</td><td class="desc">สร้าง HC Folder หลังผ่าน Approval Workflow</td></tr>
+          <tr><td>3</td><td class="sig">RenameFolder(int folderId, string newName, UserContext user)</td><td class="ret">void</td><td class="desc">เปลี่ยนชื่อ Folder — ตรวจสิทธิ์และชื่อซ้ำ Sibling</td></tr>
+          <tr><td>4</td><td class="sig">ArchiveFolder(int folderId, UserContext user)</td><td class="ret">void</td><td class="desc">Archive Folder และ Descendants ทั้งหมดพร้อมไฟล์</td></tr>
+          <tr><td>5</td><td class="sig">DeleteFolder(int folderId, UserContext user)</td><td class="ret">void</td><td class="desc">Soft-delete Folder → Recycle Bin (ต้องไม่มีไฟล์อยู่ภายใน)</td></tr>
+          <tr><td>6</td><td class="sig">RestoreFolder(int folderId, int? newParentId, UserContext user)</td><td class="ret">void</td><td class="desc">Restore Folder จาก Recycle Bin ภายใน 30 วัน รองรับ Reparent</td></tr>
+          <tr><td>7</td><td class="sig">PermanentlyDeleteFolder(int folderId, UserContext user)</td><td class="ret">void</td><td class="desc">ลบถาวร Folder + Descendants + Files + Permissions (Manager+)</td></tr>
+          <tr><td>8</td><td class="sig">ApplyTemplate(int parentFolderId, int templateId, UserContext user)</td><td class="ret">void</td><td class="desc">ใส่ Template ลงใน Folder ที่มีอยู่แล้ว</td></tr>
+          <tr><td>9</td><td class="sig">ApplyTemplateToOrgUnit(int orgUnitId, int templateId, string rootFolderName, int confidentialityLevel, UserContext user)</td><td class="ret">void</td><td class="desc">สร้าง Root Folder สำหรับ OrgUnit แล้ว Populate จาก Template</td></tr>
+          <tr><td>10</td><td class="sig">ApplyTemplateToFolder(int parentFolderId, int templateId, int confidentialityLevel, UserContext user)</td><td class="ret">void</td><td class="desc">ใส่ Template (by ID) ลงใน Folder พร้อม Confidentiality Level</td></tr>
+          <tr><td>11</td><td class="sig">ApplyTemplateToFolder(int parentFolderId, IList&lt;FolderTemplateItem&gt; items, int confidentialityLevel, UserContext user)</td><td class="ret">void</td><td class="desc">ใส่ Template (by item list) ลงใน Folder (Overload)</td></tr>
+          <tr><td>12</td><td class="sig">ApplyTemplateToOrgUnit(int orgUnitId, IList&lt;FolderTemplateItem&gt; items, string rootFolderName, int confidentialityLevel, UserContext user)</td><td class="ret">void</td><td class="desc">สร้าง OrgUnit Root Folder + Populate จาก Item List (Overload)</td></tr>
+          <tr><td>13</td><td class="sig">GetFolderContents(int folderId, UserContext user)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">แสดง Child Folders (ไม่รวม Deleted/Archived) พร้อมกรองสิทธิ์</td></tr>
+          <tr><td>14</td><td class="sig">GetFolder(int folderId, UserContext user)</td><td class="ret">Folder</td><td class="desc">ดึง Folder Metadata ตาม ID</td></tr>
+          <tr><td>15</td><td class="sig">ChangeConfidentialityLevel(int folderId, int newLevel, UserContext user)</td><td class="ret">void</td><td class="desc">เปลี่ยน Confidentiality Level — update Descendants ที่ Inherit ด้วย</td></tr>
+          <tr><td>16</td><td class="sig">GetRootFolders(int? orgUnitId, UserContext user)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">แสดง Root Folders (1HC/2SC/3NC/4PC) กรองตาม OrgUnit visibility</td></tr>
+          <tr><td>17</td><td class="sig">GetDeletedFolders(int? orgUnitId, UserContext user)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">แสดง Deleted Folders ใน Recycle Bin ภายใน 30 วัน</td></tr>
+          <tr><td>18</td><td class="sig">GetAllFolders(int? orgUnitId, UserContext user)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Folder ทั้งหมดของ OrgUnit (พร้อม Session Cache)</td></tr>
+          <tr><td>19</td><td class="sig">GetFoldersByOrgUnit(int orgUnitId, UserContext user)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Folder ตาม OrgUnit (delegate → GetAllFolders)</td></tr>
+          <tr><td>20</td><td class="sig">GetFoldersByOrgUnitAndParents(int orgUnitId, UserContext user)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Folder ของ OrgUnit และ Parent OrgUnits ใน Hierarchy</td></tr>
+          <tr><td>21</td><td class="sig">GetAccessibleFolders(int? orgUnitId, UserContext user)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">Folder ที่ User เข้าถึงได้ — กรอง OrgUnit visibility + Read permission</td></tr>
+          <tr><td>22</td><td class="sig">MoveFolder(MoveFolderRequest request, UserContext user)</td><td class="ret">void</td><td class="desc">ย้าย Folder ไป Parent ใหม่ — ตรวจ Depth, Circular ref, Permissions</td></tr>
+          <tr><td>23</td><td class="sig">CopyFolderStructure(int sourceFolderId, int destinationParentFolderId, UserContext user)</td><td class="ret">void</td><td class="desc">คัดลอก Folder Structure (โครงสร้างเปล่า ไม่รวมไฟล์) — Manager+</td></tr>
+          <tr><td>24</td><td class="sig">GetDescendants(int folderId)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Descendant Folders ทั้งหมดแบบ Recursive</td></tr>
+          <tr><td>25</td><td class="sig">InvalidateFolderCache(int? orgUnitId = null)</td><td class="ret">void</td><td class="desc">ล้าง Session Cache หลัง Create/Rename/Delete/Move</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FolderAuthorityService -->
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)">
+      <span class="chevron">▶</span>
+      <span class="class-name">FolderAuthorityService</span><span class="badge badge-svc">Service</span>
+      <span class="class-file">CMS.Services/FolderAuthorityService.cs</span>
+    </div>
+    <div class="method-table">
+      <table>
+        <thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="sig">GetAll()</td><td class="ret">IEnumerable&lt;FolderAuthorityConfig&gt;</td><td class="desc">ดึง FolderAuthorityConfig ทั้งหมด</td></tr>
+          <tr><td>2</td><td class="sig">ResolveForEmployee(string positionName, string departmentCode, string divisionCode, string levelCode = null)</td><td class="ret">Dictionary&lt;int, FolderAuthorityConfig&gt;</td><td class="desc">Resolve Authority Config 4 ระดับสำหรับ Employee</td></tr>
+          <tr><td>3</td><td class="sig">ResolveForUser(UserAccount user)</td><td class="ret">Dictionary&lt;int, FolderAuthorityConfig&gt;</td><td class="desc">Resolve Authority Config จาก UserAccount (Position, Dept, Div, Level)</td></tr>
+          <tr><td>4</td><td class="sig">Save(FolderAuthorityConfig config, int userId)</td><td class="ret">int</td><td class="desc">Insert หรือ Update FolderAuthorityConfig row</td></tr>
+          <tr><td>5</td><td class="sig">Delete(string configLabel, int userId)</td><td class="ret">void</td><td class="desc">ลบ Config ทั้ง Group (ทุก Level) ตาม ConfigLabel</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FolderQuotaService -->
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)">
+      <span class="chevron">▶</span>
+      <span class="class-name">FolderQuotaService</span><span class="badge badge-svc">Service</span>
+      <span class="class-file">CMS.Services/FolderQuotaService.cs</span>
+    </div>
+    <div class="method-table">
+      <table>
+        <thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="sig">GetUsage(int orgUnitId, int? parentOrgUnitId = null)</td><td class="ret">QuotaUsageResult</td><td class="desc">คืน % การใช้ Quota, Alert Level, และ Bytes ของ OrgUnit</td></tr>
+          <tr><td>2</td><td class="sig">GetFileTypeStats(int orgUnitId)</td><td class="ret">IList&lt;FileTypeUsage&gt;</td><td class="desc">สถิติจำนวนไฟล์และขนาดแยกตาม Extension</td></tr>
+          <tr><td>3</td><td class="sig">GetFilesByOrgUnit(int orgUnitId)</td><td class="ret">IEnumerable&lt;FileDocument&gt;</td><td class="desc">ดึงไฟล์ active ของ OrgUnit เรียงตามวันที่อัปโหลด</td></tr>
+          <tr><td>4</td><td class="sig">GetAllFileStats()</td><td class="ret">Dictionary&lt;int, OrgUnitFileStat&gt;</td><td class="desc">สถิติไฟล์ทุก OrgUnit ใน Query เดียว</td></tr>
+          <tr><td>5</td><td class="sig">CheckAlert(int orgUnitId, int? parentOrgUnitId = null)</td><td class="ret">QuotaAlertLevel</td><td class="desc">คืน Alert Level: Normal / Warning / Critical / Full</td></tr>
+          <tr><td>6</td><td class="sig">EnforceQuota(int orgUnitId, int? parentOrgUnitId = null)</td><td class="ret">void</td><td class="desc">Throw QuotaExceededException ถ้า Quota เต็ม</td></tr>
+          <tr><td>7</td><td class="sig">SendAlertIfNeeded(int orgUnitId, int? parentOrgUnitId = null)</td><td class="ret">void</td><td class="desc">ส่ง Notification ถ้าใช้เกิน Warning Threshold (Fire-and-forget)</td></tr>
+          <tr><td>8</td><td class="sig">GetAllConfigs()</td><td class="ret">IEnumerable&lt;FolderQuotaConfig&gt;</td><td class="desc">ดึง Quota Config ทั้งหมด</td></tr>
+          <tr><td>9</td><td class="sig">GetConfig(int orgUnitId, int? parentOrgUnitId = null)</td><td class="ret">FolderQuotaConfig</td><td class="desc">ดึง Quota Config ของ OrgUnit พร้อม Parent Fallback</td></tr>
+          <tr><td>10</td><td class="sig">SaveConfig(FolderQuotaConfig config, UserContext user)</td><td class="ret">void</td><td class="desc">Upsert Quota Config พร้อม Validation</td></tr>
+          <tr><td>11</td><td class="sig">DeleteConfig(int quotaConfigId, string orgUnitTypeName, UserContext user)</td><td class="ret">void</td><td class="desc">ลบ Quota Configuration</td></tr>
+          <tr><td>12</td><td class="sig">SubmitChangeRequest(SubmitQuotaChangeRequest dto, UserContext user)</td><td class="ret">int</td><td class="desc">ส่งคำขอเพิ่ม Quota — ตรวจว่า Quota ใหม่ &gt; ปัจจุบัน</td></tr>
+          <tr><td>13</td><td class="sig">GetPendingRequests()</td><td class="ret">IEnumerable&lt;FolderQuotaChangeRequest&gt;</td><td class="desc">ดึงคำขอ Quota ที่รอการอนุมัติ</td></tr>
+          <tr><td>14</td><td class="sig">GetAllRequests()</td><td class="ret">IEnumerable&lt;FolderQuotaChangeRequest&gt;</td><td class="desc">ดึงคำขอ Quota ทั้งหมด</td></tr>
+          <tr><td>15</td><td class="sig">GetRequestsByOrgUnit(int orgUnitId)</td><td class="ret">IEnumerable&lt;FolderQuotaChangeRequest&gt;</td><td class="desc">ดึงคำขอ Quota ของ OrgUnit ที่ระบุ</td></tr>
+          <tr><td>16</td><td class="sig">ApproveRequest(int requestId, string remark, UserContext user)</td><td class="ret">void</td><td class="desc">อนุมัติคำขอ — Update Config + ส่ง Notification</td></tr>
+          <tr><td>17</td><td class="sig">RejectRequest(int requestId, string remark, UserContext user)</td><td class="ret">void</td><td class="desc">ปฏิเสธคำขอพร้อมเหตุผล + ส่ง Notification</td></tr>
+          <tr><td>18</td><td class="sig">CancelRequest(int requestId, UserContext user)</td><td class="ret">void</td><td class="desc">ยกเลิกคำขอที่ Pending (เฉพาะผู้ส่งเอง)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== CONTROLLERS ======================== -->
+<div id="tab-controllers" class="content">
+  <div class="search-bar"><input type="text" placeholder="ค้นหา method..." onkeyup="filterMethods(this,'tab-controllers')" /></div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">FileBrowseController</span><span class="badge badge-ctl">Controller</span><span class="class-file">CMS.Controllers/DMS/Document/FileBrowseController.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">GetFilesInFolder(int folderId, UserContext user)</td><td class="ret">IList&lt;FileDocument&gt;</td><td class="desc">แสดงไฟล์ใน Folder (delegate → FileService)</td></tr>
+      <tr><td>2</td><td class="sig">GetAllFilesGroupedByFolder(UserContext user)</td><td class="ret">IList&lt;FileDocument&gt;</td><td class="desc">ดึงไฟล์ทั้งหมดจัดกลุ่มตาม Folder (Admin/Manager only)</td></tr>
+      <tr><td>3</td><td class="sig">GetFilesByOrgUnit(int orgUnitId, UserContext user)</td><td class="ret">IList&lt;FileDocument&gt;</td><td class="desc">ดึงไฟล์ตาม OrgUnit (Manager+ only)</td></tr>
+      <tr><td>4</td><td class="sig">DownloadFile(int fileDocumentId, UserContext user)</td><td class="ret">FileDownloadResult</td><td class="desc">ดาวน์โหลดไฟล์พร้อม Stream และ Metadata</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">FileUploadController</span><span class="badge badge-ctl">Controller</span><span class="class-file">CMS.Controllers/DMS/Document/FileUploadController.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">UploadFiles(IFileUploadView view, IList&lt;FileUploadRequest&gt; files, int folderId, UserContext user)</td><td class="ret">void</td><td class="desc">อัปโหลดไฟล์ผ่าน Presenter Pattern</td></tr>
+      <tr><td>2</td><td class="sig">DownloadFile(IFileUploadView view, int fileDocumentId, UserContext user, Func&lt;string, string&gt; getSavePath)</td><td class="ret">void</td><td class="desc">ดาวน์โหลดไฟล์ไปยัง Local Path ผ่าน Presenter</td></tr>
+      <tr><td>3</td><td class="sig">FindDuplicateNames(IEnumerable&lt;string&gt; fileNames, int folderId, UserContext user)</td><td class="ret">IEnumerable&lt;string&gt;</td><td class="desc">ตรวจหาชื่อไฟล์ซ้ำใน Folder</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">FileCommandController</span><span class="badge badge-ctl">Controller</span><span class="class-file">CMS.Controllers/DMS/Document/FileCommandController.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">DeleteFile(int fileId, UserContext user)</td><td class="ret">void</td><td class="desc">ลบไฟล์ (Soft-delete)</td></tr>
+      <tr><td>2</td><td class="sig">RenameFile(int fileId, string newName, UserContext user)</td><td class="ret">void</td><td class="desc">เปลี่ยนชื่อไฟล์</td></tr>
+      <tr><td>3</td><td class="sig">MoveFiles(MoveFileRequest request, UserContext user)</td><td class="ret">void</td><td class="desc">ย้ายไฟล์ระหว่าง Folder</td></tr>
+      <tr><td>4</td><td class="sig">CopyFile(int fileId, int destinationFolderId, UserContext user, bool overwrite = false)</td><td class="ret">int</td><td class="desc">คัดลอกไฟล์ไปยัง Folder ปลายทาง</td></tr>
+      <tr><td>5</td><td class="sig">HideFiles(List&lt;int&gt; fileIds, UserContext user)</td><td class="ret">void</td><td class="desc">ซ่อนไฟล์ที่ระบุ</td></tr>
+      <tr><td>6</td><td class="sig">UnhideFiles(List&lt;int&gt; fileIds, UserContext user)</td><td class="ret">void</td><td class="desc">คืนสถานะไฟล์ที่ซ่อน</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">FolderCommandController</span><span class="badge badge-ctl">Controller</span><span class="class-file">CMS.Controllers/DMS/Document/FolderCommandController.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">CreateFolder(CreateFolderRequest request, UserContext user)</td><td class="ret">Folder</td><td class="desc">สร้าง Folder</td></tr>
+      <tr><td>2</td><td class="sig">CreateHCFolderAfterApproval(ApprovalRequest approvalRequest, UserContext user)</td><td class="ret">Folder</td><td class="desc">สร้าง HC Folder หลัง Approval</td></tr>
+      <tr><td>3</td><td class="sig">RenameFolder(int folderId, string newName, UserContext user)</td><td class="ret">void</td><td class="desc">เปลี่ยนชื่อ Folder</td></tr>
+      <tr><td>4</td><td class="sig">ArchiveFolder(int folderId, UserContext user)</td><td class="ret">void</td><td class="desc">Archive Folder</td></tr>
+      <tr><td>5</td><td class="sig">DeleteFolder(int folderId, UserContext user)</td><td class="ret">void</td><td class="desc">ลบ Folder → Recycle Bin</td></tr>
+      <tr><td>6</td><td class="sig">RestoreFolder(int folderId, int? newParentId, UserContext user)</td><td class="ret">void</td><td class="desc">Restore Folder จาก Recycle Bin</td></tr>
+      <tr><td>7</td><td class="sig">PermanentlyDeleteFolder(int folderId, UserContext user)</td><td class="ret">void</td><td class="desc">ลบถาวร Folder</td></tr>
+      <tr><td>8</td><td class="sig">MoveFolder(MoveFolderRequest request, UserContext user)</td><td class="ret">void</td><td class="desc">ย้าย Folder ไป Parent ใหม่</td></tr>
+      <tr><td>9</td><td class="sig">ChangeConfidentialityLevel(int folderId, int newLevel, UserContext user)</td><td class="ret">void</td><td class="desc">เปลี่ยน Confidentiality Level</td></tr>
+      <tr><td>10</td><td class="sig">CopyFolderStructure(int sourceFolderId, int destinationParentFolderId, UserContext user)</td><td class="ret">void</td><td class="desc">คัดลอก Folder Structure</td></tr>
+      <tr><td>11</td><td class="sig">ApplyTemplate(int parentFolderId, int templateId, UserContext user)</td><td class="ret">void</td><td class="desc">ใส่ Template ลงใน Folder</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">FolderReadLookupController</span><span class="badge badge-ctl">Controller</span><span class="class-file">CMS.Controllers/DMS/Document/FolderReadLookupController.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">GetFolder(int folderId, UserContext user)</td><td class="ret">Folder</td><td class="desc">ดึง Folder Metadata</td></tr>
+      <tr><td>2</td><td class="sig">GetRootFolders(int? orgUnitId, UserContext user)</td><td class="ret">IList&lt;Folder&gt;</td><td class="desc">แสดง Root Folders</td></tr>
+      <tr><td>3</td><td class="sig">GetFolderContents(int folderId, UserContext user)</td><td class="ret">IList&lt;Folder&gt;</td><td class="desc">แสดง Child Folders</td></tr>
+      <tr><td>4</td><td class="sig">GetDeletedFolders(int? orgUnitId, UserContext user)</td><td class="ret">IList&lt;Folder&gt;</td><td class="desc">แสดง Deleted Folders ใน Recycle Bin</td></tr>
+      <tr><td>5</td><td class="sig">GetAccessibleFolders(int? orgUnitId, UserContext user)</td><td class="ret">IList&lt;Folder&gt;</td><td class="desc">แสดง Folder ที่ User เข้าถึงได้</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">FilePermissionCommandController</span><span class="badge badge-ctl">Controller</span><span class="class-file">CMS.Controllers/DMS/Document/FilePermissionCommandController.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">SetFilePermission(SetFilePermissionRequest request, UserContext user)</td><td class="ret">void</td><td class="desc">กำหนด File-level Permission (GRANT/DENY)</td></tr>
+      <tr><td>2</td><td class="sig">RevokeFilePermission(int filePermissionId, UserContext user, string reason = null)</td><td class="ret">void</td><td class="desc">ยกเลิก File Permission</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">FolderTemplateController</span><span class="badge badge-ctl">Controller</span><span class="class-file">CMS.Controllers/DMS/Document/FolderTemplateController.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">ApplyTemplateToOrgUnit(int orgUnitId, int templateId, string rootFolderName, int confidentialityLevel, UserContext user)</td><td class="ret">void</td><td class="desc">ใส่ Template สร้าง OrgUnit Folder Structure</td></tr>
+      <tr><td>2</td><td class="sig">ApplyTemplateToFolder(int parentFolderId, int templateId, int confidentialityLevel, UserContext user)</td><td class="ret">void</td><td class="desc">ใส่ Template ลงใน Folder ที่มีอยู่</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">RecycleBinController</span><span class="badge badge-ctl">Controller</span><span class="class-file">CMS.Controllers/DMS/Document/RecycleBinController.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">GetDeletedFolders(int? orgUnitId, UserContext user)</td><td class="ret">IList&lt;Folder&gt;</td><td class="desc">แสดง Deleted Folders ใน Recycle Bin</td></tr>
+      <tr><td>2</td><td class="sig">RestoreFolder(int folderId, int? newParentId, UserContext user)</td><td class="ret">void</td><td class="desc">Restore Folder จาก Recycle Bin</td></tr>
+      <tr><td>3</td><td class="sig">PermanentlyDeleteFolder(int folderId, UserContext user)</td><td class="ret">void</td><td class="desc">ลบถาวร — ตรวจ Ownership (Non-Admin ลบได้เฉพาะของตัวเอง)</td></tr>
+    </tbody></table></div>
+  </div>
+</div>
+
+<!-- ======================== REPOSITORIES ======================== -->
+<div id="tab-repositories" class="content">
+  <div class="search-bar"><input type="text" placeholder="ค้นหา method..." onkeyup="filterMethods(this,'tab-repositories')" /></div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">IFileDocumentRepository</span><span class="badge badge-repo">Repository</span><span class="class-file">CMS.Data/Interfaces/IFileDocumentRepository.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">Insert(FileDocument document)</td><td class="ret">int</td><td class="desc">Insert ไฟล์ใหม่ คืน FileID</td></tr>
+      <tr><td>2</td><td class="sig">GetById(int fileId)</td><td class="ret">FileDocument</td><td class="desc">ดึงไฟล์ตาม ID (รวม Deleted)</td></tr>
+      <tr><td>3</td><td class="sig">GetByFolder(int folderId)</td><td class="ret">IEnumerable&lt;FileDocument&gt;</td><td class="desc">ดึงไฟล์ทั้งหมดใน Folder</td></tr>
+      <tr><td>4</td><td class="sig">Update(FileDocument document)</td><td class="ret">void</td><td class="desc">Update ข้อมูลไฟล์</td></tr>
+      <tr><td>5</td><td class="sig">SoftDelete(int fileId, int deletedBy)</td><td class="ret">void</td><td class="desc">Soft-delete ไฟล์ (FileStatus = 3)</td></tr>
+      <tr><td>6</td><td class="sig">PermanentDelete(int fileId)</td><td class="ret">void</td><td class="desc">ลบไฟล์ถาวรจาก Database</td></tr>
+      <tr><td>7</td><td class="sig">UpdateVirusScanStatus(int fileId, int virusScanStatus)</td><td class="ret">void</td><td class="desc">Update สถานะ Virus Scan (0=Pending, 1=Clean, 2=Infected)</td></tr>
+      <tr><td>8</td><td class="sig">GetByChecksum(string checksum, int folderId)</td><td class="ret">FileDocument</td><td class="desc">ดึงไฟล์ตาม SHA256 Checksum ใน Folder</td></tr>
+      <tr><td>9</td><td class="sig">GetAllGroupedByFolder()</td><td class="ret">IEnumerable&lt;FileDocument&gt;</td><td class="desc">ดึงไฟล์ active ทั้งหมดจัดกลุ่มตาม Folder</td></tr>
+      <tr><td>10</td><td class="sig">GetByOrgUnit(int orgUnitId)</td><td class="ret">IEnumerable&lt;FileDocument&gt;</td><td class="desc">ดึงไฟล์ของ OrgUnit</td></tr>
+      <tr><td>11</td><td class="sig">RenameFile(int fileId, string newName)</td><td class="ret">void</td><td class="desc">Update OriginalFileName</td></tr>
+      <tr><td>12</td><td class="sig">DeleteAllByFolder(int folderId)</td><td class="ret">void</td><td class="desc">Hard-delete ไฟล์ทั้งหมดใน Folder ไม่ว่าสถานะใด</td></tr>
+      <tr><td>13</td><td class="sig">ExistsWithName(string fileName, int folderId)</td><td class="ret">bool</td><td class="desc">ตรวจว่ามีไฟล์ active ชื่อนั้นใน Folder</td></tr>
+      <tr><td>14</td><td class="sig">GetByOriginalName(string fileName, int folderId)</td><td class="ret">FileDocument</td><td class="desc">ดึงไฟล์ active ตามชื่อใน Folder</td></tr>
+      <tr><td>15</td><td class="sig">CountByNamePrefix(string namePrefix, int folderId)</td><td class="ret">int</td><td class="desc">นับไฟล์ที่ขึ้นต้นด้วย prefix (สำหรับตั้งชื่อ Copy)</td></tr>
+      <tr><td>16</td><td class="sig">GetDeletedFiles(int? orgUnitId)</td><td class="ret">IEnumerable&lt;FileDocument&gt;</td><td class="desc">ดึงไฟล์ Soft-deleted ตาม OrgUnit (optional)</td></tr>
+      <tr><td>17</td><td class="sig">RestoreFile(int fileId)</td><td class="ret">void</td><td class="desc">Restore ไฟล์ Soft-deleted กลับเป็น Active</td></tr>
+      <tr><td>18</td><td class="sig">UpdateVersion(int fileId, int version)</td><td class="ret">void</td><td class="desc">Update Version column โดยตรง</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">IFilePermissionRepository</span><span class="badge badge-repo">Repository</span><span class="class-file">CMS.Data/Interfaces/IFilePermissionRepository.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">Insert(FilePermission permission)</td><td class="ret">int</td><td class="desc">Insert Permission entry</td></tr>
+      <tr><td>2</td><td class="sig">GetById(int filePermissionId)</td><td class="ret">FilePermission</td><td class="desc">ดึง Permission ตาม ID</td></tr>
+      <tr><td>3</td><td class="sig">GetByFile(int fileId)</td><td class="ret">IEnumerable&lt;FilePermission&gt;</td><td class="desc">แสดง Active Permissions (ไม่รวม Revoked)</td></tr>
+      <tr><td>4</td><td class="sig">GetAllByFile(int fileId)</td><td class="ret">IEnumerable&lt;FilePermission&gt;</td><td class="desc">แสดงทุก Permission รวม Revoked</td></tr>
+      <tr><td>5</td><td class="sig">GetByGrantedBy(int userId)</td><td class="ret">IEnumerable&lt;FilePermission&gt;</td><td class="desc">ดึง Permission ที่ User คนนั้นให้</td></tr>
+      <tr><td>6</td><td class="sig">GetAll()</td><td class="ret">IEnumerable&lt;FilePermission&gt;</td><td class="desc">ดึง Permission ทั้งหมด</td></tr>
+      <tr><td>7</td><td class="sig">GetByPrincipal(int principalType, int principalId)</td><td class="ret">IEnumerable&lt;FilePermission&gt;</td><td class="desc">ดึง Permission ที่แชร์ให้ Principal (Shared With Me)</td></tr>
+      <tr><td>8</td><td class="sig">Revoke(int filePermissionId, int revokedBy, string revokeReason)</td><td class="ret">void</td><td class="desc">ยกเลิก Permission (Soft-delete)</td></tr>
+      <tr><td>9</td><td class="sig">DeleteByFile(int fileId)</td><td class="ret">void</td><td class="desc">ลบ Permission ทั้งหมดของไฟล์</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">IFolderRepository</span><span class="badge badge-repo">Repository</span><span class="class-file">CMS.Data/Interfaces/IFolderRepository.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">Insert(Folder folder)</td><td class="ret">int</td><td class="desc">Insert Folder ใหม่</td></tr>
+      <tr><td>2</td><td class="sig">Update(Folder folder)</td><td class="ret">void</td><td class="desc">Update Folder record</td></tr>
+      <tr><td>3</td><td class="sig">UpdateFileCount(int folderId)</td><td class="ret">void</td><td class="desc">เรียก Stored Procedure คำนวณ FileCount ใหม่</td></tr>
+      <tr><td>4</td><td class="sig">GetById(int folderId)</td><td class="ret">Folder</td><td class="desc">ดึง Folder ตาม ID (รวม Deleted)</td></tr>
+      <tr><td>5</td><td class="sig">GetChildren(int parentFolderId)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">แสดง Child Folders โดยตรง (ไม่ Deleted)</td></tr>
+      <tr><td>6</td><td class="sig">GetDescendants(int folderId)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Descendants ทั้งหมด Recursive</td></tr>
+      <tr><td>7</td><td class="sig">GetAllRootFolders()</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">แสดง Root Folders ทุก OrgUnit</td></tr>
+      <tr><td>8</td><td class="sig">GetRootFoldersByOrgUnit(int orgUnitId)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">แสดง Root Folders ของ OrgUnit ที่ระบุ</td></tr>
+      <tr><td>9</td><td class="sig">GetAllDeletedFolders()</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Deleted Folders ทั้งหมด</td></tr>
+      <tr><td>10</td><td class="sig">GetDeletedByOrgUnit(int orgUnitId)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Deleted Folders ของ OrgUnit</td></tr>
+      <tr><td>11</td><td class="sig">GetByOrgUnit(int orgUnitId)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Folders ทั้งหมดของ OrgUnit</td></tr>
+      <tr><td>12</td><td class="sig">GetAll()</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Folders ทั้งหมด</td></tr>
+      <tr><td>13</td><td class="sig">GetActiveFolders()</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">ดึง Folders ที่ไม่ Deleted / Archived</td></tr>
+      <tr><td>14</td><td class="sig">GetSiblings(int? parentFolderId, int orgUnitId)</td><td class="ret">IEnumerable&lt;Folder&gt;</td><td class="desc">แสดง Sibling Folders ภายใต้ Parent เดียวกัน</td></tr>
+      <tr><td>15</td><td class="sig">SoftDelete(int folderId, int deletedBy)</td><td class="ret">void</td><td class="desc">Soft-delete Folder (IsDeleted = true)</td></tr>
+      <tr><td>16</td><td class="sig">Restore(int folderId)</td><td class="ret">void</td><td class="desc">Restore Folder ที่ Deleted</td></tr>
+      <tr><td>17</td><td class="sig">PermanentDelete(int folderId)</td><td class="ret">void</td><td class="desc">ลบ Folder ถาวรจาก Database</td></tr>
+      <tr><td>18</td><td class="sig">GetByIdAsync(int folderId)</td><td class="ret">Task&lt;Folder&gt;</td><td class="desc">Async — ดึง Folder ตาม ID</td></tr>
+      <tr><td>19</td><td class="sig">GetByOrgUnitAsync(int orgUnitId)</td><td class="ret">Task&lt;IEnumerable&lt;Folder&gt;&gt;</td><td class="desc">Async — ดึง Folders ตาม OrgUnit</td></tr>
+      <tr><td>20</td><td class="sig">GetAllAsync()</td><td class="ret">Task&lt;IEnumerable&lt;Folder&gt;&gt;</td><td class="desc">Async — ดึง Folders ทั้งหมด</td></tr>
+      <tr><td>21</td><td class="sig">GetActiveFoldersAsync()</td><td class="ret">Task&lt;IEnumerable&lt;Folder&gt;&gt;</td><td class="desc">Async — ดึง Active Folders</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">IFolderAuthorityRepository</span><span class="badge badge-repo">Repository</span><span class="class-file">CMS.Data/Interfaces/IFolderAuthorityRepository.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">GetAll()</td><td class="ret">IEnumerable&lt;FolderAuthorityConfig&gt;</td><td class="desc">ดึง Config ทั้งหมด</td></tr>
+      <tr><td>2</td><td class="sig">Resolve(string positionName, string departmentCode, string divisionCode, string levelCode = null)</td><td class="ret">IEnumerable&lt;FolderAuthorityConfig&gt;</td><td class="desc">Resolve 4 ระดับ — Priority: LevelCode &gt; Position &gt; Dept &gt; Div</td></tr>
+      <tr><td>3</td><td class="sig">Insert(FolderAuthorityConfig config, int createdBy)</td><td class="ret">int</td><td class="desc">Insert Config row ใหม่</td></tr>
+      <tr><td>4</td><td class="sig">Update(FolderAuthorityConfig config, int updatedBy)</td><td class="ret">void</td><td class="desc">Update Config row</td></tr>
+      <tr><td>5</td><td class="sig">Delete(string configLabel, int deletedBy)</td><td class="ret">void</td><td class="desc">ลบ Config ทั้ง Group ตาม ConfigLabel</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">IFolderQuotaConfigRepository</span><span class="badge badge-repo">Repository</span><span class="class-file">CMS.Data/Interfaces/IFolderQuotaConfigRepository.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">GetByOrgUnit(int orgUnitId, int? parentOrgUnitId = null)</td><td class="ret">FolderQuotaConfig</td><td class="desc">ดึง Quota Config ของ OrgUnit พร้อม Parent Fallback</td></tr>
+      <tr><td>2</td><td class="sig">GetByMasterCode(int orgUnitType, string orgUnitCode)</td><td class="ret">FolderQuotaConfig</td><td class="desc">ดึง Config ตาม OrgUnit Type และ Code</td></tr>
+      <tr><td>3</td><td class="sig">GetByEmsOrgUnitId(int emsOrgUnitId, int orgUnitType)</td><td class="ret">FolderQuotaConfig</td><td class="desc">ดึง Config ตาม EMS OrgUnit ID (ID Mapping)</td></tr>
+      <tr><td>4</td><td class="sig">GetAll()</td><td class="ret">IEnumerable&lt;FolderQuotaConfig&gt;</td><td class="desc">ดึง Config ทั้งหมด</td></tr>
+      <tr><td>5</td><td class="sig">Save(FolderQuotaConfig config)</td><td class="ret">void</td><td class="desc">Upsert Quota Config</td></tr>
+      <tr><td>6</td><td class="sig">Delete(int quotaConfigId, string orgUnitTypeName)</td><td class="ret">void</td><td class="desc">ลบ Quota Config</td></tr>
+      <tr><td>7</td><td class="sig">GetAllFileStats()</td><td class="ret">Dictionary&lt;int, OrgUnitFileStat&gt;</td><td class="desc">ดึงสถิติไฟล์ทุก OrgUnit ใน Query เดียว</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="class-card open">
+    <div class="class-header" onclick="toggleCard(this)"><span class="chevron">▶</span><span class="class-name">IFolderQuotaChangeRequestRepository</span><span class="badge badge-repo">Repository</span><span class="class-file">CMS.Data/Interfaces/IFolderQuotaChangeRequestRepository.cs</span></div>
+    <div class="method-table"><table><thead><tr><th>#</th><th>Method Signature</th><th>Returns</th><th>Description</th></tr></thead><tbody>
+      <tr><td>1</td><td class="sig">Insert(FolderQuotaChangeRequest request)</td><td class="ret">int</td><td class="desc">Insert คำขอ Quota ใหม่</td></tr>
+      <tr><td>2</td><td class="sig">GetById(int requestId)</td><td class="ret">FolderQuotaChangeRequest</td><td class="desc">ดึงคำขอตาม ID</td></tr>
+      <tr><td>3</td><td class="sig">GetByOrgUnit(int orgUnitId)</td><td class="ret">IEnumerable&lt;FolderQuotaChangeRequest&gt;</td><td class="desc">ดึงคำขอของ OrgUnit</td></tr>
+      <tr><td>4</td><td class="sig">GetPending()</td><td class="ret">IEnumerable&lt;FolderQuotaChangeRequest&gt;</td><td class="desc">ดึงคำขอที่รอ Approve</td></tr>
+      <tr><td>5</td><td class="sig">GetAll()</td><td class="ret">IEnumerable&lt;FolderQuotaChangeRequest&gt;</td><td class="desc">ดึงคำขอทั้งหมด</td></tr>
+      <tr><td>6</td><td class="sig">UpdateStatus(int requestId, QuotaRequestStatus status, int reviewedBy, string remark)</td><td class="ret">void</td><td class="desc">Update สถานะพร้อมข้อมูล Reviewer</td></tr>
+    </tbody></table></div>
+  </div>
+</div>
+
+<!-- ======================== DOMAIN ======================== -->
+<div id="tab-domain" class="content">
+  <div class="domain-grid">
+    <div class="domain-card">
+      <h3>FileDocument</h3>
+      <div class="file-path">CMS.Domain/Models/FileDocument.cs</div>
+      <div class="desc">File Metadata Entity — maps to <code>storage.FileDocument</code> table</div>
+      <ul class="props-list">
+        <li>FileID, FileGUID, FolderID</li>
+        <li>OriginalFileName, StoredFileName, FileExtension, MimeType</li>
+        <li>FileSizeBytes, PhysicalPath, Checksum (SHA256)</li>
+        <li>VirusScanStatus: 0=Pending | 1=Clean | 2=Infected</li>
+        <li>FileStatus: 1=Active | 2=Archived | 3=Deleted</li>
+        <li>UploadedBy, UploadedDate</li>
+        <li>ArchivedBy, ArchivedDate</li>
+        <li>DeletedBy, DeletedDate</li>
+        <li>Version, IsHidden, HiddenBy, HiddenDate</li>
+      </ul>
+    </div>
+    <div class="domain-card">
+      <h3>FilePermission</h3>
+      <div class="file-path">CMS.Domain/Models/FilePermission.cs</div>
+      <div class="desc">File-level Permission Entry — GRANT/DENY ต่อ User/Role</div>
+      <ul class="props-list">
+        <li>FilePermissionID, FileID</li>
+        <li>PrincipalType, PrincipalID</li>
+        <li>CanRead, CanWrite, CanDelete, CanModify, CanFullControl</li>
+        <li>IsDeny (Deny เหนือกว่า Grant)</li>
+        <li>ExpiryDate</li>
+        <li>GrantedBy, GrantedDate</li>
+        <li>RevokedDate, RevokeReason</li>
+      </ul>
+    </div>
+    <div class="domain-card">
+      <h3>Folder</h3>
+      <div class="file-path">CMS.Domain/Models/Folder.cs</div>
+      <div class="desc">Folder Hierarchy Entity</div>
+      <ul class="props-list">
+        <li>FolderID, ParentFolderID, OrgUnitID</li>
+        <li>FolderName, FolderDepth</li>
+        <li>ConfidentialityLevel: 1=HC | 2=SC | 3=NC | 4=PC</li>
+        <li>InheritPermission, IsDeleted, IsArchived</li>
+        <li>FileCount, FolderSizeBytes, QuotaBytes</li>
+        <li>PhysicalPath</li>
+        <li>CreatedBy, CreatedDate</li>
+        <li>UpdatedBy, UpdatedDate</li>
+        <li>ArchivedBy, ArchivedDate</li>
+        <li>DeletedBy, DeletedAt</li>
+      </ul>
+    </div>
+    <div class="domain-card">
+      <h3>FolderAuthorityConfig</h3>
+      <div class="file-path">CMS.Domain/Models/FolderAuthorityConfig.cs</div>
+      <div class="desc">Authority-based Access Control Config — ตาม Position/Dept/Div/Level</div>
+      <ul class="props-list">
+        <li>ConfigID, ConfigLabel</li>
+        <li>ConfidentialityLevel (1-4)</li>
+        <li>PrincipalType</li>
+        <li>CanView, CanAdd, CanEdit, CanModify</li>
+        <li>PositionName, DepartmentCode</li>
+        <li>DivisionCode, LevelCode</li>
+      </ul>
+    </div>
+    <div class="domain-card">
+      <h3>FolderQuotaConfig</h3>
+      <div class="file-path">CMS.Domain/Models/FolderQuotaConfig.cs</div>
+      <div class="desc">Storage Quota Configuration ต่อ OrgUnit</div>
+      <ul class="props-list">
+        <li>QuotaConfigID, OrgUnitID, OrgUnitTypeName</li>
+        <li>QuotaBytes</li>
+        <li>WarnThresholdPct, CriticalThresholdPct</li>
+        <li>CreatedBy, CreatedDate</li>
+        <li>UpdatedBy, UpdatedDate</li>
+      </ul>
+    </div>
+    <div class="domain-card">
+      <h3>FolderQuotaChangeRequest</h3>
+      <div class="file-path">CMS.Domain/Models/FolderQuotaChangeRequest.cs</div>
+      <div class="desc">คำขอเพิ่ม Quota — ส่งโดย OrgUnit Admin, อนุมัติโดย System Admin</div>
+      <ul class="props-list">
+        <li>RequestID, OrgUnitID, OrgUnitName</li>
+        <li>CurrentQuotaBytes, RequestedQuotaBytes</li>
+        <li>Reason</li>
+        <li>Status: Pending | Approved | Rejected | Cancelled</li>
+        <li>RequestedBy, RequestedDate</li>
+        <li>ReviewedBy, ReviewedDate, Remark</li>
+      </ul>
+    </div>
+    <div class="domain-card">
+      <h3>FolderTemplateItem</h3>
+      <div class="file-path">CMS.Domain/Models/FolderTemplateItem.cs</div>
+      <div class="desc">Template Item สำหรับสร้าง Folder Structure จำนวนมากทีเดียว</div>
+      <ul class="props-list">
+        <li>ItemID, TemplateID, ParentItemID</li>
+        <li>FolderName</li>
+        <li>ConfidentialityLevel, InheritPermission</li>
+        <li>SortOrder</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTab(name) {
+    document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleCard(header) {
+    header.parentElement.classList.toggle('open');
+  }
+
+  function filterMethods(input, tabId) {
+    const q = input.value.toLowerCase();
+    const tab = document.getElementById(tabId);
+    tab.querySelectorAll('.class-card').forEach(card => {
+      let anyMatch = false;
+      card.querySelectorAll('tbody tr').forEach(row => {
+        const txt = row.textContent.toLowerCase();
+        const match = txt.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) anyMatch = true;
+      });
+      card.style.display = (q === '' || anyMatch) ? '' : 'none';
+      if (anyMatch && q !== '') card.classList.add('open');
+    });
+  }
+</script>
+
+</body>
+</html>
