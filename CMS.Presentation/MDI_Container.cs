@@ -3396,7 +3396,7 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            OpenChildForm(new RecycleBinForm(_recycleBinController, _currentUser));
+            OpenChildForm(new RecycleBinForm(_recycleBinController, _currentUser, _userAccountLookupController));
         }
 
         // ── Dashboard Handlers ────────────────────────────────────────────────

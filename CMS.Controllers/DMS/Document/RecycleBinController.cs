@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Data.Interfaces;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 
@@ -9,18 +11,21 @@ namespace CMS.Controllers.DMS.Document
 {
     public sealed class RecycleBinController : IRecycleBinController
     {
-        private readonly IFolderService _folderService;
-        private readonly IOrgStructureService _orgStructureService;
-        private readonly IFileDocumentRepository _fileDocumentRepository;
+        private readonly IFolderService           _folderService;
+        private readonly IOrgStructureService      _orgStructureService;
+        private readonly IFileDocumentRepository   _fileDocumentRepository;
+        private readonly IFolderRepository         _folderRepository;
 
         public RecycleBinController(
-            IFolderService folderService = null,
-            IOrgStructureService orgStructureService = null,
-            IFileDocumentRepository fileDocumentRepository = null)
+            IFolderService           folderService           = null,
+            IOrgStructureService     orgStructureService     = null,
+            IFileDocumentRepository  fileDocumentRepository  = null,
+            IFolderRepository        folderRepository        = null)
         {
-            _folderService = folderService;
-            _orgStructureService = orgStructureService;
+            _folderService          = folderService;
+            _orgStructureService    = orgStructureService;
             _fileDocumentRepository = fileDocumentRepository;
+            _folderRepository       = folderRepository;
         }
 
         public IList<OrgUnit> GetOrgHierarchy()
@@ -52,6 +57,13 @@ namespace CMS.Controllers.DMS.Document
             if (_folderService == null)
                 return;
 
+            if (user != null && user.Role != UserRole.Admin && _folderRepository != null)
+            {
+                var folder = _folderRepository.GetById(folderId);
+                if (folder != null && folder.DeletedBy.HasValue && folder.DeletedBy.Value != user.UserID)
+                    throw new UnauthorizedAccessException("ไม่มีสิทธิ์ลบถาวรรายการของผู้อื่น");
+            }
+
             _folderService.PermanentlyDeleteFolder(folderId, user);
         }
 
@@ -75,6 +87,13 @@ namespace CMS.Controllers.DMS.Document
         {
             if (_fileDocumentRepository == null)
                 return;
+
+            if (user != null && user.Role != UserRole.Admin)
+            {
+                var file = _fileDocumentRepository.GetById(fileId);
+                if (file != null && file.DeletedBy.HasValue && file.DeletedBy.Value != user.UserID)
+                    throw new UnauthorizedAccessException("ไม่มีสิทธิ์ลบถาวรรายการของผู้อื่น");
+            }
 
             _fileDocumentRepository.PermanentDelete(fileId);
         }

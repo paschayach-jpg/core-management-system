@@ -15,9 +15,10 @@ namespace CMS.Presentation
     /// </summary>
     public partial class FilePermissionForm : Form
     {
-        private readonly IFilePermissionCommandController _filePermissionCommandController;
-        private readonly IFilePermissionAclController _filePermissionAclController;
-        private readonly IUserAccountLookupController _userAccountLookupController;
+        private readonly IFilePermissionCommandController  _filePermissionCommandController;
+        private readonly IFilePermissionAclController      _filePermissionAclController;
+        private readonly IUserAccountLookupController      _userAccountLookupController;
+        private readonly IUserAccessOrgLookupController    _orgLookupController;
         private readonly UserContext               _currentUser;
         private readonly FileDocument              _file;
 
@@ -39,10 +40,11 @@ namespace CMS.Presentation
             if (file                     == null) throw new ArgumentNullException("file");
 
             _filePermissionCommandController = filePermissionCommandController;
-            _filePermissionAclController = filePermissionAclController;
-            _currentUser              = currentUser;
-            _file                     = file;
-            _userAccountLookupController = userAccountLookupController;
+            _filePermissionAclController     = filePermissionAclController;
+            _currentUser                     = currentUser;
+            _file                            = file;
+            _userAccountLookupController     = userAccountLookupController;
+            _orgLookupController             = orgLookupController;
 
             InitializeComponent();
 
@@ -125,7 +127,7 @@ namespace CMS.Presentation
 
         private void BtnAdd_Click(object sender, EventArgs e)
         {
-            using (var dlg = new FilePermissionAddDialog(_userAccountLookupController))
+            using (var dlg = new FilePermissionAddDialog(_userAccountLookupController, _orgLookupController))
             {
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 

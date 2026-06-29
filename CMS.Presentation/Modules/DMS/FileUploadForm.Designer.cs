@@ -178,11 +178,13 @@
             // pnlFooter
             //
             this.pnlFooter.BackColor = System.Drawing.Color.White;
+            this.pnlFooter.Controls.Add(this.lblProgressText);
+            this.pnlFooter.Controls.Add(this.progressBar);
             this.pnlFooter.Controls.Add(this.btnClearErrors);
             this.pnlFooter.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlFooter.Location = new System.Drawing.Point(0, 448);
+            this.pnlFooter.Location = new System.Drawing.Point(0, 420);
             this.pnlFooter.Name = "pnlFooter";
-            this.pnlFooter.Size = new System.Drawing.Size(540, 52);
+            this.pnlFooter.Size = new System.Drawing.Size(540, 80);
             this.pnlFooter.TabIndex = 3;
             //
             // btnClearErrors
@@ -192,9 +194,9 @@
             this.btnClearErrors.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClearErrors.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnClearErrors.ForeColor = System.Drawing.Color.White;
-            this.btnClearErrors.Location = new System.Drawing.Point(12, 10);
+            this.btnClearErrors.Location = new System.Drawing.Point(12, 44);
             this.btnClearErrors.Name = "btnClearErrors";
-            this.btnClearErrors.Size = new System.Drawing.Size(160, 32);
+            this.btnClearErrors.Size = new System.Drawing.Size(160, 28);
             this.btnClearErrors.TabIndex = 0;
             this.btnClearErrors.Text = "🗑 Clear รายการ Error";
             this.btnClearErrors.UseVisualStyleBackColor = false;
@@ -203,17 +205,21 @@
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(0, 0);
+            this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.progressBar.Location = new System.Drawing.Point(12, 26);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(0, 0);
+            this.progressBar.Size = new System.Drawing.Size(516, 10);
             this.progressBar.TabIndex = 4;
             this.progressBar.Visible = false;
             // 
             // lblProgressText
             // 
-            this.lblProgressText.Location = new System.Drawing.Point(0, 0);
+            this.lblProgressText.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblProgressText.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblProgressText.ForeColor = System.Drawing.Color.FromArgb(43, 87, 154);
+            this.lblProgressText.Location = new System.Drawing.Point(12, 6);
             this.lblProgressText.Name = "lblProgressText";
-            this.lblProgressText.Size = new System.Drawing.Size(0, 0);
+            this.lblProgressText.Size = new System.Drawing.Size(516, 16);
             this.lblProgressText.TabIndex = 5;
             this.lblProgressText.Visible = false;
             // 
@@ -262,8 +268,6 @@
             this.Controls.Add(this.pnlUploadZone);
             this.Controls.Add(this.pnlFolderPath);
             this.Controls.Add(this.pnlFooter);
-            this.Controls.Add(this.progressBar);
-            this.Controls.Add(this.lblProgressText);
             this.Controls.Add(this.lblQuotaWarning);
             this.Controls.Add(this.btnPickFiles);
             this.Controls.Add(this.btnUpload);

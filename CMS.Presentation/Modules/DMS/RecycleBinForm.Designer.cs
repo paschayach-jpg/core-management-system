@@ -15,6 +15,10 @@ namespace CMS.Presentation
         private System.Windows.Forms.ToolStripSeparator   _sep2;
         private System.Windows.Forms.ToolStripLabel       _lblOrgUnit;
         private System.Windows.Forms.ToolStripComboBox    _cmbOrgUnit;
+        private System.Windows.Forms.ToolStripLabel       _lblDeletedBy;
+        private System.Windows.Forms.ToolStripComboBox    _cmbDeletedBy;
+        private System.Windows.Forms.ToolStripLabel       _lblType;
+        private System.Windows.Forms.ToolStripComboBox    _cmbType;
         private System.Windows.Forms.ListView             _listView;
         private System.Windows.Forms.StatusStrip          _statusBar;
         private System.Windows.Forms.ToolStripStatusLabel _lblStatus;
@@ -54,8 +58,12 @@ namespace CMS.Presentation
             this._btnEmptyBin = new System.Windows.Forms.ToolStripButton();
             this._btnClose    = new System.Windows.Forms.ToolStripButton();
             this._btnRefresh  = new System.Windows.Forms.ToolStripButton();
-            this._lblOrgUnit  = new System.Windows.Forms.ToolStripLabel();
-            this._cmbOrgUnit  = new System.Windows.Forms.ToolStripComboBox();
+            this._lblOrgUnit   = new System.Windows.Forms.ToolStripLabel();
+            this._cmbOrgUnit   = new System.Windows.Forms.ToolStripComboBox();
+            this._lblDeletedBy = new System.Windows.Forms.ToolStripLabel();
+            this._cmbDeletedBy = new System.Windows.Forms.ToolStripComboBox();
+            this._lblType      = new System.Windows.Forms.ToolStripLabel();
+            this._cmbType      = new System.Windows.Forms.ToolStripComboBox();
             this._listView    = new System.Windows.Forms.ListView();
             this._emptyPanel  = new System.Windows.Forms.Panel();
             this._iconLabel   = new System.Windows.Forms.Label();
@@ -90,7 +98,7 @@ namespace CMS.Presentation
             this._toolbar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
                 this._btnRestore, this._btnDelete, this._sep1, this._btnEmptyBin,
                 this._sep2, this._btnClose,
-                this._btnRefresh, this._lblOrgUnit, this._cmbOrgUnit });
+                this._btnRefresh, this._lblType, this._cmbType, this._lblDeletedBy, this._cmbDeletedBy, this._lblOrgUnit, this._cmbOrgUnit });
 
             // ── _btnRestore ───────────────────────────────────────────────────
             this._btnRestore.Text        = "♻️  คืนค่า (Restore)";
@@ -138,10 +146,34 @@ namespace CMS.Presentation
 
             // ── _cmbOrgUnit ───────────────────────────────────────────────────
             this._cmbOrgUnit.DropDownStyle          = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this._cmbOrgUnit.Size                   = new System.Drawing.Size(190, 25);
+            this._cmbOrgUnit.Size                   = new System.Drawing.Size(170, 25);
             this._cmbOrgUnit.Alignment              = System.Windows.Forms.ToolStripItemAlignment.Right;
             this._cmbOrgUnit.ToolTipText            = "กรองตามหน่วยงาน";
             this._cmbOrgUnit.SelectedIndexChanged  += new System.EventHandler(this.CmbOrgUnit_SelectedIndexChanged);
+
+            // ── _lblDeletedBy ─────────────────────────────────────────────────
+            this._lblDeletedBy.Text      = "ลบโดย:";
+            this._lblDeletedBy.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+
+            // ── _cmbDeletedBy ─────────────────────────────────────────────────
+            this._cmbDeletedBy.DropDownStyle         = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this._cmbDeletedBy.Size                  = new System.Drawing.Size(140, 25);
+            this._cmbDeletedBy.Alignment             = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this._cmbDeletedBy.ToolTipText           = "กรองตามผู้ลบ";
+            this._cmbDeletedBy.SelectedIndexChanged += new System.EventHandler(this.CmbDeletedBy_SelectedIndexChanged);
+
+            // ── _lblType ──────────────────────────────────────────────────────
+            this._lblType.Text      = "ประเภท:";
+            this._lblType.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+
+            // ── _cmbType ──────────────────────────────────────────────────────
+            this._cmbType.DropDownStyle         = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this._cmbType.Size                  = new System.Drawing.Size(110, 25);
+            this._cmbType.Alignment             = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this._cmbType.ToolTipText           = "กรองตามประเภท (Folder / File)";
+            this._cmbType.Items.AddRange(new object[] { "— ทั้งหมด —", "📁  Folder", "📄  File" });
+            this._cmbType.SelectedIndex         = 0;
+            this._cmbType.SelectedIndexChanged += new System.EventHandler(this.CmbType_SelectedIndexChanged);
 
             // ── _loadingPanel ─────────────────────────────────────────────────────
             this._loadingPanel.Dock      = System.Windows.Forms.DockStyle.Fill;
@@ -169,12 +201,13 @@ namespace CMS.Presentation
             this._listView.OwnerDraw        = true;
             this._listView.Visible          = false;
             this._listView.ContextMenuStrip = this._contextMenu;
-            this._listView.Columns.Add("ชื่อ Folder",  260);
-            this._listView.Columns.Add("หน่วยงาน",      170);
+            this._listView.Columns.Add("ชื่อ Folder",  280);
+            this._listView.Columns.Add("หน่วยงาน",      160);
             this._listView.Columns.Add("ตำแหน่งเดิม",   200);
-            this._listView.Columns.Add("วันที่ลบ",      150);
-            this._listView.Columns.Add("คงเหลือ (วัน)", 100);
-            this._listView.Columns.Add("ระดับ",           80);
+            this._listView.Columns.Add("ลบโดย",          150);
+            this._listView.Columns.Add("วันที่ลบ",      140);
+            this._listView.Columns.Add("คงเหลือ (วัน)",  90);
+            this._listView.Columns.Add("ระดับ",           70);
             this._listView.DrawColumnHeader     += new System.Windows.Forms.DrawListViewColumnHeaderEventHandler(this.ListView_DrawColumnHeader);
             this._listView.DrawItem             += new System.Windows.Forms.DrawListViewItemEventHandler(this.ListView_DrawItem);
             this._listView.DrawSubItem          += new System.Windows.Forms.DrawListViewSubItemEventHandler(this.ListViewDrawSubItem);
@@ -263,8 +296,8 @@ namespace CMS.Presentation
 
             // ── Form ──────────────────────────────────────────────────────────
             this.Text          = "🗑️ ถังขยะ — Recycle Bin";
-            this.Size          = new System.Drawing.Size(980, 650);
-            this.MinimumSize   = new System.Drawing.Size(780, 510);
+            this.Size          = new System.Drawing.Size(1200, 650);
+            this.MinimumSize   = new System.Drawing.Size(980, 510);
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Font          = new System.Drawing.Font("Segoe UI", 10f);
             this.BackColor     = System.Drawing.Color.White;

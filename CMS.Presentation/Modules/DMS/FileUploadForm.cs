@@ -261,9 +261,16 @@ namespace CMS.Presentation
             }
 
             UpdateSummary();
-            
-            // ตรวจสอบว่าอัปโหลดสำเร็จทั้งหมดหรือไม่
+
             int successCount = _fileRows.Count(r => r.LblStatus.Text == "สำเร็จ");
+            int errCount     = _fileRows.Count(r => r.LblStatus.Text == "Error");
+            progressBar.Style = ProgressBarStyle.Continuous;
+            progressBar.Value = _fileRows.Count > 0 ? (successCount * 100 / _fileRows.Count) : 100;
+            lblProgressText.Text = errCount > 0
+                ? string.Format("เสร็จสิ้น: สำเร็จ {0}/{1} ไฟล์  |  Error {2} ไฟล์", successCount, _fileRows.Count, errCount)
+                : string.Format("อัปโหลดสำเร็จทั้งหมด {0} ไฟล์", successCount);
+
+            // ตรวจสอบว่าอัปโหลดสำเร็จทั้งหมดหรือไม่
             int totalCount = _fileRows.Count;
             
             if (successCount > 0)
@@ -447,6 +454,12 @@ namespace CMS.Presentation
             _uploadedIds.Clear();
             _currentUploadRow = -1;
 
+            progressBar.Style = ProgressBarStyle.Continuous;
+            progressBar.Value = 0;
+            progressBar.Visible = true;
+            lblProgressText.Text = string.Format("กำลังเตรียมอัปโหลด {0} ไฟล์...", _pendingFiles.Count);
+            lblProgressText.Visible = true;
+
             if (!_uploadWorker.IsBusy)
                 _uploadWorker.RunWorkerAsync(new List<FileUploadRequest>(_pendingFiles));
         }
@@ -520,6 +533,10 @@ namespace CMS.Presentation
                 row.LblStatus.ForeColor = Color.FromArgb(43, 87, 154);
                 row.Progress.Style    = ProgressBarStyle.Marquee;
                 row.Progress.MarqueeAnimationSpeed = 30;
+
+                string fn = rowIndex < _pendingFiles.Count ? _pendingFiles[rowIndex].FileName : "";
+                lblProgressText.Text = string.Format("กำลังอัปโหลด: {0}  ({1}/{2})", fn, rowIndex + 1, _fileRows.Count);
+                progressBar.Value = _fileRows.Count > 0 ? (rowIndex * 100 / _fileRows.Count) : 0;
             }
         }
 

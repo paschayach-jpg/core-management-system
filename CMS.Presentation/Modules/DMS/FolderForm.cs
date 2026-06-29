@@ -133,6 +133,8 @@ namespace CMS.Presentation
         // Supplements the service-level cache for call sites that bypass the presenter.
         private readonly Dictionary<int, List<Folder>> _folderListCacheByOrg = new Dictionary<int, List<Folder>>();
         private List<Folder> _folderListCacheAll = null;
+        // FolderID → FolderName lookup built from last ShowFolderTree call; used to resolve ParentFolderName in list view
+        private Dictionary<int, string> _folderNameById = new Dictionary<int, string>();
 
         // Drop zone overlay — shown when content list is empty to prompt drag-and-drop upload
         private Panel _pnlDropHint;
@@ -706,9 +708,12 @@ namespace CMS.Presentation
                     .ToList();
                 Folder contentFolder = selectedFoldersInContent.Count > 0 ? selectedFoldersInContent[0] : null;
 
-                // ลบได้ถ้า canEdit และมีไฟล์หรือ folder ที่ลบได้อยู่อย่างน้อย 1 รายการ
-                bool canDeleteContent = canEdit && (hasFileSelection ||
-                    selectedFoldersInContent.Any(f => CanDeleteFolder(f)));
+                // ลบได้ถ้า canEdit หรือเป็นเจ้าของไฟล์ทุกรายการที่เลือก (A1: owner delete own files)
+                bool userOwnsAllSelectedFiles = hasFileSelection && !hasFolderSelection
+                    && selectedFiles.All(f => f.UploadedBy == _user.UserID);
+                bool canDeleteContent = (canEdit && (hasFileSelection ||
+                    selectedFoldersInContent.Any(f => CanDeleteFolder(f))))
+                    || userOwnsAllSelectedFiles;
 
                 // Check if any item (file or folder) is selected in content list
                 bool hasSelection = contentsListView.SelectedItems.Count > 0 &&
@@ -2834,6 +2839,9 @@ namespace CMS.Presentation
                     };
                 });
 
+                // Populate parent-name lookup so conf-view items can show parent folder hint
+                _folderNameById = result.AllFolders.ToDictionary(f => f.FolderID, f => f.FolderName);
+
                 BuildConfidentialityTreeFromAllFolders(result.AllRootFolders, result.AllOrgUnits, result.ChildrenByParent);
 
                 // Restore expanded state ที่เคย expand ไว้
@@ -3323,6 +3331,21 @@ namespace CMS.Presentation
                     {
                         bool isRoot = !f.ParentFolderID.HasValue || f.ParentFolderID == 0;
                         string iconKey = isRoot ? ConfidentialityBookIcon(f.ConfidentialityLevel) : "folder";
+
+                        // Resolve location hint: child folder → parent folder name; root folder → specific org unit name
+                        if (f.ParentFolderID.HasValue && f.ParentFolderID.Value > 0)
+                        {
+                            string pn;
+                            f.ParentFolderName = _folderNameById.TryGetValue(f.ParentFolderID.Value, out pn) ? pn : null;
+                        }
+                        else
+                        {
+                            // Root folder: use the most specific org unit (e.g., department) rather than the committee name
+                            string specificOuName;
+                            f.ParentFolderName = (_orgUnitNameCache != null && _orgUnitNameCache.TryGetValue(f.OrgUnitID, out specificOuName))
+                                ? specificOuName : ouName;
+                        }
+
                         var item = new ListViewItem(f.Name) { ImageKey = iconKey, Group = lvGroup };
                         item.SubItems.Add(f.FileCount > 0
                             ? string.Format("Folder  {0} ไฟล์", f.FileCount)
@@ -3681,8 +3704,9 @@ namespace CMS.Presentation
             _treeMainMenu.ImageKey = "folder";
             _treeMainMenu.SelectedImageKey = "open_folder";
 
-            // ListView needs its own separate ImageList (WinForms does not allow sharing with TreeView)
-            var listImageList = GetOrBuildListSmall16();
+            // ListView needs its own separate ImageList (WinForms does not allow sharing with TreeView).
+            // Use 16×28 so each row is tall enough for a 2-line name (main + parent folder hint).
+            var listImageList = BuildContentListImageList();
             contentsListView.SmallImageList = listImageList;
 
             // ── LargeImageList (48×48) for Large Icon view ────────────────────
@@ -3952,6 +3976,15 @@ namespace CMS.Presentation
             return list;
         }
 
+        private ImageList BuildContentListImageList()
+        {
+            var src = GetOrBuildListSmall16();
+            var list = new ImageList { ImageSize = new Size(16, 28), ColorDepth = ColorDepth.Depth32Bit };
+            foreach (string key in src.Images.Keys)
+                list.Images.Add(key, src.Images[key]);
+            return list;
+        }
+
         // -----------------------------------------------------------------------
         // IFolderView — ShowFolderTree  (Req 4.1, 7.6)
         // -----------------------------------------------------------------------
@@ -3966,6 +3999,9 @@ namespace CMS.Presentation
             var allFolders = rootFolders == null
                 ? new List<Folder>()
                 : rootFolders.Where(f => !f.IsDeleted && !f.IsArchived).ToList();
+
+            // Rebuild lookup so ShowFolderContents can resolve parent folder names without extra DB calls
+            _folderNameById = allFolders.ToDictionary(f => f.FolderID, f => f.FolderName);
 
             // Group by parent: key 0 = root (ParentFolderID null or 0)
             var byParent = allFolders
@@ -4105,6 +4141,20 @@ namespace CMS.Presentation
                 // Populate OrgUnitName
                 string ouName;
                 folder.OrgUnitName = orgUnitNames.TryGetValue(folder.OrgUnitID, out ouName) ? ouName : "—";
+
+                // Resolve location hint for 2-line Name column display
+                if (folder.ParentFolderID.HasValue && folder.ParentFolderID.Value > 0)
+                {
+                    string pn;
+                    folder.ParentFolderName = _folderNameById.TryGetValue(folder.ParentFolderID.Value, out pn) ? pn : null;
+                }
+                else
+                {
+                    // Root folder: show specific org unit (dept/division) name so identical-named folders are distinguishable
+                    string ouHint;
+                    folder.ParentFolderName = (_orgUnitNameCache != null && _orgUnitNameCache.TryGetValue(folder.OrgUnitID, out ouHint))
+                        ? ouHint : null;
+                }
 
                 // Name column: name + subtitle hint (icon comes from ImageList)
                 string nameText = folder.Name;
@@ -5000,6 +5050,14 @@ namespace CMS.Presentation
                 e.DrawDefault = true;
                 return;
             }
+
+            // Guard: item may have been removed from ListView during redraw (e.g. folder navigation)
+            if (e.Item == null || e.Item.ListView == null)
+            {
+                e.DrawDefault = true;
+                return;
+            }
+
             // Alternating row background
             bool isSelected = e.Item.Selected;
             bool isEven = e.ItemIndex % 2 == 0;
@@ -5016,13 +5074,13 @@ namespace CMS.Presentation
                 textColor = e.Item.ForeColor;
             if (textColor == Color.Empty) textColor = Color.Black;
 
-            // ── Column 0: draw icon + name ────────────────────────────────────
+            // ── Column 0: draw icon + name (+ parent folder hint on second line) ───
             if (e.ColumnIndex == 0)
             {
                 var il = contentsListView.SmallImageList;
                 int iconW = 0;
                 int iconX = e.Bounds.X + 2;
-                int iconY = e.Bounds.Y + (e.Bounds.Height - 16) / 2;
+                int iconY = e.Bounds.Y + 2;
 
                 if (il != null && !string.IsNullOrEmpty(e.Item.ImageKey)
                     && il.Images.ContainsKey(e.Item.ImageKey))
@@ -5030,19 +5088,40 @@ namespace CMS.Presentation
                     int imgIdx = il.Images.IndexOfKey(e.Item.ImageKey);
                     if (imgIdx >= 0)
                         il.Draw(e.Graphics, iconX, iconY, 16, 16, imgIdx);
-                    iconW = 20; // 16px icon + 4px gap
+                    iconW = 20;
                 }
 
-                var textBounds = new Rectangle(
-                    e.Bounds.X + 2 + iconW,
-                    e.Bounds.Y,
-                    e.Bounds.Width - 2 - iconW,
-                    e.Bounds.Height);
+                int textX = e.Bounds.X + 2 + iconW;
+                int textW = e.Bounds.Width - 2 - iconW;
 
-                var flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter |
-                            TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine;
-                TextRenderer.DrawText(e.Graphics, e.SubItem.Text,
-                                      e.Item.ListView.Font, textBounds, textColor, flags);
+                var tagFolder = e.Item.Tag as Folder;
+                string parentHint = tagFolder != null ? tagFolder.ParentFolderName : null;
+
+                if (!string.IsNullOrEmpty(parentHint))
+                {
+                    // Top line: folder name
+                    var nameBounds = new Rectangle(textX, e.Bounds.Y + 1, textW, 16);
+                    TextRenderer.DrawText(e.Graphics, e.SubItem.Text, e.Item.ListView.Font,
+                        nameBounds, textColor,
+                        TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+
+                    // Bottom line: parent folder hint in small gray font
+                    using (var hintFont = new Font(e.Item.ListView.Font.FontFamily, 7f, FontStyle.Regular))
+                    {
+                        var hintColor = isSelected ? Color.FromArgb(200, 230, 255) : Color.FromArgb(120, 120, 120);
+                        var hintBounds = new Rectangle(textX, e.Bounds.Y + 17, textW, 11);
+                        TextRenderer.DrawText(e.Graphics, "📁 " + parentHint, hintFont,
+                            hintBounds, hintColor,
+                            TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+                    }
+                }
+                else
+                {
+                    var textBounds = new Rectangle(textX, e.Bounds.Y, textW, e.Bounds.Height);
+                    TextRenderer.DrawText(e.Graphics, e.SubItem.Text, e.Item.ListView.Font,
+                        textBounds, textColor,
+                        TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
+                }
                 return;
             }
 
@@ -5129,7 +5208,7 @@ namespace CMS.Presentation
 
                 // Fixed widths for non-name columns (index 1..8)
                 // Keep layout stable and only stretch Name column to fill remaining space.
-                int[] fixedWidths = { 0, 95, 70, 85, 125, 160, 48, 220, 85 };
+                int[] fixedWidths = { 0, 95, 70, 85, 125, 160, 48, 0, 0 };
                 int fixedTotal = 0;
 
                 for (int i = 1; i < contentsListView.Columns.Count && i < fixedWidths.Length; i++)

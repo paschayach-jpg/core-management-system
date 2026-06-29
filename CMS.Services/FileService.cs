@@ -329,7 +329,10 @@ namespace CMS.Services
                 // เงื่อนไขที่ 2: FolderPermission — Delete โดยใช้ UserAccount (User, Role, Dept, Div)
                 bool hasAclDelete = !hasAuthority && _permissionService.CheckPermission(user.UserID, doc.FolderID, "Delete");
 
-                if (!hasAuthority && !hasAclDelete)
+                // เงื่อนไขที่ 3: เจ้าของไฟล์ — ผู้อัปโหลดสามารถลบไฟล์ของตัวเองได้
+                bool isOwner = doc.UploadedBy == user.UserID;
+
+                if (!hasAuthority && !hasAclDelete && !isOwner)
                     throw new UnauthorizedAccessException(string.Format(
                         "User {0} does not have permission to delete file from folder {1}.", user.UserID, doc.FolderID));
             }

@@ -199,7 +199,7 @@ namespace CMS.Presentation
                             MessageBox.Show("Recycle bin controller is not available.", "Recycle Bin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return true;
                         }
-                        return ShowTargetForm(context, new RecycleBinForm(context.RecycleBinController, context.User));
+                        return ShowTargetForm(context, new RecycleBinForm(context.RecycleBinController, context.User, context.UserAccountLookupController));
 
                     case "KnowledgeBase":
                     case "KnowledgeBaseForm":

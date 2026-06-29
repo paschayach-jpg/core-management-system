@@ -16,27 +16,44 @@ namespace CMS.Presentation
     public partial class RecycleBinForm : Form
     {
         // ── Services ────────────────────────────────────────────────────────────
-        private readonly IRecycleBinController _recycleBinController;
-        private readonly UserContext           _user;
+        private readonly IRecycleBinController        _recycleBinController;
+        private readonly UserContext                  _user;
+        private readonly IUserAccountLookupController _userLookupController;
+
+        private Dictionary<int, string> _deletedByMap = new Dictionary<int, string>();
 
         // ── State ───────────────────────────────────────────────────────────────
-        private List<Folder>       _folders       = new List<Folder>();
-        private List<FileDocument> _files         = new List<FileDocument>();
-        private List<OrgUnit>      _orgUnits      = new List<OrgUnit>();
-        private int?               _filterOrgUnit = null;
+        private List<Folder>       _folders         = new List<Folder>();
+        private List<FileDocument> _files           = new List<FileDocument>();
+        private List<OrgUnit>      _orgUnits        = new List<OrgUnit>();
+        private int?               _filterOrgUnit   = null;
+        private int?               _filterDeletedBy = null;
+        private int?               _filterType      = null; // null=ทั้งหมด, 1=Folder, 2=File
 
         // ────────────────────────────────────────────────────────────────────────
         public RecycleBinForm(
             IRecycleBinController recycleBinController,
-            UserContext user)
+            UserContext user,
+            IUserAccountLookupController userLookupController = null)
         {
             if (recycleBinController == null) throw new ArgumentNullException("recycleBinController");
             if (user == null) throw new ArgumentNullException("user");
 
             _recycleBinController = recycleBinController;
-            _user = user;
+            _user                 = user;
+            _userLookupController = userLookupController;
 
             InitializeComponent();
+
+            if (_userLookupController != null)
+            {
+                try
+                {
+                    foreach (var u in _userLookupController.GetAllUsers())
+                        _deletedByMap[u.UserID] = string.IsNullOrEmpty(u.DisplayName) ? u.ADUserName : u.DisplayName;
+                }
+                catch { }
+            }
             // ไม่โหลด DB ที่นี่ — โหลดใน Shown event เพื่อให้ form เปิดทันที
         }
 
@@ -74,6 +91,7 @@ namespace CMS.Presentation
 
             PopulateList();
             if (rebuildFilter) BuildOrgUnitFilter();
+            BuildDeletedByFilter();
             SetLoadingState(false);
         }
 
@@ -120,6 +138,37 @@ namespace CMS.Presentation
             _cmbOrgUnit.SelectedIndexChanged += CmbOrgUnit_SelectedIndexChanged;
         }
 
+        private void BuildDeletedByFilter()
+        {
+            var distinctIds = _folders
+                .Select(f => f.DeletedBy)
+                .Concat(_files.Select(f => f.DeletedBy))
+                .Where(id => id.HasValue)
+                .Select(id => id.Value)
+                .Distinct()
+                .OrderBy(id => ResolveDeletedByName(id))
+                .ToList();
+
+            _cmbDeletedBy.SelectedIndexChanged -= CmbDeletedBy_SelectedIndexChanged;
+            _cmbDeletedBy.Items.Clear();
+            _cmbDeletedBy.Items.Add(new DeletedByItem { Id = null, Name = "— ทั้งหมด —" });
+
+            foreach (var id in distinctIds)
+                _cmbDeletedBy.Items.Add(new DeletedByItem { Id = id, Name = ResolveDeletedByName(id) });
+
+            int selIdx = 0;
+            if (_filterDeletedBy.HasValue)
+            {
+                for (int i = 1; i < _cmbDeletedBy.Items.Count; i++)
+                {
+                    var item = _cmbDeletedBy.Items[i] as DeletedByItem;
+                    if (item != null && item.Id == _filterDeletedBy) { selIdx = i; break; }
+                }
+            }
+            _cmbDeletedBy.SelectedIndex = selIdx;
+            _cmbDeletedBy.SelectedIndexChanged += CmbDeletedBy_SelectedIndexChanged;
+        }
+
         private void LoadData()
         {
             try
@@ -153,7 +202,11 @@ namespace CMS.Presentation
             _listView.Items.Clear();
 
             // ── Folders ──────────────────────────────────────────────────────────
-            foreach (var folder in _folders.OrderByDescending(f => f.DeletedAt ?? DateTime.MinValue))
+            var foldersToShow = (_filterType == 2) ? Enumerable.Empty<Folder>() :
+                _filterDeletedBy.HasValue
+                    ? _folders.Where(f => f.DeletedBy == _filterDeletedBy.Value)
+                    : (IEnumerable<Folder>)_folders;
+            foreach (var folder in foldersToShow.OrderByDescending(f => f.DeletedAt ?? DateTime.MinValue))
             {
                 string orgUnitName = GetOrgUnitName(folder.OrgUnitID);
                 string parentPath  = folder.ParentFolderId.HasValue
@@ -169,11 +222,14 @@ namespace CMS.Presentation
                 string remaining = daysRemaining == 0 ? "หมดอายุ" : daysRemaining + " วัน";
                 string level     = ConfidentialityBadge(folder.ConfidentialityLevel);
 
+                string deletedByFolder = ResolveDeletedByName(folder.DeletedBy);
+
                 var item = new ListViewItem(new[]
                 {
                     "📁  " + folder.FolderName,
                     orgUnitName,
                     parentPath,
+                    deletedByFolder,
                     deletedAt,
                     remaining,
                     level
@@ -188,7 +244,11 @@ namespace CMS.Presentation
             }
 
             // ── Files ─────────────────────────────────────────────────────────────
-            foreach (var file in _files.OrderByDescending(f => f.DeletedDate ?? DateTime.MinValue))
+            var filesToShow = (_filterType == 1) ? Enumerable.Empty<FileDocument>() :
+                _filterDeletedBy.HasValue
+                    ? _files.Where(f => f.DeletedBy == _filterDeletedBy.Value)
+                    : (IEnumerable<FileDocument>)_files;
+            foreach (var file in filesToShow.OrderByDescending(f => f.DeletedDate ?? DateTime.MinValue))
             {
                 string orgUnitName = string.IsNullOrEmpty(file.OrgUnitName)
                     ? "—"
@@ -206,11 +266,14 @@ namespace CMS.Presentation
                 string remaining = daysRemaining == 0 ? "หมดอายุ" : daysRemaining + " วัน";
                 string level     = ConfidentialityBadge(file.ConfidentialityLevel);
 
+                string deletedByFile = ResolveDeletedByName(file.DeletedBy);
+
                 var item = new ListViewItem(new[]
                 {
                     "📄  " + file.OriginalFileName,
                     orgUnitName,
                     folderName,
+                    deletedByFile,
                     deletedAt,
                     remaining,
                     level
@@ -244,6 +307,13 @@ namespace CMS.Presentation
         {
             var ou = _orgUnits.FirstOrDefault(o => o.OrgUnitId == orgUnitId);
             return ou != null ? ou.Name : "(หน่วยงาน #" + orgUnitId + ")";
+        }
+
+        private string ResolveDeletedByName(int? userId)
+        {
+            if (!userId.HasValue || userId.Value <= 0) return "—";
+            string name;
+            return _deletedByMap.TryGetValue(userId.Value, out name) ? name : "UserID:" + userId.Value;
         }
 
         // ── Event Handlers ───────────────────────────────────────────────────────
@@ -316,6 +386,20 @@ namespace CMS.Presentation
             await LoadAllAsync(rebuildFilter: false);
         }
 
+        private void CmbDeletedBy_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            var sel = _cmbDeletedBy.SelectedItem as DeletedByItem;
+            _filterDeletedBy = sel?.Id;
+            PopulateList();
+        }
+
+        private void CmbType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int idx = _cmbType.SelectedIndex;
+            _filterType = idx == 1 ? (int?)1 : idx == 2 ? (int?)2 : null;
+            PopulateList();
+        }
+
         private void BtnRestore_Click(object sender, EventArgs e)
         {
             var selected = GetSelectedItems();
@@ -335,29 +419,53 @@ namespace CMS.Presentation
             int total = _folders.Count + _files.Count;
             if (total == 0) return;
 
+            bool isAdmin = _user.Role == UserRole.Admin;
+
+            var ownFolders = isAdmin
+                ? _folders.ToList()
+                : _folders.Where(f => f.DeletedBy.HasValue && f.DeletedBy.Value == _user.UserID).ToList();
+            var ownFiles = isAdmin
+                ? _files.ToList()
+                : _files.Where(f => f.DeletedBy.HasValue && f.DeletedBy.Value == _user.UserID).ToList();
+
+            int skipCount = total - ownFolders.Count - ownFiles.Count;
+
+            if (ownFolders.Count == 0 && ownFiles.Count == 0)
+            {
+                MessageBox.Show(
+                    "ไม่มีรายการที่ตัวเองลบไว้ในถังขยะ\n\nสามารถล้างได้เฉพาะรายการที่ตัวเองเป็นผู้ลบเท่านั้น",
+                    "ไม่มีรายการ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string skipNote = skipCount > 0
+                ? string.Format("\n\n⚠️ {0} รายการที่เป็นของผู้อื่นจะถูกข้ามไป (ไม่มีสิทธิ์)", skipCount)
+                : "";
+
             var result = MessageBox.Show(
-                string.Format("ต้องการล้างถังขยะทั้งหมด ({0} Folder, {1} File) หรือไม่?\n\n⚠️ การลบถาวรไม่สามารถกู้คืนได้",
-                    _folders.Count, _files.Count),
+                string.Format("ต้องการล้างถังขยะ ({0} Folder, {1} File) หรือไม่?\n\n⚠️ การลบถาวรไม่สามารถกู้คืนได้{2}",
+                    ownFolders.Count, ownFiles.Count, skipNote),
                 "ล้างถังขยะ", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
 
             if (result != DialogResult.Yes) return;
 
             int success = 0, failed = 0;
 
-            foreach (var folder in _folders.ToList())
+            foreach (var folder in ownFolders)
             {
                 try { _recycleBinController.PermanentlyDeleteFolder(folder.FolderId, _user); success++; }
                 catch { failed++; }
             }
 
-            foreach (var file in _files.ToList())
+            foreach (var file in ownFiles)
             {
                 try { _recycleBinController.PermanentlyDeleteFile(file.FileID, _user); success++; }
                 catch { failed++; }
             }
 
             string msg = string.Format("ล้างถังขยะเรียบร้อย — ลบ {0} รายการ", success);
-            if (failed > 0) msg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
+            if (failed    > 0) msg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
+            if (skipCount > 0) msg += string.Format("\nข้าม {0} รายการ (ไม่มีสิทธิ์ลบรายการของผู้อื่น)", skipCount);
             MessageBox.Show(msg, "เสร็จสิ้น", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             LoadData();
@@ -367,19 +475,21 @@ namespace CMS.Presentation
 
         private void ContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            bool canManage = _user.Role == UserRole.Manager || _user.Role == UserRole.Admin;
-            int  selCount  = _listView.SelectedItems.Count;
-            int  total     = _folders.Count + _files.Count;
+            bool isAdmin  = _user.Role == UserRole.Admin;
+            int  selCount = _listView.SelectedItems.Count;
+            int  total    = _folders.Count + _files.Count;
 
-            // ลบถาวร: แสดงเฉพาะ Manager/Admin เท่านั้น
-            _ctxDelete.Visible  = canManage;
-            _ctxSep1.Visible    = canManage;
+            bool canDeleteSelected = selCount > 0 && (isAdmin || GetSelectedItems().Any(
+                t => t.DeletedBy.HasValue && t.DeletedBy.Value == _user.UserID));
+
+            // ทุก user เห็นปุ่มลบถาวร — ownership guard อยู่ใน T2/ConfirmPermanentDelete
+            _ctxDelete.Visible = true;
+            _ctxSep1.Visible   = true;
 
             _ctxRestore.Enabled   = selCount > 0;
-            _ctxDelete.Enabled    = selCount > 0 && canManage;
+            _ctxDelete.Enabled    = canDeleteSelected;
             _ctxSelectAll.Enabled = total > 0;
 
-            // อัปเดต label ให้แสดงจำนวนที่เลือกด้วย
             _ctxRestore.Text = selCount > 1
                 ? string.Format("♻️   คืนค่า {0} รายการ", selCount)
                 : "♻️   คืนค่า (Restore)";
@@ -455,18 +565,39 @@ namespace CMS.Presentation
         {
             if (targets == null || targets.Count == 0) return;
 
-            string names = targets.Count == 1
-                ? string.Format("'{0}'", targets[0].DisplayName)
-                : string.Format("{0} รายการที่เลือก", targets.Count);
+            bool isAdmin = _user.Role == UserRole.Admin;
+
+            var allowed = isAdmin
+                ? targets.ToList()
+                : targets.Where(t => t.DeletedBy.HasValue && t.DeletedBy.Value == _user.UserID).ToList();
+            var blocked = isAdmin
+                ? new List<RecycleBinItem>()
+                : targets.Where(t => !t.DeletedBy.HasValue || t.DeletedBy.Value != _user.UserID).ToList();
+
+            if (allowed.Count == 0)
+            {
+                MessageBox.Show(
+                    string.Format("ไม่สามารถลบถาวรได้ — {0} รายการที่เลือกเป็นของผู้อื่นทั้งหมด\n\nสามารถลบได้เฉพาะรายการที่ตัวเองเป็นผู้ลบไว้เท่านั้น", blocked.Count),
+                    "ไม่มีสิทธิ์", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string names = allowed.Count == 1
+                ? string.Format("'{0}'", allowed[0].DisplayName)
+                : string.Format("{0} รายการที่เลือก", allowed.Count);
+
+            string skipNote = blocked.Count > 0
+                ? string.Format("\n\n⚠️ {0} รายการที่เป็นของผู้อื่นจะถูกข้ามไป (ไม่มีสิทธิ์)", blocked.Count)
+                : "";
 
             var result = MessageBox.Show(
-                string.Format("⚠️ ลบ {0} ออกจากระบบถาวรหรือไม่?\n\nการลบถาวรไม่สามารถกู้คืนได้", names),
+                string.Format("⚠️ ลบ {0} ออกจากระบบถาวรหรือไม่?\n\nการลบถาวรไม่สามารถกู้คืนได้{1}", names, skipNote),
                 "ลบถาวร", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
 
             if (result != DialogResult.Yes) return;
 
             int success = 0, failed = 0;
-            foreach (var item in targets)
+            foreach (var item in allowed)
             {
                 try
                 {
@@ -480,7 +611,8 @@ namespace CMS.Presentation
             }
 
             string msg = string.Format("ลบถาวร {0} รายการเรียบร้อย", success);
-            if (failed > 0) msg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
+            if (failed  > 0) msg += string.Format(" (ล้มเหลว {0} รายการ)", failed);
+            if (blocked.Count > 0) msg += string.Format("\nข้าม {0} รายการ (ไม่มีสิทธิ์ลบรายการของผู้อื่น)", blocked.Count);
             MessageBox.Show(msg, "เสร็จสิ้น", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             LoadData();
@@ -490,13 +622,24 @@ namespace CMS.Presentation
 
         private void UpdateActionButtons()
         {
-            bool canManage = _user.Role == UserRole.Manager || _user.Role == UserRole.Admin;
-            int  selCount  = _listView.SelectedItems.Count;
-            int  total     = _folders.Count + _files.Count;
+            bool isAdmin  = _user.Role == UserRole.Admin;
+            int  selCount = _listView.SelectedItems.Count;
+            int  total    = _folders.Count + _files.Count;
+
+            bool hasOwnInBin = isAdmin
+                || _folders.Any(f => f.DeletedBy.HasValue && f.DeletedBy.Value == _user.UserID)
+                || _files.Any(f => f.DeletedBy.HasValue && f.DeletedBy.Value == _user.UserID);
+
+            bool canDeleteSelected = selCount > 0 && (isAdmin || GetSelectedItems().Any(
+                t => t.DeletedBy.HasValue && t.DeletedBy.Value == _user.UserID));
 
             _btnRestore.Enabled  = selCount > 0;
-            _btnDelete.Enabled   = selCount > 0 && canManage;
-            _btnEmptyBin.Enabled = total > 0 && canManage;
+            _btnDelete.Enabled   = canDeleteSelected;
+            _btnEmptyBin.Enabled = total > 0 && hasOwnInBin;
+
+            _btnDelete.ToolTipText = !canDeleteSelected && selCount > 0
+                ? "ลบได้เฉพาะรายการที่ตัวเองเป็นผู้ลบไว้เท่านั้น"
+                : "ลบ Folder ที่เลือกออกจากระบบถาวร (ไม่สามารถกู้คืนได้)";
 
             if (selCount > 0)
                 _lblStatus.Text = string.Format("เลือก {0} รายการ  |  📁 {1} Folder  📄 {2} File ในถังขยะ",
@@ -581,9 +724,26 @@ namespace CMS.Presentation
                         : (File   != null ? File.OriginalFileName : "");
                 }
             }
+
+            public int? DeletedBy
+            {
+                get
+                {
+                    return ItemType == RecycleBinItemType.Folder
+                        ? (Folder != null ? Folder.DeletedBy : (int?)null)
+                        : (File   != null ? File.DeletedBy   : (int?)null);
+                }
+            }
         }
 
         private class OrgUnitItem
+        {
+            public int?   Id   { get; set; }
+            public string Name { get; set; }
+            public override string ToString() { return Name; }
+        }
+
+        private class DeletedByItem
         {
             public int?   Id   { get; set; }
             public string Name { get; set; }

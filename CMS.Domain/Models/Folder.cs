@@ -41,6 +41,9 @@ namespace CMS.Domain.Models
         /// <summary>Transient: OrgUnit display name, populated by service/presentation layer.</summary>
         public string OrgUnitName { get; set; }
 
+        /// <summary>Transient: immediate parent folder name, populated by presentation layer for list display.</summary>
+        public string ParentFolderName { get; set; }
+
         /// <summary>Transient: display name of the creator, populated by repository layer.</summary>
         public string CreatedByName { get; set; }
 

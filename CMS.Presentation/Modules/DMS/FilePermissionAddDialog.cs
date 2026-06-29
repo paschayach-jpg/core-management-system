@@ -12,8 +12,11 @@ namespace CMS.Presentation
     /// </summary>
     public partial class FilePermissionAddDialog : Form
     {
-        private readonly IUserAccountLookupController _userAccountLookupController;
+        private readonly IUserAccountLookupController  _userAccountLookupController;
+        private readonly IUserAccessOrgLookupController _orgLookupController;
+
         private List<UserAccount> _userList = new List<UserAccount>();
+        private List<OrgUnit>     _orgList  = new List<OrgUnit>();
 
         // ── Result properties (อ่านได้หลัง DialogResult.OK) ─────────────────
         public int  SelectedPrincipalType { get; private set; }
@@ -25,9 +28,12 @@ namespace CMS.Presentation
         public bool CanFullControl { get; private set; }
         public bool IsDeny         { get; private set; }
 
-        public FilePermissionAddDialog(IUserAccountLookupController userAccountLookupController = null)
+        public FilePermissionAddDialog(
+            IUserAccountLookupController  userAccountLookupController = null,
+            IUserAccessOrgLookupController orgLookupController        = null)
         {
             _userAccountLookupController = userAccountLookupController;
+            _orgLookupController         = orgLookupController;
             InitializeComponent();
         }
 
@@ -35,7 +41,35 @@ namespace CMS.Presentation
 
         private void FilePermissionAddDialog_Load(object sender, EventArgs e)
         {
+            AddSectionPanels();
             ReloadUsers(true);
+        }
+
+        private void AddSectionPanels()
+        {
+            // White card behind ประเภทผู้ใช้ + เลือกผู้ใช้ section
+            var pnlSection = new Panel
+            {
+                BackColor   = System.Drawing.Color.White,
+                BorderStyle = BorderStyle.None,
+                Location    = new System.Drawing.Point(8, 42),
+                Size        = new System.Drawing.Size(378, 64),
+            };
+            // Drop card behind existing controls (SendToBack)
+            Controls.Add(pnlSection);
+            pnlSection.SendToBack();
+            // Re-bring header to front
+            pnlHeader.BringToFront();
+
+            // Footer separator line above buttons
+            var pnlFooterLine = new Panel
+            {
+                BackColor = System.Drawing.Color.FromArgb(200, 210, 225),
+                Location  = new System.Drawing.Point(0, 354),
+                Size      = new System.Drawing.Size(394, 1),
+            };
+            Controls.Add(pnlFooterLine);
+            pnlFooterLine.BringToFront();
         }
 
         // ── Radio button handlers ─────────────────────────────────────────────
@@ -54,7 +88,7 @@ namespace CMS.Presentation
             if (rdGroup.Checked)
             {
                 lblSelect.Text = "เลือกหน่วยงาน:";
-                ReloadUsers(false);
+                ReloadOrgUnits();
             }
         }
 
@@ -90,8 +124,18 @@ namespace CMS.Presentation
             }
             else if (rdGroup.Checked)
             {
-                SelectedPrincipalType = 4;
-                int.TryParse(cboSelect.Text, out principalId);
+                int idx = cboSelect.SelectedIndex;
+                if (idx < 0 || idx >= _orgList.Count)
+                {
+                    MessageBox.Show("กรุณาเลือกหน่วยงานให้ถูกต้อง", "แจ้งเตือน",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var org = _orgList[idx];
+                principalId           = org.OrgUnitID;
+                // OrgUnitType 2=Division → PrincipalType 4, OrgUnitType 3=Department → PrincipalType 3
+                SelectedPrincipalType = org.OrgUnitType == 2 ? 4 : 3;
             }
             else
             {
@@ -133,6 +177,41 @@ namespace CMS.Presentation
                 _userList = (_userAccountLookupController?.GetAllUsers() ?? Enumerable.Empty<UserAccount>()).ToList();
                 foreach (var u in _userList.OrderBy(x => x.ADUserName))
                     cboSelect.Items.Add(string.Format("{0} — {1} (ID:{2})", u.ADUserName, u.DisplayName, u.UserID));
+                if (cboSelect.Items.Count > 0)
+                    cboSelect.SelectedIndex = 0;
+            }
+            catch { }
+        }
+
+        private void ReloadOrgUnits()
+        {
+            cboSelect.Items.Clear();
+            cboSelect.Text = "";
+            _orgList.Clear();
+
+            if (_orgLookupController == null) return;
+
+            try
+            {
+                // De-duplicate: same OrgUnitNameTH + OrgUnitType may exist with multiple IDs
+                // (DB data issue — same dept linked under multiple parent nodes).
+                // Keep lowest OrgUnitID per name+type = original/canonical record.
+                var deduped = _orgLookupController.GetHierarchy()
+                    .Where(o => o.IsActive && !o.IsDeleted)
+                    .GroupBy(o => new { Name = (o.OrgUnitNameTH ?? "").Trim(), o.OrgUnitType })
+                    .Select(g => g.OrderBy(o => o.OrgUnitID).First())
+                    .OrderBy(o => o.OrgUnitType)   // Division(2) ก่อน Department(3)
+                    .ThenBy(o => o.Name)
+                    .ToList();
+
+                foreach (var org in deduped)
+                {
+                    string tier  = org.OrgUnitType == 2 ? "ฝ่าย" : "แผนก";
+                    string label = string.Format("[{0}] {1} (ID:{2})", tier, org.Name, org.OrgUnitID);
+                    cboSelect.Items.Add(label);
+                    _orgList.Add(org);
+                }
+
                 if (cboSelect.Items.Count > 0)
                     cboSelect.SelectedIndex = 0;
             }

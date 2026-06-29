@@ -169,7 +169,7 @@ namespace CMS.Presentation
             // 
             // pnlPermHdr
             // 
-            this.pnlPermHdr.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(250)))));
+            this.pnlPermHdr.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.pnlPermHdr.Controls.Add(this.lblPermHdrTitle);
             this.pnlPermHdr.Controls.Add(this.lblPermHdrAllow);
             this.pnlPermHdr.Controls.Add(this.lblPermHdrDeny);
@@ -182,6 +182,7 @@ namespace CMS.Presentation
             // 
             this.lblPermHdrTitle.AutoSize = true;
             this.lblPermHdrTitle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblPermHdrTitle.ForeColor = System.Drawing.Color.White;
             this.lblPermHdrTitle.Location = new System.Drawing.Point(9, 4);
             this.lblPermHdrTitle.Name = "lblPermHdrTitle";
             this.lblPermHdrTitle.Size = new System.Drawing.Size(29, 15);
@@ -191,6 +192,7 @@ namespace CMS.Presentation
             // lblPermHdrAllow
             // 
             this.lblPermHdrAllow.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblPermHdrAllow.ForeColor = System.Drawing.Color.White;
             this.lblPermHdrAllow.Location = new System.Drawing.Point(233, 4);
             this.lblPermHdrAllow.Name = "lblPermHdrAllow";
             this.lblPermHdrAllow.Size = new System.Drawing.Size(51, 16);
@@ -201,6 +203,7 @@ namespace CMS.Presentation
             // lblPermHdrDeny
             // 
             this.lblPermHdrDeny.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.lblPermHdrDeny.ForeColor = System.Drawing.Color.White;
             this.lblPermHdrDeny.Location = new System.Drawing.Point(313, 4);
             this.lblPermHdrDeny.Name = "lblPermHdrDeny";
             this.lblPermHdrDeny.Size = new System.Drawing.Size(47, 16);
@@ -244,7 +247,7 @@ namespace CMS.Presentation
             // 
             // pnlRowWrite
             // 
-            this.pnlRowWrite.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(255)))));
+            this.pnlRowWrite.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(225)))), ((int)(((byte)(235)))), ((int)(((byte)(255)))));
             this.pnlRowWrite.Controls.Add(this.lblPermWrite);
             this.pnlRowWrite.Controls.Add(this.rdAllowWrite);
             this.pnlRowWrite.Controls.Add(this.rdDenyWrite);
@@ -312,7 +315,7 @@ namespace CMS.Presentation
             // 
             // pnlRowModify
             // 
-            this.pnlRowModify.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(255)))));
+            this.pnlRowModify.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(225)))), ((int)(((byte)(235)))), ((int)(((byte)(255)))));
             this.pnlRowModify.Controls.Add(this.lblPermModify);
             this.pnlRowModify.Controls.Add(this.rdAllowModify);
             this.pnlRowModify.Controls.Add(this.rdDenyModify);
@@ -408,7 +411,7 @@ namespace CMS.Presentation
             this.AcceptButton = this.btnOk;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.White;
+            this.BackColor = System.Drawing.Color.FromArgb(238, 242, 248);
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(394, 425);
             this.Controls.Add(this.btnCancel);
