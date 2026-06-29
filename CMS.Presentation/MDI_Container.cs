@@ -138,14 +138,11 @@ namespace CMS.Presentation
         // Persistent logout button in ribbonStrip
         private ToolStripButton _btnLogout;
         private bool _ribbonCollapsed = false;
-        private bool _adminTabActive = false;
+        private bool _adminTabActive  = false;
+        private bool _navCollapsed    = false;
 
         // ── "Shared With Me" badge (Home ribbon) ────────────────────────────
         private ToolStripLabel _lblSharedBadge;
-
-        // ── Persistent left navigation panel ────────────────────────────────
-        private Panel _pnlMainNav;
-        private TreeView _navTree;
 
         // File detail panel controls
         private Panel _fileDetailPanel;
@@ -363,6 +360,7 @@ namespace CMS.Presentation
 
                 // Persistent left navigation panel (always visible)
                 InitializeMainNavPanel();
+                LoadMainNavTree();
 
                 // Auto-open FolderForm on startup
                 // Auto-open FolderForm first — must appear before dashboard data loads
@@ -515,100 +513,6 @@ namespace CMS.Presentation
         // -----------------------------------------------------------------------
         // Left Navigation Panel
         // -----------------------------------------------------------------------
-
-        private void InitializeMainNavPanel()
-        {
-            var accent = Color.FromArgb(31, 56, 100);
-
-            var lblNavTitle = new Label
-            {
-                Text = "☰  เมนูหลัก",
-                Dock = DockStyle.Top,
-                Height = 30,
-                BackColor = accent,
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                Padding = new Padding(8, 0, 0, 0)
-            };
-
-            _navTree = new TreeView
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White,
-                BorderStyle = BorderStyle.None,
-                Font = new Font("Segoe UI", 10f),
-                HotTracking = true,
-                Indent = 14,
-                HideSelection = false,
-                ShowLines = true
-            };
-            _navTree.NodeMouseClick += NavTree_NodeMouseClick;
-
-            var pnlNavActions = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 26,
-                BackColor = Color.FromArgb(240, 244, 250),
-                Padding = new Padding(4, 3, 4, 3)
-            };
-
-            var btnExpandAll = new Button
-            {
-                Text = "ขยายโหนด",
-                Dock = DockStyle.Left,
-                Width = 82,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(31, 56, 100),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 8f),
-                Cursor = Cursors.Hand,
-                TabStop = false
-            };
-            btnExpandAll.FlatAppearance.BorderSize = 0;
-            btnExpandAll.Click += (s, e) => _navTree.ExpandAll();
-
-            var btnCollapseAll = new Button
-            {
-                Text = "ย่อโหนด",
-                Dock = DockStyle.Left,
-                Width = 70,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(90, 110, 140),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 8f),
-                Cursor = Cursors.Hand,
-                TabStop = false,
-                Margin = new Padding(0, 0, 4, 0)
-            };
-            btnCollapseAll.FlatAppearance.BorderSize = 0;
-            btnCollapseAll.Click += (s, e) => _navTree.CollapseAll();
-
-            pnlNavActions.Controls.Add(btnCollapseAll);
-            pnlNavActions.Controls.Add(btnExpandAll);
-
-            var sep = new Panel
-            {
-                Dock = DockStyle.Right,
-                Width = 1,
-                BackColor = Color.FromArgb(180, 200, 230)
-            };
-
-            _pnlMainNav = new Panel
-            {
-                Dock = DockStyle.Left,
-                Width = 185,
-                BackColor = Color.White
-            };
-            _pnlMainNav.Controls.Add(_navTree);
-            _pnlMainNav.Controls.Add(pnlNavActions);
-            _pnlMainNav.Controls.Add(sep);
-            _pnlMainNav.Controls.Add(lblNavTitle);
-
-            this.Controls.Add(_pnlMainNav);
-
-            LoadMainNavTree();
-        }
 
         private void LoadMainNavTree()
         {
@@ -786,6 +690,29 @@ namespace CMS.Presentation
 
             dialog.StartPosition = FormStartPosition.Manual;
             dialog.Location      = new System.Drawing.Point(x, y);
+        }
+
+        private void LblNavTitle_Click(object sender, EventArgs e)
+        {
+            _navCollapsed = !_navCollapsed;
+            if (_navCollapsed)
+            {
+                _pnlMainNav.Width         = 28;
+                _navTree.Visible          = false;
+                pnlNavActions.Visible     = false;
+                lblNavTitle.Text          = "☰";
+                lblNavTitle.TextAlign     = System.Drawing.ContentAlignment.MiddleCenter;
+                lblNavTitle.Padding       = new System.Windows.Forms.Padding(0);
+            }
+            else
+            {
+                _pnlMainNav.Width         = 185;
+                _navTree.Visible          = true;
+                pnlNavActions.Visible     = true;
+                lblNavTitle.Text          = "☰  เมนูหลัก";
+                lblNavTitle.TextAlign     = System.Drawing.ContentAlignment.MiddleLeft;
+                lblNavTitle.Padding       = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            }
         }
 
         private void NavTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
