@@ -1106,6 +1106,100 @@
 
         }
 
+        private void InitializeMainNavPanel()
+        {
+            var accent = System.Drawing.Color.FromArgb(31, 56, 100);
+
+            lblNavTitle = new System.Windows.Forms.Label
+            {
+                Text      = "☰  เมนูหลัก",
+                Dock      = System.Windows.Forms.DockStyle.Top,
+                Height    = 30,
+                BackColor = accent,
+                ForeColor = System.Drawing.Color.White,
+                Font      = new System.Drawing.Font("Segoe UI", 9.5f, System.Drawing.FontStyle.Bold),
+                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                Padding   = new System.Windows.Forms.Padding(8, 0, 0, 0),
+                Cursor    = System.Windows.Forms.Cursors.Hand
+            };
+            lblNavTitle.Click += LblNavTitle_Click;
+
+            _navTree = new System.Windows.Forms.TreeView
+            {
+                Dock          = System.Windows.Forms.DockStyle.Fill,
+                BackColor     = System.Drawing.Color.White,
+                BorderStyle   = System.Windows.Forms.BorderStyle.None,
+                Font          = new System.Drawing.Font("Segoe UI", 10f),
+                HotTracking   = true,
+                Indent        = 14,
+                HideSelection = false,
+                ShowLines     = true
+            };
+            _navTree.NodeMouseClick += NavTree_NodeMouseClick;
+
+            pnlNavActions = new System.Windows.Forms.Panel
+            {
+                Dock      = System.Windows.Forms.DockStyle.Top,
+                Height    = 26,
+                BackColor = System.Drawing.Color.FromArgb(240, 244, 250),
+                Padding   = new System.Windows.Forms.Padding(4, 3, 4, 3)
+            };
+
+            btnNavExpandAll = new System.Windows.Forms.Button
+            {
+                Text      = "ขยายโหนด",
+                Dock      = System.Windows.Forms.DockStyle.Left,
+                Width     = 82,
+                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(31, 56, 100),
+                ForeColor = System.Drawing.Color.White,
+                Font      = new System.Drawing.Font("Segoe UI", 8f),
+                Cursor    = System.Windows.Forms.Cursors.Hand,
+                TabStop   = false
+            };
+            btnNavExpandAll.FlatAppearance.BorderSize = 0;
+            btnNavExpandAll.Click += (s, e) => _navTree.ExpandAll();
+
+            btnNavCollapseAll = new System.Windows.Forms.Button
+            {
+                Text      = "ย่อโหนด",
+                Dock      = System.Windows.Forms.DockStyle.Left,
+                Width     = 70,
+                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(90, 110, 140),
+                ForeColor = System.Drawing.Color.White,
+                Font      = new System.Drawing.Font("Segoe UI", 8f),
+                Cursor    = System.Windows.Forms.Cursors.Hand,
+                TabStop   = false,
+                Margin    = new System.Windows.Forms.Padding(0, 0, 4, 0)
+            };
+            btnNavCollapseAll.FlatAppearance.BorderSize = 0;
+            btnNavCollapseAll.Click += (s, e) => _navTree.CollapseAll();
+
+            pnlNavActions.Controls.Add(btnNavCollapseAll);
+            pnlNavActions.Controls.Add(btnNavExpandAll);
+
+            pnlNavSep = new System.Windows.Forms.Panel
+            {
+                Dock      = System.Windows.Forms.DockStyle.Right,
+                Width     = 1,
+                BackColor = System.Drawing.Color.FromArgb(180, 200, 230)
+            };
+
+            _pnlMainNav = new System.Windows.Forms.Panel
+            {
+                Dock      = System.Windows.Forms.DockStyle.Left,
+                Width     = 185,
+                BackColor = System.Drawing.Color.White
+            };
+            _pnlMainNav.Controls.Add(_navTree);
+            _pnlMainNav.Controls.Add(pnlNavActions);
+            _pnlMainNav.Controls.Add(pnlNavSep);
+            _pnlMainNav.Controls.Add(lblNavTitle);
+
+            this.Controls.Add(_pnlMainNav);
+        }
+
         // ── Field declarations ────────────────────────────────────────────────
         private System.Windows.Forms.MenuStrip menuStrip;
         // หน้าหลัก
@@ -1223,5 +1317,14 @@
         private System.Windows.Forms.ListView lvRecentFiles;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.ToolStripButton toolStripButton1;
+
+        // Main Navigation Panel
+        private System.Windows.Forms.Panel    _pnlMainNav;
+        private System.Windows.Forms.TreeView _navTree;
+        private System.Windows.Forms.Label    lblNavTitle;
+        private System.Windows.Forms.Panel    pnlNavActions;
+        private System.Windows.Forms.Button   btnNavExpandAll;
+        private System.Windows.Forms.Button   btnNavCollapseAll;
+        private System.Windows.Forms.Panel    pnlNavSep;
     }
 }
