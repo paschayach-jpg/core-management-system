@@ -30,6 +30,7 @@ namespace CMS.Presentation
             this.btnCollapseAll = new System.Windows.Forms.ToolStripButton();
             this.btnShowAll = new System.Windows.Forms.ToolStripButton();
             this.separator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnReloadMenu = new System.Windows.Forms.ToolStripButton();
             this.btnClose = new System.Windows.Forms.ToolStripButton();
             this.splitterMain = new System.Windows.Forms.Splitter();
             this.pnlLeft = new System.Windows.Forms.Panel();
@@ -100,6 +101,7 @@ namespace CMS.Presentation
             this.btnCollapseAll,
             this.btnShowAll,
             this.separator3,
+            this.btnReloadMenu,
             this.btnClose});
             this.toolStrip.Location = new System.Drawing.Point(0, 43);
             this.toolStrip.Name = "toolStrip";
@@ -203,6 +205,14 @@ namespace CMS.Presentation
             //
             this.separator3.Name = "separator3";
             this.separator3.Size = new System.Drawing.Size(6, 27);
+            //
+            // btnReloadMenu
+            //
+            this.btnReloadMenu.Name = "btnReloadMenu";
+            this.btnReloadMenu.Text = "🔄 รีโหลด Menu";
+            this.btnReloadMenu.ToolTipText = "รีโหลดข้อมูล Folder Tree ใหม่จาก DB";
+            this.btnReloadMenu.BackColor = System.Drawing.Color.FromArgb(232, 245, 233);
+            this.btnReloadMenu.Click += new System.EventHandler(this.btnReloadMenu_Click);
             //
             // btnClose
             //
@@ -481,6 +491,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ToolStripButton    btnCollapseAll;
         private System.Windows.Forms.ToolStripButton    btnShowAll;
         private System.Windows.Forms.ToolStripSeparator separator3;
+        private System.Windows.Forms.ToolStripButton    btnReloadMenu;
         private System.Windows.Forms.ToolStripButton    btnClose;
         private System.Windows.Forms.Splitter           splitterMain;
         private System.Windows.Forms.Panel              pnlLeft;

@@ -26,6 +26,7 @@ namespace CMS.Presentation
 
         // ตัวเลือกมุมมองปัจจุบัน: false = ตามองค์กร, true = ตามความลับ
         private bool _isConfView = false;
+        private bool _initialized = false;
 
         // รูปแบบโครงสร้างที่เลือกไว้ — เก็บตลอด session ไม่ต้องเลือกใหม่ทุกครั้งที่กด เพิ่ม
         private OrgStructurePattern? _currentPattern;
@@ -35,6 +36,9 @@ namespace CMS.Presentation
 
         /// <summary>ยิงเมื่อ hidden node IDs เปลี่ยน — MDI_Container ใช้ reload Folder Explorer</summary>
         public event EventHandler HiddenNodesChanged;
+
+        /// <summary>ยิงหลัง CRUD สำเร็จ — MDI_Container ใช้ reload folder tree / nav</summary>
+        public event EventHandler OrgStructureChanged;
 
         public OrgStructureForm(CMS.Services.Interfaces.IOrgStructureService service, UserContext user,
             IAuthorityOrgLookupController authorityOrgLookupController = null)
@@ -100,6 +104,7 @@ namespace CMS.Presentation
 
             _presenter.SetActiveView(false);
             _presenter.LoadOrganizationView();
+            _initialized = true;
         }
 
         // -----------------------------------------------------------------------
@@ -167,64 +172,100 @@ namespace CMS.Presentation
             treeView.BeginUpdate();
             treeView.Nodes.Clear();
 
-            var subCommittees = _allUnits
+            // Division IDs ที่มี Department อย่างน้อย 1 ตัว
+            var divIdsWithDept = new HashSet<int>(
+                _allUnits
+                    .Where(u => u.Tier == OrgUnitTier.Department && u.IsActive && u.ParentId.HasValue)
+                    .Select(u => u.ParentId.Value));
+
+            // SubCommittee IDs ที่มี Division ที่มี Department (= 3 ระดับจริง)
+            var scIdsWithDept = new HashSet<int>(
+                _allUnits
+                    .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive
+                                && u.ParentId.HasValue && divIdsWithDept.Contains(u.OrgUnitId))
+                    .Select(u => u.ParentId.Value));
+
+            var allSCs = _allUnits
                 .Where(u => u.Tier == OrgUnitTier.SubCommittee && u.IsActive)
-                .OrderBy(u => u.Name);
-
-            foreach (var sc in subCommittees)
-            {
-                var scNode = CreateNode(sc);
-
-                // ฝ่ายที่มี ParentId = SC นี้ (FK)
-                var directDivisions = _allUnits
-                    .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == sc.OrgUnitId)
-                    .OrderBy(u => u.Name)
-                    .ToList();
-
-                foreach (var div in directDivisions)
-                {
-                    scNode.Nodes.Add(BuildDivisionNode(div));
-                }
-
-                treeView.Nodes.Add(scNode);
-            }
-
-            // Level 0: ฝ่ายที่ไม่มี parent (standalone / LevelZeroOnly pattern)
-            var standaloneDivisions = _allUnits
-                .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == null)
                 .OrderBy(u => u.Name)
                 .ToList();
 
-            if (standaloneDivisions.Any())
+            // ── กลุ่มที่ 1: Sub → Div → Dep (SC ที่ Div มี Dept) ────────────
+            var grp1 = new TreeNode("📁  กลุ่มที่ 1 — Sub → Div → Dep")
             {
-                var headerNode = new TreeNode("≡  Level 0 (ระดับเดียว)")
+                ForeColor = Color.FromArgb(0, 51, 102),
+                NodeFont  = new Font(treeView.Font, FontStyle.Bold),
+                Tag       = null
+            };
+
+            foreach (var sc in allSCs.Where(s => scIdsWithDept.Contains(s.OrgUnitId)))
+            {
+                var scNode = CreateNode(sc);
+                foreach (var div in _allUnits
+                    .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == sc.OrgUnitId)
+                    .OrderBy(u => u.Name))
                 {
-                    ForeColor = Color.FromArgb(80, 80, 80),
-                    NodeFont  = new Font(SystemFonts.DefaultFont, FontStyle.Bold | FontStyle.Italic),
-                    Tag       = null
-                };
-                foreach (var div in standaloneDivisions)
-                {
-                    var divNode = BuildDivisionNode(div);
-                    divNode.ForeColor = Color.FromArgb(0, 100, 0);
-                    divNode.NodeFont  = new Font(SystemFonts.DefaultFont, FontStyle.Bold);
-                    headerNode.Nodes.Add(divNode);
+                    scNode.Nodes.Add(BuildDivisionNode(div));
                 }
-                treeView.Nodes.Add(headerNode);
-                headerNode.Expand();
+                grp1.Nodes.Add(scNode);
             }
 
+            if (grp1.Nodes.Count == 0)
+                grp1.Nodes.Add(new TreeNode("(ไม่มีข้อมูล)") { ForeColor = Color.Gray });
+
+            treeView.Nodes.Add(grp1);
+            grp1.Expand();
+
+            // ── กลุ่มที่ 2: Div → Dep (SC ที่ Div ไม่มี Dept + Standalone Divs) ──
+            var grp2 = new TreeNode("📁  กลุ่มที่ 2 — Div → Dep")
+            {
+                ForeColor = Color.FromArgb(0, 100, 0),
+                NodeFont  = new Font(treeView.Font, FontStyle.Bold),
+                Tag       = null
+            };
+
+            foreach (var sc in allSCs.Where(s => !scIdsWithDept.Contains(s.OrgUnitId)))
+            {
+                var scNode = CreateNode(sc);
+                foreach (var div in _allUnits
+                    .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == sc.OrgUnitId)
+                    .OrderBy(u => u.Name))
+                {
+                    scNode.Nodes.Add(BuildDivisionNode(div));
+                }
+                grp2.Nodes.Add(scNode);
+            }
+
+            foreach (var div in _allUnits
+                .Where(u => u.Tier == OrgUnitTier.Division && u.IsActive && u.ParentId == null)
+                .OrderBy(u => u.Name))
+            {
+                grp2.Nodes.Add(BuildDivisionNode(div));
+            }
+
+            if (grp2.Nodes.Count == 0)
+                grp2.Nodes.Add(new TreeNode("(ไม่มีข้อมูล)") { ForeColor = Color.Gray });
+
+            treeView.Nodes.Add(grp2);
+            grp2.Expand();
+
+            // กรอง hidden nodes
             if (_hiddenOrgUnitIds.Count > 0)
             {
-                foreach (TreeNode node in treeView.Nodes.Cast<TreeNode>().ToList())
+                foreach (TreeNode grp in treeView.Nodes)
                 {
-                    if (node.Tag is OrgUnit u && _hiddenOrgUnitIds.Contains(u.OrgUnitId))
-                        treeView.Nodes.Remove(node);
+                    foreach (TreeNode node in grp.Nodes.Cast<TreeNode>().ToList())
+                    {
+                        if (node.Tag is OrgUnit u && _hiddenOrgUnitIds.Contains(u.OrgUnitId))
+                            grp.Nodes.Remove(node);
+                    }
                 }
             }
 
-            treeView.CollapseAll();
             treeView.EndUpdate();
+
+            if (_initialized)
+                OrgStructureChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private TreeNode BuildDivisionNode(OrgUnit div)
@@ -314,6 +355,9 @@ namespace CMS.Presentation
 
             treeView.CollapseAll();
             treeView.EndUpdate();
+
+            if (_initialized)
+                OrgStructureChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>สร้าง TreeNode สำหรับ Confidentiality view พร้อม tier badge</summary>
@@ -820,6 +864,11 @@ namespace CMS.Presentation
             treeView.BeginUpdate();
             treeView.CollapseAll();
             treeView.EndUpdate();
+        }
+
+        private void btnReloadMenu_Click(object sender, EventArgs e)
+        {
+            OrgStructureChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void btnShowAll_Click(object sender, EventArgs e)

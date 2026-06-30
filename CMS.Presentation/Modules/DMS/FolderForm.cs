@@ -6717,6 +6717,16 @@ namespace CMS.Presentation
                 lblOrgUnitStatus.Text = string.Format("📂 กำลังดู: {0}", _selectedOrgUnitName ?? "—");
         }
 
+        /// <summary>
+        /// Reload org unit tree (treeOrgUnit) จาก DB — เรียกหลัง CRUD โครงสร้างองค์กร
+        /// </summary>
+        public void ReloadOrgUnitTree()
+        {
+            _selectedOrgUnitId = null;
+            _selectedOrgUnitName = null;
+            LoadOrgUnitTree();
+        }
+
         private IEnumerable<CMS.Domain.Models.OrgUnit> GetOrgUnits()
         {
             if (_orgLookupController == null) return Enumerable.Empty<CMS.Domain.Models.OrgUnit>();

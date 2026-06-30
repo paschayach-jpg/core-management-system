@@ -1483,7 +1483,13 @@ namespace CMS.Presentation
             if (_orgStructureService != null)
             {
                 var form = new OrgStructureForm(_orgStructureService, _currentUser, _authorityOrgLookupController);
-                form.HiddenNodesChanged += (s, e) => LoadDashboardFolderTree(force: true);
+                form.HiddenNodesChanged  += (s, e) => LoadDashboardFolderTree(force: true);
+                form.OrgStructureChanged += (s, e) =>
+                {
+                    _cachedOrgUnits = null;
+                    foreach (var ff in MdiChildren.OfType<FolderForm>())
+                        ff.ReloadOrgUnitTree();
+                };
                 OpenChildForm(form);
             }
             else
@@ -3562,7 +3568,7 @@ namespace CMS.Presentation
                 if (_orgStructureService == null)
                     return;
 
-                if (_cachedOrgUnits == null)
+                if (force || _cachedOrgUnits == null)
                     _cachedOrgUnits = _orgStructureService.GetHierarchy().ToList();
 
                 var allUnits = _cachedOrgUnits;
