@@ -283,6 +283,16 @@ namespace CMS.Presentation
             _orgTree.EndUpdate();
         }
 
+        private void btnExpandAll_Click(object sender, EventArgs e)
+        {
+            _orgTree.ExpandAll();
+        }
+
+        private void btnCollapseAll_Click(object sender, EventArgs e)
+        {
+            _orgTree.CollapseAll();
+        }
+
         /// <summary>
         /// กรอง OrgUnit ที่ current user มีสิทธิ์มองเห็น:
         /// Admin(4)       → ทั้งหมด

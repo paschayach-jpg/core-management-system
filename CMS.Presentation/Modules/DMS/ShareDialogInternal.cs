@@ -271,6 +271,11 @@ namespace CMS.Presentation
                 BackColor = Color.Transparent, WrapContents = false,
             };
             pnlPerms.Controls.AddRange(new Control[] { chkRead, chkWrite, chkDelete });
+            chkWrite.CheckedChanged += (s, e) =>
+            {
+                if (chkWrite.Checked && !chkRead.Checked)
+                    chkRead.Checked = true;
+            };
 
             // ── Section: วันหมดอายุ ───────────────────────────────────────────
             var barExpiry = mkBar("วันหมดอายุ");
@@ -358,6 +363,13 @@ namespace CMS.Presentation
             {
                 if (lstPrincipal.SelectedItem is PrincipalItem item)
                     AddToSelected(item);
+            };
+
+            // คลิกขวาครั้งเดียว → ย้ายกลับฝั่งซ้าย
+            lstSelected.Click += (s, e) =>
+            {
+                if (lstSelected.SelectedItem != null)
+                    RemoveSelectedItems();
             };
 
             lstSelected.KeyDown += (s, e) =>
@@ -483,16 +495,20 @@ namespace CMS.Presentation
 
         private void FilterPrincipals(string filter)
         {
-            var lst = (ListBox)_controls["lstPrincipal"];
-            lst.BeginUpdate();
-            lst.Items.Clear();
+            var lstLeft  = (ListBox)_controls["lstPrincipal"];
+            var lstRight = (ListBox)_controls["lstSelected"];
+            var inRight  = new HashSet<string>(
+                lstRight.Items.Cast<PrincipalItem>().Select(p => p.PrincipalType + ":" + p.Id));
+
+            lstLeft.BeginUpdate();
+            lstLeft.Items.Clear();
             var items = string.IsNullOrWhiteSpace(filter)
                 ? _allPrincipals
                 : _allPrincipals.Where(p => p.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
-            foreach (var item in items)
-                lst.Items.Add(item);
-            lst.DisplayMember = "Name";
-            lst.EndUpdate();
+            foreach (var item in items.Where(p => !inRight.Contains(p.PrincipalType + ":" + p.Id)))
+                lstLeft.Items.Add(item);
+            lstLeft.DisplayMember = "Name";
+            lstLeft.EndUpdate();
         }
 
         private void AddToSelected(PrincipalItem item)
@@ -502,6 +518,7 @@ namespace CMS.Presentation
                 return;
             lst.Items.Add(item);
             UpdateSelectedCount();
+            FilterPrincipals(((TextBox)_controls["txtSearch"]).Text);
         }
 
         private void RemoveSelectedItems()
@@ -511,6 +528,7 @@ namespace CMS.Presentation
             foreach (var item in toRemove)
                 lst.Items.Remove(item);
             UpdateSelectedCount();
+            FilterPrincipals(((TextBox)_controls["txtSearch"]).Text);
         }
 
         private void UpdateSelectedCount()

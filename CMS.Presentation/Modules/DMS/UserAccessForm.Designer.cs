@@ -39,6 +39,9 @@ namespace CMS.Presentation
             this.tabOrg = new System.Windows.Forms.TabPage();
             this.splitOrg = new System.Windows.Forms.SplitContainer();
             this.pnlOrgLeft = new System.Windows.Forms.Panel();
+            this.pnlTreeBtns = new System.Windows.Forms.Panel();
+            this.btnExpandAll = new System.Windows.Forms.Button();
+            this.btnCollapseAll = new System.Windows.Forms.Button();
             this._orgTree = new System.Windows.Forms.TreeView();
             this.lblOrgTree = new System.Windows.Forms.Label();
             this.pnlOrgRight = new System.Windows.Forms.Panel();
@@ -63,6 +66,7 @@ namespace CMS.Presentation
             this.splitOrg.Panel2.SuspendLayout();
             this.splitOrg.SuspendLayout();
             this.pnlOrgLeft.SuspendLayout();
+            this.pnlTreeBtns.SuspendLayout();
             this.pnlOrgRight.SuspendLayout();
             this.pnlOrgBtns.SuspendLayout();
             this.SuspendLayout();
@@ -316,6 +320,7 @@ namespace CMS.Presentation
             // pnlOrgLeft
             // 
             this.pnlOrgLeft.Controls.Add(this._orgTree);
+            this.pnlOrgLeft.Controls.Add(this.pnlTreeBtns);
             this.pnlOrgLeft.Controls.Add(this.lblOrgTree);
             this.pnlOrgLeft.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlOrgLeft.Location = new System.Drawing.Point(0, 0);
@@ -342,7 +347,32 @@ namespace CMS.Presentation
             this.lblOrgTree.TabIndex = 1;
             this.lblOrgTree.Text = "โครงสร้างองค์กร";
             this.lblOrgTree.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
+            //
+            // pnlTreeBtns
+            //
+            this.pnlTreeBtns.Controls.Add(this.btnCollapseAll);
+            this.pnlTreeBtns.Controls.Add(this.btnExpandAll);
+            this.pnlTreeBtns.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlTreeBtns.Height = 30;
+            this.pnlTreeBtns.Name = "pnlTreeBtns";
+            this.pnlTreeBtns.Padding = new System.Windows.Forms.Padding(2);
+            //
+            // btnExpandAll
+            //
+            this.btnExpandAll.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnExpandAll.Text = "ขยาย";
+            this.btnExpandAll.Width = 60;
+            this.btnExpandAll.Name = "btnExpandAll";
+            this.btnExpandAll.Click += new System.EventHandler(this.btnExpandAll_Click);
+            //
+            // btnCollapseAll
+            //
+            this.btnCollapseAll.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnCollapseAll.Text = "ย่อ";
+            this.btnCollapseAll.Width = 50;
+            this.btnCollapseAll.Name = "btnCollapseAll";
+            this.btnCollapseAll.Click += new System.EventHandler(this.btnCollapseAll_Click);
+            //
             // pnlOrgRight
             // 
             this.pnlOrgRight.Controls.Add(this._lvOrgUsers);
@@ -466,6 +496,7 @@ namespace CMS.Presentation
             this.splitOrg.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitOrg)).EndInit();
             this.splitOrg.ResumeLayout(false);
+            this.pnlTreeBtns.ResumeLayout(false);
             this.pnlOrgLeft.ResumeLayout(false);
             this.pnlOrgRight.ResumeLayout(false);
             this.pnlOrgBtns.ResumeLayout(false);
@@ -503,6 +534,9 @@ namespace CMS.Presentation
         private System.Windows.Forms.SplitContainer splitOrg;
         private System.Windows.Forms.Panel          pnlOrgLeft;
         private System.Windows.Forms.Label          lblOrgTree;
+        private System.Windows.Forms.Panel          pnlTreeBtns;
+        private System.Windows.Forms.Button         btnExpandAll;
+        private System.Windows.Forms.Button         btnCollapseAll;
         private System.Windows.Forms.TreeView       _orgTree;
         private System.Windows.Forms.Panel          pnlOrgRight;
         private System.Windows.Forms.Label          lblOrgUsers;
