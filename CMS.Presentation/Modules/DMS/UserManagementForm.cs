@@ -58,6 +58,53 @@ namespace CMS.Presentation
             btnSync.Click += BtnSync_Click;
             lvUsers.SelectedIndexChanged += LvUsers_SelectionChanged;
             lvUsers.DoubleClick += BtnEdit_Click;
+            lvUsers.ColumnClick += LvUsers_ColumnClick;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Sort by column header (คลิกซ้ำ = สลับ asc/desc)
+        // ─────────────────────────────────────────────────────────────────────
+
+        private int _sortColumn = -1;
+        private SortOrder _sortOrder = SortOrder.None;
+
+        private void LvUsers_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            if (e.Column == _sortColumn)
+            {
+                _sortOrder = _sortOrder == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
+            }
+            else
+            {
+                _sortColumn = e.Column;
+                _sortOrder = SortOrder.Ascending;
+            }
+
+            lvUsers.ListViewItemSorter = new ListViewColumnSorter(_sortColumn, _sortOrder);
+            lvUsers.Sort();
+        }
+
+        private class ListViewColumnSorter : System.Collections.IComparer
+        {
+            private readonly int _column;
+            private readonly SortOrder _order;
+
+            public ListViewColumnSorter(int column, SortOrder order)
+            {
+                _column = column;
+                _order = order;
+            }
+
+            public int Compare(object x, object y)
+            {
+                var itemX = (ListViewItem)x;
+                var itemY = (ListViewItem)y;
+                string textX = _column < itemX.SubItems.Count ? itemX.SubItems[_column].Text : "";
+                string textY = _column < itemY.SubItems.Count ? itemY.SubItems[_column].Text : "";
+
+                int result = string.Compare(textX, textY, StringComparison.CurrentCultureIgnoreCase);
+                return _order == SortOrder.Descending ? -result : result;
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -191,14 +238,14 @@ namespace CMS.Presentation
                     .ToList();
             }
 
-            // Populate cmbDeptFilter
+            // Populate cmbDeptFilter (ฝ่าย)
             cmbDeptFilter.Items.Clear();
-            cmbDeptFilter.Items.Add(new HrDepartment { DepartmentID = 0, DepartmentName = "ทุกแผนก", DepartmentNameTh = "ทุกแผนก" });
-            foreach (var d in _departments)
+            cmbDeptFilter.Items.Add(new HrDivision { DivisionID = 0, DivisionName = "ทุกฝ่าย" });
+            foreach (var d in _divisions)
             {
                 cmbDeptFilter.Items.Add(d);
             }
-            cmbDeptFilter.DisplayMember = "DisplayName";
+            cmbDeptFilter.DisplayMember = "DivisionName";
             cmbDeptFilter.SelectedIndex = 0;
         }
 
@@ -237,15 +284,14 @@ namespace CMS.Presentation
 
             if (cmbDeptFilter.SelectedIndex > 0)
             {
-                var dept = cmbDeptFilter.SelectedItem as HrDepartment;
-                if (dept != null)
+                var div = cmbDeptFilter.SelectedItem as HrDivision;
+                if (div != null && !string.IsNullOrEmpty(div.DivisionName))
                 {
-                    result = result.Where(u => 
-                        (dept.DepartmentID > 0 && u.DepartmentId == dept.DepartmentID)
-                        || (!string.IsNullOrEmpty(dept.DepartmentCode) && string.Equals(u.DepartmentCode, dept.DepartmentCode, StringComparison.OrdinalIgnoreCase))
-                        || (!string.IsNullOrEmpty(dept.DepartmentName) && string.Equals(u.DepartmentName, dept.DepartmentName, StringComparison.OrdinalIgnoreCase))
-                        || (!string.IsNullOrEmpty(dept.DepartmentNameTh) && string.Equals(u.DepartmentName, dept.DepartmentNameTh, StringComparison.OrdinalIgnoreCase))
-                    );
+                    // กรองด้วยชื่อฝ่ายตรงตามที่แสดงในคอลัมน์ "ฝ่าย" เท่านั้น
+                    // (ไม่ใช้ DivisionID/DivisionCode เพราะข้อมูล FK บาง record ผูกผิด ทำให้กรองพลาด)
+                    string target = div.DivisionName.Trim();
+                    result = result.Where(u =>
+                        string.Equals((u.DivisionName ?? "").Trim(), target, StringComparison.OrdinalIgnoreCase));
                 }
             }
 

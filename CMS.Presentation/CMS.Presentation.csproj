@@ -130,6 +130,9 @@
     <Compile Include="Modules\DMS\GlobalErrorDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Modules\DMS\ReactivateOrgUnitDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\DMS\LoginForm.cs">
       <SubType>Form</SubType>
     </Compile>

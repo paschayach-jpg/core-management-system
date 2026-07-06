@@ -232,6 +232,26 @@ namespace CMS.Services
                 string.Format("Deactivated OrgUnit '{0}'.", existing.OrgUnitNameTH));
         }
 
+        public void ActivateOrgUnit(int orgUnitId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            if (user.AppRole != 4)
+                throw new UnauthorizedAccessException("Activating an OrgUnit requires Admin role.");
+
+            var existing = _orgUnitRepository.GetById(orgUnitId);
+            if (existing == null)
+                throw new InvalidOperationException(string.Format(
+                    "OrgUnit with ID {0} was not found.", orgUnitId));
+
+            if (existing.IsActive) return; // already active — idempotent
+
+            _orgUnitRepository.Activate(orgUnitId);
+
+            Log(user, "OrgStructure", "UPDATE", "EMS.OrgUnit", orgUnitId, 1,
+                string.Format("Activated OrgUnit '{0}'.", existing.OrgUnitNameTH));
+        }
+
         public void DeleteOrgUnit(int orgUnitId, UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");

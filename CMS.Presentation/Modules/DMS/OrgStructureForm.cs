@@ -850,6 +850,32 @@ namespace CMS.Presentation
             _presenter.DeactivateOrgUnit(selected.OrgUnitId);
         }
 
+        private void btnActivate_Click(object sender, EventArgs e)
+        {
+            var inactiveUnits = _allUnits.Where(u => !u.IsActive).ToList();
+            if (inactiveUnits.Count == 0)
+            {
+                ShowInfo("ไม่มีหน่วยงานที่ปิดใช้งานอยู่");
+                return;
+            }
+
+            using (var dlg = new ReactivateOrgUnitDialog(inactiveUnits))
+            {
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                var unit = dlg.SelectedOrgUnit;
+                var confirm = MessageBox.Show(
+                    string.Format("คุณต้องการเปิดใช้งานหน่วยงาน '{0}' หรือไม่?", unit.Name),
+                    "ยืนยันการเปิดใช้งาน",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (confirm != DialogResult.Yes) return;
+
+                _presenter.ActivateOrgUnit(unit.OrgUnitId);
+            }
+        }
+
         private void btnExpandAll_Click(object sender, EventArgs e)
         {
             treeView.BeginUpdate();

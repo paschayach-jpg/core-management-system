@@ -264,6 +264,18 @@ namespace CMS.Controllers.DMS.Document
             catch (Exception ex)                 { _view.ShowError("Failed to deactivate OrgUnit: " + ex.Message); }
         }
 
+        public void ActivateOrgUnit(int orgUnitId)
+        {
+            try
+            {
+                _service.ActivateOrgUnit(orgUnitId, _user);
+                _view.ShowInfo("OrgUnit was activated successfully.");
+                RefreshCurrentView();
+            }
+            catch (InvalidOperationException ex) { _view.ShowError(ex.Message); }
+            catch (Exception ex)                 { _view.ShowError("Failed to activate OrgUnit: " + ex.Message); }
+        }
+
         public bool HasActiveDependents(int orgUnitId)
         {
             try   { return _service.HasActiveDependents(orgUnitId); }

@@ -25,6 +25,7 @@ namespace CMS.Presentation
             this.btnDelete = new System.Windows.Forms.ToolStripButton();
             this.separator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnDeactivate = new System.Windows.Forms.ToolStripButton();
+            this.btnActivate = new System.Windows.Forms.ToolStripButton();
             this.separator2 = new System.Windows.Forms.ToolStripSeparator();
             this.btnExpandAll = new System.Windows.Forms.ToolStripButton();
             this.btnCollapseAll = new System.Windows.Forms.ToolStripButton();
@@ -96,6 +97,7 @@ namespace CMS.Presentation
             this.btnDelete,
             this.separator1,
             this.btnDeactivate,
+            this.btnActivate,
             this.separator2,
             this.btnExpandAll,
             this.btnCollapseAll,
@@ -171,6 +173,15 @@ namespace CMS.Presentation
             this.btnDeactivate.Text = "⛔ ปิดใช้งาน";
             this.btnDeactivate.ToolTipText = "ปิดใช้งานหน่วยงานที่เลือก";
             this.btnDeactivate.Click += new System.EventHandler(this.btnDeactivate_Click);
+            //
+            // btnActivate
+            //
+            this.btnActivate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(25)))), ((int)(((byte)(135)))), ((int)(((byte)(84)))));
+            this.btnActivate.Name = "btnActivate";
+            this.btnActivate.Size = new System.Drawing.Size(91, 24);
+            this.btnActivate.Text = "🔓 เปิดใช้งาน";
+            this.btnActivate.ToolTipText = "เปิดใช้งานหน่วยงานที่เคยปิดไว้";
+            this.btnActivate.Click += new System.EventHandler(this.btnActivate_Click);
             //
             // separator2
             //
@@ -489,6 +500,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.ToolStripSeparator separator2;
         private System.Windows.Forms.ToolStripButton    btnExpandAll;
         private System.Windows.Forms.ToolStripButton    btnCollapseAll;
+        private System.Windows.Forms.ToolStripButton    btnActivate;
         private System.Windows.Forms.ToolStripButton    btnShowAll;
         private System.Windows.Forms.ToolStripSeparator separator3;
         private System.Windows.Forms.ToolStripButton    btnReloadMenu;

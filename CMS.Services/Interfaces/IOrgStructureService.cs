@@ -11,6 +11,7 @@ namespace CMS.Services.Interfaces
         OrgUnit UpdateOrgUnit(UpdateOrgUnitRequest request, UserContext user);
         OrgUnit MoveOrgUnit(UpdateOrgUnitRequest request, UserContext user);
         void DeactivateOrgUnit(int orgUnitId, UserContext user);
+        void ActivateOrgUnit(int orgUnitId, UserContext user);
         void DeleteOrgUnit(int orgUnitId, UserContext user);
         void ForceDeleteOrgUnit(int orgUnitId, UserContext user);
         bool HasActiveDependents(int orgUnitId);

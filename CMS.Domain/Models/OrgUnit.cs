@@ -22,6 +22,7 @@ namespace CMS.Domain.Models
         public bool IsActive { get; set; }
         public bool IsDeleted { get; set; }
         public int? DeletedBy { get; set; }
+        public DateTime? DeletedDate { get; set; }
         public int CreatedBy { get; set; }
         public DateTime CreatedDate { get; set; }
 

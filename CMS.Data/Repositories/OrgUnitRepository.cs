@@ -253,6 +253,26 @@ namespace CMS.Data.Repositories
             SoftDelete(orgUnitId, 0);
         }
 
+        public void Activate(int orgUnitId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    UPDATE EMS.OrgUnit
+                    SET    IsActive    = 1,
+                           IsDeleted   = 0,
+                           DeletedBy   = NULL,
+                           DeletedDate = NULL
+                    WHERE  OrgUnitID = @OrgUnitID";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         public void ForceDeleteWithDependents(int orgUnitId, int deletedBy)
         {
             using (var conn = new SqlConnection(_connectionString))
@@ -488,6 +508,7 @@ END";
                 IsActive        = (bool)reader["IsActive"],
                 IsDeleted       = (bool)reader["IsDeleted"],
                 DeletedBy       = reader["DeletedBy"] == DBNull.Value ? (int?)null : (int)reader["DeletedBy"],
+                DeletedDate     = reader["DeletedDate"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["DeletedDate"],
                 CreatedBy       = (int)reader["CreatedBy"],
                 CreatedDate     = (DateTime)reader["CreatedDate"]
             };
