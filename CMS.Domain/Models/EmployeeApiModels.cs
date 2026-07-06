@@ -69,6 +69,8 @@ namespace CMS.Domain.Models
     {
         public string EmployeeCode     { get; set; }
         public string DisplayName      { get; set; }
+        public string FullNameEn       { get; set; }
+        public string FullNameTh       { get; set; }
         public string DepartmentCode   { get; set; }
         public string DepartmentNameTh { get; set; }
         public string DepartmentNameEn { get; set; }

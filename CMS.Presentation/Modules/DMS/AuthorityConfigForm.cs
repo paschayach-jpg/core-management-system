@@ -212,20 +212,28 @@ namespace CMS.Presentation
                 if (tag.Type == "DIV")
                 {
                     // แสดง config ของ Division + ทุก Department ใน Division นั้น + Position ที่สังกัด
-                    filtered = _allConfigs.Where(c => c.DivisionCode == tag.Code);
+                    var divCode = tag.Code?.Trim();
+                    HashSet<string> deptCodes;
+                    HashSet<string> positionNames;
+                    GetDepartmentsAndPositionsForDiv(divCode, out deptCodes, out positionNames);
+
+                    filtered = _allConfigs.Where(c =>
+                        string.Equals(c.DivisionCode?.Trim(), divCode, StringComparison.OrdinalIgnoreCase) ||
+                        (!string.IsNullOrEmpty(c.DepartmentCode) && deptCodes.Contains(c.DepartmentCode.Trim())) ||
+                        (!string.IsNullOrEmpty(c.PositionName) && positionNames.Contains(c.PositionName.Trim())));
                 }
                 else if (tag.Type == "DEP")
                 {
                     // แสดง config ของ Department + Position ที่สังกัด Department นั้น
-                    var deptCode = tag.Code;
+                    var deptCode = tag.Code?.Trim();
                     var posInDept = GetPositionNamesForDept(deptCode);
                     filtered = _allConfigs.Where(c =>
-                        c.DepartmentCode == deptCode ||
-                        (!string.IsNullOrEmpty(c.PositionName) && posInDept.Contains(c.PositionName)));
+                        string.Equals(c.DepartmentCode?.Trim(), deptCode, StringComparison.OrdinalIgnoreCase) ||
+                        (!string.IsNullOrEmpty(c.PositionName) && posInDept.Contains(c.PositionName.Trim())));
                 }
                 else if (tag.Type == "POS" || tag.Type == "POS_IN_DEP")
                 {
-                    filtered = _allConfigs.Where(c => c.PositionName == tag.Code);
+                    filtered = _allConfigs.Where(c => string.Equals(c.PositionName?.Trim(), tag.Code?.Trim(), StringComparison.OrdinalIgnoreCase));
                 }
                 else if (tag.Type == "POS_GROUP")
                 {
@@ -298,17 +306,58 @@ namespace CMS.Presentation
             try
             {
                 var dept = _authorityOrgLookupController.GetDepartments()
-                    .FirstOrDefault(d => string.Equals(d.DepartmentCode, departmentCode, StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(d => string.Equals(d.DepartmentCode?.Trim(), departmentCode?.Trim(), StringComparison.OrdinalIgnoreCase));
                 if (dept == null) return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 // ดึง Position จาก HR_PositionMapping
                 var names = _authorityOrgLookupController.GetPositionMappingsByDepartmentId(dept.DepartmentID)
-                    .Select(m => m.PositionName)
+                    .Select(m => m.PositionName?.Trim())
                     .Where(n => !string.IsNullOrEmpty(n));
                 return new HashSet<string>(names, StringComparer.OrdinalIgnoreCase);
             }
             catch { }
             return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private void GetDepartmentsAndPositionsForDiv(string divisionCode, out HashSet<string> deptCodes, out HashSet<string> positionNames)
+        {
+            deptCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            positionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (_authorityOrgLookupController == null) return;
+            try
+            {
+                var div = _authorityOrgLookupController.GetDivisions()
+                    .FirstOrDefault(d => string.Equals(d.DivisionCode?.Trim(), divisionCode?.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (div == null) return;
+
+                var depts = _authorityOrgLookupController.GetDepartments()
+                    .Where(d => d.DivisionID == div.DivisionID)
+                    .ToList();
+
+                foreach (var dep in depts)
+                {
+                    if (!string.IsNullOrEmpty(dep.DepartmentCode))
+                    {
+                        var depTrim = dep.DepartmentCode.Trim();
+                        deptCodes.Add(depTrim);
+
+                        // ดึง Position ของแผนกนี้
+                        var posInDept = GetPositionNamesForDept(depTrim);
+                        foreach (var pos in posInDept)
+                            positionNames.Add(pos.Trim());
+                    }
+                }
+
+                // ดึง Position ที่อยู่ใน Division โดยตรง (ไม่สังกัด Dept)
+                var mappingsInDiv = _authorityOrgLookupController.GetPositionMappings()
+                    .Where(m => m.DivisionID == div.DivisionID && (!m.DepartmentID.HasValue || m.DepartmentID == 0))
+                    .Select(m => m.PositionName?.Trim())
+                    .Where(n => !string.IsNullOrEmpty(n));
+                foreach (var pos in mappingsInDiv)
+                    positionNames.Add(pos);
+            }
+            catch { }
         }
 
         // ── Grid Setup ────────────────────────────────────────────────────────
@@ -479,45 +528,46 @@ namespace CMS.Presentation
             {
                 foreach (var d in _authorityOrgLookupController.GetDepartments())
                     if (!string.IsNullOrEmpty(d.DepartmentCode))
-                        _deptLookup[d.DepartmentCode] = string.Format("{0} — {1}", d.DepartmentCode, d.DisplayName);
+                        _deptLookup[d.DepartmentCode.Trim()] = string.Format("{0} — {1}", d.DepartmentCode.Trim(), d.DisplayName?.Trim());
 
                 foreach (var d in _authorityOrgLookupController.GetDivisions())
                     if (!string.IsNullOrEmpty(d.DivisionCode))
-                        _divLookup[d.DivisionCode] = string.Format("{0} — {1}", d.DivisionCode, d.DivisionName);
+                        _divLookup[d.DivisionCode.Trim()] = string.Format("{0} — {1}", d.DivisionCode.Trim(), d.DivisionName?.Trim());
             }
 
             var allRows = _authorityConfigController.GetAll().ToList();
             _allConfigs = new List<FolderAuthorityConfig>();
 
-            foreach (var grp in allRows.GroupBy(r => r.ConfigLabel))
+            foreach (var grp in allRows.GroupBy(r => (r.ConfigLabel ?? "").Trim()))
             {
                 var first = grp.First();
 
                 // PositionName เก็บค่าจริงจาก DB เท่านั้น
                 // การแสดงผลใน grid จัดการใน FilterGrid โดยใช้ _deptLookup/_divLookup
-                string displayLabel = first.PositionName;
+                string displayLabel = first.PositionName?.Trim();
                 if (string.IsNullOrEmpty(displayLabel) && !string.IsNullOrEmpty(first.DepartmentCode))
-                    _deptLookup.TryGetValue(first.DepartmentCode, out displayLabel);
+                    _deptLookup.TryGetValue(first.DepartmentCode.Trim(), out displayLabel);
                 if (string.IsNullOrEmpty(displayLabel) && !string.IsNullOrEmpty(first.DivisionCode))
-                    _divLookup.TryGetValue(first.DivisionCode, out displayLabel);
+                    _divLookup.TryGetValue(first.DivisionCode.Trim(), out displayLabel);
                 if (string.IsNullOrEmpty(displayLabel))
                     displayLabel = grp.Key;
 
                 var flat = new FolderAuthorityConfig
                 {
                     ConfigLabel    = grp.Key,
-                    PositionName   = first.PositionName,
-                    LevelCode      = first.LevelCode,
-                    DepartmentCode = first.DepartmentCode,
-                    DivisionCode   = first.DivisionCode
+                    PositionName   = first.PositionName?.Trim(),
+                    LevelCode      = first.LevelCode?.Trim(),
+                    DepartmentCode = first.DepartmentCode?.Trim(),
+                    DivisionCode   = first.DivisionCode?.Trim()
                 };
 
                 // Enrich display names
                 string deptName, divName;
-                if (!string.IsNullOrEmpty(first.DepartmentCode) && _deptLookup.TryGetValue(first.DepartmentCode, out deptName))
+                if (!string.IsNullOrEmpty(first.DepartmentCode) && _deptLookup.TryGetValue(first.DepartmentCode.Trim(), out deptName))
                     flat.DepartmentName = deptName;
-                if (!string.IsNullOrEmpty(first.DivisionCode) && _divLookup.TryGetValue(first.DivisionCode, out divName))
+                if (!string.IsNullOrEmpty(first.DivisionCode) && _divLookup.TryGetValue(first.DivisionCode.Trim(), out divName))
                     flat.DivisionName = divName;
+
                 foreach (var row in grp)
                 {
                     switch (row.ConfidentialityLevel)

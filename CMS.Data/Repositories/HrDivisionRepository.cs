@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -42,8 +42,8 @@ namespace CMS.Data.Repositories
             return new HrDivision
             {
                 DivisionID   = Convert.ToInt32(reader["DivisionID"]),
-                DivisionCode = reader["DivisionCode"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DivisionCode"]),
-                DivisionName = reader["DivisionName"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DivisionName"]),
+                DivisionCode = reader["DivisionCode"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DivisionCode"]).Trim(),
+                DivisionName = reader["DivisionName"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DivisionName"]).Trim(),
                 IsActive     = reader["IsActive"] != DBNull.Value && Convert.ToBoolean(reader["IsActive"]),
                 CreatedDate  = reader["CreatedDate"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader["CreatedDate"])
             };

@@ -18,11 +18,13 @@ namespace CMS.Services
         private readonly IUserOrgVisibilityRepository _visibilityRepo;
         private readonly IOrgUnitRepository           _orgUnitRepo;
         private readonly IAuditService                _auditService;
+        private readonly IUserAccountRepository       _userAccountRepo;
 
         public UserOrgVisibilityService(
             IUserOrgVisibilityRepository visibilityRepo,
             IOrgUnitRepository           orgUnitRepo,
-            IAuditService                auditService = null)
+            IAuditService                auditService = null,
+            IUserAccountRepository       userAccountRepo = null)
         {
             if (visibilityRepo == null) throw new ArgumentNullException("visibilityRepo");
             if (orgUnitRepo    == null) throw new ArgumentNullException("orgUnitRepo");
@@ -30,6 +32,7 @@ namespace CMS.Services
             _visibilityRepo = visibilityRepo;
             _orgUnitRepo    = orgUnitRepo;
             _auditService   = auditService;
+            _userAccountRepo = userAccountRepo;
         }
 
         // -----------------------------------------------------------------------
@@ -43,7 +46,30 @@ namespace CMS.Services
             var grants = _visibilityRepo.GetByUser(userId).ToList();
 
             if (grants.Count == 0)
+            {
+                if (userId == caller.UserID)
+                {
+                    return RoleBasedFallback(caller);
+                }
+
+                if (_userAccountRepo != null)
+                {
+                    var targetUser = _userAccountRepo.GetById(userId);
+                    if (targetUser != null)
+                    {
+                        var targetContext = new UserContext
+                        {
+                            UserID = targetUser.UserID,
+                            AppRole = targetUser.AppRole,
+                            OrgUnitID = targetUser.OrgUnitID,
+                            ADUserName = targetUser.ADUserName
+                        };
+                        return RoleBasedFallback(targetContext);
+                    }
+                }
+
                 return RoleBasedFallback(caller);
+            }
 
             // Explicit-grant mode: return only the granted OrgUnits
             var grantedIds = new HashSet<int>(grants.Select(g => g.OrgUnitID));

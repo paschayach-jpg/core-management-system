@@ -121,7 +121,7 @@
             this._pnlSaveCopy.Controls.Add(this._lblSaveCopyDesc);
             this._pnlSaveCopy.Cursor   = System.Windows.Forms.Cursors.Hand;
             this._pnlSaveCopy.Location = new System.Drawing.Point(20, 48);
-            this._pnlSaveCopy.Size     = new System.Drawing.Size(178, 128);
+            this._pnlSaveCopy.Size     = new System.Drawing.Size(273, 128);
             this._pnlSaveCopy.Paint       += new System.Windows.Forms.PaintEventHandler(this.PnlSaveCopy_Paint);
             this._pnlSaveCopy.MouseEnter  += new System.EventHandler(this.PnlSaveCopy_MouseEnter);
             this._pnlSaveCopy.MouseLeave  += new System.EventHandler(this.PnlSaveCopy_MouseLeave);
@@ -142,7 +142,7 @@
             this._lblSaveCopyTitle.Font      = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Bold);
             this._lblSaveCopyTitle.ForeColor = System.Drawing.Color.FromArgb(30, 30, 30);
             this._lblSaveCopyTitle.Location  = new System.Drawing.Point(12, 66);
-            this._lblSaveCopyTitle.Size      = new System.Drawing.Size(154, 20);
+            this._lblSaveCopyTitle.Size      = new System.Drawing.Size(249, 20);
             this._lblSaveCopyTitle.Text      = "บันทึกไฟล์ใหม่";
             this._lblSaveCopyTitle.Click       += new System.EventHandler(this.PnlSaveCopy_Click);
             this._lblSaveCopyTitle.DoubleClick  += new System.EventHandler(this.PnlSaveCopy_DoubleClick);
@@ -152,7 +152,7 @@
             this._lblSaveCopyDesc.Font      = new System.Drawing.Font("Segoe UI", 8F);
             this._lblSaveCopyDesc.ForeColor = System.Drawing.Color.FromArgb(90, 90, 90);
             this._lblSaveCopyDesc.Location  = new System.Drawing.Point(12, 88);
-            this._lblSaveCopyDesc.Size      = new System.Drawing.Size(154, 34);
+            this._lblSaveCopyDesc.Size      = new System.Drawing.Size(249, 34);
             this._lblSaveCopyDesc.Text      = "เพิ่มเป็นสำเนาใหม่\nตั้งชื่ออัตโนมัติ copy(1)…";
             this._lblSaveCopyDesc.Click       += new System.EventHandler(this.PnlSaveCopy_Click);
             this._lblSaveCopyDesc.DoubleClick  += new System.EventHandler(this.PnlSaveCopy_DoubleClick);
@@ -165,8 +165,8 @@
             this._pnlReplace.Controls.Add(this._lblReplaceTitle);
             this._pnlReplace.Controls.Add(this._lblReplaceDesc);
             this._pnlReplace.Cursor   = System.Windows.Forms.Cursors.Hand;
-            this._pnlReplace.Location = new System.Drawing.Point(211, 48);
-            this._pnlReplace.Size     = new System.Drawing.Size(178, 128);
+            this._pnlReplace.Location = new System.Drawing.Point(306, 48);
+            this._pnlReplace.Size     = new System.Drawing.Size(273, 128);
             this._pnlReplace.Paint       += new System.Windows.Forms.PaintEventHandler(this.PnlReplace_Paint);
             this._pnlReplace.MouseEnter  += new System.EventHandler(this.PnlReplace_MouseEnter);
             this._pnlReplace.MouseLeave  += new System.EventHandler(this.PnlReplace_MouseLeave);
@@ -187,7 +187,7 @@
             this._lblReplaceTitle.Font      = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Bold);
             this._lblReplaceTitle.ForeColor = System.Drawing.Color.FromArgb(30, 30, 30);
             this._lblReplaceTitle.Location  = new System.Drawing.Point(12, 66);
-            this._lblReplaceTitle.Size      = new System.Drawing.Size(154, 20);
+            this._lblReplaceTitle.Size      = new System.Drawing.Size(249, 20);
             this._lblReplaceTitle.Text      = "แทนที่ไฟล์เดิม";
             this._lblReplaceTitle.Click       += new System.EventHandler(this.PnlReplace_Click);
             this._lblReplaceTitle.DoubleClick  += new System.EventHandler(this.PnlReplace_DoubleClick);
@@ -197,7 +197,7 @@
             this._lblReplaceDesc.Font      = new System.Drawing.Font("Segoe UI", 8F);
             this._lblReplaceDesc.ForeColor = System.Drawing.Color.FromArgb(90, 90, 90);
             this._lblReplaceDesc.Location  = new System.Drawing.Point(12, 88);
-            this._lblReplaceDesc.Size      = new System.Drawing.Size(154, 34);
+            this._lblReplaceDesc.Size      = new System.Drawing.Size(249, 34);
             this._lblReplaceDesc.Text      = "เขียนทับไฟล์เดิม\nไฟล์เดิมจะถูกแทนที่";
             this._lblReplaceDesc.Click       += new System.EventHandler(this.PnlReplace_Click);
             this._lblReplaceDesc.DoubleClick  += new System.EventHandler(this.PnlReplace_DoubleClick);
@@ -212,6 +212,7 @@
             this._pnlSkip.Cursor   = System.Windows.Forms.Cursors.Hand;
             this._pnlSkip.Location = new System.Drawing.Point(402, 48);
             this._pnlSkip.Size     = new System.Drawing.Size(178, 128);
+            this._pnlSkip.Visible  = false;
             this._pnlSkip.Paint       += new System.Windows.Forms.PaintEventHandler(this.PnlSkip_Paint);
             this._pnlSkip.MouseEnter  += new System.EventHandler(this.PnlSkip_MouseEnter);
             this._pnlSkip.MouseLeave  += new System.EventHandler(this.PnlSkip_MouseLeave);

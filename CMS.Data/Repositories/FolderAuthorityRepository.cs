@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -122,12 +122,12 @@ namespace CMS.Data.Repositories
             return new FolderAuthorityConfig
             {
                 ConfigID             = (int)r["ConfigID"],
-                ConfigLabel          = r["ConfigLabel"]    as string ?? "",
-                PositionName         = r["PositionName"]   as string,
-                DepartmentCode       = r["DepartmentCode"] as string,
-                DivisionCode         = r["DivisionCode"]   as string,
+                ConfigLabel          = (r["ConfigLabel"]    as string ?? "").Trim(),
+                PositionName         = (r["PositionName"]   as string)?.Trim(),
+                DepartmentCode       = (r["DepartmentCode"] as string)?.Trim(),
+                DivisionCode         = (r["DivisionCode"]   as string)?.Trim(),
                 ConfidentialityLevel = Convert.ToInt32(r["ConfidentialityLevel"]),
-                LevelCode            = levelCode ?? LevelCodeFromInt(Convert.ToInt32(r["ConfidentialityLevel"])),
+                LevelCode            = levelCode?.Trim() ?? LevelCodeFromInt(Convert.ToInt32(r["ConfidentialityLevel"])),
                 CanView    = (bool)r["CanView"],
                 CanAdd     = (bool)r["CanAdd"],
                 CanEdit    = (bool)r["CanEdit"],

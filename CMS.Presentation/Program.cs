@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -66,7 +66,7 @@ namespace CMS.Presentation
                 var filePermissionService = new FilePermissionService(filePermissionRepository, auditService);
 
                 var userOrgVisibilityRepo = new UserOrgVisibilityRepository(configManager);
-                var userOrgVisibilityService = new UserOrgVisibilityService(userOrgVisibilityRepo, orgUnitRepository, auditService);
+                var userOrgVisibilityService = new UserOrgVisibilityService(userOrgVisibilityRepo, orgUnitRepository, auditService, userAccountRepo);
 
                 var orgStructureService = new OrgStructureService(orgUnitRepository, auditService, userOrgVisibilityService);
 

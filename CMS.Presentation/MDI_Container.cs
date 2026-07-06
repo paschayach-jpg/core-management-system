@@ -1537,6 +1537,7 @@ namespace CMS.Presentation
                     userAdminController: _userAdminController,
                     userOrgVisibilityController: _userOrgVisibilityController,
                     folderReadLookupController: _folderReadLookupController,
+                    employeeApiService: _employeeApiService,
                     folderQuotaService: _quotaService
                 );
 
@@ -1811,102 +1812,14 @@ namespace CMS.Presentation
                 return;
             }
 
-            // Show dialog to choose share type — modern style
-            using (var dlg = new Form())
+            // External share disabled — go straight to Internal share
+            using (var shareDialog = new ShareDialogInternal(
+                _shareCommandController,
+                    _userAccountLookupController, _userAccessOrgLookupController, _currentUser,
+                    _folderReadLookupController,
+                selectedFiles, selectedFolder, parentFolder))
             {
-                Color navyDark = Color.FromArgb(25, 55, 105);
-                Color navyMid = Color.FromArgb(50, 90, 150);
-                Color navyLight = Color.FromArgb(215, 228, 248);
-                Color bodyBg = Color.FromArgb(243, 246, 251);
-
-                dlg.Text = "เลือกประเภทการแบ่งปัน";
-                dlg.ClientSize = new System.Drawing.Size(340, 170);
-                dlg.StartPosition = FormStartPosition.CenterParent;
-                dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dlg.MaximizeBox = false;
-                dlg.MinimizeBox = false;
-                dlg.BackColor = bodyBg;
-                dlg.Font = new Font("Segoe UI", 9f);
-
-                // Header bar
-                var pnlH = new Panel { Dock = DockStyle.Top, Height = 52, BackColor = navyDark };
-                var lblH = new Label
-                {
-                    Text = "🔗  เลือกประเภทการแบ่งปัน",
-                    Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                    ForeColor = Color.White,
-                    AutoSize = true,
-                    Location = new Point(14, 14),
-                };
-                pnlH.Controls.Add(lblH);
-
-                // Hint label
-                var lblHint = new Label
-                {
-                    Text = "  เลือกแบ่งปันภายในองค์กร หรือสร้าง link สำหรับบุคคลภายนอก",
-                    Font = new Font("Segoe UI", 8.5f),
-                    ForeColor = Color.FromArgb(70, 85, 110),
-                    BackColor = navyLight,
-                    Dock = DockStyle.None,
-                    Size = new Size(340, 26),
-                    Location = new Point(0, 52),
-                    TextAlign = ContentAlignment.MiddleLeft,
-                };
-
-                // Internal button
-                var btnInternal = new Button
-                {
-                    Text = "🏢  ภายใน (Internal)",
-                    Size = new Size(148, 56),
-                    Location = new Point(14, 88),
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = navyDark,
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                    DialogResult = DialogResult.Yes,
-                };
-                btnInternal.FlatAppearance.BorderSize = 0;
-
-                // External button
-                var btnExternal = new Button
-                {
-                    Text = "🌐  ภายนอก (External)",
-                    Size = new Size(148, 56),
-                    Location = new Point(174, 88),
-                    FlatStyle = FlatStyle.Flat,
-                    BackColor = Color.FromArgb(220, 228, 245),
-                    ForeColor = navyDark,
-                    Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                    DialogResult = DialogResult.No,
-                };
-                btnExternal.FlatAppearance.BorderColor = Color.FromArgb(180, 200, 235);
-                btnExternal.FlatAppearance.BorderSize = 1;
-
-                dlg.Controls.AddRange(new Control[] { pnlH, lblHint, btnInternal, btnExternal });
-                dlg.AcceptButton = btnInternal;
-                dlg.CancelButton = btnExternal;
-
-                if (dlg.ShowDialog(this) == DialogResult.Yes)
-                {
-                    // Internal share
-                    using (var shareDialog = new ShareDialogInternal(
-                        _shareCommandController,
-                            _userAccountLookupController, _userAccessOrgLookupController, _currentUser,
-                            _folderReadLookupController,
-                        selectedFiles, selectedFolder, parentFolder))
-                    {
-                        shareDialog.ShowDialog(this);
-                    }
-                }
-                else
-                {
-                    using (var shareDialog = new ShareDialogExternal(
-                        _shareCommandController, _currentUser,
-                        selectedFiles, selectedFolder))
-                    {
-                        shareDialog.ShowDialog(this);
-                    }
-                }
+                shareDialog.ShowDialog(this);
             }
         }
 
@@ -2441,7 +2354,8 @@ namespace CMS.Presentation
             OpenChildForm(new UserManagementForm(
                 _userAdminWithHrController,
                 _currentUser,
-                _auditService));
+                _auditService,
+                _employeeApiService));
         }
 
         private void OpenPdpaConsent()

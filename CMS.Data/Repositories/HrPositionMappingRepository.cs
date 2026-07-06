@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -79,13 +79,13 @@ namespace CMS.Data.Repositories
                 HeadCount      = r["HeadCount"]    == DBNull.Value ? 0 : (int)r["HeadCount"],
                 IsActive       = (bool)r["IsActive"],
                 CreatedDate    = (DateTime)r["CreatedDate"],
-                PositionCode   = r["PositionCode"]   == DBNull.Value ? "" : Convert.ToString(r["PositionCode"]),
-                PositionName   = r["PositionName"]   == DBNull.Value ? "" : Convert.ToString(r["PositionName"]),
-                Level          = r["LevelCode"]      == DBNull.Value ? "" : Convert.ToString(r["LevelCode"]),
-                DepartmentCode = r["DepartmentCode"] == DBNull.Value ? "" : Convert.ToString(r["DepartmentCode"]),
-                DepartmentName = r["DepartmentName"] == DBNull.Value ? "" : Convert.ToString(r["DepartmentName"]),
-                DivisionCode   = r["DivisionCode"]   == DBNull.Value ? "" : Convert.ToString(r["DivisionCode"]),
-                DivisionName   = r["DivisionName"]   == DBNull.Value ? "" : Convert.ToString(r["DivisionName"])
+                PositionCode   = (r["PositionCode"]   == DBNull.Value ? "" : Convert.ToString(r["PositionCode"])).Trim(),
+                PositionName   = (r["PositionName"]   == DBNull.Value ? "" : Convert.ToString(r["PositionName"])).Trim(),
+                Level          = (r["LevelCode"]      == DBNull.Value ? "" : Convert.ToString(r["LevelCode"])).Trim(),
+                DepartmentCode = (r["DepartmentCode"] == DBNull.Value ? "" : Convert.ToString(r["DepartmentCode"])).Trim(),
+                DepartmentName = (r["DepartmentName"] == DBNull.Value ? "" : Convert.ToString(r["DepartmentName"])).Trim(),
+                DivisionCode   = (r["DivisionCode"]   == DBNull.Value ? "" : Convert.ToString(r["DivisionCode"])).Trim(),
+                DivisionName   = (r["DivisionName"]   == DBNull.Value ? "" : Convert.ToString(r["DivisionName"])).Trim()
             };
         }
     }

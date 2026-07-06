@@ -183,6 +183,8 @@ namespace CMS.Services
             {
                 EmployeeCode     = emp.EmployeeCode,
                 DisplayName      = emp.DisplayName,
+                FullNameEn       = emp.FullNameEn,
+                FullNameTh       = emp.FullNameTh,
                 Company          = emp.Company,
                 DepartmentId     = pos != null ? pos.DepartmentId     : 0,
                 DepartmentCode   = pos != null ? pos.DepartmentCode   : string.Empty,

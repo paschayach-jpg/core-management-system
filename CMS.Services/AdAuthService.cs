@@ -76,7 +76,7 @@ namespace CMS.Services
                     return new AdAuthResult
                     {
                         Success             = true,
-                        AccessToken         = lr.AccessToken,
+                        AccessToken         = lr.AccessToken ?? lr.Token,
                         RefreshToken        = lr.RefreshToken,
                         RefreshTokenExpired = ParseDate(lr.RefreshTokenExpired),
                         EmployeeInfo        = lr.EmployeeInfo,

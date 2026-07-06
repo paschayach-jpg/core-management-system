@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -63,13 +63,13 @@ namespace CMS.Data.Repositories
             {
                 DepartmentID     = Convert.ToInt32(reader["DepartmentID"]),
                 DivisionID       = Convert.ToInt32(reader["DivisionID"]),
-                DepartmentCode   = reader["DepartmentCode"]   == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentCode"]),
-                DepartmentName   = reader["DepartmentName"]   == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentName"]),
+                DepartmentCode   = reader["DepartmentCode"]   == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentCode"]).Trim(),
+                DepartmentName   = reader["DepartmentName"]   == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentName"]).Trim(),
                 IsActive         = reader["IsActive"] != DBNull.Value && Convert.ToBoolean(reader["IsActive"]),
                 CreatedDate      = reader["CreatedDate"]      == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(reader["CreatedDate"]),
-                Level            = reader["Level"]            == DBNull.Value ? string.Empty : Convert.ToString(reader["Level"]),
-                DepartmentNameTh = reader["DepartmentNameTh"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentNameTh"]),
-                DepartmentNameEn = reader["DepartmentNameEn"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentNameEn"])
+                Level            = reader["Level"]            == DBNull.Value ? string.Empty : Convert.ToString(reader["Level"]).Trim(),
+                DepartmentNameTh = reader["DepartmentNameTh"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentNameTh"]).Trim(),
+                DepartmentNameEn = reader["DepartmentNameEn"] == DBNull.Value ? string.Empty : Convert.ToString(reader["DepartmentNameEn"]).Trim()
             };
         }
     }

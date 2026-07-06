@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -36,12 +36,12 @@ namespace CMS.Data.Repositories
                             var pos = new HrPosition
                             {
                                 PositionID   = Convert.ToInt32(reader["PositionID"]),
-                                PositionCode = reader["PositionCode"] == DBNull.Value ? "" : Convert.ToString(reader["PositionCode"]),
-                                PositionName = reader["PositionName"] == DBNull.Value ? "" : Convert.ToString(reader["PositionName"]),
+                                PositionCode = reader["PositionCode"] == DBNull.Value ? "" : Convert.ToString(reader["PositionCode"]).Trim(),
+                                PositionName = reader["PositionName"] == DBNull.Value ? "" : Convert.ToString(reader["PositionName"]).Trim(),
                                 IsActive     = reader["IsActive"] != DBNull.Value && Convert.ToBoolean(reader["IsActive"])
                             };
                             // Level เป็น alias ที่ set LevelCode
-                            pos.LevelCode = reader["Level"] == DBNull.Value ? "" : Convert.ToString(reader["Level"]);
+                            pos.LevelCode = reader["Level"] == DBNull.Value ? "" : Convert.ToString(reader["Level"]).Trim();
                             results.Add(pos);
                         }
                     }

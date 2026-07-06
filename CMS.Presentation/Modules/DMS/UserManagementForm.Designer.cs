@@ -18,11 +18,13 @@ namespace CMS.Presentation
             this.pnlToolbar     = new System.Windows.Forms.Panel();
             this.txtSearch      = new System.Windows.Forms.TextBox();
             this.cmbStatus      = new System.Windows.Forms.ComboBox();
+            this.cmbDeptFilter  = new System.Windows.Forms.ComboBox();
             this.btnSearch      = new System.Windows.Forms.Button();
             this.btnCreate      = new System.Windows.Forms.Button();
             this.btnEdit        = new System.Windows.Forms.Button();
             this.btnToggle      = new System.Windows.Forms.Button();
             this.btnRefresh     = new System.Windows.Forms.Button();
+            this.btnSync        = new System.Windows.Forms.Button();
             this.lvUsers        = new System.Windows.Forms.ListView();
             this.colID          = new System.Windows.Forms.ColumnHeader();
             this.colAD          = new System.Windows.Forms.ColumnHeader();
@@ -62,8 +64,8 @@ namespace CMS.Presentation
             // ── pnlToolbar ───────────────────────────────────────────────────
             this.pnlToolbar.BackColor = System.Drawing.Color.FromArgb(243, 245, 250);
             this.pnlToolbar.Controls.AddRange(new System.Windows.Forms.Control[] {
-                this.txtSearch, this.cmbStatus, this.btnSearch,
-                this.btnCreate, this.btnEdit, this.btnToggle, this.btnRefresh });
+                this.txtSearch, this.cmbStatus, this.cmbDeptFilter, this.btnSearch,
+                this.btnCreate, this.btnEdit, this.btnToggle, this.btnRefresh, this.btnSync });
             this.pnlToolbar.Dock    = System.Windows.Forms.DockStyle.Top;
             this.pnlToolbar.Height  = 46;
             this.pnlToolbar.Name    = "pnlToolbar";
@@ -74,7 +76,7 @@ namespace CMS.Presentation
             //
             this.txtSearch.Left  = 6;
             this.txtSearch.Top   = 10;
-            this.txtSearch.Width = 200;
+            this.txtSearch.Width = 130;
             this.txtSearch.Name  = "txtSearch";
             this.txtSearch.Font  = new System.Drawing.Font("Segoe UI", 10F);
             //
@@ -82,18 +84,27 @@ namespace CMS.Presentation
             //
             this.cmbStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbStatus.Items.AddRange(new object[] { "ทุกสถานะ", "ใช้งาน", "ปิดใช้งาน" });
-            this.cmbStatus.Left           = 214;
+            this.cmbStatus.Left           = 142;
             this.cmbStatus.Top            = 8;
-            this.cmbStatus.Width          = 120;
+            this.cmbStatus.Width          = 100;
             this.cmbStatus.Name           = "cmbStatus";
             this.cmbStatus.Font           = new System.Drawing.Font("Segoe UI", 10F);
             this.cmbStatus.SelectedIndex  = 0;
             //
+            // cmbDeptFilter
+            //
+            this.cmbDeptFilter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbDeptFilter.Left           = 248;
+            this.cmbDeptFilter.Top            = 8;
+            this.cmbDeptFilter.Width          = 150;
+            this.cmbDeptFilter.Name           = "cmbDeptFilter";
+            this.cmbDeptFilter.Font           = new System.Drawing.Font("Segoe UI", 10F);
+            //
             // btnSearch
             //
-            this.btnSearch.Left      = 342;
+            this.btnSearch.Left      = 404;
             this.btnSearch.Top       = 8;
-            this.btnSearch.Width     = 80;
+            this.btnSearch.Width     = 70;
             this.btnSearch.Height    = 28;
             this.btnSearch.Name      = "btnSearch";
             this.btnSearch.Text      = "🔍 ค้นหา";
@@ -105,9 +116,9 @@ namespace CMS.Presentation
             this.btnCreate.BackColor = System.Drawing.Color.FromArgb(31, 56, 100);
             this.btnCreate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCreate.ForeColor = System.Drawing.Color.White;
-            this.btnCreate.Left      = 440;
+            this.btnCreate.Left      = 480;
             this.btnCreate.Top       = 8;
-            this.btnCreate.Width     = 100;
+            this.btnCreate.Width     = 90;
             this.btnCreate.Height    = 28;
             this.btnCreate.Name      = "btnCreate";
             this.btnCreate.Text      = "➕ เพิ่มผู้ใช้";
@@ -118,9 +129,9 @@ namespace CMS.Presentation
             //
             this.btnEdit.Enabled  = false;
             this.btnEdit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnEdit.Left     = 548;
+            this.btnEdit.Left     = 576;
             this.btnEdit.Top      = 8;
-            this.btnEdit.Width    = 90;
+            this.btnEdit.Width    = 70;
             this.btnEdit.Height   = 28;
             this.btnEdit.Name     = "btnEdit";
             this.btnEdit.Text     = "✏️ แก้ไข";
@@ -130,9 +141,9 @@ namespace CMS.Presentation
             //
             this.btnToggle.Enabled  = false;
             this.btnToggle.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnToggle.Left     = 646;
+            this.btnToggle.Left     = 652;
             this.btnToggle.Top      = 8;
-            this.btnToggle.Width    = 110;
+            this.btnToggle.Width    = 100;
             this.btnToggle.Height   = 28;
             this.btnToggle.Name     = "btnToggle";
             this.btnToggle.Text     = "🔒 ปิดใช้งาน";
@@ -141,13 +152,25 @@ namespace CMS.Presentation
             // btnRefresh
             //
             this.btnRefresh.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRefresh.Left      = 764;
+            this.btnRefresh.Left      = 758;
             this.btnRefresh.Top       = 8;
             this.btnRefresh.Width     = 80;
             this.btnRefresh.Height    = 28;
             this.btnRefresh.Name      = "btnRefresh";
             this.btnRefresh.Text      = "🔄 รีเฟรช";
             this.btnRefresh.Font      = new System.Drawing.Font("Segoe UI", 9F);
+            //
+            // btnSync
+            //
+            this.btnSync.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSync.Left      = 844;
+            this.btnSync.Top       = 8;
+            this.btnSync.Width     = 150;
+            this.btnSync.Height    = 28;
+            this.btnSync.Name      = "btnSync";
+            this.btnSync.Text      = "🔄 ซิงค์ข้อมูล AD/HR";
+            this.btnSync.Font      = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnSync.BackColor = System.Drawing.Color.FromArgb(220, 230, 242);
 
             // ── lvUsers ──────────────────────────────────────────────────────
             this.lvUsers.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
@@ -213,11 +236,13 @@ namespace CMS.Presentation
         private System.Windows.Forms.Panel          pnlToolbar;
         private System.Windows.Forms.TextBox        txtSearch;
         private System.Windows.Forms.ComboBox       cmbStatus;
+        private System.Windows.Forms.ComboBox       cmbDeptFilter;
         private System.Windows.Forms.Button         btnSearch;
         private System.Windows.Forms.Button         btnCreate;
         private System.Windows.Forms.Button         btnEdit;
         private System.Windows.Forms.Button         btnToggle;
         private System.Windows.Forms.Button         btnRefresh;
+        private System.Windows.Forms.Button         btnSync;
         private System.Windows.Forms.ListView       lvUsers;
         private System.Windows.Forms.ColumnHeader   colID;
         private System.Windows.Forms.ColumnHeader   colAD;

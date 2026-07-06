@@ -11,6 +11,9 @@ namespace CMS.Services.DTOs
         [DataMember(Name = "accessToken")]
         public string AccessToken { get; set; }
 
+        [DataMember(Name = "token")]
+        public string Token { get; set; }
+
         [DataMember(Name = "refreshToken")]
         public string RefreshToken { get; set; }
 

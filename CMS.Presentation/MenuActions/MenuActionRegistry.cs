@@ -69,7 +69,7 @@ namespace CMS.Presentation
                         return ShowTargetForm(context, new OrgStructureForm(context.OrgStructureService, context.User, null));
 
                     case "UserManagement":
-                        return ShowTargetForm(context, new UserManagementForm(context.UserAdminController, context.User, context.AuditService));
+                        return ShowTargetForm(context, new UserManagementForm(context.UserAdminController, context.User, context.AuditService, context.EmployeeApiService));
 
                     case "UserAccess":
                         if (context.OrgLookupController == null && context.OrgStructureService == null)

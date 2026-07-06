@@ -18,6 +18,7 @@ namespace CMS.Presentation
         private readonly IUserAdminController _userAdminController;
         private readonly UserContext _currentUser;
         private readonly IAuditLogController _auditLogController;
+        private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
 
         private List<UserAccount> _allUsers = new List<UserAccount>();
         private List<HrDivision> _divisions = new List<HrDivision>();
@@ -26,11 +27,13 @@ namespace CMS.Presentation
         private List<HrPositionLevel> _levels = new List<HrPositionLevel>();
 
         public UserManagementForm(IUserAdminController userAdminController, UserContext currentUser,
-                                   CMS.Services.Interfaces.IAuditService auditService = null)
+                                   CMS.Services.Interfaces.IAuditService auditService = null,
+                                   CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null)
         {
             _userAdminController = userAdminController;
             _currentUser = currentUser;
             _auditLogController = new AuditLogController(auditService);
+            _employeeApiService = employeeApiService;
 
             InitializeComponent();
             WireEvents();
@@ -46,11 +49,13 @@ namespace CMS.Presentation
         {
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyFilter(); };
             cmbStatus.SelectedIndexChanged += (s, e) => ApplyFilter();
+            cmbDeptFilter.SelectedIndexChanged += (s, e) => ApplyFilter();
             btnSearch.Click += (s, e) => ApplyFilter();
             btnCreate.Click += BtnCreate_Click;
             btnEdit.Click += BtnEdit_Click;
             btnToggle.Click += BtnToggle_Click;
             btnRefresh.Click += (s, e) => LoadUsers();
+            btnSync.Click += BtnSync_Click;
             lvUsers.SelectedIndexChanged += LvUsers_SelectionChanged;
             lvUsers.DoubleClick += BtnEdit_Click;
         }
@@ -185,6 +190,16 @@ namespace CMS.Presentation
                     })
                     .ToList();
             }
+
+            // Populate cmbDeptFilter
+            cmbDeptFilter.Items.Clear();
+            cmbDeptFilter.Items.Add(new HrDepartment { DepartmentID = 0, DepartmentName = "ทุกแผนก", DepartmentNameTh = "ทุกแผนก" });
+            foreach (var d in _departments)
+            {
+                cmbDeptFilter.Items.Add(d);
+            }
+            cmbDeptFilter.DisplayMember = "DisplayName";
+            cmbDeptFilter.SelectedIndex = 0;
         }
 
         private void LoadUsers()
@@ -216,7 +231,23 @@ namespace CMS.Presentation
                     (u.DisplayName ?? "").ToLower().Contains(kw) ||
                     (u.ADUserName ?? "").ToLower().Contains(kw) ||
                     (u.EmployeeCode ?? "").ToLower().Contains(kw) ||
-                    (u.DepartmentName ?? "").ToLower().Contains(kw));
+                    (u.DepartmentName ?? "").ToLower().Contains(kw) ||
+                    (u.DivisionName ?? "").ToLower().Contains(kw) ||
+                    (u.PositionName ?? "").ToLower().Contains(kw));
+
+            if (cmbDeptFilter.SelectedIndex > 0)
+            {
+                var dept = cmbDeptFilter.SelectedItem as HrDepartment;
+                if (dept != null)
+                {
+                    result = result.Where(u => 
+                        (dept.DepartmentID > 0 && u.DepartmentId == dept.DepartmentID)
+                        || (!string.IsNullOrEmpty(dept.DepartmentCode) && string.Equals(u.DepartmentCode, dept.DepartmentCode, StringComparison.OrdinalIgnoreCase))
+                        || (!string.IsNullOrEmpty(dept.DepartmentName) && string.Equals(u.DepartmentName, dept.DepartmentName, StringComparison.OrdinalIgnoreCase))
+                        || (!string.IsNullOrEmpty(dept.DepartmentNameTh) && string.Equals(u.DepartmentName, dept.DepartmentNameTh, StringComparison.OrdinalIgnoreCase))
+                    );
+                }
+            }
 
             if (status == 1) result = result.Where(u => u.IsActive);
             if (status == 2) result = result.Where(u => !u.IsActive);
@@ -998,6 +1029,191 @@ namespace CMS.Presentation
                 case 4: return "Admin";
                 default: return appRole.ToString();
             }
+        }
+
+        private async void BtnSync_Click(object sender, EventArgs e)
+        {
+            if (_employeeApiService == null)
+            {
+                MessageBox.Show("ไม่พบ API Service สำหรับดึงข้อมูลพนักงาน (IEmployeeApiService เป็น null)", 
+                    "ซิงค์ข้อมูลล้มเหลว", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var confirmResult = MessageBox.Show(
+                "คุณต้องการเริ่มการซิงค์ข้อมูลผู้ใช้งานและตำแหน่งงานจาก AD/HR หรือไม่?\n\n" +
+                "ระบบจะนำเข้าข้อมูลพนักงานใหม่ที่ยังไม่มีในฐานข้อมูลเป็นระดับผู้ใช้งานทั่วไป (Officer) " +
+                "และทำการอัปเดตข้อมูลตำแหน่ง แผนก และฝ่ายของพนักงานปัจจุบันให้เป็นล่าสุด",
+                "ยืนยันการซิงค์ข้อมูล AD/HR",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirmResult != DialogResult.Yes)
+                return;
+
+            SetStatus("กำลังดึงข้อมูลพนักงานจาก API...", Color.FromArgb(31, 56, 100));
+            Cursor = Cursors.WaitCursor;
+            btnSync.Enabled = false;
+
+            try
+            {
+                var employees = await System.Threading.Tasks.Task.Run(() => _employeeApiService.GetAllEmployees()?.ToList());
+
+                if (employees == null || employees.Count == 0)
+                {
+                    MessageBox.Show("ไม่พบข้อมูลพนักงานจากการดึงข้อมูลผ่าน API", "ดึงข้อมูลล้มเหลว", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                SetStatus(string.Format("ดึงข้อมูลสำเร็จ กำลังซิงค์พนักงาน {0} ราย...", employees.Count), Color.FromArgb(31, 56, 100));
+
+                int createdCount = 0;
+                int updatedCount = 0;
+
+                await System.Threading.Tasks.Task.Run(() =>
+                {
+                    var currentUsers = _userAdminController.GetAllUsers() ?? new List<UserAccount>();
+                    var userDict = currentUsers.GroupBy(u => u.ADUserName ?? "", StringComparer.OrdinalIgnoreCase)
+                                              .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var emp in employees)
+                    {
+                        if (string.IsNullOrEmpty(emp.EmployeeCode))
+                            continue;
+
+                        string fullNameEn = !string.IsNullOrEmpty(emp.FullNameEn) ? emp.FullNameEn : ExtractEnglishName(emp.DisplayName);
+                        string adUserName = GenerateAdUserName(fullNameEn, emp.EmployeeCode);
+
+                        UserAccount existingUser = null;
+                        if (!userDict.TryGetValue(adUserName, out existingUser))
+                        {
+                            existingUser = currentUsers.FirstOrDefault(u => 
+                                string.Equals(u.EmployeeCode, emp.EmployeeCode, StringComparison.OrdinalIgnoreCase));
+                        }
+
+                        if (existingUser == null)
+                        {
+                            var newAccount = new UserAccount
+                            {
+                                ADUserName = adUserName,
+                                DisplayName = emp.DisplayName,
+                                Email = null,
+                                AppRole = 1,       // Default: Officer
+                                OrgUnitID = 1,     // Root Org
+                                ConsentGiven = false,
+                                IsActive = true,
+                                CreatedDate = DateTime.Now,
+                                EmployeeCode = emp.EmployeeCode
+                            };
+
+                            int newUserId = _userAdminController.CreateUser(newAccount);
+                            if (newUserId > 0)
+                            {
+                                createdCount++;
+                                _userAdminController.UpdateEmployeeInfo(
+                                    newUserId,
+                                    emp.EmployeeCode,
+                                    null, null, null,
+                                    null, null, null,
+                                    emp.DepartmentId,
+                                    emp.DepartmentCode,
+                                    emp.DepartmentNameEn,
+                                    emp.DepartmentNameTh,
+                                    emp.DivisionId,
+                                    emp.DivisionCode,
+                                    emp.DivisionNameEn,
+                                    emp.DivisionNameTh,
+                                    "พนักงาน"
+                                );
+                            }
+                        }
+                        else
+                        {
+                            _userAdminController.UpdateEmployeeInfo(
+                                existingUser.UserID,
+                                emp.EmployeeCode,
+                                null, null, null,
+                                null, null, null,
+                                emp.DepartmentId,
+                                emp.DepartmentCode,
+                                emp.DepartmentNameEn,
+                                emp.DepartmentNameTh,
+                                emp.DivisionId,
+                                emp.DivisionCode,
+                                emp.DivisionNameEn,
+                                emp.DivisionNameTh,
+                                existingUser.PositionName ?? "พนักงาน"
+                            );
+                            updatedCount++;
+                        }
+                    }
+                });
+
+                _auditLogController?.Log(new AuditEntry
+                {
+                    Module = "UserManagement",
+                    Action = "AD/HR User Sync",
+                    UserID = _currentUser.UserID,
+                    UserName = _currentUser.ADUserName,
+                    Result = 1,
+                    NewValue = string.Format("Sync completed. Created: {0}, Updated: {1}", createdCount, updatedCount)
+                });
+
+                MessageBox.Show(
+                    string.Format("การซิงค์ข้อมูลผู้ใช้งานและโครงสร้างองค์กร AD/HR สำเร็จ!\n\n- เพิ่มบัญชีผู้ใช้ใหม่: {0} ราย\n- อัปเดตข้อมูลพนักงานเดิม: {1} ราย", 
+                        createdCount, updatedCount),
+                    "ซิงค์ข้อมูลสำเร็จ",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                _auditLogController?.Log(new AuditEntry
+                {
+                    Module = "UserManagement",
+                    Action = "AD/HR User Sync",
+                    UserID = _currentUser.UserID,
+                    UserName = _currentUser.ADUserName,
+                    Result = 2,
+                    ErrorMessage = ex.Message
+                });
+
+                MessageBox.Show("เกิดข้อผิดพลาดในการซิงค์ข้อมูล:\n" + ex.Message, "ข้อผิดพลาด", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnSync.Enabled = true;
+                Cursor = Cursors.Default;
+                LoadUsers();
+                LoadHrData();
+            }
+        }
+
+        private static string GenerateAdUserName(string fullNameEn, string employeeCode)
+        {
+            if (string.IsNullOrEmpty(fullNameEn)) 
+                return employeeCode;
+
+            // Remove any placeholder values like "- -", "-", etc.
+            string clean = fullNameEn.Replace("-", "").Replace(".", "").Trim();
+            if (string.IsNullOrEmpty(clean))
+                return employeeCode;
+
+            return fullNameEn.Replace(" ", ".").ToLower();
+        }
+
+        private static string ExtractEnglishName(string displayName)
+        {
+            if (string.IsNullOrEmpty(displayName)) return string.Empty;
+            int openParenthesis = displayName.IndexOf('(');
+            int closeParenthesis = displayName.IndexOf(')');
+            if (openParenthesis >= 0 && closeParenthesis > openParenthesis)
+            {
+                return displayName.Substring(openParenthesis + 1, closeParenthesis - openParenthesis - 1).Trim();
+            }
+            return displayName.Trim();
         }
 
         private void SetStatus(string text, Color color)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -2607,13 +2607,9 @@ namespace CMS.Presentation
         {
             if (_userAccountController == null) return 0;
 
-            // สร้าง ADUserName จาก FullNameEn (เอาเฉพาะชื่อ EN จาก DisplayName)
-            string fullNameEn = ExtractEnglishName(emp.DisplayName);
-            if (string.IsNullOrEmpty(fullNameEn)) return 0;
-
-            // format: BUI_DOMAIN1\firstname.lastname (lowercase, no spaces)
-            string adUserName = string.Format(@"BUI_DOMAIN1\{0}",
-                fullNameEn.Replace(" ", ".").ToLower());
+            // สร้าง ADUserName จาก FullNameEn
+            string fullNameEn = !string.IsNullOrEmpty(emp.FullNameEn) ? emp.FullNameEn : ExtractEnglishName(emp.DisplayName);
+            string adUserName = GenerateAdUserName(fullNameEn, emp.EmployeeCode);
 
             // ค้นหาใน DB ก่อน
             try
@@ -2672,6 +2668,19 @@ namespace CMS.Presentation
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return 0;
             }
+        }
+
+        private static string GenerateAdUserName(string fullNameEn, string employeeCode)
+        {
+            if (string.IsNullOrEmpty(fullNameEn)) 
+                return employeeCode;
+
+            // Remove any placeholder values like "- -", "-", etc.
+            string clean = fullNameEn.Replace("-", "").Replace(".", "").Trim();
+            if (string.IsNullOrEmpty(clean))
+                return employeeCode;
+
+            return fullNameEn.Replace(" ", ".").ToLower();
         }
 
         /// <summary>แยกชื่อภาษาอังกฤษออกจาก DisplayName เช่น "ขนิษฐา ไชยมงค์ (Khanittha Chaimong)" → "Khanittha Chaimong"</summary>
