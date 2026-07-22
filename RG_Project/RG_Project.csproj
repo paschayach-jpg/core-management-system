@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{33617DC3-FB5C-4112-8388-5EE2B0DBA1DD}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>RG_Project</RootNamespace>
+    <AssemblyName>RG_Project</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <StartupObject>RG_Project.Program</StartupObject>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>ExternalDLL\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="ClosedXML">
+      <HintPath>ExternalDLL\ClosedXML.dll</HintPath>
+    </Reference>
+    <Reference Include="DocumentFormat.OpenXml">
+      <HintPath>ExternalDLL\DocumentFormat.OpenXml.dll</HintPath>
+    </Reference>
+    <Reference Include="ExcelNumberFormat">
+      <HintPath>ExternalDLL\ExcelNumberFormat.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple">
+      <HintPath>ExternalDLL\System.ValueTuple.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <!-- Login -->
+    <Compile Include="Login\Loading.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Login\LoginManager.cs" />
+    <Compile Include="Login\MenuControl.cs" />
+    <Compile Include="Login\LoginFrmNew.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Login\LoginFrmNew.Designer.cs">
+      <DependentUpon>LoginFrmNew.cs</DependentUpon>
+    </Compile>
+    <!-- Config -->
+    <Compile Include="Config\DBConfig.cs" />
+    <Compile Include="Config\DBConfigReader.cs" />
+    <!-- Controllers -->
+    <Compile Include="Controllers\ConectionDB.cs" />
+    <!-- Models -->
+    <Compile Include="Models\ClaimMotor\MenuModel.cs" />
+    <!-- Project Controllers -->
+    <Compile Include="Project\Controllers\DataGridViewProgressBarColumn.cs" />
+    <Compile Include="Project\Controllers\EmployeeController.cs" />
+    <Compile Include="Project\Controllers\EFilingController.cs" />
+    <Compile Include="Project\Controllers\KmsController.cs" />
+    <Compile Include="Project\Controllers\ProjectController.cs" />
+    <Compile Include="Project\Controllers\ProjectDocumentController.cs" />
+    <Compile Include="Project\Controllers\ProjectMemberController.cs" />
+    <Compile Include="Project\Controllers\ProjectMemberRoleController.cs" />
+    <Compile Include="Project\Controllers\ProjectProgressController.cs" />
+    <Compile Include="Project\Controllers\ProjectStateController.cs" />
+    <Compile Include="Project\Controllers\ProjectStateMemberController.cs" />
+    <Compile Include="Project\Controllers\ProjectTaskController.cs" />
+    <Compile Include="Project\Controllers\ProjectTemplateController.cs" />
+    <Compile Include="Project\Controllers\TemplateDocController.cs" />
+    <!-- Project Models -->
+    <Compile Include="Project\Models\EFilingRequestModel.cs" />
+    <Compile Include="Project\Models\ProjectDocumentWorkflowModel.cs" />
+    <Compile Include="Project\Models\ProjectMemberModel.cs" />
+    <Compile Include="Project\Models\ProjectMemberRoleModel.cs" />
+    <Compile Include="Project\Models\ProjectModel.cs" />
+    <Compile Include="Project\Models\ProjectProgressModel.cs" />
+    <Compile Include="Project\Models\ProjectStateModel.cs" />
+    <Compile Include="Project\Models\ProjectStateMemberModel.cs" />
+    <Compile Include="Project\Models\ProjectTaskModel.cs" />
+    <Compile Include="Project\Models\ProjectTemplateModel.cs" />
+    <Compile Include="Project\Models\ProjectTemplateStateModel.cs" />
+    <Compile Include="Project\Models\TemplateDocModel.cs" />
+    <!-- Project Services -->
+    <Compile Include="Project\Services\ProjectDocumentService.cs" />
+    <Compile Include="Project\Services\ProjectProgressService.cs" />
+    <Compile Include="Project\Services\ProjectService.cs" />
+    <Compile Include="Project\Services\ProjectStateService.cs" />
+    <Compile Include="Project\Services\ProjectTaskService.cs" />
+    <!-- Project Forms -->
+    <Compile Include="Project\Forms\Frm_Doc_Workflow_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Doc_Workflow_Edit.Designer.cs">
+      <DependentUpon>Frm_Doc_Workflow_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Detail.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Detail.Designer.cs">
+      <DependentUpon>Frm_Project_Detail.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_List.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_List.Designer.cs">
+      <DependentUpon>Frm_Project_List.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Member.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Member.Designer.cs">
+      <DependentUpon>Frm_Project_Member.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Progress_Update.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Progress_Update.Designer.cs">
+      <DependentUpon>Frm_Project_Progress_Update.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Role.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Role.Designer.cs">
+      <DependentUpon>Frm_Project_Role.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Role_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Role_Edit.Designer.cs">
+      <DependentUpon>Frm_Project_Role_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_State_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_State_Edit.Designer.cs">
+      <DependentUpon>Frm_Project_State_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Task_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Task_Edit.Designer.cs">
+      <DependentUpon>Frm_Project_Task_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Task_List.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Task_List.Designer.cs">
+      <DependentUpon>Frm_Project_Task_List.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Task_Status.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Project_Task_Status.Designer.cs">
+      <DependentUpon>Frm_Project_Task_Status.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Select_RefProject.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Select_RefProject.Designer.cs">
+      <DependentUpon>Frm_Select_RefProject.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Select_StateMember.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Select_StateMember.Designer.cs">
+      <DependentUpon>Frm_Select_StateMember.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Select_StateForTask.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Task_Dashboard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Task_Dashboard.Designer.cs">
+      <DependentUpon>Frm_Task_Dashboard.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Template_Doc_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Project\Forms\Frm_Template_Doc_Edit.Designer.cs">
+      <DependentUpon>Frm_Template_Doc_Edit.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Project\Forms\Frm_Project_Detail.resx">
+      <DependentUpon>Frm_Project_Detail.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Project\Forms\Frm_Project_List.resx">
+      <DependentUpon>Frm_Project_List.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Project\Forms\Frm_Project_Task_Edit.resx">
+      <DependentUpon>Frm_Project_Task_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Project\Forms\Frm_Project_Task_Status.resx">
+      <DependentUpon>Frm_Project_Task_Status.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
