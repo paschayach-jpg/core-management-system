@@ -28,7 +28,7 @@ namespace CMS.Controllers.KMS.KB
             _view           = view;
             _articleService = articleService;
             _user           = user;
-            _article        = _articleService.GetById(article.ArticleID);
+            _article        = article == null ? article : _articleService.GetById(article.ArticleID);
         }
 
         /// <summary>Push initial data into the view.</summary>
