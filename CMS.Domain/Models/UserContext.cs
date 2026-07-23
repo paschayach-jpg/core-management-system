@@ -11,6 +11,9 @@ namespace CMS.Domain.Models
         public int UserID { get; set; }
         public string ADUserName { get; set; }
 
+        /// <summary>ชื่อเต็มสำหรับแสดงผล (จาก UserAccount.DisplayName) — ใช้โดยโมดูล RGP เป็นหลัก</summary>
+        public string DisplayName { get; set; }
+
         /// <summary>1=Officer, 2=SrOfficer, 3=Manager, 4=Admin</summary>
         public int AppRole { get; set; }
 

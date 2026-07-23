@@ -1,6 +1,6 @@
 ﻿using RG_Project.Login;
 using RG_Project.Project.Controllers;
-using RG_Project.Project.Models;
+using CMS.Domain.Models;
 using System;
 using System.Data;
 using System.Drawing;

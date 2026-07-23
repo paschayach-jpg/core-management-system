@@ -32,6 +32,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
@@ -146,6 +147,20 @@
     <Compile Include="WFE\WorkflowDashboardController.cs" />
     <Compile Include="WFE\WorkflowDelegationController.cs" />
     <Compile Include="WFE\WorkflowReportController.cs" />
+    <!-- RGP (RG_Project) module -->
+    <Compile Include="RGP\RgpComposition.cs" />
+    <Compile Include="RGP\ProjectController.cs" />
+    <Compile Include="RGP\ProjectStateController.cs" />
+    <Compile Include="RGP\ProjectTaskController.cs" />
+    <Compile Include="RGP\ProjectProgressController.cs" />
+    <Compile Include="RGP\ProjectDocumentController.cs" />
+    <Compile Include="RGP\ProjectMemberController.cs" />
+    <Compile Include="RGP\ProjectMemberRoleController.cs" />
+    <Compile Include="RGP\ProjectStateMemberController.cs" />
+    <Compile Include="RGP\ProjectTemplateController.cs" />
+    <Compile Include="RGP\TemplateDocController.cs" />
+    <Compile Include="RGP\EmployeeController.cs" />
+    <Compile Include="RGP\KmsController.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CMS.Domain\CMS.Domain.csproj">
@@ -165,6 +180,8 @@
       <Name>CMS.Infrastructure</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="RGP\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

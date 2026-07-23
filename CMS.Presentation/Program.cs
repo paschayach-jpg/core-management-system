@@ -514,6 +514,29 @@ namespace CMS.Presentation
                 Application.ThreadException += (s, ev) =>
                     GlobalErrorDialog.Show(ev.Exception, _globalErrUser);
 
+                // ── RGP (โมดูล Project) — Data → Services → Controllers ───────
+                var rgpProjectRepo = new CMS.Data.Repositories.ProjectRepository(configManager);
+                var rgpStateRepo = new CMS.Data.Repositories.ProjectStateRepository(configManager);
+                var rgpTaskRepo = new CMS.Data.Repositories.ProjectTaskRepository(configManager);
+                var rgpProgressRepo = new CMS.Data.Repositories.ProjectProgressRepository(configManager);
+                var rgpDocRepo = new CMS.Data.Repositories.ProjectDocumentRepository(configManager);
+                var rgpTemplateRepo = new CMS.Data.Repositories.ProjectTemplateRepository(configManager);
+                var rgpEfilingRepo = new CMS.Data.Repositories.EFilingRepository(configManager);
+                var rgpAuditRepo = new CMS.Data.Repositories.ProjectAuditRepository(configManager);
+
+                var rgpAuditService = new CMS.Services.ProjectAuditService(rgpAuditRepo);
+                var rgpProjectService = new CMS.Services.ProjectService(rgpProjectRepo, rgpStateRepo, rgpDocRepo, rgpTemplateRepo, rgpAuditService);
+                var rgpStateService = new CMS.Services.ProjectStateService(rgpStateRepo, rgpAuditService);
+                var rgpProgressService = new CMS.Services.ProjectProgressService(rgpProgressRepo, rgpStateRepo, rgpProjectRepo);
+                var rgpTaskService = new CMS.Services.ProjectTaskService(rgpTaskRepo, rgpStateRepo, rgpProgressService, rgpAuditService);
+                var rgpDocService = new CMS.Services.ProjectDocumentService(rgpDocRepo, rgpEfilingRepo);
+
+                var rgpProjectController = new CMS.Controllers.RGP.ProjectController(rgpProjectService);
+                var rgpStateController = new CMS.Controllers.RGP.ProjectStateController(rgpStateService);
+                var rgpTaskController = new CMS.Controllers.RGP.ProjectTaskController(rgpTaskService);
+                var rgpProgressController = new CMS.Controllers.RGP.ProjectProgressController(rgpProgressService);
+                var rgpDocController = new CMS.Controllers.RGP.ProjectDocumentController(rgpDocService);
+
                 // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(
                     logger: loggingService,
@@ -571,7 +594,12 @@ namespace CMS.Presentation
                     subCommitteeRepository: subCommitteeRepository,
                     hrDivisionRepository: hrDivisionRepository,
                     hrDepartmentRepository: hrDepartmentRepository,
-                    quotaService: quotaService);
+                    quotaService: quotaService,
+                    rgpProjectController: rgpProjectController,
+                    rgpStateController: rgpStateController,
+                    rgpTaskController: rgpTaskController,
+                    rgpProgressController: rgpProgressController,
+                    rgpDocController: rgpDocController);
 
                 Application.Run(mainForm);
 

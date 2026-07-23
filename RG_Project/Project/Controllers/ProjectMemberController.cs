@@ -1,4 +1,4 @@
-﻿using RG_Project.Project.Models;
+﻿using CMS.Domain.Models;
 using System;
 using RG_Project.Controllers;
 using System.Data;

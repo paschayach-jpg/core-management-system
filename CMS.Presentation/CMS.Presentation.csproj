@@ -47,6 +47,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
@@ -62,6 +63,8 @@
     </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System.Configuration" />
   </ItemGroup>
@@ -829,6 +832,141 @@
       <Project>{50513916-e8f1-4308-94c0-174114009d4f}</Project>
       <Name>CMS.Services</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Modules\RGP\RgpSession.cs" />
+    <Compile Include="Modules\RGP\Controls\DataGridViewProgressBarColumn.cs" />
+    <Compile Include="Modules\RGP\Frm_Doc_Workflow_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Doc_Workflow_Edit.Designer.cs">
+      <DependentUpon>Frm_Doc_Workflow_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Detail.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Detail.Designer.cs">
+      <DependentUpon>Frm_Project_Detail.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_List.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_List.Designer.cs">
+      <DependentUpon>Frm_Project_List.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Member.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Member.Designer.cs">
+      <DependentUpon>Frm_Project_Member.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Progress_Update.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Progress_Update.Designer.cs">
+      <DependentUpon>Frm_Project_Progress_Update.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Role.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Role.Designer.cs">
+      <DependentUpon>Frm_Project_Role.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Role_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Role_Edit.Designer.cs">
+      <DependentUpon>Frm_Project_Role_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_State_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_State_Edit.Designer.cs">
+      <DependentUpon>Frm_Project_State_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_Edit.Designer.cs">
+      <DependentUpon>Frm_Project_Task_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_List.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_List.Designer.cs">
+      <DependentUpon>Frm_Project_Task_List.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_Status.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_Status.Designer.cs">
+      <DependentUpon>Frm_Project_Task_Status.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_RefProject.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_RefProject.Designer.cs">
+      <DependentUpon>Frm_Select_RefProject.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_StateForTask.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_StateMember.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_StateMember.Designer.cs">
+      <DependentUpon>Frm_Select_StateMember.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Task_Dashboard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Task_Dashboard.Designer.cs">
+      <DependentUpon>Frm_Task_Dashboard.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Template_Doc_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Template_Doc_Edit.Designer.cs">
+      <DependentUpon>Frm_Template_Doc_Edit.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Modules\RGP\Frm_Doc_Workflow_Edit.resx">
+      <DependentUpon>Frm_Doc_Workflow_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Detail.resx">
+      <DependentUpon>Frm_Project_Detail.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_List.resx">
+      <DependentUpon>Frm_Project_List.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Member.resx">
+      <DependentUpon>Frm_Project_Member.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Progress_Update.resx">
+      <DependentUpon>Frm_Project_Progress_Update.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Role_Edit.resx">
+      <DependentUpon>Frm_Project_Role_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_State_Edit.resx">
+      <DependentUpon>Frm_Project_State_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Task_Edit.resx">
+      <DependentUpon>Frm_Project_Task_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Task_Status.resx">
+      <DependentUpon>Frm_Project_Task_Status.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Select_RefProject.resx">
+      <DependentUpon>Frm_Select_RefProject.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Select_StateMember.resx">
+      <DependentUpon>Frm_Select_StateMember.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Template_Doc_Edit.resx">
+      <DependentUpon>Frm_Template_Doc_Edit.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

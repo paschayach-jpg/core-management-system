@@ -1,5 +1,10 @@
 ﻿using RG_Project.Login;
 using RG_Project.Services;
+using CMS.Data.Interfaces;
+using CMS.Domain.Models;
+using CMS.Infrastructure;
+using CMS.Services;
+using CMS.Services.Interfaces;
 using System;
 using System.Configuration;
 using System.Drawing;
@@ -11,11 +16,17 @@ namespace RG_Project.Login
 {
     /// <summary>
     /// Steel Blue – Modern, Professional &amp; Luxury Login Form.
-    /// Login logic is identical to LoginFrm (uses LoginManager real auth).
+    /// Auth รวมเข้ากับ CMS แล้ว — เรียก CMS.Services.AdAuthService + CMS.Data.Repositories.UserAccountRepository
+    /// แทน RG_Project.Login.LoginManager เดิม เพื่อสร้าง CMS.Domain.Models.UserContext ตัวจริง
     /// </summary>
     public partial class LoginFrmNew : Form
     {
         private readonly string version = ConfigurationManager.AppSettings["Version"];
+        private readonly IAdAuthService _adAuthService;
+        private readonly IUserAccountRepository _userAccountRepo;
+
+        /// <summary>UserContext ตัวจริงหลัง login สำเร็จ (ใช้ต่อใน Program.cs)</summary>
+        public UserContext CurrentUserContext { get; private set; }
         // ── State ──────────────────────────────────────────────────────────
         private Point _formDragOffset;
         private bool  _dragging        = false;
@@ -35,8 +46,13 @@ namespace RG_Project.Login
         public event Action LoginSuccess;
 
         // ─────────────────────────────────────────────────────────────────
-        public LoginFrmNew()
+        /// <summary>ใช้เมื่อไม่ได้ประกอบ dependency มาจาก composition root (เช่น เปิดผ่าน Designer) — สร้าง default ให้เอง</summary>
+        public LoginFrmNew() : this(new AdAuthService(new ConfigManager()), null) { }
+
+        public LoginFrmNew(IAdAuthService adAuthService, IUserAccountRepository userAccountRepo)
         {
+            _adAuthService = adAuthService;
+            _userAccountRepo = userAccountRepo ?? new CMS.Data.Repositories.UserAccountRepository(new ConfigManager());
             InitializeComponent();
             ApplyPostInitStyles();
             //WireUpDragEvents();
@@ -392,31 +408,65 @@ namespace RG_Project.Login
                     loadingForm.Show();
                     loadingForm.Refresh();
 
-                    bool credentialsValid = await LoginManager.Instance.CheckLoginAsync(username, password);
-                    
-                    if (!credentialsValid)
+                    var authResult = await _adAuthService.LoginAsync(username, password);
+
+                    if (authResult == null || !authResult.Success)
                     {
                         SetBusy(false);
                         ShowError("Username หรือ Password ไม่ถูกต้อง");
-                        Console.WriteLine("เข้าสู่ระบบล้มเหลว");
+                        Console.WriteLine("เข้าสู่ระบบล้มเหลว: " + (authResult != null ? authResult.ErrorMessage : "null result"));
                         txtPassword.Text = string.Empty;
                         txtUsername.Focus();
                         await ShakeAsync();
                         return;
                     }
 
-                    var token = await LoginManager.Instance.LoginAsync(username, password);
-                    
-                    if (string.IsNullOrEmpty(token))
+                    string adUserName = !string.IsNullOrEmpty(authResult.AdUserName) ? authResult.AdUserName : username;
+
+                    UserAccount account = _userAccountRepo.GetByADUserName(adUserName);
+                    if (account == null)
+                    {
+                        var emp = authResult.EmployeeInfo;
+                        var newAccount = new UserAccount
+                        {
+                            ADUserName = adUserName,
+                            DisplayName = emp != null
+                                ? (emp.EmployeeFirstNameTh + " " + emp.EmployeeLastNameTh).Trim()
+                                : adUserName,
+                            AppRole = 1, // ค่าเริ่มต้น: Officer
+                            OrgUnitID = 1,
+                            IsActive = true,
+                            ConsentGiven = true, // โมดูล Project ไม่มีขั้นตอน PDPA consent แยกต่างหากในรอบนี้
+                            CreatedDate = DateTime.Now
+                        };
+                        int newUserId = _userAccountRepo.Create(newAccount);
+                        account = _userAccountRepo.GetById(newUserId);
+                    }
+
+                    if (!account.IsActive)
                     {
                         SetBusy(false);
-                        ShowError("ไม่สามารถได้รับ Token");
-                        Console.WriteLine("Token validation failed");
+                        ShowError("บัญชีของคุณถูกระงับ กรุณาติดต่อผู้ดูแลระบบ");
                         return;
                     }
 
-                    GlobalData.Token = token;
-                    Console.WriteLine("เข้าสู่ระบบสำเร็จ");
+                    _userAccountRepo.UpdateLastLogin(account.UserID);
+
+                    CurrentUserContext = new UserContext
+                    {
+                        UserID = account.UserID,
+                        ADUserName = account.ADUserName,
+                        DisplayName = account.DisplayName,
+                        AppRole = account.AppRole,
+                        MachineName = System.Net.Dns.GetHostName(),
+                        PositionName = account.PositionName,
+                        DepartmentCode = account.DepartmentCode,
+                        DepartmentName = account.DepartmentName,
+                        DepartmentId = account.DepartmentId,
+                    };
+
+                    GlobalData.Token = authResult.AccessToken;
+                    Console.WriteLine("เข้าสู่ระบบสำเร็จ: " + adUserName);
                     SetBusy(false);
                     LoginSuccess?.Invoke();
                     this.Close();

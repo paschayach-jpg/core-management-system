@@ -117,8 +117,8 @@ namespace CMS.Presentation
             }
             else
             {
-                username = "pitakpong";
-                password = "P@takpong0132";
+                //username = "pitakpong";
+                //password = "P@takpong0132";
                 //username = "athika";
                 //password = "Aple1712!";
             }

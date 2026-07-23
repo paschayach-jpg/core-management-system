@@ -1,5 +1,4 @@
-﻿using RG_Project.Login;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -55,6 +54,4 @@ namespace RG_Project.Config
             }
         }
     }
-
-
 }
