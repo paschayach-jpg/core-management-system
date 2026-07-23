@@ -95,6 +95,16 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.Initialize();
         }
 
+        // When the user closes the dialog via the X button (or Alt+F4) after a successful
+        // Save Draft, we still need to return OK so ArticleViewerForm.BtnEdit_Click knows
+        // to call RefreshAfterEdit().  SendReview/Publish/Archive already call CloseOk()
+        // themselves, so this only affects the "save then manually close" path.
+        private void KBEditorDialog_FormClosing(object sender, System.Windows.Forms.FormClosingEventArgs e)
+        {
+            if (_savedSuccessfully && DialogResult != DialogResult.OK)
+                DialogResult = DialogResult.OK;
+        }
+
         private void BtnSaveDraft_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
@@ -103,6 +113,7 @@ namespace CMS.Presentation.Modules.KMS
             try
             {
                 _presenter.Save(txtChangeDesc.Text.Trim());
+                _savedSuccessfully = true;
 
                 // Check if already linked
                 foreach (DataGridViewRow row in dgvRelatedLinked.Rows)
@@ -295,6 +306,7 @@ namespace CMS.Presentation.Modules.KMS
         private int    _mappingExpandedWidth   = 529;
         private bool   _syncingToolbar = false;
         private bool   _applyingFormat = false; // guards against re-entrant InvokeScript during font-size apply
+        private bool   _savedSuccessfully = false; // set on any successful Save; used to return OK when user closes via X
 
         public string ContentHTML
         {
@@ -730,7 +742,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TxtTagInput_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Oemcomma)
+            if (e.KeyCode == Keys.Enter)
             {
                 e.SuppressKeyPress = true;
                 AddTagChip(txtTagInput.Text.Trim());
@@ -743,6 +755,19 @@ namespace CMS.Presentation.Modules.KMS
                 {
                     flpTags.Controls.RemoveAt(flpTags.Controls.Count - 2);
                 }
+            }
+        }
+
+        // KeyPress fires after keyboard-layout translation, so e.KeyChar == ','
+        // only when the user actually typed a comma — not when pressing the physical
+        // comma key in Thai layout (which produces "ม" via Keys.Oemcomma in KeyDown).
+        private void TxtTagInput_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == ',')
+            {
+                e.Handled = true;
+                AddTagChip(txtTagInput.Text.Trim());
+                txtTagInput.Text = string.Empty;
             }
         }
 
@@ -814,11 +839,11 @@ namespace CMS.Presentation.Modules.KMS
             // Validate tag input only when not loading existing data
             if (!skipValidation)
             {
-                // Validate tag input - allow only alphanumeric, spaces, hyphens, and underscores
-                if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9\s\-_]+$"))
+                // Allow alphanumeric, Thai characters, spaces, hyphens, and underscores
+                if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9฀-๿\s\-_]+$"))
                 {
-                    MessageBox.Show("Tag can only contain letters, numbers, spaces, hyphens, and underscores.", 
-                        "Invalid Tag", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Tag สามารถประกอบด้วยตัวอักษร ตัวเลข ภาษาไทย ช่องว่าง ขีด (-) และขีดล่าง (_) เท่านั้น",
+                        "Tag ไม่ถูกต้อง", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 

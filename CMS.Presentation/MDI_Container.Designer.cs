@@ -141,7 +141,7 @@
             this.pnlDashboard.Controls.Add(this.lblDashTitle);
             this.pnlDashboard.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlDashboard.Location = new System.Drawing.Point(0, 56);
-            this.pnlDashboard.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.pnlDashboard.Margin = new System.Windows.Forms.Padding(4);
             this.pnlDashboard.Name = "pnlDashboard";
             this.pnlDashboard.Size = new System.Drawing.Size(1959, 863);
             this.pnlDashboard.TabIndex = 0;
@@ -153,7 +153,7 @@
             this.pnlDashContent.Controls.Add(this.splitContainer1);
             this.pnlDashContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlDashContent.Location = new System.Drawing.Point(404, 62);
-            this.pnlDashContent.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.pnlDashContent.Margin = new System.Windows.Forms.Padding(4);
             this.pnlDashContent.Name = "pnlDashContent";
             this.pnlDashContent.Padding = new System.Windows.Forms.Padding(27, 25, 27, 25);
             this.pnlDashContent.Size = new System.Drawing.Size(1555, 801);
@@ -165,7 +165,7 @@
             this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
             this.splitContainer1.IsSplitterFixed = true;
             this.splitContainer1.Location = new System.Drawing.Point(27, 25);
-            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.splitContainer1.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -197,7 +197,7 @@
             this.lblRecentFiles.Location = new System.Drawing.Point(267, 267);
             this.lblRecentFiles.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblRecentFiles.Name = "lblRecentFiles";
-            this.lblRecentFiles.Size = new System.Drawing.Size(159, 20);
+            this.lblRecentFiles.Size = new System.Drawing.Size(198, 25);
             this.lblRecentFiles.TabIndex = 8;
             this.lblRecentFiles.Text = "📄 ไฟล์ที่อัปโหลดล่าสุด";
             // 
@@ -258,7 +258,7 @@
             this.btnDashOrgUnit.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnDashOrgUnit.ForeColor = System.Drawing.Color.White;
             this.btnDashOrgUnit.Location = new System.Drawing.Point(653, 112);
-            this.btnDashOrgUnit.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnDashOrgUnit.Margin = new System.Windows.Forms.Padding(4);
             this.btnDashOrgUnit.Name = "btnDashOrgUnit";
             this.btnDashOrgUnit.Size = new System.Drawing.Size(187, 74);
             this.btnDashOrgUnit.TabIndex = 5;
@@ -273,7 +273,7 @@
             this.btnDashUpload.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnDashUpload.ForeColor = System.Drawing.Color.White;
             this.btnDashUpload.Location = new System.Drawing.Point(53, 112);
-            this.btnDashUpload.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnDashUpload.Margin = new System.Windows.Forms.Padding(4);
             this.btnDashUpload.Name = "btnDashUpload";
             this.btnDashUpload.Size = new System.Drawing.Size(187, 74);
             this.btnDashUpload.TabIndex = 2;
@@ -288,7 +288,7 @@
             this.btnDashApproval.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnDashApproval.ForeColor = System.Drawing.Color.White;
             this.btnDashApproval.Location = new System.Drawing.Point(453, 112);
-            this.btnDashApproval.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnDashApproval.Margin = new System.Windows.Forms.Padding(4);
             this.btnDashApproval.Name = "btnDashApproval";
             this.btnDashApproval.Size = new System.Drawing.Size(187, 74);
             this.btnDashApproval.TabIndex = 4;
@@ -303,7 +303,7 @@
             this.btnDashFolder.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnDashFolder.ForeColor = System.Drawing.Color.White;
             this.btnDashFolder.Location = new System.Drawing.Point(253, 112);
-            this.btnDashFolder.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnDashFolder.Margin = new System.Windows.Forms.Padding(4);
             this.btnDashFolder.Name = "btnDashFolder";
             this.btnDashFolder.Size = new System.Drawing.Size(187, 74);
             this.btnDashFolder.TabIndex = 3;
@@ -321,7 +321,7 @@
             this.lvRecentFiles.GridLines = true;
             this.lvRecentFiles.HideSelection = false;
             this.lvRecentFiles.Location = new System.Drawing.Point(0, 0);
-            this.lvRecentFiles.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.lvRecentFiles.Margin = new System.Windows.Forms.Padding(4);
             this.lvRecentFiles.Name = "lvRecentFiles";
             this.lvRecentFiles.Size = new System.Drawing.Size(1501, 488);
             this.lvRecentFiles.TabIndex = 9;
@@ -332,7 +332,7 @@
             // 
             this.splitterDash.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(197)))), ((int)(((byte)(211)))), ((int)(((byte)(232)))));
             this.splitterDash.Location = new System.Drawing.Point(399, 62);
-            this.splitterDash.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.splitterDash.Margin = new System.Windows.Forms.Padding(4);
             this.splitterDash.Name = "splitterDash";
             this.splitterDash.Size = new System.Drawing.Size(5, 801);
             this.splitterDash.TabIndex = 1;
@@ -348,7 +348,7 @@
             this.pnlDashLeft.Controls.Add(this.lblTreeTitle);
             this.pnlDashLeft.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlDashLeft.Location = new System.Drawing.Point(0, 62);
-            this.pnlDashLeft.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.pnlDashLeft.Margin = new System.Windows.Forms.Padding(4);
             this.pnlDashLeft.Name = "pnlDashLeft";
             this.pnlDashLeft.Padding = new System.Windows.Forms.Padding(11, 10, 11, 10);
             this.pnlDashLeft.Size = new System.Drawing.Size(399, 801);
@@ -386,7 +386,7 @@
             this.pnlTreeViewToggle.Controls.Add(this.btnToggleByConfidentiality);
             this.pnlTreeViewToggle.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlTreeViewToggle.Location = new System.Drawing.Point(11, 47);
-            this.pnlTreeViewToggle.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.pnlTreeViewToggle.Margin = new System.Windows.Forms.Padding(4);
             this.pnlTreeViewToggle.Name = "pnlTreeViewToggle";
             this.pnlTreeViewToggle.Padding = new System.Windows.Forms.Padding(0, 5, 0, 5);
             this.pnlTreeViewToggle.Size = new System.Drawing.Size(375, 44);
@@ -401,7 +401,7 @@
             this.btnToggleByOrg.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnToggleByOrg.ForeColor = System.Drawing.Color.White;
             this.btnToggleByOrg.Location = new System.Drawing.Point(0, 5);
-            this.btnToggleByOrg.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnToggleByOrg.Margin = new System.Windows.Forms.Padding(4);
             this.btnToggleByOrg.Name = "btnToggleByOrg";
             this.btnToggleByOrg.Size = new System.Drawing.Size(137, 34);
             this.btnToggleByOrg.TabIndex = 0;
@@ -417,7 +417,7 @@
             this.btnToggleByConfidentiality.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnToggleByConfidentiality.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.btnToggleByConfidentiality.Location = new System.Drawing.Point(0, 5);
-            this.btnToggleByConfidentiality.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnToggleByConfidentiality.Margin = new System.Windows.Forms.Padding(4);
             this.btnToggleByConfidentiality.Name = "btnToggleByConfidentiality";
             this.btnToggleByConfidentiality.Size = new System.Drawing.Size(375, 34);
             this.btnToggleByConfidentiality.TabIndex = 1;
@@ -728,7 +728,7 @@
             // btnRibbonUpload
             // 
             this.btnRibbonUpload.Name = "btnRibbonUpload";
-            this.btnRibbonUpload.Size = new System.Drawing.Size(81, 24);
+            this.btnRibbonUpload.Size = new System.Drawing.Size(97, 27);
             this.btnRibbonUpload.Text = "📤 อัปโหลด";
             this.btnRibbonUpload.ToolTipText = "อัปโหลดไฟล์ไปยัง Folder ที่เลือก";
             this.btnRibbonUpload.Visible = false;
@@ -1079,7 +1079,7 @@
             this.Controls.Add(this.menuStrip);
             this.IsMdiContainer = true;
             this.MainMenuStrip = this.menuStrip;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "MDI_Container";
             this.Text = "Core Management System (CMS)";
             this.Load += new System.EventHandler(this.MDI_Container_Load);
