@@ -575,7 +575,6 @@ namespace CMS.Presentation
                 // TODO ชั่วคราว: เพิ่มเมนู Project Management (RGP) แบบ hardcoded เพื่อทดสอบการใช้งาน
                 // โดยไม่ขึ้นกับว่าเมนูจาก API/DB (EMS.MenuItem) จะมีรายการนี้หรือไม่
                 // ในระยะยาวควรย้ายไปกำหนดที่ฝั่ง Menu API/DB แทน แล้วเอาโค้ดนี้ออก
-                _navTree.Nodes.Add(new TreeNode("Project Management") { Tag = "ProjectMain" });
 
                 _navTree.EndUpdate();
             }
@@ -614,6 +613,9 @@ namespace CMS.Presentation
             // KMS — Knowledge Management
             if (c == "KMS" || c.StartsWith("KMS") || d == "KMS" || d.Contains("KNOWLEDGE") || d.Contains("ความรู้"))
                 return "KBMainForm";
+
+            if (c == "RGP" || c.StartsWith("RGP") || d == "RGP" || d.Contains("PROJECTMANAGEMENT") || d.Contains("จัดการโปรเจ็ค"))
+                return "FrmProjectList";
 
             // WFE / WKE — Workflow Engine
             if (c == "WFE" || c == "WKE" || c.StartsWith("WFE") || c.StartsWith("WKE")
@@ -2066,6 +2068,7 @@ namespace CMS.Presentation
                     return true;
                 case "ProjectMain":
                 case "ProjectManagement":
+                case "Frm_Project_List":
                     OpenProjectManagement();
                     return true;
                 case "KBCategoryForm":

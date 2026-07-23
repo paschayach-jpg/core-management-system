@@ -2246,7 +2246,7 @@ namespace CMS.Presentation
                 case "recyclebinform":
                 case "trash":
                     return "RecycleBin";
-                case "frm_project_list":
+                case "frmprojectlist":
                     return "Frm_Project_List";
                 default:
                     // Catalog already resolved the key — trust it for any action not in this switch
