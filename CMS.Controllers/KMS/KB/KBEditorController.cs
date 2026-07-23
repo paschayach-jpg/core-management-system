@@ -43,7 +43,7 @@ namespace CMS.Controllers.KMS.KB
             _categoryService = categoryService;
             _articleService  = articleService;
             _user            = user;
-            _editingArticle  = article;
+            _editingArticle  = _articleService.GetById(article.ArticleID);
         }
 
         /// <summary>
