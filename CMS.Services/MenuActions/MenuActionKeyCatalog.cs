@@ -53,7 +53,9 @@ namespace CMS.Services
             "QuotaConfig",
             "QuotaRequest",
             "QuotaApproval",
-            "FolderUsageReport"
+            "FolderUsageReport",
+            "ProjectMain",
+            "Frm_Project_List"
         };
 
         public static string[] GetAvailableActionKeys()

@@ -78,6 +78,11 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
         private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
+        private readonly CMS.Controllers.RGP.ProjectController _rgpProjectController;
+        private readonly CMS.Controllers.RGP.ProjectStateController _rgpStateController;
+        private readonly CMS.Controllers.RGP.ProjectTaskController _rgpTaskController;
+        private readonly CMS.Controllers.RGP.ProjectProgressController _rgpProgressController;
+        private readonly CMS.Controllers.RGP.ProjectDocumentController _rgpDocController;
         private readonly CMS.Data.Interfaces.IKBCategoryRepository _kbCategoryRepository;
         private readonly CMS.Data.Interfaces.IKBArticleRepository  _kbArticleRepository;
         private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;
@@ -223,7 +228,12 @@ namespace CMS.Presentation
             CMS.Data.Interfaces.ISubCommitteeRepository  subCommitteeRepository  = null,
             CMS.Data.Interfaces.IHrDivisionRepository   hrDivisionRepository    = null,
             CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepository  = null,
-            CMS.Services.Interfaces.IFolderQuotaService quotaService = null)
+            CMS.Services.Interfaces.IFolderQuotaService quotaService = null,
+            CMS.Controllers.RGP.ProjectController rgpProjectController = null,
+            CMS.Controllers.RGP.ProjectStateController rgpStateController = null,
+            CMS.Controllers.RGP.ProjectTaskController rgpTaskController = null,
+            CMS.Controllers.RGP.ProjectProgressController rgpProgressController = null,
+            CMS.Controllers.RGP.ProjectDocumentController rgpDocController = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -281,6 +291,11 @@ namespace CMS.Presentation
             _employeeDirectoryController = employeeDirectoryController;
             _userOrgVisibilityController = userOrgVisibilityController;
             _employeeApiService = employeeApiService;
+            _rgpProjectController = rgpProjectController;
+            _rgpStateController = rgpStateController;
+            _rgpTaskController = rgpTaskController;
+            _rgpProgressController = rgpProgressController;
+            _rgpDocController = rgpDocController;
             _workflowDelegationService = workflowDelegationService;
             _ldapUserSearchService     = ldapUserSearchService;
             _kbCategoryService = kbCategoryService;
@@ -557,6 +572,10 @@ namespace CMS.Presentation
             }
             finally
             {
+                // TODO ชั่วคราว: เพิ่มเมนู Project Management (RGP) แบบ hardcoded เพื่อทดสอบการใช้งาน
+                // โดยไม่ขึ้นกับว่าเมนูจาก API/DB (EMS.MenuItem) จะมีรายการนี้หรือไม่
+                // ในระยะยาวควรย้ายไปกำหนดที่ฝั่ง Menu API/DB แทน แล้วเอาโค้ดนี้ออก
+
                 _navTree.EndUpdate();
             }
         }
@@ -594,6 +613,9 @@ namespace CMS.Presentation
             // KMS — Knowledge Management
             if (c == "KMS" || c.StartsWith("KMS") || d == "KMS" || d.Contains("KNOWLEDGE") || d.Contains("ความรู้"))
                 return "KBMainForm";
+
+            if (c == "RGP" || c.StartsWith("RGP") || d == "RGP" || d.Contains("PROJECTMANAGEMENT") || d.Contains("จัดการโปรเจ็ค"))
+                return "FrmProjectList";
 
             // WFE / WKE — Workflow Engine
             if (c == "WFE" || c == "WKE" || c.StartsWith("WFE") || c.StartsWith("WKE")
@@ -1671,6 +1693,31 @@ namespace CMS.Presentation
             OpenKnowledgeBase();
         }
 
+        /// <summary>เปิดหน้าแรกของโมดูล Project (RGP) — Frm_Project_List เป็น MDI child</summary>
+        private void OpenProjectManagement()
+        {
+            if (_rgpProjectController == null)
+            {
+                MessageBox.Show("Project Management service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var existing = MdiChildren.OfType<CMS.Presentation.Modules.RGP.Frm_Project_List>().FirstOrDefault();
+            if (existing != null)
+            {
+                if (existing.WindowState == FormWindowState.Minimized)
+                    existing.WindowState = FormWindowState.Normal;
+                existing.Activate();
+                return;
+            }
+
+            var form = new CMS.Presentation.Modules.RGP.Frm_Project_List(
+                _rgpProjectController, _rgpStateController, _rgpTaskController,
+                _rgpProgressController, _rgpDocController, _currentUser);
+            OpenChildForm(form);
+        }
+
         private void OpenKnowledgeBase()
         {
             if (_kbCategoryService == null || _kbArticleService == null)
@@ -2018,6 +2065,11 @@ namespace CMS.Presentation
                 case "KnowledgeBaseForm":
                 case "KBMainForm":
                     OpenKnowledgeBase();
+                    return true;
+                case "ProjectMain":
+                case "ProjectManagement":
+                case "Frm_Project_List":
+                    OpenProjectManagement();
                     return true;
                 case "KBCategoryForm":
                     OpenKBCategorySettings();
