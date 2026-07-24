@@ -42,6 +42,7 @@ namespace CMS.Data.Repositories
                            ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') AS LinkedEntities
                     FROM   KMS.t_KBArticle a
                     LEFT JOIN KMS.m_KBCategory c ON c.CategoryID = a.CategoryID
+                    WHERE  (a.IsDelete = 0 OR a.IsDelete IS NULL)
                     ORDER BY a.CreatedDate DESC";
                 using (var cmd = new SqlCommand(sql, conn))
                 using (var r = cmd.ExecuteReader())
@@ -77,6 +78,7 @@ namespace CMS.Data.Repositories
                     FROM   KMS.t_KBArticle a
                     LEFT JOIN KMS.m_KBCategory c ON c.CategoryID = a.CategoryID
                     WHERE  a.CategoryID = @CategoryID
+                      AND  (a.IsDelete = 0 OR a.IsDelete IS NULL)
                     ORDER BY a.ArticleCode ASC";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -117,6 +119,7 @@ namespace CMS.Data.Repositories
                     WHERE  (@CategoryID  IS NULL OR a.CategoryID  = @CategoryID)
                       AND  (@Status      IS NULL OR a.Status      = @Status)
                       AND  (@ArticleType IS NULL OR a.ArticleType = @ArticleType)
+                      AND  (a.IsDelete = 0 OR a.IsDelete IS NULL)
                     ORDER BY a.ArticleCode ASC";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -341,7 +344,37 @@ namespace CMS.Data.Repositories
                 ReviewedBy           = r["ReviewedBy"]    as string,
                 CategoryName         = r["CategoryName"]  as string,
                 LinkedEntities       = HasColumn(r, "LinkedEntities") ? r["LinkedEntities"] as string : null,
+                IsDelete             = HasColumn(r, "IsDelete") && !r.IsDBNull(r.GetOrdinal("IsDelete")) && r.GetBoolean(r.GetOrdinal("IsDelete")),
             };
+        }
+
+        public void SoftDelete(int articleId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = "UPDATE KMS.t_KBArticle SET IsDelete = 1 WHERE ArticleID = @ArticleID";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ArticleID", articleId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void UpdateExpiryDate(int articleId, DateTime? expiryDate)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = "UPDATE KMS.t_KBArticle SET ExpiryDate = @ExpiryDate WHERE ArticleID = @ArticleID";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ArticleID",  articleId);
+                    cmd.Parameters.AddWithValue("@ExpiryDate", (object)expiryDate ?? DBNull.Value);
+                    cmd.ExecuteNonQuery();
+                }
+            }
         }
     }
 }

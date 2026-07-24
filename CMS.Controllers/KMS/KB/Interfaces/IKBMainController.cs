@@ -5,10 +5,11 @@ namespace CMS.Controllers.KMS.KB.Interfaces
 {
     public interface IKBMainController
     {
-        string SearchKeyword  { get; }
-        byte?  StatusFilter   { get; }
-        byte?  TypeFilter     { get; }
-        int    SearchFieldId  { get; }
+        string SearchKeyword    { get; }
+        byte?  StatusFilter    { get; }
+        byte?  TypeFilter      { get; }
+        int    SearchFieldId   { get; }
+        bool   IsArchivedMode  { get; set; }
         int?   SelectedCategoryId    { get; set; }
         /// <summary>
         /// When set by the presenter, LoadArticles filters results to articles whose

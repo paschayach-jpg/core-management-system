@@ -332,5 +332,15 @@ namespace CMS.Services
         {
             _articleRepo.IncrementLikeCount(articleId);
         }
+
+        public void SoftDelete(int articleId)
+        {
+            _articleRepo.SoftDelete(articleId);
+        }
+
+        public void UpdateExpiryDate(int articleId, DateTime? expiryDate)
+        {
+            _articleRepo.UpdateExpiryDate(articleId, expiryDate);
+        }
     }
 }

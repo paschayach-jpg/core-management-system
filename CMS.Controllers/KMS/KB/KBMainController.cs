@@ -71,8 +71,18 @@ namespace CMS.Controllers.KMS.KB
             catch (Exception ex) { _view.ShowError("Load category failed: " + ex.Message); }
         }
 
+        public void OnArchivedSelected()
+        {
+            _view.IsArchivedMode       = true;
+            _view.SelectedCategoryId   = null;
+            _view.SelectedArticleTitle = null;
+            _view.ArticleTitleText     = "  \U0001F4E6 Archived";
+            LoadArticles();
+        }
+
         public void OnCategorySelected(int? categoryId, string categoryName)
         {
+            _view.IsArchivedMode       = false;
             _view.SelectedCategoryId   = categoryId;
             _view.SelectedArticleTitle = null;   // clear title-subcategory filter
             _view.ArticleTitleText     = categoryId.HasValue
@@ -87,6 +97,7 @@ namespace CMS.Controllers.KMS.KB
         /// </summary>
         public void OnTitleSelected(int? categoryId, string categoryName, string title)
         {
+            _view.IsArchivedMode       = false;
             _view.SelectedCategoryId   = categoryId;
             _view.SelectedArticleTitle = title;
             _view.ArticleTitleText     = string.Format("  {0}  ›  {1}", categoryName, title);
@@ -111,15 +122,16 @@ namespace CMS.Controllers.KMS.KB
             {
                 _view.ShowLoading();
 
+                bool   isArchived    = _view.IsArchivedMode;
                 string keyword       = _view.SearchKeyword;
                 int    searchFieldId = _view.SearchFieldId;
-                byte?  statusFilter  = _view.StatusFilter;
+                byte?  statusFilter  = isArchived ? (byte?)4 : _view.StatusFilter;
                 byte?  typeFilter    = _view.TypeFilter;
-                int?   catId         = _view.SelectedCategoryId;
+                int?   catId         = isArchived ? (int?)null : _view.SelectedCategoryId;
                 string titleFilter   = _view.SelectedArticleTitle;
                 int    pageSize      = _view.PageSize;
 
-                if (!catId.HasValue) return;
+                if (!isArchived && !catId.HasValue) return;
 
                 IEnumerable<KBArticle> articles;
                 articles = _articleService.SearchByType(keyword, catId, statusFilter, typeFilter, searchFieldId);
@@ -216,6 +228,22 @@ namespace CMS.Controllers.KMS.KB
             {
                 _view.ShowError("ส่งขอ Review ไม่สำเร็จ: " + ex.Message);
             }
+        }
+
+        public void DeleteArticle(int articleId)
+        {
+            try
+            {
+                _articleService.SoftDelete(articleId);
+                LoadArticles();
+            }
+            catch (Exception ex) { _view.ShowError("ลบบทความไม่สำเร็จ: " + ex.Message); }
+        }
+
+        public void UpdateArticleExpiryDate(int articleId, DateTime? expiryDate)
+        {
+            try   { _articleService.UpdateExpiryDate(articleId, expiryDate); }
+            catch (Exception ex) { _view.ShowError("บันทึกวันหมดอายุไม่สำเร็จ: " + ex.Message); }
         }
 
         public void ShowReport()
