@@ -276,6 +276,8 @@ namespace CMS.Presentation.Modules.KMS
                 cboStatus.Enabled = !value;
                 var delCol = dgvArticles.Columns["colBtnDelete"];
                 if (delCol != null) delCol.Visible = value;
+                var reviewCol = dgvArticles.Columns["colBtnReview"];
+                if (reviewCol != null) reviewCol.Visible = !value;
             }
         }
 
