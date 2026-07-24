@@ -1,4 +1,4 @@
-// ✅ Allowed usings: CMS.Controllers, CMS.Domain
+﻿// ✅ Allowed usings: CMS.Controllers, CMS.Domain
 // ❌ Forbidden usings: CMS.Services, CMS.Data
 using System;
 using System.Collections.Generic;
@@ -674,6 +674,36 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        // ── Tab key interception for webEditor ───────────────────────────────────
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr GetFocus();
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool IsChild(IntPtr hWndParent, IntPtr hWnd);
+
+        private bool WebEditorContentHasFocus()
+        {
+            var hwnd = GetFocus();
+            return hwnd != IntPtr.Zero &&
+                   (hwnd == webEditor.Handle || IsChild(webEditor.Handle, hwnd));
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            const int WM_KEYDOWN = 0x0100;
+            if (msg.Msg == WM_KEYDOWN && keyData == Keys.Tab && WebEditorContentHasFocus())
+            {
+                if (_editorReady && webEditor.Document != null)
+                {
+                    webEditor.Document.InvokeScript("insertTab");
+                    return true;
+                }
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
         // ── RTE Toolbar Handlers ─────────────────────────────────────────────
 
         private void WebEditor_DocumentCompleted(object sender, System.Windows.Forms.WebBrowserDocumentCompletedEventArgs e)
@@ -1249,6 +1279,19 @@ namespace CMS.Presentation.Modules.KMS
                 "document.onclick=function(e){" +
                 "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +
                 "};" +
+                // Insert 4 non-breaking spaces at cursor (called from C# ProcessCmdKey on Tab press).
+                // pasteHTML collapses selection to end of inserted content automatically,
+                // keeping the cursor visible without extra collapse/select calls.
+                "function insertTab(){" +
+                "try{var sel=document.selection;" +
+                // IE may report sel.type='None' when the cursor is at position 0;
+                // re-focusing the body recovers a valid Caret selection.
+                "if(!sel||sel.type==='None'){document.body.focus();sel=document.selection;}" +
+                "if(!sel)return;" +
+                "var r=sel.createRange();" +
+                "r.collapse(true);" +
+                "r.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');" +
+                "}catch(e){}}" +
                 "</script>" +
                 "</head><body contenteditable='true' style='outline:none;'></body></html>";
         }
