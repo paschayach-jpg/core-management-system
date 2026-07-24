@@ -110,7 +110,7 @@ namespace CMS.Data.Repositories
                                    UNION ALL
                                    SELECT DepartmentCode,  DepartmentName  FROM [EMS].[m_Department]
                                ) lu ON lu.code = l.EntityID
-                               WHERE  l.ArticleID = a.ArticleID
+                               WHERE  l.ArticleID = a.ArticleID AND l.EntityType = 6
                                ORDER BY l.CreatedDate DESC
                                FOR XML PATH(''), TYPE
                            ).value('.', 'NVARCHAR(MAX)'), 1, 1, '') AS LinkedEntities
