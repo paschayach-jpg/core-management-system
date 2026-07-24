@@ -15,8 +15,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Controllers", "CMS.Cont
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMS.Presentation", "CMS.Presentation\CMS.Presentation.csproj", "{598277F1-1DF7-4C37-88F2-CF817D829251}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RG_Project", "RG_Project\RG_Project.csproj", "{33617DC3-FB5C-4112-8388-5EE2B0DBA1DD}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,10 +45,6 @@ Global
 		{598277F1-1DF7-4C37-88F2-CF817D829251}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{598277F1-1DF7-4C37-88F2-CF817D829251}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{598277F1-1DF7-4C37-88F2-CF817D829251}.Release|Any CPU.Build.0 = Release|Any CPU
-		{33617DC3-FB5C-4112-8388-5EE2B0DBA1DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{33617DC3-FB5C-4112-8388-5EE2B0DBA1DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{33617DC3-FB5C-4112-8388-5EE2B0DBA1DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{33617DC3-FB5C-4112-8388-5EE2B0DBA1DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
