@@ -22,7 +22,7 @@ namespace CMS.Data.Repositories
         public DataTable GetDocsByState(int i_proj_state_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -41,8 +41,8 @@ namespace CMS.Data.Repositories
                     dw.i_update_user,
                     dw.d_update_date,
                     ps.n_state_name
-                FROM t_project_doc_workflow dw
-                JOIN t_project_state ps ON ps.i_proj_state_id = dw.i_proj_state_id
+                FROM RGP.t_project_doc_workflow dw
+                JOIN RGP.t_project_state ps ON ps.i_proj_state_id = dw.i_proj_state_id
                 WHERE dw.i_proj_state_id = @i_proj_state_id
                 ORDER BY dw.i_seq_no";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -60,7 +60,7 @@ namespace CMS.Data.Repositories
         public DataTable GetDocsByProject(int i_project_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -80,8 +80,8 @@ namespace CMS.Data.Repositories
                     dw.d_update_date,
                     ps.n_state_name,
                     ps.i_seq_no AS state_seq_no
-                FROM t_project_doc_workflow dw
-                JOIN t_project_state ps ON ps.i_proj_state_id = dw.i_proj_state_id
+                FROM RGP.t_project_doc_workflow dw
+                JOIN RGP.t_project_state ps ON ps.i_proj_state_id = dw.i_proj_state_id
                 WHERE dw.i_project_id = @i_project_id
                 ORDER BY ps.i_seq_no, dw.i_seq_no";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -100,11 +100,11 @@ namespace CMS.Data.Repositories
         public int InsertDocWorkflow(ProjectDocumentWorkflowModel model)
         {
             int newId = -1;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO t_project_doc_workflow
+                INSERT INTO RGP.t_project_doc_workflow
                     (i_proj_state_id, i_project_id, i_doc_id, n_doc_name, c_doc_type,
                      f_required, c_doc_status, n_remark, i_seq_no, i_create_user, d_create_date)
                 OUTPUT INSERTED.i_doc_wf_id
@@ -134,20 +134,20 @@ namespace CMS.Data.Repositories
         }
 
         /// <summary>
-        /// Bulk copy Document Workflow จาก m_template_doc ไปยัง t_project_doc_workflow
+        /// Bulk copy Document Workflow จาก RGP.m_template_doc ไปยัง RGP.t_project_doc_workflow
         /// เรียกใช้หลัง InsertStatesFromTemplate() เพื่อ auto-populate เอกสารตาม template
         /// </summary>
         public bool InsertDocWorkflowFromTemplate(int i_project_id, string i_user)
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            // JOIN t_project_state (เพิ่งสร้างใหม่) กับ m_template_doc โดย i_state_id
-            // n_doc_name และ c_doc_type เป็น snapshot ที่เก็บไว้ใน m_template_doc แล้ว
+            // JOIN RGP.t_project_state (เพิ่งสร้างใหม่) กับ RGP.m_template_doc โดย i_state_id
+            // n_doc_name และ c_doc_type เป็น snapshot ที่เก็บไว้ใน RGP.m_template_doc แล้ว
             string sql = @"
-                INSERT INTO t_project_doc_workflow
+                INSERT INTO RGP.t_project_doc_workflow
                     (i_proj_state_id, i_project_id, i_doc_id, n_doc_name,
                      c_doc_type, f_required, c_doc_status, i_seq_no,
                      i_create_user, d_create_date)
@@ -162,8 +162,8 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                     td.i_seq_no,
                     @i_user,
                     GETDATE()
-                FROM  t_project_state ps
-                JOIN  m_template_doc  td ON td.i_state_id = ps.i_state_id
+                FROM  RGP.t_project_state ps
+                JOIN  RGP.m_template_doc  td ON td.i_state_id = ps.i_state_id
                 WHERE ps.i_project_id  = @i_project_id
                   AND ps.i_state_id    IS NOT NULL
                 ORDER BY ps.i_seq_no, td.i_seq_no";            using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -183,11 +183,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project_doc_workflow SET
+                UPDATE RGP.t_project_doc_workflow SET
                     i_proj_state_id = @i_proj_state_id,
                     n_doc_name      = @n_doc_name,
                     c_doc_type      = @c_doc_type,
@@ -223,10 +223,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "DELETE FROM t_project_doc_workflow WHERE i_doc_wf_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
+            string sql = "DELETE FROM RGP.t_project_doc_workflow WHERE i_doc_wf_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@id", i_doc_wf_id);
                 rows = cmd.ExecuteNonQuery();
@@ -242,11 +242,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project_doc_workflow SET
+                UPDATE RGP.t_project_doc_workflow SET
                     c_doc_status  = @c_doc_status,
                     i_update_user = @i_user,
                     d_update_date = GETDATE()
@@ -268,10 +268,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int seq = 1;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "SELECT ISNULL(MAX(i_seq_no), 0) + 1 FROM t_project_doc_workflow WHERE i_proj_state_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
+            string sql = "SELECT ISNULL(MAX(i_seq_no), 0) + 1 FROM RGP.t_project_doc_workflow WHERE i_proj_state_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@id", i_proj_state_id);
                 object result = cmd.ExecuteScalar();

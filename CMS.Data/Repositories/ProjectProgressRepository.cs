@@ -22,7 +22,7 @@ namespace CMS.Data.Repositories
         public DataTable GetProgressHistory(int i_proj_state_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -36,8 +36,8 @@ namespace CMS.Data.Repositories
                     pr.d_action_date,
                     pr.i_action_user,
                     ps.n_state_name
-                FROM t_project_progress pr
-                JOIN t_project_state ps ON ps.i_proj_state_id = pr.i_proj_state_id
+                FROM RGP.t_project_progress pr
+                JOIN RGP.t_project_state ps ON ps.i_proj_state_id = pr.i_proj_state_id
                 WHERE pr.i_proj_state_id = @i_proj_state_id
                 ORDER BY pr.d_action_date DESC";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -56,7 +56,7 @@ namespace CMS.Data.Repositories
         public DataTable GetLatestProgressByProject(int i_project_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -78,26 +78,26 @@ namespace CMS.Data.Repositories
                     rp.c_project_no                      AS c_ref_project_no,
                     rp.n_project_name                    AS n_ref_project_name,
                     ISNULL(ref_st.i_pct_overall, 0)      AS i_ref_pct_overall
-                FROM t_project_state ps
+                FROM RGP.t_project_state ps
                 LEFT JOIN (
                     SELECT i_proj_state_id, MAX(i_progress_id) AS max_id
-                    FROM t_project_progress
+                    FROM RGP.t_project_progress
                     GROUP BY i_proj_state_id
                 ) lp ON lp.i_proj_state_id = ps.i_proj_state_id
-                LEFT JOIN t_project_progress pr ON pr.i_progress_id = lp.max_id
+                LEFT JOIN RGP.t_project_progress pr ON pr.i_progress_id = lp.max_id
                 -- ref project header
-                LEFT JOIN t_project rp ON rp.i_project_id = ps.i_ref_project_id AND rp.f_active = 'Y'
+                LEFT JOIN RGP.t_project rp ON rp.i_project_id = ps.i_ref_project_id AND rp.f_active = 'Y'
                 -- ref project overall %
                 LEFT JOIN (
                     SELECT
                         rps.i_project_id,
                         CAST(AVG(CAST(ISNULL(rpr.i_pct_complete, 0) AS FLOAT)) AS INT) AS i_pct_overall
-                    FROM t_project_state rps
+                    FROM RGP.t_project_state rps
                     LEFT JOIN (
                         SELECT i_proj_state_id, MAX(i_progress_id) AS max_id
-                        FROM t_project_progress GROUP BY i_proj_state_id
+                        FROM RGP.t_project_progress GROUP BY i_proj_state_id
                     ) rlp ON rlp.i_proj_state_id = rps.i_proj_state_id
-                    LEFT JOIN t_project_progress rpr ON rpr.i_progress_id = rlp.max_id
+                    LEFT JOIN RGP.t_project_progress rpr ON rpr.i_progress_id = rlp.max_id
                     GROUP BY rps.i_project_id
                 ) ref_st ON ref_st.i_project_id = ps.i_ref_project_id
                 WHERE ps.i_project_id = @i_project_id
@@ -117,11 +117,11 @@ namespace CMS.Data.Repositories
         public int InsertProgress(ProjectProgressModel model)
         {
             int newId = -1;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO t_project_progress
+                INSERT INTO RGP.t_project_progress
                     (i_proj_state_id, i_project_id, c_status, n_remark, i_pct_complete,
                      d_action_date, i_action_user)
                 OUTPUT INSERTED.i_progress_id
@@ -153,7 +153,7 @@ namespace CMS.Data.Repositories
         {
             
             int pct = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -166,23 +166,23 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                                 THEN ISNULL(ref_st.i_pct_overall, 0)
                             ELSE ISNULL(pr.i_pct_complete, 0)
                         END AS effective_pct
-                    FROM t_project_state ps
+                    FROM RGP.t_project_state ps
                     LEFT JOIN (
                         SELECT i_proj_state_id, MAX(i_progress_id) AS max_id
-                        FROM t_project_progress
+                        FROM RGP.t_project_progress
                         GROUP BY i_proj_state_id
                     ) lp ON lp.i_proj_state_id = ps.i_proj_state_id
-                    LEFT JOIN t_project_progress pr ON pr.i_progress_id = lp.max_id
+                    LEFT JOIN RGP.t_project_progress pr ON pr.i_progress_id = lp.max_id
                     LEFT JOIN (
                         SELECT
                             rps.i_project_id,
                             CAST(AVG(CAST(ISNULL(rpr.i_pct_complete, 0) AS FLOAT)) AS INT) AS i_pct_overall
-                        FROM t_project_state rps
+                        FROM RGP.t_project_state rps
                         LEFT JOIN (
                             SELECT i_proj_state_id, MAX(i_progress_id) AS max_id
-                            FROM t_project_progress GROUP BY i_proj_state_id
+                            FROM RGP.t_project_progress GROUP BY i_proj_state_id
                         ) rlp ON rlp.i_proj_state_id = rps.i_proj_state_id
-                        LEFT JOIN t_project_progress rpr ON rpr.i_progress_id = rlp.max_id
+                        LEFT JOIN RGP.t_project_progress rpr ON rpr.i_progress_id = rlp.max_id
                         GROUP BY rps.i_project_id
                     ) ref_st ON ref_st.i_project_id = ps.i_ref_project_id
                     WHERE ps.i_project_id = @i_project_id
@@ -204,11 +204,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int count = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                SELECT COUNT(*) FROM t_project_state
+                SELECT COUNT(*) FROM RGP.t_project_state
                 WHERE i_project_id = @i_project_id
                   AND c_status IN ('InProgress', 'Completed')";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {

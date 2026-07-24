@@ -19,12 +19,12 @@ namespace CMS.Data.Repositories
         public DataTable GetByProject(int i_project_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
                 SELECT i_member_id, n_member_name, c_role, department_code
-                FROM t_project_member
+                FROM RGP.t_project_member
                 WHERE i_project_id = @pid
                 ORDER BY i_member_id";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -40,11 +40,11 @@ namespace CMS.Data.Repositories
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO t_project_member (i_project_id, n_member_name, c_role, c_department_code, i_create_user, d_create_date)
+                INSERT INTO RGP.t_project_member (i_project_id, n_member_name, c_role, department_code, i_create_user, d_create_date)
                 VALUES (@pid, @name, @role, @dept, @user, GETDATE())";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@pid",  m.i_project_id);
@@ -62,10 +62,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "DELETE FROM t_project_member WHERE i_member_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
+            string sql = "DELETE FROM RGP.t_project_member WHERE i_member_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@id", i_member_id);
                 rows = cmd.ExecuteNonQuery();

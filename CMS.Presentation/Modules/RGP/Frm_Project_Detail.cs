@@ -1798,6 +1798,10 @@ namespace CMS.Presentation.Modules.RGP
             dgv.AllowUserToAddRows    = false;
             dgv.AllowUserToDeleteRows = false;
 
+            // ปิด sorting ทุกคอลัมน์ — รายการเรียงตามลำดับขั้นตอน/เวลาที่กำหนดไว้แล้ว ไม่ควรให้คลิกหัวตารางแล้วลำดับสลับ
+            foreach (DataGridViewColumn col in dgv.Columns)
+                col.SortMode = DataGridViewColumnSortMode.NotSortable;
+
             // ── Row Numbers ───────────────────────────────────────────────────────
             dgv.RowPostPaint += (s, e) =>
             {

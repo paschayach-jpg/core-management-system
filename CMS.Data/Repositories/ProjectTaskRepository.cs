@@ -22,6 +22,7 @@ namespace CMS.Data.Repositories
             string code = "";
             
                     bool rowExists = false;
+// RunningNumber ยังอยู่ที่ BUI_RG เดิม (ไม่ย้ายมา CMS_DB.RGP) — ต้องคง connection string เดิมไว้เฉพาะจุดนี้
 using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
             {
                 conn.Open();
@@ -124,7 +125,7 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public DataTable GetByState(int i_proj_state_id, bool includeDeleted = false)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -149,13 +150,13 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                     -- Subtask summary
                     ISNULL(sub.i_subtask_count, 0) AS i_subtask_count,
                     ISNULL(sub.i_subtask_done,  0) AS i_subtask_done
-                FROM t_project_task t
-                JOIN t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
+                FROM RGP.t_project_task t
+                JOIN RGP.t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
                 LEFT JOIN (
                     SELECT i_parent_task_id,
                            COUNT(*)                                          AS i_subtask_count,
                            SUM(CASE WHEN c_status='Done' THEN 1 ELSE 0 END) AS i_subtask_done
-                    FROM t_project_task
+                    FROM RGP.t_project_task
                     WHERE i_parent_task_id IS NOT NULL AND f_active='Y'
                     GROUP BY i_parent_task_id
                 ) sub ON sub.i_parent_task_id = t.i_task_id
@@ -177,7 +178,7 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public DataTable GetByProject(int i_project_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -198,13 +199,13 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                          THEN 1 ELSE 0 END AS b_overdue,
                     ISNULL(sub.i_subtask_count, 0) AS i_subtask_count,
                     ISNULL(sub.i_subtask_done,  0) AS i_subtask_done
-                FROM t_project_task t
-                JOIN t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
+                FROM RGP.t_project_task t
+                JOIN RGP.t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
                 LEFT JOIN (
                     SELECT i_parent_task_id,
                            COUNT(*) AS i_subtask_count,
                            SUM(CASE WHEN c_status='Done' THEN 1 ELSE 0 END) AS i_subtask_done
-                    FROM t_project_task
+                    FROM RGP.t_project_task
                     WHERE i_parent_task_id IS NOT NULL AND f_active='Y'
                     GROUP BY i_parent_task_id
                 ) sub ON sub.i_parent_task_id = t.i_task_id
@@ -224,7 +225,7 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public DataTable GetSubtasks(int i_parent_task_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -232,8 +233,8 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                     CASE WHEN t.d_due_date < CAST(GETDATE() AS DATE)
                               AND t.c_status NOT IN ('Done','Cancelled')
                          THEN 1 ELSE 0 END AS b_overdue
-                FROM t_project_task t
-                JOIN t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
+                FROM RGP.t_project_task t
+                JOIN RGP.t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
                 WHERE t.i_parent_task_id = @pid AND t.f_active = 'Y'
                 ORDER BY t.i_priority DESC, t.d_due_date";
             using (var cmd = new SqlCommand(sql, conn))
@@ -249,7 +250,7 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public DataTable GetSubtasksForDashboard(int parentTaskId)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -270,8 +271,8 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                  THEN 1 ELSE 0 END AS b_overdue,
             0 AS i_subtask_count,
             0 AS i_subtask_done
-        FROM t_project_task t
-        JOIN t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
+        FROM RGP.t_project_task t
+        JOIN RGP.t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
         WHERE t.i_parent_task_id = @pid AND t.f_active = 'Y'
         ORDER BY t.i_priority DESC, t.d_due_date, t.d_create_date";
             using (var cmd = new SqlCommand(sql, conn))
@@ -287,7 +288,7 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public DataTable GetAllTasksForProject(int projectId)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -301,8 +302,8 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                            0 AS tree_depth,
                            CAST(RIGHT(REPLICATE('0',10)+CAST(t.i_task_id AS VARCHAR(10)),10)
                                 AS NVARCHAR(MAX)) AS sort_path
-                    FROM t_project_task t
-                    JOIN t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
+                    FROM RGP.t_project_task t
+                    JOIN RGP.t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
                     WHERE t.i_project_id = @pid
                       AND t.i_parent_task_id IS NULL AND t.f_active = 'Y'
                     UNION ALL
@@ -315,16 +316,16 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                            tt.tree_depth + 1,
                            CAST(tt.sort_path+'/'+RIGHT(REPLICATE('0',10)+CAST(t.i_task_id AS VARCHAR(10)),10)
                                 AS NVARCHAR(MAX))
-                    FROM t_project_task t
+                    FROM RGP.t_project_task t
                     INNER JOIN TaskTree tt ON t.i_parent_task_id = tt.i_task_id
-                    JOIN t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
+                    JOIN RGP.t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
                     WHERE t.f_active = 'Y'
                 ),
                 ChildCnt AS (
                     SELECT i_parent_task_id,
                            COUNT(*) AS i_subtask_count,
                            SUM(CASE WHEN c_status='Done' THEN 1 ELSE 0 END) AS i_subtask_done
-                    FROM t_project_task
+                    FROM RGP.t_project_task
                     WHERE i_parent_task_id IS NOT NULL AND f_active='Y'
                     GROUP BY i_parent_task_id
                 )
@@ -360,11 +361,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public int InsertTask(ProjectTaskModel m)
         {
             int newId = -1;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO t_project_task
+                INSERT INTO RGP.t_project_task
                     (c_task_code, i_proj_state_id, i_project_id, i_parent_task_id,
                      i_subtask_depth, n_title, n_description, i_priority, c_status,
                      i_pct_complete, n_assignee, d_due_date, d_start_date,
@@ -404,11 +405,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project_task SET
+                UPDATE RGP.t_project_task SET
                     n_title           = @title,
                     n_description     = @desc,
                     i_priority        = @prio,
@@ -444,11 +445,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project_task SET
+                UPDATE RGP.t_project_task SET
                     c_status       = @stat,
                     i_pct_complete = @pct,
                     i_update_user  = @uu,
@@ -470,11 +471,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project_task SET
+                UPDATE RGP.t_project_task SET
                     f_active         = 'N',
                     d_deleted_date   = GETDATE(),
                     d_recycle_expiry = DATEADD(DAY, 30, GETDATE()),
@@ -495,11 +496,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project_task SET
+                UPDATE RGP.t_project_task SET
                     f_active         = 'Y',
                     d_deleted_date   = NULL,
                     d_recycle_expiry = NULL,
@@ -520,12 +521,12 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int pct = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
                 SELECT ISNULL(CAST(AVG(CAST(i_pct_complete AS FLOAT)) AS INT), 0)
-                FROM t_project_task
+                FROM RGP.t_project_task
                 WHERE i_proj_state_id = @sid AND f_active = 'Y'
                   AND i_parent_task_id IS NULL";            using (var cmd = new SqlCommand(sql, conn))
             {
@@ -542,10 +543,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int count = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "SELECT COUNT(*) FROM t_project_task WHERE i_proj_state_id=@sid AND f_active='Y'";            using (var cmd = new SqlCommand(sql, conn))
+            string sql = "SELECT COUNT(*) FROM RGP.t_project_task WHERE i_proj_state_id=@sid AND f_active='Y'";            using (var cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@sid", i_proj_state_id);
                 count = (int)cmd.ExecuteScalar();
@@ -559,14 +560,14 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public DataTable GetComments(int i_task_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
                 SELECT i_comment_id, i_task_id, i_parent_comment_id, i_thread_depth,
                        n_content, f_is_edited, f_is_deleted,
                        i_create_user, d_create_date, d_edited_date
-                FROM t_project_task_comment
+                FROM RGP.t_project_task_comment
                 WHERE i_task_id = @tid
                 ORDER BY d_create_date";
             using (var cmd = new SqlCommand(sql, conn))
@@ -581,11 +582,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public int InsertComment(ProjectTaskCommentModel m)
         {
             int newId = -1;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO t_project_task_comment
+                INSERT INTO RGP.t_project_task_comment
                     (i_task_id, i_parent_comment_id, i_thread_depth, n_content,
                      f_is_edited, f_is_deleted, i_create_user, d_create_date)
                 OUTPUT INSERTED.i_comment_id
@@ -608,10 +609,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "UPDATE t_project_task_comment SET f_is_deleted='Y' WHERE i_comment_id=@id";            using (var cmd = new SqlCommand(sql, conn))
+            string sql = "UPDATE RGP.t_project_task_comment SET f_is_deleted='Y' WHERE i_comment_id=@id";            using (var cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@id", i_comment_id);
                 rows = cmd.ExecuteNonQuery();
@@ -624,10 +625,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = @"UPDATE t_project_task_comment SET
+            string sql = @"UPDATE RGP.t_project_task_comment SET
                                n_content   = @c,
                                f_is_edited = 'Y',
                                d_edited_date = GETDATE()

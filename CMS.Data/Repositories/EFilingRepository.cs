@@ -113,11 +113,11 @@ namespace CMS.Data.Repositories
         public int InsertEFilingRequest(EFilingRequestModel model)
         {
             int newId = -1;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO t_project_efiling_request
+                INSERT INTO RGP.t_project_efiling_request
                     (i_proj_state_id, i_project_id, c_efiling_ref_no, n_doc_name,
                      c_request_status, d_request_date, n_remark, i_request_user)
                 OUTPUT INSERTED.i_efiling_req_id
@@ -150,11 +150,11 @@ namespace CMS.Data.Repositories
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project_efiling_request SET
+                UPDATE RGP.t_project_efiling_request SET
                     c_request_status = @c_request_status,
                     d_receive_date   = @d_receive_date,
                     n_remark         = @n_remark,
@@ -181,7 +181,7 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public DataTable GetEFilingRequestsByProject(int i_project_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -199,8 +199,8 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                     er.i_update_user,
                     er.d_update_date,
                     ps.n_state_name
-                FROM t_project_efiling_request er
-                JOIN t_project_state ps ON ps.i_proj_state_id = er.i_proj_state_id
+                FROM RGP.t_project_efiling_request er
+                JOIN RGP.t_project_state ps ON ps.i_proj_state_id = er.i_proj_state_id
                 WHERE er.i_project_id = @i_project_id
                 ORDER BY er.d_request_date DESC";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -218,7 +218,7 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public DataTable GetEFilingRequestsByState(int i_proj_state_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -234,8 +234,8 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                     er.n_remark,
                     er.i_request_user,
                     ps.n_state_name
-                FROM t_project_efiling_request er
-                JOIN t_project_state ps ON ps.i_proj_state_id = er.i_proj_state_id
+                FROM RGP.t_project_efiling_request er
+                JOIN RGP.t_project_state ps ON ps.i_proj_state_id = er.i_proj_state_id
                 WHERE er.i_proj_state_id = @i_proj_state_id
                 ORDER BY er.d_request_date DESC";
             using (SqlCommand cmd = new SqlCommand(sql, conn))

@@ -8,7 +8,7 @@ using System.Data.SqlClient;
 namespace CMS.Data.Repositories
 {
     /// <summary>
-    /// DAL สำหรับ m_template_doc — จัดการ mapping Template State ↔ Master Document
+    /// DAL สำหรับ RGP.m_template_doc — จัดการ mapping Template State ↔ Master Document
     /// </summary>
     public class TemplateDocRepository : ITemplateDocRepository
     {
@@ -31,7 +31,7 @@ namespace CMS.Data.Repositories
         public DataTable GetDocumentTypes()
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = $@"
@@ -53,7 +53,7 @@ namespace CMS.Data.Repositories
         public DataTable GetMasterDocuments()
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = $@"
@@ -76,7 +76,7 @@ namespace CMS.Data.Repositories
         public DataTable GetDocsByState(int i_state_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -96,9 +96,9 @@ namespace CMS.Data.Repositories
                     td.d_update_date,
                     ms.n_state_name,
                     pt.n_template_name
-                FROM  m_template_doc    td
-                JOIN  m_template_state  ms ON ms.i_state_id    = td.i_state_id
-                JOIN  m_project_template pt ON pt.i_template_id = td.i_template_id
+                FROM  RGP.m_template_doc    td
+                JOIN  RGP.m_template_state  ms ON ms.i_state_id    = td.i_state_id
+                JOIN  RGP.m_project_template pt ON pt.i_template_id = td.i_template_id
                 WHERE td.i_state_id = @i_state_id
                 ORDER BY td.i_seq_no";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -116,7 +116,7 @@ namespace CMS.Data.Repositories
         public DataTable GetDocsByTemplate(int i_template_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -132,8 +132,8 @@ namespace CMS.Data.Repositories
                     td.n_remark,
                     ms.n_state_name,
                     ms.i_seq_no AS state_seq_no
-                FROM  m_template_doc    td
-                JOIN  m_template_state  ms ON ms.i_state_id    = td.i_state_id
+                FROM  RGP.m_template_doc    td
+                JOIN  RGP.m_template_state  ms ON ms.i_state_id    = td.i_state_id
                 WHERE td.i_template_id = @i_template_id
                 ORDER BY ms.i_seq_no, td.i_seq_no";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -151,11 +151,11 @@ namespace CMS.Data.Repositories
         public int InsertTemplateDoc(TemplateDocModel model)
         {
             int newId = -1;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO m_template_doc
+                INSERT INTO RGP.m_template_doc
                     (i_template_id, i_state_id, i_doc_id, n_doc_name, c_doc_type,
                      f_required, i_seq_no, n_remark, i_create_user, d_create_date)
                 OUTPUT INSERTED.i_template_doc_id
@@ -191,11 +191,11 @@ namespace CMS.Data.Repositories
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE m_template_doc SET
+                UPDATE RGP.m_template_doc SET
                     n_doc_name    = @n_doc_name,
                     c_doc_type    = @c_doc_type,
                     f_required    = @f_required,
@@ -228,10 +228,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "DELETE FROM m_template_doc WHERE i_template_doc_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
+            string sql = "DELETE FROM RGP.m_template_doc WHERE i_template_doc_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@id", i_template_doc_id);
                 rows = cmd.ExecuteNonQuery();
@@ -247,12 +247,12 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int count = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
                 SELECT COUNT(*)
-                FROM m_template_doc
+                FROM RGP.m_template_doc
                 WHERE i_state_id = @i_state_id
                   AND i_doc_id   = @i_doc_id
                   AND (@exclude_id = -1 OR i_template_doc_id <> @exclude_id)";            using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -273,10 +273,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int seq = 1;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "SELECT ISNULL(MAX(i_seq_no), 0) + 1 FROM m_template_doc WHERE i_state_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
+            string sql = "SELECT ISNULL(MAX(i_seq_no), 0) + 1 FROM RGP.m_template_doc WHERE i_state_id = @id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@id", i_state_id);
                 object result = cmd.ExecuteScalar();

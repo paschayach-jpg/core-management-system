@@ -7,7 +7,7 @@ using System.Data.SqlClient;
 namespace CMS.Data.Repositories
 {
     /// <summary>
-    /// DAL สำหรับ m_project_template — CRUD ประเภทโครงการ
+    /// DAL สำหรับ RGP.m_project_template — CRUD ประเภทโครงการ
     /// </summary>
     public class ProjectTemplateRepository : IProjectTemplateRepository
     {
@@ -22,12 +22,12 @@ namespace CMS.Data.Repositories
         public DataTable GetActiveTemplates()
         {
             var dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
                 string sql = @"
                     SELECT i_template_id, c_template_code, n_template_name
-                    FROM m_project_template
+                    FROM RGP.m_project_template
                     WHERE f_active = 'Y'
                     ORDER BY n_template_name";
                 using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -43,7 +43,7 @@ namespace CMS.Data.Repositories
         public DataTable GetAll()
         {
             var dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -55,9 +55,9 @@ namespace CMS.Data.Repositories
                     t.f_active,
                     ISNULL(t.f_is_legal_dict,'N') AS f_is_legal_dict,
                     t.d_create_date,
-                    (SELECT COUNT(*) FROM m_template_state  s WHERE s.i_template_id = t.i_template_id) AS i_state_count,
-                    (SELECT COUNT(*) FROM t_project          p WHERE p.i_template_id = t.i_template_id) AS i_project_count
-                FROM m_project_template t
+                    (SELECT COUNT(*) FROM RGP.m_template_state  s WHERE s.i_template_id = t.i_template_id) AS i_state_count,
+                    (SELECT COUNT(*) FROM RGP.t_project          p WHERE p.i_template_id = t.i_template_id) AS i_project_count
+                FROM RGP.m_project_template t
                 ORDER BY t.n_template_name";
             using (var cmd = new SqlCommand(sql, conn))
             using (var r = cmd.ExecuteReader())
@@ -70,11 +70,11 @@ namespace CMS.Data.Repositories
         public int Insert(string code, string name, string desc, string user, bool isLegalDict = false)
         {
             int newId = -1;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO m_project_template
+                INSERT INTO RGP.m_project_template
                     (c_template_code, n_template_name, c_description, f_active, f_is_legal_dict, i_create_user, d_create_date)
                 OUTPUT INSERTED.i_template_id
                 VALUES (@code, @name, @desc, 'Y', @ldict, @user, GETDATE())";
@@ -98,11 +98,11 @@ namespace CMS.Data.Repositories
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE m_project_template SET
+                UPDATE RGP.m_project_template SET
                     c_template_code = @code,
                     n_template_name = @name,
                     c_description   = @desc,
@@ -129,11 +129,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public bool IsLegalDict(int templateId)
         {
             string val = "N";
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             using (var cmd = new SqlCommand(
-                "SELECT ISNULL(f_is_legal_dict,'N') FROM m_project_template WHERE i_template_id=@id",
+                "SELECT ISNULL(f_is_legal_dict,'N') FROM RGP.m_project_template WHERE i_template_id=@id",
                 conn))
             {
                 cmd.Parameters.AddWithValue("@id", templateId);
@@ -149,26 +149,26 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
 
             // ลบ state เดิมของ target ก่อน (cascade doc ด้วย)
             using (var cmd = new SqlCommand(
-                "DELETE FROM m_template_doc WHERE i_state_id IN (SELECT i_state_id FROM m_template_state WHERE i_template_id=@tid)",
+                "DELETE FROM RGP.m_template_doc WHERE i_state_id IN (SELECT i_state_id FROM RGP.m_template_state WHERE i_template_id=@tid)",
                 conn))
             { cmd.Parameters.AddWithValue("@tid", targetTemplateId); cmd.ExecuteNonQuery(); }
 
             using (var cmd = new SqlCommand(
-                "DELETE FROM m_template_state WHERE i_template_id=@tid", conn))
+                "DELETE FROM RGP.m_template_state WHERE i_template_id=@tid", conn))
             { cmd.Parameters.AddWithValue("@tid", targetTemplateId); cmd.ExecuteNonQuery(); }
 
             // Copy state จาก source
             string copySql = @"
-                INSERT INTO m_template_state
+                INSERT INTO RGP.m_template_state
                     (i_template_id, n_state_name, c_description, f_required, i_seq_no, i_create_user, d_create_date)
                 SELECT @tid, n_state_name, c_description, f_required, i_seq_no, @user, GETDATE()
-                FROM m_template_state
+                FROM RGP.m_template_state
                 WHERE i_template_id = @src
                 ORDER BY i_seq_no";            using (var cmd = new SqlCommand(copySql, conn))
             {
@@ -185,11 +185,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public DataTable GetAllActive()
         {
             var dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             using (var cmd = new SqlCommand(
-                "SELECT i_template_id, n_template_name FROM m_project_template WHERE f_active='Y' ORDER BY n_template_name",
+                "SELECT i_template_id, n_template_name FROM RGP.m_project_template WHERE f_active='Y' ORDER BY n_template_name",
                 conn))
             using (var r = cmd.ExecuteReader())
                 dt.Load(r);
@@ -203,13 +203,13 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
             error = "";
             int projCount = 0;
             int rows = 0;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
 
             // ตรวจว่ามีโครงการใช้งาน Template นี้อยู่หรือไม่
             using (var cmd = new SqlCommand(
-                "SELECT COUNT(*) FROM t_project WHERE i_template_id = @id", conn))
+                "SELECT COUNT(*) FROM RGP.t_project WHERE i_template_id = @id", conn))
             {
                 cmd.Parameters.AddWithValue("@id", id);
                 projCount = (int)cmd.ExecuteScalar();
@@ -220,14 +220,14 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                 return false;
             }
 
-            // ลบ cascade: m_template_doc → m_template_state → m_project_template
-            using (var cmd = new SqlCommand("DELETE FROM m_template_doc   WHERE i_template_id = @id", conn))
+            // ลบ cascade: RGP.m_template_doc → RGP.m_template_state → RGP.m_project_template
+            using (var cmd = new SqlCommand("DELETE FROM RGP.m_template_doc   WHERE i_template_id = @id", conn))
             { cmd.Parameters.AddWithValue("@id", id); cmd.ExecuteNonQuery(); }
 
-            using (var cmd = new SqlCommand("DELETE FROM m_template_state WHERE i_template_id = @id", conn))
+            using (var cmd = new SqlCommand("DELETE FROM RGP.m_template_state WHERE i_template_id = @id", conn))
             { cmd.Parameters.AddWithValue("@id", id); cmd.ExecuteNonQuery(); }
 
-            using (var cmd = new SqlCommand("DELETE FROM m_project_template WHERE i_template_id = @id", conn))
+            using (var cmd = new SqlCommand("DELETE FROM RGP.m_project_template WHERE i_template_id = @id", conn))
             {
                 cmd.Parameters.AddWithValue("@id", id);
                 rows = cmd.ExecuteNonQuery();
@@ -237,21 +237,21 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         }
 
         // ════════════════════════════════════════════════════════════════════════
-        // Template STATE (m_template_state) CRUD
+        // Template STATE (RGP.m_template_state) CRUD
         // ════════════════════════════════════════════════════════════════════════
 
         /// <summary>ดึงขั้นตอนของ Template</summary>
         public DataTable GetStates(int templateId)
         {
             var dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
                 SELECT i_state_id, n_state_name, c_description, f_required,
                        i_seq_no,
-                       (SELECT COUNT(*) FROM m_template_doc d WHERE d.i_state_id = s.i_state_id) AS i_doc_count
-                FROM m_template_state s
+                       (SELECT COUNT(*) FROM RGP.m_template_doc d WHERE d.i_state_id = s.i_state_id) AS i_doc_count
+                FROM RGP.m_template_state s
                 WHERE s.i_template_id = @id
                 ORDER BY s.i_seq_no";
             using (var cmd = new SqlCommand(sql, conn))
@@ -268,11 +268,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                                bool required, int seqNo, int? estimatedDays, string user)
         {
             int newId = -1;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO m_template_state
+                INSERT INTO RGP.m_template_state
                     (i_template_id, n_state_name, c_description, f_required,
                      i_seq_no, i_create_user, d_create_date)
                 OUTPUT INSERTED.i_state_id
@@ -300,11 +300,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE m_template_state SET
+                UPDATE RGP.m_template_state SET
                     n_state_name  = @name,
                     c_description = @desc,
                     f_required    = @req,
@@ -326,17 +326,17 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
             return rows > 0;
         }
 
-        /// <summary>ลบขั้นตอน — ตรวจ dependency m_template_doc ก่อน</summary>
+        /// <summary>ลบขั้นตอน — ตรวจ dependency RGP.m_template_doc ก่อน</summary>
         public bool DeleteState(int stateId, out string error)
         {
             error = "";
             int docCount = 0;
             int rows = 0;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             using (var cmd = new SqlCommand(
-                "SELECT COUNT(*) FROM m_template_doc WHERE i_state_id = @id", conn))
+                "SELECT COUNT(*) FROM RGP.m_template_doc WHERE i_state_id = @id", conn))
             {
                 cmd.Parameters.AddWithValue("@id", stateId);
                 docCount = (int)cmd.ExecuteScalar();
@@ -347,7 +347,7 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                 return false;
             }
             using (var cmd = new SqlCommand(
-                "DELETE FROM m_template_state WHERE i_state_id = @id", conn))
+                "DELETE FROM RGP.m_template_state WHERE i_state_id = @id", conn))
             {
                 cmd.Parameters.AddWithValue("@id", stateId);
                 rows = cmd.ExecuteNonQuery();
@@ -360,11 +360,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         public int GetNextStateSeqNo(int templateId)
         {
                         int seq = 1;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             using (var cmd = new SqlCommand(
-                "SELECT ISNULL(MAX(i_seq_no), 0) + 1 FROM m_template_state WHERE i_template_id = @id",
+                "SELECT ISNULL(MAX(i_seq_no), 0) + 1 FROM RGP.m_template_state WHERE i_template_id = @id",
                 conn))
             {
                 cmd.Parameters.AddWithValue("@id", templateId);
@@ -386,12 +386,12 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
             if (string.IsNullOrWhiteSpace(code)) return false;
             
             int count = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
                 SELECT COUNT(*)
-                FROM m_project_template
+                FROM RGP.m_project_template
                 WHERE c_template_code = @code
                   AND (@excludeId = -1 OR i_template_id <> @excludeId)";            using (var cmd = new SqlCommand(sql, conn))
             {

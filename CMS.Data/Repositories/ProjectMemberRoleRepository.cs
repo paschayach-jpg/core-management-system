@@ -18,13 +18,13 @@ namespace CMS.Data.Repositories
         public DataTable GetAll()
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
                 SELECT i_role_id, n_role_name, f_active,
                        i_create_user, d_create_date, i_update_user, d_update_date
-                FROM m_project_member_role ORDER BY i_role_id";
+                FROM RGP.m_project_member_role ORDER BY i_role_id";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
             using (SqlDataReader r = cmd.ExecuteReader()) { dt.Load(r); }
             }
@@ -34,10 +34,10 @@ namespace CMS.Data.Repositories
         public DataTable GetActive()
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "SELECT i_role_id, n_role_name FROM m_project_member_role WHERE f_active='Y' ORDER BY i_role_id";
+            string sql = "SELECT i_role_id, n_role_name FROM RGP.m_project_member_role WHERE f_active='Y' ORDER BY i_role_id";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
             using (SqlDataReader r = cmd.ExecuteReader()) { dt.Load(r); }
             }
@@ -48,10 +48,10 @@ namespace CMS.Data.Repositories
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = @"INSERT INTO m_project_member_role (n_role_name, i_create_user, d_create_date)
+            string sql = @"INSERT INTO RGP.m_project_member_role (n_role_name, i_create_user, d_create_date)
                            VALUES (@name, @user, GETDATE())";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@name", roleName.Trim());
@@ -66,10 +66,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = @"UPDATE m_project_member_role
+            string sql = @"UPDATE RGP.m_project_member_role
                            SET n_role_name=@name, f_active=@active,
                                i_update_user=@user, d_update_date=GETDATE()
                            WHERE i_role_id=@id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
@@ -88,10 +88,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "DELETE FROM m_project_member_role WHERE i_role_id=@id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
+            string sql = "DELETE FROM RGP.m_project_member_role WHERE i_role_id=@id";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@id", roleId);
                 rows = cmd.ExecuteNonQuery();

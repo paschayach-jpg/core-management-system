@@ -23,6 +23,7 @@ namespace CMS.Data.Repositories
         public string GenerateProjectNo()
         {
             string projectNo;
+            // RunningNumber ยังอยู่ที่ BUI_RG เดิม (ไม่ย้ายมา CMS_DB.RGP) — ต้องคง connection string เดิมไว้เฉพาะจุดนี้
             using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
             {
                 conn.Open();
@@ -102,7 +103,7 @@ namespace CMS.Data.Repositories
             string c_status, string i_template_id, string d_from, string d_to)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
@@ -127,8 +128,8 @@ namespace CMS.Data.Repositories
                     ISNULL(st.i_total_states, 0)     AS i_total_states,
                     ISNULL(st.i_completed_states, 0) AS i_completed_states,
                     ISNULL(st.i_pct_overall, 0)      AS i_pct_overall
-                FROM t_project p
-                LEFT JOIN m_project_template t ON t.i_template_id = p.i_template_id
+                FROM RGP.t_project p
+                LEFT JOIN RGP.m_project_template t ON t.i_template_id = p.i_template_id
                 LEFT JOIN (
                     SELECT
                         ps.i_project_id,
@@ -141,24 +142,24 @@ namespace CMS.Data.Repositories
                                 ELSE ISNULL(pr.i_pct_complete, 0)
                             END
                         AS FLOAT)) AS INT) AS i_pct_overall
-                    FROM t_project_state ps
+                    FROM RGP.t_project_state ps
                     LEFT JOIN (
                         SELECT i_proj_state_id, MAX(i_progress_id) AS max_id
-                        FROM t_project_progress
+                        FROM RGP.t_project_progress
                         GROUP BY i_proj_state_id
                     ) lp ON lp.i_proj_state_id = ps.i_proj_state_id
-                    LEFT JOIN t_project_progress pr ON pr.i_progress_id = lp.max_id
+                    LEFT JOIN RGP.t_project_progress pr ON pr.i_progress_id = lp.max_id
                     -- ref project overall %
                     LEFT JOIN (
                         SELECT
                             rps.i_project_id,
                             CAST(AVG(CAST(ISNULL(rpr.i_pct_complete, 0) AS FLOAT)) AS INT) AS i_pct_overall
-                        FROM t_project_state rps
+                        FROM RGP.t_project_state rps
                         LEFT JOIN (
                             SELECT i_proj_state_id, MAX(i_progress_id) AS max_id
-                            FROM t_project_progress GROUP BY i_proj_state_id
+                            FROM RGP.t_project_progress GROUP BY i_proj_state_id
                         ) rlp ON rlp.i_proj_state_id = rps.i_proj_state_id
-                        LEFT JOIN t_project_progress rpr ON rpr.i_progress_id = rlp.max_id
+                        LEFT JOIN RGP.t_project_progress rpr ON rpr.i_progress_id = rlp.max_id
                         GROUP BY rps.i_project_id
                     ) ref_st ON ref_st.i_project_id = ps.i_ref_project_id
                     GROUP BY ps.i_project_id
@@ -166,12 +167,12 @@ namespace CMS.Data.Repositories
                 LEFT JOIN (
                     -- ดึง progress ล่าสุดของทั้ง project
                     SELECT pp.i_action_user, pp.d_action_date, ps2.i_project_id
-                    FROM t_project_progress pp
-                    INNER JOIN t_project_state ps2 ON ps2.i_proj_state_id = pp.i_proj_state_id
+                    FROM RGP.t_project_progress pp
+                    INNER JOIN RGP.t_project_state ps2 ON ps2.i_proj_state_id = pp.i_proj_state_id
                     WHERE pp.i_progress_id = (
                         SELECT MAX(pp2.i_progress_id)
-                        FROM t_project_progress pp2
-                        INNER JOIN t_project_state ps3 ON ps3.i_proj_state_id = pp2.i_proj_state_id
+                        FROM RGP.t_project_progress pp2
+                        INNER JOIN RGP.t_project_state ps3 ON ps3.i_proj_state_id = pp2.i_proj_state_id
                         WHERE ps3.i_project_id = ps2.i_project_id
                     )
                 ) lpr ON lpr.i_project_id = p.i_project_id
@@ -213,14 +214,14 @@ namespace CMS.Data.Repositories
         public DataTable GetProjectById(int i_project_id)
         {
             DataTable dt = new DataTable();
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
                 SELECT p.*, ISNULL(t.n_template_name, '-') AS n_template_name,
                        ISNULL(t.f_is_legal_dict,'N') AS f_is_legal_dict
-                FROM t_project p
-                LEFT JOIN m_project_template t ON t.i_template_id = p.i_template_id
+                FROM RGP.t_project p
+                LEFT JOIN RGP.m_project_template t ON t.i_template_id = p.i_template_id
                 WHERE p.i_project_id = @i_project_id AND p.f_active = 'Y'";
             using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
@@ -237,11 +238,11 @@ namespace CMS.Data.Repositories
         public int InsertProject(ProjectModel model)
         {
             int newId = -1;
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO t_project
+                INSERT INTO RGP.t_project
                     (c_project_no, n_project_name, i_template_id, c_status, c_description,
                      d_start_date, d_due_date, f_active, i_create_user, d_create_date)
                 OUTPUT INSERTED.i_project_id
@@ -277,11 +278,11 @@ namespace CMS.Data.Repositories
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project SET
+                UPDATE RGP.t_project SET
                     n_project_name = @n_project_name,
                     i_template_id  = @i_template_id,
                     c_description  = @c_description,
@@ -313,11 +314,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project SET
+                UPDATE RGP.t_project SET
                     n_legal_dict_json = @json,
                     i_update_user     = @user,
                     d_update_date     = GETDATE()
@@ -339,11 +340,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project SET
+                UPDATE RGP.t_project SET
                     f_active      = 'N',
                     c_status      = 'Cancelled',
                     i_update_user = @i_user,
@@ -365,11 +366,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project SET
+                UPDATE RGP.t_project SET
                     c_status      = 'Completed',
                     d_close_date  = GETDATE(),
                     i_update_user = @i_user,
@@ -391,11 +392,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int rows = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                UPDATE t_project SET
+                UPDATE RGP.t_project SET
                     c_status      = @c_status,
                     d_close_date  = CASE WHEN @c_status='Completed' THEN GETDATE() ELSE d_close_date END,
                     i_update_user = @i_user,
@@ -418,11 +419,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int count = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                SELECT COUNT(*) FROM t_project_state
+                SELECT COUNT(*) FROM RGP.t_project_state
                 WHERE i_project_id = @i_project_id AND c_status <> 'Pending'";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@i_project_id", i_project_id);
@@ -439,10 +440,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int count = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
-            string sql = "SELECT COUNT(*) FROM t_project WHERE c_project_no = @c_project_no AND f_active = 'Y'";            using (SqlCommand cmd = new SqlCommand(sql, conn))
+            string sql = "SELECT COUNT(*) FROM RGP.t_project WHERE c_project_no = @c_project_no AND f_active = 'Y'";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@c_project_no", c_project_no);
                 count = (int)cmd.ExecuteScalar();
@@ -458,11 +459,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
         {
             
             int count = 0;
-using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
             string sql = @"
-                SELECT COUNT(*) FROM t_project_state
+                SELECT COUNT(*) FROM RGP.t_project_state
                 WHERE i_project_id = @i_project_id
                   AND f_required = 'Y'
                   AND c_status <> 'Completed'";            using (SqlCommand cmd = new SqlCommand(sql, conn))

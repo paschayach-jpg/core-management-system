@@ -8,7 +8,7 @@ using CMS.Infrastructure.Interfaces;
 namespace CMS.Data.Repositories
 {
     /// <summary>
-    /// Audit repository เฉพาะโมดูล Project (RGP) — เขียนลง t_project_audit_log
+    /// Audit repository เฉพาะโมดูล Project (RGP) — เขียนลง RGP.t_project_audit_log
     /// แยกจาก CMS.Data.Repositories.AuditRepository เพราะ shape/ตารางต่างกัน
     /// </summary>
     public class ProjectAuditRepository : IProjectAuditRepository
@@ -22,11 +22,11 @@ namespace CMS.Data.Repositories
 
         public void Insert(ProjectAuditEntry entry)
         {
-            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ProjectDbConnectionString")))
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
             {
                 conn.Open();
                 const string sql = @"
-                    INSERT INTO t_project_audit_log
+                    INSERT INTO RGP.t_project_audit_log
                         (i_user_id, n_module, n_action, n_table_name, i_record_id,
                          i_result, n_message, n_machine_name, d_action_date)
                     VALUES

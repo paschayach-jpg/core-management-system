@@ -153,7 +153,7 @@
             this.pnlDashContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlDashContent.Location = new System.Drawing.Point(304, 50);
             this.pnlDashContent.Name = "pnlDashContent";
-            this.pnlDashContent.Padding = new System.Windows.Forms.Padding(20, 20, 20, 20);
+            this.pnlDashContent.Padding = new System.Windows.Forms.Padding(20);
             this.pnlDashContent.Size = new System.Drawing.Size(1165, 644);
             this.pnlDashContent.TabIndex = 0;
             // 
@@ -334,7 +334,7 @@
             this.pnlDashLeft.Dock = System.Windows.Forms.DockStyle.Left;
             this.pnlDashLeft.Location = new System.Drawing.Point(0, 50);
             this.pnlDashLeft.Name = "pnlDashLeft";
-            this.pnlDashLeft.Padding = new System.Windows.Forms.Padding(8, 8, 8, 8);
+            this.pnlDashLeft.Padding = new System.Windows.Forms.Padding(8);
             this.pnlDashLeft.Size = new System.Drawing.Size(300, 644);
             this.pnlDashLeft.TabIndex = 2;
             // 
@@ -346,7 +346,7 @@
             this.treeViewFolders.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
             this.treeViewFolders.ItemHeight = 22;
             this.treeViewFolders.Location = new System.Drawing.Point(8, 97);
-            this.treeViewFolders.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.treeViewFolders.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewFolders.Name = "treeViewFolders";
             this.treeViewFolders.Size = new System.Drawing.Size(282, 537);
             this.treeViewFolders.TabIndex = 0;
@@ -784,7 +784,7 @@
             // btnRibbonFolderSettings
             // 
             this.btnRibbonFolderSettings.Name = "btnRibbonFolderSettings";
-            this.btnRibbonFolderSettings.Size = new System.Drawing.Size(105, 29);
+            this.btnRibbonFolderSettings.Size = new System.Drawing.Size(105, 23);
             this.btnRibbonFolderSettings.Text = "⚙️ ตั้งค่า Folder";
             this.btnRibbonFolderSettings.ToolTipText = "ตั้งค่า Folder ที่เลือก";
             // 

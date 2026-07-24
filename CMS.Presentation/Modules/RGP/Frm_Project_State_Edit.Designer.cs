@@ -463,6 +463,7 @@
             this.btnViewTasks.TabIndex = 2;
             this.btnViewTasks.Text = "📋 Tasks";
             this.btnViewTasks.UseVisualStyleBackColor = false;
+            this.btnViewTasks.Visible = false;
             this.btnViewTasks.Click += new System.EventHandler(this.btnViewTasks_Click);
             // 
             // dgvStateMembers

@@ -735,12 +735,12 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode       = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor           = System.Drawing.Color.FromArgb(242, 246, 252);
-            this.ClientSize          = new System.Drawing.Size(940, 700);
+            this.ClientSize          = new System.Drawing.Size(940, 560);
             this.Controls.Add(this.tabMain);
             this.Controls.Add(this.pnlAccent);
             this.Controls.Add(this.pnlHeader);
             this.Font            = new System.Drawing.Font("Segoe UI", 9F);
-            this.MinimumSize     = new System.Drawing.Size(940, 700);
+            this.MinimumSize     = new System.Drawing.Size(940, 560);
             this.Name            = "Frm_Template_Doc_Edit";
             this.StartPosition   = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text            = "จัดการประเภทโครงการ และเอกสาร";
