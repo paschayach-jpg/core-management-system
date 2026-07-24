@@ -114,6 +114,7 @@ namespace CMS.Presentation.Modules.KMS
             {
                 _presenter.Save(txtChangeDesc.Text.Trim());
                 _savedSuccessfully = true;
+                _originalContentHtml = ContentHTML;
 
                 // Check if already linked
                 foreach (DataGridViewRow row in dgvRelatedLinked.Rows)
@@ -220,8 +221,48 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private bool ShouldConfirmBeforeBack()
+        {
+            if (_presenter == null) return false;
+            if (ContentText.Length == 0) return false;
+
+            bool isNewArticle = _presenter.EditingArticle == null;
+            if (isNewArticle)
+                return !_savedSuccessfully;
+
+            return ContentHTML != _originalContentHtml;
+        }
+
         private void BtnBack_Click(object sender, EventArgs e)
         {
+            if (ShouldConfirmBeforeBack())
+            {
+                var result = MessageBox.Show(
+                    "ต้องการบันทึกข้อมูลก่อนออก?",
+                    "ยืนยัน",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Cancel)
+                    return;
+
+                if (result == DialogResult.Yes)
+                {
+                    if (!ValidateInput()) return;
+                    try
+                    {
+                        _presenter.Save(txtChangeDesc.Text.Trim());
+                        _savedSuccessfully = true;
+                        _originalContentHtml = ContentHTML;
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowError("บันทึกไม่สำเร็จ:\n" + ex.Message);
+                        return;
+                    }
+                }
+            }
+
             if (BackRequested != null)
                 BackRequested(this, EventArgs.Empty);
             else
@@ -307,6 +348,7 @@ namespace CMS.Presentation.Modules.KMS
         private bool   _syncingToolbar = false;
         private bool   _applyingFormat = false; // guards against re-entrant InvokeScript during font-size apply
         private bool   _savedSuccessfully = false; // set on any successful Save; used to return OK when user closes via X
+        private string _originalContentHtml = string.Empty; // baseline content for unsaved-changes detection
 
         public string ContentHTML
         {
@@ -321,6 +363,16 @@ namespace CMS.Presentation.Modules.KMS
                 _pendingHtml = value ?? string.Empty;
                 if (_editorReady && webEditor.Document != null && webEditor.Document.Body != null)
                     webEditor.Document.Body.InnerHtml = _pendingHtml;
+            }
+        }
+
+        private string ContentText
+        {
+            get
+            {
+                if (!_editorReady || webEditor.Document == null || webEditor.Document.Body == null)
+                    return _pendingHtml;
+                return webEditor.Document.Body.InnerText ?? string.Empty;
             }
         }
 
@@ -714,6 +766,7 @@ namespace CMS.Presentation.Modules.KMS
             _editorReady = true;
             if (!string.IsNullOrEmpty(_pendingHtml))
                 webEditor.Document.Body.InnerHtml = _pendingHtml;
+            _originalContentHtml = webEditor.Document.Body.InnerHtml ?? string.Empty;
             UpdateEditorStatus();
 
             // KeyUp fires after the browser updates the selection — giving accurate queryCommandState results.
