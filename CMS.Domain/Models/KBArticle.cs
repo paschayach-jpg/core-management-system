@@ -30,6 +30,7 @@ namespace CMS.Domain.Models
         public string   CreatedBy        { get; set; }
         public DateTime CreatedDate      { get; set; }
         public string   ReviewedBy       { get; set; }
+        public bool     IsDelete         { get; set; }
 
         // Display helpers (set by repository / service)
         public string CategoryName       { get; set; }

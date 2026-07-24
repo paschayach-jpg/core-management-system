@@ -43,6 +43,10 @@ namespace CMS.Presentation.Modules.KMS
         // ── Suppress AfterSelect during programmatic tree population ─────────────
         private bool _suppressCategorySelect = false;
 
+        // ── Archived mode state ───────────────────────────────────────────────────
+        private bool _isArchivedMode         = false;
+        private int  _pendingToggleArticleId = 0;
+
         // ── Category settings embedded panel state ───────────────────────────────
         private KBCategoryForm _activeCategoryForm = null;
 
@@ -263,6 +267,20 @@ namespace CMS.Presentation.Modules.KMS
             BuildCategoryTree(categories.ToList(), articleCounts, titlesByCategory);
         }
 
+        public bool IsArchivedMode
+        {
+            get { return _isArchivedMode; }
+            set
+            {
+                _isArchivedMode   = value;
+                cboStatus.Enabled = !value;
+                var delCol = dgvArticles.Columns["colBtnDelete"];
+                if (delCol != null) delCol.Visible = value;
+                var reviewCol = dgvArticles.Columns["colBtnReview"];
+                if (reviewCol != null) reviewCol.Visible = !value;
+            }
+        }
+
         /// <summary>Tag object placed on title leaf-nodes in treeCategories.</summary>
         private sealed class TitleNode
         {
@@ -270,6 +288,9 @@ namespace CMS.Presentation.Modules.KMS
             public string CategoryName { get; set; }
             public string Title        { get; set; }
         }
+
+        /// <summary>Tag object placed on the fixed "Archived" tree node.</summary>
+        private sealed class ArchivedNode { }
 
         public void RenderArticles(IEnumerable<KBArticle> articles)
         {
@@ -285,6 +306,11 @@ namespace CMS.Presentation.Modules.KMS
                 _tab2NeedsRefresh = true;
         }
 
+        private static bool IsArticleActive(KBArticle a)
+        {
+            return a.ExpiryDate == null || a.ExpiryDate.Value.Date > DateTime.Today;
+        }
+
         private void PopulateGrid(List<KBArticle> articles)
         {
             dgvArticles.SuspendLayout();
@@ -294,28 +320,25 @@ namespace CMS.Presentation.Modules.KMS
             {
                 var a = articles[i];
                 dgvArticles.Rows.Add(
-                    0,
-                    //a.ArticleCode,
-                    a.CategoryName,
-                    a.Title,
-                    a.Summary,
-                    a.ContentHTML.Length >= 200 ? $"{a.ContentHTML.Substring(0, 200)}...read more" : a.ContentHTML,
-                    a.PublishedDate,
-                    a.ExpiryDate,
-                    a.LinkedEntities,
-                    a.Tags,
-                    //a.ArticleTypeName,
-                    //a.StatusName,
-                    a.CurrentVersion > 0 ? "v" + a.CurrentVersion : "-",
-                    a.ViewCount,
-                    
-                    "👁️ Read",
-                    "✏️ Edit",
-                    "🔗 Share",
-                    a.Status == 1 ? "📤 Review" : ""
+                    0,                          // 0  colRowNum
+                    a.CategoryName,             // 1  colCategory
+                    a.Title,                    // 2  colTitle
+                    a.Summary,                  // 3  colCode (Summary)
+                    a.ContentHTML.Length >= 200 ? $"{a.ContentHTML.Substring(0, 200)}...read more" : a.ContentHTML, // 4 colContentHtml
+                    a.PublishedDate,            // 5  colPublishedDate
+                    a.ExpiryDate,               // 6  colExpiryDate (CalendarColumn)
+                    IsArticleActive(a) ? "ON" : "OFF", // 7  colActive
+                    a.LinkedEntities,           // 8  colOrgDivDept
+                    a.Tags,                     // 9  colTags
+                    a.CurrentVersion > 0 ? "v" + a.CurrentVersion : "-", // 10 colVersion
+                    a.ViewCount,                // 11 colViews
+                    "👁️ Read",          // 12 colBtnRead
+                    "✏️ Edit",           // 13 colBtnEdit
+                    "🔗 Share",          // 14 colBtnShare
+                    a.Status == 1 ? "📤 Review" : "", // 15 colBtnReview
+                    "🗑 ลบ"             // 16 colBtnDelete
                 );
             }
-            //dgvArticles.Sort(dgvArticles.Columns["colCode"], ListSortDirection.Ascending);
             dgvArticles.ResumeLayout();
         }
 
@@ -422,6 +445,23 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null || e.Node == null || _suppressCategorySelect) return;
 
+            // Root node (Tag == null) — reset archived mode
+            if (e.Node.Tag == null)
+            {
+                _isArchivedMode = false;
+                cboStatus.Enabled = true;
+                var delCol = dgvArticles.Columns["colBtnDelete"];
+                if (delCol != null) delCol.Visible = false;
+                return;
+            }
+
+            // Archived fixed node
+            if (e.Node.Tag is ArchivedNode)
+            {
+                _presenter.OnArchivedSelected();
+                return;
+            }
+
             // Title leaf-node → filter grid to that specific title
             var tn = e.Node.Tag as TitleNode;
             if (tn != null)
@@ -432,7 +472,7 @@ namespace CMS.Presentation.Modules.KMS
 
             // Category node → existing behaviour
             var cat = e.Node.Tag as KBCategory;
-            if (cat == null) return;  // root node — no specific category selected
+            if (cat == null) return;
             _presenter.OnCategorySelected(cat.CategoryID, cat.CategoryName);
         }
 
@@ -794,7 +834,7 @@ namespace CMS.Presentation.Modules.KMS
                 new { Code = (byte?)1,    Description = "Draft"     },
                 new { Code = (byte?)2,    Description = "Review"    },
                 new { Code = (byte?)3,    Description = "Published" },
-                new { Code = (byte?)4,    Description = "Archived"  },
+                //new { Code = (byte?)4,    Description = "Archived"  },
             };
             cboStatus.DisplayMember = "Description";
             cboStatus.ValueMember   = "Code";
@@ -849,6 +889,14 @@ namespace CMS.Presentation.Modules.KMS
                 .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
             foreach (var cat in roots)
                 rootNode.Nodes.Add(BuildCategoryNode(cat, categories, articleCounts, titlesByCategory));
+
+            var archivedTreeNode = new TreeNode("📁 Archived")
+            {
+                Tag       = new ArchivedNode(),
+                //ForeColor = Color.FromArgb(139, 0, 0),
+                //NodeFont  = new Font("Segoe UI", 11f, FontStyle.Bold),
+            };
+            rootNode.Nodes.Add(archivedTreeNode);
 
             treeCategories.EndUpdate();
             rootNode.Expand();
@@ -1072,13 +1120,23 @@ namespace CMS.Presentation.Modules.KMS
                 DefaultCellStyle = { Format = "dd/MM/yyyy" },
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
-            dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
+            dgvArticles.Columns.Add(new CalendarColumn
             {
-                Name = "colExpiryDate",
-                HeaderText = "วันที่ยกเลิก",
-                ReadOnly = true,
-                DefaultCellStyle = { Format = "dd/MM/yyyy" },
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                Name             = "colExpiryDate",
+                HeaderText       = "วันที่ยกเลิก",
+                ReadOnly         = false,
+                Width            = 110,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+            });
+            dgvArticles.Columns.Add(new DataGridViewButtonColumn
+            {
+                Name                        = "colActive",
+                HeaderText                  = "Active",
+                Width                       = 70,
+                FlatStyle                   = FlatStyle.Flat,
+                UseColumnTextForButtonValue = false,
+                DefaultCellStyle            = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter },
+                AutoSizeMode                = DataGridViewAutoSizeColumnMode.AllCells
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -1190,9 +1248,27 @@ namespace CMS.Presentation.Modules.KMS
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
 
-            dgvArticles.CellDoubleClick       += DgvArticles_CellDoubleClick;
+            dgvArticles.Columns.Add(new DataGridViewButtonColumn
+            {
+                Name                        = "colBtnDelete",
+                HeaderText                  = "",
+                Width                       = 74,
+                FlatStyle                   = FlatStyle.Flat,
+                UseColumnTextForButtonValue = false,
+                Visible                     = false,
+                DefaultCellStyle            = new DataGridViewCellStyle
+                {
+                    BackColor = Color.FromArgb(192, 0, 0),
+                    ForeColor = Color.White,
+                    Alignment = DataGridViewContentAlignment.MiddleCenter
+                },
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
+
+            dgvArticles.CellDoubleClick += DgvArticles_CellDoubleClick;
             dgvArticles.CellClick       += DgvArticles_CellClick;
-            dgvArticles.CellFormatting += DgvArticles_CellFormatting;
+            dgvArticles.CellFormatting  += DgvArticles_CellFormatting;
+            dgvArticles.CellEndEdit     += DgvArticles_CellEndEdit;
         }
 
         // ── DataGridView events ───────────────────────────────────────────────────
@@ -1211,11 +1287,45 @@ namespace CMS.Presentation.Modules.KMS
             var article = _cachedArticles[e.RowIndex];
             string col = dgvArticles.Columns[e.ColumnIndex].Name;
 
-            if (col == "colContentHtml") OnArticleCardClick(article);
-            else if (col == "colBtnRead") OnArticleCardClick(article);
-            else if (col == "colBtnEdit") OnEditClick(article);
-            else if (col == "colBtnShare") OnShareClick(article);
+            if      (col == "colContentHtml") OnArticleCardClick(article);
+            else if (col == "colBtnRead")     OnArticleCardClick(article);
+            else if (col == "colBtnEdit")     OnEditClick(article);
+            else if (col == "colBtnShare")    OnShareClick(article);
             else if (col == "colBtnReview" && article.Status == 1) OnSendReviewClick(article);
+            else if (col == "colActive")      OnToggleActiveClick(article, e.RowIndex, e.ColumnIndex);
+            else if (col == "colBtnDelete")   OnDeleteClick(article);
+        }
+
+        private void OnToggleActiveClick(KBArticle article, int rowIndex, int colIndex)
+        {
+            if (IsArticleActive(article))
+            {
+                // Currently ON → set ExpiryDate = today to deactivate
+                _pendingToggleArticleId = 0;
+                _presenter.UpdateArticleExpiryDate(article.ArticleID, DateTime.Today);
+                article.ExpiryDate = DateTime.Today;
+                dgvArticles[colIndex, rowIndex].Value = "OFF";
+                dgvArticles.InvalidateCell(colIndex, rowIndex);
+                int expColIdx = dgvArticles.Columns["colExpiryDate"].Index;
+                dgvArticles[expColIdx, rowIndex].Value = DateTime.Today;
+            }
+            else
+            {
+                // Currently OFF → focus ExpiryDate so user must set a future date
+                _pendingToggleArticleId = article.ArticleID;
+                int expColIdx = dgvArticles.Columns["colExpiryDate"].Index;
+                dgvArticles.CurrentCell = dgvArticles[expColIdx, rowIndex];
+                dgvArticles.BeginEdit(true);
+            }
+        }
+
+        private void OnDeleteClick(KBArticle article)
+        {
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการลบบทความ \"{0}\" หรือไม่?\nการดำเนินการนี้ไม่สามารถย้อนกลับได้", article.Title),
+                "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (confirm == DialogResult.Yes)
+                _presenter.DeleteArticle(article.ArticleID);
         }
 
         private void DgvArticles_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -1246,12 +1356,149 @@ namespace CMS.Presentation.Modules.KMS
                 e.CellStyle.ForeColor = Color.FromArgb(180, 180, 180);
                 e.FormattingApplied   = true;
             }
+            else if (col == "colActive")
+            {
+                bool active = object.Equals(e.Value, "ON");
+                e.CellStyle.BackColor = active
+                    ? Color.FromArgb(39, 174, 96)
+                    : Color.FromArgb(160, 160, 160);
+                e.CellStyle.ForeColor = Color.White;
+                e.FormattingApplied   = true;
+            }
+        }
+
+        private void DgvArticles_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            if (_pendingToggleArticleId <= 0) return;
+            if (dgvArticles.Columns[e.ColumnIndex].Name != "colExpiryDate") return;
+
+            var article = _cachedArticles[e.RowIndex];
+            if (article.ArticleID != _pendingToggleArticleId) { _pendingToggleArticleId = 0; return; }
+
+            object rawVal   = dgvArticles[e.ColumnIndex, e.RowIndex].Value;
+            DateTime? newDate = (rawVal is DateTime) ? (DateTime?)((DateTime)rawVal) : null;
+
+            if (newDate.HasValue && newDate.Value.Date > DateTime.Today)
+            {
+                _presenter.UpdateArticleExpiryDate(article.ArticleID, newDate.Value);
+                article.ExpiryDate = newDate;
+                int activeIdx = dgvArticles.Columns["colActive"].Index;
+                dgvArticles[activeIdx, e.RowIndex].Value = "ON";
+                dgvArticles.InvalidateCell(activeIdx, e.RowIndex);
+            }
+            // else: date unchanged or still in past — toggle stays OFF, no DB update
+            _pendingToggleArticleId = 0;
         }
 
         private void cboType_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (_presenter == null) return;
             _presenter.LoadArticles();
+        }
+
+        // ── Custom DateTimePicker column for colExpiryDate ──────────────────────
+
+        private class CalendarEditingControl : DateTimePicker, IDataGridViewEditingControl
+        {
+            private DataGridView _dgv;
+            private bool _valueChanged;
+            private int  _rowIndex;
+
+            public CalendarEditingControl()
+            {
+                Format       = DateTimePickerFormat.Short;
+                ShowCheckBox = true;
+            }
+
+            public DataGridView EditingControlDataGridView
+            {
+                get { return _dgv; }
+                set { _dgv = value; }
+            }
+            public int EditingControlRowIndex
+            {
+                get { return _rowIndex; }
+                set { _rowIndex = value; }
+            }
+            public bool EditingControlValueChanged
+            {
+                get { return _valueChanged; }
+                set { _valueChanged = value; }
+            }
+            public Cursor EditingPanelCursor { get { return Cursors.Default; } }
+            public bool   RepositionEditingControlOnValueChange { get { return false; } }
+
+            public object EditingControlFormattedValue
+            {
+                get  { return Checked ? (object)Value : null; }
+                set
+                {
+                    if (value is DateTime)
+                    {
+                        Checked = true;
+                        Value   = (DateTime)value;
+                    }
+                    else { Checked = false; }
+                }
+            }
+            public object GetEditingControlFormattedValue(DataGridViewDataErrorContexts ctx)
+                => EditingControlFormattedValue;
+            public void ApplyCellStyleToEditingControl(DataGridViewCellStyle s) { }
+            public bool EditingControlWantsInputKey(Keys k, bool dgvWantsIt) { return false; }
+            public void PrepareEditingControlForEdit(bool selectAll) { }
+
+            protected override void OnValueChanged(EventArgs e)
+            {
+                _valueChanged = true;
+                if (_dgv != null) _dgv.NotifyCurrentCellDirty(true);
+                base.OnValueChanged(e);
+            }
+        }
+
+        private class CalendarCell : DataGridViewTextBoxCell
+        {
+            public override Type EditType  { get { return typeof(CalendarEditingControl); } }
+            public override Type ValueType { get { return typeof(object); } }
+
+            public override void InitializeEditingControl(
+                int rowIndex, object initialFormattedValue, DataGridViewCellStyle style)
+            {
+                base.InitializeEditingControl(rowIndex, initialFormattedValue, style);
+                var ctl = DataGridView.EditingControl as CalendarEditingControl;
+                if (ctl == null) return;
+                if (Value is DateTime)
+                {
+                    ctl.Checked = true;
+                    ctl.Value   = (DateTime)Value;
+                }
+                else { ctl.Checked = false; }
+            }
+
+            public override object ParseFormattedValue(
+                object formattedValue,
+                DataGridViewCellStyle cellStyle,
+                System.ComponentModel.TypeConverter formattedValueTypeConverter,
+                System.ComponentModel.TypeConverter valueTypeConverter)
+            {
+                if (formattedValue is DateTime) return formattedValue;
+                return null;
+            }
+
+            protected override object GetFormattedValue(
+                object value, int rowIndex,
+                ref DataGridViewCellStyle cellStyle,
+                System.ComponentModel.TypeConverter valueTypeConverter,
+                System.ComponentModel.TypeConverter formattedValueTypeConverter,
+                DataGridViewDataErrorContexts context)
+            {
+                if (value is DateTime) return ((DateTime)value).ToString("dd/MM/yyyy");
+                return string.Empty;
+            }
+        }
+
+        private class CalendarColumn : DataGridViewColumn
+        {
+            public CalendarColumn() : base(new CalendarCell()) { }
         }
 
         // ── Natural sort: "มาตรา2" < "มาตรา10" ──────────────────────────────────

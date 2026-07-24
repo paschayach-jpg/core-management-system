@@ -1,4 +1,4 @@
-// ✅ Allowed usings: CMS.Controllers, CMS.Domain
+﻿// ✅ Allowed usings: CMS.Controllers, CMS.Domain
 // ❌ Forbidden usings: CMS.Services, CMS.Data
 using System;
 using System.Collections.Generic;
@@ -95,6 +95,16 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.Initialize();
         }
 
+        // When the user closes the dialog via the X button (or Alt+F4) after a successful
+        // Save Draft, we still need to return OK so ArticleViewerForm.BtnEdit_Click knows
+        // to call RefreshAfterEdit().  SendReview/Publish/Archive already call CloseOk()
+        // themselves, so this only affects the "save then manually close" path.
+        private void KBEditorDialog_FormClosing(object sender, System.Windows.Forms.FormClosingEventArgs e)
+        {
+            if (_savedSuccessfully && DialogResult != DialogResult.OK)
+                DialogResult = DialogResult.OK;
+        }
+
         private void BtnSaveDraft_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
@@ -103,6 +113,8 @@ namespace CMS.Presentation.Modules.KMS
             try
             {
                 _presenter.Save(txtChangeDesc.Text.Trim());
+                _savedSuccessfully = true;
+                _originalContentHtml = ContentHTML;
 
                 // Check if already linked
                 foreach (DataGridViewRow row in dgvRelatedLinked.Rows)
@@ -209,8 +221,48 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private bool ShouldConfirmBeforeBack()
+        {
+            if (_presenter == null) return false;
+            if (ContentText.Length == 0) return false;
+
+            bool isNewArticle = _presenter.EditingArticle == null;
+            if (isNewArticle)
+                return !_savedSuccessfully;
+
+            return ContentHTML != _originalContentHtml;
+        }
+
         private void BtnBack_Click(object sender, EventArgs e)
         {
+            if (ShouldConfirmBeforeBack())
+            {
+                var result = MessageBox.Show(
+                    "ต้องการบันทึกข้อมูลก่อนออก?",
+                    "ยืนยัน",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Cancel)
+                    return;
+
+                if (result == DialogResult.Yes)
+                {
+                    if (!ValidateInput()) return;
+                    try
+                    {
+                        _presenter.Save(txtChangeDesc.Text.Trim());
+                        _savedSuccessfully = true;
+                        _originalContentHtml = ContentHTML;
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowError("บันทึกไม่สำเร็จ:\n" + ex.Message);
+                        return;
+                    }
+                }
+            }
+
             if (BackRequested != null)
                 BackRequested(this, EventArgs.Empty);
             else
@@ -295,6 +347,8 @@ namespace CMS.Presentation.Modules.KMS
         private int    _mappingExpandedWidth   = 529;
         private bool   _syncingToolbar = false;
         private bool   _applyingFormat = false; // guards against re-entrant InvokeScript during font-size apply
+        private bool   _savedSuccessfully = false; // set on any successful Save; used to return OK when user closes via X
+        private string _originalContentHtml = string.Empty; // baseline content for unsaved-changes detection
 
         public string ContentHTML
         {
@@ -309,6 +363,16 @@ namespace CMS.Presentation.Modules.KMS
                 _pendingHtml = value ?? string.Empty;
                 if (_editorReady && webEditor.Document != null && webEditor.Document.Body != null)
                     webEditor.Document.Body.InnerHtml = _pendingHtml;
+            }
+        }
+
+        private string ContentText
+        {
+            get
+            {
+                if (!_editorReady || webEditor.Document == null || webEditor.Document.Body == null)
+                    return _pendingHtml;
+                return webEditor.Document.Body.InnerText ?? string.Empty;
             }
         }
 
@@ -662,6 +726,36 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        // ── Tab key interception for webEditor ───────────────────────────────────
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr GetFocus();
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool IsChild(IntPtr hWndParent, IntPtr hWnd);
+
+        private bool WebEditorContentHasFocus()
+        {
+            var hwnd = GetFocus();
+            return hwnd != IntPtr.Zero &&
+                   (hwnd == webEditor.Handle || IsChild(webEditor.Handle, hwnd));
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            const int WM_KEYDOWN = 0x0100;
+            if (msg.Msg == WM_KEYDOWN && keyData == Keys.Tab && WebEditorContentHasFocus())
+            {
+                if (_editorReady && webEditor.Document != null)
+                {
+                    webEditor.Document.InvokeScript("insertTab");
+                    return true;
+                }
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
         // ── RTE Toolbar Handlers ─────────────────────────────────────────────
 
         private void WebEditor_DocumentCompleted(object sender, System.Windows.Forms.WebBrowserDocumentCompletedEventArgs e)
@@ -672,6 +766,7 @@ namespace CMS.Presentation.Modules.KMS
             _editorReady = true;
             if (!string.IsNullOrEmpty(_pendingHtml))
                 webEditor.Document.Body.InnerHtml = _pendingHtml;
+            _originalContentHtml = webEditor.Document.Body.InnerHtml ?? string.Empty;
             UpdateEditorStatus();
 
             // KeyUp fires after the browser updates the selection — giving accurate queryCommandState results.
@@ -730,7 +825,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void TxtTagInput_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Oemcomma)
+            if (e.KeyCode == Keys.Enter)
             {
                 e.SuppressKeyPress = true;
                 AddTagChip(txtTagInput.Text.Trim());
@@ -743,6 +838,19 @@ namespace CMS.Presentation.Modules.KMS
                 {
                     flpTags.Controls.RemoveAt(flpTags.Controls.Count - 2);
                 }
+            }
+        }
+
+        // KeyPress fires after keyboard-layout translation, so e.KeyChar == ','
+        // only when the user actually typed a comma — not when pressing the physical
+        // comma key in Thai layout (which produces "ม" via Keys.Oemcomma in KeyDown).
+        private void TxtTagInput_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == ',')
+            {
+                e.Handled = true;
+                AddTagChip(txtTagInput.Text.Trim());
+                txtTagInput.Text = string.Empty;
             }
         }
 
@@ -814,11 +922,11 @@ namespace CMS.Presentation.Modules.KMS
             // Validate tag input only when not loading existing data
             if (!skipValidation)
             {
-                // Validate tag input - allow only alphanumeric, spaces, hyphens, and underscores
-                if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9\s\-_]+$"))
+                // Allow alphanumeric, Thai characters, spaces, hyphens, and underscores
+                if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9฀-๿\s\-_]+$"))
                 {
-                    MessageBox.Show("Tag can only contain letters, numbers, spaces, hyphens, and underscores.", 
-                        "Invalid Tag", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Tag สามารถประกอบด้วยตัวอักษร ตัวเลข ภาษาไทย ช่องว่าง ขีด (-) และขีดล่าง (_) เท่านั้น",
+                        "Tag ไม่ถูกต้อง", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 
@@ -1224,6 +1332,19 @@ namespace CMS.Presentation.Modules.KMS
                 "document.onclick=function(e){" +
                 "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +
                 "};" +
+                // Insert 4 non-breaking spaces at cursor (called from C# ProcessCmdKey on Tab press).
+                // pasteHTML collapses selection to end of inserted content automatically,
+                // keeping the cursor visible without extra collapse/select calls.
+                "function insertTab(){" +
+                "try{var sel=document.selection;" +
+                // IE may report sel.type='None' when the cursor is at position 0;
+                // re-focusing the body recovers a valid Caret selection.
+                "if(!sel||sel.type==='None'){document.body.focus();sel=document.selection;}" +
+                "if(!sel)return;" +
+                "var r=sel.createRange();" +
+                "r.collapse(true);" +
+                "r.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');" +
+                "}catch(e){}}" +
                 "</script>" +
                 "</head><body contenteditable='true' style='outline:none;'></body></html>";
         }

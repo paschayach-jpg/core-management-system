@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CMS.Domain.Models;
 
@@ -59,5 +60,8 @@ namespace CMS.Services.Interfaces
         // ── Engagement ────────────────────────────────────────────────────────
         void IncrementViewCount(int articleId);
         void IncrementLikeCount(int articleId);
+
+        void SoftDelete(int articleId);
+        void UpdateExpiryDate(int articleId, DateTime? expiryDate);
     }
 }
