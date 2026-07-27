@@ -78,7 +78,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnCollapseGenInfo = new System.Windows.Forms.Button();
             this.lblGenInfoHeader = new System.Windows.Forms.Label();
             this.pnlContentOuter = new System.Windows.Forms.Panel();
-            this.webEditor = new System.Windows.Forms.WebBrowser();
+            this.webEditor = new Microsoft.Web.WebView2.WinForms.WebView2();
             this.pnlRteStatus = new System.Windows.Forms.Panel();
             this.lblRteStatus = new System.Windows.Forms.Label();
             this.lblContent = new System.Windows.Forms.Label();
@@ -1030,14 +1030,10 @@ namespace CMS.Presentation.Modules.KMS
             // webEditor
             // 
             this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.webEditor.IsWebBrowserContextMenuEnabled = false;
             this.webEditor.Location = new System.Drawing.Point(0, 115);
-            this.webEditor.MinimumSize = new System.Drawing.Size(20, 20);
             this.webEditor.Name = "webEditor";
-            this.webEditor.ScriptErrorsSuppressed = true;
             this.webEditor.Size = new System.Drawing.Size(1176, 558);
             this.webEditor.TabIndex = 5;
-            this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
             // 
             // pnlRteStatus
             // 
@@ -2846,7 +2842,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ToolStripButton    tsRteImage;
         private System.Windows.Forms.ToolStripButton    tsRteAttach;
         private System.Windows.Forms.Label       lblContent;
-        private System.Windows.Forms.WebBrowser  webEditor;
+        private Microsoft.Web.WebView2.WinForms.WebView2 webEditor;
         private System.Windows.Forms.Panel       pnlRteStatus;
         private System.Windows.Forms.Label       lblRteStatus;
 

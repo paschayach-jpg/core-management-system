@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using Microsoft.Web.WebView2.Core;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Enums;
@@ -63,7 +64,7 @@ namespace CMS.Presentation.Modules.KMS
             // splitMain always match pnlScroll's client area — no overflow, no jump.
             splitMain.Dock = DockStyle.Fill;
 
-            webEditor.DocumentText = GetEditorHtml();
+            InitWebEditorAsync();
             InitTypeCombo();
             InitCrafCombo();
             
@@ -341,28 +342,28 @@ namespace CMS.Presentation.Modules.KMS
             set { txtSummary.Text = value; }
         }
 
-        private string _pendingHtml  = string.Empty;
-        private bool   _editorReady    = false;
+        private string _pendingHtml   = string.Empty;
+        private string _cachedHtml    = string.Empty;
+        private string _cachedState   = string.Empty;
+        private bool   _editorReady   = false;
         private int    _genInfoExpandedHeight  = 220;
         private int    _mappingExpandedWidth   = 529;
         private bool   _syncingToolbar = false;
-        private bool   _applyingFormat = false; // guards against re-entrant InvokeScript during font-size apply
-        private bool   _savedSuccessfully = false; // set on any successful Save; used to return OK when user closes via X
-        private string _originalContentHtml = string.Empty; // baseline content for unsaved-changes detection
+        private bool   _applyingFormat = false;
+        private bool   _savedSuccessfully = false;
+        private string _originalContentHtml = string.Empty;
 
         public string ContentHTML
         {
-            get
-            {
-                if (!_editorReady || webEditor.Document == null || webEditor.Document.Body == null)
-                    return _pendingHtml;
-                return webEditor.Document.Body.InnerHtml ?? string.Empty;
-            }
+            get { return _editorReady ? _cachedHtml : _pendingHtml; }
             set
             {
                 _pendingHtml = value ?? string.Empty;
-                if (_editorReady && webEditor.Document != null && webEditor.Document.Body != null)
-                    webEditor.Document.Body.InnerHtml = _pendingHtml;
+                if (_editorReady)
+                {
+                    string escaped = Newtonsoft.Json.JsonConvert.SerializeObject(_pendingHtml);
+                    _ = webEditor.ExecuteScriptAsync("document.body.innerHTML=" + escaped + ";notifyHtml();");
+                }
             }
         }
 
@@ -370,9 +371,9 @@ namespace CMS.Presentation.Modules.KMS
         {
             get
             {
-                if (!_editorReady || webEditor.Document == null || webEditor.Document.Body == null)
-                    return _pendingHtml;
-                return webEditor.Document.Body.InnerText ?? string.Empty;
+                if (!_editorReady || string.IsNullOrEmpty(_cachedHtml)) return _pendingHtml;
+                return System.Text.RegularExpressions.Regex
+                    .Replace(_cachedHtml, @"<[^>]+>", "").Replace("&nbsp;", " ").Trim();
             }
         }
 
@@ -726,97 +727,80 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        // ── Tab key interception for webEditor ───────────────────────────────────
+        // ── WebView2 Initialisation ──────────────────────────────────────────────
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern IntPtr GetFocus();
-
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
-        private static extern bool IsChild(IntPtr hWndParent, IntPtr hWnd);
-
-        private bool WebEditorContentHasFocus()
+        private async void InitWebEditorAsync()
         {
-            var hwnd = GetFocus();
-            return hwnd != IntPtr.Zero &&
-                   (hwnd == webEditor.Handle || IsChild(webEditor.Handle, hwnd));
+            try
+            {
+                await webEditor.EnsureCoreWebView2Async(null);
+
+                webEditor.CoreWebView2.Settings.AreDevToolsEnabled         = false;
+                webEditor.CoreWebView2.Settings.IsStatusBarEnabled         = false;
+                webEditor.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+
+                // Open http/https links in the system browser; cancel navigation inside the editor.
+                webEditor.CoreWebView2.NavigationStarting += (s, ev) =>
+                {
+                    if (ev.Uri.StartsWith("http://") || ev.Uri.StartsWith("https://"))
+                    {
+                        ev.Cancel = true;
+                        try { System.Diagnostics.Process.Start(ev.Uri); }
+                        catch (Exception ex) { ShowError("ไม่สามารถเปิดลิงก์ได้:\n" + ex.Message); }
+                    }
+                };
+
+                // JS → C# messaging: state and html updates pushed by notifyState()/notifyHtml()
+                webEditor.CoreWebView2.WebMessageReceived += WebEditor_WebMessageReceived;
+
+                webEditor.CoreWebView2.NavigationCompleted += WebEditor_NavigationCompleted;
+
+                webEditor.NavigateToString(GetEditorHtml());
+            }
+            catch (Exception ex)
+            {
+                ShowError("ไม่สามารถเริ่มต้น WebView2 ได้:\n" + ex.Message);
+            }
         }
 
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        private void WebEditor_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
         {
-            const int WM_KEYDOWN = 0x0100;
-            if (msg.Msg == WM_KEYDOWN && WebEditorContentHasFocus() && _editorReady && webEditor.Document != null)
+            if (_editorReady) return;
+            _editorReady = true;
+
+            // Inject pending HTML if the presenter already called ContentHTML = "..." before init finished
+            if (!string.IsNullOrEmpty(_pendingHtml))
             {
-                if (keyData == Keys.Tab)
-                {
-                    webEditor.Document.InvokeScript("insertTab");
-                    return true;
-                }
-                if (keyData == (Keys.Tab | Keys.Shift))
-                {
-                    webEditor.Document.InvokeScript("removeTab");
-                    return true;
-                }
+                string escaped = Newtonsoft.Json.JsonConvert.SerializeObject(_pendingHtml);
+                _ = webEditor.ExecuteScriptAsync("document.body.innerHTML=" + escaped + ";notifyHtml();");
             }
-            return base.ProcessCmdKey(ref msg, keyData);
+            else
+            {
+                _ = webEditor.ExecuteScriptAsync("notifyChange();");
+            }
+        }
+
+        private void WebEditor_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            var msg = e.TryGetWebMessageAsString();
+            if (msg == null) return;
+
+            if (msg.StartsWith("STATE:"))
+            {
+                _cachedState = msg.Substring(6);
+                SyncToolbarState();
+            }
+            else if (msg.StartsWith("HTML:"))
+            {
+                bool isFirst = string.IsNullOrEmpty(_cachedHtml) && string.IsNullOrEmpty(_originalContentHtml);
+                _cachedHtml = msg.Substring(5);
+                if (isFirst)
+                    _originalContentHtml = _cachedHtml;
+                UpdateEditorStatus();
+            }
         }
 
         // ── RTE Toolbar Handlers ─────────────────────────────────────────────
-
-        private void WebEditor_DocumentCompleted(object sender, System.Windows.Forms.WebBrowserDocumentCompletedEventArgs e)
-        {
-            if (_editorReady) return;
-            if (webEditor.Document == null || webEditor.Document.Body == null) return;
-            // Editability is set via contenteditable="true" on the body in GetEditorHtml()
-            _editorReady = true;
-            if (!string.IsNullOrEmpty(_pendingHtml))
-                webEditor.Document.Body.InnerHtml = _pendingHtml;
-            _originalContentHtml = webEditor.Document.Body.InnerHtml ?? string.Empty;
-            UpdateEditorStatus();
-
-            // KeyUp fires after the browser updates the selection — giving accurate queryCommandState results.
-            // onselectionchange fires on any cursor movement (click, arrow keys, Shift+select, etc.)
-            webEditor.Document.Body.KeyUp += (s, ev) => { UpdateEditorStatus(); SyncToolbarState(); };
-            webEditor.Document.AttachEventHandler("onselectionchange", (s, ev) => SyncToolbarState());
-
-            // Attach link click handler to open links in external browser
-            webEditor.Document.Click += WebEditor_Document_Click;
-
-            SyncToolbarState(); // sync once immediately after load
-        }
-
-        private void WebEditor_Document_Click(object sender, HtmlElementEventArgs e)
-        {
-            if (webEditor.Document == null) return;
-
-            var element = webEditor.Document.GetElementFromPoint(e.ClientMousePosition);
-            if (element == null) { SyncToolbarState(); return; }
-
-            // Check if clicked element or its parent is a link
-            while (element != null)
-            {
-                if (element.TagName != null && element.TagName.ToUpper() == "A")
-                {
-                    string href = element.GetAttribute("href");
-                    if (!string.IsNullOrEmpty(href) && (href.StartsWith("http://") || href.StartsWith("https://")))
-                    {
-                        e.ReturnValue = false; // Prevent default navigation
-                        try
-                        {
-                            System.Diagnostics.Process.Start(href);
-                        }
-                        catch (Exception ex)
-                        {
-                            ShowError("ไม่สามารถเปิดลิงก์ได้:\n" + ex.Message);
-                        }
-                    }
-                    break;
-                }
-                element = element.Parent;
-            }
-
-            SyncToolbarState(); // update toolbar after cursor placement
-        }
 
         // ── Tag Chip Management ──────────────────────────────────────────────
 
@@ -978,28 +962,19 @@ namespace CMS.Presentation.Modules.KMS
 
         private void UpdateEditorStatus()
         {
-            if (webEditor.Document == null || webEditor.Document.Body == null) return;
-            int len = (webEditor.Document.Body.InnerText ?? string.Empty).Length;
+            int len = ContentText.Length;
             lblRteStatus.Text = string.Format("🖊️ กำลังแก้ไข  |  จำนวนอักขระ: {0}", len);
         }
 
-        /// <summary>
-        /// Reads the current cursor/selection format state from the WebBrowser via InvokeScript
-        /// and updates every formatting button's active (highlighted) appearance accordingly.
-        /// Triggered on: document click, key-up, selection-change, and after every ExecCmd.
-        /// </summary>
         private void SyncToolbarState()
         {
-            if (!_editorReady || webEditor.Document == null) return;
-            if (_applyingFormat) return; // another format op is on the call stack — skip entirely
-            _applyingFormat = true;      // block re-entrant StepFontSize during our own InvokeScript
+            if (!_editorReady || string.IsNullOrEmpty(_cachedState)) return;
+            if (_applyingFormat) return;
+
             try
             {
-                // getRteState() returns "BIUJCRUL|blockTag|fontName|fontSize"
-                // B=Bold I=Italic U=Underline J=JustifyLeft C=JustifyCenter R=JustifyRight
-                // U=UnorderedList L=OrderedList
-                var raw = webEditor.Document.InvokeScript("getRteState") as string;
-                if (string.IsNullOrEmpty(raw) || !raw.Contains("|")) return;
+                var raw = _cachedState;
+                if (!raw.Contains("|")) return;
 
                 var parts    = raw.Split('|');
                 var f        = parts[0].PadRight(8, '0');
@@ -1015,11 +990,9 @@ namespace CMS.Presentation.Modules.KMS
                 SetBtnActive(tsRteBullet,      f[6] == '1');
                 SetBtnActive(tsRteNumList,     f[7] == '1');
 
-                // Sync font comboboxes without triggering their SelectedIndexChanged handlers
                 _syncingToolbar = true;
                 try
                 {
-                    // Font family — match case-insensitively against combo items
                     int fi = -1;
                     if (!string.IsNullOrEmpty(fontName))
                         for (int i = 0; i < tsRteFontFamily.Items.Count; i++)
@@ -1028,7 +1001,6 @@ namespace CMS.Presentation.Modules.KMS
                             { fi = i; break; }
                     tsRteFontFamily.SelectedIndex = fi;
 
-                    // Font size — match pt value string to combo item
                     int newSzIdx = -1;
                     if (!string.IsNullOrEmpty(fontSz))
                         for (int i = 0; i < tsRteFontSize.Items.Count; i++)
@@ -1038,8 +1010,7 @@ namespace CMS.Presentation.Modules.KMS
                 }
                 finally { _syncingToolbar = false; }
             }
-            catch { /* non-critical — ignore errors during state sync */ }
-            finally { _applyingFormat = false; }
+            catch { }
         }
 
         /// <summary>
@@ -1057,28 +1028,30 @@ namespace CMS.Presentation.Modules.KMS
                 : Color.Empty;                    // default — inherited
         }
 
-        private void ExecCmd(string command, object value = null)
+        private void ExecCmd(string command, string value = null)
         {
-            if (webEditor.Document == null) return;
-            webEditor.Document.ExecCommand(command, false, value);
+            if (!_editorReady) return;
+            string js = value == null
+                ? string.Format("document.execCommand('{0}',false,null);notifyChange();", command)
+                : string.Format("document.execCommand('{0}',false,{1});notifyChange();",
+                      command, Newtonsoft.Json.JsonConvert.SerializeObject(value));
+            _ = webEditor.ExecuteScriptAsync(js);
             webEditor.Focus();
-            SyncToolbarState(); // reflect the new format state in the toolbar immediately
         }
 
         private void PasteHtmlAtCursor(string html)
         {
-            if (webEditor.Document == null) return;
-            webEditor.Document.InvokeScript("pasteHtml", new object[] { html });
+            if (!_editorReady) return;
+            string escaped = Newtonsoft.Json.JsonConvert.SerializeObject(html);
+            _ = webEditor.ExecuteScriptAsync("pasteHtml(" + escaped + ");notifyChange();");
             webEditor.Focus();
-            UpdateEditorStatus();
         }
 
         private void TsRteBold_Click(object sender, EventArgs e)
         {
-            if (!_editorReady || webEditor.Document == null) return;
-            webEditor.Document.InvokeScript("applyBold");
+            if (!_editorReady) return;
+            _ = webEditor.ExecuteScriptAsync("applyBold();notifyChange();");
             webEditor.Focus();
-            SyncToolbarState();
         }
         private void TsRteItalic_Click(object sender, EventArgs e)       { ExecCmd("Italic"); }
         private void TsRteUnder_Click(object sender, EventArgs e)        { ExecCmd("Underline"); }
@@ -1201,29 +1174,28 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_syncingToolbar || tsRteFontSize.SelectedIndex < 0) return;
             if (_applyingFormat) return;
-            _applyingFormat = true;
-            try
-            {
-                ApplyFontSizePt(tsRteFontSize.Items[tsRteFontSize.SelectedIndex].ToString());
-                webEditor.Focus();
-            }
-            finally { _applyingFormat = false; }
-            BeginInvoke((Action)SyncToolbarState); // defer off the current COM call stack
+            ApplyFontSizePt(tsRteFontSize.Items[tsRteFontSize.SelectedIndex].ToString());
+            webEditor.Focus();
         }
 
-        private void TsRteFontSizeInc_Click(object sender, EventArgs e) { StepFontSize(+1); }
-        private void TsRteFontSizeDec_Click(object sender, EventArgs e) { StepFontSize(-1); }
+        private void TsRteFontSizeInc_Click(object sender, EventArgs e) { _ = StepFontSizeAsync(+1); }
+        private void TsRteFontSizeDec_Click(object sender, EventArgs e) { _ = StepFontSizeAsync(-1); }
 
-        private void StepFontSize(int direction)
+        private async System.Threading.Tasks.Task StepFontSizeAsync(int direction)
         {
-            if (!_editorReady || webEditor.Document == null) return;
+            if (!_editorReady) return;
             if (_applyingFormat) return;
             _applyingFormat = true;
             try
             {
-                if (!true.Equals(webEditor.Document.InvokeScript("hasTextSel"))) return;
+                // Ask JS whether there is a text selection, then read current font size
+                var hasSel = await webEditor.ExecuteScriptAsync("hasTextSel()");
+                if (hasSel != "true") return;
 
-                var current = webEditor.Document.InvokeScript("getSelFontSizePt") as string ?? string.Empty;
+                // ExecuteScriptAsync returns a JSON string — strip surrounding quotes
+                var rawSz = await webEditor.ExecuteScriptAsync("getSelFontSizePt()");
+                var current = rawSz.Trim('"');
+
                 int currentIdx = -1;
                 for (int i = 0; i < tsRteFontSize.Items.Count; i++)
                     if (tsRteFontSize.Items[i].ToString() == current)
@@ -1237,37 +1209,30 @@ namespace CMS.Presentation.Modules.KMS
                 webEditor.Focus();
             }
             finally { _applyingFormat = false; }
-            BeginInvoke((Action)SyncToolbarState); // defer off the current COM call stack
         }
 
         private void ApplyFontSizePt(string pt)
         {
-            if (webEditor.Document == null) return;
-            // Single InvokeScript crossing: apply font size and restore selection in one call.
-            // Caller owns _applyingFormat.
+            if (!_editorReady) return;
             string markerId = "fsm" + Environment.TickCount.ToString();
-            webEditor.Document.InvokeScript("applyFontSizePt", new object[] { pt, markerId });
+            string js = string.Format("applyFontSizePt({0},{1});notifyChange();",
+                Newtonsoft.Json.JsonConvert.SerializeObject(pt),
+                Newtonsoft.Json.JsonConvert.SerializeObject(markerId));
+            _ = webEditor.ExecuteScriptAsync(js);
         }
 
         private static string GetEditorHtml()
         {
-            // Bug-fix notes:
-            // 1. html{height:100%} + body{min-height:100%} ensures the body fills the
-            //    entire WebBrowser viewport.  Without this the body is only as tall as
-            //    its content, so clicks below the last line land on the <html> element
-            //    (outside contenteditable) and no cursor is placed.
-            // 2. margin:0/padding:8px keeps visual spacing without shrinking the body's
-            //    percentage-based height (margin is excluded from % calculations in IE).
-            // 3. The document.onclick handler redirects clicks that land on <html>
-            //    (srcElement === document.documentElement) into the body so focus and
-            //    cursor placement always work.
+            // WebView2 (Chromium) version — all JavaScript uses W3C standard APIs.
+            // No document.selection / TextRange / pasteHTML (IE-only APIs).
+            // JS pushes state and html to C# via window.chrome.webview.postMessage.
             return
                 "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
                 "<style>" +
-                "html{height:100%;}" +
+                "html,body{height:100%;margin:0;}" +
                 "body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:14px;" +
-                "margin:0;padding:8px;min-height:100%;box-sizing:border-box;" +
-                "line-height:1.6;color:#333;}" +
+                "padding:8px;min-height:100%;box-sizing:border-box;line-height:1.6;color:#333;" +
+                "outline:none;}" +
                 "h1{font-size:22px;}h2{font-size:18px;}h3{font-size:15px;}" +
                 "table{border-collapse:collapse;width:100%;margin:8px 0;}" +
                 "td,th{border:1px solid #ccc;padding:4px 8px;}" +
@@ -1277,87 +1242,158 @@ namespace CMS.Presentation.Modules.KMS
                 "code{background:#f4f4f4;font-family:Consolas,monospace;padding:2px 4px;border-radius:2px;}" +
                 "a{color:#2980b9;}" +
                 "</style>" +
-                "<script type='text/javascript'>" +
-                "function pasteHtml(h){" +
-                "try{if(document.selection){var r=document.selection.createRange();r.pasteHTML(h);}}" +
-                "catch(e){}}" +
-                // getRteState — called by C# via InvokeScript after every cursor move / key / click.
-                // Returns a compact string: 8 binary flags + '|' + fontName + '|' + fontSize.
-                // Flags order: bold italic underline justifyLeft justifyCenter justifyRight ul ol
+                "<script>" +
+                // ── Push helpers — send state/html to C# via postMessage ──────────
+                "function notifyState(){" +
+                "try{window.chrome.webview.postMessage('STATE:'+getRteState());}catch(e){}}" +
+                "function notifyHtml(){" +
+                "try{window.chrome.webview.postMessage('HTML:'+document.body.innerHTML);}catch(e){}}" +
+                "function notifyChange(){notifyState();notifyHtml();}" +
+                // ── Format state query ───────────────────────────────────────────
                 "function getRteState(){" +
                 "try{" +
-                "var b=document.queryCommandState('Bold')?'1':'0';" +
-                "var i=document.queryCommandState('Italic')?'1':'0';" +
-                "var u=document.queryCommandState('Underline')?'1':'0';" +
-                "var jl=document.queryCommandState('JustifyLeft')?'1':'0';" +
-                "var jc=document.queryCommandState('JustifyCenter')?'1':'0';" +
-                "var jr=document.queryCommandState('JustifyRight')?'1':'0';" +
-                "var ul=document.queryCommandState('InsertUnorderedList')?'1':'0';" +
-                "var ol=document.queryCommandState('InsertOrderedList')?'1':'0';" +
-                "var fn=(document.queryCommandValue('FontName')||'').toLowerCase();" +
+                "var b=document.queryCommandState('bold')?'1':'0';" +
+                "var i=document.queryCommandState('italic')?'1':'0';" +
+                "var u=document.queryCommandState('underline')?'1':'0';" +
+                "var jl=document.queryCommandState('justifyLeft')?'1':'0';" +
+                "var jc=document.queryCommandState('justifyCenter')?'1':'0';" +
+                "var jr=document.queryCommandState('justifyRight')?'1':'0';" +
+                "var ul=document.queryCommandState('insertUnorderedList')?'1':'0';" +
+                "var ol=document.queryCommandState('insertOrderedList')?'1':'0';" +
+                "var fn=(document.queryCommandValue('fontName')||'').toLowerCase();" +
                 "var fs=getSelFontSizePt();" +
                 "return b+i+u+jl+jc+jr+ul+ol+'|'+fn+'|'+fs;" +
-                "}catch(e){return '00000000||';}" +
-                "}" +
-                "function applyBold(){document.execCommand('Bold',false,null);}" +
-                "function hasTextSel(){try{var s=document.selection;return !!(s&&s.type=='Text');}catch(e){return false;}}" +
-                // HTML font size 1-7 → pt equivalents (matches tsRteFontSize items)
+                "}catch(e){return '00000000||';}}" +
+                // ── Bold (Chromium keeps Bold capitalised in execCommand) ─────────
+                "function applyBold(){document.execCommand('bold',false,null);}" +
+                // ── Selection helpers ────────────────────────────────────────────
+                "function hasTextSel(){" +
+                "var s=window.getSelection();return !!(s&&!s.isCollapsed&&s.toString().length>0);}" +
+                // ── Font size read ───────────────────────────────────────────────
                 "var _htmlSzPt={'1':'8','2':'10','3':'12','4':'14','5':'18','6':'24','7':'36'};" +
                 "function getSelFontSizePt(){" +
-                "try{var s=document.selection;" +
-                "if(s&&s.type=='Text'){var r=s.createRange();" +
-                "if(r&&r.parentElement){var el=r.parentElement();" +
-                "while(el&&el.tagName!='BODY'){" +
-                // CSS style.fontSize takes priority over HTML size attribute
+                "try{var s=window.getSelection();" +
+                "if(!s||s.rangeCount===0)return '';" +
+                "var el=s.getRangeAt(0).commonAncestorContainer;" +
+                "if(el.nodeType===3)el=el.parentNode;" +
+                "while(el&&el.tagName!=='BODY'){" +
                 "if(el.style&&el.style.fontSize){var f=el.style.fontSize;" +
                 "if(f.indexOf('pt')>-1)return Math.round(parseFloat(f)).toString();" +
                 "if(f.indexOf('px')>-1)return Math.round(parseFloat(f)*0.75).toString();}" +
-                // Fall back to HTML size attribute (old-code content)
-                "if(el.tagName=='FONT'){var a=el.getAttribute('size');if(a&&_htmlSzPt[a])return _htmlSzPt[a];}" +
-                "el=el.parentElement;}}}" +
+                "if(el.tagName==='FONT'){var a=el.getAttribute('size');if(a&&_htmlSzPt[a])return _htmlSzPt[a];}" +
+                "el=el.parentElement;}" +
                 "}catch(e){}return '';}" +
-                // Apply CSS font-size to the current selection in a single JS call (no second InvokeScript pump).
-                // Fast path: if the selection's immediate parent already has an inline font-size style,
-                //   update it in-place — avoids wrapping the content in another <span> on every press.
-                // Fallback: strip any existing font-size from inner HTML, wrap with a new <span>,
-                //   then immediately restore the selection to cover the new element.
+                // ── Font size apply ──────────────────────────────────────────────
                 "function applyFontSizePt(pt,markerId){" +
-                "try{if(!hasTextSel())return;" +
-                "var r=document.selection.createRange();" +
-                "var el=r.parentElement();" +
-                "if(el&&el.tagName!='BODY'&&el.style&&el.style.fontSize){" +
-                "el.style.fontSize=pt+'pt';r.select();return;}" +
-                "var inner=r.htmlText.replace(/font-size\\s*:[^;'\"]+;?/gi,'');" +
-                "r.pasteHTML('<span id=\"'+markerId+'\" style=\"font-size:'+pt+'pt\">'+inner+'</span>');" +
+                "try{" +
+                "var s=window.getSelection();" +
+                "if(!s||s.rangeCount===0||s.isCollapsed)return;" +
+                "var range=s.getRangeAt(0);" +
+                "var el=range.commonAncestorContainer;" +
+                "if(el.nodeType===3)el=el.parentNode;" +
+                // Fast path: immediate parent already has inline font-size → update in-place
+                "if(el&&el.tagName!=='BODY'&&el.style&&el.style.fontSize){" +
+                "el.style.fontSize=pt+'pt';return;}" +
+                // Wrap selection in a new span
+                "var div=document.createElement('div');" +
+                "div.appendChild(range.cloneContents());" +
+                "var inner=div.innerHTML.replace(/font-size\\s*:[^;'\"]+;?/gi,'');" +
+                "document.execCommand('insertHTML',false," +
+                "'<span id=\"'+markerId+'\" style=\"font-size:'+pt+'pt\">'+inner+'</span>');" +
                 "var newEl=document.getElementById(markerId);" +
-                "if(newEl){var r2=document.body.createTextRange();" +
-                "r2.moveToElementText(newEl);r2.select();newEl.removeAttribute('id');}}" +
-                "catch(e){}}" +
-                // Redirect clicks on <html> (outside body padding) into the body.
-                "document.onclick=function(e){" +
-                "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +
-                "};" +
-                // Tab: insert 4 non-breaking spaces at cursor position.
+                "if(newEl){var nr=document.createRange();" +
+                "nr.selectNodeContents(newEl);s.removeAllRanges();s.addRange(nr);" +
+                "newEl.removeAttribute('id');}" +
+                "}catch(e){}}" +
+                // ── Paste HTML at cursor ──────────────────────────────────────────
+                "function pasteHtml(h){" +
+                "try{" +
+                "var s=window.getSelection();" +
+                "if(!s||s.rangeCount===0)return;" +
+                "var range=s.getRangeAt(0);" +
+                "range.deleteContents();" +
+                "var frag=range.createContextualFragment(h);" +
+                "var last=frag.lastChild;" +
+                "range.insertNode(frag);" +
+                "if(last){var r2=document.createRange();" +
+                "r2.setStartAfter(last);r2.collapse(true);" +
+                "s.removeAllRanges();s.addRange(r2);}" +
+                "}catch(e){}}" +
+                // ── Tab indent (pixel-accurate, Chromium) ─────────────────────────
+                "var _tabPx=40;" +
                 "function insertTab(){" +
-                "try{var sel=document.selection;" +
-                "if(!sel||sel.type==='None'){document.body.focus();sel=document.selection;}" +
-                "if(!sel)return;" +
-                "var r=sel.createRange();r.collapse(true);" +
-                "r.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');" +
+                "try{" +
+                "var s=window.getSelection();" +
+                "if(!s||s.rangeCount===0){document.body.focus();s=window.getSelection();}" +
+                "if(!s||s.rangeCount===0)return;" +
+                "var range=s.getRangeAt(0);range.deleteContents();range.collapse(true);" +
+                "var left=range.getBoundingClientRect().left-document.body.getBoundingClientRect().left;" +
+                "var w=_tabPx-(left%_tabPx);if(w<4)w+=_tabPx;" +
+                // Insert via DOM so cursor placement is explicit (execCommand leaves cursor
+                // inside contenteditable=false span in Chromium, causing it to disappear).
+                "var span=document.createElement('span');" +
+                "span.setAttribute('data-kms-tab','1');" +
+                "span.setAttribute('contenteditable','false');" +
+                "span.style.cssText='display:inline-block;width:'+w+'px;overflow:hidden';" +
+                "span.innerHTML='\\u00a0';" +
+                "range.insertNode(span);" +
+                // Move cursor to immediately after the inserted span.
+                "var r2=document.createRange();" +
+                "r2.setStartAfter(span);r2.collapse(true);" +
+                "s.removeAllRanges();s.addRange(r2);" +
                 "}catch(e){}}" +
-                // Shift+Tab: remove consecutive space/&nbsp; immediately before cursor (up to 4).
                 "function removeTab(){" +
-                "try{var sel=document.selection;" +
-                "if(!sel||sel.type==='None'){document.body.focus();sel=document.selection;}" +
-                "if(!sel)return;" +
-                "var r=sel.createRange();r.collapse(true);" +
-                "var r2=r.duplicate();r2.moveStart('character',-4);" +
-                "var text=r2.text,count=0;" +
-                "for(var i=text.length-1;i>=0;i--){var c=text.charCodeAt(i);if(c===32||c===160)count++;else break;}" +
-                "if(count>0){var del=r.duplicate();del.moveStart('character',-count);del.text='';}" +
+                "try{" +
+                "var s=window.getSelection();" +
+                "if(!s||s.rangeCount===0)return;" +
+                "var range=s.getRangeAt(0);range.collapse(true);" +
+                "var node=range.startContainer,offset=range.startOffset;" +
+                // Helper: remove span element, reposition cursor where span was
+                "var rmSpan=function(sp){" +
+                "var par=sp.parentNode,idx=Array.prototype.indexOf.call(par.childNodes,sp);" +
+                "par.removeChild(sp);" +
+                "var r=document.createRange();r.setStart(par,idx);r.collapse(true);" +
+                "s.removeAllRanges();s.addRange(r);};" +
+                // Helper: remove consecutive &nbsp;/space ending at off in text node tn
+                "var rmNbsp=function(tn,off){" +
+                "var t=tn.textContent,cnt=0;" +
+                "for(var i=off-1;i>=0;i--){var c=t.charCodeAt(i);if(c===160||c===32)cnt++;else break;}" +
+                "if(cnt>0){tn.textContent=t.slice(0,off-cnt)+t.slice(off);" +
+                "var r=document.createRange();r.setStart(tn,off-cnt);r.collapse(true);" +
+                "s.removeAllRanges();s.addRange(r);};};" +
+                // Case A: cursor is inside (or on) a tab span
+                "var check=node.nodeType===3?node.parentNode:node;" +
+                "if(check&&check.getAttribute&&check.getAttribute('data-kms-tab')){rmSpan(check);return;}" +
+                // Case B: cursor is in a text node at offset > 0
+                // Only examine THIS text node — do NOT fall through to previousSibling.
+                // A sibling span to the left is not immediately before this cursor position.
+                "if(node.nodeType===3&&offset>0){" +
+                "var cb=node.textContent.charCodeAt(offset-1);" +
+                "if(cb===160||cb===32)rmNbsp(node,offset);" +
+                "return;}" +
+                // Case C: cursor at text offset=0, or inside an element node
+                // → look at the node directly before the cursor position
+                "var prev;" +
+                "if(node.nodeType===1)" +
+                "{prev=offset>0?node.childNodes[offset-1]:node.previousSibling;}" +
+                "else{prev=node.previousSibling;}" +
+                "if(!prev)return;" +
+                "if(prev.nodeType===1&&prev.getAttribute&&prev.getAttribute('data-kms-tab')){rmSpan(prev);return;}" +
+                "if(prev.nodeType===3){var pl=prev.textContent.length;" +
+                "if(pl>0){var cp=prev.textContent.charCodeAt(pl-1);" +
+                "if(cp===160||cp===32)rmNbsp(prev,pl);}}" +
                 "}catch(e){}}" +
+                // ── Tab key handled in JS so host ProcessCmdKey is not needed ─────
+                "document.addEventListener('keydown',function(e){" +
+                "if(e.key==='Tab'){e.preventDefault();" +
+                "if(e.shiftKey)removeTab();else insertTab();" +
+                "notifyChange();" +
+                "}});" +
+                // ── Push state/html on every edit and selection change ────────────
+                "document.addEventListener('input',notifyChange);" +
+                "document.addEventListener('selectionchange',notifyState);" +
                 "</script>" +
-                "</head><body contenteditable='true' style='outline:none;'></body></html>";
+                "</head><body contenteditable='true'></body></html>";
         }
 
         // ── Tab Mapping Toolbars ─────────────────────────────────────────────
