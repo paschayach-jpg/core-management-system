@@ -78,7 +78,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnCollapseGenInfo = new System.Windows.Forms.Button();
             this.lblGenInfoHeader = new System.Windows.Forms.Label();
             this.pnlContentOuter = new System.Windows.Forms.Panel();
-            this.webEditor = new System.Windows.Forms.WebBrowser();
+            this.webEditor = new Microsoft.Web.WebView2.WinForms.WebView2();
             this.pnlRteStatus = new System.Windows.Forms.Panel();
             this.lblRteStatus = new System.Windows.Forms.Label();
             this.lblContent = new System.Windows.Forms.Label();
@@ -105,6 +105,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteCode = new System.Windows.Forms.ToolStripButton();
             this.tsRteImage = new System.Windows.Forms.ToolStripButton();
             this.tsRteAttach = new System.Windows.Forms.ToolStripButton();
+            this.tsRteSepZoom = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteZoomOut = new System.Windows.Forms.ToolStripButton();
+            this.tsRteZoom = new System.Windows.Forms.ToolStripComboBox();
+            this.tsRteZoomIn = new System.Windows.Forms.ToolStripButton();
             this.pnlSummaryArea = new System.Windows.Forms.Panel();
             this.txtSummary = new System.Windows.Forms.TextBox();
             this.lblSummary = new System.Windows.Forms.Label();
@@ -237,6 +241,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlTagChipTemplate.SuspendLayout();
             this.pnlGenInfoHeader.SuspendLayout();
             this.pnlContentOuter.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.webEditor)).BeginInit();
             this.pnlRteStatus.SuspendLayout();
             this.tsRte.SuspendLayout();
             this.pnlSummaryArea.SuspendLayout();
@@ -1029,15 +1034,15 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // webEditor
             // 
+            this.webEditor.AllowExternalDrop = true;
+            this.webEditor.CreationProperties = null;
+            this.webEditor.DefaultBackgroundColor = System.Drawing.Color.White;
             this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.webEditor.IsWebBrowserContextMenuEnabled = false;
             this.webEditor.Location = new System.Drawing.Point(0, 115);
-            this.webEditor.MinimumSize = new System.Drawing.Size(20, 20);
             this.webEditor.Name = "webEditor";
-            this.webEditor.ScriptErrorsSuppressed = true;
             this.webEditor.Size = new System.Drawing.Size(1176, 558);
             this.webEditor.TabIndex = 5;
-            this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
+            this.webEditor.ZoomFactor = 1D;
             // 
             // pnlRteStatus
             // 
@@ -1101,7 +1106,11 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteTable,
             this.tsRteCode,
             this.tsRteImage,
-            this.tsRteAttach});
+            this.tsRteAttach,
+            this.tsRteSepZoom,
+            this.tsRteZoomOut,
+            this.tsRteZoom,
+            this.tsRteZoomIn});
             this.tsRte.Location = new System.Drawing.Point(0, 65);
             this.tsRte.Name = "tsRte";
             this.tsRte.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
@@ -1315,6 +1324,47 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteAttach.Text = "📎";
             this.tsRteAttach.ToolTipText = "แนบไฟล์";
             this.tsRteAttach.Click += new System.EventHandler(this.TsRteAttach_Click);
+            // 
+            // tsRteSepZoom
+            // 
+            this.tsRteSepZoom.Name = "tsRteSepZoom";
+            this.tsRteSepZoom.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteZoomOut
+            // 
+            this.tsRteZoomOut.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteZoomOut.Name = "tsRteZoomOut";
+            this.tsRteZoomOut.Size = new System.Drawing.Size(29, 25);
+            this.tsRteZoomOut.Text = "−";
+            this.tsRteZoomOut.ToolTipText = "ย่อ (Zoom Out)";
+            this.tsRteZoomOut.Click += new System.EventHandler(this.TsRteZoomOut_Click);
+            // 
+            // tsRteZoom
+            // 
+            this.tsRteZoom.AutoSize = false;
+            this.tsRteZoom.Items.AddRange(new object[] {
+            "50%",
+            "75%",
+            "100%",
+            "125%",
+            "150%",
+            "175%",
+            "200%"});
+            this.tsRteZoom.Name = "tsRteZoom";
+            this.tsRteZoom.Size = new System.Drawing.Size(62, 28);
+            this.tsRteZoom.ToolTipText = "ระดับการซูม (พิมพ์ตัวเลขแล้วกด Enter หรือเลือกจากรายการ)";
+            this.tsRteZoom.SelectedIndexChanged += new System.EventHandler(this.TsRteZoom_SelectedIndexChanged);
+            this.tsRteZoom.Leave += new System.EventHandler(this.TsRteZoom_Leave);
+            this.tsRteZoom.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TsRteZoom_KeyDown);
+            // 
+            // tsRteZoomIn
+            // 
+            this.tsRteZoomIn.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteZoomIn.Name = "tsRteZoomIn";
+            this.tsRteZoomIn.Size = new System.Drawing.Size(29, 25);
+            this.tsRteZoomIn.Text = "+";
+            this.tsRteZoomIn.ToolTipText = "ขยาย (Zoom In)";
+            this.tsRteZoomIn.Click += new System.EventHandler(this.TsRteZoomIn_Click);
             // 
             // pnlSummaryArea
             // 
@@ -2743,6 +2793,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlGenInfoHeader.ResumeLayout(false);
             this.pnlContentOuter.ResumeLayout(false);
             this.pnlContentOuter.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.webEditor)).EndInit();
             this.pnlRteStatus.ResumeLayout(false);
             this.tsRte.ResumeLayout(false);
             this.tsRte.PerformLayout();
@@ -2845,8 +2896,12 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ToolStripButton    tsRteCode;
         private System.Windows.Forms.ToolStripButton    tsRteImage;
         private System.Windows.Forms.ToolStripButton    tsRteAttach;
+        private System.Windows.Forms.ToolStripSeparator tsRteSepZoom;
+        private System.Windows.Forms.ToolStripButton    tsRteZoomOut;
+        private System.Windows.Forms.ToolStripComboBox  tsRteZoom;
+        private System.Windows.Forms.ToolStripButton    tsRteZoomIn;
         private System.Windows.Forms.Label       lblContent;
-        private System.Windows.Forms.WebBrowser  webEditor;
+        private Microsoft.Web.WebView2.WinForms.WebView2 webEditor;
         private System.Windows.Forms.Panel       pnlRteStatus;
         private System.Windows.Forms.Label       lblRteStatus;
 

@@ -25,7 +25,9 @@ namespace CMS.Presentation.Modules.KMS
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
             this.splitViewer = new System.Windows.Forms.SplitContainer();
-            this.webContent = new System.Windows.Forms.WebBrowser();
+            this.webContent = new Microsoft.Web.WebView2.WinForms.WebView2();
+            this.pnlZoomStatus = new System.Windows.Forms.Panel();
+            this.lblZoomIndicator = new System.Windows.Forms.Label();
             this.pnlInfoWrapper = new System.Windows.Forms.Panel();
             this.pnlArticleInfo = new System.Windows.Forms.Panel();
             this.tblMeta = new System.Windows.Forms.TableLayoutPanel();
@@ -96,6 +98,7 @@ namespace CMS.Presentation.Modules.KMS
             this.splitViewer.Panel1.SuspendLayout();
             this.splitViewer.Panel2.SuspendLayout();
             this.splitViewer.SuspendLayout();
+            this.pnlZoomStatus.SuspendLayout();
             this.pnlInfoWrapper.SuspendLayout();
             this.pnlArticleInfo.SuspendLayout();
             this.tblMeta.SuspendLayout();
@@ -289,6 +292,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.splitViewer.Panel1.BackColor = System.Drawing.Color.White;
             this.splitViewer.Panel1.Controls.Add(this.webContent);
+            this.splitViewer.Panel1.Controls.Add(this.pnlZoomStatus);
             this.splitViewer.Panel1.Controls.Add(this.pnlInfoWrapper);
             this.splitViewer.Panel1MinSize = 400;
             // 
@@ -300,19 +304,43 @@ namespace CMS.Presentation.Modules.KMS
             this.splitViewer.Size = new System.Drawing.Size(1100, 591);
             this.splitViewer.SplitterDistance = 400;
             this.splitViewer.TabIndex = 2;
-            // 
+            //
             // webContent
-            // 
+            //
+            ((System.ComponentModel.ISupportInitialize)(this.webContent)).BeginInit();
             this.webContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.webContent.IsWebBrowserContextMenuEnabled = false;
             this.webContent.Location = new System.Drawing.Point(0, 106);
             this.webContent.Name = "webContent";
-            this.webContent.ScriptErrorsSuppressed = true;
-            this.webContent.Size = new System.Drawing.Size(400, 485);
+            this.webContent.Size = new System.Drawing.Size(400, 463);
             this.webContent.TabIndex = 1;
-            this.webContent.WebBrowserShortcutsEnabled = false;
-            this.webContent.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.webContent_DocumentCompleted);
-            // 
+            this.webContent.ZoomFactor = 1D;
+            this.webContent.ZoomFactorChanged += new System.EventHandler<System.EventArgs>(this.WebContent_ZoomFactorChanged);
+            ((System.ComponentModel.ISupportInitialize)(this.webContent)).EndInit();
+            //
+            // pnlZoomStatus — overlay indicator at the bottom of webContent
+            //
+            this.pnlZoomStatus.BackColor = System.Drawing.Color.FromArgb(235, 245, 251);
+            this.pnlZoomStatus.Controls.Add(this.lblZoomIndicator);
+            this.pnlZoomStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.pnlZoomStatus.Location = new System.Drawing.Point(0, 569);
+            this.pnlZoomStatus.Name = "pnlZoomStatus";
+            this.pnlZoomStatus.Size = new System.Drawing.Size(400, 22);
+            this.pnlZoomStatus.TabIndex = 2;
+            this.pnlZoomStatus.Visible = false;
+            //
+            // lblZoomIndicator
+            //
+            this.lblZoomIndicator.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblZoomIndicator.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lblZoomIndicator.ForeColor = System.Drawing.Color.FromArgb(46, 116, 181);
+            this.lblZoomIndicator.Location = new System.Drawing.Point(0, 0);
+            this.lblZoomIndicator.Name = "lblZoomIndicator";
+            this.lblZoomIndicator.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
+            this.lblZoomIndicator.Size = new System.Drawing.Size(400, 22);
+            this.lblZoomIndicator.TabIndex = 0;
+            this.lblZoomIndicator.Text = "🔍 100%";
+            this.lblZoomIndicator.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            //
             // pnlInfoWrapper
             // 
             this.pnlInfoWrapper.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(159)))), ((int)(((byte)(212)))));
@@ -1099,6 +1127,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlHeader.ResumeLayout(false);
             this.pnlToolbar.ResumeLayout(false);
             this.pnlToolbarSep.ResumeLayout(false);
+            this.pnlZoomStatus.ResumeLayout(false);
             this.splitViewer.Panel1.ResumeLayout(false);
             this.splitViewer.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitViewer)).EndInit();
@@ -1153,7 +1182,9 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label            lblPublishVal;
         private System.Windows.Forms.Label            lblConfidential;
         private System.Windows.Forms.Label            lblReviewDueVal;
-        private System.Windows.Forms.WebBrowser       webContent;
+        private Microsoft.Web.WebView2.WinForms.WebView2 webContent;
+        private System.Windows.Forms.Panel            pnlZoomStatus;
+        private System.Windows.Forms.Label            lblZoomIndicator;
         private System.Windows.Forms.Panel            pnlSidebar;
         private System.Windows.Forms.Panel            pnlVersionList;
         private System.Windows.Forms.Panel            panel1;
