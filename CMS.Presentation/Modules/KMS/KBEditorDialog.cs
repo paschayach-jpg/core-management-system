@@ -1337,9 +1337,14 @@ namespace CMS.Presentation.Modules.KMS
                 "span.style.cssText='display:inline-block;width:'+w+'px;overflow:hidden';" +
                 "span.innerHTML='\\u00a0';" +
                 "range.insertNode(span);" +
-                // Move cursor to immediately after the inserted span.
-                "var r2=document.createRange();" +
-                "r2.setStartAfter(span);r2.collapse(true);" +
+                "var r2=document.createRange();r2.setStartAfter(span);r2.collapse(true);" +
+                // After insert: recalculate the next tab span's width from the new cursor
+                // position so the tab-stop grid stays correct (the next span now starts
+                // further right and its old width no longer hits the right column).
+                "var nxt=span.nextSibling;" +
+                "if(nxt&&nxt.nodeType===1&&nxt.getAttribute&&nxt.getAttribute('data-kms-tab')){" +
+                "var nl=nxt.getBoundingClientRect().left-document.body.getBoundingClientRect().left;" +
+                "var nw=_tabPx-(nl%_tabPx);if(nw<4)nw+=_tabPx;nxt.style.width=nw+'px';}" +
                 "s.removeAllRanges();s.addRange(r2);" +
                 "}catch(e){}}" +
                 "function removeTab(){" +
@@ -1352,6 +1357,13 @@ namespace CMS.Presentation.Modules.KMS
                 "var rmSpan=function(sp){" +
                 "var par=sp.parentNode,idx=Array.prototype.indexOf.call(par.childNodes,sp);" +
                 "par.removeChild(sp);" +
+                // After removal: recalculate the next tab span's width from its new left
+                // position so the tab-stop grid stays correct (subsequent spans were
+                // calculated for a cursor position that no longer exists after removal).
+                "var nxt=par.childNodes[idx];" +
+                "if(nxt&&nxt.nodeType===1&&nxt.getAttribute&&nxt.getAttribute('data-kms-tab')){" +
+                "var nl=nxt.getBoundingClientRect().left-document.body.getBoundingClientRect().left;" +
+                "var nw=_tabPx-(nl%_tabPx);if(nw<4)nw+=_tabPx;nxt.style.width=nw+'px';}" +
                 "var r=document.createRange();r.setStart(par,idx);r.collapse(true);" +
                 "s.removeAllRanges();s.addRange(r);};" +
                 // Helper: remove consecutive &nbsp;/space ending at off in text node tn
@@ -1377,6 +1389,13 @@ namespace CMS.Presentation.Modules.KMS
                 "if(node.nodeType===1)" +
                 "{prev=offset>0?node.childNodes[offset-1]:node.previousSibling;}" +
                 "else{prev=node.previousSibling;}" +
+                // Walk up when no immediate prev: cursor may be inside a formatting span
+                // e.g. <span style="font-size:18pt">[cursor]กิจสมใจ</span> where the
+                // tab span is a sibling of the formatting span, not of the text node.
+                "if(!prev){" +
+                "var wn=node.nodeType===3?node.parentNode:node;" +
+                "while(wn&&wn!==document.body&&!prev){prev=wn.previousSibling;wn=wn.parentNode;}" +
+                "}" +
                 "if(!prev)return;" +
                 "if(prev.nodeType===1&&prev.getAttribute&&prev.getAttribute('data-kms-tab')){rmSpan(prev);return;}" +
                 "if(prev.nodeType===3){var pl=prev.textContent.length;" +
