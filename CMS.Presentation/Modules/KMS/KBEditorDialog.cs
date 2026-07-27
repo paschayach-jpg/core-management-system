@@ -1337,31 +1337,22 @@ namespace CMS.Presentation.Modules.KMS
                 "document.onclick=function(e){" +
                 "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +
                 "};" +
-                // Insert 4 non-breaking spaces at cursor (called from C# ProcessCmdKey on Tab press).
-                // pasteHTML collapses selection to end of inserted content automatically,
-                // keeping the cursor visible without extra collapse/select calls.
+                // Tab: insert 4 non-breaking spaces at cursor position.
                 "function insertTab(){" +
                 "try{var sel=document.selection;" +
-                // IE may report sel.type='None' when the cursor is at position 0;
-                // re-focusing the body recovers a valid Caret selection.
                 "if(!sel||sel.type==='None'){document.body.focus();sel=document.selection;}" +
                 "if(!sel)return;" +
-                "var r=sel.createRange();" +
-                "r.collapse(true);" +
+                "var r=sel.createRange();r.collapse(true);" +
                 "r.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');" +
                 "}catch(e){}}" +
-                // removeTab: ลบ space/&nbsp; ก่อน cursor (สูงสุด 4 ตัว)
-                // นับ space/&nbsp; ต่อเนื่องจาก cursor ถอยหลัง แล้วลบเท่าที่พบ
+                // Shift+Tab: remove consecutive space/&nbsp; immediately before cursor (up to 4).
                 "function removeTab(){" +
                 "try{var sel=document.selection;" +
                 "if(!sel||sel.type==='None'){document.body.focus();sel=document.selection;}" +
                 "if(!sel)return;" +
                 "var r=sel.createRange();r.collapse(true);" +
                 "var r2=r.duplicate();r2.moveStart('character',-4);" +
-                "var text=r2.text;" +
-                "if(!text.length)return;" +
-                // text[length-1] คือ char ติดกับ cursor, นับถอยหลังจนเจอ non-space
-                "var count=0;" +
+                "var text=r2.text,count=0;" +
                 "for(var i=text.length-1;i>=0;i--){var c=text.charCodeAt(i);if(c===32||c===160)count++;else break;}" +
                 "if(count>0){var del=r.duplicate();del.moveStart('character',-count);del.text='';}" +
                 "}catch(e){}}" +
