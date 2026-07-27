@@ -1383,10 +1383,25 @@ namespace CMS.Presentation.Modules.KMS
                 "if(pl>0){var cp=prev.textContent.charCodeAt(pl-1);" +
                 "if(cp===160||cp===32)rmNbsp(prev,pl);}}" +
                 "}catch(e){}}" +
+                // Returns true when cursor is inside a list item (<li>)
+                "function isInList(){" +
+                "var s=window.getSelection();" +
+                "if(!s||s.rangeCount===0)return false;" +
+                "var n=s.getRangeAt(0).startContainer;" +
+                "if(n.nodeType===3)n=n.parentNode;" +
+                "while(n&&n!==document.body){if(n.tagName==='LI')return true;n=n.parentNode;}" +
+                "return false;}" +
                 // ── Tab key handled in JS so host ProcessCmdKey is not needed ─────
                 "document.addEventListener('keydown',function(e){" +
                 "if(e.key==='Tab'){e.preventDefault();" +
+                "if(isInList()){" +
+                // Inside a list: indent / outdent the list item
+                "if(e.shiftKey)document.execCommand('outdent',false,null);" +
+                "else document.execCommand('indent',false,null);" +
+                "}else{" +
+                // Outside a list: custom tab span / nbsp removal
                 "if(e.shiftKey)removeTab();else insertTab();" +
+                "}" +
                 "notifyChange();" +
                 "}});" +
                 // ── Push state/html on every edit and selection change ────────────

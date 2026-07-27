@@ -237,6 +237,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlTagChipTemplate.SuspendLayout();
             this.pnlGenInfoHeader.SuspendLayout();
             this.pnlContentOuter.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.webEditor)).BeginInit();
             this.pnlRteStatus.SuspendLayout();
             this.tsRte.SuspendLayout();
             this.pnlSummaryArea.SuspendLayout();
@@ -1029,11 +1030,15 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // webEditor
             // 
+            this.webEditor.AllowExternalDrop = true;
+            this.webEditor.CreationProperties = null;
+            this.webEditor.DefaultBackgroundColor = System.Drawing.Color.White;
             this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.webEditor.Location = new System.Drawing.Point(0, 115);
             this.webEditor.Name = "webEditor";
             this.webEditor.Size = new System.Drawing.Size(1176, 558);
             this.webEditor.TabIndex = 5;
+            this.webEditor.ZoomFactor = 1D;
             // 
             // pnlRteStatus
             // 
@@ -2739,6 +2744,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlGenInfoHeader.ResumeLayout(false);
             this.pnlContentOuter.ResumeLayout(false);
             this.pnlContentOuter.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.webEditor)).EndInit();
             this.pnlRteStatus.ResumeLayout(false);
             this.tsRte.ResumeLayout(false);
             this.tsRte.PerformLayout();
