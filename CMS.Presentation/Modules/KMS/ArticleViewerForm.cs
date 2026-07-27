@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using Microsoft.Web.WebView2.Core;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
@@ -21,6 +22,9 @@ namespace CMS.Presentation.Modules.KMS
         private Func<KBArticle, DialogResult> _openEditorFactory;
         private KBArticle                     _article;
         private IEnumerable<KBArticle>        _relatedArticles = new List<KBArticle>();
+        private bool                          _webContentReady = false;
+        private string                        _pendingHtml     = string.Empty;
+        private Timer                         _zoomHideTimer;
 
         /// <summary>The ArticleID currently displayed; used by KBMainForm history stack.</summary>
         public int CurrentArticleId { get { return _article != null ? _article.ArticleID : 0; } }
@@ -59,6 +63,9 @@ namespace CMS.Presentation.Modules.KMS
                 Close();
                 return;
             }
+            _zoomHideTimer = new Timer { Interval = 1500 };
+            _zoomHideTimer.Tick += (s, ev) => { _zoomHideTimer.Stop(); pnlZoomStatus.Visible = false; };
+            InitWebViewAsync();
             AdjustSplitter();
             splitViewer.Resize += (s, ev) => AdjustSplitter();
             _presenter.Initialize();
@@ -124,8 +131,8 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnPrint_Click(object sender, EventArgs e)
         {
-            try { webContent.Print(); }
-            catch { ShowInfo("ไม่สามารถพิมพ์ได้"); }
+            if (!_webContentReady) return;
+            _ = webContent.ExecuteScriptAsync("window.print()");
         }
 
         private void BtnExportPdf_Click(object sender, EventArgs e)
@@ -168,35 +175,48 @@ namespace CMS.Presentation.Modules.KMS
                 ArticleOpenRequested(this, article);
         }
 
-        // ── WebBrowser handlers ──────────────────────────────────────────────
+        // ── WebView2 initialisation ──────────────────────────────────────────
 
-        private void webContent_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+        private async void InitWebViewAsync()
         {
-            if (webContent.Document != null)
+            try
             {
-                webContent.Document.Click -= WebContent_Document_Click;
-                webContent.Document.Click += WebContent_Document_Click;
+                await webContent.EnsureCoreWebView2Async(null);
+
+                webContent.CoreWebView2.Settings.AreDevToolsEnabled            = false;
+                webContent.CoreWebView2.Settings.IsStatusBarEnabled            = false;
+                webContent.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+
+                // Open http/https links in the system browser
+                webContent.CoreWebView2.NavigationStarting += (s, ev) =>
+                {
+                    if (ev.Uri.StartsWith("http://") || ev.Uri.StartsWith("https://"))
+                    {
+                        ev.Cancel = true;
+                        try { System.Diagnostics.Process.Start(ev.Uri); }
+                        catch (Exception ex) { ShowError("ไม่สามารถเปิดลิงก์ได้:\n" + ex.Message); }
+                    }
+                };
+
+                _webContentReady = true;
+                if (!string.IsNullOrEmpty(_pendingHtml))
+                    webContent.NavigateToString(_pendingHtml);
+            }
+            catch (Exception ex)
+            {
+                ShowError("ไม่สามารถเริ่มต้น WebView2 ได้:\n" + ex.Message);
             }
         }
 
-        private void WebContent_Document_Click(object sender, HtmlElementEventArgs e)
+        // ── Zoom indicator ───────────────────────────────────────────────────
+
+        private void WebContent_ZoomFactorChanged(object sender, EventArgs e)
         {
-            var element = webContent.Document.GetElementFromPoint(e.ClientMousePosition);
-            if (element == null) return;
-            while (element != null && element.TagName.ToLower() != "a")
-                element = element.Parent;
-            if (element == null || element.TagName.ToLower() != "a") return;
-
-            string href = element.GetAttribute("href");
-            if (string.IsNullOrWhiteSpace(href)) return;
-
-            if (href.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                href.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                e.ReturnValue = false;
-                try { System.Diagnostics.Process.Start(href); }
-                catch (Exception ex) { ShowError("ไม่สามารถเปิดลิงก์ได้: " + ex.Message); }
-            }
+            int pct = (int)Math.Round(webContent.ZoomFactor * 100);
+            lblZoomIndicator.Text = "🔍 " + pct + "%";
+            pnlZoomStatus.Visible = true;
+            _zoomHideTimer.Stop();
+            _zoomHideTimer.Start();
         }
 
         // ── Tab populate methods (data binding only) ─────────────────────────
@@ -315,33 +335,29 @@ namespace CMS.Presentation.Modules.KMS
 
         private void LoadContent()
         {
-            try
-            {
-                string body = _article.ContentHTML ?? string.Empty;
-                string html = string.Format(
-                    "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
-                    "<style>" +
-                    "body{{font-family:'Segoe UI',Tahoma,sans-serif;font-size:13px;" +
-                        "margin:12px 16px;color:#333;line-height:1.8}}" +
-                    "h2{{font-size:16px;color:#1E3A5F;border-bottom:2px solid #2E74B5;" +
-                        "padding-bottom:4px;margin:0 0 10px}}" +
-                    "h3{{font-size:14px;color:#2E74B5;margin:10px 0 5px}}" +
-                    "p{{margin-bottom:8px}}" +
-                    "pre,code{{background:#f4f6f8;padding:3px 7px;border-radius:3px;" +
-                        "font-family:Consolas,monospace;font-size:12px}}" +
-                    "table{{border-collapse:collapse;width:100%;margin:8px 0}}" +
-                    "td,th{{border:1px solid #ddd;padding:6px 10px;text-align:left}}" +
-                    "th{{background:#2E74B5;color:#fff}}" +
-                    "a{{color:#2E74B5}}" +
-                    "</style></head><body>{0}</body></html>",
-                    body);
-                webContent.DocumentText = html;
-            }
-            catch
-            {
-                webContent.DocumentText =
-                    "<p style='font-family:Segoe UI;color:#888'>ไม่สามารถแสดงเนื้อหาได้</p>";
-            }
+            string body = _article.ContentHTML ?? string.Empty;
+            string html =
+                "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
+                "<style>" +
+                "body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:13px;" +
+                    "margin:12px 16px;color:#333;line-height:1.6}" +
+                "p{margin:0 0 8px}" +
+                "[data-kms-tab]{font-size:0!important;line-height:0!important}" +
+                "h2{font-size:16px;color:#1E3A5F;border-bottom:2px solid #2E74B5;" +
+                    "padding-bottom:4px;margin:0 0 10px}" +
+                "h3{font-size:14px;color:#2E74B5;margin:10px 0 5px}" +
+                "pre,code{background:#f4f6f8;padding:3px 7px;border-radius:3px;" +
+                    "font-family:Consolas,monospace;font-size:12px}" +
+                "table{border-collapse:collapse;width:100%;margin:8px 0}" +
+                "td,th{border:1px solid #ddd;padding:6px 10px;text-align:left}" +
+                "th{background:#2E74B5;color:#fff}" +
+                "a{color:#2E74B5}" +
+                "</style></head><body>" + body + "</body></html>";
+
+            if (_webContentReady)
+                webContent.NavigateToString(html);
+            else
+                _pendingHtml = html;
         }
 
         // ── Colour helpers ────────────────────────────────────────────────────

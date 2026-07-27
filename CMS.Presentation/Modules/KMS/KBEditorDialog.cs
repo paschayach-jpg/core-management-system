@@ -65,6 +65,7 @@ namespace CMS.Presentation.Modules.KMS
             splitMain.Dock = DockStyle.Fill;
 
             InitWebEditorAsync();
+            tsRteZoom.Text = _zoomPct + "%"; // default 100%
             InitTypeCombo();
             InitCrafCombo();
             
@@ -350,6 +351,8 @@ namespace CMS.Presentation.Modules.KMS
         private int    _mappingExpandedWidth   = 529;
         private bool   _syncingToolbar = false;
         private bool   _applyingFormat = false;
+        private int    _zoomPct        = 100;
+        private static readonly int[] _zoomLevels = { 50, 75, 100, 125, 150, 175, 200 };
         private bool   _savedSuccessfully = false;
         private string _originalContentHtml = string.Empty;
 
@@ -754,6 +757,9 @@ namespace CMS.Presentation.Modules.KMS
                 webEditor.CoreWebView2.WebMessageReceived += WebEditor_WebMessageReceived;
 
                 webEditor.CoreWebView2.NavigationCompleted += WebEditor_NavigationCompleted;
+
+                // Sync zoom display when user uses Ctrl+scroll inside WebView2
+                webEditor.ZoomFactorChanged += WebEditor_ZoomFactorChanged;
 
                 webEditor.NavigateToString(GetEditorHtml());
             }
@@ -1214,6 +1220,74 @@ namespace CMS.Presentation.Modules.KMS
                 Newtonsoft.Json.JsonConvert.SerializeObject(pt),
                 Newtonsoft.Json.JsonConvert.SerializeObject(markerId));
             _ = webEditor.ExecuteScriptAsync(js);
+        }
+
+        // ── Zoom controls ────────────────────────────────────────────────────────
+
+        private void WebEditor_ZoomFactorChanged(object sender, EventArgs e)
+        {
+            int pct = (int)Math.Round(webEditor.ZoomFactor * 100);
+            _zoomPct = pct;
+            _syncingToolbar = true;
+            tsRteZoom.Text = pct + "%";
+            _syncingToolbar = false;
+        }
+
+        private void TsRteZoomOut_Click(object sender, EventArgs e)
+        {
+            int prev = _zoomLevels.LastOrDefault(l => l < _zoomPct);
+            if (prev > 0) SetZoom(prev);
+        }
+
+        private void TsRteZoomIn_Click(object sender, EventArgs e)
+        {
+            int next = _zoomLevels.FirstOrDefault(l => l > _zoomPct);
+            if (next > 0) SetZoom(next);
+        }
+
+        private void TsRteZoom_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_syncingToolbar || tsRteZoom.SelectedItem == null) return;
+            string s = tsRteZoom.SelectedItem.ToString().Replace("%", "");
+            if (int.TryParse(s, out int pct)) SetZoom(pct);
+        }
+
+        private void TsRteZoom_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Return) return;
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+            ApplyZoomFromText();
+            webEditor.Focus();
+        }
+
+        private void TsRteZoom_Leave(object sender, EventArgs e)
+        {
+            ApplyZoomFromText();
+        }
+
+        private void ApplyZoomFromText()
+        {
+            string s = tsRteZoom.Text.Replace("%", "").Trim();
+            if (int.TryParse(s, out int pct) && pct >= 10 && pct <= 500)
+                SetZoom(pct);
+            else
+            {
+                // Reset display to the last valid zoom
+                _syncingToolbar = true;
+                tsRteZoom.Text = _zoomPct + "%";
+                _syncingToolbar = false;
+            }
+        }
+
+        private void SetZoom(int pct)
+        {
+            _zoomPct = pct;
+            webEditor.ZoomFactor = pct / 100.0;
+            _syncingToolbar = true;
+            tsRteZoom.Text = pct + "%";
+            _syncingToolbar = false;
+            webEditor.Focus();
         }
 
         private static string GetEditorHtml()

@@ -105,6 +105,10 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteCode = new System.Windows.Forms.ToolStripButton();
             this.tsRteImage = new System.Windows.Forms.ToolStripButton();
             this.tsRteAttach = new System.Windows.Forms.ToolStripButton();
+            this.tsRteSepZoom = new System.Windows.Forms.ToolStripSeparator();
+            this.tsRteZoomOut = new System.Windows.Forms.ToolStripButton();
+            this.tsRteZoom = new System.Windows.Forms.ToolStripComboBox();
+            this.tsRteZoomIn = new System.Windows.Forms.ToolStripButton();
             this.pnlSummaryArea = new System.Windows.Forms.Panel();
             this.txtSummary = new System.Windows.Forms.TextBox();
             this.lblSummary = new System.Windows.Forms.Label();
@@ -1102,7 +1106,11 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteTable,
             this.tsRteCode,
             this.tsRteImage,
-            this.tsRteAttach});
+            this.tsRteAttach,
+            this.tsRteSepZoom,
+            this.tsRteZoomOut,
+            this.tsRteZoom,
+            this.tsRteZoomIn});
             this.tsRte.Location = new System.Drawing.Point(0, 65);
             this.tsRte.Name = "tsRte";
             this.tsRte.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
@@ -1316,6 +1324,47 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteAttach.Text = "📎";
             this.tsRteAttach.ToolTipText = "แนบไฟล์";
             this.tsRteAttach.Click += new System.EventHandler(this.TsRteAttach_Click);
+            // 
+            // tsRteSepZoom
+            // 
+            this.tsRteSepZoom.Name = "tsRteSepZoom";
+            this.tsRteSepZoom.Size = new System.Drawing.Size(6, 28);
+            // 
+            // tsRteZoomOut
+            // 
+            this.tsRteZoomOut.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteZoomOut.Name = "tsRteZoomOut";
+            this.tsRteZoomOut.Size = new System.Drawing.Size(29, 25);
+            this.tsRteZoomOut.Text = "−";
+            this.tsRteZoomOut.ToolTipText = "ย่อ (Zoom Out)";
+            this.tsRteZoomOut.Click += new System.EventHandler(this.TsRteZoomOut_Click);
+            // 
+            // tsRteZoom
+            // 
+            this.tsRteZoom.AutoSize = false;
+            this.tsRteZoom.Items.AddRange(new object[] {
+            "50%",
+            "75%",
+            "100%",
+            "125%",
+            "150%",
+            "175%",
+            "200%"});
+            this.tsRteZoom.Name = "tsRteZoom";
+            this.tsRteZoom.Size = new System.Drawing.Size(62, 28);
+            this.tsRteZoom.ToolTipText = "ระดับการซูม (พิมพ์ตัวเลขแล้วกด Enter หรือเลือกจากรายการ)";
+            this.tsRteZoom.SelectedIndexChanged += new System.EventHandler(this.TsRteZoom_SelectedIndexChanged);
+            this.tsRteZoom.Leave += new System.EventHandler(this.TsRteZoom_Leave);
+            this.tsRteZoom.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TsRteZoom_KeyDown);
+            // 
+            // tsRteZoomIn
+            // 
+            this.tsRteZoomIn.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsRteZoomIn.Name = "tsRteZoomIn";
+            this.tsRteZoomIn.Size = new System.Drawing.Size(29, 25);
+            this.tsRteZoomIn.Text = "+";
+            this.tsRteZoomIn.ToolTipText = "ขยาย (Zoom In)";
+            this.tsRteZoomIn.Click += new System.EventHandler(this.TsRteZoomIn_Click);
             // 
             // pnlSummaryArea
             // 
@@ -2847,6 +2896,10 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ToolStripButton    tsRteCode;
         private System.Windows.Forms.ToolStripButton    tsRteImage;
         private System.Windows.Forms.ToolStripButton    tsRteAttach;
+        private System.Windows.Forms.ToolStripSeparator tsRteSepZoom;
+        private System.Windows.Forms.ToolStripButton    tsRteZoomOut;
+        private System.Windows.Forms.ToolStripComboBox  tsRteZoom;
+        private System.Windows.Forms.ToolStripButton    tsRteZoomIn;
         private System.Windows.Forms.Label       lblContent;
         private Microsoft.Web.WebView2.WinForms.WebView2 webEditor;
         private System.Windows.Forms.Panel       pnlRteStatus;
