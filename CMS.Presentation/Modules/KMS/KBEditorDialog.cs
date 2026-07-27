@@ -1047,12 +1047,7 @@ namespace CMS.Presentation.Modules.KMS
             webEditor.Focus();
         }
 
-        private void TsRteBold_Click(object sender, EventArgs e)
-        {
-            if (!_editorReady) return;
-            _ = webEditor.ExecuteScriptAsync("applyBold();notifyChange();");
-            webEditor.Focus();
-        }
+        private void TsRteBold_Click(object sender, EventArgs e)           { ExecCmd("bold"); }
         private void TsRteItalic_Click(object sender, EventArgs e)       { ExecCmd("Italic"); }
         private void TsRteUnder_Click(object sender, EventArgs e)        { ExecCmd("Underline"); }
         private void TsRteAlignLeft_Click(object sender, EventArgs e)    { ExecCmd("JustifyLeft"); }
@@ -1231,8 +1226,13 @@ namespace CMS.Presentation.Modules.KMS
                 "<style>" +
                 "html,body{height:100%;margin:0;}" +
                 "body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:14px;" +
-                "padding:8px;min-height:100%;box-sizing:border-box;line-height:1.6;color:#333;" +
+                "padding:8px;min-height:100%;box-sizing:border-box;line-height:1.4;color:#333;" +
                 "outline:none;}" +
+                // Remove default <p> margins so lines from Enter key match <br> spacing.
+                "p{margin:0;}" +
+                // Prevent tab-span characters from inheriting a large font-size (e.g. 18pt)
+                // that would stretch the line height beyond the surrounding text.
+                "[data-kms-tab]{font-size:0!important;line-height:0!important;}" +
                 "h1{font-size:22px;}h2{font-size:18px;}h3{font-size:15px;}" +
                 "table{border-collapse:collapse;width:100%;margin:8px 0;}" +
                 "td,th{border:1px solid #ccc;padding:4px 8px;}" +
@@ -1264,8 +1264,6 @@ namespace CMS.Presentation.Modules.KMS
                 "var fs=getSelFontSizePt();" +
                 "return b+i+u+jl+jc+jr+ul+ol+'|'+fn+'|'+fs;" +
                 "}catch(e){return '00000000||';}}" +
-                // ── Bold (Chromium keeps Bold capitalised in execCommand) ─────────
-                "function applyBold(){document.execCommand('bold',false,null);}" +
                 // ── Selection helpers ────────────────────────────────────────────
                 "function hasTextSel(){" +
                 "var s=window.getSelection();return !!(s&&!s.isCollapsed&&s.toString().length>0);}" +
