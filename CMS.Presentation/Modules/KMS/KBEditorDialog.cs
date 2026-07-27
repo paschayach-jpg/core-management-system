@@ -745,11 +745,16 @@ namespace CMS.Presentation.Modules.KMS
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             const int WM_KEYDOWN = 0x0100;
-            if (msg.Msg == WM_KEYDOWN && keyData == Keys.Tab && WebEditorContentHasFocus())
+            if (msg.Msg == WM_KEYDOWN && WebEditorContentHasFocus() && _editorReady && webEditor.Document != null)
             {
-                if (_editorReady && webEditor.Document != null)
+                if (keyData == Keys.Tab)
                 {
                     webEditor.Document.InvokeScript("insertTab");
+                    return true;
+                }
+                if (keyData == (Keys.Tab | Keys.Shift))
+                {
+                    webEditor.Document.InvokeScript("removeTab");
                     return true;
                 }
             }
@@ -1344,6 +1349,21 @@ namespace CMS.Presentation.Modules.KMS
                 "var r=sel.createRange();" +
                 "r.collapse(true);" +
                 "r.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');" +
+                "}catch(e){}}" +
+                // removeTab: ลบ space/&nbsp; ก่อน cursor (สูงสุด 4 ตัว)
+                // นับ space/&nbsp; ต่อเนื่องจาก cursor ถอยหลัง แล้วลบเท่าที่พบ
+                "function removeTab(){" +
+                "try{var sel=document.selection;" +
+                "if(!sel||sel.type==='None'){document.body.focus();sel=document.selection;}" +
+                "if(!sel)return;" +
+                "var r=sel.createRange();r.collapse(true);" +
+                "var r2=r.duplicate();r2.moveStart('character',-4);" +
+                "var text=r2.text;" +
+                "if(!text.length)return;" +
+                // text[length-1] คือ char ติดกับ cursor, นับถอยหลังจนเจอ non-space
+                "var count=0;" +
+                "for(var i=text.length-1;i>=0;i--){var c=text.charCodeAt(i);if(c===32||c===160)count++;else break;}" +
+                "if(count>0){var del=r.duplicate();del.moveStart('character',-count);del.text='';}" +
                 "}catch(e){}}" +
                 "</script>" +
                 "</head><body contenteditable='true' style='outline:none;'></body></html>";
