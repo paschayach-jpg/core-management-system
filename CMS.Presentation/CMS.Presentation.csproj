@@ -9,12 +9,31 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CMS.Presentation</RootNamespace>
     <AssemblyName>CMS.Presentation</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <PublishUrl>\\150.1.8.23\AppForUser\cmspopp\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Unc</InstallFrom>
+    <UpdateEnabled>true</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <InstallUrl>\\150.1.8.23\AppForUser\cmspopp\</InstallUrl>
+    <ApplicationRevision>1</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <PublishWizardCompleted>true</PublishWizardCompleted>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,6 +52,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifests>true</GenerateManifests>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
       <HintPath>..\packages\BouncyCastle.1.8.9\lib\BouncyCastle.Crypto.dll</HintPath>
@@ -42,11 +64,20 @@
       <HintPath>..\packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Core">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.4078.44\lib\net462\Microsoft.Web.WebView2.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.WinForms">
+      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.4078.44\lib\net462\Microsoft.Web.WebView2.WinForms.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
@@ -62,6 +93,8 @@
     </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System.Configuration" />
   </ItemGroup>
@@ -830,5 +863,177 @@
       <Name>CMS.Services</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Modules\RGP\RgpSession.cs" />
+    <Compile Include="Modules\RGP\Controls\DataGridViewProgressBarColumn.cs" />
+    <Compile Include="Modules\RGP\Frm_Doc_Workflow_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Doc_Workflow_Edit.Designer.cs">
+      <DependentUpon>Frm_Doc_Workflow_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Detail.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Detail.Designer.cs">
+      <DependentUpon>Frm_Project_Detail.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_List.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_List.Designer.cs">
+      <DependentUpon>Frm_Project_List.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Member.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Member.Designer.cs">
+      <DependentUpon>Frm_Project_Member.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Progress_Update.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Progress_Update.Designer.cs">
+      <DependentUpon>Frm_Project_Progress_Update.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Role.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Role.Designer.cs">
+      <DependentUpon>Frm_Project_Role.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Role_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Role_Edit.Designer.cs">
+      <DependentUpon>Frm_Project_Role_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_State_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_State_Edit.Designer.cs">
+      <DependentUpon>Frm_Project_State_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_Edit.Designer.cs">
+      <DependentUpon>Frm_Project_Task_Edit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_List.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_List.Designer.cs">
+      <DependentUpon>Frm_Project_Task_List.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_Status.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Project_Task_Status.Designer.cs">
+      <DependentUpon>Frm_Project_Task_Status.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_RefProject.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_RefProject.Designer.cs">
+      <DependentUpon>Frm_Select_RefProject.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_StateForTask.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_StateMember.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Select_StateMember.Designer.cs">
+      <DependentUpon>Frm_Select_StateMember.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Task_Dashboard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Task_Dashboard.Designer.cs">
+      <DependentUpon>Frm_Task_Dashboard.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Template_Doc_Edit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\RGP\Frm_Template_Doc_Edit.Designer.cs">
+      <DependentUpon>Frm_Template_Doc_Edit.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Modules\RGP\Frm_Doc_Workflow_Edit.resx">
+      <DependentUpon>Frm_Doc_Workflow_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Detail.resx">
+      <DependentUpon>Frm_Project_Detail.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_List.resx">
+      <DependentUpon>Frm_Project_List.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Member.resx">
+      <DependentUpon>Frm_Project_Member.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Progress_Update.resx">
+      <DependentUpon>Frm_Project_Progress_Update.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Role_Edit.resx">
+      <DependentUpon>Frm_Project_Role_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_State_Edit.resx">
+      <DependentUpon>Frm_Project_State_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Task_Edit.resx">
+      <DependentUpon>Frm_Project_Task_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Project_Task_Status.resx">
+      <DependentUpon>Frm_Project_Task_Status.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Select_RefProject.resx">
+      <DependentUpon>Frm_Select_RefProject.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Select_StateMember.resx">
+      <DependentUpon>Frm_Select_StateMember.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\RGP\Frm_Template_Doc_Edit.resx">
+      <DependentUpon>Frm_Template_Doc_Edit.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <!-- WebView2Loader.dll for AnyCPU ClickOnce deployment.
+       The NuGet .targets injects these as Content items via an imported file, which ClickOnce
+       does not pick up. Declaring them directly here forces both MSBuild (copy to output) and
+       the ClickOnce manifest generator (PublishState=Included) to include them. -->
+  <ItemGroup>
+    <Content Include="..\packages\Microsoft.Web.WebView2.1.0.4078.44\runtimes\win-x86\native\WebView2Loader.dll">
+      <Link>runtimes\win-x86\native\WebView2Loader.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PublishState>Included</PublishState>
+      <Visible>False</Visible>
+    </Content>
+    <Content Include="..\packages\Microsoft.Web.WebView2.1.0.4078.44\runtimes\win-x64\native\WebView2Loader.dll">
+      <Link>runtimes\win-x64\native\WebView2Loader.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PublishState>Included</PublishState>
+      <Visible>False</Visible>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.6.2">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.6.2 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\Microsoft.Web.WebView2.1.0.4078.44\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.4078.44\build\Microsoft.Web.WebView2.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Web.WebView2.1.0.4078.44\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Web.WebView2.1.0.4078.44\build\Microsoft.Web.WebView2.targets'))" />
+  </Target>
 </Project>

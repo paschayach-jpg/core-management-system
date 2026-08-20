@@ -78,6 +78,11 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
         private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
+        private readonly CMS.Controllers.RGP.ProjectController _rgpProjectController;
+        private readonly CMS.Controllers.RGP.ProjectStateController _rgpStateController;
+        private readonly CMS.Controllers.RGP.ProjectTaskController _rgpTaskController;
+        private readonly CMS.Controllers.RGP.ProjectProgressController _rgpProgressController;
+        private readonly CMS.Controllers.RGP.ProjectDocumentController _rgpDocController;
         private readonly CMS.Data.Interfaces.IKBCategoryRepository _kbCategoryRepository;
         private readonly CMS.Data.Interfaces.IKBArticleRepository  _kbArticleRepository;
         private readonly CMS.Data.Interfaces.IKBArticleLinkRepository _kbArticleLinkRepository;
@@ -138,14 +143,11 @@ namespace CMS.Presentation
         // Persistent logout button in ribbonStrip
         private ToolStripButton _btnLogout;
         private bool _ribbonCollapsed = false;
-        private bool _adminTabActive = false;
+        private bool _adminTabActive  = false;
+        private bool _navCollapsed    = false;
 
         // ── "Shared With Me" badge (Home ribbon) ────────────────────────────
         private ToolStripLabel _lblSharedBadge;
-
-        // ── Persistent left navigation panel ────────────────────────────────
-        private Panel _pnlMainNav;
-        private TreeView _navTree;
 
         // File detail panel controls
         private Panel _fileDetailPanel;
@@ -226,7 +228,12 @@ namespace CMS.Presentation
             CMS.Data.Interfaces.ISubCommitteeRepository  subCommitteeRepository  = null,
             CMS.Data.Interfaces.IHrDivisionRepository   hrDivisionRepository    = null,
             CMS.Data.Interfaces.IHrDepartmentRepository hrDepartmentRepository  = null,
-            CMS.Services.Interfaces.IFolderQuotaService quotaService = null)
+            CMS.Services.Interfaces.IFolderQuotaService quotaService = null,
+            CMS.Controllers.RGP.ProjectController rgpProjectController = null,
+            CMS.Controllers.RGP.ProjectStateController rgpStateController = null,
+            CMS.Controllers.RGP.ProjectTaskController rgpTaskController = null,
+            CMS.Controllers.RGP.ProjectProgressController rgpProgressController = null,
+            CMS.Controllers.RGP.ProjectDocumentController rgpDocController = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -284,6 +291,11 @@ namespace CMS.Presentation
             _employeeDirectoryController = employeeDirectoryController;
             _userOrgVisibilityController = userOrgVisibilityController;
             _employeeApiService = employeeApiService;
+            _rgpProjectController = rgpProjectController;
+            _rgpStateController = rgpStateController;
+            _rgpTaskController = rgpTaskController;
+            _rgpProgressController = rgpProgressController;
+            _rgpDocController = rgpDocController;
             _workflowDelegationService = workflowDelegationService;
             _ldapUserSearchService     = ldapUserSearchService;
             _kbCategoryService = kbCategoryService;
@@ -363,6 +375,7 @@ namespace CMS.Presentation
 
                 // Persistent left navigation panel (always visible)
                 InitializeMainNavPanel();
+                LoadMainNavTree();
 
                 // Auto-open FolderForm on startup
                 // Auto-open FolderForm first — must appear before dashboard data loads
@@ -516,100 +529,6 @@ namespace CMS.Presentation
         // Left Navigation Panel
         // -----------------------------------------------------------------------
 
-        private void InitializeMainNavPanel()
-        {
-            var accent = Color.FromArgb(31, 56, 100);
-
-            var lblNavTitle = new Label
-            {
-                Text = "☰  เมนูหลัก",
-                Dock = DockStyle.Top,
-                Height = 30,
-                BackColor = accent,
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                Padding = new Padding(8, 0, 0, 0)
-            };
-
-            _navTree = new TreeView
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White,
-                BorderStyle = BorderStyle.None,
-                Font = new Font("Segoe UI", 10f),
-                HotTracking = true,
-                Indent = 14,
-                HideSelection = false,
-                ShowLines = true
-            };
-            _navTree.NodeMouseClick += NavTree_NodeMouseClick;
-
-            var pnlNavActions = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 26,
-                BackColor = Color.FromArgb(240, 244, 250),
-                Padding = new Padding(4, 3, 4, 3)
-            };
-
-            var btnExpandAll = new Button
-            {
-                Text = "ขยายโหนด",
-                Dock = DockStyle.Left,
-                Width = 82,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(31, 56, 100),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 8f),
-                Cursor = Cursors.Hand,
-                TabStop = false
-            };
-            btnExpandAll.FlatAppearance.BorderSize = 0;
-            btnExpandAll.Click += (s, e) => _navTree.ExpandAll();
-
-            var btnCollapseAll = new Button
-            {
-                Text = "ย่อโหนด",
-                Dock = DockStyle.Left,
-                Width = 70,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(90, 110, 140),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 8f),
-                Cursor = Cursors.Hand,
-                TabStop = false,
-                Margin = new Padding(0, 0, 4, 0)
-            };
-            btnCollapseAll.FlatAppearance.BorderSize = 0;
-            btnCollapseAll.Click += (s, e) => _navTree.CollapseAll();
-
-            pnlNavActions.Controls.Add(btnCollapseAll);
-            pnlNavActions.Controls.Add(btnExpandAll);
-
-            var sep = new Panel
-            {
-                Dock = DockStyle.Right,
-                Width = 1,
-                BackColor = Color.FromArgb(180, 200, 230)
-            };
-
-            _pnlMainNav = new Panel
-            {
-                Dock = DockStyle.Left,
-                Width = 185,
-                BackColor = Color.White
-            };
-            _pnlMainNav.Controls.Add(_navTree);
-            _pnlMainNav.Controls.Add(pnlNavActions);
-            _pnlMainNav.Controls.Add(sep);
-            _pnlMainNav.Controls.Add(lblNavTitle);
-
-            this.Controls.Add(_pnlMainNav);
-
-            LoadMainNavTree();
-        }
-
         private void LoadMainNavTree()
         {
             _navTree.BeginUpdate();
@@ -653,6 +572,10 @@ namespace CMS.Presentation
             }
             finally
             {
+                // TODO ชั่วคราว: เพิ่มเมนู Project Management (RGP) แบบ hardcoded เพื่อทดสอบการใช้งาน
+                // โดยไม่ขึ้นกับว่าเมนูจาก API/DB (EMS.MenuItem) จะมีรายการนี้หรือไม่
+                // ในระยะยาวควรย้ายไปกำหนดที่ฝั่ง Menu API/DB แทน แล้วเอาโค้ดนี้ออก
+
                 _navTree.EndUpdate();
             }
         }
@@ -690,6 +613,9 @@ namespace CMS.Presentation
             // KMS — Knowledge Management
             if (c == "KMS" || c.StartsWith("KMS") || d == "KMS" || d.Contains("KNOWLEDGE") || d.Contains("ความรู้"))
                 return "KBMainForm";
+
+            if (c == "RGP" || c.StartsWith("RGP") || d == "RGP" || d.Contains("PROJECTMANAGEMENT") || d.Contains("จัดการโปรเจ็ค"))
+                return "FrmProjectList";
 
             // WFE / WKE — Workflow Engine
             if (c == "WFE" || c == "WKE" || c.StartsWith("WFE") || c.StartsWith("WKE")
@@ -786,6 +712,29 @@ namespace CMS.Presentation
 
             dialog.StartPosition = FormStartPosition.Manual;
             dialog.Location      = new System.Drawing.Point(x, y);
+        }
+
+        private void LblNavTitle_Click(object sender, EventArgs e)
+        {
+            _navCollapsed = !_navCollapsed;
+            if (_navCollapsed)
+            {
+                _pnlMainNav.Width         = 28;
+                _navTree.Visible          = false;
+                pnlNavActions.Visible     = false;
+                lblNavTitle.Text          = "☰";
+                lblNavTitle.TextAlign     = System.Drawing.ContentAlignment.MiddleCenter;
+                lblNavTitle.Padding       = new System.Windows.Forms.Padding(0);
+            }
+            else
+            {
+                _pnlMainNav.Width         = 185;
+                _navTree.Visible          = true;
+                pnlNavActions.Visible     = true;
+                lblNavTitle.Text          = "☰  เมนูหลัก";
+                lblNavTitle.TextAlign     = System.Drawing.ContentAlignment.MiddleLeft;
+                lblNavTitle.Padding       = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            }
         }
 
         private void NavTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -1744,6 +1693,31 @@ namespace CMS.Presentation
             OpenKnowledgeBase();
         }
 
+        /// <summary>เปิดหน้าแรกของโมดูล Project (RGP) — Frm_Project_List เป็น MDI child</summary>
+        private void OpenProjectManagement()
+        {
+            if (_rgpProjectController == null)
+            {
+                MessageBox.Show("Project Management service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var existing = MdiChildren.OfType<CMS.Presentation.Modules.RGP.Frm_Project_List>().FirstOrDefault();
+            if (existing != null)
+            {
+                if (existing.WindowState == FormWindowState.Minimized)
+                    existing.WindowState = FormWindowState.Normal;
+                existing.Activate();
+                return;
+            }
+
+            var form = new CMS.Presentation.Modules.RGP.Frm_Project_List(
+                _rgpProjectController, _rgpStateController, _rgpTaskController,
+                _rgpProgressController, _rgpDocController, _currentUser);
+            OpenChildForm(form);
+        }
+
         private void OpenKnowledgeBase()
         {
             if (_kbCategoryService == null || _kbArticleService == null)
@@ -2091,6 +2065,11 @@ namespace CMS.Presentation
                 case "KnowledgeBaseForm":
                 case "KBMainForm":
                     OpenKnowledgeBase();
+                    return true;
+                case "ProjectMain":
+                case "ProjectManagement":
+                case "Frm_Project_List":
+                    OpenProjectManagement();
                     return true;
                 case "KBCategoryForm":
                     OpenKBCategorySettings();

@@ -104,6 +104,20 @@
     <Compile Include="Models\Workflow\StepGraph.cs" />
     <Compile Include="Models\FolderQuotaConfig.cs" />
     <Compile Include="Models\FolderQuotaChangeRequest.cs" />
+    <!-- RGP (RG_Project) module -->
+    <Compile Include="Models\ProjectAuditEntry.cs" />
+    <Compile Include="Models\EFilingRequestModel.cs" />
+    <Compile Include="Models\ProjectDocumentWorkflowModel.cs" />
+    <Compile Include="Models\ProjectMemberModel.cs" />
+    <Compile Include="Models\ProjectMemberRoleModel.cs" />
+    <Compile Include="Models\ProjectModel.cs" />
+    <Compile Include="Models\ProjectProgressModel.cs" />
+    <Compile Include="Models\ProjectStateMemberModel.cs" />
+    <Compile Include="Models\ProjectStateModel.cs" />
+    <Compile Include="Models\ProjectTaskModel.cs" />
+    <Compile Include="Models\ProjectTemplateModel.cs" />
+    <Compile Include="Models\ProjectTemplateStateModel.cs" />
+    <Compile Include="Models\TemplateDocModel.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

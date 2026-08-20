@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CMS.Domain.Models;
 
@@ -17,5 +18,8 @@ namespace CMS.Data.Interfaces
 
         /// <summary>คืน sequence ถัดไปสำหรับปีที่กำหนด เพื่อสร้าง ArticleCode รูปแบบ KB-yyyy-NNN</summary>
         int GetNextCodeSequence(int year);
+
+        void SoftDelete(int articleId);
+        void UpdateExpiryDate(int articleId, DateTime? expiryDate);
     }
 }

@@ -62,6 +62,7 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Windows.Forms" />
@@ -228,6 +229,19 @@
     <Compile Include="Workflow\Interfaces\IDefinitionService.cs" />
     <Compile Include="Workflow\WorkflowServiceV2.cs" />
     <Compile Include="Workflow\DefinitionService.cs" />
+    <!-- RGP (RG_Project) module -->
+    <Compile Include="Interfaces\IProjectAuditService.cs" />
+    <Compile Include="Interfaces\IProjectService.cs" />
+    <Compile Include="Interfaces\IProjectStateService.cs" />
+    <Compile Include="Interfaces\IProjectProgressService.cs" />
+    <Compile Include="Interfaces\IProjectTaskService.cs" />
+    <Compile Include="Interfaces\IProjectDocumentService.cs" />
+    <Compile Include="ProjectAuditService.cs" />
+    <Compile Include="ProjectService.cs" />
+    <Compile Include="ProjectStateService.cs" />
+    <Compile Include="ProjectProgressService.cs" />
+    <Compile Include="ProjectTaskService.cs" />
+    <Compile Include="ProjectDocumentService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

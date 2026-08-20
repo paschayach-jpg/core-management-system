@@ -212,6 +212,12 @@ namespace CMS.Presentation
                             MessageBox.Show("กรุณาเปิด KB Category Form ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
 
+                    case "ProjectMain":
+                    case "ProjectManagement":
+                        if (!TryRequestMdiAction(context, "ProjectMain"))
+                            MessageBox.Show("กรุณาเปิด Project Management ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
                     case "WorkflowDashboard":
                         if (!TryRequestMdiAction(context, "WorkflowDashboard"))
                             MessageBox.Show("กรุณาเปิด Workflow Dashboard ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -270,6 +276,10 @@ namespace CMS.Presentation
                     case "FolderUsageReport":
                         if (!TryRequestMdiAction(context, "FolderUsageReport"))
                             MessageBox.Show("กรุณาเปิด Folder Usage Report ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+                    case "Frm_Project_List":
+                        if (!TryRequestMdiAction(context, "Frm_Project_List"))
+                            MessageBox.Show("กรุณาเปิด Frm_Project_List Form ผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
                 }
             }
