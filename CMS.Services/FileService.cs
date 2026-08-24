@@ -901,7 +901,7 @@ namespace CMS.Services
                                      : scanResult.IsClean ? 1   // 1=Clean
                                                              : 2,  // 2=Infected
                     VirusScanDate = DateTime.Now,
-                    FileStatus = 1, // 1=Active
+                    FileStatus = request.InitialFileStatus ?? 1,
                     UploadedBy = user.UserID,
                     UploadedDate = DateTime.Now,
                     Version = newVersion

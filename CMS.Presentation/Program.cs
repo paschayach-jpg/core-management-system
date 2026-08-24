@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -537,6 +537,66 @@ namespace CMS.Presentation
                 var rgpProgressController = new CMS.Controllers.RGP.ProjectProgressController(rgpProgressService);
                 var rgpDocController = new CMS.Controllers.RGP.ProjectDocumentController(rgpDocService);
 
+                // ── Launch external upload form if requested ──────────────────
+                if (startup.UploadMode)
+                {
+                    if (startup.FolderId <= 0)
+                    {
+                        MessageBox.Show("กรุณาระบุ Target Folder ID (/folderId:<id>)", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    string fName = null;
+                    int? defaultLevel = null;
+                    try
+                    {
+                        var targetFolder = folderService.GetFolder(startup.FolderId, userContext);
+                        if (targetFolder != null)
+                        {
+                            fName = targetFolder.FolderName;
+                            defaultLevel = targetFolder.ConfidentialityLevel;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        loggingService.Error("Failed to retrieve folder details for external upload", ex);
+                    }
+
+                    using (var uploadForm = new FrmExternalUpload(fileUploadController, userContext, startup.FolderId, fName, defaultLevel, uploadCheckpointController))
+                    {
+                        if (!string.IsNullOrEmpty(startup.FilePath))
+                        {
+                            uploadForm.PreSelectFile(startup.FilePath);
+                        }
+
+                        if (uploadForm.ShowDialog() == DialogResult.OK)
+                        {
+                            int? fileId = uploadForm.UploadedFileId;
+                            if (fileId.HasValue)
+                            {
+                                Console.WriteLine($"UPLOAD_SUCCESS: {fileId.Value} | LEVEL: {uploadForm.SelectedLevel}");
+
+                                if (!string.IsNullOrEmpty(startup.OutPath))
+                                {
+                                    try
+                                    {
+                                        File.WriteAllText(startup.OutPath, fileId.Value.ToString());
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        loggingService.Error("Failed to write UploadedFileId to outPath: " + startup.OutPath, ex);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("UPLOAD_CANCELLED");
+                        }
+                    }
+                    return;
+                }
+
                 // ── Launch main form ──────────────────────────────────────────
                 var mainForm = new MDI_Container(
                     logger: loggingService,
@@ -862,11 +922,20 @@ namespace CMS.Presentation
         public string Password { get; private set; }
         public string Token { get; private set; }
 
+        public bool UploadMode { get; private set; } = false;
+        public int FolderId { get; private set; } = 0;
+        public string FilePath { get; private set; }
+        public string OutPath { get; private set; }
+
         /// <summary>
         /// Parse command-line args:
         ///   /u:username   — username
         ///   /p:password   — password
         ///   /token:xxxxx  — access token
+        ///   /upload       — run in standalone upload form mode
+        ///   /folderId:123 — target folder ID
+        ///   /filePath:xxx — path of file to upload
+        ///   /out:xxx      — path to write output file ID
         /// </summary>
         public static StartupArgs Parse(string[] args)
         {
@@ -881,6 +950,17 @@ namespace CMS.Presentation
                     result.Password = arg.Substring(3);
                 else if (arg.StartsWith("/token:", StringComparison.OrdinalIgnoreCase))
                     result.Token = arg.Substring(7);
+                else if (arg.Equals("/upload", StringComparison.OrdinalIgnoreCase))
+                    result.UploadMode = true;
+                else if (arg.StartsWith("/folderId:", StringComparison.OrdinalIgnoreCase))
+                {
+                    int.TryParse(arg.Substring(10), out int fid);
+                    result.FolderId = fid;
+                }
+                else if (arg.StartsWith("/filePath:", StringComparison.OrdinalIgnoreCase))
+                    result.FilePath = arg.Substring(10);
+                else if (arg.StartsWith("/out:", StringComparison.OrdinalIgnoreCase))
+                    result.OutPath = arg.Substring(5);
             }
 
             if (!string.IsNullOrEmpty(result.Token))
