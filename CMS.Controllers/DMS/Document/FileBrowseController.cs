@@ -40,12 +40,12 @@ namespace CMS.Controllers.DMS.Document
             return _fileService.GetFilesByOrgUnit(orgUnitId, user).ToList();
         }
 
-        public FileDownloadResult DownloadFile(int fileDocumentId, UserContext user)
+        public FileDownloadResult DownloadFile(int fileDocumentId, UserContext user, bool bypassPermissionCheck = false)
         {
             if (_fileService == null)
                 return new FileDownloadResult { Success = false, ErrorMessage = "File service is not available." };
 
-            return _fileService.DownloadFile(fileDocumentId, user);
+            return _fileService.DownloadFile(fileDocumentId, user, bypassPermissionCheck);
         }
     }
 }

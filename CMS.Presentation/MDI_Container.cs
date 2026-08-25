@@ -1741,6 +1741,7 @@ namespace CMS.Presentation
                         viewer, _kbArticleService, _currentUser, article);
                     viewer.AttachPresenter(viewerPresenter);
                     viewer.AttachEditorFactory(a => OpenKBEditorDialog(a));
+                    viewer.AttachFileBrowseController(_fileBrowseController, _currentUser);
                     return viewer;
                 },
                 // editorFactory — สร้าง KBEditorDialog พร้อม presenter สำหรับฝังใน KBMainForm

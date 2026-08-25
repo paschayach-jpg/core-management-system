@@ -191,7 +191,7 @@ namespace CMS.Services
         // DownloadFile
         // -----------------------------------------------------------------------
 
-        public FileDownloadResult DownloadFile(int fileId, UserContext user)
+        public FileDownloadResult DownloadFile(int fileId, UserContext user, bool bypassPermissionCheck = false)
         {
             if (user == null) throw new ArgumentNullException("user");
 
@@ -201,26 +201,29 @@ namespace CMS.Services
             if (doc.FileStatus == 3)
                 throw new InvalidOperationException("The requested file has been deleted.");
 
-            // เงื่อนไขที่ 1+2: สิทธิ์จาก FolderAuthorityConfig / FolderPermission
-            bool hasFolderAccess = _permissionService.CheckPermission(user.UserID, doc.FolderID, "Read");
-
-            // เงื่อนไขที่ 3: ไฟล์ถูก share ตรงให้ user (FilePermission) — bypass folder check
-            bool hasDirectShare = false;
-            if (!hasFolderAccess && _filePermissionRepository != null)
+            if (!bypassPermissionCheck)
             {
-                var filePerms = _filePermissionRepository.GetByFile(doc.FileID);
-                hasDirectShare = filePerms.Any(p =>
-                    p.PrincipalType == 1 &&          // User
-                    p.PrincipalID == user.UserID &&
-                    p.CanRead == true &&
-                    p.IsDeny == false &&
-                    p.RevokedDate == null &&
-                    !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
-            }
+                // เงื่อนไขที่ 1+2: สิทธิ์จาก FolderAuthorityConfig / FolderPermission
+                bool hasFolderAccess = _permissionService.CheckPermission(user.UserID, doc.FolderID, "Read");
 
-            if (!hasFolderAccess && !hasDirectShare)
-                throw new UnauthorizedAccessException(string.Format(
-                    "User {0} does not have Read permission on folder {1}.", user.UserID, doc.FolderID));
+                // เงื่อนไขที่ 3: ไฟล์ถูก share ตรงให้ user (FilePermission) — bypass folder check
+                bool hasDirectShare = false;
+                if (!hasFolderAccess && _filePermissionRepository != null)
+                {
+                    var filePerms = _filePermissionRepository.GetByFile(doc.FileID);
+                    hasDirectShare = filePerms.Any(p =>
+                        p.PrincipalType == 1 &&          // User
+                        p.PrincipalID == user.UserID &&
+                        p.CanRead == true &&
+                        p.IsDeny == false &&
+                        p.RevokedDate == null &&
+                        !(p.ExpiryDate.HasValue && p.ExpiryDate.Value.Date < DateTime.Today));
+                }
+
+                if (!hasFolderAccess && !hasDirectShare)
+                    throw new UnauthorizedAccessException(string.Format(
+                        "User {0} does not have Read permission on folder {1}.", user.UserID, doc.FolderID));
+            }
 
             if (string.IsNullOrEmpty(doc.PhysicalPath))
             {
