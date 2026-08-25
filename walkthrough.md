@@ -9,6 +9,7 @@ This document details the changes implemented to store real attached files in th
 - **Config JSON Migration Commit:** `8776d92`
 - **App.config Cleanup Commit:** `1cc970f`
 - **Local Config Deletion & Network Fallback Commit:** `d838e1e`
+- **KMS Attachments Permission Bypass Commit:** `7551f2e`
 - **App.config Cleanup Commit:** `1cc970f`
 - **Local Config Deletion & Network Fallback Commit:** `d838e1e`
 
@@ -65,7 +66,7 @@ This document details the changes implemented to store real attached files in th
 - Removed original hardcoded mockup files from initializing on form load.
 
 #### [KBEditorController.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Controllers/KMS/KB/KBEditorController.cs)
-- Added the `SaveArticleAttachments(int articleId)` helper method to save the attached file IDs from the DataGridView grid when either **Save Draft (เธเธฑเธเธ—เธถเธ)** or **Send Review (เธชเนเธเธเธญ Review)** is clicked.
+- Added the `SaveArticleAttachments(int articleId)` helper method to save the attached file IDs from the DataGridView grid when either **Save Draft (เน€เธยเน€เธเธ‘เน€เธยเน€เธโ€”เน€เธเธ–เน€เธย)** or **Send Review (เน€เธเธเน€เธยเน€เธยเน€เธยเน€เธเธ Review)** is clicked.
 - Added the `FormatFileSize` size formatting helper.
 - Modified `LoadArticleLinks` to load attachments from the database using `_articleService.GetArticleAttachmentFiles(articleId)` and bind them to the grid when editing an existing article.
 
@@ -94,6 +95,19 @@ This document details the changes implemented to store real attached files in th
 - Configured NuGet dependency configuration for the `CMS.Infrastructure` project.
 
 - **Note:** All local `cms_config.json` files have been deleted from the repository. The configuration is loaded exclusively from the designated external network path.
+
+### 6. KMS Attachment Permission Bypass
+
+#### [IFileService.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Services/Interfaces/IFileService.cs) & [FileService.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Services/FileService.cs)
+- Added `bool bypassPermissionCheck = false` parameter to `DownloadFile` method.
+- When `bypassPermissionCheck` is set to `true`, the service bypasses the folder-level read permission checks (`_permissionService.CheckPermission` and `_filePermissionRepository.GetByFile`), allowing immediate download.
+
+#### [IFileBrowseController.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Controllers/DMS/Document/Interfaces/IFileBrowseController.cs) & [FileBrowseController.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Controllers/DMS/Document/FileBrowseController.cs)
+- Propagated the `bypassPermissionCheck` parameter down to the controller level.
+
+#### [KBEditorDialog.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Presentation/Modules/KMS/KBEditorDialog.cs)
+- Set `bypassPermissionCheck: true` on the `_fileBrowseController.DownloadFile` invocation within `DownloadAndOpenFile` method.
+- This ensures that users viewing attachments directly from the KMS Editor screen are not blocked by underlying folder-level permissions (e.g. Folder 437).
 
 ---
 
