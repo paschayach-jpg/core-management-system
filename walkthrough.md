@@ -1,5 +1,10 @@
 # Walkthrough - KB Article Attachments & Audit Logging
 
+## Git Commit Info
+- **Branch:** `Pitakpong`
+- **Commit ID:** `1f89175`
+- **Commit Message:** `feat(kms): implement database persistence and duplicate-check logic for article attachments`
+
 This document details the changes implemented to store real attached files in the `KMS.t_KBArticleAttachment` table, record audit logs when files are attached, and load/display them in both the viewer and editor screens. It also details how file attachment history is recorded in `KMS.t_KBArticleLink` without duplicates.
 
 ## Changes Made
