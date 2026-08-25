@@ -76,3 +76,11 @@ Two root-level Thai-language spec docs describe a planned WFE migration off WinF
 - `.agents/blazor_interactive_auth.md` — Blazor Web App (.NET 8/9) patterns for interactive render mode + session-restore race conditions, for a *different* (Blazor Server) migration path than the Razor Pages spec above. Treat these two migration docs as alternative explorations, not a settled decision — check with the user which target applies before doing migration work.
 
 When doing WFE migration/spec work, treat these `.md` files as the source of truth for target page structure and DB contracts, and cross-reference against the current WinForms implementation in `CMS.Presentation/Modules/WFE` + `CMS.Controllers/WFE` + `CMS.Services`/`CMS.Services/Workflow`.
+
+## Coding Guidelines
+
+### ❌ ข้อห้ามด้าน Form File Structure (Strictly Enforced)
+- ❌ ห้าม `new Control()` ใน `Frm{Name}.cs` เด็ดขาด
+- ❌ ห้าม declare control fields (`private TextEdit txt...`) ใน `Frm{Name}.cs`
+- ❌ ห้าม `Controls.Add()`, `SuspendLayout()`, `BeginInit()` ใน `Frm{Name}.cs`
+- ❌ ห้ามสร้าง Form โดยไม่มีไฟล์ `Frm{Name}.Designer.cs` แยกต่างหาก
