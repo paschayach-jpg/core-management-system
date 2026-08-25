@@ -28,7 +28,14 @@ namespace CMS.Infrastructure
         public ConfigManager()
         {
             string configPath = Environment.GetEnvironmentVariable("CMS_CONFIG_PATH");
-            if (!string.IsNullOrWhiteSpace(configPath) && File.Exists(configPath))
+            
+            // If environment variable is not set or empty, check local fallback
+            if (string.IsNullOrWhiteSpace(configPath))
+            {
+                configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cms_config.json");
+            }
+
+            if (File.Exists(configPath))
             {
                 try
                 {
@@ -42,7 +49,13 @@ namespace CMS.Infrastructure
             }
             else
             {
-                throw new FileNotFoundException("CMS Configuration file was not found. Please verify the environment variable 'CMS_CONFIG_PATH' is set and points to a valid JSON file.");
+                // If environment variable was set but file not found, or local file also not found
+                string envVarMsg = Environment.GetEnvironmentVariable("CMS_CONFIG_PATH") != null 
+                    ? "Verify the environment variable 'CMS_CONFIG_PATH' is set and points to a valid JSON file."
+                    : "No 'CMS_CONFIG_PATH' environment variable was found, and the local fallback file 'cms_config.json' is missing.";
+                
+                throw new FileNotFoundException(string.Format(
+                    "CMS Configuration file was not found at '{0}'. {1}", configPath, envVarMsg));
             }
 
             if (_jsonConfig != null)

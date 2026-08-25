@@ -102,6 +102,9 @@
     <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Resources\BRD2.md" />
+    <None Include="cms_config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <EmbeddedResource Include="template.xlsx" />
   </ItemGroup>
   <ItemGroup>
