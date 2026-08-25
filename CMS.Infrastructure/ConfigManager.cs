@@ -29,10 +29,10 @@ namespace CMS.Infrastructure
         {
             string configPath = Environment.GetEnvironmentVariable("CMS_CONFIG_PATH");
             
-            // If environment variable is not set or empty, check local fallback
+            // If environment variable is not set or empty, check central network config fallback
             if (string.IsNullOrWhiteSpace(configPath))
             {
-                configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cms_config.json");
+                configPath = @"\\150.1.8.23\AppForUser\CMS_Central_Configs\cms_config.json";
             }
 
             if (File.Exists(configPath))
@@ -49,10 +49,10 @@ namespace CMS.Infrastructure
             }
             else
             {
-                // If environment variable was set but file not found, or local file also not found
+                // If environment variable was set but file not found, or central file also not found
                 string envVarMsg = Environment.GetEnvironmentVariable("CMS_CONFIG_PATH") != null 
                     ? "Verify the environment variable 'CMS_CONFIG_PATH' is set and points to a valid JSON file."
-                    : "No 'CMS_CONFIG_PATH' environment variable was found, and the local fallback file 'cms_config.json' is missing.";
+                    : "No 'CMS_CONFIG_PATH' environment variable was found, and the central fallback file is missing or the network path is inaccessible.";
                 
                 throw new FileNotFoundException(string.Format(
                     "CMS Configuration file was not found at '{0}'. {1}", configPath, envVarMsg));
