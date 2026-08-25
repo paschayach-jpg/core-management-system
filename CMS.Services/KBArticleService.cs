@@ -369,6 +369,11 @@ namespace CMS.Services
             }
         }
 
+        public void RemoveArticleAttachment(int articleId, int fileId)
+        {
+            _attachmentRepo.DeleteByArticleAndFile(articleId, fileId);
+        }
+
         // ── Article Links ─────────────────────────────────────────────────────
 
         public IEnumerable<KBArticleLink> GetArticleLinks(int articleId, byte? entityType = null)

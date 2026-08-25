@@ -474,6 +474,25 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
+        /// Remove an attached file's link (KMS.t_KBArticleLink, EntityType = Folder/File) by FileID
+        /// </summary>
+        public void RemoveArticleAttachmentLink(int fileId)
+        {
+            if (_editingArticle == null) return; // Not saved yet - nothing to delete in DB
+
+            try
+            {
+                _articleService.RemoveArticleLink(
+                    _editingArticle.ArticleID, fileId, (byte)KBEntityType.Folder);
+                _articleService.RemoveArticleAttachment(_editingArticle.ArticleID, fileId);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to remove attachment link: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
         /// Save article links to database
         /// </summary>
         private void SaveArticleLinks(int articleId)

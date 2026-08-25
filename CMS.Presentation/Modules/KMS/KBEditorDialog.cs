@@ -2196,17 +2196,31 @@ namespace CMS.Presentation.Modules.KMS
             else if (e.ColumnIndex == dgvAttachLinked.Columns["colDelete"].Index)
             {
                 string fileName = dgvAttachLinked.Rows[e.RowIndex].Cells["colFilename"].Value?.ToString();
-                
+                object tag = dgvAttachLinked.Rows[e.RowIndex].Tag;
+
                 var confirm = MessageBox.Show(
                     string.Format("ต้องการลบไฟล์ '{0}' ใช่หรือไม่?", fileName),
-                    "ยืนยันการลบ", 
-                    MessageBoxButtons.YesNo, 
+                    "ยืนยันการลบ",
+                    MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question);
-                
+
                 if (confirm == DialogResult.Yes)
                 {
+                    if (tag is int fileId && _presenter != null)
+                    {
+                        try
+                        {
+                            _presenter.RemoveArticleAttachmentLink(fileId);
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowError("ลบข้อมูลการเชื่อมโยงไฟล์ไม่สำเร็จ: " + ex.Message);
+                            return;
+                        }
+                    }
+
                     dgvAttachLinked.Rows.RemoveAt(e.RowIndex);
-                    
+
                     // Renumber
                     for (int i = 0; i < dgvAttachLinked.Rows.Count; i++)
                     {
