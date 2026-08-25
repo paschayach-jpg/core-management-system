@@ -10,8 +10,7 @@ This document details the changes implemented to store real attached files in th
 - **App.config Cleanup Commit:** `1cc970f`
 - **Local Config Deletion & Network Fallback Commit:** `d838e1e`
 - **KMS Attachments Permission Bypass Commit:** `7551f2e`
-- **App.config Cleanup Commit:** `1cc970f`
-- **Local Config Deletion & Network Fallback Commit:** `d838e1e`
+- **Viewer Attachments View Button Column Commit:** `fdffa0d`
 
 ---
 
@@ -66,7 +65,7 @@ This document details the changes implemented to store real attached files in th
 - Removed original hardcoded mockup files from initializing on form load.
 
 #### [KBEditorController.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Controllers/KMS/KB/KBEditorController.cs)
-- Added the `SaveArticleAttachments(int articleId)` helper method to save the attached file IDs from the DataGridView grid when either **Save Draft (เน€เธยเน€เธเธ‘เน€เธยเน€เธโ€”เน€เธเธ–เน€เธย)** or **Send Review (เน€เธเธเน€เธยเน€เธยเน€เธยเน€เธเธ Review)** is clicked.
+- Added the `SaveArticleAttachments(int articleId)` helper method to save the attached file IDs from the DataGridView grid when either **Save Draft (เน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธโ€เน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเนโฌโ€เน€เธโฌเน€เธยเน€เธโ€“เน€เธโฌเน€เธยเธขย)** or **Send Review (เน€เธโฌเน€เธยเน€เธยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเธขยเน€เธโฌเน€เธยเน€เธย Review)** is clicked.
 - Added the `FormatFileSize` size formatting helper.
 - Modified `LoadArticleLinks` to load attachments from the database using `_articleService.GetArticleAttachmentFiles(articleId)` and bind them to the grid when editing an existing article.
 
@@ -108,6 +107,17 @@ This document details the changes implemented to store real attached files in th
 #### [KBEditorDialog.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Presentation/Modules/KMS/KBEditorDialog.cs)
 - Set `bypassPermissionCheck: true` on the `_fileBrowseController.DownloadFile` invocation within `DownloadAndOpenFile` method.
 - This ensures that users viewing attachments directly from the KMS Editor screen are not blocked by underlying folder-level permissions (e.g. Folder 437).
+
+### 7. KMS Viewer Attachment View Button
+
+#### [ArticleViewerForm.Designer.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Presentation/Modules/KMS/ArticleViewerForm.Designer.cs) & [ArticleViewerForm.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Presentation/Modules/KMS/ArticleViewerForm.cs)
+- Added `colAttachView` (DataGridViewButtonColumn) with header "ดูไฟล์" and button text "👁️ ดู" to the `dgvAttachLinked` grid.
+- Registered the `CellContentClick` event on the grid.
+- Implemented `DgvAttachLinked_CellContentClick` and `DownloadAndOpenFile` using `_fileBrowseController.DownloadFile` with `bypassPermissionCheck: true` to match the editor behavior.
+- Added `AttachFileBrowseController(IFileBrowseController, UserContext)` to inject required dependencies.
+
+#### [MDI_Container.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Presentation/MDI_Container.cs)
+- Injected `_fileBrowseController` and `_currentUser` into `ArticleViewerForm` via the viewer factory callback.
 
 ---
 
