@@ -45,7 +45,9 @@ namespace CMS.Controllers.KMS.KB
 
                 try
                 {
-                    foreach (var a in _articleService.GetAll())
+                    // Archived (Status = 4) articles only ever appear under the "Archived"
+                    // folder — exclude them from per-category counts/titles here.
+                    foreach (var a in _articleService.GetAll().Where(a => a.Status != 4))
                     {
                         // per-category article count
                         if (!counts.ContainsKey(a.CategoryID)) counts[a.CategoryID] = 0;
@@ -137,6 +139,11 @@ namespace CMS.Controllers.KMS.KB
                 articles = _articleService.SearchByType(keyword, catId, statusFilter, typeFilter, searchFieldId);
 
                 var list = articles.ToList();
+
+                // Archived (Status = 4) articles must only show up under the "Archived"
+                // folder, never mixed into a category's regular listing.
+                if (!isArchived)
+                    list = list.Where(a => a.Status != 4).ToList();
 
                 if (!string.IsNullOrEmpty(titleFilter))
                     list = list.Where(a => string.Equals(
