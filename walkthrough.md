@@ -7,6 +7,10 @@ This document details the changes implemented to store real attached files in th
 - **Initial Attachments Commit:** `1f89175`
 - **Documentation Update Commit:** `2335d04`
 - **Config JSON Migration Commit:** `8776d92`
+- **App.config Cleanup Commit:** `1cc970f`
+- **Local Config Deletion & Network Fallback Commit:** `d838e1e`
+- **App.config Cleanup Commit:** `1cc970f`
+- **Local Config Deletion & Network Fallback Commit:** `d838e1e`
 
 ---
 
@@ -61,7 +65,7 @@ This document details the changes implemented to store real attached files in th
 - Removed original hardcoded mockup files from initializing on form load.
 
 #### [KBEditorController.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Controllers/KMS/KB/KBEditorController.cs)
-- Added the `SaveArticleAttachments(int articleId)` helper method to save the attached file IDs from the DataGridView grid when either **Save Draft (บันทึก)** or **Send Review (ส่งขอ Review)** is clicked.
+- Added the `SaveArticleAttachments(int articleId)` helper method to save the attached file IDs from the DataGridView grid when either **Save Draft (เธเธฑเธเธ—เธถเธ)** or **Send Review (เธชเนเธเธเธญ Review)** is clicked.
 - Added the `FormatFileSize` size formatting helper.
 - Modified `LoadArticleLinks` to load attachments from the database using `_articleService.GetArticleAttachmentFiles(articleId)` and bind them to the grid when editing an existing article.
 
@@ -74,12 +78,13 @@ This document details the changes implemented to store real attached files in th
 #### [ArticleViewerController.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Controllers/KMS/KB/ArticleViewerController.cs)
 - Implemented `LoadAttachments(int articleId)` to retrieve the attachment files from the service and pass them to the viewer.
 
-### 5. Configuration JSON Migration (Environment Variable Mode)
+### 5. Configuration JSON Migration (Environment Variable & Network Share Mode)
 
 #### [ConfigManager.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Infrastructure/ConfigManager.cs)
 - Replaced the reading of settings from `ConfigurationManager.AppSettings` with loading from an external JSON configuration file.
-- The path of the JSON file is retrieved from the environment variable `CMS_CONFIG_PATH` (e.g. `C:\CMS_Config\cms_config.json` or `\\150.1.8.23\AppConfigs\cms_config.json`).
-- If the environment variable is not defined or the file does not exist, a `FileNotFoundException` is thrown to ensure the system is correctly configured.
+- The path of the JSON file is retrieved from the environment variable `CMS_CONFIG_PATH`.
+- **[FALLBACK]** If the environment variable is not defined or empty, the app falls back to loading from the central network path: `\\150.1.8.23\AppForUser\CMS_Central_Configs\cms_config.json`.
+- If both the environment variable path and central network share path do not exist or are inaccessible, a `FileNotFoundException` is thrown.
 - Implemented flat lookup in the `"AppSettings"` section of the JSON to retain 100% compatibility with all existing keys.
 
 #### [CMS.Infrastructure.csproj](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Infrastructure/CMS.Infrastructure.csproj)
@@ -88,8 +93,7 @@ This document details the changes implemented to store real attached files in th
 #### [NEW] [packages.config](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Infrastructure/packages.config)
 - Configured NuGet dependency configuration for the `CMS.Infrastructure` project.
 
-#### [NEW] [cms_config.json](file:///c:/Users/pitakpong/Documents/cms_import/cms_config.json)
-- Created a sample/dev configuration file containing all database connection strings and parameters previously stored in `app.config`.
+- **Note:** All local `cms_config.json` files have been deleted from the repository. The configuration is loaded exclusively from the designated external network path.
 
 ---
 
