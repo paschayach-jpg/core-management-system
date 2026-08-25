@@ -1,11 +1,14 @@
-# Walkthrough - KB Article Attachments & Audit Logging
+# Walkthrough - KB Article Attachments & Configuration Migration
+
+This document details the changes implemented to store real attached files in the `KMS.t_KBArticleAttachment` table, record audit logs when files are attached, and load/display them in both the viewer and editor screens. It also details how file attachment history is recorded in `KMS.t_KBArticleLink` without duplicates. Finally, it details the migration of appSettings from `app.config` to an external JSON configuration file.
 
 ## Git Commit Info
 - **Branch:** `Pitakpong`
-- **Commit ID:** `1f89175`
-- **Commit Message:** `feat(kms): implement database persistence and duplicate-check logic for article attachments`
+- **Initial Attachments Commit:** `1f89175`
+- **Documentation Update Commit:** `2335d04`
+- **Config JSON Migration Commit:** `8776d92`
 
-This document details the changes implemented to store real attached files in the `KMS.t_KBArticleAttachment` table, record audit logs when files are attached, and load/display them in both the viewer and editor screens. It also details how file attachment history is recorded in `KMS.t_KBArticleLink` without duplicates.
+---
 
 ## Changes Made
 
@@ -70,6 +73,25 @@ This document details the changes implemented to store real attached files in th
 
 #### [ArticleViewerController.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Controllers/KMS/KB/ArticleViewerController.cs)
 - Implemented `LoadAttachments(int articleId)` to retrieve the attachment files from the service and pass them to the viewer.
+
+### 5. Configuration JSON Migration (Environment Variable Mode)
+
+#### [ConfigManager.cs](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Infrastructure/ConfigManager.cs)
+- Replaced the reading of settings from `ConfigurationManager.AppSettings` with loading from an external JSON configuration file.
+- The path of the JSON file is retrieved from the environment variable `CMS_CONFIG_PATH` (e.g. `C:\CMS_Config\cms_config.json` or `\\150.1.8.23\AppConfigs\cms_config.json`).
+- If the environment variable is not defined or the file does not exist, a `FileNotFoundException` is thrown to ensure the system is correctly configured.
+- Implemented flat lookup in the `"AppSettings"` section of the JSON to retain 100% compatibility with all existing keys.
+
+#### [CMS.Infrastructure.csproj](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Infrastructure/CMS.Infrastructure.csproj)
+- Added a package reference to `Newtonsoft.Json` to support JSON parsing.
+
+#### [NEW] [packages.config](file:///c:/Users/pitakpong/Documents/cms_import/CMS.Infrastructure/packages.config)
+- Configured NuGet dependency configuration for the `CMS.Infrastructure` project.
+
+#### [NEW] [cms_config.json](file:///c:/Users/pitakpong/Documents/cms_import/cms_config.json)
+- Created a sample/dev configuration file containing all database connection strings and parameters previously stored in `app.config`.
+
+---
 
 ## Verification
 
