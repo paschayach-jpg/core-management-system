@@ -44,6 +44,16 @@ namespace CMS.Services.Interfaces
         /// <summary>คืน VersionNumber ล่าสุดจาก t_KBVersion (0 ถ้ายังไม่มีประวัติ)</summary>
         int GetLatestVersionNumber(int articleId);
 
+        // ── Article Attachments ───────────────────────────────────────────────
+        /// <summary>ดึงไฟล์แนบของบทความ</summary>
+        IEnumerable<KBArticleAttachment> GetArticleAttachments(int articleId);
+
+        /// <summary>ดึงรายละเอียดของไฟล์ที่แนบกับบทความ</summary>
+        IEnumerable<FileDocument> GetArticleAttachmentFiles(int articleId);
+
+        /// <summary>ลบไฟล์แนบเดิมทั้งหมดแล้วบันทึกรายการใหม่ พร้อมบันทึก audit log</summary>
+        void SaveArticleAttachments(int articleId, IEnumerable<int> fileIds, string actionBy);
+
         // ── Article Links ─────────────────────────────────────────────────────
         /// <summary>ดึง links ของบทความ optionally กรองด้วย entityType</summary>
         IEnumerable<KBArticleLink> GetArticleLinks(int articleId, byte? entityType = null);

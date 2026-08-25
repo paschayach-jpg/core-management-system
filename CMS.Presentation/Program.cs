@@ -56,6 +56,7 @@ namespace CMS.Presentation
                 var kbArticleRepository     = new KBArticleRepository(configManager);
                 var kbVersionRepository     = new KBVersionRepository(configManager);
                 var kbArticleLinkRepository = new KBArticleLinkRepository(configManager);
+                var kbArticleAttachmentRepository = new KBArticleAttachmentRepository(configManager);
                 var subCommitteeRepository  = new SubCommitteeRepository(configManager);
                 var folderQuotaConfigRepo   = new CMS.Data.Repositories.FolderQuotaConfigRepository(configManager);
                 var folderQuotaRequestRepo  = new CMS.Data.Repositories.FolderQuotaChangeRequestRepository(configManager);
@@ -167,7 +168,7 @@ namespace CMS.Presentation
 
                 // ── KB Services (MOD-006) ─────────────────────────────────────
                 var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);
-                var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, kbArticleLinkRepository, auditService);
+                var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, kbArticleLinkRepository, kbArticleAttachmentRepository, fileDocumentRepository, auditService);
                 var kbDashboardService = new KBDashboardService(kbDashboardRepository, loggingService);
 
                 // ── Workflow Engine Services (MOD-008) ────────────────────────

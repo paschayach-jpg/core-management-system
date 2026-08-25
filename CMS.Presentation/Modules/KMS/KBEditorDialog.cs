@@ -636,6 +636,11 @@ namespace CMS.Presentation.Modules.KMS
             return dgvRelatedLinked;
         }
 
+        public System.Windows.Forms.DataGridView GetAttachLinkedDataGridView()
+        {
+            return dgvAttachLinked;
+        }
+
         public System.Windows.Forms.DataGridView GetWorkflowLinkedDataGridView()
         {
             return dgvWorkflowLinked;
@@ -2150,27 +2155,6 @@ namespace CMS.Presentation.Modules.KMS
             dgvAttachLinked.Rows.Clear();
             
             // Mockup data - will be replaced with actual DMS integration
-            var mockupFiles = new[]
-            {
-                new { Name = "Claims_Form_2569.pdf", Size = 245 * 1024L, Date = DateTime.Now.AddDays(-5) },
-                new { Name = "UW_Criteria_Table.xlsx", Size = 89 * 1024L, Date = DateTime.Now.AddDays(-3) }
-            };
-            
-            int index = 1;
-            foreach (var file in mockupFiles)
-            {
-                int rowIndex = dgvAttachLinked.Rows.Add(
-                    index.ToString(),
-                    file.Name,
-                    FormatFileSize(file.Size),
-                    file.Date.ToString("dd/MM/yyyy HH:mm")
-                );
-                
-                dgvAttachLinked.Rows[rowIndex].Tag = index;
-                dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
-                    index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                index++;
-            }
             
             UpdateAttachLinkedCount();
         }
