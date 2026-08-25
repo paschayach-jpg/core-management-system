@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
+using Newtonsoft.Json.Linq;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 
@@ -17,6 +19,7 @@ namespace CMS.Infrastructure
     /// </summary>
     public class ConfigManager : IConfigManager
     {
+        private readonly JObject _jsonConfig;
         private readonly string _connectionString;
 
         // In-memory cache to avoid repeated DB round-trips
@@ -24,8 +27,28 @@ namespace CMS.Infrastructure
 
         public ConfigManager()
         {
-            var cs = ConfigurationManager.ConnectionStrings["CmsDb"];
-            _connectionString = cs != null ? cs.ConnectionString : null;
+            string configPath = Environment.GetEnvironmentVariable("CMS_CONFIG_PATH");
+            if (!string.IsNullOrWhiteSpace(configPath) && File.Exists(configPath))
+            {
+                try
+                {
+                    string jsonText = File.ReadAllText(configPath);
+                    _jsonConfig = JObject.Parse(jsonText);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("Failed to parse JSON config at: " + configPath, ex);
+                }
+            }
+            else
+            {
+                throw new FileNotFoundException("CMS Configuration file was not found. Please verify the environment variable 'CMS_CONFIG_PATH' is set and points to a valid JSON file.");
+            }
+
+            if (_jsonConfig != null)
+            {
+                _connectionString = _jsonConfig["ConnectionStrings"]?["CmsDb"]?.ToString();
+            }
         }
 
         /// <summary>
@@ -116,12 +139,15 @@ namespace CMS.Infrastructure
                     return cached;
             }
 
-            // 2. app.config appSettings
-            string appConfigValue = ConfigurationManager.AppSettings[key];
-            if (appConfigValue != null)
+            // 2. JSON AppSettings lookup
+            if (_jsonConfig != null)
             {
-                lock (_cache) { _cache[key] = appConfigValue; }
-                return appConfigValue;
+                string jsonVal = _jsonConfig["AppSettings"]?[key]?.ToString();
+                if (jsonVal != null)
+                {
+                    lock (_cache) { _cache[key] = jsonVal; }
+                    return jsonVal;
+                }
             }
 
             // 3. Database fallback
