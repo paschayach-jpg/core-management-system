@@ -7,7 +7,7 @@ namespace CMS.Services.Interfaces
     public interface IFileService
     {
         IEnumerable<UploadResult> UploadFiles(IEnumerable<FileUploadRequest> files, int folderId, UserContext user);
-        FileDownloadResult DownloadFile(int fileId, UserContext user);
+        FileDownloadResult DownloadFile(int fileId, UserContext user, bool bypassPermissionCheck = false);
         void DeleteFile(int fileId, UserContext user);
         StorageUsageReport GetStorageReport(int orgUnitId, UserContext user);
 

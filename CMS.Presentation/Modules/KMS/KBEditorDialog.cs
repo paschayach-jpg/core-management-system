@@ -2233,7 +2233,7 @@ namespace CMS.Presentation.Modules.KMS
             {
                 this.Cursor = Cursors.WaitCursor;
 
-                var result = _fileBrowseController.DownloadFile(fileId, _user);
+                var result = _fileBrowseController.DownloadFile(fileId, _user, bypassPermissionCheck: true);
                 if (result == null || !result.Success || result.FileStream == null)
                 {
                     string err = (result != null && !string.IsNullOrWhiteSpace(result.ErrorMessage))
