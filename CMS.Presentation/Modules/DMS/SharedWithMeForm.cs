@@ -23,6 +23,7 @@ namespace CMS.Presentation
         private DataGridView _grid;
         private Label        _lblCount;
         private Button       _btnRevoke;
+        private ComboBox     _cboFilter;
 
         // ── สาธารณะ: จำนวนรายการใหม่ (ใช้อัพเดต badge ใน MDI) ───────────
         public int NewItemCount { get; private set; }
@@ -118,7 +119,7 @@ namespace CMS.Presentation
                 AutoSize  = true,
                 Location  = new Point(8, 9),
             };
-            var cboFilter = new ComboBox
+            _cboFilter = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font          = uiFont,
@@ -127,10 +128,10 @@ namespace CMS.Presentation
                 FlatStyle     = FlatStyle.Flat,
                 BackColor     = Color.White,
             };
-            cboFilter.Items.AddRange(new[] { "ทั้งหมด", "ใหม่ (7 วัน)", "ใช้งานได้", "หมดอายุ", "Deny" });
-            cboFilter.SelectedIndex = 0;
-            cboFilter.SelectedIndexChanged += (s, e) => ApplyFilter(cboFilter.SelectedItem.ToString());
-            pnlFilter.Controls.AddRange(new Control[] { lblFilter, cboFilter });
+            _cboFilter.Items.AddRange(new[] { "ทั้งหมด", "ใหม่ (7 วัน)", "ใช้งานได้", "หมดอายุ", "Deny" });
+            _cboFilter.SelectedIndex = 2;
+            _cboFilter.SelectedIndexChanged += (s, e) => ApplyFilter(_cboFilter.SelectedItem.ToString());
+            pnlFilter.Controls.AddRange(new Control[] { lblFilter, _cboFilter });
 
             // ── DataGridView ─────────────────────────────────────────────────
             _grid = new DataGridView
@@ -431,7 +432,7 @@ namespace CMS.Presentation
                     "ทั้งหมด {0} รายการ  |  ✔ ใช้งานได้ {1}  |  🔴 ใหม่ {2} รายการ",
                     _allRows.Count, activeCount, NewItemCount);
 
-                RenderRows(_allRows);
+                ApplyFilter(_cboFilter.SelectedItem.ToString());
             }
             catch (Exception ex)
             {

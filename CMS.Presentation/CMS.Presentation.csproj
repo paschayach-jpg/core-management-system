@@ -287,6 +287,12 @@
     <Compile Include="Modules\DMS\FileUploadForm.Designer.cs">
       <DependentUpon>FileUploadForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\FrmExternalUpload.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FrmExternalUpload.Designer.cs">
+      <DependentUpon>FrmExternalUpload.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\DMS\FilesByFolderForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -666,6 +672,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\DMS\FileUploadForm.resx">
       <DependentUpon>FileUploadForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Modules\DMS\FrmExternalUpload.resx">
+      <DependentUpon>FrmExternalUpload.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\DMS\DuplicateFileChoiceDialog.resx">
       <DependentUpon>DuplicateFileChoiceDialog.cs</DependentUpon>

@@ -22,6 +22,7 @@ namespace CMS.Presentation.Modules.KMS
         private Func<KBArticle, DialogResult> _openEditorFactory;
         private KBArticle                     _article;
         private IEnumerable<KBArticle>        _relatedArticles = new List<KBArticle>();
+        private IEnumerable<FileDocument>     _attachments = new List<FileDocument>();
         private bool                          _webContentReady = false;
         private string                        _pendingHtml     = string.Empty;
         private Timer                         _zoomHideTimer;
@@ -95,6 +96,14 @@ namespace CMS.Presentation.Modules.KMS
             // Refresh the Related tab if it is currently selected
             if (tabMapping.SelectedTab == tabRelated)
                 PopulateRelatedTab();
+        }
+
+        public void BindAttachments(IEnumerable<FileDocument> files)
+        {
+            _attachments = files ?? new List<FileDocument>();
+            // Refresh the Attach tab if it is currently selected
+            if (tabMapping.SelectedTab == tabAttach)
+                PopulateAttachTab();
         }
 
         public void ShowError(string message)
@@ -223,11 +232,33 @@ namespace CMS.Presentation.Modules.KMS
 
         private void PopulateAttachTab()
         {
-            // Mockup — replace with real DMS data when available
             dgvAttachLinked.Rows.Clear();
-            dgvAttachLinked.Rows.Add("1", "Claims_Form_2569.pdf",   "245 KB", "01/01/2569");
-            dgvAttachLinked.Rows.Add("2", "UW_Criteria_Table.xlsx", "89 KB",  "01/01/2569");
+            int index = 1;
+            foreach (var file in _attachments)
+            {
+                int rowIndex = dgvAttachLinked.Rows.Add(
+                    index.ToString(),
+                    file.OriginalFileName,
+                    FormatFileSize(file.FileSizeBytes),
+                    file.UploadedDate.ToString("dd/MM/yyyy HH:mm")
+                );
+                dgvAttachLinked.Rows[rowIndex].Tag = file;
+                index++;
+            }
             lblAttachLinked.Text = string.Format("ไฟล์ที่แนบ ({0} ไฟล์)", dgvAttachLinked.Rows.Count);
+        }
+
+        private string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return string.Format("{0:0.##} {1}", len, sizes[order]);
         }
 
         private void PopulateRelatedTab()

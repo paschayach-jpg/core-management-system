@@ -1,4 +1,4 @@
-﻿// ✅ Allowed usings: CMS.Controllers, CMS.Domain
+// ✅ Allowed usings: CMS.Controllers, CMS.Domain
 // ❌ Forbidden usings: CMS.Services, CMS.Data
 using System;
 using System.Collections.Generic;
@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
 
@@ -25,11 +26,19 @@ namespace CMS.Presentation.Modules.KMS
 
         private KBEditorController _presenter;
         private readonly UserContext _user;
+        private readonly IFileUploadController _fileUploadController;
+        private readonly IUploadCheckpointController _checkpointController;
+        private readonly IFileBrowseController _fileBrowseController;
 
-        public KBEditorDialog(UserContext user)
+        public KBEditorDialog(UserContext user) : this(user, null, null, null) { }
+
+        public KBEditorDialog(UserContext user, IFileUploadController fileUploadController, IUploadCheckpointController checkpointController, IFileBrowseController fileBrowseController = null)
         {
             if (user == null) throw new ArgumentNullException("user");
             _user = user;
+            _fileUploadController = fileUploadController;
+            _checkpointController = checkpointController;
+            _fileBrowseController = fileBrowseController;
             InitializeComponent();
         }
 
@@ -625,6 +634,11 @@ namespace CMS.Presentation.Modules.KMS
         public System.Windows.Forms.DataGridView GetRelatedDataGridView()
         {
             return dgvRelatedLinked;
+        }
+
+        public System.Windows.Forms.DataGridView GetAttachLinkedDataGridView()
+        {
+            return dgvAttachLinked;
         }
 
         public System.Windows.Forms.DataGridView GetWorkflowLinkedDataGridView()
@@ -2141,27 +2155,6 @@ namespace CMS.Presentation.Modules.KMS
             dgvAttachLinked.Rows.Clear();
             
             // Mockup data - will be replaced with actual DMS integration
-            var mockupFiles = new[]
-            {
-                new { Name = "Claims_Form_2569.pdf", Size = 245 * 1024L, Date = DateTime.Now.AddDays(-5) },
-                new { Name = "UW_Criteria_Table.xlsx", Size = 89 * 1024L, Date = DateTime.Now.AddDays(-3) }
-            };
-            
-            int index = 1;
-            foreach (var file in mockupFiles)
-            {
-                int rowIndex = dgvAttachLinked.Rows.Add(
-                    index.ToString(),
-                    file.Name,
-                    FormatFileSize(file.Size),
-                    file.Date.ToString("dd/MM/yyyy HH:mm")
-                );
-                
-                dgvAttachLinked.Rows[rowIndex].Tag = index;
-                dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
-                    index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-                index++;
-            }
             
             UpdateAttachLinkedCount();
         }
@@ -2179,7 +2172,25 @@ namespace CMS.Presentation.Modules.KMS
             if (e.ColumnIndex == dgvAttachLinked.Columns["colView"].Index)
             {
                 string fileName = dgvAttachLinked.Rows[e.RowIndex].Cells["colFilename"].Value?.ToString();
-                ShowInfo(string.Format("เปิดไฟล์: {0}\n\n(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS)", fileName));
+                object tag = dgvAttachLinked.Rows[e.RowIndex].Tag;
+
+                if (tag is int fileId)
+                {
+                    if (fileId <= 2)
+                    {
+                        // Mockup files (UW_Criteria_Table.xlsx, Claims_Form_2569.pdf)
+                        ShowInfo(string.Format("เปิดไฟล์จำลอง: {0}\n\n(ไฟล์นี้เป็นตัวอย่าง mockup ที่ไม่ได้อัปโหลดขึ้นเซิร์ฟเวอร์จริง)", fileName));
+                    }
+                    else
+                    {
+                        // Real files uploaded via FrmExternalUpload
+                        DownloadAndOpenFile(fileId, fileName);
+                    }
+                }
+                else
+                {
+                    ShowInfo(string.Format("เปิดไฟล์: {0}\n\n(ไม่พบรหัสไฟล์สำหรับดาวน์โหลด)", fileName));
+                }
             }
             // Check if Delete button clicked
             else if (e.ColumnIndex == dgvAttachLinked.Columns["colDelete"].Index)
@@ -2210,40 +2221,96 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private void DownloadAndOpenFile(int fileId, string fileName)
+        {
+            if (_fileBrowseController == null)
+            {
+                MessageBox.Show("ระบบดูไฟล์ (File Browse Controller) ยังไม่ได้เชื่อมต่อ", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+
+                var result = _fileBrowseController.DownloadFile(fileId, _user);
+                if (result == null || !result.Success || result.FileStream == null)
+                {
+                    string err = (result != null && !string.IsNullOrWhiteSpace(result.ErrorMessage))
+                        ? result.ErrorMessage
+                        : "ไม่สามารถดาวน์โหลดไฟล์จากระบบได้";
+                    MessageBox.Show(err, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Create secure temp path
+                string safeName = string.Join("_", fileName.Split(System.IO.Path.GetInvalidFileNameChars()));
+                string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CMS", "OpenFiles");
+                System.IO.Directory.CreateDirectory(tempDir);
+
+                string tempPath = System.IO.Path.Combine(tempDir, safeName);
+                
+                // Avoid conflicts if same file is already created
+                try
+                {
+                    if (System.IO.File.Exists(tempPath))
+                    {
+                        System.IO.File.Delete(tempPath);
+                    }
+                }
+                catch { /* ignore if file is locked/open */ }
+
+                using (result.FileStream)
+                using (var fs = new System.IO.FileStream(tempPath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.Read))
+                {
+                    result.FileStream.CopyTo(fs);
+                }
+
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = tempPath,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(string.Format("ไม่สามารถเปิดไฟล์ได้: {0}\nข้อผิดพลาด: {1}", fileName, ex.Message),
+                    "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+            }
+        }
+
         private void BtnUploadFileNew_Click(object sender, EventArgs e)
         {
-            using (var ofd = new OpenFileDialog())
+            if (_fileUploadController == null)
             {
-                ofd.Title = "เลือกไฟล์ที่ต้องการแนบ";
-                ofd.Filter = "All Files (*.*)|*.*|" +
-                             "PDF Files (*.pdf)|*.pdf|" +
-                             "Excel Files (*.xlsx;*.xls)|*.xlsx;*.xls|" +
-                             "Word Files (*.docx;*.doc)|*.docx;*.doc|" +
-                             "Image Files (*.jpg;*.png;*.gif)|*.jpg;*.png;*.gif";
-                ofd.FilterIndex = 1;
-                ofd.Multiselect = true;
-                
-                if (ofd.ShowDialog() == DialogResult.OK)
+                MessageBox.Show("ระบบอัปโหลดไฟล์ยังไม่ถูกตั้งค่าผ่าน Composition Root", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            int folderId = 1; // Default target folder ID for KMS Attachments
+            using (var uploadForm = new FrmExternalUpload(_fileUploadController, _user, folderId, "KMS Attachments", 4, _checkpointController))
+            {
+                if (uploadForm.ShowDialog(this) == DialogResult.OK)
                 {
-                    foreach (var filePath in ofd.FileNames)
+                    foreach (var file in uploadForm.UploadedFiles)
                     {
-                        var fi = new System.IO.FileInfo(filePath);
                         int newIndex = dgvAttachLinked.Rows.Count + 1;
-                        
                         int rowIndex = dgvAttachLinked.Rows.Add(
                             newIndex.ToString(),
-                            fi.Name,
-                            FormatFileSize(fi.Length),
+                            file.FileName,
+                            FormatFileSize(file.FileSize),
                             DateTime.Now.ToString("dd/MM/yyyy HH:mm")
                         );
-                        
-                        dgvAttachLinked.Rows[rowIndex].Tag = newIndex;
+
+                        dgvAttachLinked.Rows[rowIndex].Tag = file.FileId;
                         dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
                             newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
                     }
-                    
                     UpdateAttachLinkedCount();
-                    ShowInfo(string.Format("เพิ่มไฟล์แนบ {0} ไฟล์เรียบร้อยแล้ว\n\n(Mockup - ไฟล์จะถูกอัพโหลดจริงเมื่อบันทึกบทความ)", ofd.FileNames.Length));
                 }
             }
         }

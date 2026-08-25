@@ -1776,7 +1776,7 @@ namespace CMS.Presentation
         /// </summary>
         private KBEditorDialog CreateKBEditorForm(KBArticle article)
         {
-            var dlg = new KBEditorDialog(_currentUser);
+            var dlg = new KBEditorDialog(_currentUser, _fileUploadController, _uploadCheckpointController, _fileBrowseController);
             var presenter = new KBEditorController(
                 dlg, _kbCategoryService, _kbArticleService, _currentUser, article);
             dlg.AttachPresenter(presenter);
