@@ -99,6 +99,22 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public void DeleteByArticleAndFile(int articleId, int fileId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = "DELETE FROM KMS.t_KBArticleAttachment WHERE ArticleID = @ArticleID AND FileID = @FileID";
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ArticleID", articleId);
+                    cmd.Parameters.AddWithValue("@FileID", fileId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         // ── Helpers ──────────────────────────────────────────────────────────
 
         private static KBArticleAttachment Map(IDataReader r)

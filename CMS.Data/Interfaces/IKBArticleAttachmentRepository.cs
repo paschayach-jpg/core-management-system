@@ -27,5 +27,10 @@ namespace CMS.Data.Interfaces
         /// Delete all attachments for a specific article
         /// </summary>
         void DeleteAllForArticle(int articleId);
+
+        /// <summary>
+        /// Delete a specific attachment by ArticleID and FileID
+        /// </summary>
+        void DeleteByArticleAndFile(int articleId, int fileId);
     }
 }

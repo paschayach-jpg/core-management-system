@@ -54,6 +54,9 @@ namespace CMS.Services.Interfaces
         /// <summary>ลบไฟล์แนบเดิมทั้งหมดแล้วบันทึกรายการใหม่ พร้อมบันทึก audit log</summary>
         void SaveArticleAttachments(int articleId, IEnumerable<int> fileIds, string actionBy);
 
+        /// <summary>ลบไฟล์แนบเฉพาะรายการ (KMS.t_KBArticleAttachment) ด้วย ArticleID และ FileID</summary>
+        void RemoveArticleAttachment(int articleId, int fileId);
+
         // ── Article Links ─────────────────────────────────────────────────────
         /// <summary>ดึง links ของบทความ optionally กรองด้วย entityType</summary>
         IEnumerable<KBArticleLink> GetArticleLinks(int articleId, byte? entityType = null);
