@@ -154,6 +154,7 @@
     <Compile Include="RGP\ProjectTaskController.cs" />
     <Compile Include="RGP\ProjectProgressController.cs" />
     <Compile Include="RGP\ProjectDocumentController.cs" />
+    <Compile Include="RGP\ProjectAttachmentController.cs" />
     <Compile Include="RGP\ProjectMemberController.cs" />
     <Compile Include="RGP\ProjectMemberRoleController.cs" />
     <Compile Include="RGP\ProjectStateMemberController.cs" />

@@ -892,6 +892,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Modules\RGP\RgpSession.cs" />
+    <Compile Include="Modules\RGP\RgpDmsContext.cs" />
     <Compile Include="Modules\RGP\Controls\DataGridViewProgressBarColumn.cs" />
     <Compile Include="Modules\RGP\Frm_Doc_Workflow_Edit.cs">
       <SubType>Form</SubType>

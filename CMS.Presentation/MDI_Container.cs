@@ -1715,6 +1715,13 @@ namespace CMS.Presentation
                 return;
             }
 
+            // ให้ Form ลูกของ RGP (Frm_Project_Detail) เปิด dialog อัปโหลด/เลือกไฟล์ DMS ได้
+            // ด้วยอินสแตนซ์ชุดเดียวกับที่ MDI ใช้ (เหมือนที่ KBEditorDialog ได้รับผ่าน ctor)
+            CMS.Presentation.Modules.RGP.RgpDmsContext.Set(
+                _fileUploadController, _fileBrowseController, _folderReadLookupController,
+                _folderCommandController, _uploadCheckpointController, _fileCommandController,
+                _networkDriveHelper);
+
             var form = new CMS.Presentation.Modules.RGP.Frm_Project_List(
                 _rgpProjectController, _rgpStateController, _rgpTaskController,
                 _rgpProgressController, _rgpDocController, _currentUser);

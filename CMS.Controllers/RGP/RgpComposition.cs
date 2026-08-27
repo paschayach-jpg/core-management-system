@@ -24,6 +24,7 @@ namespace CMS.Controllers.RGP
         private static IProjectTaskService _taskService;
         private static IProjectProgressService _progressService;
         private static IProjectDocumentService _docService;
+        private static IProjectAttachmentService _attachmentService;
         private static IProjectMemberRepository _memberRepo;
         private static IProjectMemberRoleRepository _memberRoleRepo;
         private static IProjectStateMemberRepository _stateMemberRepo;
@@ -122,6 +123,18 @@ namespace CMS.Controllers.RGP
                     var cm = ConfigManager;
                     _docService = new ProjectDocumentService(new ProjectDocumentRepository(cm), new EFilingRepository(cm));
                     return _docService;
+                }
+            }
+        }
+
+        public static IProjectAttachmentService AttachmentService
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _attachmentService ?? (_attachmentService =
+                        new ProjectAttachmentService(new ProjectAttachmentRepository(ConfigManager)));
                 }
             }
         }

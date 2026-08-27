@@ -31,6 +31,16 @@ namespace CMS.Presentation.Modules.RGP
         private readonly ProjectProgressController  _progressSvc;
         private readonly ProjectDocumentController  _docSvc;
         private readonly ProjectMemberController _memberCtrl;
+        private readonly ProjectAttachmentController _attachSvc = new ProjectAttachmentController();
+
+        // ── ไฟล์แนบโครงการ (สร้าง UI ใน code — วางบนแท็บ "ข้อมูลโครงการ") ──
+        private System.Windows.Forms.Panel         _pnlAttach;
+        private System.Windows.Forms.DataGridView  _dgvAttach;
+        private System.Windows.Forms.Button        _btnAttachUpload;
+        private System.Windows.Forms.Button        _btnAttachLink;
+        private System.Windows.Forms.Button        _btnAttachDownload;
+        private System.Windows.Forms.Button        _btnAttachRemove;
+        private System.Windows.Forms.Label         _lblAttachHint;
 
         private readonly string _userName;
         private readonly string _fullname;
@@ -122,6 +132,20 @@ namespace CMS.Presentation.Modules.RGP
                 txtProjectNo.ReadOnly       = true;
                 LoadProjectData();
             }
+
+            BuildAttachmentPanel();
+            if (_isNew)
+            {
+                _btnAttachUpload.Enabled   = false;
+                _btnAttachLink.Enabled     = false;
+                _btnAttachDownload.Enabled = false;
+                _btnAttachRemove.Enabled   = false;
+                _lblAttachHint.Visible     = true;
+            }
+            else
+            {
+                LoadAttachments();
+            }
         }
 
         // ─── Hover Effects ────────────────────────────────────────────────────────
@@ -146,6 +170,264 @@ namespace CMS.Presentation.Modules.RGP
         {
             btn.MouseEnter += (s, e) => btn.BackColor = hoverColor;
             btn.MouseLeave += (s, e) => btn.BackColor = normalColor;
+        }
+
+        // ─── ไฟล์แนบโครงการ (reuse DMS shared upload stack — เหมือน KMS) ──────────
+
+        private void BuildAttachmentPanel()
+        {
+            if (_pnlAttach != null) return;
+
+            _pnlAttach = new Panel
+            {
+                Dock      = DockStyle.Bottom,
+                Height    = 188,
+                BackColor = Color.FromArgb(242, 246, 252),
+                Padding   = new Padding(10, 4, 10, 6)
+            };
+
+            var lblTitle = new Label
+            {
+                Dock      = DockStyle.Top,
+                Height    = 22,
+                Text      = "ไฟล์แนบโครงการ:",
+                Font      = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(42, 57, 80),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            var toolbar = new Panel
+            {
+                Dock      = DockStyle.Top,
+                Height    = 36,
+                BackColor = Color.FromArgb(229, 236, 248),
+                Padding   = new Padding(4, 4, 4, 4)
+            };
+
+            _btnAttachUpload   = MakeAttachButton("อัปโหลดไฟล์ใหม่", NavyMedium, 0);
+            _btnAttachLink     = MakeAttachButton("เลือกจาก DMS",    NavyLight,  132);
+            _btnAttachDownload = MakeAttachButton("ดาวน์โหลด",       SlateBlue,  246);
+            _btnAttachRemove   = MakeAttachButton("ลบออก",           DangerRed,  350);
+            _btnAttachUpload.Click   += btnAttachUpload_Click;
+            _btnAttachLink.Click     += btnAttachLink_Click;
+            _btnAttachDownload.Click += btnAttachDownload_Click;
+            _btnAttachRemove.Click   += btnAttachRemove_Click;
+            ApplyHover(_btnAttachUpload,   NavyMediumH, NavyMedium);
+            ApplyHover(_btnAttachLink,     NavyLightH,  NavyLight);
+            ApplyHover(_btnAttachDownload, SlateBlueH,  SlateBlue);
+            ApplyHover(_btnAttachRemove,   DangerRedH,  DangerRed);
+
+            _lblAttachHint = new Label
+            {
+                AutoSize  = true,
+                Location  = new Point(492, 10),
+                Text      = "บันทึกโครงการก่อนจึงจะแนบไฟล์ได้",
+                Font      = new Font("Segoe UI", 8.5F, FontStyle.Italic),
+                ForeColor = Color.FromArgb(150, 90, 40),
+                Visible   = false
+            };
+
+            toolbar.Controls.Add(_btnAttachUpload);
+            toolbar.Controls.Add(_btnAttachLink);
+            toolbar.Controls.Add(_btnAttachDownload);
+            toolbar.Controls.Add(_btnAttachRemove);
+            toolbar.Controls.Add(_lblAttachHint);
+
+            _dgvAttach = new DataGridView
+            {
+                Dock                   = DockStyle.Fill,
+                BackgroundColor        = Color.White,
+                AllowUserToResizeRows  = false,
+                AutoGenerateColumns    = false
+            };
+            _dgvAttach.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "ชื่อไฟล์",     Width = 260 });
+            _dgvAttach.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "ประเภท",       Width = 70  });
+            _dgvAttach.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "ขนาด",         Width = 90  });
+            _dgvAttach.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "ชั้นความลับ",  Width = 130 });
+            _dgvAttach.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "แนบโดย",       Width = 120 });
+            _dgvAttach.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "วันที่แนบ",    Width = 130 });
+            _dgvAttach.SelectionChanged  += (s, e) => UpdateAttachButtons();
+            _dgvAttach.CellDoubleClick   += (s, e) => { if (e.RowIndex >= 0) btnAttachDownload_Click(s, e); };
+            StyleDgv(_dgvAttach);
+
+            _pnlAttach.Controls.Add(_dgvAttach);
+            _pnlAttach.Controls.Add(toolbar);
+            _pnlAttach.Controls.Add(lblTitle);
+
+            tabInfo.Controls.Add(_pnlAttach);
+            tabInfo.Controls.SetChildIndex(pnlInfo,    0);
+            tabInfo.Controls.SetChildIndex(_pnlAttach, 1);
+            tabInfo.Controls.SetChildIndex(pnlAudit,   2);
+
+            bool dmsReady = RgpDmsContext.IsReady;
+            _btnAttachUpload.Enabled = dmsReady;
+            _btnAttachLink.Enabled   = dmsReady;
+            UpdateAttachButtons();
+        }
+
+        private Button MakeAttachButton(string text, Color back, int x)
+        {
+            return new Button
+            {
+                Text      = text,
+                BackColor = back,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font      = new Font("Segoe UI", 9F),
+                Cursor    = Cursors.Hand,
+                Size      = new Size(126, 26),
+                Location  = new Point(x + 4, 4),
+                UseVisualStyleBackColor = false
+            };
+        }
+
+        private void UpdateAttachButtons()
+        {
+            bool hasRow = !_isNew && _dgvAttach != null && _dgvAttach.SelectedRows.Count > 0;
+            if (_btnAttachDownload != null) _btnAttachDownload.Enabled = hasRow;
+            if (_btnAttachRemove   != null) _btnAttachRemove.Enabled   = hasRow;
+        }
+
+        private void LoadAttachments()
+        {
+            if (_dgvAttach == null) return;
+            _dgvAttach.Rows.Clear();
+            if (_i_project_id == 0) { UpdateAttachButtons(); return; }
+
+            foreach (var a in _attachSvc.GetAttachments(_i_project_id))
+            {
+                int idx = _dgvAttach.Rows.Add(
+                    a.n_file_name,
+                    string.IsNullOrEmpty(a.c_file_ext) ? "" : a.c_file_ext.TrimStart('.').ToUpperInvariant(),
+                    FormatFileSize(a.l_file_size_bytes),
+                    ConfidentialityLevelText(a.i_confidentiality_level),
+                    string.IsNullOrEmpty(a.i_create_user) ? "-" : a.i_create_user,
+                    a.d_create_date == DateTime.MinValue ? "" : a.d_create_date.ToString("dd/MM/yyyy HH:mm"));
+                _dgvAttach.Rows[idx].Tag = a.i_file_id;
+            }
+            _dgvAttach.ClearSelection();
+            UpdateAttachButtons();
+        }
+
+        private static string FormatFileSize(long bytes)
+        {
+            if (bytes <= 0) return "-";
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return (bytes / 1024.0).ToString("0.#") + " KB";
+            return (bytes / 1024.0 / 1024.0).ToString("0.##") + " MB";
+        }
+
+        private static string ConfidentialityLevelText(int level)
+        {
+            switch (level)
+            {
+                case 1: return "Level 1 - HC";
+                case 2: return "Level 2 - SC";
+                case 3: return "Level 3 - NC";
+                case 4: return "Level 4 - PC";
+                default: return "-";
+            }
+        }
+
+        private int? SelectedAttachFileId()
+        {
+            if (_dgvAttach == null || _dgvAttach.SelectedRows.Count == 0) return null;
+            var tag = _dgvAttach.SelectedRows[0].Tag;
+            return tag is int ? (int?)(int)tag : null;
+        }
+
+        private void btnAttachUpload_Click(object sender, EventArgs e)
+        {
+            if (_i_project_id == 0) return;
+            if (!RgpDmsContext.IsReady)
+            {
+                MessageBox.Show("ระบบจัดการไฟล์ (DMS) ยังไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int folderId = CMS.Presentation.UserControls.FolderExplorerControl.ResolveLevelFolderId(4);
+            using (var dlg = new FrmExternalUpload(
+                RgpDmsContext.FileUploadController, RgpSession.Current, folderId, "ไฟล์แนบโครงการ", 4,
+                RgpDmsContext.UploadCheckpointController, RgpDmsContext.FolderCommandController,
+                RgpDmsContext.FolderReadLookupController, RgpDmsContext.FileBrowseController,
+                RgpDmsContext.FileCommandController, RgpDmsContext.NetworkDriveHelper))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK &&
+                    dlg.UploadedFileIds != null && dlg.UploadedFileIds.Count > 0)
+                {
+                    _attachSvc.LinkAttachments(_i_project_id, dlg.UploadedFileIds, _userName);
+                    LoadAttachments();
+                }
+            }
+        }
+
+        private void btnAttachLink_Click(object sender, EventArgs e)
+        {
+            if (_i_project_id == 0) return;
+            if (!RgpDmsContext.IsReady)
+            {
+                MessageBox.Show("ระบบจัดการไฟล์ (DMS) ยังไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = new FrmDmsFilePicker(
+                RgpDmsContext.FolderReadLookupController, RgpDmsContext.FileBrowseController,
+                RgpSession.Current, 4, RgpDmsContext.NetworkDriveHelper))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK &&
+                    dlg.SelectedFiles != null && dlg.SelectedFiles.Count > 0)
+                {
+                    var ids = new List<int>();
+                    foreach (var f in dlg.SelectedFiles) ids.Add(f.FileID);
+                    _attachSvc.LinkAttachments(_i_project_id, ids, _userName);
+                    LoadAttachments();
+                }
+            }
+        }
+
+        private void btnAttachDownload_Click(object sender, EventArgs e)
+        {
+            int? fileId = SelectedAttachFileId();
+            if (fileId == null || !RgpDmsContext.IsReady) return;
+
+            var res = RgpDmsContext.FileBrowseController.DownloadFile(fileId.Value, RgpSession.Current);
+            if (res == null || !res.Success)
+            {
+                MessageBox.Show(res?.ErrorMessage ?? "ดาวน์โหลดไฟล์ไม่สำเร็จ", "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                using (var sfd = new SaveFileDialog { FileName = res.FileName })
+                {
+                    if (sfd.ShowDialog(this) != DialogResult.OK) return;
+                    using (var fs = System.IO.File.Create(sfd.FileName))
+                        res.FileStream.CopyTo(fs);
+                }
+                MessageBox.Show("ดาวน์โหลดไฟล์เรียบร้อย", "สำเร็จ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                res.FileStream?.Dispose();
+            }
+        }
+
+        private void btnAttachRemove_Click(object sender, EventArgs e)
+        {
+            int? fileId = SelectedAttachFileId();
+            if (fileId == null) return;
+
+            if (MessageBox.Show("ยกเลิกการแนบไฟล์นี้ออกจากโครงการ?\n(ไฟล์ยังคงอยู่ในระบบ DMS)", "ยืนยัน",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            _attachSvc.RemoveAttachment(_i_project_id, fileId.Value, _userName);
+            LoadAttachments();
         }
 
         // ─── Tab Header Custom Draw ────────────────────────────────────────────
