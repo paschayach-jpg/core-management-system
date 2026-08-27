@@ -15,7 +15,7 @@ namespace CMS.Presentation.Modules.RGP
             ("InProgress", "🔄 กำลังทำ"),
             ("InReview",   "🔍 รอตรวจสอบ"),
             ("Done",       "✅ เสร็จแล้ว"),
-            ("Cancelled",  "❌ ยกเลิก"),
+            ("OnHold",     "⏸ On Hold"),
         };
 
         public Frm_Project_Task_Status(int taskId, string currentStatus, int currentPct)
@@ -36,6 +36,9 @@ namespace CMS.Presentation.Modules.RGP
             string val = _statuses[cbbStatus.SelectedIndex].Value;
             if (val == "Done")   nudPct.Value = 100;
             if (val == "Todo")   nudPct.Value = 0;
+
+            // On Hold: แช่แข็ง % ไว้ที่ค่าเดิม ห้ามแก้ไขขณะอยู่สถานะนี้
+            nudPct.Enabled = val != "OnHold";
         }
 
         private void btnOk_Click(object sender, EventArgs e)

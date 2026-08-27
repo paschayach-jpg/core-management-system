@@ -13,11 +13,16 @@ namespace CMS.Presentation.Modules.RGP
         private readonly bool   _returnOnly;
         private readonly ProjectMemberController     _ctrl     = new ProjectMemberController();
         private readonly ProjectMemberRoleController _roleCtrl = new ProjectMemberRoleController();
+        private readonly EmployeeController          _empCtrl  = new EmployeeController();
 
         public string MemberName     { get; private set; }
         public string MemberRole     { get; private set; }
         public string MemberType     { get; private set; }
         public string MemberDeptCode { get; private set; }
+
+        // ใช้ในโหมดปกติ (ไม่ returnOnly) — โมเดลที่สร้าง/บันทึกแล้ว ให้ parent เอาไปใช้ต่อได้ทันที
+        // (ถ้า _projectId == 0 คือโครงการยังไม่บันทึก โมเดลนี้จะยังไม่ถูก insert ลง DB จริง)
+        public ProjectMemberModel Result { get; private set; }
 
         // mode ปกติ — insert project member
         public Frm_Project_Member(int projectId, string userName)
@@ -82,11 +87,7 @@ namespace CMS.Presentation.Modules.RGP
                 case "1": LoadNameCombo(_roleCtrl.GetSubCommittees(),  "SubCommitteeNameTH" , "SubCommitteeID"); break;
                 case "2": LoadNameCombo(_roleCtrl.GetDivisions(),  "DivisionName" , "DivisionID");      break;
                 case "3": LoadNameCombo(_roleCtrl.GetDepartments(), "DepartmentName", "DepartmentID");    break;
-                case "4": // พนักงาน — พิมพ์เอง
-                    cbbName.Visible = false;
-                    txtName.Visible = true;
-                    txtName.Focus();
-                    return;
+                case "4": LoadNameCombo(_empCtrl.GetActiveADUsers(), "ADUserName", "ADUserName");    break;
                 default:
                     cbbName.Visible = false;
                     txtName.Visible = false;
@@ -132,12 +133,12 @@ namespace CMS.Presentation.Modules.RGP
                 return;
             }
 
-            string memberName = typeCode == "4" ? txtName.Text.Trim() : cbbName.Text.Trim();
+            string memberName = cbbName.Text.Trim();
             if (string.IsNullOrWhiteSpace(memberName))
             {
                 MessageBox.Show("กรุณาระบุชื่อ", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                (typeCode == "4" ? (Control)txtName : cbbName).Focus();
+                cbbName.Focus();
                 return;
             }
 
@@ -166,11 +167,23 @@ namespace CMS.Presentation.Modules.RGP
                 n_member_name    = memberName,
                 c_role           = cbbRole.Text,
                 c_department_code = deptCode,
+                c_member_type    = typeName,
                 i_create_user    = _userName
             };
 
-            if (_ctrl.Insert(m))
+            if (_projectId == 0)
+            {
+                // โครงการยังไม่ถูกบันทึก — เก็บไว้ใน memory เฉยๆ ไม่ยิง DB
+                Result = m;
                 this.DialogResult = DialogResult.OK;
+                return;
+            }
+
+            if (_ctrl.Insert(m))
+            {
+                Result = m;
+                this.DialogResult = DialogResult.OK;
+            }
             else
                 MessageBox.Show("บันทึกไม่สำเร็จ", "ข้อผิดพลาด",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);

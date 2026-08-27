@@ -138,6 +138,8 @@
     <Compile Include="Interfaces\IProjectMemberRepository.cs" />
     <Compile Include="Interfaces\IProjectMemberRoleRepository.cs" />
     <Compile Include="Interfaces\IProjectStateMemberRepository.cs" />
+    <Compile Include="Interfaces\IProjectNotifyLogRepository.cs" />
+    <Compile Include="Interfaces\IProjectTaskStatusLogRepository.cs" />
     <Compile Include="Interfaces\IProjectTemplateRepository.cs" />
     <Compile Include="Interfaces\ITemplateDocRepository.cs" />
     <Compile Include="Interfaces\IEmployeeRepository.cs" />
@@ -152,6 +154,8 @@
     <Compile Include="Repositories\ProjectMemberRepository.cs" />
     <Compile Include="Repositories\ProjectMemberRoleRepository.cs" />
     <Compile Include="Repositories\ProjectStateMemberRepository.cs" />
+    <Compile Include="Repositories\ProjectNotifyLogRepository.cs" />
+    <Compile Include="Repositories\ProjectTaskStatusLogRepository.cs" />
     <Compile Include="Repositories\ProjectTemplateRepository.cs" />
     <Compile Include="Repositories\TemplateDocRepository.cs" />
     <Compile Include="Repositories\EmployeeRepository.cs" />

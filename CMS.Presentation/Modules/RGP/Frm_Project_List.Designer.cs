@@ -19,8 +19,8 @@
             this.pnlAccent = new System.Windows.Forms.Panel();
             this.pnlFilter = new System.Windows.Forms.Panel();
             this.pnlFilterSep = new System.Windows.Forms.Panel();
-            this.btnTasks = new System.Windows.Forms.Button();
             this.btnManageTemplate = new System.Windows.Forms.Button();
+            this.btnTasks = new System.Windows.Forms.Button();
             this.btnDelete = new System.Windows.Forms.Button();
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnAdd = new System.Windows.Forms.Button();
@@ -133,6 +133,22 @@
             this.pnlFilterSep.Size = new System.Drawing.Size(1100, 1);
             this.pnlFilterSep.TabIndex = 99;
             // 
+            // btnManageTemplate
+            // 
+            this.btnManageTemplate.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(120)))), ((int)(((byte)(90)))));
+            this.btnManageTemplate.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnManageTemplate.FlatAppearance.BorderSize = 0;
+            this.btnManageTemplate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnManageTemplate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnManageTemplate.ForeColor = System.Drawing.Color.White;
+            this.btnManageTemplate.Location = new System.Drawing.Point(439, 6);
+            this.btnManageTemplate.Name = "btnManageTemplate";
+            this.btnManageTemplate.Size = new System.Drawing.Size(160, 30);
+            this.btnManageTemplate.TabIndex = 18;
+            this.btnManageTemplate.Text = "จัดการเส้นงาน Workflow";
+            this.btnManageTemplate.UseVisualStyleBackColor = false;
+            this.btnManageTemplate.Click += new System.EventHandler(this.btnManageTemplate_Click);
+            // 
             // btnTasks
             // 
             this.btnTasks.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(111)))), ((int)(((byte)(66)))), ((int)(((byte)(193)))));
@@ -148,22 +164,6 @@
             this.btnTasks.Text = "Tasks";
             this.btnTasks.UseVisualStyleBackColor = false;
             this.btnTasks.Click += new System.EventHandler(this.btnTasks_Click);
-            //
-            // btnManageTemplate
-            //
-            this.btnManageTemplate.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(120)))), ((int)(((byte)(90)))));
-            this.btnManageTemplate.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnManageTemplate.FlatAppearance.BorderSize = 0;
-            this.btnManageTemplate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnManageTemplate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.btnManageTemplate.ForeColor = System.Drawing.Color.White;
-            this.btnManageTemplate.Location = new System.Drawing.Point(439, 6);
-            this.btnManageTemplate.Name = "btnManageTemplate";
-            this.btnManageTemplate.Size = new System.Drawing.Size(160, 30);
-            this.btnManageTemplate.TabIndex = 18;
-            this.btnManageTemplate.Text = "จัดการประเภทโครงการ";
-            this.btnManageTemplate.UseVisualStyleBackColor = false;
-            this.btnManageTemplate.Click += new System.EventHandler(this.btnManageTemplate_Click);
             // 
             // btnDelete
             // 

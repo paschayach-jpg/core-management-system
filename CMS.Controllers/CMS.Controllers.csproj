@@ -157,6 +157,7 @@
     <Compile Include="RGP\ProjectMemberController.cs" />
     <Compile Include="RGP\ProjectMemberRoleController.cs" />
     <Compile Include="RGP\ProjectStateMemberController.cs" />
+    <Compile Include="RGP\ProjectNotifyLogController.cs" />
     <Compile Include="RGP\ProjectTemplateController.cs" />
     <Compile Include="RGP\TemplateDocController.cs" />
     <Compile Include="RGP\EmployeeController.cs" />

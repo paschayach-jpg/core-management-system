@@ -2222,6 +2222,11 @@ namespace CMS.Presentation.Modules.KMS
                         try
                         {
                             _presenter.RemoveArticleAttachmentLink(fileId);
+
+                            // Deletion already persisted to DB (existing article) — make sure
+                            // ArticleViewerForm refreshes its own attachment grid on return.
+                            if (_presenter.EditingArticle != null)
+                                _savedSuccessfully = true;
                         }
                         catch (Exception ex)
                         {
@@ -2332,10 +2337,26 @@ namespace CMS.Presentation.Modules.KMS
                         );
 
                         dgvAttachLinked.Rows[rowIndex].Tag = file.FileId;
-                        dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
+                        dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor =
                             newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
                     }
                     UpdateAttachLinkedCount();
+
+                    // If the article already exists, persist the attachments/links right away
+                    // (same as Save Draft). New, not-yet-saved articles keep the old behavior:
+                    // attachments stay local until btnSaveDraft is clicked.
+                    if (_presenter != null && _presenter.EditingArticle != null)
+                    {
+                        try
+                        {
+                            _presenter.SaveAttachmentsAndLinksIfExisting();
+                            _savedSuccessfully = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            ShowError("บันทึกไฟล์แนบไม่สำเร็จ: " + ex.Message);
+                        }
+                    }
                 }
             }
         }

@@ -474,6 +474,20 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
+        /// Persist attachments/links immediately for an already-saved article (e.g. right after
+        /// an upload), mirroring what Save() does. No-op if the article has not been saved yet -
+        /// in that case attachments stay local until the user clicks Save Draft.
+        /// </summary>
+        public void SaveAttachmentsAndLinksIfExisting()
+        {
+            if (_editingArticle == null) return;
+
+            int articleId = _editingArticle.ArticleID;
+            SaveArticleLinks(articleId);
+            SaveArticleAttachments(articleId);
+        }
+
+        /// <summary>
         /// Remove an attached file's link (KMS.t_KBArticleLink, EntityType = Folder/File) by FileID
         /// </summary>
         public void RemoveArticleAttachmentLink(int fileId)

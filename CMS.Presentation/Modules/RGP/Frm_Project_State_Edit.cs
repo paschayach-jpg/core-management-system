@@ -1,5 +1,6 @@
 ﻿using CMS.Domain.Models;
 using CMS.Controllers.RGP;
+using CMS.Presentation.Services;
 using System;
 using System.Data;
 using System.Drawing;
@@ -13,9 +14,13 @@ namespace CMS.Presentation.Modules.RGP
         private readonly ProjectStateModel  _editModel;
         private readonly ProjectStateController _service;
         private readonly ProjectStateMemberController _memberCtrl = new ProjectStateMemberController();
+        private readonly ProjectNotifyLogController _notifyLogCtrl = new ProjectNotifyLogController();
         private readonly string             _userName;
         private readonly DateTime?          _projectStart;
         private readonly DateTime?          _projectDue;
+        // เมื่อ _i_project_id == 0 (โครงการยังไม่ถูกบันทึก) ใช้ callback นี้แทนการ query DB
+        // เพื่อรวมวันคาดการณ์ของขั้นตอนอื่นที่ staged ไว้ใน parent (รับ excludeStateId คืนผลรวมวัน)
+        private readonly Func<int, int>     _stagedUsedDaysProvider;
 
         // ref project ที่เลือกอยู่
         private int?   _refProjectId   = null;
@@ -25,7 +30,8 @@ namespace CMS.Presentation.Modules.RGP
         public ProjectStateModel Result { get; private set; }
 
         public Frm_Project_State_Edit(int i_project_id, ProjectStateModel model = null,
-            DateTime? projectStart = null, DateTime? projectDue = null)
+            DateTime? projectStart = null, DateTime? projectDue = null,
+            Func<int, int> stagedUsedDaysProvider = null)
         {
             InitializeComponent();
             _i_project_id = i_project_id;
@@ -34,6 +40,7 @@ namespace CMS.Presentation.Modules.RGP
             _userName     = RgpSession.Current?.ADUserName;
             _projectStart = projectStart;
             _projectDue   = projectDue;
+            _stagedUsedDaysProvider = stagedUsedDaysProvider;
         }
 
         private void Frm_Project_State_Edit_Load(object sender, EventArgs e)
@@ -67,8 +74,16 @@ namespace CMS.Presentation.Modules.RGP
                 }
                 RefreshRefProjectDisplay();
 
-                LoadStateMembers();
-                pnlMembers.Visible = true;
+                // สมาชิกของขั้นตอนต้องมีขั้นตอนจริงใน DB ก่อน — ถ้าโครงการยังไม่บันทึก (staging) ยังใช้ไม่ได้
+                if (_i_project_id > 0)
+                {
+                    LoadStateMembers();
+                    pnlMembers.Visible = true;
+                }
+                else
+                {
+                    pnlMembers.Visible = false;
+                }
             }
             else
             {
@@ -169,7 +184,9 @@ namespace CMS.Presentation.Modules.RGP
             {
                 int totalDays    = (_projectDue.Value - _projectStart.Value).Days;
                 int excludeId    = _editModel?.i_proj_state_id ?? 0;
-                int usedDays     = _service.GetTotalEstimatedDays(_i_project_id, excludeId);
+                int usedDays     = _i_project_id > 0
+                    ? _service.GetTotalEstimatedDays(_i_project_id, excludeId)
+                    : (_stagedUsedDaysProvider?.Invoke(excludeId) ?? 0);
                 int remaining    = totalDays - usedDays;
 
                 if ((int)nudEstDays.Value > remaining)
@@ -184,7 +201,13 @@ namespace CMS.Presentation.Modules.RGP
             }
 
             bool success;
-            if (_editModel != null)
+            if (_i_project_id == 0)
+            {
+                // โครงการยังไม่ถูกบันทึก — เก็บไว้ใน memory เฉยๆ ไม่ยิง DB (parent จะเป็นคนกำหนด id ชั่วคราว/จริง)
+                if (_editModel != null) model.i_proj_state_id = _editModel.i_proj_state_id;
+                success = true;
+            }
+            else if (_editModel != null)
             {
                 model.i_proj_state_id = _editModel.i_proj_state_id;
                 success = _service.UpdateState(model);
@@ -211,10 +234,10 @@ namespace CMS.Presentation.Modules.RGP
 
         private void btnViewTasks_Click(object sender, EventArgs e)
         {
-            // ถ้าเป็น Add mode (ยังไม่มี State) → ไม่สามารถดู Task ได้
-            if (_editModel == null)
+            // ถ้าเป็น Add mode (ยังไม่มี State) หรือโครงการ/ขั้นตอนยัง staging อยู่ → ไม่สามารถดู Task ได้
+            if (_editModel == null || _i_project_id == 0)
             {
-                MessageBox.Show("กรุณาบันทึกขั้นตอนก่อนเพิ่ม Task", "แจ้งเตือน",
+                MessageBox.Show("กรุณาบันทึกโครงการและขั้นตอนก่อนเพิ่ม Task", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -246,14 +269,18 @@ namespace CMS.Presentation.Modules.RGP
             dgvStateMembers.Columns.Clear();
             dgvStateMembers.AutoGenerateColumns = false;
 
-            var colId   = new DataGridViewTextBoxColumn { Name = "i_state_member_id", DataPropertyName = "i_state_member_id", Visible = false };
-            var colName = new DataGridViewTextBoxColumn { HeaderText = "ชื่อ",    DataPropertyName = "n_member_name", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill };
-            var colRole = new DataGridViewTextBoxColumn { HeaderText = "บทบาท",   DataPropertyName = "c_role",        Width = 150 };
-            var colBy   = new DataGridViewTextBoxColumn { HeaderText = "เพิ่มโดย", DataPropertyName = "i_create_user", Width = 100 };
+            var colId    = new DataGridViewTextBoxColumn { Name = "i_state_member_id", DataPropertyName = "i_state_member_id", Visible = false };
+            var colName  = new DataGridViewTextBoxColumn { HeaderText = "ชื่อ",       DataPropertyName = "n_member_name",  AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill };
+            var colType  = new DataGridViewTextBoxColumn { HeaderText = "ประเภท",     DataPropertyName = "c_member_type",  Width = 90 };
+            var colRole  = new DataGridViewTextBoxColumn { HeaderText = "บทบาท",      DataPropertyName = "c_role",         Width = 130 };
+            var colSent  = new DataGridViewTextBoxColumn { HeaderText = "ส่งไปแล้ว (ครั้ง)", DataPropertyName = "i_notify_count", Width = 110 };
+            var colBy    = new DataGridViewTextBoxColumn { HeaderText = "เพิ่มโดย",    DataPropertyName = "i_create_user",  Width = 100 };
 
+            colType.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             colRole.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            colSent.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
-            dgvStateMembers.Columns.AddRange(colId, colName, colRole, colBy);
+            dgvStateMembers.Columns.AddRange(colId, colName, colType, colRole, colSent, colBy);
 
             var hStyle = dgvStateMembers.ColumnHeadersDefaultCellStyle;
             hStyle.BackColor = Color.FromArgb(30, 58, 95);
@@ -290,6 +317,7 @@ namespace CMS.Presentation.Modules.RGP
                         i_project_id    = _i_project_id,
                         n_member_name   = dlg.SelectedName,
                         c_role          = dlg.SelectedRole,
+                        c_member_type   = dlg.SelectedType,
                         i_create_user   = _userName
                     };
                     if (_memberCtrl.Insert(m))
@@ -314,6 +342,128 @@ namespace CMS.Presentation.Modules.RGP
             {
                 if (_memberCtrl.Delete(id))
                     LoadStateMembers();
+            }
+        }
+
+        // ─── ส่ง Notify ────────────────────────────────────────────────────────
+        private async void btnNotifyMember_Click(object sender, EventArgs e)
+        {
+            if (dgvStateMembers.CurrentRow == null) return;
+            DataRowView row = dgvStateMembers.CurrentRow.DataBoundItem as DataRowView;
+            if (row == null) return;
+
+            string memberType = row["c_member_type"]?.ToString() ?? "";
+            if (memberType != "พนักงาน")
+            {
+                MessageBox.Show("ส่ง Notify ได้เฉพาะประเภท \"พนักงาน\" เท่านั้น (ต้องมี AD username)", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int    stateMemberId = Convert.ToInt32(row["i_state_member_id"]);
+            string adUserName    = row["n_member_name"]?.ToString() ?? "";
+            if (string.IsNullOrWhiteSpace(adUserName)) return;
+
+            if (!NotificationManager.Instance.IsConnected)
+            {
+                MessageBox.Show("ระบบแจ้งเตือนไม่พร้อมใช้งานในขณะนี้ กรุณาลองใหม่อีกครั้ง", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            btnNotifyMember.Enabled = false;
+            try
+            {
+                // 1) เช็คว่ามี Task ที่สร้างจาก Notify ให้คนนี้/ขั้นตอนนี้มาก่อนหรือยัง
+                int? existingTaskId = _notifyLogCtrl.GetExistingTaskId(_editModel.i_proj_state_id, stateMemberId);
+                int  taskId;
+                bool createdNewTask = false;
+
+                if (existingTaskId.HasValue)
+                {
+                    taskId = existingTaskId.Value;
+                }
+                else
+                {
+                    var taskModel = new ProjectTaskModel
+                    {
+                        i_proj_state_id = _editModel.i_proj_state_id,
+                        i_project_id    = _i_project_id,
+                        n_title         = $"ติดตาม - {_editModel.n_state_name}",
+                        n_description   = _editModel.c_description,
+                        n_assignee      = adUserName,
+                        i_create_user   = _userName
+                    };
+                    taskId = new ProjectTaskController().CreateTask(taskModel);
+                    createdNewTask = taskId > 0;
+                }
+
+                // 2) ส่ง Notification จริง
+                string projectName = "";
+                try
+                {
+                    DataTable projDt = new ProjectController().GetProjectById(_i_project_id);
+                    if (projDt.Rows.Count > 0) projectName = projDt.Rows[0]["n_project_name"]?.ToString() ?? "";
+                }
+                catch { /* ไม่กระทบการส่ง notify ถ้าดึงชื่อโครงการไม่ได้ */ }
+
+                string apiResult = "Success", apiMessage = null;
+                try
+                {
+                    await NotificationManager.Instance.SendNotificationAsync(
+                        typeCode: "ASSIGN",
+                        title: "มีงานส่งมา",
+                        message: $"คุณได้รับงานสำหรับขั้นตอน '{_editModel.n_state_name}' ในโครงการ '{projectName}' กรุณาดำเนินการ",
+                        recipientUserAd: adUserName,
+                        senderUserAd: _userName,
+                        referenceType: "project_state",
+                        referenceId: _editModel.i_proj_state_id.ToString(),
+                        referenceCode: null,
+                        priority: 2);
+                }
+                catch (Exception exSend)
+                {
+                    apiResult  = "Failed";
+                    apiMessage = exSend.Message;
+                }
+
+                // 3) log การส่ง
+                _notifyLogCtrl.Insert(new ProjectNotifyLogModel
+                {
+                    i_project_id      = _i_project_id,
+                    i_proj_state_id   = _editModel.i_proj_state_id,
+                    i_state_member_id = stateMemberId,
+                    n_recipient_name  = adUserName,
+                    i_task_id         = taskId > 0 ? (int?)taskId : null,
+                    f_task_created    = createdNewTask ? "Y" : "N",
+                    c_api_result      = apiResult,
+                    n_message         = apiMessage,
+                    i_send_user       = _userName
+                });
+
+                LoadStateMembers();
+
+                if (apiResult == "Success")
+                {
+                    MessageBox.Show(createdNewTask
+                        ? "ส่ง Notify และสร้าง Task ติดตามให้แล้ว"
+                        : "ส่ง Notify แล้ว (มี Task ติดตามอยู่ก่อนแล้ว ไม่ได้สร้างใหม่)",
+                        "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("ส่ง Notify ไม่สำเร็จ: " + apiMessage, "ข้อผิดพลาด",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnNotifyMember.Enabled = true;
             }
         }
     }
