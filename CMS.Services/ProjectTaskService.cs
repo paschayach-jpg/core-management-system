@@ -12,17 +12,20 @@ namespace CMS.Services
         private readonly IProjectStateRepository _stateRepo;
         private readonly IProjectProgressService _progressSvc;
         private readonly IProjectAuditService _auditService;
+        private readonly IProjectTaskStatusLogRepository _statusLogRepo;
 
         public ProjectTaskService(
             IProjectTaskRepository taskRepo,
             IProjectStateRepository stateRepo,
             IProjectProgressService progressSvc,
-            IProjectAuditService auditService)
+            IProjectAuditService auditService,
+            IProjectTaskStatusLogRepository statusLogRepo)
         {
             _taskRepo = taskRepo;
             _stateRepo = stateRepo;
             _progressSvc = progressSvc;
             _auditService = auditService;
+            _statusLogRepo = statusLogRepo;
         }
 
         // ─── Task CRUD ────────────────────────────────────────────────────────────
@@ -70,12 +73,21 @@ namespace CMS.Services
         /// <summary>
         /// อัปเดต Status + % ของ Task
         /// ถ้า Status=Done → sync % ของ State ด้วย
+        /// ถ้า Status=OnHold → แช่แข็ง % ไว้ที่ค่าเดิมก่อนเปลี่ยน (ไม่ยอมให้เปลี่ยน % พร้อมกับเข้า On Hold)
+        /// ทุกครั้งที่เปลี่ยนสถานะ จะ log ไว้ที่ t_project_task_status_log (ใครเปลี่ยน, จากอะไรเป็นอะไร, % ตอนนั้น)
         /// </summary>
         public bool UpdateStatus(int i_task_id, int i_proj_state_id, int i_project_id,
             string c_status, int i_pct_complete, string i_user, out string errorMessage)
         {
             errorMessage = "";
-            bool ok = _taskRepo.UpdateStatus(i_task_id, c_status, i_pct_complete, i_user);
+
+            var current = _taskRepo.GetById(i_task_id);
+            string oldStatus = current?.c_status;
+            int    oldPct    = current?.i_pct_complete ?? i_pct_complete;
+
+            int effectivePct = c_status == "OnHold" ? oldPct : i_pct_complete;
+
+            bool ok = _taskRepo.UpdateStatus(i_task_id, c_status, effectivePct, i_user);
             if (!ok) { errorMessage = "บันทึกสถานะ Task ไม่สำเร็จ"; return false; }
 
             // Sync ความคืบหน้าของ State จาก avg Task pct
@@ -90,6 +102,16 @@ namespace CMS.Services
                 RecordID = i_task_id,
                 Result = 1,
             });
+
+            _statusLogRepo.Insert(new ProjectTaskStatusLogModel
+            {
+                i_task_id       = i_task_id,
+                c_old_status    = oldStatus,
+                c_new_status    = c_status,
+                i_pct_at_change = effectivePct,
+                i_change_user   = i_user
+            });
+
             return true;
         }
 

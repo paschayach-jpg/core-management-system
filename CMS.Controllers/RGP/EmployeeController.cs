@@ -16,5 +16,6 @@ namespace CMS.Controllers.RGP
         }
 
         public DataTable GetActiveEmployees() => _repo.GetActiveEmployees();
+        public DataTable GetActiveADUsers() => _repo.GetActiveADUsers();
     }
 }

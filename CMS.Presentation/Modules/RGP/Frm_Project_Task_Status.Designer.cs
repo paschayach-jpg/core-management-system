@@ -40,7 +40,7 @@
                 "🔄 กำลังทำ",
                 "🔍 รอตรวจสอบ",
                 "✅ เสร็จแล้ว",
-                "❌ ยกเลิก" });
+                "⏸ On Hold" });
             this.cbbStatus.Location      = new System.Drawing.Point(110, 22);
             this.cbbStatus.Name          = "cbbStatus";
             this.cbbStatus.Size          = new System.Drawing.Size(200, 23);

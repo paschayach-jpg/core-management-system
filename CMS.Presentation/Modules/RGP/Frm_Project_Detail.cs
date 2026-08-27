@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
@@ -39,6 +40,14 @@ namespace CMS.Presentation.Modules.RGP
         private bool _tab3Loaded = false;
         private bool _tab4Loaded = false;
         private bool _tab5Loaded = false;
+
+        // ── Staging: ขั้นตอน/เอกสาร/บุคคลที่เพิ่มไว้ก่อนโครงการถูกบันทึกจริง (เฉพาะตอน _isNew) ──
+        // i_proj_state_id/i_doc_wf_id ของรายการที่ยัง staged อยู่ จะเป็นเลขติดลบชั่วคราว (ไม่ใช่ id จริงจาก DB)
+        private readonly List<ProjectStateModel>             _pendingStates = new List<ProjectStateModel>();
+        private readonly List<ProjectDocumentWorkflowModel>  _pendingDocs   = new List<ProjectDocumentWorkflowModel>();
+        private readonly List<ProjectMemberModel>            _pendingMembers = new List<ProjectMemberModel>();
+        private int _tempIdCounter = 0;
+        private int NextTempId() => --_tempIdCounter;
 
         // Legal Dictionary tab (dynamic)
         private TabPage        _tabLd;
@@ -267,11 +276,70 @@ namespace CMS.Presentation.Modules.RGP
             }
             int tmplId = (int)val;
 
-            if (_isNew && !_tab2Loaded)
+            if (_isNew)
             {
-                DataTable dt = _stateSvc.GetTemplateStates(tmplId);
-                dgvStates.DataSource = dt;
-                SetupDgvStates();
+                bool shouldLoad = _pendingStates.Count == 0;
+                if (!shouldLoad)
+                {
+                    shouldLoad = MessageBox.Show(
+                        "มีขั้นตอนที่เพิ่มไว้อยู่แล้ว ต้องการแทนที่ด้วยขั้นตอนจาก Template นี้หรือไม่?\n" +
+                        "(เอกสารที่ผูกกับขั้นตอนเดิมจะถูกลบไปด้วย)",
+                        "ยืนยันการแทนที่ขั้นตอน", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+                        == DialogResult.Yes;
+                }
+
+                if (shouldLoad)
+                {
+                    _pendingStates.Clear();
+                    _pendingDocs.Clear();
+                    DataTable dt = _stateSvc.GetTemplateStates(tmplId);
+                    var templateStateIdToTempId = new Dictionary<int, int>();
+                    foreach (DataRow r in dt.Rows)
+                    {
+                        int tempId = NextTempId();
+                        int templateStateId = Convert.ToInt32(r["i_state_id"]);
+                        templateStateIdToTempId[templateStateId] = tempId;
+
+                        _pendingStates.Add(new ProjectStateModel
+                        {
+                            i_proj_state_id = tempId,
+                            i_state_id      = templateStateId,
+                            n_state_name    = r["n_state_name"]?.ToString() ?? "",
+                            i_seq_no        = r["i_seq_no"] != DBNull.Value ? Convert.ToInt32(r["i_seq_no"]) : 1,
+                            c_description   = r["c_description"] != DBNull.Value ? r["c_description"].ToString() : null,
+                            f_required      = r["f_required"]?.ToString() ?? "Y",
+                            c_status        = "Pending",
+                            i_pct_complete  = 0,
+                            i_create_user   = _userName
+                        });
+                    }
+
+                    // ดึงเอกสารของทุกขั้นตอนใน Template นี้มา staged ด้วย
+                    var templateDocCtrl = new TemplateDocController();
+                    DataTable docsDt = templateDocCtrl.GetDocsByTemplate(tmplId);
+                    foreach (DataRow dr in docsDt.Rows)
+                    {
+                        int templateStateId = Convert.ToInt32(dr["i_state_id"]);
+                        if (!templateStateIdToTempId.TryGetValue(templateStateId, out int stateTempId)) continue;
+
+                        _pendingDocs.Add(new ProjectDocumentWorkflowModel
+                        {
+                            i_doc_wf_id     = NextTempId(),
+                            i_proj_state_id = stateTempId,
+                            n_doc_name      = dr["n_doc_name"]?.ToString() ?? "",
+                            c_doc_type      = dr["c_doc_type"] != DBNull.Value ? dr["c_doc_type"].ToString() : null,
+                            f_required      = dr["f_required"]?.ToString() ?? "Y",
+                            c_doc_status    = "Pending",
+                            n_remark        = dr["n_remark"] != DBNull.Value ? dr["n_remark"].ToString() : null,
+                            i_seq_no        = dr["i_seq_no"] != DBNull.Value ? Convert.ToInt32(dr["i_seq_no"]) : 1,
+                            i_create_user   = _userName
+                        });
+                    }
+
+                    LoadTab2States();
+                    LoadDocWorkflowData();
+                    LoadStatesFilterCombo();
+                }
             }
 
             try { CheckLegalDictTab(new ProjectTemplateController().IsLegalDict(tmplId)); }
@@ -298,11 +366,81 @@ namespace CMS.Presentation.Modules.RGP
 
         private void LoadTab2States()
         {
-            if (_i_project_id == 0) return;
-            DataTable dt = _stateSvc.GetStatesWithProgress(_i_project_id);
+            DataTable dt = _i_project_id == 0
+                ? BuildPendingStatesTable()
+                : _stateSvc.GetStatesWithProgress(_i_project_id);
             dgvStates.DataSource = dt;
             SetupDgvStates();
             _tab2Loaded = true;
+        }
+
+        /// <summary>สร้าง DataTable จาก _pendingStates (โครงการยังไม่ถูกบันทึก) ให้มี schema ตรงกับ GetStatesWithProgress</summary>
+        private DataTable BuildPendingStatesTable()
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("i_proj_state_id", typeof(int));
+            dt.Columns.Add("n_state_name", typeof(string));
+            dt.Columns.Add("c_description", typeof(string));
+            dt.Columns.Add("f_required", typeof(string));
+            dt.Columns.Add("i_estimated_days", typeof(int));
+            dt.Columns.Add("c_status", typeof(string));
+            dt.Columns.Add("i_pct_complete", typeof(int));
+            dt.Columns.Add("i_ref_project_id", typeof(int));
+            dt.Columns.Add("c_ref_project_no", typeof(string));
+            dt.Columns.Add("n_ref_project_name", typeof(string));
+            dt.Columns.Add("i_ref_pct_overall", typeof(int));
+            dt.Columns.Add("i_seq_no", typeof(int));
+
+            foreach (var s in _pendingStates.OrderBy(x => x.i_seq_no))
+            {
+                DataRow row = dt.NewRow();
+                row["i_proj_state_id"]    = s.i_proj_state_id;
+                row["n_state_name"]       = s.n_state_name ?? "";
+                row["c_description"]      = (object)s.c_description ?? DBNull.Value;
+                row["f_required"]         = s.f_required ?? "Y";
+                row["i_estimated_days"]   = s.i_estimated_days.HasValue ? (object)s.i_estimated_days.Value : DBNull.Value;
+                row["c_status"]           = s.c_status ?? "Pending";
+                row["i_pct_complete"]     = s.i_pct_complete;
+                row["i_ref_project_id"]   = s.i_ref_project_id.HasValue ? (object)s.i_ref_project_id.Value : DBNull.Value;
+                row["c_ref_project_no"]   = (object)s.c_ref_project_no ?? DBNull.Value;
+                row["n_ref_project_name"] = (object)s.n_ref_project_name ?? DBNull.Value;
+                row["i_ref_pct_overall"]  = s.i_ref_pct_overall;
+                row["i_seq_no"]           = s.i_seq_no;
+                dt.Rows.Add(row);
+            }
+            return dt;
+        }
+
+        /// <summary>ผลรวมวันคาดการณ์ของขั้นตอนที่ staged ไว้ (ใช้แทน GetTotalEstimatedDays ตอนโครงการยังไม่บันทึก)</summary>
+        private int StagedUsedDays(int excludeStateId)
+        {
+            return _pendingStates.Where(s => s.i_proj_state_id != excludeStateId)
+                                  .Sum(s => s.i_estimated_days ?? 0);
+        }
+
+        /// <summary>
+        /// แทรก/แก้ไขขั้นตอน staged ตามลำดับที่ผู้ใช้ระบุ (i_seq_no) — รายการอื่นที่อยู่ตั้งแต่ตำแหน่งนั้นเป็นต้นไป
+        /// จะถูกเลื่อนลง แล้วเรียงเลขลำดับใหม่ให้ต่อเนื่อง 1..N เสมอ (ไม่ให้ลำดับซ้ำกัน)
+        /// excludeTempId = id ของรายการที่กำลังแก้ไข (null = กำลังเพิ่มใหม่)
+        /// </summary>
+        private void InsertPendingStateAtPosition(ProjectStateModel model, int? excludeTempId)
+        {
+            var others = _pendingStates
+                .Where(s => !excludeTempId.HasValue || s.i_proj_state_id != excludeTempId.Value)
+                .OrderBy(s => s.i_seq_no)
+                .ToList();
+
+            int pos = model.i_seq_no - 1; // แปลงเป็น 0-based index
+            if (pos < 0) pos = 0;
+            if (pos > others.Count) pos = others.Count;
+
+            others.Insert(pos, model);
+
+            for (int i = 0; i < others.Count; i++)
+                others[i].i_seq_no = i + 1;
+
+            _pendingStates.Clear();
+            _pendingStates.AddRange(others);
         }
 
         private void SetupDgvStates()
@@ -341,7 +479,9 @@ namespace CMS.Presentation.Modules.RGP
         private void DgvStates_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0 || dgvStates.DataSource == null) return;
-            DataRow r = ((DataTable)dgvStates.DataSource).Rows[e.RowIndex];
+            DataTable dtSrc = (DataTable)dgvStates.DataSource;
+            if (!dtSrc.Columns.Contains("i_ref_project_id")) return; // โหมดพรีวิวขั้นตอนจาก Template (โครงการยังไม่ถูกบันทึก) ยังไม่มีคอลัมน์นี้
+            DataRow r = dtSrc.Rows[e.RowIndex];
             bool hasRef = r["i_ref_project_id"] != DBNull.Value;
             string colProp = dgvStates.Columns[e.ColumnIndex].DataPropertyName;
 
@@ -362,10 +502,22 @@ namespace CMS.Presentation.Modules.RGP
 
         private void btnAddState_Click(object sender, EventArgs e)
         {
-            if (_i_project_id == 0)
-            { MessageBox.Show("กรุณาบันทึกโครงการก่อนเพิ่มขั้นตอน", "แจ้งเตือน"); return; }
             DateTime? start = dtpStartDate.Checked ? dtpStartDate.Value : (DateTime?)null;
             DateTime? due   = dtpDueDate.Checked   ? dtpDueDate.Value   : (DateTime?)null;
+
+            if (_i_project_id == 0)
+            {
+                var frmNew = new Frm_Project_State_Edit(0, null, start, due, StagedUsedDays);
+                if (frmNew.ShowDialog() == DialogResult.OK)
+                {
+                    var model = frmNew.Result;
+                    model.i_proj_state_id = NextTempId();
+                    InsertPendingStateAtPosition(model, null);
+                    LoadTab2States();
+                }
+                return;
+            }
+
             var frm = new Frm_Project_State_Edit(_i_project_id, null, start, due);
             if (frm.ShowDialog() == DialogResult.OK) LoadTab2States();
         }
@@ -377,6 +529,18 @@ namespace CMS.Presentation.Modules.RGP
             if (model == null) return;
             DateTime? start = dtpStartDate.Checked ? dtpStartDate.Value : (DateTime?)null;
             DateTime? due   = dtpDueDate.Checked   ? dtpDueDate.Value   : (DateTime?)null;
+
+            if (_i_project_id == 0)
+            {
+                var frmNew = new Frm_Project_State_Edit(0, model, start, due, StagedUsedDays);
+                if (frmNew.ShowDialog() == DialogResult.OK)
+                {
+                    InsertPendingStateAtPosition(frmNew.Result, model.i_proj_state_id);
+                    LoadTab2States();
+                }
+                return;
+            }
+
             var frm = new Frm_Project_State_Edit(_i_project_id, model, start, due);
             if (frm.ShowDialog() == DialogResult.OK) LoadTab2States();
         }
@@ -389,6 +553,14 @@ namespace CMS.Presentation.Modules.RGP
             if (MessageBox.Show($"ต้องการลบขั้นตอน '{model.n_state_name}' ใช่หรือไม่?",
                 "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
+                if (_i_project_id == 0)
+                {
+                    _pendingStates.RemoveAll(s => s.i_proj_state_id == model.i_proj_state_id);
+                    _pendingDocs.RemoveAll(d => d.i_proj_state_id == model.i_proj_state_id);
+                    LoadTab2States();
+                    return;
+                }
+
                 string err;
                 if (_stateSvc.DeleteState(model.i_proj_state_id, out err))
                     LoadTab2States();
@@ -412,6 +584,16 @@ namespace CMS.Presentation.Modules.RGP
             int idx = dgvStates.CurrentRow.Index;
             int newIdx = idx + direction;
             if (newIdx < 0 || newIdx >= dgvStates.Rows.Count) return;
+
+            if (_i_project_id == 0)
+            {
+                var ordered = _pendingStates.OrderBy(s => s.i_seq_no).ToList();
+                int tmpSeq = ordered[idx].i_seq_no;
+                ordered[idx].i_seq_no    = ordered[newIdx].i_seq_no;
+                ordered[newIdx].i_seq_no = tmpSeq;
+                LoadTab2States();
+                return;
+            }
 
             DataTable dt = (DataTable)dgvStates.DataSource;
             var orderList = new System.Collections.Generic.List<Tuple<int, int>>();
@@ -589,7 +771,6 @@ namespace CMS.Presentation.Modules.RGP
 
         private void LoadTab4Documents()
         {
-            if (_i_project_id == 0) return;
             LoadDocWorkflowData();
             LoadStatesFilterCombo();
             _tab4Loaded = true;
@@ -597,16 +778,64 @@ namespace CMS.Presentation.Modules.RGP
 
         private void LoadDocWorkflowData(int stateId = 0)
         {
-            DataTable dt = stateId > 0
-                ? _docSvc.GetDocWorkflow(stateId)
-                : _docSvc.GetDocWorkflowByProject(_i_project_id);
+            DataTable dt = _i_project_id == 0
+                ? BuildPendingDocsTable(stateId)
+                : (stateId > 0 ? _docSvc.GetDocWorkflow(stateId) : _docSvc.GetDocWorkflowByProject(_i_project_id));
             dgvDocWorkflow.DataSource = dt;
             SetupDgvDocWorkflow();
         }
 
+        /// <summary>สร้าง DataTable จาก _pendingDocs (โครงการยังไม่ถูกบันทึก) ให้มี schema ตรงกับ GetDocWorkflowByProject</summary>
+        private DataTable BuildPendingDocsTable(int filterStateId = 0)
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("i_doc_wf_id", typeof(int));
+            dt.Columns.Add("i_proj_state_id", typeof(int));
+            dt.Columns.Add("n_state_name", typeof(string));
+            dt.Columns.Add("n_doc_name", typeof(string));
+            dt.Columns.Add("c_doc_type", typeof(string));
+            dt.Columns.Add("f_required", typeof(string));
+            dt.Columns.Add("c_doc_status", typeof(string));
+            dt.Columns.Add("n_remark", typeof(string));
+            dt.Columns.Add("i_seq_no", typeof(int));
+
+            IEnumerable<ProjectDocumentWorkflowModel> docs = filterStateId > 0
+                ? _pendingDocs.Where(d => d.i_proj_state_id == filterStateId)
+                : _pendingDocs;
+
+            foreach (var d in docs.OrderBy(x => x.i_seq_no))
+            {
+                var state = _pendingStates.FirstOrDefault(s => s.i_proj_state_id == d.i_proj_state_id);
+                DataRow row = dt.NewRow();
+                row["i_doc_wf_id"]     = d.i_doc_wf_id;
+                row["i_proj_state_id"] = d.i_proj_state_id;
+                row["n_state_name"]    = state?.n_state_name ?? "";
+                row["n_doc_name"]      = d.n_doc_name ?? "";
+                row["c_doc_type"]      = (object)d.c_doc_type ?? DBNull.Value;
+                row["f_required"]      = d.f_required ?? "Y";
+                row["c_doc_status"]    = d.c_doc_status ?? "Pending";
+                row["n_remark"]        = (object)d.n_remark ?? DBNull.Value;
+                row["i_seq_no"]        = d.i_seq_no;
+                dt.Rows.Add(row);
+            }
+            return dt;
+        }
+
         private void LoadStatesFilterCombo()
         {
-            DataTable dt = _stateSvc.GetStatesForCombo(_i_project_id);
+            DataTable dt;
+            if (_i_project_id == 0)
+            {
+                dt = new DataTable();
+                dt.Columns.Add("i_proj_state_id", typeof(int));
+                dt.Columns.Add("n_state_name", typeof(string));
+                foreach (var s in _pendingStates.OrderBy(x => x.i_seq_no))
+                    dt.Rows.Add(s.i_proj_state_id, s.n_state_name);
+            }
+            else
+            {
+                dt = _stateSvc.GetStatesForCombo(_i_project_id);
+            }
             DataRow blank = dt.NewRow();
             blank["i_proj_state_id"] = 0;
             blank["n_state_name"]    = "--- ทุกขั้นตอน ---";
@@ -648,7 +877,24 @@ namespace CMS.Presentation.Modules.RGP
         private void btnAddDoc_Click(object sender, EventArgs e)
         {
             if (_i_project_id == 0)
-            { MessageBox.Show("กรุณาบันทึกโครงการก่อน", "แจ้งเตือน"); return; }
+            {
+                if (_pendingStates.Count == 0)
+                {
+                    MessageBox.Show("กรุณาเพิ่มขั้นตอนอย่างน้อย 1 รายการก่อน", "แจ้งเตือน",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                var frmNew = new Frm_Doc_Workflow_Edit(0, null, _pendingStates);
+                if (frmNew.ShowDialog() == DialogResult.OK)
+                {
+                    var model = frmNew.Result;
+                    model.i_doc_wf_id = NextTempId();
+                    _pendingDocs.Add(model);
+                    LoadDocWorkflowData();
+                }
+                return;
+            }
+
             var frm = new Frm_Doc_Workflow_Edit(_i_project_id);
             if (frm.ShowDialog() == DialogResult.OK) LoadDocWorkflowData();
         }
@@ -657,6 +903,19 @@ namespace CMS.Presentation.Modules.RGP
         {
             var model = GetSelectedDocModel();
             if (model == null) return;
+
+            if (_i_project_id == 0)
+            {
+                var frmNew = new Frm_Doc_Workflow_Edit(0, model, _pendingStates);
+                if (frmNew.ShowDialog() == DialogResult.OK)
+                {
+                    int idx = _pendingDocs.FindIndex(d => d.i_doc_wf_id == model.i_doc_wf_id);
+                    if (idx >= 0) _pendingDocs[idx] = frmNew.Result;
+                    LoadDocWorkflowData();
+                }
+                return;
+            }
+
             var frm = new Frm_Doc_Workflow_Edit(_i_project_id, model);
             if (frm.ShowDialog() == DialogResult.OK) LoadDocWorkflowData();
         }
@@ -674,6 +933,13 @@ namespace CMS.Presentation.Modules.RGP
             if (MessageBox.Show($"ต้องการลบเอกสาร '{model.n_doc_name}' ใช่หรือไม่?",
                 "ยืนยันการลบ", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
+                if (_i_project_id == 0)
+                {
+                    _pendingDocs.RemoveAll(d => d.i_doc_wf_id == model.i_doc_wf_id);
+                    LoadDocWorkflowData();
+                    return;
+                }
+
                 string err;
                 if (_docSvc.DeleteDocWorkflow(model.i_doc_wf_id, out err))
                     LoadDocWorkflowData();
@@ -705,7 +971,15 @@ namespace CMS.Presentation.Modules.RGP
 
                 var btn = new Button { Text = "บันทึก", Left = 100, Top = 70, Width = 80 };
                 btn.Click += (s2, e2) => {
-                    _docSvc.UpdateDocStatus(model.i_doc_wf_id, cbb.SelectedItem.ToString(), _userName);
+                    if (_i_project_id == 0)
+                    {
+                        var pending = _pendingDocs.FirstOrDefault(d => d.i_doc_wf_id == model.i_doc_wf_id);
+                        if (pending != null) pending.c_doc_status = cbb.SelectedItem.ToString();
+                    }
+                    else
+                    {
+                        _docSvc.UpdateDocStatus(model.i_doc_wf_id, cbb.SelectedItem.ToString(), _userName);
+                    }
                     dlg.DialogResult = DialogResult.OK;
                 };
                 dlg.Controls.AddRange(new Control[] { cbb, btn });
@@ -738,10 +1012,26 @@ namespace CMS.Presentation.Modules.RGP
 
         private void LoadTab5Members()
         {
-            if (_i_project_id == 0) return;
-            dgvMembers.DataSource = _memberCtrl.GetByProject(_i_project_id);
+            dgvMembers.DataSource = _i_project_id == 0
+                ? BuildPendingMembersTable()
+                : _memberCtrl.GetByProject(_i_project_id);
             SetupDgvMembers();
             _tab5Loaded = true;
+        }
+
+        /// <summary>สร้าง DataTable จาก _pendingMembers (โครงการยังไม่ถูกบันทึก) ให้มี schema ตรงกับ GetByProject</summary>
+        private DataTable BuildPendingMembersTable()
+        {
+            var dt = new DataTable();
+            dt.Columns.Add("i_member_id", typeof(int));
+            dt.Columns.Add("n_member_name", typeof(string));
+            dt.Columns.Add("department_code", typeof(string));
+            dt.Columns.Add("c_role", typeof(string));
+            dt.Columns.Add("c_member_type", typeof(string));
+            foreach (var m in _pendingMembers)
+                dt.Rows.Add(m.i_member_id, m.n_member_name ?? "", (object)m.c_department_code ?? DBNull.Value,
+                    m.c_role ?? "", (object)m.c_member_type ?? DBNull.Value);
+            return dt;
         }
 
         private void SetupDgvMembers()
@@ -751,13 +1041,15 @@ namespace CMS.Presentation.Modules.RGP
 
             var colId1  = new DataGridViewTextBoxColumn { HeaderText = "#",      Width = 50 };
             var colId   = new DataGridViewTextBoxColumn { Name = "i_member_id",   HeaderText = "#",      DataPropertyName = "i_member_id",    Width = 100, Visible = false };
-            var colName = new DataGridViewTextBoxColumn { Name = "n_member_name", HeaderText = "ชื่อ",   DataPropertyName = "n_member_name",  Width = 300, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill };
+            var colName = new DataGridViewTextBoxColumn { Name = "n_member_name", HeaderText = "ชื่อ",   DataPropertyName = "n_member_name",  Width = 260, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill };
+            var colType = new DataGridViewTextBoxColumn { Name = "c_member_type", HeaderText = "ประเภท", DataPropertyName = "c_member_type",  Width = 120 };
             var colDept = new DataGridViewTextBoxColumn { Name = "department_code", HeaderText = "รหัส", DataPropertyName = "department_code", Width = 150 };
             var colRole = new DataGridViewTextBoxColumn { Name = "c_role",        HeaderText = "บทบาท", DataPropertyName = "c_role",          Width = 180 };
 
             colRole.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            colType.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
-            dgvMembers.Columns.AddRange(colId1, colId, colName, colDept, colRole);
+            dgvMembers.Columns.AddRange(colId1, colId, colName, colType, colDept, colRole);
             StyleDgv(dgvMembers);
         }
 
@@ -765,8 +1057,16 @@ namespace CMS.Presentation.Modules.RGP
         {
             if (_i_project_id == 0)
             {
-                MessageBox.Show("กรุณาบันทึกโครงการก่อนเพิ่มบุคคล", "แจ้งเตือน",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                using (var dlgNew = new Frm_Project_Member(0, _userName))
+                {
+                    if (dlgNew.ShowDialog() == DialogResult.OK)
+                    {
+                        var model = dlgNew.Result;
+                        model.i_member_id = NextTempId();
+                        _pendingMembers.Add(model);
+                        LoadTab5Members();
+                    }
+                }
                 return;
             }
 
@@ -786,6 +1086,13 @@ namespace CMS.Presentation.Modules.RGP
             if (MessageBox.Show($"ต้องการลบ '{name}' ออกจากโครงการ?", "ยืนยัน",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
+                if (_i_project_id == 0)
+                {
+                    _pendingMembers.RemoveAll(m => m.i_member_id == memberId);
+                    LoadTab5Members();
+                    return;
+                }
+
                 if (_memberCtrl.Delete(memberId))
                     LoadTab5Members();
             }
@@ -839,7 +1146,7 @@ namespace CMS.Presentation.Modules.RGP
                     if (string.IsNullOrEmpty(manualNo))
                     {
                         MessageBox.Show("กรุณาระบุเลขที่โครงการ", "แจ้งเตือน",
-                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);  
                         txtProjectNo.Focus();
                         return;
                     }
@@ -859,8 +1166,20 @@ namespace CMS.Presentation.Modules.RGP
                 success = newId > 0;
                 if (success)
                 {
-                    MessageBox.Show("สร้างโครงการเรียบร้อยแล้ว เลขที่: " + model.c_project_no, "สำเร็จ",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var failures = SaveStagedChildren(newId);
+                    if (failures.Count == 0)
+                    {
+                        MessageBox.Show("สร้างโครงการเรียบร้อยแล้ว เลขที่: " + model.c_project_no, "สำเร็จ",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            "สร้างโครงการเรียบร้อยแล้ว เลขที่: " + model.c_project_no + "\n\n" +
+                            "แต่มีบางรายการที่เพิ่มไม่สำเร็จ กรุณาเข้าไปเพิ่มด้วยตนเองภายหลัง:\n" +
+                            string.Join("\n", failures),
+                            "สำเร็จบางส่วน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
                     this.DialogResult = DialogResult.OK;
                     this.Close();
                 }
@@ -880,6 +1199,60 @@ namespace CMS.Presentation.Modules.RGP
             if (!success)
                 MessageBox.Show("บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง", "ข้อผิดพลาด",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        /// <summary>
+        /// หลังสร้างโครงการสำเร็จได้ id จริงแล้ว — insert ขั้นตอน/เอกสาร/บุคคลที่ staged ไว้ตามลำดับ dependency
+        /// (ขั้นตอนก่อน เพื่อได้ id จริงมา remap ให้เอกสารที่ผูกกับขั้นตอนนั้น)
+        /// ถ้ารายการไหน insert ไม่สำเร็จ จะข้ามไปทำรายการถัดไป แล้วคืนรายชื่อที่ล้มเหลวกลับมาให้ผู้ใช้แจ้งเตือน
+        /// (โครงการที่สร้างไปแล้วจะไม่ถูกลบ/rollback)
+        /// </summary>
+        private List<string> SaveStagedChildren(int newProjectId)
+        {
+            var failures = new List<string>();
+            var tempToRealState = new Dictionary<int, int>();
+
+            foreach (var s in _pendingStates.OrderBy(x => x.i_seq_no))
+            {
+                int tempId = s.i_proj_state_id;
+                s.i_project_id = newProjectId;
+                try
+                {
+                    int realId = _stateSvc.AddState(s);
+                    if (realId > 0) tempToRealState[tempId] = realId;
+                    else failures.Add($"ขั้นตอน: {s.n_state_name}");
+                }
+                catch { failures.Add($"ขั้นตอน: {s.n_state_name}"); }
+            }
+
+            foreach (var d in _pendingDocs.OrderBy(x => x.i_seq_no))
+            {
+                if (!tempToRealState.TryGetValue(d.i_proj_state_id, out int realStateId))
+                {
+                    failures.Add($"เอกสาร: {d.n_doc_name} (ขั้นตอนที่ผูกไว้ไม่ถูกสร้าง)");
+                    continue;
+                }
+                d.i_project_id    = newProjectId;
+                d.i_proj_state_id = realStateId;
+                try
+                {
+                    int realId = _docSvc.AddDocWorkflow(d);
+                    if (realId <= 0) failures.Add($"เอกสาร: {d.n_doc_name}");
+                }
+                catch { failures.Add($"เอกสาร: {d.n_doc_name}"); }
+            }
+
+            foreach (var m in _pendingMembers)
+            {
+                m.i_project_id = newProjectId;
+                try
+                {
+                    if (!_memberCtrl.Insert(m)) failures.Add($"บุคคลที่เกี่ยวข้อง: {m.n_member_name}");
+                }
+                catch { failures.Add($"บุคคลที่เกี่ยวข้อง: {m.n_member_name}"); }
+            }
+
+            return failures;
         }
 
         private void btnClose_Click(object sender, EventArgs e)
