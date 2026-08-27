@@ -66,6 +66,7 @@ namespace CMS.Presentation
         private readonly IPermissionCheckController _permissionCheckController;
         private readonly IAuditLogController _auditLogController;
         private readonly IFolderReadLookupController _folderReadLookupController;
+        private readonly CMS.Infrastructure.Interfaces.INetworkDriveHelper _networkDriveHelper;
         private readonly IFileDocumentLookupController _fileDocumentLookupController;
         private readonly IFilePermissionAclController _filePermissionAclController;
         private readonly IFilePermissionCommandController _filePermissionCommandController;
@@ -233,7 +234,8 @@ namespace CMS.Presentation
             CMS.Controllers.RGP.ProjectStateController rgpStateController = null,
             CMS.Controllers.RGP.ProjectTaskController rgpTaskController = null,
             CMS.Controllers.RGP.ProjectProgressController rgpProgressController = null,
-            CMS.Controllers.RGP.ProjectDocumentController rgpDocController = null)
+            CMS.Controllers.RGP.ProjectDocumentController rgpDocController = null,
+            CMS.Infrastructure.Interfaces.INetworkDriveHelper networkDriveHelper = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -244,6 +246,7 @@ namespace CMS.Presentation
             _logger = logger;
             _auditService = auditService;
             _currentUser = currentUser;
+            _networkDriveHelper = networkDriveHelper;
             _notificationService = notificationService;
             _approvalService = approvalService;
             _folderAuthorityService = folderAuthorityService;
@@ -1777,7 +1780,7 @@ namespace CMS.Presentation
         /// </summary>
         private KBEditorDialog CreateKBEditorForm(KBArticle article)
         {
-            var dlg = new KBEditorDialog(_currentUser, _fileUploadController, _uploadCheckpointController, _fileBrowseController);
+            var dlg = new KBEditorDialog(_currentUser, _fileUploadController, _uploadCheckpointController, _fileBrowseController, _folderCommandController, _folderReadLookupController, _fileCommandController, _networkDriveHelper);
             var presenter = new KBEditorController(
                 dlg, _kbCategoryService, _kbArticleService, _currentUser, article);
             dlg.AttachPresenter(presenter);

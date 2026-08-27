@@ -887,6 +887,18 @@ namespace CMS.Services
                 writtenPath = _networkDriveHelper.BuildPath(folder.OrgUnitID, folder.FolderID, physicalName);
                 _networkDriveHelper.WriteFile(writtenPath, request.FileStream);
 
+                // ── Verify the physical write landed correctly before creating a DB row ──
+                long actualSize = _networkDriveHelper.GetFileSize(writtenPath);
+                if (actualSize < 0)
+                    throw new IOException(string.Format(
+                        "ไฟล์ที่เขียนไม่พบบน network share หลังอัปโหลด ('{0}')", writtenPath));
+                if (actualSize == 0 && request.FileSizeBytes > 0)
+                    throw new IOException("ไฟล์ที่เขียนมีขนาด 0 bytes");
+                if (request.FileSizeBytes > 0 && actualSize != request.FileSizeBytes)
+                    throw new IOException(string.Format(
+                        "ขนาดไฟล์ที่เขียนไม่ตรง (คาด {0:N0} ได้ {1:N0} bytes)",
+                        request.FileSizeBytes, actualSize));
+
                 string storedFileName = Path.GetFileName(writtenPath);
                 string mimeType = string.IsNullOrEmpty(request.MimeType) ? "application/octet-stream" : request.MimeType;
 
@@ -897,7 +909,7 @@ namespace CMS.Services
                     StoredFileName = storedFileName,
                     FileExtension = ext,
                     MimeType = mimeType,
-                    FileSizeBytes = request.FileSizeBytes,
+                    FileSizeBytes = actualSize,
                     PhysicalPath = writtenPath,
                     Checksum = checksum,
                     VirusScanStatus = scanResult.ScannerError ? 0   // 0=Pending (scanner unavailable)
@@ -912,6 +924,11 @@ namespace CMS.Services
 
                 insertedId = _fileDocumentRepository.Insert(doc);
 
+                // The file is written and the row is committed. From here on, any failure in a
+                // follow-up bookkeeping step must NOT roll back the upload — otherwise we would
+                // delete a good physical file and soft-delete a good row.
+                try
+                {
                 // Replace: bump version and soft-delete old record only after new record is inserted
                 if (existingDoc != null)
                 {
@@ -990,7 +1007,14 @@ namespace CMS.Services
 
                 Log(user, "File", "UPLOAD", "storage.FileDocument", insertedId.Value, 1,
                     string.Format("Uploaded '{0}' ({1:N0} bytes) to folder {2}.",
-                        resolvedName, request.FileSizeBytes, folder.FolderID));
+                        resolvedName, actualSize, folder.FolderID));
+                }
+                catch (Exception postCommitEx)
+                {
+                    _loggingService.Error(string.Format(
+                        "FileService: Upload of '{0}' (FileID {1}) succeeded but a follow-up step failed: {2}",
+                        resolvedName, insertedId, postCommitEx.Message), postCommitEx);
+                }
 
                 return new UploadResult
                 {
@@ -1009,6 +1033,9 @@ namespace CMS.Services
                     {
                         if (_networkDriveHelper.FileExists(writtenPath))
                             _networkDriveHelper.DeleteFile(writtenPath);
+                        string tmp = writtenPath + ".uploading";
+                        if (_networkDriveHelper.FileExists(tmp))
+                            _networkDriveHelper.DeleteFile(tmp);
                     }
                     catch (Exception rollbackEx)
                     {

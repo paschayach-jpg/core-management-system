@@ -23,6 +23,12 @@ namespace CMS.Infrastructure.Interfaces
         bool FileExists(string path);
 
         /// <summary>
+        /// Returns the size in bytes of the file at the specified path,
+        /// or -1 if the file does not exist / cannot be accessed.
+        /// </summary>
+        long GetFileSize(string path);
+
+        /// <summary>
         /// ย้ายไฟล์จาก sourcePath ไปยัง destPath จริงบน disk
         /// สร้าง directory ปลายทางอัตโนมัติถ้ายังไม่มี
         /// </summary>
