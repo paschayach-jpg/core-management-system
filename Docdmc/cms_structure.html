@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMS โครงสร้างโปรแกรม</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg:         #0F1117;
+    --panel:      #161C26;
+    --panel-2:    #1C2333;
+    --border:     #252E42;
+    --border-2:   #2E3A52;
+    --navy:       #1E3A8A;
+    --accent:     #3B82F6;
+    --accent-2:   #60A5FA;
+    --green:      #10B981;
+    --green-lt:   #0D2E20;
+    --violet:     #8B5CF6;
+    --rose:       #F43F5E;
+    --amber:      #F59E0B;
+    --teal:       #14B8A6;
+    --text-1:     #E2E8F0;
+    --text-2:     #94A3B8;
+    --text-3:     #475569;
+    --connector:  #2E3A52;
+    --shadow:     0 4px 24px rgba(0,0,0,.5);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg:         #F0F4FA;
+      --panel:      #FFFFFF;
+      --panel-2:    #F8FAFC;
+      --border:     #DDE4F0;
+      --border-2:   #C8D3E8;
+      --navy:       #1E3A8A;
+      --accent:     #2563EB;
+      --accent-2:   #1D4ED8;
+      --green:      #059669;
+      --green-lt:   #ECFDF5;
+      --violet:     #7C3AED;
+      --rose:       #E11D48;
+      --amber:      #D97706;
+      --teal:       #0D9488;
+      --text-1:     #0F172A;
+      --text-2:     #475569;
+      --text-3:     #94A3B8;
+      --connector:  #CBD5E1;
+      --shadow:     0 4px 24px rgba(0,0,0,.08);
+    }
+  }
+
+  :root[data-theme="light"] {
+    --bg:         #F0F4FA;
+    --panel:      #FFFFFF;
+    --panel-2:    #F8FAFC;
+    --border:     #DDE4F0;
+    --border-2:   #C8D3E8;
+    --navy:       #1E3A8A;
+    --accent:     #2563EB;
+    --accent-2:   #1D4ED8;
+    --green:      #059669;
+    --green-lt:   #ECFDF5;
+    --violet:     #7C3AED;
+    --rose:       #E11D48;
+    --amber:      #D97706;
+    --teal:       #0D9488;
+    --text-1:     #0F172A;
+    --text-2:     #475569;
+    --text-3:     #94A3B8;
+    --connector:  #CBD5E1;
+    --shadow:     0 4px 24px rgba(0,0,0,.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg);
+    color: var(--text-1);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* Header */
+  .header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .header-icon {
+    width: 38px; height: 38px;
+    background: var(--accent);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .header-title { font-size: 1.05rem; font-weight: 700; color: var(--text-1); }
+  .header-sub { font-size: .8rem; color: var(--text-2); margin-top: 1px; font-family: 'JetBrains Mono', monospace; }
+  .header-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text-2);
+    transition: all .15s;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .btn:hover { background: var(--border); color: var(--text-1); }
+  .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-accent:hover { opacity: .85; color: #fff; }
+
+  /* Layout */
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* Legend / Subsystem panel */
+  .legend-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    position: sticky;
+    top: 82px;
+    box-shadow: var(--shadow);
+  }
+  .legend-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .legend-item:last-child { border-bottom: none; }
+  .legend-item:hover { background: var(--panel-2); }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .legend-item-body { flex: 1; min-width: 0; }
+  .legend-name { font-size: .9rem; font-weight: 600; color: var(--text-1); }
+  .legend-desc { font-size: .78rem; color: var(--text-2); margin-top: 2px; line-height: 1.5; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+  .stat-label { font-size: .75rem; color: var(--text-2); }
+
+  /* Tree */
+  .tree-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .tree-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--panel-2);
+  }
+  .tree-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .78rem;
+    color: var(--text-3);
+  }
+  .tree-path span { color: var(--accent); }
+  .tree-body { padding: 12px 0; }
+
+  /* Tree nodes */
+  .tree-node { }
+  .tree-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 3px 0;
+    cursor: default;
+    user-select: none;
+    position: relative;
+  }
+  .tree-row:hover { background: var(--panel-2); }
+  .tree-row.clickable { cursor: pointer; }
+
+  .tree-indent {
+    display: flex;
+    flex-shrink: 0;
+  }
+  .tree-pipe {
+    width: 20px;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+  }
+  .tree-pipe-v {
+    position: absolute;
+    top: 0; bottom: 0; left: 10px;
+    width: 1px;
+    background: var(--connector);
+  }
+  .tree-pipe-h {
+    position: absolute;
+    top: 50%; left: 10px;
+    width: 10px; height: 1px;
+    background: var(--connector);
+  }
+
+  .tree-toggle {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 1px solid var(--border-2);
+    background: var(--panel-2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-right: 6px;
+    font-size: .65rem;
+    color: var(--text-3);
+    transition: all .15s;
+  }
+  .tree-row.open .tree-toggle { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tree-toggle.leaf { background: transparent; border: none; }
+
+  .tree-icon { font-size: .9rem; margin-right: 6px; flex-shrink: 0; }
+
+  .tree-label {
+    font-size: .88rem;
+    color: var(--text-1);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tree-label.layer-label { font-weight: 700; font-size: .9rem; }
+  .tree-label.dim { color: var(--text-2); }
+
+  .tree-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem;
+    padding: 2px 7px;
+    border-radius: 100px;
+    margin-left: 8px;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+
+  .tree-children { display: none; }
+  .tree-children.open { display: block; }
+
+  /* Colors per system */
+  .c-dms  { color: var(--accent); }
+  .c-kms  { color: var(--violet); }
+  .c-rgp  { color: var(--teal); }
+  .c-wfe  { color: var(--rose); }
+  .c-core { color: var(--amber); }
+  .c-green{ color: var(--green); }
+
+  .b-dms  { background: rgba(59,130,246,.15); color: var(--accent-2); }
+  .b-kms  { background: rgba(139,92,246,.15); color: var(--violet); }
+  .b-rgp  { background: rgba(20,184,166,.15); color: var(--teal); }
+  .b-wfe  { background: rgba(244,63,94,.15);  color: var(--rose); }
+  .b-core { background: rgba(245,158,11,.15); color: var(--amber); }
+  .b-green{ background: rgba(16,185,129,.15); color: var(--green); }
+
+  @media (max-width: 800px) {
+    .wrap { grid-template-columns: 1fr; }
+    .legend-panel { position: static; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="header-icon">🗂️</div>
+    <div>
+      <div class="header-title">CMS Import — โครงสร้างโปรแกรม</div>
+      <div class="header-sub">C:\Users\pitakpong\Documents\cms_import</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="expandAll()">ขยายทั้งหมด</button>
+    <button class="btn" onclick="collapseAll()">ย่อทั้งหมด</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Left: Legend -->
+  <div>
+    <div class="legend-panel">
+      <div class="legend-head">Subsystems</div>
+
+      <div class="legend-item" onclick="filterBy('dms')">
+        <div class="legend-dot" style="background:var(--accent)"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">DMS</div>
+          <div class="legend-desc">Document Management System<br>จัดการเอกสารและไฟล์</div>
+        </div>
+      </div>
+
+      <div class="legend-item" onclick="filterBy('kms')">
+        <div class="legend-dot" style="background:var(--violet)"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">KMS</div>
+          <div class="legend-desc">Knowledge Management System<br>ฐานความรู้องค์กร</div>
+        </div>
+      </div>
+
+      <div class="legend-item" onclick="filterBy('rgp')">
+        <div class="legend-dot" style="background:var(--teal)"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">RGP</div>
+          <div class="legend-desc">RG Project Module<br>โมดูลโครงการ RG</div>
+        </div>
+      </div>
+
+      <div class="legend-item" onclick="filterBy('wfe')">
+        <div class="legend-dot" style="background:var(--rose)"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">WFE</div>
+          <div class="legend-desc">Workflow Engine<br>ระบบ Workflow อัตโนมัติ</div>
+        </div>
+      </div>
+
+      <div class="legend-head" style="margin-top:0">Architecture Layers</div>
+
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#64748B"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">CMS.Controllers</div>
+          <div class="legend-desc">HTTP Request handlers</div>
+        </div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#64748B"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">CMS.Services</div>
+          <div class="legend-desc">Business Logic Layer</div>
+        </div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#64748B"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">CMS.Domain</div>
+          <div class="legend-desc">Domain Models & Entities</div>
+        </div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#64748B"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">CMS.Data</div>
+          <div class="legend-desc">Repository & DB Access</div>
+        </div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#64748B"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">CMS.Infrastructure</div>
+          <div class="legend-desc">External Services & IO</div>
+        </div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#64748B"></div>
+        <div class="legend-item-body">
+          <div class="legend-name">CMS.Presentation</div>
+          <div class="legend-desc">UI Forms & User Controls</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Tree -->
+  <div>
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num">6</div>
+        <div class="stat-label">Layers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">4</div>
+        <div class="stat-label">Subsystems</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">40+</div>
+        <div class="stat-label">Folders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">.NET</div>
+        <div class="stat-label">Platform</div>
+      </div>
+    </div>
+
+    <!-- Tree panel -->
+    <div class="tree-panel">
+      <div class="tree-head">
+        <div class="tree-path">📁 <span>cms_import</span> / — Project Root</div>
+      </div>
+      <div class="tree-body" id="tree-root">
+
+        <!-- CMS.Controllers -->
+        <div class="tree-node">
+          <div class="tree-row clickable open" onclick="toggle(this)">
+            <div class="tree-indent"></div>
+            <div class="tree-toggle">−</div>
+            <span class="tree-icon">📦</span>
+            <span class="tree-label layer-label">CMS.Controllers</span>
+            <span class="tree-badge b-core">API Layer</span>
+          </div>
+          <div class="tree-children open">
+
+            <div class="tree-node">
+              <div class="tree-row clickable open" onclick="toggle(this)">
+                <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                <div class="tree-toggle">−</div>
+                <span class="tree-icon c-dms">📄</span>
+                <span class="tree-label c-dms" style="font-weight:600">DMS</span>
+                <span class="tree-badge b-dms">Document Management</span>
+              </div>
+              <div class="tree-children open">
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon">📁</span>
+                  <span class="tree-label dim">Document</span>
+                  <span class="tree-badge b-dms">Controller</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tree-node">
+              <div class="tree-row clickable open" onclick="toggle(this)">
+                <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                <div class="tree-toggle">−</div>
+                <span class="tree-icon c-kms">🧠</span>
+                <span class="tree-label c-kms" style="font-weight:600">KMS</span>
+                <span class="tree-badge b-kms">Knowledge Management</span>
+              </div>
+              <div class="tree-children open">
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon">📁</span>
+                  <span class="tree-label dim">Interfaces</span>
+                </div>
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div></div><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon">📁</span>
+                  <span class="tree-label dim">KB</span>
+                  <span class="tree-badge b-kms">Knowledge Base</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon c-rgp">🔷</span>
+              <span class="tree-label c-rgp" style="font-weight:600">RGP</span>
+              <span class="tree-badge b-rgp">RG Project</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon c-wfe">⚙️</span>
+              <span class="tree-label c-wfe" style="font-weight:600">WFE</span>
+              <span class="tree-badge b-wfe">Workflow Engine</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- CMS.Services -->
+        <div class="tree-node">
+          <div class="tree-row clickable open" onclick="toggle(this)">
+            <div class="tree-indent"></div>
+            <div class="tree-toggle">−</div>
+            <span class="tree-icon">⚙️</span>
+            <span class="tree-label layer-label">CMS.Services</span>
+            <span class="tree-badge b-core">Business Logic</span>
+          </div>
+          <div class="tree-children open">
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🔄</span>
+              <span class="tree-label">BackgroundJobs</span>
+              <span class="tree-badge" style="background:rgba(100,116,139,.15);color:#94A3B8">Background Task</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">⚡</span>
+              <span class="tree-label">Caching</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📦</span>
+              <span class="tree-label">DTOs</span>
+              <span class="tree-badge" style="background:rgba(100,116,139,.15);color:#94A3B8">Data Transfer</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🚨</span>
+              <span class="tree-label">Exceptions</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🔌</span>
+              <span class="tree-label">Integrations</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📋</span>
+              <span class="tree-label">Interfaces</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🗂️</span>
+              <span class="tree-label">MenuActions</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🔔</span>
+              <span class="tree-label">Notifications</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📊</span>
+              <span class="tree-label">Performance</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📏</span>
+              <span class="tree-label">SLA</span>
+              <span class="tree-badge" style="background:rgba(100,116,139,.15);color:#94A3B8">SLA Management</span>
+            </div>
+
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">✅</span>
+              <span class="tree-label">Validators</span>
+            </div>
+
+            <!-- Workflow -->
+            <div class="tree-node">
+              <div class="tree-row clickable open" onclick="toggle(this)">
+                <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+                <div class="tree-toggle">−</div>
+                <span class="tree-icon c-wfe">🔀</span>
+                <span class="tree-label c-wfe" style="font-weight:600">Workflow</span>
+                <span class="tree-badge b-wfe">Engine</span>
+              </div>
+              <div class="tree-children open">
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe" style="width:20px"></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon">📐</span>
+                  <span class="tree-label dim">Definition</span>
+                </div>
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe" style="width:20px"></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon">📦</span>
+                  <span class="tree-label dim">DTOs</span>
+                </div>
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe" style="width:20px"></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon">⚙️</span>
+                  <span class="tree-label dim">Engine</span>
+                </div>
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe" style="width:20px"></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon">📋</span>
+                  <span class="tree-label dim">Interfaces</span>
+                </div>
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe" style="width:20px"></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon">🔌</span>
+                  <span class="tree-label dim">Plugins</span>
+                </div>
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe" style="width:20px"></div><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon">📏</span>
+                  <span class="tree-label dim">Rules</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- CMS.Domain -->
+        <div class="tree-node">
+          <div class="tree-row clickable open" onclick="toggle(this)">
+            <div class="tree-indent"></div>
+            <div class="tree-toggle">−</div>
+            <span class="tree-icon">🏛️</span>
+            <span class="tree-label layer-label">CMS.Domain</span>
+            <span class="tree-badge b-core">Domain Core</span>
+          </div>
+          <div class="tree-children open">
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🏷️</span>
+              <span class="tree-label">Enums</span>
+            </div>
+            <div class="tree-node">
+              <div class="tree-row clickable open" onclick="toggle(this)">
+                <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+                <div class="tree-toggle">−</div>
+                <span class="tree-icon">🗃️</span>
+                <span class="tree-label">Models</span>
+              </div>
+              <div class="tree-children open">
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe" style="width:20px"></div><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon c-wfe">🔀</span>
+                  <span class="tree-label dim c-wfe">Workflow</span>
+                  <span class="tree-badge b-wfe">Domain Model</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CMS.Data -->
+        <div class="tree-node">
+          <div class="tree-row clickable open" onclick="toggle(this)">
+            <div class="tree-indent"></div>
+            <div class="tree-toggle">−</div>
+            <span class="tree-icon">🗄️</span>
+            <span class="tree-label layer-label">CMS.Data</span>
+            <span class="tree-badge b-core">Data Access</span>
+          </div>
+          <div class="tree-children open">
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📋</span>
+              <span class="tree-label">Interfaces</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🗃️</span>
+              <span class="tree-label">Models</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📚</span>
+              <span class="tree-label">Repositories</span>
+              <span class="tree-badge" style="background:rgba(100,116,139,.15);color:#94A3B8">Repository Pattern</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📜</span>
+              <span class="tree-label">Scripts</span>
+              <span class="tree-badge" style="background:rgba(100,116,139,.15);color:#94A3B8">SQL Scripts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CMS.Infrastructure -->
+        <div class="tree-node">
+          <div class="tree-row clickable open" onclick="toggle(this)">
+            <div class="tree-indent"></div>
+            <div class="tree-toggle">−</div>
+            <span class="tree-icon">🔧</span>
+            <span class="tree-label layer-label">CMS.Infrastructure</span>
+            <span class="tree-badge b-core">Infrastructure</span>
+          </div>
+          <div class="tree-children open">
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📋</span>
+              <span class="tree-label">Interfaces</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CMS.Presentation -->
+        <div class="tree-node">
+          <div class="tree-row clickable open" onclick="toggle(this)">
+            <div class="tree-indent"></div>
+            <div class="tree-toggle">−</div>
+            <span class="tree-icon">🖥️</span>
+            <span class="tree-label layer-label">CMS.Presentation</span>
+            <span class="tree-badge b-green">UI Layer</span>
+          </div>
+          <div class="tree-children open">
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🪟</span>
+              <span class="tree-label">Forms</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🗂️</span>
+              <span class="tree-label">MenuActions</span>
+            </div>
+            <div class="tree-node">
+              <div class="tree-row clickable open" onclick="toggle(this)">
+                <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                <div class="tree-toggle">−</div>
+                <span class="tree-icon">📦</span>
+                <span class="tree-label">Modules</span>
+              </div>
+              <div class="tree-children open">
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon c-dms">📄</span>
+                  <span class="tree-label dim c-dms">DMS</span>
+                  <span class="tree-badge b-dms">Document Mgmt</span>
+                </div>
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon c-kms">🧠</span>
+                  <span class="tree-label dim c-kms">KMS</span>
+                  <span class="tree-badge b-kms">Knowledge Mgmt</span>
+                </div>
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div></div><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon c-rgp">🔷</span>
+                  <span class="tree-label dim c-rgp">RGP</span>
+                  <span class="tree-badge b-rgp">RG Project</span>
+                </div>
+                <div class="tree-row">
+                  <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div></div><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+                  <div class="tree-toggle leaf"></div>
+                  <span class="tree-icon c-wfe">⚙️</span>
+                  <span class="tree-label dim c-wfe">WFE</span>
+                  <span class="tree-badge b-wfe">Workflow Engine</span>
+                </div>
+              </div>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🖼️</span>
+              <span class="tree-label">Resources</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">⚙️</span>
+              <span class="tree-label">Services</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🧩</span>
+              <span class="tree-label">UserControls</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CMS.Tests -->
+        <div class="tree-node">
+          <div class="tree-row clickable open" onclick="toggle(this)">
+            <div class="tree-indent"></div>
+            <div class="tree-toggle">−</div>
+            <span class="tree-icon">🧪</span>
+            <span class="tree-label layer-label">CMS.Tests</span>
+            <span class="tree-badge b-green">Unit Tests</span>
+          </div>
+          <div class="tree-children open">
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📋</span>
+              <span class="tree-label dim">Test Cases</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RG_Project -->
+        <div class="tree-node">
+          <div class="tree-row clickable open" onclick="toggle(this)">
+            <div class="tree-indent"></div>
+            <div class="tree-toggle">−</div>
+            <span class="tree-icon c-rgp">🔷</span>
+            <span class="tree-label layer-label c-rgp">RG_Project</span>
+            <span class="tree-badge b-rgp">Standalone App</span>
+          </div>
+          <div class="tree-children open">
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">⚙️</span>
+              <span class="tree-label dim">Config</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🎮</span>
+              <span class="tree-label dim">Controllers</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🔗</span>
+              <span class="tree-label dim">ExternalDLL</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🔐</span>
+              <span class="tree-label dim">Login</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🗃️</span>
+              <span class="tree-label dim">Models</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📁</span>
+              <span class="tree-label dim">Project</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Config/tooling -->
+        <div class="tree-node">
+          <div class="tree-row clickable" onclick="toggle(this)">
+            <div class="tree-indent"></div>
+            <div class="tree-toggle">+</div>
+            <span class="tree-icon">🔩</span>
+            <span class="tree-label layer-label" style="color:var(--text-3)">Config & Tooling</span>
+            <span class="tree-badge" style="background:rgba(100,116,139,.12);color:var(--text-3)">.agents .claude .kiro .vscode</span>
+          </div>
+          <div class="tree-children">
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🤖</span>
+              <span class="tree-label dim">.agents</span>
+              <span class="tree-badge" style="background:rgba(100,116,139,.12);color:var(--text-3)">AI Agents Config</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🧠</span>
+              <span class="tree-label dim">.claude</span>
+              <span class="tree-badge" style="background:rgba(100,116,139,.12);color:var(--text-3)">Claude Config</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">🪄</span>
+              <span class="tree-label dim">.kiro</span>
+              <span class="tree-badge" style="background:rgba(100,116,139,.12);color:var(--text-3)">Kiro Config</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-v"></div><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">💻</span>
+              <span class="tree-label dim">.vscode</span>
+            </div>
+            <div class="tree-row">
+              <div class="tree-indent"><div class="tree-pipe"><div class="tree-pipe-h"></div></div></div>
+              <div class="tree-toggle leaf"></div>
+              <span class="tree-icon">📦</span>
+              <span class="tree-label dim">node_modules / packages</span>
+              <span class="tree-badge" style="background:rgba(100,116,139,.12);color:var(--text-3)">Dependencies</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /tree-body -->
+    </div><!-- /tree-panel -->
+  </div>
+</div>
+
+<script>
+function toggle(row) {
+  const children = row.nextElementSibling;
+  if (!children || !children.classList.contains('tree-children')) return;
+  const isOpen = children.classList.contains('open');
+  const btn = row.querySelector('.tree-toggle');
+  if (isOpen) {
+    children.classList.remove('open');
+    row.classList.remove('open');
+    if (btn) btn.textContent = '+';
+  } else {
+    children.classList.add('open');
+    row.classList.add('open');
+    if (btn) btn.textContent = '−';
+  }
+}
+
+function expandAll() {
+  document.querySelectorAll('.tree-children').forEach(c => c.classList.add('open'));
+  document.querySelectorAll('.tree-row.clickable').forEach(r => {
+    r.classList.add('open');
+    const btn = r.querySelector('.tree-toggle');
+    if (btn && btn.textContent.trim() !== '') btn.textContent = '−';
+  });
+}
+
+function collapseAll() {
+  document.querySelectorAll('.tree-children').forEach(c => c.classList.remove('open'));
+  document.querySelectorAll('.tree-row.clickable').forEach(r => {
+    r.classList.remove('open');
+    const btn = r.querySelector('.tree-toggle');
+    if (btn && btn.textContent.trim() !== '') btn.textContent = '+';
+  });
+}
+
+function filterBy(sys) {
+  expandAll();
+}
+</script>
+</body>
+</html>

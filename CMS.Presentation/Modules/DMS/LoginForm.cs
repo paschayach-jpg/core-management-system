@@ -135,6 +135,13 @@ namespace CMS.Presentation
                 txtPassword.Focus();
                 return;
             }
+            if (HasNonAscii(username))
+            {
+                using (var dlg = new LoginErrorForm(LoginErrorType.InvalidUsernameChars))
+                    dlg.ShowDialog(this);
+                txtUsername.Focus();
+                return;
+            }
 
             SetLoading(true);
             lblStatus.Text = "กำลังตรวจสอบ...";
@@ -220,6 +227,13 @@ namespace CMS.Presentation
                 txtPassword.Focus();
                 return;
             }
+            if (HasNonAscii(username))
+            {
+                using (var dlg = new LoginErrorForm(LoginErrorType.InvalidUsernameChars))
+                    dlg.ShowDialog(this);
+                txtUsername.Focus();
+                return;
+            }
 
             SetLoading(true);
             lblStatus.Text = "กำลังตรวจสอบ AD...";
@@ -292,6 +306,63 @@ namespace CMS.Presentation
         {
             if (e.KeyCode == Keys.Enter)
                 txtPassword.Focus();
+        }
+
+        // AD Username ต้องเป็น ASCII เท่านั้น — บล็อกภาษาไทย/อักขระ non-ASCII
+        private bool _suppressUsernameSanitize;
+        private bool _thaiWarnShown;   // กัน MessageBox เด้งซ้ำทุกปุ่ม
+
+        private static bool HasNonAscii(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return false;
+            foreach (char c in s)
+                if (c > 0x7F) return true;
+            return false;
+        }
+
+        private void ShowUsernameCharWarning()
+        {
+            lblStatus.Text = "ชื่อผู้ใช้งานต้องเป็นภาษาอังกฤษเท่านั้น";
+
+            if (_thaiWarnShown) return;
+            _thaiWarnShown = true;
+            MessageBox.Show(this,
+                "ระบบไม่รองรับภาษาไทยในช่องชื่อผู้ใช้งาน (AD Username)\n\n" +
+                "กรุณากรอกเป็นตัวอักษรภาษาอังกฤษ ตัวเลข หรือ . _ - เท่านั้น",
+                "ชื่อผู้ใช้งานไม่ถูกต้อง",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        private void txtUsername_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && e.KeyChar > 0x7F)
+            {
+                e.Handled = true;
+                ShowUsernameCharWarning();
+            }
+        }
+
+        private void txtUsername_TextChanged(object sender, EventArgs e)
+        {
+            if (_suppressUsernameSanitize) return;
+
+            string original = txtUsername.Text;
+            if (!HasNonAscii(original))
+            {
+                _thaiWarnShown = false;   // ช่องสะอาดแล้ว — ครั้งหน้าเตือนใหม่ได้
+                return;
+            }
+
+            // เกิดจาก paste / IME — ตัดอักขระ non-ASCII ออกแล้วเตือน
+            string cleaned = new string(original.Where(c => c <= 0x7F).ToArray());
+            int caret = Math.Min(txtUsername.SelectionStart, cleaned.Length);
+
+            _suppressUsernameSanitize = true;
+            txtUsername.Text = cleaned;
+            txtUsername.SelectionStart = caret;
+            _suppressUsernameSanitize = false;
+
+            ShowUsernameCharWarning();
         }
 
         // ─────────────────────────────────────────────────────────────────────

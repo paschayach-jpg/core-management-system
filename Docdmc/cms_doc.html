@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMS Import System</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* ── Token layer ── */
+  :root {
+    --bg:        #F1F4F9;
+    --surface:   #FFFFFF;
+    --surface-2: #F8FAFC;
+    --border:    #DDE3ED;
+    --navy:      #1E2D5A;
+    --navy-mid:  #2E4580;
+    --accent:    #2563EB;
+    --accent-lt: #EFF4FF;
+    --emerald:   #059669;
+    --emerald-lt:#ECFDF5;
+    --amber:     #D97706;
+    --amber-lt:  #FFFBEB;
+    --text-1:    #111827;
+    --text-2:    #4B5563;
+    --text-3:    #9CA3AF;
+    --shadow-sm: 0 1px 3px rgba(30,45,90,.08), 0 1px 2px rgba(30,45,90,.06);
+    --shadow:    0 4px 12px rgba(30,45,90,.10);
+    --r:         8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:        #0D1117;
+      --surface:   #161B27;
+      --surface-2: #1E2536;
+      --border:    #2A3450;
+      --navy:      #3B5BDB;
+      --navy-mid:  #4C6EF5;
+      --accent:    #60A5FA;
+      --accent-lt: #1E2D4A;
+      --emerald:   #34D399;
+      --emerald-lt:#0D2E25;
+      --amber:     #FCD34D;
+      --amber-lt:  #2D2008;
+      --text-1:    #F1F5F9;
+      --text-2:    #94A3B8;
+      --text-3:    #475569;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
+      --shadow:    0 4px 12px rgba(0,0,0,.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg:        #0D1117;
+    --surface:   #161B27;
+    --surface-2: #1E2536;
+    --border:    #2A3450;
+    --navy:      #3B5BDB;
+    --navy-mid:  #4C6EF5;
+    --accent:    #60A5FA;
+    --accent-lt: #1E2D4A;
+    --emerald:   #34D399;
+    --emerald-lt:#0D2E25;
+    --amber:     #FCD34D;
+    --amber-lt:  #2D2008;
+    --text-1:    #F1F5F9;
+    --text-2:    #94A3B8;
+    --text-3:    #475569;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.3);
+    --shadow:    0 4px 12px rgba(0,0,0,.4);
+  }
+
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body {
+    font-family: 'Sarabun', 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text-1);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── Page shell ── */
+  .page-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ── Cover header ── */
+  .cover {
+    background: var(--navy);
+    color: #fff;
+    padding: 48px 56px 40px;
+    border-radius: 0 0 var(--r) var(--r);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 80% at 90% 10%, rgba(255,255,255,.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .cover-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: .78rem;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.85);
+    margin-bottom: 20px;
+  }
+  .cover-badge .dot {
+    width: 7px; height: 7px;
+    background: #34D399;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .cover h1 {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin-bottom: 12px;
+  }
+  .cover-sub {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,.7);
+    max-width: 560px;
+    margin-bottom: 32px;
+  }
+  .cover-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    border-top: 1px solid rgba(255,255,255,.15);
+    padding-top: 24px;
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 3px; }
+  .meta-label {
+    font-size: .72rem;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.5);
+  }
+  .meta-value {
+    font-size: .95rem;
+    color: rgba(255,255,255,.9);
+    font-weight: 500;
+  }
+
+  /* ── Two-col layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* ── Sidebar nav ── */
+  .sidebar {
+    position: sticky;
+    top: 24px;
+  }
+  .nav-section-label {
+    font-size: .7rem;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    padding: 0 12px;
+    margin-bottom: 6px;
+    margin-top: 20px;
+  }
+  .nav-section-label:first-child { margin-top: 0; }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: .9rem;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: background .15s, color .15s;
+  }
+  .nav-link:hover, .nav-link.active {
+    background: var(--accent-lt);
+    color: var(--accent);
+  }
+  .nav-link svg { flex-shrink: 0; opacity: .7; }
+
+  /* ── Content ── */
+  .content { min-width: 0; }
+
+  /* ── Section ── */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 32px 36px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+  }
+  .section-eyebrow {
+    font-size: .72rem;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .section h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-1);
+    margin-bottom: 16px;
+    text-wrap: balance;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+  }
+  .section p {
+    color: var(--text-2);
+    margin-bottom: 14px;
+    font-size: .97rem;
+  }
+  .section p:last-child { margin-bottom: 0; }
+
+  /* ── Feature grid ── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .feature-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 18px 20px;
+  }
+  .feature-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+  }
+  .feature-icon.blue  { background: var(--accent-lt); }
+  .feature-icon.green { background: var(--emerald-lt); }
+  .feature-icon.amber { background: var(--amber-lt); }
+  .feature-card h3 {
+    font-size: .95rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-1);
+  }
+  .feature-card p {
+    font-size: .85rem;
+    color: var(--text-2);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ── Architecture diagram ── */
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .arch-layer:last-child { border-bottom: none; }
+  .arch-layer-num {
+    font-family: 'Inter', sans-serif;
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--text-3);
+    width: 20px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .arch-layer-bar {
+    width: 4px;
+    border-radius: 2px;
+    align-self: stretch;
+    flex-shrink: 0;
+  }
+  .arch-layer-body { flex: 1; min-width: 0; }
+  .arch-layer-name {
+    font-family: 'Inter', sans-serif;
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+  .arch-layer-desc {
+    font-size: .83rem;
+    color: var(--text-2);
+    margin-top: 2px;
+  }
+  .arch-layer-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .72rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+  }
+
+  /* ── Tech stack ── */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .tech-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+  }
+  .tech-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .tech-item span {
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--text-1);
+  }
+  .tech-item small {
+    font-size: .75rem;
+    color: var(--text-3);
+    display: block;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── Flow steps ── */
+  .flow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 16px;
+    position: relative;
+  }
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    padding-bottom: 24px;
+    position: relative;
+  }
+  .flow-step:last-child { padding-bottom: 0; }
+  .flow-step-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 32px;
+  }
+  .flow-num {
+    width: 32px; height: 32px;
+    background: var(--navy);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-size: .8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+  .flow-connector {
+    width: 2px;
+    flex: 1;
+    background: var(--border);
+    margin-top: 4px;
+  }
+  .flow-step:last-child .flow-connector { display: none; }
+  .flow-body { padding-top: 4px; }
+  .flow-body h4 {
+    font-size: .97rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-1);
+  }
+  .flow-body p {
+    font-size: .87rem;
+    color: var(--text-2);
+    margin: 0;
+  }
+
+  /* ── Status table ── */
+  .status-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: .88rem;
+  }
+  .status-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    font-size: .78rem;
+    letter-spacing: .04em;
+    border-bottom: 1px solid var(--border);
+  }
+  .status-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-1);
+    vertical-align: middle;
+  }
+  .status-table tr:last-child td { border-bottom: none; }
+  .status-table tr:hover td { background: var(--surface-2); }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-family: 'Inter', sans-serif;
+    font-size: .75rem;
+    font-weight: 600;
+  }
+  .pill-green  { background: var(--emerald-lt); color: var(--emerald); }
+  .pill-blue   { background: var(--accent-lt);  color: var(--accent);  }
+  .pill-amber  { background: var(--amber-lt);   color: var(--amber);   }
+  .pill::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* ── Info box ── */
+  .info-box {
+    background: var(--accent-lt);
+    border: 1px solid rgba(37,99,235,.2);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-size: .88rem;
+    color: var(--text-1);
+    margin-top: 16px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .cover { padding: 32px 24px 28px; }
+    .cover h1 { font-size: 1.7rem; }
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; }
+    .section { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- Cover -->
+  <div class="cover">
+    <div class="cover-badge"><span class="dot"></span> เอกสารโครงการ</div>
+    <h1>ระบบ CMS Import<br>Content Management System</h1>
+    <p class="cover-sub">เอกสารรายละเอียดระบบจัดการเนื้อหาและนำเข้าข้อมูล สำหรับนำเสนอผู้บริหาร</p>
+    <div class="cover-meta">
+      <div class="meta-item">
+        <span class="meta-label">จัดทำโดย</span>
+        <span class="meta-value">ทีมพัฒนาระบบ</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">วันที่</span>
+        <span class="meta-value">25 สิงหาคม 2569</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">เวอร์ชัน</span>
+        <span class="meta-value">1.0</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">สถานะ</span>
+        <span class="meta-value">กำลังพัฒนา</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="nav-section-label">เนื้อหา</div>
+      <a href="#overview"      class="nav-link active">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        ภาพรวมระบบ
+      </a>
+      <a href="#features"      class="nav-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        ฟีเจอร์หลัก
+      </a>
+      <a href="#architecture"  class="nav-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        สถาปัตยกรรม
+      </a>
+      <a href="#techstack"     class="nav-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        เทคโนโลยีที่ใช้
+      </a>
+      <a href="#flow"          class="nav-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        ขั้นตอนการทำงาน
+      </a>
+      <a href="#modules"       class="nav-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        โมดูลระบบ
+      </a>
+      <a href="#status"        class="nav-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        สถานะการพัฒนา
+      </a>
+    </nav>
+
+    <!-- Main content -->
+    <main class="content">
+
+      <!-- Overview -->
+      <div class="section" id="overview">
+        <div class="section-eyebrow">01 — ภาพรวม</div>
+        <h2>ระบบ CMS Import คืออะไร?</h2>
+        <p>ระบบ CMS Import เป็นแพลตฟอร์มสำหรับ<strong>จัดการเนื้อหา (Content Management)</strong>และ<strong>นำเข้าข้อมูล (Data Import)</strong> ที่ออกแบบให้รองรับการทำงานขององค์กรได้อย่างยืดหยุ่น สามารถรับข้อมูลจากแหล่งภายนอกหลายรูปแบบ ประมวลผล ตรวจสอบความถูกต้อง และนำเข้าสู่ฐานข้อมูลหลักได้อย่างปลอดภัย</p>
+        <p>พัฒนาด้วย Clean Architecture บน .NET ทำให้ระบบมีความยืดหยุ่นสูง ดูแลรักษาง่าย และสามารถขยายความสามารถได้ในอนาคต</p>
+        <div class="info-box">
+          <strong>วัตถุประสงค์หลัก:</strong> ลดเวลาและความผิดพลาดในการนำเข้าข้อมูลด้วยมือ พร้อมเพิ่มความโปร่งใสในการจัดการเนื้อหาทั่วทั้งองค์กร
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="section" id="features">
+        <div class="section-eyebrow">02 — ความสามารถ</div>
+        <h2>ฟีเจอร์หลักของระบบ</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon blue">📥</div>
+            <h3>นำเข้าข้อมูลอัตโนมัติ</h3>
+            <p>รองรับไฟล์ CSV, Excel, JSON และ XML พร้อม Validation ทุก field ก่อนบันทึก</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon green">✅</div>
+            <h3>ตรวจสอบข้อมูล</h3>
+            <p>ระบบตรวจสอบความถูกต้องของข้อมูลอัตโนมัติ แจ้งเตือนทันทีเมื่อพบข้อผิดพลาด</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon blue">🔄</div>
+            <h3>จัดการเนื้อหา</h3>
+            <p>บริหารจัดการข้อมูลเนื้อหาได้หลายประเภทผ่าน Dashboard ที่ใช้งานง่าย</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon green">📊</div>
+            <h3>รายงานผล</h3>
+            <p>สรุปผลการนำเข้าข้อมูล บันทึก Log การทำงาน และส่งออกรายงานได้</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon amber">🔐</div>
+            <h3>ระบบสิทธิ์ผู้ใช้</h3>
+            <p>กำหนดสิทธิ์การเข้าถึงแยกตาม Role พร้อมระบบ Authentication ที่ปลอดภัย</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon amber">🔗</div>
+            <h3>เชื่อมต่อระบบอื่น</h3>
+            <p>มี API สำหรับเชื่อมต่อกับระบบภายนอกผ่าน RESTful Service</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Architecture -->
+      <div class="section" id="architecture">
+        <div class="section-eyebrow">03 — สถาปัตยกรรม</div>
+        <h2>โครงสร้างระบบ (Clean Architecture)</h2>
+        <p>ระบบออกแบบตามหลัก Clean Architecture แบ่งชั้นการทำงานชัดเจน แต่ละชั้นมีหน้าที่เฉพาะ ทำให้แก้ไขและทดสอบได้ง่าย</p>
+        <div class="arch-diagram">
+          <div class="arch-layer">
+            <span class="arch-layer-num">1</span>
+            <div class="arch-layer-bar" style="background:#2563EB;"></div>
+            <div class="arch-layer-body">
+              <div class="arch-layer-name">CMS.Presentation</div>
+              <div class="arch-layer-desc">ส่วนติดต่อผู้ใช้งาน — Web UI, API Endpoints สำหรับ Client</div>
+              <div class="arch-layer-tags">
+                <span class="tag">Web Frontend</span>
+                <span class="tag">REST API</span>
+                <span class="tag">Views</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch-layer">
+            <span class="arch-layer-num">2</span>
+            <div class="arch-layer-bar" style="background:#7C3AED;"></div>
+            <div class="arch-layer-body">
+              <div class="arch-layer-name">CMS.Controllers</div>
+              <div class="arch-layer-desc">รับ Request และส่งต่อไปยัง Service Layer ที่เหมาะสม</div>
+              <div class="arch-layer-tags">
+                <span class="tag">HTTP Controllers</span>
+                <span class="tag">Route Handling</span>
+                <span class="tag">Request Mapping</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch-layer">
+            <span class="arch-layer-num">3</span>
+            <div class="arch-layer-bar" style="background:#059669;"></div>
+            <div class="arch-layer-body">
+              <div class="arch-layer-name">CMS.Services</div>
+              <div class="arch-layer-desc">Business Logic ทั้งหมด รวมถึง Import Processing และ Validation</div>
+              <div class="arch-layer-tags">
+                <span class="tag">Business Logic</span>
+                <span class="tag">Import Service</span>
+                <span class="tag">Validation</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch-layer">
+            <span class="arch-layer-num">4</span>
+            <div class="arch-layer-bar" style="background:#D97706;"></div>
+            <div class="arch-layer-body">
+              <div class="arch-layer-name">CMS.Domain</div>
+              <div class="arch-layer-desc">โมเดลข้อมูลหลัก Entity และ Business Rules ที่ไม่ขึ้นกับ Framework</div>
+              <div class="arch-layer-tags">
+                <span class="tag">Entities</span>
+                <span class="tag">Domain Models</span>
+                <span class="tag">Business Rules</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch-layer">
+            <span class="arch-layer-num">5</span>
+            <div class="arch-layer-bar" style="background:#DC2626;"></div>
+            <div class="arch-layer-body">
+              <div class="arch-layer-name">CMS.Infrastructure</div>
+              <div class="arch-layer-desc">ติดต่อระบบภายนอก ฐานข้อมูล ไฟล์ระบบ และ External Services</div>
+              <div class="arch-layer-tags">
+                <span class="tag">Database</span>
+                <span class="tag">File System</span>
+                <span class="tag">External APIs</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch-layer">
+            <span class="arch-layer-num">6</span>
+            <div class="arch-layer-bar" style="background:#6B7280;"></div>
+            <div class="arch-layer-body">
+              <div class="arch-layer-name">CMS.Data</div>
+              <div class="arch-layer-desc">ชั้นเข้าถึงฐานข้อมูล Repository Pattern และ Data Context</div>
+              <div class="arch-layer-tags">
+                <span class="tag">Repository</span>
+                <span class="tag">DbContext</span>
+                <span class="tag">Migrations</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tech stack -->
+      <div class="section" id="techstack">
+        <div class="section-eyebrow">04 — เทคโนโลยี</div>
+        <h2>เทคโนโลยีที่ใช้พัฒนา</h2>
+        <div class="tech-grid">
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#512BD4;"></div>
+            <div>
+              <span>.NET / C#</span>
+              <small>Backend Framework</small>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#003B57;"></div>
+            <div>
+              <span>ASP.NET Core</span>
+              <small>Web API Layer</small>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#CC2927;"></div>
+            <div>
+              <span>SQL Server</span>
+              <small>Database</small>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#F7DF1E;"></div>
+            <div>
+              <span>JavaScript</span>
+              <small>Frontend</small>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#339933;"></div>
+            <div>
+              <span>Node.js</span>
+              <small>Build Tools</small>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#E34F26;"></div>
+            <div>
+              <span>Entity Framework</span>
+              <small>ORM</small>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#1D72B8;"></div>
+            <div>
+              <span>xUnit</span>
+              <small>Unit Testing</small>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-dot" style="background:#F05032;"></div>
+            <div>
+              <span>Git</span>
+              <small>Version Control</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flow -->
+      <div class="section" id="flow">
+        <div class="section-eyebrow">05 — กระบวนการ</div>
+        <h2>ขั้นตอนการนำเข้าข้อมูล</h2>
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-step-line">
+              <div class="flow-num">1</div>
+              <div class="flow-connector"></div>
+            </div>
+            <div class="flow-body">
+              <h4>อัปโหลดไฟล์ต้นฉบับ</h4>
+              <p>ผู้ใช้อัปโหลดไฟล์ข้อมูล (CSV, Excel, JSON) ผ่าน Web Interface หรือ API</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-line">
+              <div class="flow-num">2</div>
+              <div class="flow-connector"></div>
+            </div>
+            <div class="flow-body">
+              <h4>ตรวจสอบรูปแบบไฟล์</h4>
+              <p>ระบบตรวจสอบโครงสร้างและรูปแบบข้อมูลว่าตรงตาม Template ที่กำหนด</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-line">
+              <div class="flow-num">3</div>
+              <div class="flow-connector"></div>
+            </div>
+            <div class="flow-body">
+              <h4>Validate ข้อมูลแต่ละแถว</h4>
+              <p>ตรวจสอบความถูกต้องของแต่ละ record รวมถึง business rules และ constraints</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-line">
+              <div class="flow-num">4</div>
+              <div class="flow-connector"></div>
+            </div>
+            <div class="flow-body">
+              <h4>Preview ผลลัพธ์</h4>
+              <p>แสดงตัวอย่างข้อมูลที่จะนำเข้า พร้อมสรุปข้อผิดพลาดให้ผู้ใช้ยืนยัน</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-line">
+              <div class="flow-num">5</div>
+              <div class="flow-connector"></div>
+            </div>
+            <div class="flow-body">
+              <h4>บันทึกลงฐานข้อมูล</h4>
+              <p>นำเข้าข้อมูลที่ผ่านการตรวจสอบเข้าสู่ฐานข้อมูลแบบ Transaction-safe</p>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-step-line">
+              <div class="flow-num">6</div>
+            </div>
+            <div class="flow-body">
+              <h4>สรุปผลและ Log</h4>
+              <p>บันทึก Log การนำเข้า สร้างรายงานสรุป และแจ้งเตือนผู้เกี่ยวข้อง</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modules -->
+      <div class="section" id="modules">
+        <div class="section-eyebrow">06 — โมดูล</div>
+        <h2>โมดูลในระบบ</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon blue">👤</div>
+            <h3>User Management</h3>
+            <p>จัดการผู้ใช้งาน บทบาท สิทธิ์ และการยืนยันตัวตน</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon green">📁</div>
+            <h3>Import Manager</h3>
+            <p>จัดการกระบวนการนำเข้าข้อมูลทุกขั้นตอน</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon blue">📝</div>
+            <h3>Content Editor</h3>
+            <p>สร้างและแก้ไขเนื้อหาผ่าน Interface ที่ใช้งานสะดวก</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon amber">📋</div>
+            <h3>Audit Log</h3>
+            <p>บันทึกทุกการกระทำในระบบเพื่อการตรวจสอบย้อนหลัง</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon green">🔌</div>
+            <h3>API Gateway</h3>
+            <p>RESTful API สำหรับเชื่อมต่อกับระบบภายนอก</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon amber">📊</div>
+            <h3>Dashboard</h3>
+            <p>ภาพรวมสถิติและสถานะการทำงานของระบบแบบ Real-time</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="section" id="status">
+        <div class="section-eyebrow">07 — ความคืบหน้า</div>
+        <h2>สถานะการพัฒนา</h2>
+        <div style="overflow-x:auto;">
+          <table class="status-table">
+            <thead>
+              <tr>
+                <th>โมดูล / ฟีเจอร์</th>
+                <th>สถานะ</th>
+                <th>หมายเหตุ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Clean Architecture Setup</td>
+                <td><span class="pill pill-green">สมบูรณ์</span></td>
+                <td>โครงสร้างโปรเจกต์ครบทุก Layer</td>
+              </tr>
+              <tr>
+                <td>Domain Models / Entities</td>
+                <td><span class="pill pill-green">สมบูรณ์</span></td>
+                <td>กำหนด Entity หลักแล้ว</td>
+              </tr>
+              <tr>
+                <td>Database Layer (EF Core)</td>
+                <td><span class="pill pill-blue">กำลังพัฒนา</span></td>
+                <td>Repository Pattern อยู่ระหว่างดำเนินการ</td>
+              </tr>
+              <tr>
+                <td>Import Service</td>
+                <td><span class="pill pill-blue">กำลังพัฒนา</span></td>
+                <td>ตรรกะหลักอยู่ระหว่างสร้าง</td>
+              </tr>
+              <tr>
+                <td>REST API Controllers</td>
+                <td><span class="pill pill-blue">กำลังพัฒนา</span></td>
+                <td>ออกแบบ Endpoint แล้ว</td>
+              </tr>
+              <tr>
+                <td>Frontend UI</td>
+                <td><span class="pill pill-amber">วางแผน</span></td>
+                <td>อยู่ในขั้นออกแบบ</td>
+              </tr>
+              <tr>
+                <td>Unit Tests</td>
+                <td><span class="pill pill-amber">วางแผน</span></td>
+                <td>โครงสร้าง Test Project พร้อมแล้ว</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+</body>
+</html>
