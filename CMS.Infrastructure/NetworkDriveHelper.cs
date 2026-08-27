@@ -49,9 +49,46 @@ namespace CMS.Infrastructure
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            using (var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+            // Write to a temp file first, flush to disk, then atomically swap it in.
+            // This keeps an existing good file intact if the transfer fails part-way,
+            // and never leaves a truncated file at the real path.
+            string tempPath = path + ".uploading";
+            try
             {
-                content.CopyTo(fileStream);
+                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    content.CopyTo(fileStream);
+                    fileStream.Flush(true);
+                }
+
+                if (File.Exists(path))
+                    File.Delete(path);
+                File.Move(tempPath, path);
+            }
+            catch
+            {
+                try { if (File.Exists(tempPath)) File.Delete(tempPath); }
+                catch { /* best-effort cleanup */ }
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Returns the size in bytes of the file at the given path, or -1 if it does
+        /// not exist / cannot be accessed.
+        /// </summary>
+        public long GetFileSize(string path)
+        {
+            if (path == null) throw new ArgumentNullException("path");
+            try
+            {
+                EnsureConnected();
+                var info = new FileInfo(path);
+                return info.Exists ? info.Length : -1;
+            }
+            catch
+            {
+                return -1;
             }
         }
 

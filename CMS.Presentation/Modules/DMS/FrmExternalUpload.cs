@@ -7,6 +7,7 @@ using CMS.Domain.Models;
 using CMS.Services.DTOs;
 using CMS.Controllers.DMS.Document;
 using CMS.Controllers.DMS.Document.Interfaces;
+using CMS.Infrastructure.Interfaces;
 
 namespace CMS.Presentation
 {
@@ -18,6 +19,13 @@ namespace CMS.Presentation
         private readonly string _folderName;
         private readonly int? _defaultLevel;
         private readonly IUploadCheckpointController _checkpointController;
+        private readonly IFolderCommandController _folderCommandController;
+        private readonly IFolderReadLookupController _folderReadLookupController;
+        private readonly IFileBrowseController _fileBrowseController;
+        private readonly IFileCommandController _fileCommandController;
+        private readonly INetworkDriveHelper _networkDriveHelper;
+
+        private bool _uploadInProgress;
 
         private int _currentFolderId;
         private string _currentFolderName;
@@ -45,7 +53,12 @@ namespace CMS.Presentation
             int folderId,
             string folderName = null,
             int? defaultLevel = null,
-            IUploadCheckpointController checkpointController = null)
+            IUploadCheckpointController checkpointController = null,
+            IFolderCommandController folderCommandController = null,
+            IFolderReadLookupController folderReadLookupController = null,
+            IFileBrowseController fileBrowseController = null,
+            IFileCommandController fileCommandController = null,
+            INetworkDriveHelper networkDriveHelper = null)
         {
             _fileUploadController = fileUploadController ?? throw new ArgumentNullException(nameof(fileUploadController));
             _user = user ?? throw new ArgumentNullException(nameof(user));
@@ -55,12 +68,22 @@ namespace CMS.Presentation
             _currentFolderName = _folderName;
             _defaultLevel = defaultLevel;
             _checkpointController = checkpointController;
+            _folderCommandController = folderCommandController;
+            _folderReadLookupController = folderReadLookupController;
+            _fileBrowseController = fileBrowseController;
+            _fileCommandController = fileCommandController;
+            _networkDriveHelper = networkDriveHelper;
 
             InitializeComponent();
         }
 
         private void FrmExternalUpload_Load(object sender, EventArgs e)
         {
+            // Folder explorer (left panel) — must be ready before the Level combo fires below
+            folderExplorer.Initialize(_folderReadLookupController, _folderCommandController, _fileBrowseController, _fileCommandController, _user, _networkDriveHelper);
+            folderExplorer.SelectedFolderChanged += FolderExplorer_SelectedFolderChanged;
+            folderExplorer.FileDeleted += FolderExplorer_FileDeleted;
+
             // Populate Level ComboBox (Level 1-4)
             cboLevel.Items.Clear();
             cboLevel.Items.Add("Level 1 - Highly Confidential (HC)");
@@ -198,6 +221,36 @@ namespace CMS.Presentation
             _currentFolderId = folderId;
             _currentFolderName = folderName;
             lblFolderValue.Text = _currentFolderName;
+
+            // Reload the explorer tree rooted at this level's main folder
+            folderExplorer.LoadRoot(folderId, level);
+        }
+
+        private void FolderExplorer_SelectedFolderChanged(object sender, EventArgs e)
+        {
+            int levelFolderId = GetConfiguredFolderId(SelectedLevel, GetFallbackFolderId(SelectedLevel));
+            _currentFolderId = folderExplorer.SelectedFolderId ?? levelFolderId;
+
+            var node = folderExplorer.SelectedFolderId.HasValue
+                ? folderExplorer.SelectedFolderName
+                : null;
+            _currentFolderName = string.IsNullOrEmpty(node)
+                ? _currentFolderName
+                : $"{node} (ID: {_currentFolderId})";
+            lblFolderValue.Text = _currentFolderName;
+
+            ValidatePermission();
+        }
+
+        private void FolderExplorer_FileDeleted(object sender, int fileId)
+        {
+            UploadedFiles.RemoveAll(f => f.FileId == fileId);
+            UploadedFileIds.Remove(fileId);
+            if (UploadedFileId == fileId)
+                UploadedFileId = UploadedFileIds.Cast<int?>().FirstOrDefault();
+
+            lblStatus.Text = "ลบไฟล์ที่เพิ่งอัปโหลดแล้ว";
+            lblStatus.ForeColor = System.Drawing.Color.FromArgb(120, 120, 120);
         }
 
         private int GetConfiguredFolderId(int level, int fallbackId)
@@ -413,11 +466,14 @@ namespace CMS.Presentation
                 }
             }
 
+            _uploadInProgress = true;
             pnlDragDrop.Enabled = false;
             dgvFiles.Enabled = false;
             btnUpload.Enabled = false;
             btnCancel.Enabled = false;
+            btnDone.Enabled = false;
             cboLevel.Enabled = false;
+            folderExplorer.Enabled = false;
             progressBar.Style = ProgressBarStyle.Continuous;
             progressBar.Value = 0;
             progressBar.Visible = true;
@@ -459,6 +515,8 @@ namespace CMS.Presentation
 
             bgWorker.RunWorkerCompleted += (s, ev) =>
             {
+                _uploadInProgress = false;
+
                 // Dispose streams
                 foreach (var stream in _streamsToDispose)
                 {
@@ -472,6 +530,9 @@ namespace CMS.Presentation
                 btnUpload.Enabled = true;
                 btnCancel.Enabled = true;
                 cboLevel.Enabled = true;
+                folderExplorer.Enabled = true;
+                btnDone.Enabled = UploadedFileIds.Count > 0;
+                folderExplorer.ReloadFiles();
 
                 if (ev.Result is Exception ex)
                 {
@@ -481,14 +542,13 @@ namespace CMS.Presentation
                 }
                 else if (UploadedFileId.HasValue)
                 {
-                    lblStatus.Text = $"อัปโหลดสำเร็จ! จำนวน {UploadedFileIds.Count} ไฟล์";
-                    lblStatus.ForeColor = System.Drawing.Color.Green;
+                    // อัปโหลดสำเร็จ — ไม่ปิด dialog เพื่อให้ผู้ใช้ตรวจ/ลบไฟล์ที่เพิ่งอัป หรือเพิ่มไฟล์อีก
+                    _filePaths.Clear();
+                    dgvFiles.Rows.Clear();
                     progressBar.Value = 100;
                     progressBar.Visible = true;
-
-                    MessageBox.Show("อัปโหลดไฟล์สำเร็จเรียบร้อยแล้ว", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    this.DialogResult = DialogResult.OK;
-                    this.Close();
+                    lblStatus.Text = $"อัปโหลดสำเร็จ {UploadedFileIds.Count} ไฟล์ — เพิ่มไฟล์อีก หรือกด \"เสร็จสิ้น\"";
+                    lblStatus.ForeColor = System.Drawing.Color.Green;
                 }
                 else
                 {
@@ -504,6 +564,22 @@ namespace CMS.Presentation
         {
             this.DialogResult = DialogResult.Cancel;
             this.Close();
+        }
+
+        private void BtnDone_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.OK;
+            this.Close();
+        }
+
+        private void FrmExternalUpload_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (_uploadInProgress)
+            {
+                e.Cancel = true;
+                MessageBox.Show("กำลังอัปโหลดไฟล์อยู่ กรุณารอให้เสร็จก่อน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         public void PreSelectFile(string filePath)
@@ -594,6 +670,7 @@ namespace CMS.Presentation
                         UploadedFileSize = size;
                     }
                     UploadedFileIds.Add(result.FileDocumentId.Value);
+                    folderExplorer.MarkFilesUploaded(new[] { result.FileDocumentId.Value });
                 }
                 else
                 {
@@ -665,6 +742,7 @@ namespace CMS.Presentation
             btnUpload.Enabled = enabled;
             btnCancel.Enabled = enabled;
             cboLevel.Enabled = enabled;
+            folderExplorer.Enabled = enabled;
         }
 
         public void SetDownloadEnabled(bool enabled) { }

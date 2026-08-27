@@ -293,6 +293,18 @@
     <Compile Include="Modules\DMS\FrmExternalUpload.Designer.cs">
       <DependentUpon>FrmExternalUpload.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\FolderNameInputDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FolderNameInputDialog.Designer.cs">
+      <DependentUpon>FolderNameInputDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\FrmDmsFilePicker.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\FrmDmsFilePicker.Designer.cs">
+      <DependentUpon>FrmDmsFilePicker.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\DMS\FilesByFolderForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -601,6 +613,12 @@
     <Compile Include="Modules\WFE\Presenters\Interfaces\ISLAReportView.cs" />
     <Compile Include="Modules\WFE\Presenters\Interfaces\IHistorySearchView.cs" />
     <!-- Shared UserControls -->
+    <Compile Include="UserControls\FolderExplorerControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\FolderExplorerControl.Designer.cs">
+      <DependentUpon>FolderExplorerControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="UserControls\LoadingOverlayControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

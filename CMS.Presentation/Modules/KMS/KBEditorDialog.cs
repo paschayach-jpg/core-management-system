@@ -29,16 +29,27 @@ namespace CMS.Presentation.Modules.KMS
         private readonly IFileUploadController _fileUploadController;
         private readonly IUploadCheckpointController _checkpointController;
         private readonly IFileBrowseController _fileBrowseController;
+        private readonly IFolderCommandController _folderCommandController;
+        private readonly IFolderReadLookupController _folderReadLookupController;
+        private readonly IFileCommandController _fileCommandController;
+        private readonly CMS.Infrastructure.Interfaces.INetworkDriveHelper _networkDriveHelper;
 
         public KBEditorDialog(UserContext user) : this(user, null, null, null) { }
 
-        public KBEditorDialog(UserContext user, IFileUploadController fileUploadController, IUploadCheckpointController checkpointController, IFileBrowseController fileBrowseController = null)
+        public KBEditorDialog(UserContext user, IFileUploadController fileUploadController, IUploadCheckpointController checkpointController, IFileBrowseController fileBrowseController = null,
+            IFolderCommandController folderCommandController = null, IFolderReadLookupController folderReadLookupController = null,
+            IFileCommandController fileCommandController = null,
+            CMS.Infrastructure.Interfaces.INetworkDriveHelper networkDriveHelper = null)
         {
             if (user == null) throw new ArgumentNullException("user");
             _user = user;
             _fileUploadController = fileUploadController;
             _checkpointController = checkpointController;
             _fileBrowseController = fileBrowseController;
+            _folderCommandController = folderCommandController;
+            _folderReadLookupController = folderReadLookupController;
+            _fileCommandController = fileCommandController;
+            _networkDriveHelper = networkDriveHelper;
             InitializeComponent();
         }
 
@@ -2311,7 +2322,7 @@ namespace CMS.Presentation.Modules.KMS
             }
 
             int folderId = 1; // Default target folder ID for KMS Attachments
-            using (var uploadForm = new FrmExternalUpload(_fileUploadController, _user, folderId, "KMS Attachments", 4, _checkpointController))
+            using (var uploadForm = new FrmExternalUpload(_fileUploadController, _user, folderId, "KMS Attachments", 4, _checkpointController, _folderCommandController, _folderReadLookupController, _fileBrowseController, _fileCommandController, _networkDriveHelper))
             {
                 if (uploadForm.ShowDialog(this) == DialogResult.OK)
                 {
@@ -2352,26 +2363,41 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnSelectFromDMS_Click(object sender, EventArgs e)
         {
-            // Mockup: Show message and add sample file
-            ShowInfo("ฟีเจอร์เลือกไฟล์จาก DMS จะเปิด File Browser\n\n" +
-                     "สามารถเลือกไฟล์จากระบบจัดการเอกสาร (DMS) ที่มีอยู่แล้ว\n\n" +
-                     "(Mockup - ยังไม่ได้เชื่อมต่อกับ DMS Module)\n\n" +
-                     "เพิ่มไฟล์ตัวอย่างเข้าไปแทน...");
-            
-            // Add sample file from "DMS"
-            int newIndex = dgvAttachLinked.Rows.Count + 1;
-            int rowIndex = dgvAttachLinked.Rows.Add(
-                newIndex.ToString(),
-                "Sample_From_DMS.pdf",
-                "1.2 MB",
-                DateTime.Now.ToString("dd/MM/yyyy HH:mm")
-            );
-            
-            dgvAttachLinked.Rows[rowIndex].Tag = newIndex;
-            dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor = 
-                newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
-            
-            UpdateAttachLinkedCount();
+            if (_folderReadLookupController == null || _fileBrowseController == null)
+            {
+                MessageBox.Show("ระบบเลือกไฟล์จาก DMS ยังไม่ถูกตั้งค่าผ่าน Composition Root",
+                    "ไม่พร้อมใช้งาน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var picker = new FrmDmsFilePicker(_folderReadLookupController, _fileBrowseController, _user, 4, _networkDriveHelper))
+            {
+                if (picker.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                var existing = new HashSet<int>();
+                foreach (DataGridViewRow r in dgvAttachLinked.Rows)
+                    if (r.Tag is int id) existing.Add(id);
+
+                foreach (var f in picker.SelectedFiles)
+                {
+                    if (existing.Contains(f.FileID)) continue;
+
+                    int newIndex = dgvAttachLinked.Rows.Count + 1;
+                    int rowIndex = dgvAttachLinked.Rows.Add(
+                        newIndex.ToString(),
+                        f.OriginalFileName,
+                        FormatFileSize(f.FileSizeBytes),
+                        DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+
+                    dgvAttachLinked.Rows[rowIndex].Tag = f.FileID;
+                    dgvAttachLinked.Rows[rowIndex].DefaultCellStyle.BackColor =
+                        newIndex % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    existing.Add(f.FileID);
+                }
+
+                UpdateAttachLinkedCount();
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════════════

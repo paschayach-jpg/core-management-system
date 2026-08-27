@@ -660,7 +660,8 @@ namespace CMS.Presentation
                     rgpStateController: rgpStateController,
                     rgpTaskController: rgpTaskController,
                     rgpProgressController: rgpProgressController,
-                    rgpDocController: rgpDocController);
+                    rgpDocController: rgpDocController,
+                    networkDriveHelper: networkDriveHelper);
 
                 Application.Run(mainForm);
 
