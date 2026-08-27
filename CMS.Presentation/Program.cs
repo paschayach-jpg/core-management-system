@@ -524,12 +524,13 @@ namespace CMS.Presentation
                 var rgpTemplateRepo = new CMS.Data.Repositories.ProjectTemplateRepository(configManager);
                 var rgpEfilingRepo = new CMS.Data.Repositories.EFilingRepository(configManager);
                 var rgpAuditRepo = new CMS.Data.Repositories.ProjectAuditRepository(configManager);
+                var rgpTaskStatusLogRepo = new CMS.Data.Repositories.ProjectTaskStatusLogRepository(configManager);
 
                 var rgpAuditService = new CMS.Services.ProjectAuditService(rgpAuditRepo);
                 var rgpProjectService = new CMS.Services.ProjectService(rgpProjectRepo, rgpStateRepo, rgpDocRepo, rgpTemplateRepo, rgpAuditService);
                 var rgpStateService = new CMS.Services.ProjectStateService(rgpStateRepo, rgpAuditService);
                 var rgpProgressService = new CMS.Services.ProjectProgressService(rgpProgressRepo, rgpStateRepo, rgpProjectRepo);
-                var rgpTaskService = new CMS.Services.ProjectTaskService(rgpTaskRepo, rgpStateRepo, rgpProgressService, rgpAuditService);
+                var rgpTaskService = new CMS.Services.ProjectTaskService(rgpTaskRepo, rgpStateRepo, rgpProgressService, rgpAuditService, rgpTaskStatusLogRepo);
                 var rgpDocService = new CMS.Services.ProjectDocumentService(rgpDocRepo, rgpEfilingRepo);
 
                 var rgpProjectController = new CMS.Controllers.RGP.ProjectController(rgpProjectService);

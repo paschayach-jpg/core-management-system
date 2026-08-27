@@ -13,6 +13,7 @@ namespace CMS.Data.Interfaces
         DataTable GetSubtasks(int i_parent_task_id);
         DataTable GetSubtasksForDashboard(int parentTaskId);
         DataTable GetAllTasksForProject(int projectId);
+        ProjectTaskModel GetById(int i_task_id);
         int InsertTask(ProjectTaskModel m);
         bool UpdateTask(ProjectTaskModel m);
         bool UpdateStatus(int i_task_id, string c_status, int i_pct_complete, string i_user);

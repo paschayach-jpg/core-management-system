@@ -140,11 +140,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                     t.i_create_user, t.d_create_date, t.i_update_user, t.d_update_date,
                     ps.n_state_name,
                     -- SLA: เวลาผ่านไป >= 80% ของ (due - create)
-                    CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','Cancelled')
+                    CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','OnHold')
                               AND DATEDIFF(DAY, t.d_create_date, GETDATE()) * 1.0
                                 / NULLIF(DATEDIFF(DAY, t.d_create_date, t.d_due_date), 0) >= 0.8
                          THEN 1 ELSE 0 END AS b_sla_warning,
-                    CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','Cancelled')
+                    CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','OnHold')
                               AND t.d_due_date < CAST(GETDATE() AS DATE)
                          THEN 1 ELSE 0 END AS b_overdue,
                     -- Subtask summary
@@ -190,11 +190,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                     t.n_assignee, t.d_due_date, t.d_start_date,
                     t.f_active, t.d_create_date, t.i_update_user, t.d_update_date,
                     ps.n_state_name,
-                    CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','Cancelled')
+                    CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','OnHold')
                               AND DATEDIFF(DAY, t.d_create_date, GETDATE()) * 1.0
                                 / NULLIF(DATEDIFF(DAY, t.d_create_date, t.d_due_date), 0) >= 0.8
                          THEN 1 ELSE 0 END AS b_sla_warning,
-                    CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','Cancelled')
+                    CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','OnHold')
                               AND t.d_due_date < CAST(GETDATE() AS DATE)
                          THEN 1 ELSE 0 END AS b_overdue,
                     ISNULL(sub.i_subtask_count, 0) AS i_subtask_count,
@@ -231,7 +231,7 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
             string sql = @"
                 SELECT t.*, ps.n_state_name,
                     CASE WHEN t.d_due_date < CAST(GETDATE() AS DATE)
-                              AND t.c_status NOT IN ('Done','Cancelled')
+                              AND t.c_status NOT IN ('Done','OnHold')
                          THEN 1 ELSE 0 END AS b_overdue
                 FROM RGP.t_project_task t
                 JOIN RGP.t_project_state ps ON ps.i_proj_state_id = t.i_proj_state_id
@@ -262,11 +262,11 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
             t.n_assignee, t.d_due_date, t.d_start_date,
             t.f_active, t.d_create_date, t.i_update_user, t.d_update_date,
             ps.n_state_name,
-            CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','Cancelled')
+            CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','OnHold')
                       AND DATEDIFF(DAY, t.d_create_date, GETDATE()) * 1.0
                         / NULLIF(DATEDIFF(DAY, t.d_create_date, t.d_due_date), 0) >= 0.8
                  THEN 1 ELSE 0 END AS b_sla_warning,
-            CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','Cancelled')
+            CASE WHEN t.d_due_date IS NOT NULL AND t.c_status NOT IN ('Done','OnHold')
                       AND t.d_due_date < CAST(GETDATE() AS DATE)
                  THEN 1 ELSE 0 END AS b_overdue,
             0 AS i_subtask_count,
@@ -335,10 +335,10 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
                        tt.n_assignee, tt.d_due_date, tt.d_start_date,
                        tt.d_create_date, tt.i_update_user, tt.d_update_date,
                        tt.n_state_name, tt.tree_depth,
-                       CASE WHEN tt.d_due_date IS NOT NULL AND tt.c_status NOT IN ('Done','Cancelled')
+                       CASE WHEN tt.d_due_date IS NOT NULL AND tt.c_status NOT IN ('Done','OnHold')
                                  AND tt.d_due_date < CAST(GETDATE() AS DATE)
                             THEN 1 ELSE 0 END AS b_overdue,
-                       CASE WHEN tt.d_due_date IS NOT NULL AND tt.c_status NOT IN ('Done','Cancelled')
+                       CASE WHEN tt.d_due_date IS NOT NULL AND tt.c_status NOT IN ('Done','OnHold')
                                  AND DATEDIFF(DAY,tt.d_create_date,GETDATE())*1.0
                                    / NULLIF(DATEDIFF(DAY,tt.d_create_date,tt.d_due_date),0) >= 0.8
                             THEN 1 ELSE 0 END AS b_sla_warning,
@@ -355,6 +355,34 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Projec
             }
             }
             return dt;
+        }
+
+        /// <summary>ดึง Task ตัวเดียวด้วย id (ใช้เช็คสถานะ/pct เดิมก่อน Update)</summary>
+        public ProjectTaskModel GetById(int i_task_id)
+        {
+            ProjectTaskModel m = null;
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
+            {
+                conn.Open();
+                string sql = "SELECT i_task_id, c_status, i_pct_complete FROM RGP.t_project_task WHERE i_task_id = @id";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@id", i_task_id);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        if (r.Read())
+                        {
+                            m = new ProjectTaskModel
+                            {
+                                i_task_id      = Convert.ToInt32(r["i_task_id"]),
+                                c_status       = r["c_status"].ToString(),
+                                i_pct_complete = Convert.ToInt32(r["i_pct_complete"])
+                            };
+                        }
+                    }
+                }
+            }
+            return m;
         }
 
         /// <summary>Insert Task ใหม่ คืน i_task_id</summary>

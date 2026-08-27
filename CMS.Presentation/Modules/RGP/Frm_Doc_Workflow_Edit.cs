@@ -1,6 +1,7 @@
 using CMS.Domain.Models;
 using CMS.Controllers.RGP;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
 
@@ -13,10 +14,13 @@ namespace CMS.Presentation.Modules.RGP
         private readonly ProjectDocumentController       _service;
         private readonly ProjectStateController          _stateService;
         private readonly string                       _userName;
+        // เมื่อ _i_project_id == 0 (โครงการยังไม่ถูกบันทึก) ใช้ list ขั้นตอนที่ staged ไว้ใน parent แทนการ query DB
+        private readonly List<ProjectStateModel>      _stagedStates;
 
         public ProjectDocumentWorkflowModel Result { get; private set; }
 
-        public Frm_Doc_Workflow_Edit(int i_project_id, ProjectDocumentWorkflowModel model = null)
+        public Frm_Doc_Workflow_Edit(int i_project_id, ProjectDocumentWorkflowModel model = null,
+            List<ProjectStateModel> stagedStates = null)
         {
             InitializeComponent();
             _i_project_id = i_project_id;
@@ -24,6 +28,7 @@ namespace CMS.Presentation.Modules.RGP
             _service      = new ProjectDocumentController();
             _stateService = new ProjectStateController();
             _userName     = RgpSession.Current?.ADUserName;
+            _stagedStates = stagedStates;
         }
 
         private void Frm_Doc_Workflow_Edit_Load(object sender, EventArgs e)
@@ -52,7 +57,21 @@ namespace CMS.Presentation.Modules.RGP
 
         private void LoadStatesCombo()
         {
-            DataTable dt = _stateService.GetStatesForCombo(_i_project_id);
+            DataTable dt;
+            if (_i_project_id == 0)
+            {
+                // โครงการยังไม่ถูกบันทึก — ใช้ขั้นตอนที่ staged ไว้แทนการ query DB
+                dt = new DataTable();
+                dt.Columns.Add("i_proj_state_id", typeof(int));
+                dt.Columns.Add("n_state_name", typeof(string));
+                if (_stagedStates != null)
+                    foreach (var s in _stagedStates)
+                        dt.Rows.Add(s.i_proj_state_id, s.n_state_name);
+            }
+            else
+            {
+                dt = _stateService.GetStatesForCombo(_i_project_id);
+            }
             cbbState.DisplayMember = "n_state_name";
             cbbState.ValueMember   = "i_proj_state_id";
             cbbState.DataSource    = dt;
@@ -103,7 +122,13 @@ namespace CMS.Presentation.Modules.RGP
             };
 
             bool success;
-            if (_editModel != null)
+            if (_i_project_id == 0)
+            {
+                // โครงการยังไม่ถูกบันทึก — เก็บไว้ใน memory เฉยๆ ไม่ยิง DB
+                if (_editModel != null) model.i_doc_wf_id = _editModel.i_doc_wf_id;
+                success = true;
+            }
+            else if (_editModel != null)
             {
                 model.i_doc_wf_id = _editModel.i_doc_wf_id;
                 success = _service.UpdateDocWorkflow(model);

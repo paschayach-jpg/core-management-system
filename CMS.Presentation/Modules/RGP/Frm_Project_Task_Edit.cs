@@ -66,6 +66,8 @@ namespace CMS.Presentation.Modules.RGP
                 txtDesc.Text      = _editModel.n_description ?? "";
                 cbbPriority.SelectedIndex = _editModel.i_priority - 1;
                 nudPct.Value      = _editModel.i_pct_complete;
+                // On Hold: แช่แข็ง % ไว้ที่ค่าเดิม ห้ามแก้ไขผ่านหน้านี้ขณะอยู่สถานะนี้
+                nudPct.Enabled    = _editModel.c_status != "OnHold";
 
                 string assigneeLower = (_editModel.n_assignee ?? "").ToLower();
                 for (int i = 0; i < cbbAssignee.Items.Count; i++)
@@ -106,12 +108,12 @@ namespace CMS.Presentation.Modules.RGP
 
             bool loaded = false;
 
-            // โหลดจาก Common DB ผ่าน EmployeeController
+            // โหลดจาก CMS_DB.EMS.m_Employee (ADUserName) — ตาม pattern เดียวกับ "บุคคลที่เกี่ยวข้อง"
             try
             {
-                DataTable dt = new EmployeeController().GetActiveEmployees();
+                DataTable dt = new EmployeeController().GetActiveADUsers();
                 foreach (DataRow r in dt.Rows)
-                    cbbAssignee.Items.Add(r["full_name"].ToString());
+                    cbbAssignee.Items.Add(r["ADUserName"].ToString());
                 loaded = cbbAssignee.Items.Count > 1;
             }
             catch (Exception ex)
@@ -119,7 +121,7 @@ namespace CMS.Presentation.Modules.RGP
                 System.Diagnostics.Debug.WriteLine("LoadAssignees error: " + ex.Message);
             }
 
-            // Fallback: ดึงจาก state members ถ้า Common DB ใช้ไม่ได้
+            // Fallback: ดึงจาก state members ถ้าดึงรายชื่อพนักงานไม่ได้
             if (!loaded)
             {
                 try

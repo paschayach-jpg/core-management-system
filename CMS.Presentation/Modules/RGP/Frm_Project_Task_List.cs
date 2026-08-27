@@ -30,7 +30,7 @@ namespace CMS.Presentation.Modules.RGP
             ("InProgress", "🔄 กำลังทำ",      Color.FromArgb(255, 193, 7)),
             ("InReview",   "🔍 รอตรวจสอบ",    Color.FromArgb(111, 66, 193)),
             ("Done",       "✅ เสร็จแล้ว",     Color.FromArgb(40, 167, 69)),
-            ("Cancelled",  "❌ ยกเลิก",        Color.FromArgb(220, 53, 69)),
+            ("OnHold",     "⏸ On Hold",       Color.FromArgb(158, 158, 158)),
         };
 
         // palette
@@ -251,10 +251,10 @@ namespace CMS.Presentation.Modules.RGP
                         e.CellStyle.BackColor = Color.FromArgb(220, 208, 255);
                         e.CellStyle.ForeColor = Color.FromArgb(68, 0, 153);
                         e.Value = "🔍 รอตรวจ"; e.FormattingApplied = true; break;
-                    case "Cancelled":
-                        e.CellStyle.BackColor = Color.FromArgb(255, 199, 206);
-                        e.CellStyle.ForeColor = Color.FromArgb(156, 0, 6);
-                        e.Value = "❌ ยกเลิก"; e.FormattingApplied = true; break;
+                    case "OnHold":
+                        e.CellStyle.BackColor = Color.FromArgb(230, 230, 230);
+                        e.CellStyle.ForeColor = Color.FromArgb(90, 90, 90);
+                        e.Value = "⏸ On Hold"; e.FormattingApplied = true; break;
                     default:
                         e.CellStyle.BackColor = Color.FromArgb(215, 228, 248);
                         e.CellStyle.ForeColor = Color.FromArgb(30, 58, 95);

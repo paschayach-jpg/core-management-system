@@ -114,6 +114,8 @@
     <Compile Include="Models\ProjectModel.cs" />
     <Compile Include="Models\ProjectProgressModel.cs" />
     <Compile Include="Models\ProjectStateMemberModel.cs" />
+    <Compile Include="Models\ProjectNotifyLogModel.cs" />
+    <Compile Include="Models\ProjectTaskStatusLogModel.cs" />
     <Compile Include="Models\ProjectStateModel.cs" />
     <Compile Include="Models\ProjectTaskModel.cs" />
     <Compile Include="Models\ProjectTemplateModel.cs" />
