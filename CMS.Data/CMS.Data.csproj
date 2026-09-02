@@ -77,6 +77,7 @@
     <Compile Include="Interfaces\IKBArticleRepository.cs" />
     <Compile Include="Interfaces\IKBVersionRepository.cs" />
     <Compile Include="Interfaces\IKBArticleLinkRepository.cs" />
+    <Compile Include="Interfaces\IKBArticleAttachmentRepository.cs" />
     <Compile Include="Interfaces\IMenuItemRepository.cs" />
     <Compile Include="Interfaces\IKBDashboardRepository.cs" />
     <Compile Include="Interfaces\IWorkflowRepository.cs" />
@@ -115,6 +116,7 @@
     <Compile Include="Repositories\KBArticleRepository.cs" />
     <Compile Include="Repositories\KBVersionRepository.cs" />
     <Compile Include="Repositories\KBArticleLinkRepository.cs" />
+    <Compile Include="Repositories\KBArticleAttachmentRepository.cs" />
     <Compile Include="Repositories\MenuItemRepository.cs" />
     <Compile Include="Repositories\KBDashboardRepository.cs" />
     <Compile Include="Repositories\WorkflowRepository.cs" />
@@ -136,6 +138,8 @@
     <Compile Include="Interfaces\IProjectMemberRepository.cs" />
     <Compile Include="Interfaces\IProjectMemberRoleRepository.cs" />
     <Compile Include="Interfaces\IProjectStateMemberRepository.cs" />
+    <Compile Include="Interfaces\IProjectNotifyLogRepository.cs" />
+    <Compile Include="Interfaces\IProjectTaskStatusLogRepository.cs" />
     <Compile Include="Interfaces\IProjectTemplateRepository.cs" />
     <Compile Include="Interfaces\ITemplateDocRepository.cs" />
     <Compile Include="Interfaces\IEmployeeRepository.cs" />
@@ -150,6 +154,8 @@
     <Compile Include="Repositories\ProjectMemberRepository.cs" />
     <Compile Include="Repositories\ProjectMemberRoleRepository.cs" />
     <Compile Include="Repositories\ProjectStateMemberRepository.cs" />
+    <Compile Include="Repositories\ProjectNotifyLogRepository.cs" />
+    <Compile Include="Repositories\ProjectTaskStatusLogRepository.cs" />
     <Compile Include="Repositories\ProjectTemplateRepository.cs" />
     <Compile Include="Repositories\TemplateDocRepository.cs" />
     <Compile Include="Repositories\EmployeeRepository.cs" />

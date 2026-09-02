@@ -16,6 +16,7 @@ namespace CMS.Presentation.Modules.RGP
 
         public string SelectedName { get; private set; }
         public string SelectedRole { get; private set; }
+        public string SelectedType { get; private set; }
 
         public Frm_Select_StateMember(int projectId, string userName,
             System.Collections.Generic.IEnumerable<string> excludedNames = null)
@@ -71,6 +72,7 @@ namespace CMS.Presentation.Modules.RGP
             if (row == null) return;
             SelectedName      = row["n_member_name"]?.ToString() ?? "";
             SelectedRole      = row["c_role"]?.ToString() ?? "";
+            SelectedType      = row.Row.Table.Columns.Contains("c_member_type") ? row["c_member_type"]?.ToString() : null;
             this.DialogResult = DialogResult.OK;
         }
 

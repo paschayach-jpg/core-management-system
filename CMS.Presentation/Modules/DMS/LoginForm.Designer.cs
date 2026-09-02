@@ -32,6 +32,7 @@ namespace CMS.Presentation
             this.lblDontHave = new System.Windows.Forms.Label();
             this.lnkRegister = new System.Windows.Forms.LinkLabel();
             this.lblStatus = new System.Windows.Forms.Label();
+            this.label1 = new System.Windows.Forms.Label();
             this.pnlHeader.SuspendLayout();
             this.pnlAvatar.SuspendLayout();
             this.pnlContent.SuspendLayout();
@@ -48,7 +49,7 @@ namespace CMS.Presentation
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlHeader.Name = "pnlHeader";
-            this.pnlHeader.Size = new System.Drawing.Size(320, 168);
+            this.pnlHeader.Size = new System.Drawing.Size(321, 168);
             this.pnlHeader.TabIndex = 0;
             this.pnlHeader.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlHeader_Paint);
             // 
@@ -62,7 +63,7 @@ namespace CMS.Presentation
             this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClose.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.btnClose.ForeColor = System.Drawing.Color.White;
-            this.btnClose.Location = new System.Drawing.Point(286, 4);
+            this.btnClose.Location = new System.Drawing.Point(287, 4);
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(30, 30);
             this.btnClose.TabIndex = 3;
@@ -119,6 +120,7 @@ namespace CMS.Presentation
             // pnlContent
             // 
             this.pnlContent.BackColor = System.Drawing.Color.White;
+            this.pnlContent.Controls.Add(this.label1);
             this.pnlContent.Controls.Add(this.lblInsuranceSectors);
             this.pnlContent.Controls.Add(this.lblDomainTag);
             this.pnlContent.Controls.Add(this.checkBox1);
@@ -135,7 +137,7 @@ namespace CMS.Presentation
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContent.Location = new System.Drawing.Point(0, 168);
             this.pnlContent.Name = "pnlContent";
-            this.pnlContent.Size = new System.Drawing.Size(320, 402);
+            this.pnlContent.Size = new System.Drawing.Size(321, 402);
             this.pnlContent.TabIndex = 1;
             this.pnlContent.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlContent_Paint);
             // 
@@ -283,11 +285,22 @@ namespace CMS.Presentation
             this.lblStatus.TabIndex = 10;
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
+            // label1
+            // 
+            this.label1.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(100)))));
+            this.label1.Location = new System.Drawing.Point(69, 368);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(168, 18);
+            this.label1.TabIndex = 14;
+            this.label1.Text = "แก้ไขล่าสุด : 25/06/2026";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // LoginForm
             // 
             this.AcceptButton = this.btnLogin;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(320, 570);
+            this.ClientSize = new System.Drawing.Size(321, 570);
             this.Controls.Add(this.pnlContent);
             this.Controls.Add(this.pnlHeader);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
@@ -324,5 +337,6 @@ namespace CMS.Presentation
         private System.Windows.Forms.LinkLabel lnkRegister;
         private System.Windows.Forms.Label     lblStatus;
         private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.Label label1;
     }
 }

@@ -17,5 +17,10 @@ namespace CMS.Services.DTOs
         /// with the same name in the target folder instead of creating a copy.
         /// </summary>
         public bool OverwriteExisting { get; set; }
+
+        /// <summary>
+        /// Optional: The initial status of the uploaded file document. Defaults to 1 (Active).
+        /// </summary>
+        public int? InitialFileStatus { get; set; }
     }
 }

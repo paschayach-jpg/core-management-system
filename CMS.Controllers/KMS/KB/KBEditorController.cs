@@ -237,6 +237,7 @@ namespace CMS.Controllers.KMS.KB
 
                 // Save article links
                 SaveArticleLinks(articleId);
+                SaveArticleAttachments(articleId);
 
                 _view.ShowInfo("บันทึกเรียบร้อยแล้ว");
             }
@@ -292,6 +293,7 @@ namespace CMS.Controllers.KMS.KB
 
                 // Save article links
                 SaveArticleLinks(articleId);
+                SaveArticleAttachments(articleId);
 
                 _view.ShowInfo("ส่งขอ Review เรียบร้อยแล้ว");
                 _view.CloseOk();
@@ -472,6 +474,39 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
+        /// Persist attachments/links immediately for an already-saved article (e.g. right after
+        /// an upload), mirroring what Save() does. No-op if the article has not been saved yet -
+        /// in that case attachments stay local until the user clicks Save Draft.
+        /// </summary>
+        public void SaveAttachmentsAndLinksIfExisting()
+        {
+            if (_editingArticle == null) return;
+
+            int articleId = _editingArticle.ArticleID;
+            SaveArticleLinks(articleId);
+            SaveArticleAttachments(articleId);
+        }
+
+        /// <summary>
+        /// Remove an attached file's link (KMS.t_KBArticleLink, EntityType = Folder/File) by FileID
+        /// </summary>
+        public void RemoveArticleAttachmentLink(int fileId)
+        {
+            if (_editingArticle == null) return; // Not saved yet - nothing to delete in DB
+
+            try
+            {
+                _articleService.RemoveArticleLink(
+                    _editingArticle.ArticleID, fileId, (byte)KBEntityType.Folder);
+                _articleService.RemoveArticleAttachment(_editingArticle.ArticleID, fileId);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to remove attachment link: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
         /// Save article links to database
         /// </summary>
         private void SaveArticleLinks(int articleId)
@@ -542,6 +577,40 @@ namespace CMS.Controllers.KMS.KB
             {
                 throw new InvalidOperationException("Failed to save article links: " + ex.Message, ex);
             }
+        }
+
+        private void SaveArticleAttachments(int articleId)
+        {
+            try
+            {
+                var fileIds = new List<int>();
+                var dgvAttach = _view.GetAttachLinkedDataGridView();
+                foreach (System.Windows.Forms.DataGridViewRow row in dgvAttach.Rows)
+                {
+                    if (row.Tag != null && row.Tag is int fileId)
+                    {
+                        fileIds.Add(fileId);
+                    }
+                }
+                _articleService.SaveArticleAttachments(articleId, fileIds, _user.AdIdentity);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to save article attachments: " + ex.Message, ex);
+            }
+        }
+
+        private string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return string.Format("{0:0.##} {1}", len, sizes[order]);
         }
 
         /// <summary>
@@ -644,6 +713,27 @@ namespace CMS.Controllers.KMS.KB
 
                     dgvDocs.Rows[rowIndex].Tag = link.EntityID;
                     dgvDocs.Rows[rowIndex].DefaultCellStyle.BackColor =
+                        index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
+                    index++;
+                }
+
+                // Load Attachments
+                var attachmentFiles = _articleService.GetArticleAttachmentFiles(articleId);
+                var dgvAttach = _view.GetAttachLinkedDataGridView();
+                dgvAttach.Rows.Clear();
+
+                index = 1;
+                foreach (var file in attachmentFiles)
+                {
+                    int rowIndex = dgvAttach.Rows.Add(
+                        index.ToString(),
+                        file.OriginalFileName,
+                        FormatFileSize(file.FileSizeBytes),
+                        file.UploadedDate.ToString("dd/MM/yyyy HH:mm")
+                    );
+
+                    dgvAttach.Rows[rowIndex].Tag = file.FileID;
+                    dgvAttach.Rows[rowIndex].DefaultCellStyle.BackColor =
                         index % 2 == 0 ? Color.White : Color.FromArgb(248, 250, 253);
                     index++;
                 }

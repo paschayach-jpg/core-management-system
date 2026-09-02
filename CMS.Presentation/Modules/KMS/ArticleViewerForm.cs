@@ -9,6 +9,7 @@ using Microsoft.Web.WebView2.Core;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
+using CMS.Controllers.DMS.Document.Interfaces;
 
 namespace CMS.Presentation.Modules.KMS
 {
@@ -22,9 +23,12 @@ namespace CMS.Presentation.Modules.KMS
         private Func<KBArticle, DialogResult> _openEditorFactory;
         private KBArticle                     _article;
         private IEnumerable<KBArticle>        _relatedArticles = new List<KBArticle>();
+        private IEnumerable<FileDocument>     _attachments = new List<FileDocument>();
         private bool                          _webContentReady = false;
         private string                        _pendingHtml     = string.Empty;
         private Timer                         _zoomHideTimer;
+        private IFileBrowseController         _fileBrowseController;
+        private UserContext                   _user;
 
         /// <summary>The ArticleID currently displayed; used by KBMainForm history stack.</summary>
         public int CurrentArticleId { get { return _article != null ? _article.ArticleID : 0; } }
@@ -49,6 +53,12 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachEditorFactory(Func<KBArticle, DialogResult> factory)
         {
             _openEditorFactory = factory;
+        }
+
+        public void AttachFileBrowseController(IFileBrowseController fileBrowseController, UserContext user)
+        {
+            _fileBrowseController = fileBrowseController;
+            _user = user;
         }
 
         // ── Form events ──────────────────────────────────────────────────────
@@ -95,6 +105,14 @@ namespace CMS.Presentation.Modules.KMS
             // Refresh the Related tab if it is currently selected
             if (tabMapping.SelectedTab == tabRelated)
                 PopulateRelatedTab();
+        }
+
+        public void BindAttachments(IEnumerable<FileDocument> files)
+        {
+            _attachments = files ?? new List<FileDocument>();
+            // Refresh the Attach tab if it is currently selected
+            if (tabMapping.SelectedTab == tabAttach)
+                PopulateAttachTab();
         }
 
         public void ShowError(string message)
@@ -223,11 +241,33 @@ namespace CMS.Presentation.Modules.KMS
 
         private void PopulateAttachTab()
         {
-            // Mockup — replace with real DMS data when available
             dgvAttachLinked.Rows.Clear();
-            dgvAttachLinked.Rows.Add("1", "Claims_Form_2569.pdf",   "245 KB", "01/01/2569");
-            dgvAttachLinked.Rows.Add("2", "UW_Criteria_Table.xlsx", "89 KB",  "01/01/2569");
+            int index = 1;
+            foreach (var file in _attachments)
+            {
+                int rowIndex = dgvAttachLinked.Rows.Add(
+                    index.ToString(),
+                    file.OriginalFileName,
+                    FormatFileSize(file.FileSizeBytes),
+                    file.UploadedDate.ToString("dd/MM/yyyy HH:mm")
+                );
+                dgvAttachLinked.Rows[rowIndex].Tag = file;
+                index++;
+            }
             lblAttachLinked.Text = string.Format("ไฟล์ที่แนบ ({0} ไฟล์)", dgvAttachLinked.Rows.Count);
+        }
+
+        private string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return string.Format("{0:0.##} {1}", len, sizes[order]);
         }
 
         private void PopulateRelatedTab()
@@ -396,6 +436,85 @@ namespace CMS.Presentation.Modules.KMS
                 case 3:  return "✅ Published";
                 case 4:  return "Archived";
                 default: return "Unknown";
+            }
+        }
+
+        private void DgvAttachLinked_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return; // Header clicked
+
+            // Check if View button clicked
+            if (e.ColumnIndex == dgvAttachLinked.Columns["colAttachView"].Index)
+            {
+                string fileName = dgvAttachLinked.Rows[e.RowIndex].Cells["colAttachName"].Value?.ToString();
+                object tag = dgvAttachLinked.Rows[e.RowIndex].Tag;
+
+                if (tag is FileDocument doc)
+                {
+                    DownloadAndOpenFile(doc.FileID, doc.OriginalFileName);
+                }
+                else
+                {
+                    ShowInfo(string.Format("เปิดไฟล์: {0}\n\n(ไม่พบรหัสไฟล์สำหรับดาวน์โหลด)", fileName));
+                }
+            }
+        }
+
+        private void DownloadAndOpenFile(int fileId, string fileName)
+        {
+            if (_fileBrowseController == null)
+            {
+                MessageBox.Show("ระบบดูไฟล์ (File Browse Controller) ยังไม่ได้เชื่อมต่อ", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+
+                var result = _fileBrowseController.DownloadFile(fileId, _user, bypassPermissionCheck: true);
+                if (result == null || !result.Success || result.FileStream == null)
+                {
+                    string err = (result != null && !string.IsNullOrWhiteSpace(result.ErrorMessage))
+                        ? result.ErrorMessage
+                        : "ไม่สามารถดาวน์โหลดไฟล์จากระบบได้";
+                    MessageBox.Show(err, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Create secure temp path
+                string safeName = string.Join("_", fileName.Split(System.IO.Path.GetInvalidFileNameChars()));
+                string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CMS", "OpenFiles");
+                System.IO.Directory.CreateDirectory(tempDir);
+
+                string tempPath = System.IO.Path.Combine(tempDir, safeName);
+                
+                // Avoid conflicts if same file is already created
+                try
+                {
+                    if (System.IO.File.Exists(tempPath))
+                        System.IO.File.Delete(tempPath);
+                }
+                catch { /* ignore lock */ }
+
+                using (var fileStream = System.IO.File.Create(tempPath))
+                {
+                    result.FileStream.CopyTo(fileStream);
+                }
+
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = tempPath,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("เกิดข้อผิดพลาดในการเปิดไฟล์: " + ex.Message, "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
             }
         }
     }

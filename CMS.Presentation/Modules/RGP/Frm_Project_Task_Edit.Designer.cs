@@ -28,13 +28,13 @@
             this.lblAssignL = new System.Windows.Forms.Label();
             this.cbbAssignee = new System.Windows.Forms.ComboBox();
             this.lblDueL = new System.Windows.Forms.Label();
-            this.dtpDue = new System.Windows.Forms.DateTimePicker();
             this.lblStartL = new System.Windows.Forms.Label();
-            this.dtpStart = new System.Windows.Forms.DateTimePicker();
             this.lblHoursL = new System.Windows.Forms.Label();
             this.nudHours = new System.Windows.Forms.NumericUpDown();
             this.lblPctL = new System.Windows.Forms.Label();
             this.nudPct = new System.Windows.Forms.NumericUpDown();
+            this.dtpDue = new System.Windows.Forms.DateTimePicker();
+            this.dtpStart = new System.Windows.Forms.DateTimePicker();
             this.pnlButtons = new System.Windows.Forms.FlowLayoutPanel();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnSave = new System.Windows.Forms.Button();
@@ -117,13 +117,13 @@
             this.pnlBody.Controls.Add(this.lblAssignL, 0, 4);
             this.pnlBody.Controls.Add(this.cbbAssignee, 1, 4);
             this.pnlBody.Controls.Add(this.lblDueL, 0, 5);
-            this.pnlBody.Controls.Add(this.dtpDue, 1, 5);
             this.pnlBody.Controls.Add(this.lblStartL, 0, 6);
-            this.pnlBody.Controls.Add(this.dtpStart, 1, 6);
             this.pnlBody.Controls.Add(this.lblHoursL, 0, 7);
             this.pnlBody.Controls.Add(this.nudHours, 1, 7);
             this.pnlBody.Controls.Add(this.lblPctL, 0, 8);
             this.pnlBody.Controls.Add(this.nudPct, 1, 8);
+            this.pnlBody.Controls.Add(this.dtpDue, 1, 6);
+            this.pnlBody.Controls.Add(this.dtpStart, 1, 5);
             this.pnlBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlBody.Location = new System.Drawing.Point(0, 0);
             this.pnlBody.Name = "pnlBody";
@@ -267,18 +267,8 @@
             this.lblDueL.Name = "lblDueL";
             this.lblDueL.Size = new System.Drawing.Size(114, 34);
             this.lblDueL.TabIndex = 8;
-            this.lblDueL.Text = "วันกำหนดเสร็จ:";
+            this.lblDueL.Text = "วันเริ่มต้น:";
             this.lblDueL.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // dtpDue
-            // 
-            this.dtpDue.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.dtpDue.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpDue.Location = new System.Drawing.Point(133, 227);
-            this.dtpDue.Name = "dtpDue";
-            this.dtpDue.ShowCheckBox = true;
-            this.dtpDue.Size = new System.Drawing.Size(140, 23);
-            this.dtpDue.TabIndex = 5;
             // 
             // lblStartL
             // 
@@ -289,18 +279,8 @@
             this.lblStartL.Name = "lblStartL";
             this.lblStartL.Size = new System.Drawing.Size(114, 34);
             this.lblStartL.TabIndex = 9;
-            this.lblStartL.Text = "วันเริ่มต้น:";
+            this.lblStartL.Text = "วันกำหนดเสร็จ:";
             this.lblStartL.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // dtpStart
-            // 
-            this.dtpStart.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.dtpStart.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpStart.Location = new System.Drawing.Point(133, 261);
-            this.dtpStart.Name = "dtpStart";
-            this.dtpStart.ShowCheckBox = true;
-            this.dtpStart.Size = new System.Drawing.Size(140, 23);
-            this.dtpStart.TabIndex = 6;
             // 
             // lblHoursL
             // 
@@ -346,6 +326,26 @@
             this.nudPct.Name = "nudPct";
             this.nudPct.Size = new System.Drawing.Size(80, 23);
             this.nudPct.TabIndex = 8;
+            // 
+            // dtpDue
+            // 
+            this.dtpDue.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.dtpDue.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpDue.Location = new System.Drawing.Point(133, 261);
+            this.dtpDue.Name = "dtpDue";
+            this.dtpDue.ShowCheckBox = true;
+            this.dtpDue.Size = new System.Drawing.Size(140, 23);
+            this.dtpDue.TabIndex = 5;
+            // 
+            // dtpStart
+            // 
+            this.dtpStart.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.dtpStart.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpStart.Location = new System.Drawing.Point(133, 227);
+            this.dtpStart.Name = "dtpStart";
+            this.dtpStart.ShowCheckBox = true;
+            this.dtpStart.Size = new System.Drawing.Size(140, 23);
+            this.dtpStart.TabIndex = 6;
             // 
             // pnlButtons
             // 

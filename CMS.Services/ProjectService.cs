@@ -65,14 +65,10 @@ namespace CMS.Services
                 model.c_status = "Open";
                 int newId = _projectRepo.InsertProject(model);
 
-                if (newId > 0 && model.i_template_id.HasValue)
-                {
-                    // 1. Copy States จาก template → t_project_state
-                    _stateRepo.InsertStatesFromTemplate(newId, model.i_template_id.Value, model.i_create_user);
-
-                    // 2. Copy Document Workflow จาก m_template_doc → t_project_doc_workflow (auto-populate)
-                    _docRepo.InsertDocWorkflowFromTemplate(newId, model.i_create_user);
-                }
+                // หมายเหตุ: ไม่ copy States/Documents จาก template ที่นี่อีกต่อไป — ผู้เรียก (Frm_Project_Detail)
+                // จะ stage ขั้นตอน/เอกสารจาก template ไว้ในหน่วยความจำให้ผู้ใช้แก้ไขได้ก่อน แล้ว cascade insert เองหลัง
+                // CreateProject สำเร็จ (ผ่าน SaveStagedChildren) ถ้า auto-copy ตรงนี้ด้วยจะกลาย เป็น insert ซ้ำซ้อน
+                // กับของที่ staged ไว้ และข้าม edit ที่ผู้ใช้ทำกับขั้นตอน/เอกสารที่ดึงมาจาก template ก่อนบันทึกไปเลย
 
                 _auditService.Log(new ProjectAuditEntry
                 {

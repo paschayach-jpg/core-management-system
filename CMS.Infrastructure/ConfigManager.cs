@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
+using Newtonsoft.Json.Linq;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
 
@@ -17,6 +19,7 @@ namespace CMS.Infrastructure
     /// </summary>
     public class ConfigManager : IConfigManager
     {
+        private readonly JObject _jsonConfig;
         private readonly string _connectionString;
 
         // In-memory cache to avoid repeated DB round-trips
@@ -24,8 +27,41 @@ namespace CMS.Infrastructure
 
         public ConfigManager()
         {
-            var cs = ConfigurationManager.ConnectionStrings["CmsDb"];
-            _connectionString = cs != null ? cs.ConnectionString : null;
+            string configPath = Environment.GetEnvironmentVariable("CMS_CONFIG_PATH");
+            
+            // If environment variable is not set or empty, check central network config fallback
+            if (string.IsNullOrWhiteSpace(configPath))
+            {
+                configPath = @"\\150.1.8.23\AppForUser\CMS_Central_Configs\cms_config.json";
+            }
+
+            if (File.Exists(configPath))
+            {
+                try
+                {
+                    string jsonText = File.ReadAllText(configPath);
+                    _jsonConfig = JObject.Parse(jsonText);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("Failed to parse JSON config at: " + configPath, ex);
+                }
+            }
+            else
+            {
+                // If environment variable was set but file not found, or central file also not found
+                string envVarMsg = Environment.GetEnvironmentVariable("CMS_CONFIG_PATH") != null 
+                    ? "Verify the environment variable 'CMS_CONFIG_PATH' is set and points to a valid JSON file."
+                    : "No 'CMS_CONFIG_PATH' environment variable was found, and the central fallback file is missing or the network path is inaccessible.";
+                
+                throw new FileNotFoundException(string.Format(
+                    "CMS Configuration file was not found at '{0}'. {1}", configPath, envVarMsg));
+            }
+
+            if (_jsonConfig != null)
+            {
+                _connectionString = _jsonConfig["ConnectionStrings"]?["CmsDb"]?.ToString();
+            }
         }
 
         /// <summary>
@@ -116,12 +152,15 @@ namespace CMS.Infrastructure
                     return cached;
             }
 
-            // 2. app.config appSettings
-            string appConfigValue = ConfigurationManager.AppSettings[key];
-            if (appConfigValue != null)
+            // 2. JSON AppSettings lookup
+            if (_jsonConfig != null)
             {
-                lock (_cache) { _cache[key] = appConfigValue; }
-                return appConfigValue;
+                string jsonVal = _jsonConfig["AppSettings"]?[key]?.ToString();
+                if (jsonVal != null)
+                {
+                    lock (_cache) { _cache[key] = jsonVal; }
+                    return jsonVal;
+                }
             }
 
             // 3. Database fallback

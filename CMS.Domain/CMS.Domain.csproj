@@ -85,6 +85,7 @@
     <Compile Include="Models\KBArticle.cs" />
     <Compile Include="Models\KBVersion.cs" />
     <Compile Include="Models\KBArticleLink.cs" />
+    <Compile Include="Models\KBArticleAttachment.cs" />
     <Compile Include="Models\KBImportValidationResult.cs" />
     <Compile Include="Models\MenuItem.cs" />
     <Compile Include="Models\KBDashboardStats.cs" />
@@ -113,6 +114,8 @@
     <Compile Include="Models\ProjectModel.cs" />
     <Compile Include="Models\ProjectProgressModel.cs" />
     <Compile Include="Models\ProjectStateMemberModel.cs" />
+    <Compile Include="Models\ProjectNotifyLogModel.cs" />
+    <Compile Include="Models\ProjectTaskStatusLogModel.cs" />
     <Compile Include="Models\ProjectStateModel.cs" />
     <Compile Include="Models\ProjectTaskModel.cs" />
     <Compile Include="Models\ProjectTemplateModel.cs" />

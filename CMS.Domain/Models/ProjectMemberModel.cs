@@ -9,6 +9,7 @@ namespace CMS.Domain.Models
         public string n_member_name { get; set; }
         public string c_role        { get; set; }
         public string c_department_code { get; set; }
+        public string c_member_type { get; set; }
         public string i_create_user { get; set; }
     }
 }

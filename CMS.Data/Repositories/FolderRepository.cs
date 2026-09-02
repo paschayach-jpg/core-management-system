@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Threading.Tasks;
 using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Infrastructure.Interfaces;
@@ -324,6 +325,84 @@ namespace CMS.Data.Repositories
                     cmd.ExecuteNonQuery();
                 }
             }
+        }
+
+        // ── Async overloads ──────────────────────────────────────────────────
+        // Additive only — sync methods above are untouched.
+        // Callers that can await (e.g. background tasks) use these to free the
+        // thread pool while waiting on SQL I/O.
+
+        public async Task<Folder> GetByIdAsync(int folderId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                using (var cmd = new SqlCommand("storage.sp_GetFolderByID", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@FolderID", folderId);
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync()) return MapFolder(reader);
+                        return null;
+                    }
+                }
+            }
+        }
+
+        public async Task<IEnumerable<Folder>> GetByOrgUnitAsync(int orgUnitId)
+        {
+            var results = new List<Folder>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                using (var cmd = new SqlCommand("storage.sp_GetFoldersByOrgUnit", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@OrgUnitID", orgUnitId);
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync()) results.Add(MapFolder(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
+        public async Task<IEnumerable<Folder>> GetAllAsync()
+        {
+            var results = new List<Folder>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                using (var cmd = new SqlCommand("storage.sp_GetAllFolders", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync()) results.Add(MapFolder(reader));
+                    }
+                }
+            }
+            return results;
+        }
+
+        public async Task<IEnumerable<Folder>> GetActiveFoldersAsync()
+        {
+            var results = new List<Folder>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                await conn.OpenAsync();
+                using (var cmd = new SqlCommand("storage.sp_GetActiveFolders", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync()) results.Add(MapFolder(reader));
+                    }
+                }
+            }
+            return results;
         }
 
         private static Folder MapFolder(SqlDataReader reader)

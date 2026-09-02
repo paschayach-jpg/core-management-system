@@ -14,25 +14,33 @@ namespace CMS.Services
     /// </summary>
     public class KBArticleService : IKBArticleService
     {
-        private readonly IKBArticleRepository     _articleRepo;
-        private readonly IKBVersionRepository     _versionRepo;
-        private readonly IKBArticleLinkRepository _linkRepo;
-        private readonly IAuditService            _auditService;
+        private readonly IKBArticleRepository           _articleRepo;
+        private readonly IKBVersionRepository           _versionRepo;
+        private readonly IKBArticleLinkRepository       _linkRepo;
+        private readonly IKBArticleAttachmentRepository _attachmentRepo;
+        private readonly IFileDocumentRepository        _fileDocRepo;
+        private readonly IAuditService                  _auditService;
 
         public KBArticleService(
-            IKBArticleRepository     articleRepo,
-            IKBVersionRepository     versionRepo,
-            IKBArticleLinkRepository linkRepo,
-            IAuditService            auditService)
+            IKBArticleRepository           articleRepo,
+            IKBVersionRepository           versionRepo,
+            IKBArticleLinkRepository       linkRepo,
+            IKBArticleAttachmentRepository attachmentRepo,
+            IFileDocumentRepository        fileDocRepo,
+            IAuditService                  auditService)
         {
-            if (articleRepo  == null) throw new ArgumentNullException("articleRepo");
-            if (versionRepo  == null) throw new ArgumentNullException("versionRepo");
-            if (linkRepo     == null) throw new ArgumentNullException("linkRepo");
-            if (auditService == null) throw new ArgumentNullException("auditService");
-            _articleRepo  = articleRepo;
-            _versionRepo  = versionRepo;
-            _linkRepo     = linkRepo;
-            _auditService = auditService;
+            if (articleRepo    == null) throw new ArgumentNullException("articleRepo");
+            if (versionRepo    == null) throw new ArgumentNullException("versionRepo");
+            if (linkRepo       == null) throw new ArgumentNullException("linkRepo");
+            if (attachmentRepo == null) throw new ArgumentNullException("attachmentRepo");
+            if (fileDocRepo    == null) throw new ArgumentNullException("fileDocRepo");
+            if (auditService   == null) throw new ArgumentNullException("auditService");
+            _articleRepo    = articleRepo;
+            _versionRepo    = versionRepo;
+            _linkRepo       = linkRepo;
+            _attachmentRepo = attachmentRepo;
+            _fileDocRepo    = fileDocRepo;
+            _auditService   = auditService;
         }
 
         // ── Read ──────────────────────────────────────────────────────────────
@@ -289,6 +297,83 @@ namespace CMS.Services
             catch { return 0; }
         }
 
+        // ── Article Attachments ───────────────────────────────────────────────
+
+        public IEnumerable<KBArticleAttachment> GetArticleAttachments(int articleId)
+        {
+            return _attachmentRepo.GetAttachmentsForArticle(articleId);
+        }
+
+        public IEnumerable<FileDocument> GetArticleAttachmentFiles(int articleId)
+        {
+            var attachments = _attachmentRepo.GetAttachmentsForArticle(articleId);
+            var files = new List<FileDocument>();
+            foreach (var att in attachments)
+            {
+                var file = _fileDocRepo.GetById(att.FileID);
+                if (file != null)
+                {
+                    files.Add(file);
+                }
+            }
+            return files;
+        }
+
+        public void SaveArticleAttachments(int articleId, IEnumerable<int> fileIds, string actionBy)
+        {
+            _attachmentRepo.DeleteAllForArticle(articleId);
+            if (fileIds == null) return;
+
+            // Load existing folder/file links to check for duplicates
+            var existingLinks = _linkRepo.GetLinksForArticle(articleId, 1);
+            var existingFileIds = new HashSet<string>(existingLinks.Select(l => l.EntityID));
+
+            foreach (var fileId in fileIds)
+            {
+                var attachment = new KBArticleAttachment
+                {
+                    ArticleID = articleId,
+                    FileID = fileId,
+                    CreatedBy = actionBy,
+                    CreatedDate = DateTime.Now
+                };
+                int insertedId = _attachmentRepo.Insert(attachment);
+
+                // Write audit log for attaching file
+                _auditService.Log(new AuditEntry
+                {
+                    Module = "KnowledgeBase",
+                    Action = "ATTACH_FILE",
+                    UserName = actionBy ?? string.Empty,
+                    TableName = "KMS.t_KBArticleAttachment",
+                    RecordID = insertedId,
+                    NewValue = string.Format("Attached file ID {0} to KB article ID {1}", fileId, articleId),
+                    AuditDate = DateTime.Now,
+                    Result = 1
+                });
+
+                // Check for duplicates in t_KBArticleLink to prevent duplicate entries
+                string entityIdStr = fileId.ToString();
+                if (!existingFileIds.Contains(entityIdStr))
+                {
+                    _linkRepo.Insert(new KBArticleLink
+                    {
+                        ArticleID = articleId,
+                        EntityType = 1, // Folder/File
+                        EntityID = entityIdStr,
+                        CreatedBy = actionBy,
+                        CreatedDate = DateTime.Now
+                    });
+                    existingFileIds.Add(entityIdStr); // Avoid duplicates within the loop itself
+                }
+            }
+        }
+
+        public void RemoveArticleAttachment(int articleId, int fileId)
+        {
+            _attachmentRepo.DeleteByArticleAndFile(articleId, fileId);
+        }
+
         // ── Article Links ─────────────────────────────────────────────────────
 
         public IEnumerable<KBArticleLink> GetArticleLinks(int articleId, byte? entityType = null)
@@ -298,7 +383,11 @@ namespace CMS.Services
 
         public void SaveArticleLinks(int articleId, IEnumerable<KBArticleLink> links)
         {
-            _linkRepo.DeleteAllForArticle(articleId);
+            // Delete only links managed by the editor: Task (2), Program (3), Law (4)
+            _linkRepo.DeleteAllForArticle(articleId, 2); // Task
+            _linkRepo.DeleteAllForArticle(articleId, 3); // Program
+            _linkRepo.DeleteAllForArticle(articleId, 4); // Law
+
             if (links == null) return;
             foreach (var link in links)
             {

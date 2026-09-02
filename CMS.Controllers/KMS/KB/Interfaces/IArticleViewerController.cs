@@ -17,6 +17,9 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         /// <summary>Bind the related articles tab with articles linked via KMS.t_KBArticleLink (EntityType=6).</summary>
         void BindRelatedArticles(IEnumerable<KBArticle> articles);
 
+        /// <summary>Bind the attachments tab with files linked via KMS.t_KBArticleAttachment.</summary>
+        void BindAttachments(IEnumerable<FileDocument> files);
+
         void ShowError(string message);
         void ShowInfo(string message);
     }

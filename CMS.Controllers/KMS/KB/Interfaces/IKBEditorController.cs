@@ -50,6 +50,9 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         // ── DataGridView Access for Article Links ────────────────────────────────
         System.Windows.Forms.DataGridView GetRelatedDataGridView();
 
+        // ── DataGridView Access for Attachments ──────────────────────────────
+        System.Windows.Forms.DataGridView GetAttachLinkedDataGridView();
+
         // ── DataGridView Access for Workflows ────────────────────────────────
         System.Windows.Forms.DataGridView GetWorkflowLinkedDataGridView();
         System.Windows.Forms.DataGridView GetWorkflowSearchDataGridView();

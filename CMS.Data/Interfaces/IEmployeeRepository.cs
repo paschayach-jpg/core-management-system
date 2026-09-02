@@ -8,5 +8,6 @@ namespace CMS.Data.Interfaces
     public interface IEmployeeRepository
     {
         DataTable GetActiveEmployees();
+        DataTable GetActiveADUsers();
     }
 }

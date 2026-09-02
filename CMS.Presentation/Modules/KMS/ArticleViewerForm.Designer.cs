@@ -50,6 +50,7 @@ namespace CMS.Presentation.Modules.KMS
             this.colAttachName = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colAttachSize = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colAttachDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colAttachView = new System.Windows.Forms.DataGridViewButtonColumn();
             this.lblAttachLinked = new System.Windows.Forms.Label();
             this.tabRelated = new System.Windows.Forms.TabPage();
             this.dgvRelatedLinked = new System.Windows.Forms.DataGridView();
@@ -577,7 +578,8 @@ namespace CMS.Presentation.Modules.KMS
             this.colAttachNum,
             this.colAttachName,
             this.colAttachSize,
-            this.colAttachDate});
+            this.colAttachDate,
+            this.colAttachView});
             this.dgvAttachLinked.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvAttachLinked.Location = new System.Drawing.Point(4, 28);
             this.dgvAttachLinked.Name = "dgvAttachLinked";
@@ -588,6 +590,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvAttachLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvAttachLinked.Size = new System.Drawing.Size(680, 490);
             this.dgvAttachLinked.TabIndex = 1;
+            this.dgvAttachLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvAttachLinked_CellContentClick);
             // 
             // colAttachNum
             // 
@@ -620,6 +623,15 @@ namespace CMS.Presentation.Modules.KMS
             this.colAttachDate.Name = "colAttachDate";
             this.colAttachDate.ReadOnly = true;
             this.colAttachDate.Width = 110;
+            // 
+            // colAttachView
+            // 
+            this.colAttachView.HeaderText = "ดูไฟล์";
+            this.colAttachView.MinimumWidth = 6;
+            this.colAttachView.Name = "colAttachView";
+            this.colAttachView.Text = "👁️ ดู";
+            this.colAttachView.UseColumnTextForButtonValue = true;
+            this.colAttachView.Width = 80;
             // 
             // lblAttachLinked
             // 
@@ -1205,6 +1217,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.DataGridViewTextBoxColumn colAttachName;
         private System.Windows.Forms.DataGridViewTextBoxColumn colAttachSize;
         private System.Windows.Forms.DataGridViewTextBoxColumn colAttachDate;
+        private System.Windows.Forms.DataGridViewButtonColumn colAttachView;
         private System.Windows.Forms.Label            lblAttachLinked;
         // Related tab
         private System.Windows.Forms.DataGridView     dgvRelatedLinked;

@@ -23,7 +23,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
             string sql = @"
-                SELECT i_member_id, n_member_name, c_role, department_code
+                SELECT i_member_id, n_member_name, c_role, department_code, c_member_type
                 FROM RGP.t_project_member
                 WHERE i_project_id = @pid
                 ORDER BY i_member_id";
@@ -44,13 +44,14 @@ using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("Connec
             {
                 conn.Open();
             string sql = @"
-                INSERT INTO RGP.t_project_member (i_project_id, n_member_name, c_role, department_code, i_create_user, d_create_date)
-                VALUES (@pid, @name, @role, @dept, @user, GETDATE())";            using (SqlCommand cmd = new SqlCommand(sql, conn))
+                INSERT INTO RGP.t_project_member (i_project_id, n_member_name, c_role, department_code, c_member_type, i_create_user, d_create_date)
+                VALUES (@pid, @name, @role, @dept, @type, @user, GETDATE())";            using (SqlCommand cmd = new SqlCommand(sql, conn))
             {
                 cmd.Parameters.AddWithValue("@pid",  m.i_project_id);
                 cmd.Parameters.AddWithValue("@name", m.n_member_name);
                 cmd.Parameters.AddWithValue("@role", m.c_role);
                 cmd.Parameters.AddWithValue("@dept", (object)m.c_department_code ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@type", (object)m.c_member_type ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@user", m.i_create_user);
                 rows = cmd.ExecuteNonQuery();
             }

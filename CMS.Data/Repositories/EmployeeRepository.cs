@@ -35,5 +35,25 @@ namespace CMS.Data.Repositories
             }
             return dt;
         }
+
+        /// <summary>ดึงรายชื่อ AD username ของพนักงานที่ยังทำงานอยู่ จาก CMS_DB.EMS.m_Employee</summary>
+        public DataTable GetActiveADUsers()
+        {
+            DataTable dt = new DataTable();
+            using (SqlConnection conn = new SqlConnection(_configManager.Get<string>("ConnectionString")))
+            {
+                conn.Open();
+            string sql = @"
+                SELECT ADUserName
+                FROM EMS.m_Employee
+                WHERE IsActive = 1 AND ISNULL(IsAnonymized, 0) = 0
+                  AND ADUserName IS NOT NULL AND ADUserName <> ''
+                ORDER BY ADUserName";
+            using (var cmd = new SqlCommand(sql, conn))
+            using (var r = cmd.ExecuteReader())
+                dt.Load(r);
+            }
+            return dt;
+        }
     }
 }

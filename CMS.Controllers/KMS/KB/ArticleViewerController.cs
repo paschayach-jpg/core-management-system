@@ -38,6 +38,7 @@ namespace CMS.Controllers.KMS.KB
             _view.PopulateArticle(_article);
             LoadVersionHistory();
             LoadRelatedArticles(_article.ArticleID);
+            LoadAttachments(_article.ArticleID);
         }
 
         /// <summary>Re-fetch article from DB and refresh the view after an edit.</summary>
@@ -53,6 +54,7 @@ namespace CMS.Controllers.KMS.KB
                     _view.PopulateArticle(_article);
                     LoadVersionHistory();
                     LoadRelatedArticles(_article.ArticleID);
+                    LoadAttachments(_article.ArticleID);
                 }
             }
             catch (Exception ex)
@@ -108,6 +110,16 @@ namespace CMS.Controllers.KMS.KB
                     article.CurrentVersion = latest;
             }
             catch { /* non-critical — keep whatever CurrentVersion was already set */ }
+        }
+
+        private void LoadAttachments(int articleId)
+        {
+            try
+            {
+                var files = _articleService.GetArticleAttachmentFiles(articleId);
+                _view.BindAttachments(files);
+            }
+            catch { _view.BindAttachments(new List<FileDocument>()); }
         }
     }
 }

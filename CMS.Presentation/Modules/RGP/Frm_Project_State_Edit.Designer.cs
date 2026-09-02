@@ -41,6 +41,7 @@
             this.btnAddStateMember = new System.Windows.Forms.Button();
             this.btnDeleteStateMember = new System.Windows.Forms.Button();
             this.btnViewTasks = new System.Windows.Forms.Button();
+            this.btnNotifyMember = new System.Windows.Forms.Button();
             this.dgvStateMembers = new System.Windows.Forms.DataGridView();
             this.pnlHeader.SuspendLayout();
             this.pnlBody.SuspendLayout();
@@ -332,6 +333,7 @@
             this.btnNewRefProject.TabIndex = 3;
             this.btnNewRefProject.Text = "+ สร้างใหม่";
             this.btnNewRefProject.UseVisualStyleBackColor = false;
+            this.btnNewRefProject.Visible = false;
             this.btnNewRefProject.Click += new System.EventHandler(this.btnNewRefProject_Click);
             // 
             // pnlButtons
@@ -412,6 +414,7 @@
             this.pnlMemberToolbar.Controls.Add(this.btnAddStateMember);
             this.pnlMemberToolbar.Controls.Add(this.btnDeleteStateMember);
             this.pnlMemberToolbar.Controls.Add(this.btnViewTasks);
+            this.pnlMemberToolbar.Controls.Add(this.btnNotifyMember);
             this.pnlMemberToolbar.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlMemberToolbar.Location = new System.Drawing.Point(0, 0);
             this.pnlMemberToolbar.Name = "pnlMemberToolbar";
@@ -465,6 +468,22 @@
             this.btnViewTasks.UseVisualStyleBackColor = false;
             this.btnViewTasks.Visible = false;
             this.btnViewTasks.Click += new System.EventHandler(this.btnViewTasks_Click);
+            // 
+            // btnNotifyMember
+            // 
+            this.btnNotifyMember.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(130)))), ((int)(((byte)(120)))));
+            this.btnNotifyMember.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnNotifyMember.FlatAppearance.BorderSize = 0;
+            this.btnNotifyMember.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnNotifyMember.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnNotifyMember.ForeColor = System.Drawing.Color.White;
+            this.btnNotifyMember.Location = new System.Drawing.Point(274, 2);
+            this.btnNotifyMember.Name = "btnNotifyMember";
+            this.btnNotifyMember.Size = new System.Drawing.Size(110, 26);
+            this.btnNotifyMember.TabIndex = 3;
+            this.btnNotifyMember.Text = "🔔 Notify";
+            this.btnNotifyMember.UseVisualStyleBackColor = false;
+            this.btnNotifyMember.Click += new System.EventHandler(this.btnNotifyMember_Click);
             // 
             // dgvStateMembers
             // 
@@ -538,6 +557,7 @@
         private System.Windows.Forms.Button            btnAddStateMember;
         private System.Windows.Forms.Button            btnDeleteStateMember;
         private System.Windows.Forms.Button            btnViewTasks;
+        private System.Windows.Forms.Button            btnNotifyMember;
         private System.Windows.Forms.DataGridView      dgvStateMembers;
         private System.Windows.Forms.Button            btnCancel;
     }

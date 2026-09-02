@@ -27,6 +27,8 @@ namespace CMS.Controllers.RGP
         private static IProjectMemberRepository _memberRepo;
         private static IProjectMemberRoleRepository _memberRoleRepo;
         private static IProjectStateMemberRepository _stateMemberRepo;
+        private static IProjectNotifyLogRepository _notifyLogRepo;
+        private static IProjectTaskStatusLogRepository _taskStatusLogRepo;
         private static IProjectTemplateRepository _templateRepo;
         private static ITemplateDocRepository _templateDocRepo;
         private static IEmployeeRepository _employeeRepo;
@@ -103,7 +105,8 @@ namespace CMS.Controllers.RGP
                     var cm = ConfigManager;
                     var auditService = new ProjectAuditService(new ProjectAuditRepository(cm));
                     _taskService = new ProjectTaskService(
-                        new ProjectTaskRepository(cm), StateRepoInternal(cm), ProgressService, auditService);
+                        new ProjectTaskRepository(cm), StateRepoInternal(cm), ProgressService, auditService,
+                        TaskStatusLogRepository);
                     return _taskService;
                 }
             }
@@ -136,6 +139,16 @@ namespace CMS.Controllers.RGP
         public static IProjectStateMemberRepository StateMemberRepository
         {
             get { lock (_lock) { return _stateMemberRepo ?? (_stateMemberRepo = StateMemberRepoInternal(ConfigManager)); } }
+        }
+
+        public static IProjectNotifyLogRepository NotifyLogRepository
+        {
+            get { lock (_lock) { return _notifyLogRepo ?? (_notifyLogRepo = new ProjectNotifyLogRepository(ConfigManager)); } }
+        }
+
+        public static IProjectTaskStatusLogRepository TaskStatusLogRepository
+        {
+            get { lock (_lock) { return _taskStatusLogRepo ?? (_taskStatusLogRepo = new ProjectTaskStatusLogRepository(ConfigManager)); } }
         }
 
         public static IProjectTemplateRepository TemplateRepository

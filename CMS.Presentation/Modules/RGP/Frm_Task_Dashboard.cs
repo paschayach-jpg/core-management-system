@@ -44,7 +44,7 @@ namespace CMS.Presentation.Modules.RGP
             ("InProgress", "กำลังทำ",      Color.FromArgb(255, 165, 0)),
             ("InReview",   "รอตรวจสอบ",    Color.FromArgb(111, 66, 193)),
             ("Done",       "เสร็จแล้ว",     Color.FromArgb(40, 167, 69)),
-            ("Cancelled",  "ยกเลิก",        Color.FromArgb(220, 53, 69)),
+            ("OnHold",     "On Hold",       Color.FromArgb(158, 158, 158)),
         };
 
         // ── Data state ──────────────────────────────────────────────────────────
@@ -74,6 +74,7 @@ namespace CMS.Presentation.Modules.RGP
         private Button         _btnDetSave, _btnDetEdit, _btnDetAddSub;
         private int            _detTaskId   = -1;
         private int            _detDepth    = 0;
+        private bool           _detCanEdit  = false;
 
         // ── Constructor ─────────────────────────────────────────────────────────
         public Frm_Task_Dashboard()
@@ -482,9 +483,9 @@ namespace CMS.Presentation.Modules.RGP
                     case "InReview":
                         e.CellStyle.BackColor = Color.FromArgb(220, 208, 255); e.CellStyle.ForeColor = Color.FromArgb(68, 0, 153);
                         e.Value = "รอตรวจ"; e.FormattingApplied = true; break;
-                    case "Cancelled":
-                        e.CellStyle.BackColor = Color.FromArgb(255, 199, 206); e.CellStyle.ForeColor = Color.FromArgb(156, 0, 6);
-                        e.Value = "ยกเลิก"; e.FormattingApplied = true; break;
+                    case "OnHold":
+                        e.CellStyle.BackColor = Color.FromArgb(230, 230, 230); e.CellStyle.ForeColor = Color.FromArgb(90, 90, 90);
+                        e.Value = "On Hold"; e.FormattingApplied = true; break;
                     default:
                         e.CellStyle.BackColor = Color.FromArgb(215, 228, 248); e.CellStyle.ForeColor = Color.FromArgb(30, 58, 95);
                         e.Value = "รอทำ"; e.FormattingApplied = true; break;
@@ -912,7 +913,7 @@ namespace CMS.Presentation.Modules.RGP
                 case "Done":       badgeBg = Color.FromArgb(40, 167, 69);   badgeText = "เสร็จ";   break;
                 case "InProgress": badgeBg = Color.FromArgb(255, 165, 0);   badgeText = "กำลังทำ"; break;
                 case "InReview":   badgeBg = Color.FromArgb(111, 66, 193);  badgeText = "รอตรวจ";  break;
-                case "Cancelled":  badgeBg = Color.FromArgb(220, 53, 69);   badgeText = "ยกเลิก";  break;
+                case "OnHold":     badgeBg = Color.FromArgb(158, 158, 158); badgeText = "On Hold"; break;
                 default:           badgeBg = Color.FromArgb(108, 117, 125); badgeText = "รอทำ";    break;
             }
 
@@ -1065,7 +1066,8 @@ namespace CMS.Presentation.Modules.RGP
             // Status
             scroll.Controls.Add(MakeLabel("สถานะ:", 0, y, 100));
             _detStatus = new ComboBox { Location = new Point(104, y - 2), Size = new Size(200, 24), DropDownStyle = ComboBoxStyle.DropDownList, Font = new Font("Segoe UI", 9F) };
-            _detStatus.Items.AddRange(new object[] { "Todo", "InProgress", "InReview", "Done", "Cancelled" });
+            _detStatus.Items.AddRange(new object[] { "Todo", "InProgress", "InReview", "Done", "OnHold" });
+            _detStatus.SelectedIndexChanged += DetStatus_SelectedIndexChanged;
             scroll.Controls.Add(_detStatus);
             y += 32;
 
@@ -1224,7 +1226,8 @@ namespace CMS.Presentation.Modules.RGP
             _detStateLbl.Text = state + "  |  ผู้รับผิดชอบ: " + asgn;
 
             // Status
-            int statusIdx = Array.IndexOf(new[] { "Todo","InProgress","InReview","Done","Cancelled" }, status);
+            _detCanEdit = canEdit;
+            int statusIdx = Array.IndexOf(new[] { "Todo","InProgress","InReview","Done","OnHold" }, status);
             _detStatus.SelectedIndex = statusIdx >= 0 ? statusIdx : 0;
             _detStatus.Enabled = canEdit;
 
@@ -1235,7 +1238,7 @@ namespace CMS.Presentation.Modules.RGP
             // % complete
             _detPctBar.Value = Math.Max(0, Math.Min(100, pct));
             _detPctLbl.Text  = pct + "%";
-            _detPctBar.Enabled = canEdit;
+            _detPctBar.Enabled = canEdit && status != "OnHold";
 
             // Due date
             if (fullRow["d_due_date"] != DBNull.Value)
@@ -1308,13 +1311,20 @@ namespace CMS.Presentation.Modules.RGP
             }
         }
 
+        private void DetStatus_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // On Hold: แช่แข็ง % ไว้ที่ค่าเดิม ห้ามแก้ไขขณะอยู่สถานะนี้
+            bool isOnHold = _detStatus.SelectedIndex >= 0 && _detStatus.Items[_detStatus.SelectedIndex].ToString() == "OnHold";
+            _detPctBar.Enabled = _detCanEdit && !isOnHold;
+        }
+
         private void BtnDetSave_Click(object sender, EventArgs e)
         {
             if (_detTaskId < 0) return;
             var r = _allRows.FirstOrDefault(x => Convert.ToInt32(x["i_task_id"]) == _detTaskId);
             if (r == null) return;
 
-            string[] statusValues = { "Todo","InProgress","InReview","Done","Cancelled" };
+            string[] statusValues = { "Todo","InProgress","InReview","Done","OnHold" };
             string newStatus = statusValues[Math.Max(0, _detStatus.SelectedIndex)];
             int    newPrio   = _detPriority.SelectedIndex + 1;
             int    newPct    = _detPctBar.Value;
