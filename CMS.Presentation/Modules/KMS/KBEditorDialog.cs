@@ -19,7 +19,7 @@ namespace CMS.Presentation.Modules.KMS
     /// Layout: General Info, Content Editor, Mapping Tabs (Attachments, Related, Workflow, Programs, Docs, Versions)
     /// Supports: Create / Edit / Send Review / Publish / Archive + Version History
     /// </summary>
-    public partial class KBEditorDialog : Form, IKBEditorController
+    public partial class KBEditorDialog : Form, IKBEditorController, IMessageFilter
     {
         public event EventHandler BackRequested;
 
@@ -85,6 +85,12 @@ namespace CMS.Presentation.Modules.KMS
 
             InitWebEditor();
             tsRteZoom.Text = _zoomPct + "%"; // default 100%
+
+            // Intercept Ctrl+MouseWheel before the hosted browser can zoom itself.
+            // Message filters are application-wide, so it is removed again on dispose —
+            // this dialog is used both modally and embedded in KBMainForm's panel.
+            Application.AddMessageFilter(this);
+            Disposed += (s, ev) => Application.RemoveMessageFilter(this);
             InitTypeCombo();
             InitCrafCombo();
             
@@ -368,6 +374,11 @@ namespace CMS.Presentation.Modules.KMS
         private int    _mappingExpandedWidth   = 529;
         private bool   _syncingToolbar = false;
         private bool   _applyingFormat = false;
+        // C# is the single source of truth for the zoom level. Both ways of changing it —
+        // the toolbar, and Ctrl+MouseWheel via PreFilterMessage — go through SetZoom and are
+        // clamped to these bounds, so tsRteZoom can never drift out of sync with the page.
+        private const int ZoomMinPct = 50;
+        private const int ZoomMaxPct = 200;
         private int    _zoomPct        = 100;
         private static readonly int[] _zoomLevels = { 50, 75, 100, 125, 150, 175, 200 };
         private bool   _savedSuccessfully = false;
@@ -1333,26 +1344,74 @@ namespace CMS.Presentation.Modules.KMS
         private void ApplyZoomFromText()
         {
             string s = tsRteZoom.Text.Replace("%", "").Trim();
-            if (int.TryParse(s, out int pct) && pct >= 10 && pct <= 500)
+            if (int.TryParse(s, out int pct) && pct >= ZoomMinPct && pct <= ZoomMaxPct)
                 SetZoom(pct);
             else
             {
                 // Reset display to the last valid zoom
-                _syncingToolbar = true;
-                tsRteZoom.Text = _zoomPct + "%";
-                _syncingToolbar = false;
+                ShowZoomInToolbar(_zoomPct);
             }
         }
 
         private void SetZoom(int pct)
         {
+            SetZoom(pct, true);
+        }
+
+        private void SetZoom(int pct, bool focusEditor)
+        {
+            if (pct < ZoomMinPct) pct = ZoomMinPct;
+            if (pct > ZoomMaxPct) pct = ZoomMaxPct;
+
             _zoomPct = pct;
             if (_editorReady && webEditor.Document != null)
-                webEditor.Document.InvokeScript("setZoomPct", new object[] { pct });
+            {
+                try { webEditor.Document.InvokeScript("setZoomPct", new object[] { pct }); }
+                catch { }
+            }
+            ShowZoomInToolbar(pct);
+            if (focusEditor) webEditor.Focus();
+        }
+
+        private void ShowZoomInToolbar(int pct)
+        {
             _syncingToolbar = true;
             tsRteZoom.Text = pct + "%";
             _syncingToolbar = false;
-            webEditor.Focus();
+        }
+
+        // ── Ctrl+MouseWheel zoom ──────────────────────────────────────────────────
+        // The classic WebBrowser has no ZoomFactor property and raises no zoom event, and
+        // IE's own Ctrl+wheel optical zoom happens inside the control where neither the DOM
+        // nor WinForms can observe it — which is why tsRteZoom never followed along. So the
+        // wheel message is intercepted here before the control sees it: we apply the zoom
+        // ourselves (CSS zoom, via setZoomPct) and consume the message, so IE's optical zoom
+        // never fires and cannot compound with ours.
+
+        private const int WM_MOUSEWHEEL = 0x020A;
+
+        bool IMessageFilter.PreFilterMessage(ref Message m)
+        {
+            if (m.Msg != WM_MOUSEWHEEL) return false;
+            if ((ModifierKeys & Keys.Control) != Keys.Control) return false;
+
+            try
+            {
+                if (!_editorReady || webEditor.Document == null) return false;
+                if (!WebEditorContentHasFocus()) return false;
+
+                int delta = (short)((m.WParam.ToInt64() >> 16) & 0xFFFF);
+                if (delta == 0) return false;
+
+                int notches = delta / 120;
+                if (notches == 0) notches = delta > 0 ? 1 : -1;
+
+                SetZoom(_zoomPct + (notches * 10), false);
+            }
+            catch { }
+
+            // Always consume: the editor is zoomed by us, never by IE.
+            return true;
         }
 
         private static string GetEditorHtml()
