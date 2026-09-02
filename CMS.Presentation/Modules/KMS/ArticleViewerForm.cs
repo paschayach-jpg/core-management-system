@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using Microsoft.Web.WebView2.Core;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Domain.Models;
@@ -26,7 +25,6 @@ namespace CMS.Presentation.Modules.KMS
         private IEnumerable<FileDocument>     _attachments = new List<FileDocument>();
         private bool                          _webContentReady = false;
         private string                        _pendingHtml     = string.Empty;
-        private Timer                         _zoomHideTimer;
         private IFileBrowseController         _fileBrowseController;
         private UserContext                   _user;
 
@@ -73,9 +71,7 @@ namespace CMS.Presentation.Modules.KMS
                 Close();
                 return;
             }
-            _zoomHideTimer = new Timer { Interval = 1500 };
-            _zoomHideTimer.Tick += (s, ev) => { _zoomHideTimer.Stop(); pnlZoomStatus.Visible = false; };
-            InitWebViewAsync();
+            InitWebView();
             AdjustSplitter();
             splitViewer.Resize += (s, ev) => AdjustSplitter();
             _presenter.Initialize();
@@ -149,8 +145,8 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnPrint_Click(object sender, EventArgs e)
         {
-            if (!_webContentReady) return;
-            _ = webContent.ExecuteScriptAsync("window.print()");
+            if (!_webContentReady || webContent.Document == null) return;
+            webContent.ShowPrintDialog();
         }
 
         private void BtnExportPdf_Click(object sender, EventArgs e)
@@ -193,48 +189,28 @@ namespace CMS.Presentation.Modules.KMS
                 ArticleOpenRequested(this, article);
         }
 
-        // ── WebView2 initialisation ──────────────────────────────────────────
+        // ── WebBrowser initialisation ────────────────────────────────────────
 
-        private async void InitWebViewAsync()
+        // The classic WebBrowser control needs no async bootstrap and no runtime install,
+        // so the view is ready immediately; content arrives via DocumentText in LoadContent().
+        private void InitWebView()
         {
-            try
-            {
-                await webContent.EnsureCoreWebView2Async(null);
-
-                webContent.CoreWebView2.Settings.AreDevToolsEnabled            = false;
-                webContent.CoreWebView2.Settings.IsStatusBarEnabled            = false;
-                webContent.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-
-                // Open http/https links in the system browser
-                webContent.CoreWebView2.NavigationStarting += (s, ev) =>
-                {
-                    if (ev.Uri.StartsWith("http://") || ev.Uri.StartsWith("https://"))
-                    {
-                        ev.Cancel = true;
-                        try { System.Diagnostics.Process.Start(ev.Uri); }
-                        catch (Exception ex) { ShowError("ไม่สามารถเปิดลิงก์ได้:\n" + ex.Message); }
-                    }
-                };
-
-                _webContentReady = true;
-                if (!string.IsNullOrEmpty(_pendingHtml))
-                    webContent.NavigateToString(_pendingHtml);
-            }
-            catch (Exception ex)
-            {
-                ShowError("ไม่สามารถเริ่มต้น WebView2 ได้:\n" + ex.Message);
-            }
+            _webContentReady = true;
+            if (!string.IsNullOrEmpty(_pendingHtml))
+                webContent.DocumentText = _pendingHtml;
         }
 
-        // ── Zoom indicator ───────────────────────────────────────────────────
-
-        private void WebContent_ZoomFactorChanged(object sender, EventArgs e)
+        // Open http/https links in the system browser instead of navigating inside the viewer.
+        // Assigning DocumentText navigates to about:blank, which the scheme check exempts.
+        private void WebContent_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
-            int pct = (int)Math.Round(webContent.ZoomFactor * 100);
-            lblZoomIndicator.Text = "🔍 " + pct + "%";
-            pnlZoomStatus.Visible = true;
-            _zoomHideTimer.Stop();
-            _zoomHideTimer.Start();
+            if (e.Url == null) return;
+            if (e.Url.Scheme == Uri.UriSchemeHttp || e.Url.Scheme == Uri.UriSchemeHttps)
+            {
+                e.Cancel = true;
+                try { System.Diagnostics.Process.Start(e.Url.ToString()); }
+                catch (Exception ex) { ShowError("ไม่สามารถเปิดลิงก์ได้:\n" + ex.Message); }
+            }
         }
 
         // ── Tab populate methods (data binding only) ─────────────────────────
@@ -392,10 +368,23 @@ namespace CMS.Presentation.Modules.KMS
                 "td,th{border:1px solid #ddd;padding:6px 10px;text-align:left}" +
                 "th{background:#2E74B5;color:#fff}" +
                 "a{color:#2E74B5}" +
-                "</style></head><body>" + body + "</body></html>";
+                "</style>" +
+                // Ctrl+MouseWheel zoom. WebView2 provided this natively; the classic control
+                // does not, so it is done here with IE's proprietary CSS `zoom` (legacy event
+                // model — addEventListener does not exist in the default IE7 document mode).
+                "<script type='text/javascript'>" +
+                "var _zoomPct=100;" +
+                "document.onmousewheel=function(){" +
+                "var ev=window.event;if(!ev||!ev.ctrlKey)return;" +
+                "_zoomPct+=(ev.wheelDelta>0?10:-10);" +
+                "if(_zoomPct<50)_zoomPct=50;if(_zoomPct>300)_zoomPct=300;" +
+                "try{document.body.style.zoom=_zoomPct+'%';}catch(e){}" +
+                "ev.returnValue=false;return false;};" +
+                "</script>" +
+                "</head><body>" + body + "</body></html>";
 
             if (_webContentReady)
-                webContent.NavigateToString(html);
+                webContent.DocumentText = html;
             else
                 _pendingHtml = html;
         }
