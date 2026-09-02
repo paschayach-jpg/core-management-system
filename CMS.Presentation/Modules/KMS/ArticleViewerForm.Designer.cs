@@ -25,7 +25,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
             this.splitViewer = new System.Windows.Forms.SplitContainer();
-            this.webContent = new Microsoft.Web.WebView2.WinForms.WebView2();
+            this.webContent = new System.Windows.Forms.WebBrowser();
             this.pnlZoomStatus = new System.Windows.Forms.Panel();
             this.lblZoomIndicator = new System.Windows.Forms.Label();
             this.pnlInfoWrapper = new System.Windows.Forms.Panel();
@@ -308,15 +308,15 @@ namespace CMS.Presentation.Modules.KMS
             //
             // webContent
             //
-            ((System.ComponentModel.ISupportInitialize)(this.webContent)).BeginInit();
+            this.webContent.AllowWebBrowserDrop = false;
             this.webContent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.webContent.IsWebBrowserContextMenuEnabled = false;
             this.webContent.Location = new System.Drawing.Point(0, 106);
             this.webContent.Name = "webContent";
+            this.webContent.ScriptErrorsSuppressed = true;
             this.webContent.Size = new System.Drawing.Size(400, 463);
             this.webContent.TabIndex = 1;
-            this.webContent.ZoomFactor = 1D;
-            this.webContent.ZoomFactorChanged += new System.EventHandler<System.EventArgs>(this.WebContent_ZoomFactorChanged);
-            ((System.ComponentModel.ISupportInitialize)(this.webContent)).EndInit();
+            this.webContent.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.WebContent_Navigating);
             //
             // pnlZoomStatus — overlay indicator at the bottom of webContent
             //
@@ -1194,7 +1194,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label            lblPublishVal;
         private System.Windows.Forms.Label            lblConfidential;
         private System.Windows.Forms.Label            lblReviewDueVal;
-        private Microsoft.Web.WebView2.WinForms.WebView2 webContent;
+        private System.Windows.Forms.WebBrowser       webContent;
         private System.Windows.Forms.Panel            pnlZoomStatus;
         private System.Windows.Forms.Label            lblZoomIndicator;
         private System.Windows.Forms.Panel            pnlSidebar;

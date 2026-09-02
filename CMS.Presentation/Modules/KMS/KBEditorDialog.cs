@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using Microsoft.Web.WebView2.Core;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
 using CMS.Controllers.DMS.Document.Interfaces;
@@ -84,7 +83,7 @@ namespace CMS.Presentation.Modules.KMS
             // splitMain always match pnlScroll's client area — no overflow, no jump.
             splitMain.Dock = DockStyle.Fill;
 
-            InitWebEditorAsync();
+            InitWebEditor();
             tsRteZoom.Text = _zoomPct + "%"; // default 100%
             InitTypeCombo();
             InitCrafCombo();
@@ -364,8 +363,6 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         private string _pendingHtml   = string.Empty;
-        private string _cachedHtml    = string.Empty;
-        private string _cachedState   = string.Empty;
         private bool   _editorReady   = false;
         private int    _genInfoExpandedHeight  = 220;
         private int    _mappingExpandedWidth   = 529;
@@ -378,25 +375,53 @@ namespace CMS.Presentation.Modules.KMS
 
         public string ContentHTML
         {
-            get { return _editorReady ? _cachedHtml : _pendingHtml; }
+            get
+            {
+                if (!_editorReady || webEditor.Document == null || webEditor.Document.Body == null)
+                    return _pendingHtml;
+                return webEditor.Document.Body.InnerHtml ?? string.Empty;
+            }
             set
             {
-                _pendingHtml = value ?? string.Empty;
-                if (_editorReady)
-                {
-                    string escaped = Newtonsoft.Json.JsonConvert.SerializeObject(_pendingHtml);
-                    _ = webEditor.ExecuteScriptAsync("document.body.innerHTML=" + escaped + ";notifyHtml();");
-                }
+                _pendingHtml = NormalizeLegacyEditorHtml(value ?? string.Empty);
+                if (_editorReady && webEditor.Document != null && webEditor.Document.Body != null)
+                    webEditor.Document.Body.InnerHtml = _pendingHtml;
             }
+        }
+
+        // Tab markers used to be a <span data-kms-tab contenteditable="false"> element.
+        // MSHTML treats any non-editable element inside an editable body as an embedded
+        // "control" and draws a hatched border with resize handles around it, so markers
+        // saved by those builds surface as stray boxes in the middle of the text.
+        // Convert them back to the plain &nbsp; run this editor now uses, and strip any
+        // other contenteditable="false" left in stored content for the same reason.
+        // Normalising on load means the next Save persists the cleaned-up HTML.
+        private static readonly System.Text.RegularExpressions.Regex _legacyTabSpanRx =
+            new System.Text.RegularExpressions.Regex(
+                @"<span[^>]*\bdata-kms-tab\b[^>]*>.*?</span>",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+                System.Text.RegularExpressions.RegexOptions.Singleline);
+
+        private static readonly System.Text.RegularExpressions.Regex _ceFalseAttrRx =
+            new System.Text.RegularExpressions.Regex(
+                @"\s*contenteditable\s*=\s*([""']?)false\1",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        private static string NormalizeLegacyEditorHtml(string html)
+        {
+            if (string.IsNullOrEmpty(html)) return html;
+            html = _legacyTabSpanRx.Replace(html, "&nbsp;&nbsp;&nbsp;&nbsp;");
+            html = _ceFalseAttrRx.Replace(html, string.Empty);
+            return html;
         }
 
         private string ContentText
         {
             get
             {
-                if (!_editorReady || string.IsNullOrEmpty(_cachedHtml)) return _pendingHtml;
-                return System.Text.RegularExpressions.Regex
-                    .Replace(_cachedHtml, @"<[^>]+>", "").Replace("&nbsp;", " ").Trim();
+                if (!_editorReady || webEditor.Document == null || webEditor.Document.Body == null)
+                    return _pendingHtml;
+                return webEditor.Document.Body.InnerText ?? string.Empty;
             }
         }
 
@@ -755,80 +780,105 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        // ── WebView2 Initialisation ──────────────────────────────────────────────
+        // ── WebBrowser Initialisation ─────────────────────────────────────────────
 
-        private async void InitWebEditorAsync()
+        private void InitWebEditor()
         {
-            try
-            {
-                await webEditor.EnsureCoreWebView2Async(null);
-
-                webEditor.CoreWebView2.Settings.AreDevToolsEnabled         = false;
-                webEditor.CoreWebView2.Settings.IsStatusBarEnabled         = false;
-                webEditor.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-
-                // Open http/https links in the system browser; cancel navigation inside the editor.
-                webEditor.CoreWebView2.NavigationStarting += (s, ev) =>
-                {
-                    if (ev.Uri.StartsWith("http://") || ev.Uri.StartsWith("https://"))
-                    {
-                        ev.Cancel = true;
-                        try { System.Diagnostics.Process.Start(ev.Uri); }
-                        catch (Exception ex) { ShowError("ไม่สามารถเปิดลิงก์ได้:\n" + ex.Message); }
-                    }
-                };
-
-                // JS → C# messaging: state and html updates pushed by notifyState()/notifyHtml()
-                webEditor.CoreWebView2.WebMessageReceived += WebEditor_WebMessageReceived;
-
-                webEditor.CoreWebView2.NavigationCompleted += WebEditor_NavigationCompleted;
-
-                // Sync zoom display when user uses Ctrl+scroll inside WebView2
-                webEditor.ZoomFactorChanged += WebEditor_ZoomFactorChanged;
-
-                webEditor.NavigateToString(GetEditorHtml());
-            }
-            catch (Exception ex)
-            {
-                ShowError("ไม่สามารถเริ่มต้น WebView2 ได้:\n" + ex.Message);
-            }
+            webEditor.DocumentText = GetEditorHtml();
         }
 
-        private void WebEditor_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
+        private void WebEditor_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
             if (_editorReady) return;
+            if (webEditor.Document == null || webEditor.Document.Body == null) return;
             _editorReady = true;
 
             // Inject pending HTML if the presenter already called ContentHTML = "..." before init finished
             if (!string.IsNullOrEmpty(_pendingHtml))
-            {
-                string escaped = Newtonsoft.Json.JsonConvert.SerializeObject(_pendingHtml);
-                _ = webEditor.ExecuteScriptAsync("document.body.innerHTML=" + escaped + ";notifyHtml();");
-            }
-            else
-            {
-                _ = webEditor.ExecuteScriptAsync("notifyChange();");
-            }
+                webEditor.Document.Body.InnerHtml = _pendingHtml;
+            _originalContentHtml = webEditor.Document.Body.InnerHtml ?? string.Empty;
+            UpdateEditorStatus();
+
+            // KeyUp fires after the browser updates the selection — giving accurate queryCommandState results.
+            // onselectionchange fires on any cursor movement (click, arrow keys, Shift+select, etc.)
+            webEditor.Document.Body.KeyUp += (s, ev) => { UpdateEditorStatus(); SyncToolbarState(); };
+            webEditor.Document.AttachEventHandler("onselectionchange", (s, ev) => SyncToolbarState());
+
+            // Attach link click handler to open links in external browser
+            webEditor.Document.Click += WebEditor_Document_Click;
+
+            SyncToolbarState(); // sync once immediately after load
         }
 
-        private void WebEditor_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+        private void WebEditor_Document_Click(object sender, HtmlElementEventArgs e)
         {
-            var msg = e.TryGetWebMessageAsString();
-            if (msg == null) return;
+            if (webEditor.Document == null) return;
 
-            if (msg.StartsWith("STATE:"))
+            var element = webEditor.Document.GetElementFromPoint(e.ClientMousePosition);
+            if (element == null) { SyncToolbarState(); return; }
+
+            // Check if clicked element or its parent is a link
+            while (element != null)
             {
-                _cachedState = msg.Substring(6);
-                SyncToolbarState();
+                if (element.TagName != null && element.TagName.ToUpper() == "A")
+                {
+                    string href = element.GetAttribute("href");
+                    if (!string.IsNullOrEmpty(href) && (href.StartsWith("http://") || href.StartsWith("https://")))
+                    {
+                        e.ReturnValue = false; // Prevent default navigation
+                        try { System.Diagnostics.Process.Start(href); }
+                        catch (Exception ex) { ShowError("ไม่สามารถเปิดลิงก์ได้:\n" + ex.Message); }
+                    }
+                    break;
+                }
+                element = element.Parent;
             }
-            else if (msg.StartsWith("HTML:"))
+
+            SyncToolbarState(); // update toolbar after cursor placement
+        }
+
+        // ── Tab key interception for webEditor ───────────────────────────────────
+        // Two independent paths capture Tab, and exactly one runs per keypress:
+        //   1. This ProcessCmdKey override — when WinForms pre-translates the key.
+        //      Returning true consumes the message, so MSHTML never sees the keydown.
+        //   2. document.onkeydown inside GetEditorHtml() — when the key goes straight
+        //      to MSHTML instead (e.g. the embedded TopLevel=false hosting path).
+        // Keep this body minimal: it runs inside keyboard pre-translation, where extra
+        // synchronous COM calls into MSHTML can throw and escape before `return true`,
+        // which silently un-consumes the key and lets IE fall back to moving focus.
+        // The status bar / toolbar are refreshed by the Document.Body.KeyUp handler.
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr GetFocus();
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool IsChild(IntPtr hWndParent, IntPtr hWnd);
+
+        private bool WebEditorContentHasFocus()
+        {
+            var hwnd = GetFocus();
+            return hwnd != IntPtr.Zero &&
+                   (hwnd == webEditor.Handle || IsChild(webEditor.Handle, hwnd));
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            const int WM_KEYDOWN = 0x0100;
+            if (msg.Msg == WM_KEYDOWN && WebEditorContentHasFocus() && _editorReady && webEditor.Document != null)
             {
-                bool isFirst = string.IsNullOrEmpty(_cachedHtml) && string.IsNullOrEmpty(_originalContentHtml);
-                _cachedHtml = msg.Substring(5);
-                if (isFirst)
-                    _originalContentHtml = _cachedHtml;
-                UpdateEditorStatus();
+                if (keyData == Keys.Tab)
+                {
+                    try { webEditor.Document.InvokeScript("kmsTabIndent"); } catch { }
+                    return true;
+                }
+                if (keyData == (Keys.Tab | Keys.Shift))
+                {
+                    try { webEditor.Document.InvokeScript("kmsTabOutdent"); } catch { }
+                    return true;
+                }
             }
+            return base.ProcessCmdKey(ref msg, keyData);
         }
 
         // ── RTE Toolbar Handlers ─────────────────────────────────────────────
@@ -999,13 +1049,13 @@ namespace CMS.Presentation.Modules.KMS
 
         private void SyncToolbarState()
         {
-            if (!_editorReady || string.IsNullOrEmpty(_cachedState)) return;
+            if (!_editorReady || webEditor.Document == null) return;
             if (_applyingFormat) return;
 
             try
             {
-                var raw = _cachedState;
-                if (!raw.Contains("|")) return;
+                var raw = webEditor.Document.InvokeScript("getRteState") as string;
+                if (string.IsNullOrEmpty(raw) || !raw.Contains("|")) return;
 
                 var parts    = raw.Split('|');
                 var f        = parts[0].PadRight(8, '0');
@@ -1059,26 +1109,29 @@ namespace CMS.Presentation.Modules.KMS
                 : Color.Empty;                    // default — inherited
         }
 
-        private void ExecCmd(string command, string value = null)
+        private void ExecCmd(string command, object value = null)
         {
-            if (!_editorReady) return;
-            string js = value == null
-                ? string.Format("document.execCommand('{0}',false,null);notifyChange();", command)
-                : string.Format("document.execCommand('{0}',false,{1});notifyChange();",
-                      command, Newtonsoft.Json.JsonConvert.SerializeObject(value));
-            _ = webEditor.ExecuteScriptAsync(js);
+            if (webEditor.Document == null) return;
+            webEditor.Document.ExecCommand(command, false, value);
             webEditor.Focus();
+            SyncToolbarState();
         }
 
         private void PasteHtmlAtCursor(string html)
         {
-            if (!_editorReady) return;
-            string escaped = Newtonsoft.Json.JsonConvert.SerializeObject(html);
-            _ = webEditor.ExecuteScriptAsync("pasteHtml(" + escaped + ");notifyChange();");
+            if (webEditor.Document == null) return;
+            webEditor.Document.InvokeScript("pasteHtml", new object[] { html });
             webEditor.Focus();
+            UpdateEditorStatus();
         }
 
-        private void TsRteBold_Click(object sender, EventArgs e)           { ExecCmd("bold"); }
+        private void TsRteBold_Click(object sender, EventArgs e)
+        {
+            if (!_editorReady || webEditor.Document == null) return;
+            webEditor.Document.InvokeScript("applyBold");
+            webEditor.Focus();
+            SyncToolbarState();
+        }
         private void TsRteItalic_Click(object sender, EventArgs e)       { ExecCmd("Italic"); }
         private void TsRteUnder_Click(object sender, EventArgs e)        { ExecCmd("Underline"); }
         private void TsRteAlignLeft_Click(object sender, EventArgs e)    { ExecCmd("JustifyLeft"); }
@@ -1202,25 +1255,22 @@ namespace CMS.Presentation.Modules.KMS
             if (_applyingFormat) return;
             ApplyFontSizePt(tsRteFontSize.Items[tsRteFontSize.SelectedIndex].ToString());
             webEditor.Focus();
+            SyncToolbarState();
         }
 
-        private void TsRteFontSizeInc_Click(object sender, EventArgs e) { _ = StepFontSizeAsync(+1); }
-        private void TsRteFontSizeDec_Click(object sender, EventArgs e) { _ = StepFontSizeAsync(-1); }
+        private void TsRteFontSizeInc_Click(object sender, EventArgs e) { StepFontSize(+1); }
+        private void TsRteFontSizeDec_Click(object sender, EventArgs e) { StepFontSize(-1); }
 
-        private async System.Threading.Tasks.Task StepFontSizeAsync(int direction)
+        private void StepFontSize(int direction)
         {
-            if (!_editorReady) return;
+            if (!_editorReady || webEditor.Document == null) return;
             if (_applyingFormat) return;
             _applyingFormat = true;
             try
             {
-                // Ask JS whether there is a text selection, then read current font size
-                var hasSel = await webEditor.ExecuteScriptAsync("hasTextSel()");
-                if (hasSel != "true") return;
+                if (!true.Equals(webEditor.Document.InvokeScript("hasTextSel"))) return;
 
-                // ExecuteScriptAsync returns a JSON string — strip surrounding quotes
-                var rawSz = await webEditor.ExecuteScriptAsync("getSelFontSizePt()");
-                var current = rawSz.Trim('"');
+                var current = webEditor.Document.InvokeScript("getSelFontSizePt") as string ?? string.Empty;
 
                 int currentIdx = -1;
                 for (int i = 0; i < tsRteFontSize.Items.Count; i++)
@@ -1235,28 +1285,17 @@ namespace CMS.Presentation.Modules.KMS
                 webEditor.Focus();
             }
             finally { _applyingFormat = false; }
+            SyncToolbarState();
         }
 
         private void ApplyFontSizePt(string pt)
         {
-            if (!_editorReady) return;
+            if (webEditor.Document == null) return;
             string markerId = "fsm" + Environment.TickCount.ToString();
-            string js = string.Format("applyFontSizePt({0},{1});notifyChange();",
-                Newtonsoft.Json.JsonConvert.SerializeObject(pt),
-                Newtonsoft.Json.JsonConvert.SerializeObject(markerId));
-            _ = webEditor.ExecuteScriptAsync(js);
+            webEditor.Document.InvokeScript("applyFontSizePt", new object[] { pt, markerId });
         }
 
         // ── Zoom controls ────────────────────────────────────────────────────────
-
-        private void WebEditor_ZoomFactorChanged(object sender, EventArgs e)
-        {
-            int pct = (int)Math.Round(webEditor.ZoomFactor * 100);
-            _zoomPct = pct;
-            _syncingToolbar = true;
-            tsRteZoom.Text = pct + "%";
-            _syncingToolbar = false;
-        }
 
         private void TsRteZoomOut_Click(object sender, EventArgs e)
         {
@@ -1308,7 +1347,8 @@ namespace CMS.Presentation.Modules.KMS
         private void SetZoom(int pct)
         {
             _zoomPct = pct;
-            webEditor.ZoomFactor = pct / 100.0;
+            if (_editorReady && webEditor.Document != null)
+                webEditor.Document.InvokeScript("setZoomPct", new object[] { pct });
             _syncingToolbar = true;
             tsRteZoom.Text = pct + "%";
             _syncingToolbar = false;
@@ -1317,9 +1357,14 @@ namespace CMS.Presentation.Modules.KMS
 
         private static string GetEditorHtml()
         {
-            // WebView2 (Chromium) version — all JavaScript uses W3C standard APIs.
-            // No document.selection / TextRange / pasteHTML (IE-only APIs).
-            // JS pushes state and html to C# via window.chrome.webview.postMessage.
+            // Classic WebBrowser (IE/Trident) version — deliberately NO <meta X-UA-Compatible>.
+            // The control renders in IE7-emulation mode by default on every machine regardless
+            // of installed IE version unless overridden; forcing a newer mode would depend on
+            // that override succeeding, which defeats the whole point of this control (maximum
+            // compatibility on old/locked-down machines). So all JS below uses only legacy
+            // document.selection / TextRange APIs, which work in the default emulation mode.
+            // C# talks to this document synchronously via Document.ExecCommand / InvokeScript —
+            // there is no postMessage bridge; state/html are read on demand, not pushed.
             return
                 "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
                 "<style>" +
@@ -1329,9 +1374,6 @@ namespace CMS.Presentation.Modules.KMS
                 "outline:none;}" +
                 // Remove default <p> margins so lines from Enter key match <br> spacing.
                 "p{margin:0;}" +
-                // Prevent tab-span characters from inheriting a large font-size (e.g. 18pt)
-                // that would stretch the line height beyond the surrounding text.
-                "[data-kms-tab]{font-size:0!important;line-height:0!important;}" +
                 "h1{font-size:22px;}h2{font-size:18px;}h3{font-size:15px;}" +
                 "table{border-collapse:collapse;width:100%;margin:8px 0;}" +
                 "td,th{border:1px solid #ccc;padding:4px 8px;}" +
@@ -1341,188 +1383,187 @@ namespace CMS.Presentation.Modules.KMS
                 "code{background:#f4f4f4;font-family:Consolas,monospace;padding:2px 4px;border-radius:2px;}" +
                 "a{color:#2980b9;}" +
                 "</style>" +
-                "<script>" +
-                // ── Push helpers — send state/html to C# via postMessage ──────────
-                "function notifyState(){" +
-                "try{window.chrome.webview.postMessage('STATE:'+getRteState());}catch(e){}}" +
-                "function notifyHtml(){" +
-                "try{window.chrome.webview.postMessage('HTML:'+document.body.innerHTML);}catch(e){}}" +
-                "function notifyChange(){notifyState();notifyHtml();}" +
-                // ── Format state query ───────────────────────────────────────────
+                "<script type='text/javascript'>" +
+                // ── Paste HTML at cursor (IE TextRange) ────────────────────────────
+                "function pasteHtml(h){" +
+                "try{if(document.selection){var r=document.selection.createRange();r.pasteHTML(h);}}" +
+                "catch(e){}}" +
+                // ── Format state query — called by C# via InvokeScript ─────────────
+                // Returns a compact string: 8 binary flags + '|' + fontName + '|' + fontSize.
+                // Flags order: bold italic underline justifyLeft justifyCenter justifyRight ul ol
                 "function getRteState(){" +
                 "try{" +
-                "var b=document.queryCommandState('bold')?'1':'0';" +
-                "var i=document.queryCommandState('italic')?'1':'0';" +
-                "var u=document.queryCommandState('underline')?'1':'0';" +
-                "var jl=document.queryCommandState('justifyLeft')?'1':'0';" +
-                "var jc=document.queryCommandState('justifyCenter')?'1':'0';" +
-                "var jr=document.queryCommandState('justifyRight')?'1':'0';" +
-                "var ul=document.queryCommandState('insertUnorderedList')?'1':'0';" +
-                "var ol=document.queryCommandState('insertOrderedList')?'1':'0';" +
-                "var fn=(document.queryCommandValue('fontName')||'').toLowerCase();" +
+                "var b=document.queryCommandState('Bold')?'1':'0';" +
+                "var i=document.queryCommandState('Italic')?'1':'0';" +
+                "var u=document.queryCommandState('Underline')?'1':'0';" +
+                "var jl=document.queryCommandState('JustifyLeft')?'1':'0';" +
+                "var jc=document.queryCommandState('JustifyCenter')?'1':'0';" +
+                "var jr=document.queryCommandState('JustifyRight')?'1':'0';" +
+                "var ul=document.queryCommandState('InsertUnorderedList')?'1':'0';" +
+                "var ol=document.queryCommandState('InsertOrderedList')?'1':'0';" +
+                "var fn=(document.queryCommandValue('FontName')||'').toLowerCase();" +
                 "var fs=getSelFontSizePt();" +
                 "return b+i+u+jl+jc+jr+ul+ol+'|'+fn+'|'+fs;" +
                 "}catch(e){return '00000000||';}}" +
+                // Bold is routed through this JS wrapper instead of Document.ExecCommand from
+                // C# — a deliberate, previously-shipped workaround (kept as-is; do not "clean
+                // up" back to a direct ExecCommand("Bold") call from C#).
+                "function applyBold(){document.execCommand('Bold',false,null);}" +
                 // ── Selection helpers ────────────────────────────────────────────
-                "function hasTextSel(){" +
-                "var s=window.getSelection();return !!(s&&!s.isCollapsed&&s.toString().length>0);}" +
-                // ── Font size read ───────────────────────────────────────────────
+                "function hasTextSel(){try{var s=document.selection;return !!(s&&s.type=='Text');}catch(e){return false;}}" +
+                // HTML font size 1-7 → pt equivalents (matches tsRteFontSize items)
                 "var _htmlSzPt={'1':'8','2':'10','3':'12','4':'14','5':'18','6':'24','7':'36'};" +
                 "function getSelFontSizePt(){" +
-                "try{var s=window.getSelection();" +
-                "if(!s||s.rangeCount===0)return '';" +
-                "var el=s.getRangeAt(0).commonAncestorContainer;" +
-                "if(el.nodeType===3)el=el.parentNode;" +
-                "while(el&&el.tagName!=='BODY'){" +
+                "try{var s=document.selection;" +
+                "if(s&&s.type=='Text'){var r=s.createRange();" +
+                "if(r&&r.parentElement){var el=r.parentElement();" +
+                "while(el&&el.tagName!='BODY'){" +
                 "if(el.style&&el.style.fontSize){var f=el.style.fontSize;" +
                 "if(f.indexOf('pt')>-1)return Math.round(parseFloat(f)).toString();" +
                 "if(f.indexOf('px')>-1)return Math.round(parseFloat(f)*0.75).toString();}" +
-                "if(el.tagName==='FONT'){var a=el.getAttribute('size');if(a&&_htmlSzPt[a])return _htmlSzPt[a];}" +
-                "el=el.parentElement;}" +
+                "if(el.tagName=='FONT'){var a=el.getAttribute('size');if(a&&_htmlSzPt[a])return _htmlSzPt[a];}" +
+                "el=el.parentElement;}}}" +
                 "}catch(e){}return '';}" +
                 // ── Font size apply ──────────────────────────────────────────────
                 "function applyFontSizePt(pt,markerId){" +
-                "try{" +
-                "var s=window.getSelection();" +
-                "if(!s||s.rangeCount===0||s.isCollapsed)return;" +
-                "var range=s.getRangeAt(0);" +
-                "var el=range.commonAncestorContainer;" +
-                "if(el.nodeType===3)el=el.parentNode;" +
-                // Fast path: immediate parent already has inline font-size → update in-place
-                "if(el&&el.tagName!=='BODY'&&el.style&&el.style.fontSize){" +
-                "el.style.fontSize=pt+'pt';return;}" +
-                // Wrap selection in a new span
-                "var div=document.createElement('div');" +
-                "div.appendChild(range.cloneContents());" +
-                "var inner=div.innerHTML.replace(/font-size\\s*:[^;'\"]+;?/gi,'');" +
-                "document.execCommand('insertHTML',false," +
-                "'<span id=\"'+markerId+'\" style=\"font-size:'+pt+'pt\">'+inner+'</span>');" +
+                "try{if(!hasTextSel())return;" +
+                "var r=document.selection.createRange();" +
+                "var el=r.parentElement();" +
+                "if(el&&el.tagName!='BODY'&&el.style&&el.style.fontSize){" +
+                "el.style.fontSize=pt+'pt';r.select();return;}" +
+                "var inner=r.htmlText.replace(/font-size\\s*:[^;'\"]+;?/gi,'');" +
+                "r.pasteHTML('<span id=\"'+markerId+'\" style=\"font-size:'+pt+'pt\">'+inner+'</span>');" +
                 "var newEl=document.getElementById(markerId);" +
-                "if(newEl){var nr=document.createRange();" +
-                "nr.selectNodeContents(newEl);s.removeAllRanges();s.addRange(nr);" +
-                "newEl.removeAttribute('id');}" +
-                "}catch(e){}}" +
-                // ── Paste HTML at cursor ──────────────────────────────────────────
-                "function pasteHtml(h){" +
+                "if(newEl){var r2=document.body.createTextRange();" +
+                "r2.moveToElementText(newEl);r2.select();newEl.removeAttribute('id');}}" +
+                "catch(e){}}" +
+                // ── Zoom (CSS, IE/Trident proprietary `zoom` property) ─────────────
+                "function setZoomPct(pct){try{document.body.style.zoom=pct+'%';}catch(e){}}" +
+                // Redirect clicks on <html> (outside body padding) into the body.
+                "document.onclick=function(e){" +
+                "if(e&&e.srcElement===document.documentElement){document.body.focus();}" +
+                "};" +
+                // ── Tab indent (plain &nbsp; run — the proven pre-WebView2 mechanism) ──
+                // NOTE: a <span contenteditable="false"> marker was tried here (to match the
+                // pixel-accurate tab-stop look of the WebView2 version) but IE's legacy
+                // rendering treats a contenteditable=false element nested inside an editable
+                // body as a "control" (like an embedded object), drawing a visible selection
+                // box around it that grows with every Tab press. Plain &nbsp; characters have
+                // none of that baggage and are exactly what shipped and worked before.
+                "function insertTabAtCaret(){" +
                 "try{" +
-                "var s=window.getSelection();" +
-                "if(!s||s.rangeCount===0)return;" +
-                "var range=s.getRangeAt(0);" +
-                "range.deleteContents();" +
-                "var frag=range.createContextualFragment(h);" +
-                "var last=frag.lastChild;" +
-                "range.insertNode(frag);" +
-                "if(last){var r2=document.createRange();" +
-                "r2.setStartAfter(last);r2.collapse(true);" +
-                "s.removeAllRanges();s.addRange(r2);}" +
+                "var sel=document.selection;" +
+                "if(!sel||sel.type==='None'){document.body.focus();sel=document.selection;}" +
+                "if(!sel)return;" +
+                "var r=sel.createRange();r.collapse(true);" +
+                "r.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');" +
                 "}catch(e){}}" +
-                // ── Tab indent (pixel-accurate, Chromium) ─────────────────────────
-                "var _tabPx=40;" +
-                "function insertTab(){" +
+                // Remove up to 4 trailing spaces/&nbsp; immediately before the caret.
+                "function removeTabAtCaret(){" +
                 "try{" +
-                "var s=window.getSelection();" +
-                "if(!s||s.rangeCount===0){document.body.focus();s=window.getSelection();}" +
-                "if(!s||s.rangeCount===0)return;" +
-                "var range=s.getRangeAt(0);range.deleteContents();range.collapse(true);" +
-                "var left=range.getBoundingClientRect().left-document.body.getBoundingClientRect().left;" +
-                "var w=_tabPx-(left%_tabPx);if(w<4)w+=_tabPx;" +
-                // Insert via DOM so cursor placement is explicit (execCommand leaves cursor
-                // inside contenteditable=false span in Chromium, causing it to disappear).
-                "var span=document.createElement('span');" +
-                "span.setAttribute('data-kms-tab','1');" +
-                "span.setAttribute('contenteditable','false');" +
-                "span.style.cssText='display:inline-block;width:'+w+'px;overflow:hidden';" +
-                "span.innerHTML='\\u00a0';" +
-                "range.insertNode(span);" +
-                "var r2=document.createRange();r2.setStartAfter(span);r2.collapse(true);" +
-                // After insert: recalculate the next tab span's width from the new cursor
-                // position so the tab-stop grid stays correct (the next span now starts
-                // further right and its old width no longer hits the right column).
-                "var nxt=span.nextSibling;" +
-                "if(nxt&&nxt.nodeType===1&&nxt.getAttribute&&nxt.getAttribute('data-kms-tab')){" +
-                "var nl=nxt.getBoundingClientRect().left-document.body.getBoundingClientRect().left;" +
-                "var nw=_tabPx-(nl%_tabPx);if(nw<4)nw+=_tabPx;nxt.style.width=nw+'px';}" +
-                "s.removeAllRanges();s.addRange(r2);" +
+                "var sel=document.selection;" +
+                "if(!sel||sel.type==='None'){document.body.focus();sel=document.selection;}" +
+                "if(!sel)return;" +
+                "var r=sel.createRange();r.collapse(true);" +
+                "var r2=r.duplicate();r2.moveStart('character',-4);" +
+                "var text=r2.text,cnt=0;" +
+                "for(var i=text.length-1;i>=0;i--){var c=text.charCodeAt(i);if(c===32||c===160)cnt++;else break;}" +
+                "if(cnt>0){var del=r.duplicate();del.moveStart('character',-cnt);del.text='';}" +
                 "}catch(e){}}" +
-                "function removeTab(){" +
-                "try{" +
-                "var s=window.getSelection();" +
-                "if(!s||s.rangeCount===0)return;" +
-                "var range=s.getRangeAt(0);range.collapse(true);" +
-                "var node=range.startContainer,offset=range.startOffset;" +
-                // Helper: remove span element, reposition cursor where span was
-                "var rmSpan=function(sp){" +
-                "var par=sp.parentNode,idx=Array.prototype.indexOf.call(par.childNodes,sp);" +
-                "par.removeChild(sp);" +
-                // After removal: recalculate the next tab span's width from its new left
-                // position so the tab-stop grid stays correct (subsequent spans were
-                // calculated for a cursor position that no longer exists after removal).
-                "var nxt=par.childNodes[idx];" +
-                "if(nxt&&nxt.nodeType===1&&nxt.getAttribute&&nxt.getAttribute('data-kms-tab')){" +
-                "var nl=nxt.getBoundingClientRect().left-document.body.getBoundingClientRect().left;" +
-                "var nw=_tabPx-(nl%_tabPx);if(nw<4)nw+=_tabPx;nxt.style.width=nw+'px';}" +
-                "var r=document.createRange();r.setStart(par,idx);r.collapse(true);" +
-                "s.removeAllRanges();s.addRange(r);};" +
-                // Helper: remove consecutive &nbsp;/space ending at off in text node tn
-                "var rmNbsp=function(tn,off){" +
-                "var t=tn.textContent,cnt=0;" +
-                "for(var i=off-1;i>=0;i--){var c=t.charCodeAt(i);if(c===160||c===32)cnt++;else break;}" +
-                "if(cnt>0){tn.textContent=t.slice(0,off-cnt)+t.slice(off);" +
-                "var r=document.createRange();r.setStart(tn,off-cnt);r.collapse(true);" +
-                "s.removeAllRanges();s.addRange(r);};};" +
-                // Case A: cursor is inside (or on) a tab span
-                "var check=node.nodeType===3?node.parentNode:node;" +
-                "if(check&&check.getAttribute&&check.getAttribute('data-kms-tab')){rmSpan(check);return;}" +
-                // Case B: cursor is in a text node at offset > 0
-                // Only examine THIS text node — do NOT fall through to previousSibling.
-                // A sibling span to the left is not immediately before this cursor position.
-                "if(node.nodeType===3&&offset>0){" +
-                "var cb=node.textContent.charCodeAt(offset-1);" +
-                "if(cb===160||cb===32)rmNbsp(node,offset);" +
-                "return;}" +
-                // Case C: cursor at text offset=0, or inside an element node
-                // → look at the node directly before the cursor position
-                "var prev;" +
-                "if(node.nodeType===1)" +
-                "{prev=offset>0?node.childNodes[offset-1]:node.previousSibling;}" +
-                "else{prev=node.previousSibling;}" +
-                // Walk up when no immediate prev: cursor may be inside a formatting span
-                // e.g. <span style="font-size:18pt">[cursor]กิจสมใจ</span> where the
-                // tab span is a sibling of the formatting span, not of the text node.
-                "if(!prev){" +
-                "var wn=node.nodeType===3?node.parentNode:node;" +
-                "while(wn&&wn!==document.body&&!prev){prev=wn.previousSibling;wn=wn.parentNode;}" +
-                "}" +
-                "if(!prev)return;" +
-                "if(prev.nodeType===1&&prev.getAttribute&&prev.getAttribute('data-kms-tab')){rmSpan(prev);return;}" +
-                "if(prev.nodeType===3){var pl=prev.textContent.length;" +
-                "if(pl>0){var cp=prev.textContent.charCodeAt(pl-1);" +
-                "if(cp===160||cp===32)rmNbsp(prev,pl);}}" +
-                "}catch(e){}}" +
-                // Returns true when cursor is inside a list item (<li>)
+                // Returns true when the caret/selection is inside a list item (<li>)
                 "function isInList(){" +
-                "var s=window.getSelection();" +
-                "if(!s||s.rangeCount===0)return false;" +
-                "var n=s.getRangeAt(0).startContainer;" +
-                "if(n.nodeType===3)n=n.parentNode;" +
-                "while(n&&n!==document.body){if(n.tagName==='LI')return true;n=n.parentNode;}" +
+                "var s=document.selection;if(!s)return false;" +
+                "var r=s.createRange();var n=r.parentElement?r.parentElement():null;" +
+                "while(n&&n.tagName!=='BODY'){if(n.tagName==='LI')return true;n=n.parentElement;}" +
                 "return false;}" +
-                // ── Tab key handled in JS so host ProcessCmdKey is not needed ─────
-                "document.addEventListener('keydown',function(e){" +
-                "if(e.key==='Tab'){e.preventDefault();" +
-                "if(isInList()){" +
-                // Inside a list: indent / outdent the list item
-                "if(e.shiftKey)document.execCommand('outdent',false,null);" +
-                "else document.execCommand('indent',false,null);" +
-                "}else{" +
-                // Outside a list: custom tab span / nbsp removal
-                "if(e.shiftKey)removeTab();else insertTab();" +
+                // Nearest block-level ancestor of el (P/DIV/LI/heading/table-cell/etc.), or null
+                // if none is found before reaching <body> (e.g. raw <br>-separated content).
+                "function nearestBlock(el){" +
+                "var blocks={P:1,DIV:1,LI:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,BLOCKQUOTE:1,TD:1,TH:1,PRE:1};" +
+                "while(el&&el!==document.body){" +
+                "if(el.tagName&&blocks[el.tagName])return el;el=el.parentElement;}" +
+                "return null;}" +
+                // Ordered list of block elements from startBlock to endBlock (inclusive), when
+                // they are siblings under the same parent; otherwise degrades to just startBlock.
+                // Returns null when neither end has a block ancestor (bare text/&lt;br&gt; content) —
+                // callers then fall back to single-caret indent rather than touching the body.
+                // Only element nodes are collected: nextSibling also yields text/comment nodes,
+                // and moveToElementText/innerHTML on those would throw.
+                "function collectLines(startBlock,endBlock){" +
+                "if(!startBlock&&!endBlock)return null;" +
+                "if(!startBlock)startBlock=endBlock;" +
+                "if(!endBlock)endBlock=startBlock;" +
+                "if(startBlock.parentNode!==endBlock.parentNode)return [startBlock];" +
+                "var lines=[],node=startBlock;" +
+                "while(node){" +
+                "if(node.nodeType===1)lines.push(node);" +
+                "if(node===endBlock)break;node=node.nextSibling;}" +
+                "if(!lines.length||lines[lines.length-1]!==endBlock)return [startBlock];" +
+                "return lines;}" +
+                // Reselect the given line range so a repeated Tab press indents further.
+                "function _reselectLines(lines){" +
+                "try{" +
+                "var sr=document.body.createTextRange();sr.moveToElementText(lines[0]);" +
+                "var er=document.body.createTextRange();er.moveToElementText(lines[lines.length-1]);" +
+                "sr.setEndPoint('EndToEnd',er);sr.select();" +
+                "}catch(e){}}" +
+                // Tab with a real (possibly multi-line) selection: indent every touched line.
+                "function indentSelectionLines(){" +
+                "try{" +
+                "var r=document.selection.createRange();" +
+                "if(r.text===''){insertTabAtCaret();return;}" +
+                "var rs=r.duplicate();rs.collapse(true);var re=r.duplicate();re.collapse(false);" +
+                "var startBlock=nearestBlock(rs.parentElement?rs.parentElement():null);" +
+                "var endBlock=nearestBlock(re.parentElement?re.parentElement():null);" +
+                "var lines=collectLines(startBlock,endBlock);" +
+                // No block ancestor (bare text/<br> content) — indent at the caret instead of
+                // pasting into the start of the whole body, which would wreck the layout.
+                "if(!lines){insertTabAtCaret();return;}" +
+                "for(var i=0;i<lines.length;i++){" +
+                "var line=lines[i];" +
+                "var lr=document.body.createTextRange();lr.moveToElementText(line);lr.collapse(true);" +
+                "lr.pasteHTML('&nbsp;&nbsp;&nbsp;&nbsp;');" +
                 "}" +
-                "notifyChange();" +
-                "}});" +
-                // ── Push state/html on every edit and selection change ────────────
-                "document.addEventListener('input',notifyChange);" +
-                "document.addEventListener('selectionchange',notifyState);" +
+                "_reselectLines(lines);" +
+                "}catch(e){}}" +
+                // Shift+Tab with a real (possibly multi-line) selection: outdent every touched line.
+                "function outdentSelectionLines(){" +
+                "try{" +
+                "var r=document.selection.createRange();" +
+                "if(r.text===''){removeTabAtCaret();return;}" +
+                "var rs=r.duplicate();rs.collapse(true);var re=r.duplicate();re.collapse(false);" +
+                "var startBlock=nearestBlock(rs.parentElement?rs.parentElement():null);" +
+                "var endBlock=nearestBlock(re.parentElement?re.parentElement():null);" +
+                "var lines=collectLines(startBlock,endBlock);" +
+                "if(!lines){removeTabAtCaret();return;}" +
+                "for(var i=0;i<lines.length;i++){" +
+                "var line=lines[i];" +
+                "line.innerHTML=line.innerHTML.replace(/^(?:&nbsp;|\\s){1,4}/i,'');" +
+                "}" +
+                "_reselectLines(lines);" +
+                "}catch(e){}}" +
+                // Shared implementation for both Tab capture paths.
+                "function handleTabIndent(isShift){" +
+                "try{" +
+                "if(isInList()){document.execCommand(isShift?'outdent':'indent',false,null);return;}" +
+                "if(isShift)outdentSelectionLines();else indentSelectionLines();" +
+                "}catch(e){}}" +
+                // Zero-argument entry points called by C# (Form.ProcessCmdKey) — no IDispatch
+                // argument marshaling, matching the call shape that shipped previously.
+                "function kmsTabIndent(){handleTabIndent(false);}" +
+                "function kmsTabOutdent(){handleTabIndent(true);}" +
+                // Second capture path: when the key reaches MSHTML instead of being consumed by
+                // ProcessCmdKey, handle it here. Legacy IE event model (window.event/returnValue)
+                // — addEventListener/preventDefault do not exist in the default IE7 document mode.
+                // Cancelling keydown stops IE's default Tab action of moving focus out of the
+                // editor, which is what makes focus rectangles march across the form.
+                "document.onkeydown=function(){" +
+                "var ev=window.event;if(!ev)return;" +
+                "if(ev.keyCode===9){" +
+                "handleTabIndent(!!ev.shiftKey);" +
+                "ev.returnValue=false;ev.cancelBubble=true;ev.keyCode=0;" +
+                "return false;}" +
+                "};" +
                 "</script>" +
                 "</head><body contenteditable='true'></body></html>";
         }

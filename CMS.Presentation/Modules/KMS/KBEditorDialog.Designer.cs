@@ -78,7 +78,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnCollapseGenInfo = new System.Windows.Forms.Button();
             this.lblGenInfoHeader = new System.Windows.Forms.Label();
             this.pnlContentOuter = new System.Windows.Forms.Panel();
-            this.webEditor = new Microsoft.Web.WebView2.WinForms.WebView2();
+            this.webEditor = new System.Windows.Forms.WebBrowser();
             this.pnlRteStatus = new System.Windows.Forms.Panel();
             this.lblRteStatus = new System.Windows.Forms.Label();
             this.lblContent = new System.Windows.Forms.Label();
@@ -241,7 +241,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlTagChipTemplate.SuspendLayout();
             this.pnlGenInfoHeader.SuspendLayout();
             this.pnlContentOuter.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.webEditor)).BeginInit();
             this.pnlRteStatus.SuspendLayout();
             this.tsRte.SuspendLayout();
             this.pnlSummaryArea.SuspendLayout();
@@ -1033,17 +1032,16 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContentOuter.TabIndex = 12;
             // 
             // webEditor
-            // 
-            this.webEditor.AllowExternalDrop = true;
-            this.webEditor.CreationProperties = null;
-            this.webEditor.DefaultBackgroundColor = System.Drawing.Color.White;
+            //
             this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.webEditor.IsWebBrowserContextMenuEnabled = false;
             this.webEditor.Location = new System.Drawing.Point(0, 112);
             this.webEditor.Name = "webEditor";
+            this.webEditor.ScriptErrorsSuppressed = true;
             this.webEditor.Size = new System.Drawing.Size(1176, 561);
             this.webEditor.TabIndex = 5;
-            this.webEditor.ZoomFactor = 1D;
-            // 
+            this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
+            //
             // pnlRteStatus
             // 
             this.pnlRteStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
@@ -2793,7 +2791,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlGenInfoHeader.ResumeLayout(false);
             this.pnlContentOuter.ResumeLayout(false);
             this.pnlContentOuter.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.webEditor)).EndInit();
             this.pnlRteStatus.ResumeLayout(false);
             this.tsRte.ResumeLayout(false);
             this.tsRte.PerformLayout();
@@ -2901,7 +2898,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ToolStripComboBox  tsRteZoom;
         private System.Windows.Forms.ToolStripButton    tsRteZoomIn;
         private System.Windows.Forms.Label       lblContent;
-        private Microsoft.Web.WebView2.WinForms.WebView2 webEditor;
+        private System.Windows.Forms.WebBrowser  webEditor;
         private System.Windows.Forms.Panel       pnlRteStatus;
         private System.Windows.Forms.Label       lblRteStatus;
 
