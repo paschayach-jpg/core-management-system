@@ -1369,25 +1369,29 @@ namespace CMS.Presentation.Modules.KMS
 
         private void DgvArticles_CellEndEdit(object sender, DataGridViewCellEventArgs e)
         {
-            if (_pendingToggleArticleId <= 0) return;
             if (dgvArticles.Columns[e.ColumnIndex].Name != "colExpiryDate") return;
+            if (e.RowIndex < 0 || e.RowIndex >= _cachedArticles.Count) return;
 
             var article = _cachedArticles[e.RowIndex];
-            if (article.ArticleID != _pendingToggleArticleId) { _pendingToggleArticleId = 0; return; }
+            bool isToggleToOn = _pendingToggleArticleId > 0 && article.ArticleID == _pendingToggleArticleId;
+            _pendingToggleArticleId = 0;
 
-            object rawVal   = dgvArticles[e.ColumnIndex, e.RowIndex].Value;
+            object rawVal     = dgvArticles[e.ColumnIndex, e.RowIndex].Value;
             DateTime? newDate = (rawVal is DateTime) ? (DateTime?)((DateTime)rawVal) : null;
 
-            if (newDate.HasValue && newDate.Value.Date > DateTime.Today)
+            if (isToggleToOn && (!newDate.HasValue || newDate.Value.Date <= DateTime.Today))
             {
-                _presenter.UpdateArticleExpiryDate(article.ArticleID, newDate.Value);
-                article.ExpiryDate = newDate;
-                int activeIdx = dgvArticles.Columns["colActive"].Index;
-                dgvArticles[activeIdx, e.RowIndex].Value = "ON";
-                dgvArticles.InvalidateCell(activeIdx, e.RowIndex);
+                // OFF → ON toggle requires a future date; nothing picked or still in the
+                // past — toggle stays OFF, no DB update.
+                return;
             }
-            // else: date unchanged or still in past — toggle stays OFF, no DB update
-            _pendingToggleArticleId = 0;
+
+            _presenter.UpdateArticleExpiryDate(article.ArticleID, newDate);
+            article.ExpiryDate = newDate;
+
+            int activeIdx = dgvArticles.Columns["colActive"].Index;
+            dgvArticles[activeIdx, e.RowIndex].Value = IsArticleActive(article) ? "ON" : "OFF";
+            dgvArticles.InvalidateCell(activeIdx, e.RowIndex);
         }
 
         private void cboType_SelectedIndexChanged(object sender, EventArgs e)
@@ -1450,7 +1454,18 @@ namespace CMS.Presentation.Modules.KMS
             protected override void OnValueChanged(EventArgs e)
             {
                 _valueChanged = true;
-                if (_dgv != null) _dgv.NotifyCurrentCellDirty(true);
+                if (_dgv != null)
+                {
+                    _dgv.NotifyCurrentCellDirty(true);
+                    // Commit the edit as soon as a date is picked instead of waiting for
+                    // the user to click elsewhere. Deferred via BeginInvoke so the grid
+                    // doesn't tear down this control while it's still raising this event.
+                    var dgv = _dgv;
+                    BeginInvoke(new MethodInvoker(() =>
+                    {
+                        if (dgv.CurrentCell != null) dgv.EndEdit();
+                    }));
+                }
                 base.OnValueChanged(e);
             }
         }
