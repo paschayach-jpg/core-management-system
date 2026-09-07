@@ -93,6 +93,7 @@ namespace CMS.Presentation.Modules.KMS
             Disposed += (s, ev) => Application.RemoveMessageFilter(this);
             InitTypeCombo();
             InitCrafCombo();
+            InitStatusCombo();
             
             // Initialize tabPrograms - NEW IMPLEMENTATION (Mockup)
             InitializeProgramsDataGridViews();
@@ -168,24 +169,38 @@ namespace CMS.Presentation.Modules.KMS
             if (_presenter == null) return;
             if (!ValidateInput()) return;
 
-            string action = btnSendReview.Text.Contains("Review") ? "ส่งขอ Review" : "เผยแพร่";
             var confirm = MessageBox.Show(
-                string.Format("ต้องการ{0}บทความ \"{1}\" ใช่หรือไม่?", action, txtTitle.Text.Trim()),
+                string.Format("ต้องการส่งขอ Review บทความ \"{0}\" ใช่หรือไม่?", txtTitle.Text.Trim()),
                 "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
             if (confirm != DialogResult.Yes) return;
 
             try
             {
-                // Check if this is "Send Review" or "Publish" based on button text
-                if (btnSendReview.Text.Contains("Review"))
-                {
-                    _presenter.SendReview();
-                }
-                else
-                {
-                    _presenter.Publish();
-                }
+                _presenter.SendReview();
+            }
+            catch (Exception ex)
+            {
+                ShowError("เกิดข้อผิดพลาด:\n" + ex.Message);
+            }
+        }
+
+        // Any user can currently click this while the article is in Review status —
+        // there is no reviewer/approver restriction yet. Approval logic (who is allowed
+        // to publish, audit trail, etc.) is intended to be added on top of this later.
+        private void BtnPublish_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+
+            var confirm = MessageBox.Show(
+                string.Format("ต้องการเผยแพร่บทความ \"{0}\" ใช่หรือไม่?", txtTitle.Text.Trim()),
+                "ยืนยัน Publish", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                _presenter.Publish();
             }
             catch (Exception ex)
             {
@@ -552,20 +567,41 @@ namespace CMS.Presentation.Modules.KMS
         {
             get
             {
-                if (cboStatus.SelectedIndex < 0) return _currentStatus;
-                return (byte)(cboStatus.SelectedIndex + 1);  // 1=Draft, 2=Review, 3=Published, 4=Archived
+                var ci = cboStatus.SelectedItem as ComboItem;
+                return ci != null ? (byte)ci.Value : _currentStatus;
             }
             set
             {
                 _currentStatus = value;
-                if (value >= 1 && value <= 4)
-                {
-                    cboStatus.SelectedIndex = value - 1;
-                }
+                SelectComboByValue(cboStatus, value);
                 SetStatusDisplay(value);  // Still update status bar
             }
         }
         private byte _currentStatus = 1;
+
+        public bool StatusEnabled
+        {
+            set { cboStatus.Enabled = value; }
+        }
+
+        /// <summary>
+        /// Restrict the status dropdown to a subset of statuses (e.g. an article in
+        /// Published status cannot be moved back to Draft/Review from here).
+        /// The currently selected status is preserved if it remains in the allowed set.
+        /// </summary>
+        public void SetAllowedStatuses(IEnumerable<byte> allowedStatuses)
+        {
+            var allowed = new HashSet<byte>(allowedStatuses);
+            byte current = SelectedStatus;
+
+            cboStatus.Items.Clear();
+            foreach (var item in _statusOptions)
+            {
+                if (allowed.Contains((byte)item.Value))
+                    cboStatus.Items.Add(item);
+            }
+            SelectComboByValue(cboStatus, current);
+        }
 
         public string HeaderText
         {
@@ -590,6 +626,11 @@ namespace CMS.Presentation.Modules.KMS
         public bool ArchiveButtonVisible
         {
             set { btnArchive.Visible = value; }
+        }
+
+        public bool PublishNowButtonVisible
+        {
+            set { btnPublish.Visible = value; }
         }
 
         public bool SaveEnabled
@@ -725,6 +766,23 @@ namespace CMS.Presentation.Modules.KMS
             cboType.Items.Clear();
             cboType.Items.Add(new ComboItem("Wiki Page", 5));
             cboType.SelectedIndex = 0;
+        }
+
+        // Master list of status options; SetAllowedStatuses() filters a subset of these
+        // into cboStatus.Items while keeping the value-to-status-code mapping stable.
+        private static readonly ComboItem[] _statusOptions =
+        {
+            new ComboItem("📝 Draft", 1),
+            new ComboItem("👁️ Review", 2),
+            new ComboItem("✅ Published", 3),
+            new ComboItem("📦 Archived", 4),
+        };
+
+        private void InitStatusCombo()
+        {
+            cboStatus.Items.Clear();
+            cboStatus.Items.AddRange(_statusOptions);
+            cboStatus.SelectedIndex = 0;
         }
 
         private void InitCrafCombo()
@@ -898,8 +956,9 @@ namespace CMS.Presentation.Modules.KMS
 
         private void CboStatus_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (cboStatus.SelectedIndex < 0) return;
-            byte status = (byte)(cboStatus.SelectedIndex + 1);
+            var ci = cboStatus.SelectedItem as ComboItem;
+            if (ci == null) return;
+            byte status = (byte)ci.Value;
             _currentStatus = status;
             SetStatusDisplay(status);
         }
