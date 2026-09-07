@@ -1086,7 +1086,7 @@ namespace CMS.Presentation.Modules.KMS
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
                 Name = "colTitle", 
-                HeaderText = "ชื่อบทความ", 
+                HeaderText = "อ้างอิง", 
                 ReadOnly = true,
                 DefaultCellStyle = lft,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
@@ -1094,7 +1094,7 @@ namespace CMS.Presentation.Modules.KMS
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colCode",
-                HeaderText = "summary",
+                HeaderText = "",
                 Width = 105,
                 ReadOnly = true,
                 DefaultCellStyle = lft,
@@ -1103,7 +1103,7 @@ namespace CMS.Presentation.Modules.KMS
             dgvArticles.Columns.Add(new DataGridViewLinkColumn
             {
                 Name = "colContentHtml",
-                HeaderText = "รายละเอียด",
+                HeaderText = "สาระ",
                 ReadOnly = true,
                 Width = 600,
                 DefaultCellStyle = new DataGridViewCellStyle{
@@ -1115,7 +1115,7 @@ namespace CMS.Presentation.Modules.KMS
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colPublishedDate",
-                HeaderText = "วันที่เผยแพร่",
+                HeaderText = "วันที่มีผลบังคับใช้",
                 ReadOnly = true,
                 DefaultCellStyle = { Format = "dd/MM/yyyy" },
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
