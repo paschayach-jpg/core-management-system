@@ -66,6 +66,7 @@ namespace CMS.Services
                 (a.Title != null && a.Title.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.Summary != null && a.Summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.TitleCategory != null && a.TitleCategory.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0)
             ).ToList();
         }
@@ -122,6 +123,7 @@ namespace CMS.Services
                 (a.Title != null && a.Title.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.Summary != null && a.Summary.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.Tags != null && a.Tags.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.TitleCategory != null && a.TitleCategory.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
             ).ToList();
         }

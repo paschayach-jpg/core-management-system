@@ -1075,7 +1075,7 @@ namespace CMS.Presentation.Modules.KMS
             if (!skipValidation)
             {
                 // Allow alphanumeric, Thai characters, spaces, hyphens, and underscores
-                if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9฀-๿\s\-_]+$"))
+                if (!System.Text.RegularExpressions.Regex.IsMatch(tag, @"^[a-zA-Z0-9฀-๿\s\-_/]+$"))
                 {
                     MessageBox.Show("Tag สามารถประกอบด้วยตัวอักษร ตัวเลข ภาษาไทย ช่องว่าง ขีด (-) และขีดล่าง (_) เท่านั้น",
                         "Tag ไม่ถูกต้อง", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1730,6 +1730,7 @@ namespace CMS.Presentation.Modules.KMS
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
                         article.Summary ?? "-",
+                        article.TitleCategory ?? "-",
                         article.ArticleTypeName ?? "-",
                         article.ViewCount.ToString()
                     );
@@ -1831,6 +1832,7 @@ namespace CMS.Presentation.Modules.KMS
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
                         article.Summary ?? "-",
+                        article.TitleCategory ?? "-",
                         article.ArticleTypeName ?? "-",
                         article.ViewCount.ToString()
                     );
@@ -2610,7 +2612,7 @@ namespace CMS.Presentation.Modules.KMS
             
             // Placeholder text for search textbox
             txtSearchRelated.Text = "";
-            txtSearchRelated.ForeColor = Color.Gray;
+            txtSearchRelated.ForeColor = Color.Black;
         }
 
         // ══════════════════════════════════════════════════════════════════════════
@@ -2876,6 +2878,7 @@ namespace CMS.Presentation.Modules.KMS
                         index.ToString(),
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
+                        article.TitleCategory ?? "-",
                         article.Summary ?? "-",
                         article.ArticleTypeName ?? "-"
                     );
@@ -3009,6 +3012,7 @@ namespace CMS.Presentation.Modules.KMS
                         article.ArticleCode ?? "-",
                         article.Title ?? "-",
                         article.Summary ?? "-",
+                        article.TitleCategory ?? "-",
                         article.ArticleTypeName ?? "-",
                         article.ViewCount.ToString()
                     );
@@ -3066,6 +3070,7 @@ namespace CMS.Presentation.Modules.KMS
                 newIndex.ToString(),
                 dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchCode"].Value,
                 dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchTitle"].Value,
+                dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchTitleCategory"].Value,
                 dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSummary"].Value,
                 dgvRelatedSearch.Rows[e.RowIndex].Cells["colRelatedSearchType"].Value
             );
@@ -3102,7 +3107,7 @@ namespace CMS.Presentation.Modules.KMS
             if (string.IsNullOrWhiteSpace(txtSearchRelated.Text))
             {
                 txtSearchRelated.Text = "🔍 ค้นหาชื่อบทความ / รหัส / แท็ก...";
-                txtSearchRelated.ForeColor = Color.Gray;
+                txtSearchRelated.ForeColor = Color.Black;
             }
         }
 

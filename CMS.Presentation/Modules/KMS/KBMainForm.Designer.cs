@@ -806,8 +806,8 @@ namespace CMS.Presentation.Modules.KMS
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.Name = "KBMainForm";
             this.Text = "ห้องสมุดความรู้ (KMS) — MOD-006 | KBMain";
-            this.Load += new System.EventHandler(this.KBMainForm_Load);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.KBMainForm_FormClosing);
+            this.Load += new System.EventHandler(this.KBMainForm_Load);
             this.Resize += new System.EventHandler(this.KBMainForm_Resize);
             this.pnlHeader.ResumeLayout(false);
             this.splitMain.Panel1.ResumeLayout(false);

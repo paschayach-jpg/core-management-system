@@ -455,7 +455,7 @@ namespace CMS.Presentation.Modules.KMS
                 }
             }
 
-            pnlPaginationButtons.Visible = totalPages > 1;
+            //pnlPaginationButtons.Visible = totalPages > 1;
         }
 
         // ── Tab selection ────────────────────────────────────────────────────────

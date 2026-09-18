@@ -76,6 +76,7 @@ namespace CMS.Presentation.Modules.KMS
             AdjustSplitter();
             splitViewer.Resize += (s, ev) => AdjustSplitter();
             pnlHeader.Resize += (s, ev) => AdjustHeaderHeight();
+            pnlSummaryWrapper.Resize += (s, ev) => AdjustSummaryHeight();
             _presenter.Initialize();
             // Default tab — populate attachments immediately
             PopulateAttachTab();
@@ -89,6 +90,7 @@ namespace CMS.Presentation.Modules.KMS
             _article = article;
             PopulateHeader();
             PopulateInfoBox();
+            PopulateSummaryBox();
             BeginInvoke(new Action(LoadContent));
         }
 
@@ -271,6 +273,7 @@ namespace CMS.Presentation.Modules.KMS
                     i.ToString(),
                     a.ArticleCode ?? "-",
                     a.Title ?? "(ไม่มีชื่อ)",
+                    a.TitleCategory ?? "-",
                     a.ArticleTypeName ?? "-");
                 dgvRelatedLinked.Rows[idx].Tag = a;
                 i++;
@@ -336,7 +339,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void PopulateHeader()
         {
-            lblViewerTitle.Text = "  👁️ ดูบทความ: " + (_article.Title ?? "(ไม่มีชื่อ)");
+            lblViewerTitle.Text = "  👁️ ดูบทความ: " + (_article.TitleCategory ?? "(ไม่มีชื่อ)");
             AdjustHeaderHeight();
         }
 
@@ -359,6 +362,34 @@ namespace CMS.Presentation.Modules.KMS
             int needed = Math.Max(minHeight, measured.Height + 12);
             if (pnlHeader.Height != needed)
                 pnlHeader.Height = needed;
+        }
+
+        private void PopulateSummaryBox()
+        {
+            // เนื้อหา Summary เป็นข้อความล้วน (ไม่ใช่ HTML) — lblSummaryInfo เป็น Label ธรรมดา
+            // จึงแสดง \n (ขึ้นบรรทัดใหม่) และ \t (tab) ที่ฝังมาจากข้อมูลได้ถูกต้องอยู่แล้วโดยไม่ต้องแปลงอะไรเพิ่ม
+            string summary = _article.Summary;
+            lblSummaryInfo.Text = "📝 สรุปย่อ: " + (string.IsNullOrWhiteSpace(summary) ? "-" : summary);
+            AdjustSummaryHeight();
+        }
+
+        /// <summary>
+        /// pnlSummaryWrapper (Dock=Top) ต้องปรับความสูงตามเนื้อหาจริงเหมือน pnlHeader/AdjustHeaderHeight —
+        /// lblSummaryInfo word-wrap เองอยู่แล้วแต่ถ้าความสูง parent ไม่พอ บรรทัดที่ล้นจะโดนตัด
+        /// </summary>
+        private void AdjustSummaryHeight()
+        {
+            int width = lblSummaryInfo.ClientSize.Width;
+            if (width <= 0) return;
+
+            var flags = TextFormatFlags.WordBreak | TextFormatFlags.Left | TextFormatFlags.NoPrefix;
+            Size measured = TextRenderer.MeasureText(lblSummaryInfo.Text, lblSummaryInfo.Font,
+                new Size(width, int.MaxValue), flags);
+
+            const int minHeight = 48;
+            int needed = Math.Max(minHeight, measured.Height + pnlSummaryBox.Padding.Vertical + pnlSummaryWrapper.Padding.Vertical);
+            if (pnlSummaryWrapper.Height != needed)
+                pnlSummaryWrapper.Height = needed;
         }
 
         private void PopulateInfoBox()
