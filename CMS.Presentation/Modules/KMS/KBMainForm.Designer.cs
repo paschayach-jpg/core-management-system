@@ -807,6 +807,7 @@ namespace CMS.Presentation.Modules.KMS
             this.Name = "KBMainForm";
             this.Text = "ห้องสมุดความรู้ (KMS) — MOD-006 | KBMain";
             this.Load += new System.EventHandler(this.KBMainForm_Load);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.KBMainForm_FormClosing);
             this.Resize += new System.EventHandler(this.KBMainForm_Resize);
             this.pnlHeader.ResumeLayout(false);
             this.splitMain.Panel1.ResumeLayout(false);
@@ -841,6 +842,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel           pnlCategoryHost;  // created in KBMainForm.cs constructor
         private System.Windows.Forms.Panel           pnlEditorHost;    // created in KBMainForm.cs constructor
         private System.Windows.Forms.Panel           pnlImportHost;    // created in KBMainForm.cs constructor
+        private System.Windows.Forms.Panel           pnlOrderImportHost; // created in KBMainForm.cs constructor
         private System.Windows.Forms.Panel           panelMainRight;
         private System.Windows.Forms.Panel           pnlLeftHeader;
         private System.Windows.Forms.Label           lblCategoryHeader;

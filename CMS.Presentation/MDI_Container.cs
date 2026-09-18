@@ -67,6 +67,7 @@ namespace CMS.Presentation
         private readonly IAuditLogController _auditLogController;
         private readonly IFolderReadLookupController _folderReadLookupController;
         private readonly CMS.Infrastructure.Interfaces.INetworkDriveHelper _networkDriveHelper;
+        private readonly CMS.Services.Interfaces.IFileService _fileService;
         private readonly IFileDocumentLookupController _fileDocumentLookupController;
         private readonly IFilePermissionAclController _filePermissionAclController;
         private readonly IFilePermissionCommandController _filePermissionCommandController;
@@ -235,7 +236,8 @@ namespace CMS.Presentation
             CMS.Controllers.RGP.ProjectTaskController rgpTaskController = null,
             CMS.Controllers.RGP.ProjectProgressController rgpProgressController = null,
             CMS.Controllers.RGP.ProjectDocumentController rgpDocController = null,
-            CMS.Infrastructure.Interfaces.INetworkDriveHelper networkDriveHelper = null)
+            CMS.Infrastructure.Interfaces.INetworkDriveHelper networkDriveHelper = null,
+            CMS.Services.Interfaces.IFileService fileService = null)
         {
             if (logger == null) throw new ArgumentNullException("logger");
             if (auditService == null) throw new ArgumentNullException("auditService");
@@ -247,6 +249,7 @@ namespace CMS.Presentation
             _auditService = auditService;
             _currentUser = currentUser;
             _networkDriveHelper = networkDriveHelper;
+            _fileService = fileService;
             _notificationService = notificationService;
             _approvalService = approvalService;
             _folderAuthorityService = folderAuthorityService;
@@ -1761,6 +1764,9 @@ namespace CMS.Presentation
             // importWizardFactory — สร้าง KBImportWizardForm พร้อม presenter สำหรับฝังใน KBMainForm
             form.AttachImportWizardFactory(() => CreateKBImportWizardForm());
 
+            // orderImportWizardFactory — สร้าง KBOrderImportWizardForm (ประกาศ/คำสั่ง) สำหรับฝังใน KBMainForm
+            form.AttachOrderImportWizardFactory(() => CreateKBOrderImportWizardForm());
+
             // dashboardFactory — สร้าง KBDashboardForm พร้อม presenter
             form.AttachDashboardFactory(() =>
             {
@@ -1809,6 +1815,31 @@ namespace CMS.Presentation
             var wizardPresenter = new KBImportWizardController(
                 wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
             wizard.AttachPresenter(wizardPresenter);
+            return wizard;
+        }
+
+        /// <summary>
+        /// Composition-root helper: สร้าง KBOrderImportWizardForm (ประกาศ/คำสั่ง) พร้อม presenter ครบชุด
+        /// โดยไม่ ShowDialog — ส่งคืนฟอร์มพร้อมฝังใน panel ของ KBMainForm
+        /// </summary>
+        private CMS.Presentation.Modules.KMS.KBOrderImportWizardForm CreateKBOrderImportWizardForm()
+        {
+            if (_fileService == null)
+            {
+                MessageBox.Show(
+                    "ไม่พบ File Service — ไม่สามารถเปิดหน้านำเข้า ประกาศ/คำสั่ง ได้",
+                    "อยู่ระหว่างการพัฒนา", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
+
+            var wizard    = new CMS.Presentation.Modules.KMS.KBOrderImportWizardForm(_currentUser);
+            var reader    = new CMS.Services.KBOrderExcelReader();
+            var downloader = new CMS.Services.LawFileDownloader();
+            var processor = new CMS.Services.KBOrderImportProcessor(
+                _kbArticleRepository, _kbArticleLinkRepository, _kbArticleService, _fileService, downloader);
+            var presenter = new CMS.Controllers.KMS.KB.KBOrderImportWizardController(
+                wizard, reader, processor, _currentUser);
+            wizard.AttachPresenter(presenter);
             return wizard;
         }
 

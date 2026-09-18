@@ -19,6 +19,19 @@ namespace CMS.Data.Interfaces
         /// <summary>คืน sequence ถัดไปสำหรับปีที่กำหนด เพื่อสร้าง ArticleCode รูปแบบ KB-yyyy-NNN</summary>
         int GetNextCodeSequence(int year);
 
+        /// <summary>true เมื่อมี ArticleCode นี้อยู่แล้ว (ใช้ validate ก่อน insert ตอน import)</summary>
+        bool ExistsByCode(string articleCode);
+
+        /// <summary>ค้นบทความด้วย ArticleCode แบบตรงตัวเป๊ะ (exact match) คืน null ถ้าไม่พบ</summary>
+        KBArticle GetByCode(string articleCode);
+
+        /// <summary>
+        /// ค้นบทความมาตราด้วย TitleCategory โดยตัดช่องว่างทั้งหมดออกทั้งสองฝั่งก่อนเทียบแบบตรงตัว
+        /// เช่น key "มาตรา108/4" จะตรงกับ TitleCategory "มาตรา108 /4"
+        /// คืนเฉพาะ ArticleID, ArticleCode, TitleCategory
+        /// </summary>
+        IEnumerable<KBArticle> FindByNormalizedTitleCategory(string normalizedKey);
+
         void SoftDelete(int articleId);
         void UpdateExpiryDate(int articleId, DateTime? expiryDate);
     }

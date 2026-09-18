@@ -116,12 +116,16 @@ namespace CMS.Controllers.KMS.KB
             _view.ArticleCode         = a.ArticleCode ?? string.Empty;
             _view.Title               = a.Title       ?? string.Empty;
             _view.Summary             = a.Summary     ?? string.Empty;
+            _view.TitleCategory       = a.TitleCategory ?? string.Empty;
             _view.ContentHTML         = a.ContentHTML ?? string.Empty;
             _view.Tags                = a.Tags        ?? string.Empty;
             _view.SelectedCrafLevelCode = a.ConfidentialityLevel;
             _view.SelectedCategoryId  = a.CategoryID;
             _view.SelectedArticleType = (byte)a.ArticleType;
             _view.SelectedStatus      = a.Status;
+
+            if (a.PublishedDate.HasValue)
+                _view.PublishedDate = a.PublishedDate.Value;
 
             if (a.EffectiveDate.HasValue)
                 _view.EffectiveDate = a.EffectiveDate.Value;
@@ -200,12 +204,14 @@ namespace CMS.Controllers.KMS.KB
                     ArticleCode          = _view.ArticleCode,
                     Title                = _view.Title,
                     Summary              = _view.Summary,
+                    TitleCategory        = _view.TitleCategory,
                     ContentHTML          = _view.ContentHTML,
                     CategoryID           = _view.SelectedCategoryId,
                     ArticleType          = _view.SelectedArticleType,
                     Status               = _view.SelectedStatus,
                     ConfidentialityLevel = _view.SelectedCrafLevelCode,
                     Tags                 = _view.Tags,
+                    PublishedDate        = _view.PublishedDate,
                     EffectiveDate        = _view.EffectiveDate,
                     ExpiryDate           = _view.ExpiryDate,
                     CreatedBy            = _user.AdIdentity,
@@ -259,12 +265,14 @@ namespace CMS.Controllers.KMS.KB
                     ArticleCode      = _view.ArticleCode,
                     Title            = _view.Title,
                     Summary          = _view.Summary,
+                    TitleCategory    = _view.TitleCategory,
                     ContentHTML      = _view.ContentHTML,
                     CategoryID       = _view.SelectedCategoryId,
                     ArticleType      = _view.SelectedArticleType,
                     Status           = 2,  // Send for Review
                     ConfidentialityLevel = _view.SelectedCrafLevelCode,
                     Tags             = _view.Tags,
+                    PublishedDate    = _view.PublishedDate,
                     EffectiveDate    = _view.EffectiveDate,
                     ExpiryDate       = _view.ExpiryDate,
                     CreatedBy        = _user.AdIdentity,

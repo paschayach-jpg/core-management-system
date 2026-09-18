@@ -34,7 +34,9 @@ namespace CMS.Presentation.Modules.KMS
             this.btnSaveDraft = new System.Windows.Forms.Button();
             this.btnSendReview = new System.Windows.Forms.Button();
             this.btnPublish = new System.Windows.Forms.Button();
+            this.btnPreview = new System.Windows.Forms.Button();
             this.pnlSep1 = new System.Windows.Forms.Panel();
+            this.btnArchive = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.pnlToolbarBorder = new System.Windows.Forms.Panel();
             this.pnlStatusBar = new System.Windows.Forms.Panel();
@@ -49,6 +51,8 @@ namespace CMS.Presentation.Modules.KMS
             this.splitTopBottom = new System.Windows.Forms.SplitContainer();
             this.pnlGenInfoOuter = new System.Windows.Forms.Panel();
             this.tlpGenInfo = new System.Windows.Forms.TableLayoutPanel();
+            this.dtpPublished = new System.Windows.Forms.DateTimePicker();
+            this.lblPublished = new System.Windows.Forms.Label();
             this.dtpEffective = new System.Windows.Forms.DateTimePicker();
             this.label1 = new System.Windows.Forms.Label();
             this.lblExpiry = new System.Windows.Forms.Label();
@@ -73,6 +77,8 @@ namespace CMS.Presentation.Modules.KMS
             this.lblCraf = new System.Windows.Forms.Label();
             this.cboCraf = new System.Windows.Forms.ComboBox();
             this.dtpExpiry = new System.Windows.Forms.DateTimePicker();
+            this.lblTitleCategory = new System.Windows.Forms.Label();
+            this.txtTitleCategory = new System.Windows.Forms.TextBox();
             this.pnlGenInfoHeader = new System.Windows.Forms.Panel();
             this.btnCollapseGenInfo = new System.Windows.Forms.Button();
             this.lblGenInfoHeader = new System.Windows.Forms.Label();
@@ -221,8 +227,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingHeader = new System.Windows.Forms.Panel();
             this.btnCollapseMappingPanel = new System.Windows.Forms.Button();
             this.lblMappingHeader = new System.Windows.Forms.Label();
-            this.btnPreview = new System.Windows.Forms.Button();
-            this.btnArchive = new System.Windows.Forms.Button();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             this.flpToolbarLeft.SuspendLayout();
@@ -436,6 +440,24 @@ namespace CMS.Presentation.Modules.KMS
             this.btnPublish.Visible = false;
             this.btnPublish.Click += new System.EventHandler(this.BtnPublish_Click);
             // 
+            // btnPreview
+            // 
+            this.btnPreview.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(232)))), ((int)(((byte)(244)))), ((int)(((byte)(253)))));
+            this.btnPreview.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnPreview.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(159)))), ((int)(((byte)(212)))));
+            this.btnPreview.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnPreview.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnPreview.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(82)))), ((int)(((byte)(118)))));
+            this.btnPreview.Location = new System.Drawing.Point(650, 7);
+            this.btnPreview.Margin = new System.Windows.Forms.Padding(0);
+            this.btnPreview.Name = "btnPreview";
+            this.btnPreview.Size = new System.Drawing.Size(88, 28);
+            this.btnPreview.TabIndex = 2;
+            this.btnPreview.Text = "👁️ Preview";
+            this.btnPreview.UseVisualStyleBackColor = false;
+            this.btnPreview.Visible = false;
+            this.btnPreview.Click += new System.EventHandler(this.BtnPreview_Click);
+            // 
             // pnlSep1
             // 
             this.pnlSep1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(215)))), ((int)(((byte)(222)))));
@@ -444,6 +466,24 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlSep1.Name = "pnlSep1";
             this.pnlSep1.Size = new System.Drawing.Size(1, 24);
             this.pnlSep1.TabIndex = 99;
+            // 
+            // btnArchive
+            // 
+            this.btnArchive.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(139)))), ((int)(((byte)(90)))), ((int)(((byte)(43)))));
+            this.btnArchive.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnArchive.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(110)))), ((int)(((byte)(70)))), ((int)(((byte)(30)))));
+            this.btnArchive.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnArchive.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnArchive.ForeColor = System.Drawing.Color.White;
+            this.btnArchive.Location = new System.Drawing.Point(755, 7);
+            this.btnArchive.Margin = new System.Windows.Forms.Padding(0, 0, 4, 0);
+            this.btnArchive.Name = "btnArchive";
+            this.btnArchive.Size = new System.Drawing.Size(119, 28);
+            this.btnArchive.TabIndex = 3;
+            this.btnArchive.Text = "📦 Archive";
+            this.btnArchive.UseVisualStyleBackColor = false;
+            this.btnArchive.Visible = false;
+            this.btnArchive.Click += new System.EventHandler(this.BtnArchive_Click);
             // 
             // btnCancel
             // 
@@ -597,14 +637,14 @@ namespace CMS.Presentation.Modules.KMS
             // splitTopBottom.Panel1
             // 
             this.splitTopBottom.Panel1.Controls.Add(this.pnlGenInfoOuter);
-            this.splitTopBottom.Panel1MinSize = 220;
+            this.splitTopBottom.Panel1MinSize = 372;
             // 
             // splitTopBottom.Panel2
             // 
             this.splitTopBottom.Panel2.Controls.Add(this.pnlContentOuter);
             this.splitTopBottom.Panel2MinSize = 250;
             this.splitTopBottom.Size = new System.Drawing.Size(1178, 923);
-            this.splitTopBottom.SplitterDistance = 220;
+            this.splitTopBottom.SplitterDistance = 372;
             this.splitTopBottom.SplitterWidth = 6;
             this.splitTopBottom.TabIndex = 0;
             // 
@@ -617,7 +657,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlGenInfoOuter.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlGenInfoOuter.Location = new System.Drawing.Point(0, 0);
             this.pnlGenInfoOuter.Name = "pnlGenInfoOuter";
-            this.pnlGenInfoOuter.Size = new System.Drawing.Size(1178, 220);
+            this.pnlGenInfoOuter.Size = new System.Drawing.Size(1178, 372);
             this.pnlGenInfoOuter.TabIndex = 10;
             // 
             // tlpGenInfo
@@ -628,11 +668,13 @@ namespace CMS.Presentation.Modules.KMS
             this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 21.83253F));
             this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 27.53178F));
             this.tlpGenInfo.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25.03288F));
-            this.tlpGenInfo.Controls.Add(this.dtpEffective, 2, 6);
-            this.tlpGenInfo.Controls.Add(this.label1, 2, 5);
-            this.tlpGenInfo.Controls.Add(this.lblExpiry, 3, 5);
-            this.tlpGenInfo.Controls.Add(this.lblTags, 0, 5);
-            this.tlpGenInfo.Controls.Add(this.flpTags, 0, 6);
+            this.tlpGenInfo.Controls.Add(this.dtpPublished, 0, 6);
+            this.tlpGenInfo.Controls.Add(this.lblPublished, 0, 5);
+            this.tlpGenInfo.Controls.Add(this.dtpEffective, 1, 6);
+            this.tlpGenInfo.Controls.Add(this.label1, 1, 5);
+            this.tlpGenInfo.Controls.Add(this.lblExpiry, 2, 5);
+            this.tlpGenInfo.Controls.Add(this.lblTags, 0, 7);
+            this.tlpGenInfo.Controls.Add(this.flpTags, 0, 8);
             this.tlpGenInfo.Controls.Add(this.lblCode, 0, 0);
             this.tlpGenInfo.Controls.Add(this.lblType, 1, 0);
             this.tlpGenInfo.Controls.Add(this.lblStatus, 2, 0);
@@ -647,31 +689,58 @@ namespace CMS.Presentation.Modules.KMS
             this.tlpGenInfo.Controls.Add(this.cboCategory, 2, 4);
             this.tlpGenInfo.Controls.Add(this.lblCraf, 3, 3);
             this.tlpGenInfo.Controls.Add(this.cboCraf, 3, 4);
-            this.tlpGenInfo.Controls.Add(this.dtpExpiry, 3, 6);
+            this.tlpGenInfo.Controls.Add(this.dtpExpiry, 2, 6);
+            this.tlpGenInfo.Controls.Add(this.lblTitleCategory, 0, 9);
+            this.tlpGenInfo.Controls.Add(this.txtTitleCategory, 0, 10);
             this.tlpGenInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpGenInfo.Location = new System.Drawing.Point(0, 28);
             this.tlpGenInfo.Name = "tlpGenInfo";
             this.tlpGenInfo.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.tlpGenInfo.RowCount = 7;
+            this.tlpGenInfo.RowCount = 11;
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 18F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 9F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 19F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 33F));
-            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 11F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 33F));
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 60F));
             this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tlpGenInfo.Size = new System.Drawing.Size(1176, 190);
+            this.tlpGenInfo.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tlpGenInfo.Size = new System.Drawing.Size(1176, 342);
             this.tlpGenInfo.TabIndex = 1;
+            // 
+            // dtpPublished
+            // 
+            this.dtpPublished.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dtpPublished.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.dtpPublished.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpPublished.Location = new System.Drawing.Point(13, 146);
+            this.dtpPublished.Name = "dtpPublished";
+            this.dtpPublished.Size = new System.Drawing.Size(289, 34);
+            this.dtpPublished.TabIndex = 38;
+            // 
+            // lblPublished
+            // 
+            this.lblPublished.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblPublished.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblPublished.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblPublished.Location = new System.Drawing.Point(12, 120);
+            this.lblPublished.Margin = new System.Windows.Forms.Padding(2, 10, 2, 0);
+            this.lblPublished.Name = "lblPublished";
+            this.lblPublished.Size = new System.Drawing.Size(291, 23);
+            this.lblPublished.TabIndex = 39;
+            this.lblPublished.Text = "วันที่เผยแพร่";
             // 
             // dtpEffective
             // 
             this.dtpEffective.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dtpEffective.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.dtpEffective.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.dtpEffective.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpEffective.Location = new System.Drawing.Point(560, 146);
+            this.dtpEffective.Location = new System.Drawing.Point(308, 146);
             this.dtpEffective.Name = "dtpEffective";
-            this.dtpEffective.Size = new System.Drawing.Size(312, 26);
+            this.dtpEffective.Size = new System.Drawing.Size(246, 34);
             this.dtpEffective.TabIndex = 37;
             // 
             // label1
@@ -679,10 +748,10 @@ namespace CMS.Presentation.Modules.KMS
             this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label1.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.label1.Location = new System.Drawing.Point(559, 120);
+            this.label1.Location = new System.Drawing.Point(307, 120);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 10, 2, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(314, 23);
+            this.label1.Size = new System.Drawing.Size(248, 23);
             this.label1.TabIndex = 36;
             this.label1.Text = "วันที่มีผล";
             // 
@@ -691,22 +760,23 @@ namespace CMS.Presentation.Modules.KMS
             this.lblExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lblExpiry.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblExpiry.Location = new System.Drawing.Point(877, 120);
+            this.lblExpiry.Location = new System.Drawing.Point(559, 120);
             this.lblExpiry.Margin = new System.Windows.Forms.Padding(2, 10, 2, 0);
             this.lblExpiry.Name = "lblExpiry";
-            this.lblExpiry.Size = new System.Drawing.Size(287, 23);
+            this.lblExpiry.Size = new System.Drawing.Size(314, 23);
             this.lblExpiry.TabIndex = 32;
             this.lblExpiry.Text = "วันที่ยกเลิก";
             // 
             // lblTags
             // 
+            this.tlpGenInfo.SetColumnSpan(this.lblTags, 4);
             this.lblTags.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblTags.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lblTags.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblTags.Location = new System.Drawing.Point(12, 120);
+            this.lblTags.Location = new System.Drawing.Point(12, 183);
             this.lblTags.Margin = new System.Windows.Forms.Padding(2, 10, 2, 5);
             this.lblTags.Name = "lblTags";
-            this.lblTags.Size = new System.Drawing.Size(291, 18);
+            this.lblTags.Size = new System.Drawing.Size(1152, 18);
             this.lblTags.TabIndex = 30;
             this.lblTags.Text = "แท็ก (Tags) — คั่นด้วยเครื่องหมาย ,";
             // 
@@ -714,14 +784,14 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.flpTags.AutoScroll = true;
             this.flpTags.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.tlpGenInfo.SetColumnSpan(this.flpTags, 2);
+            this.tlpGenInfo.SetColumnSpan(this.flpTags, 4);
             this.flpTags.Controls.Add(this.pnlTagChipTemplate);
             this.flpTags.Controls.Add(this.txtTagInput);
             this.flpTags.Dock = System.Windows.Forms.DockStyle.Top;
-            this.flpTags.Location = new System.Drawing.Point(12, 143);
+            this.flpTags.Location = new System.Drawing.Point(12, 206);
             this.flpTags.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.flpTags.Name = "flpTags";
-            this.flpTags.Size = new System.Drawing.Size(543, 34);
+            this.flpTags.Size = new System.Drawing.Size(1152, 60);
             this.flpTags.TabIndex = 35;
             // 
             // pnlTagChipTemplate
@@ -767,11 +837,12 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // txtTagInput
             // 
+            this.txtTagInput.BackColor = System.Drawing.SystemColors.Menu;
             this.txtTagInput.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.txtTagInput.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtTagInput.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.txtTagInput.Location = new System.Drawing.Point(72, 3);
             this.txtTagInput.Name = "txtTagInput";
-            this.txtTagInput.Size = new System.Drawing.Size(104, 27);
+            this.txtTagInput.Size = new System.Drawing.Size(145, 27);
             this.txtTagInput.TabIndex = 0;
             this.txtTagInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtTagInput_KeyDown);
             this.txtTagInput.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.TxtTagInput_KeyPress);
@@ -828,36 +899,36 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.txtCode.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.txtCode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtCode.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.txtCode.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.txtCode.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
             this.txtCode.Location = new System.Drawing.Point(12, 26);
             this.txtCode.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.txtCode.Name = "txtCode";
             this.txtCode.ReadOnly = true;
-            this.txtCode.Size = new System.Drawing.Size(291, 26);
+            this.txtCode.Size = new System.Drawing.Size(291, 34);
             this.txtCode.TabIndex = 10;
             // 
             // cboType
             // 
             this.cboType.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboType.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.cboType.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.cboType.Location = new System.Drawing.Point(307, 26);
             this.cboType.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.cboType.Name = "cboType";
-            this.cboType.Size = new System.Drawing.Size(248, 27);
+            this.cboType.Size = new System.Drawing.Size(248, 36);
             this.cboType.TabIndex = 11;
             // 
             // cboStatus
             // 
             this.cboStatus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.cboStatus.FormattingEnabled = true;
             this.cboStatus.Location = new System.Drawing.Point(559, 26);
             this.cboStatus.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(314, 28);
+            this.cboStatus.Size = new System.Drawing.Size(314, 36);
             this.cboStatus.TabIndex = 12;
             this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboStatus_SelectedIndexChanged);
             // 
@@ -902,23 +973,23 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tlpGenInfo.SetColumnSpan(this.txtTitle, 2);
             this.txtTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtTitle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.txtTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.txtTitle.Location = new System.Drawing.Point(12, 82);
             this.txtTitle.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.txtTitle.MaxLength = 500;
             this.txtTitle.Name = "txtTitle";
-            this.txtTitle.Size = new System.Drawing.Size(543, 30);
+            this.txtTitle.Size = new System.Drawing.Size(543, 34);
             this.txtTitle.TabIndex = 22;
             // 
             // cboCategory
             // 
             this.cboCategory.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cboCategory.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.cboCategory.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.cboCategory.Location = new System.Drawing.Point(559, 82);
             this.cboCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.cboCategory.Name = "cboCategory";
-            this.cboCategory.Size = new System.Drawing.Size(314, 27);
+            this.cboCategory.Size = new System.Drawing.Size(314, 36);
             this.cboCategory.TabIndex = 23;
             // 
             // lblCraf
@@ -937,22 +1008,47 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.cboCraf.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cboCraf.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboCraf.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.cboCraf.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.cboCraf.Location = new System.Drawing.Point(877, 82);
             this.cboCraf.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.cboCraf.Name = "cboCraf";
-            this.cboCraf.Size = new System.Drawing.Size(287, 27);
+            this.cboCraf.Size = new System.Drawing.Size(287, 36);
             this.cboCraf.TabIndex = 33;
             // 
             // dtpExpiry
             // 
             this.dtpExpiry.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.dtpExpiry.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.dtpExpiry.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpExpiry.Location = new System.Drawing.Point(878, 146);
+            this.dtpExpiry.Location = new System.Drawing.Point(560, 146);
             this.dtpExpiry.Name = "dtpExpiry";
-            this.dtpExpiry.Size = new System.Drawing.Size(285, 26);
+            this.dtpExpiry.Size = new System.Drawing.Size(312, 34);
             this.dtpExpiry.TabIndex = 34;
+            // 
+            // lblTitleCategory
+            // 
+            this.tlpGenInfo.SetColumnSpan(this.lblTitleCategory, 4);
+            this.lblTitleCategory.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTitleCategory.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblTitleCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.lblTitleCategory.Location = new System.Drawing.Point(12, 266);
+            this.lblTitleCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblTitleCategory.Name = "lblTitleCategory";
+            this.lblTitleCategory.Size = new System.Drawing.Size(1152, 20);
+            this.lblTitleCategory.TabIndex = 38;
+            this.lblTitleCategory.Text = "หมวดหมู่ชื่อเรื่อง";
+            // 
+            // txtTitleCategory
+            // 
+            this.tlpGenInfo.SetColumnSpan(this.txtTitleCategory, 4);
+            this.txtTitleCategory.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtTitleCategory.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.txtTitleCategory.Location = new System.Drawing.Point(12, 286);
+            this.txtTitleCategory.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.txtTitleCategory.MaxLength = 500;
+            this.txtTitleCategory.Name = "txtTitleCategory";
+            this.txtTitleCategory.Size = new System.Drawing.Size(1152, 34);
+            this.txtTitleCategory.TabIndex = 39;
             // 
             // pnlGenInfoHeader
             // 
@@ -1008,17 +1104,17 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContentOuter.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlContentOuter.Location = new System.Drawing.Point(0, 0);
             this.pnlContentOuter.Name = "pnlContentOuter";
-            this.pnlContentOuter.Size = new System.Drawing.Size(1178, 697);
+            this.pnlContentOuter.Size = new System.Drawing.Size(1178, 545);
             this.pnlContentOuter.TabIndex = 12;
             // 
             // webEditor
             // 
             this.webEditor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.webEditor.IsWebBrowserContextMenuEnabled = false;
-            this.webEditor.Location = new System.Drawing.Point(0, 115);
+            this.webEditor.Location = new System.Drawing.Point(0, 147);
             this.webEditor.Name = "webEditor";
             this.webEditor.ScriptErrorsSuppressed = true;
-            this.webEditor.Size = new System.Drawing.Size(1176, 558);
+            this.webEditor.Size = new System.Drawing.Size(1176, 374);
             this.webEditor.TabIndex = 5;
             this.webEditor.DocumentCompleted += new System.Windows.Forms.WebBrowserDocumentCompletedEventHandler(this.WebEditor_DocumentCompleted);
             // 
@@ -1027,7 +1123,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRteStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlRteStatus.Controls.Add(this.lblRteStatus);
             this.pnlRteStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlRteStatus.Location = new System.Drawing.Point(0, 673);
+            this.pnlRteStatus.Location = new System.Drawing.Point(0, 521);
             this.pnlRteStatus.Name = "pnlRteStatus";
             this.pnlRteStatus.Padding = new System.Windows.Forms.Padding(10, 0, 10, 0);
             this.pnlRteStatus.Size = new System.Drawing.Size(1176, 22);
@@ -1050,7 +1146,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblContent.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblContent.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
             this.lblContent.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblContent.Location = new System.Drawing.Point(0, 93);
+            this.lblContent.Location = new System.Drawing.Point(0, 125);
             this.lblContent.Name = "lblContent";
             this.lblContent.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
             this.lblContent.Size = new System.Drawing.Size(1176, 22);
@@ -1089,7 +1185,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tsRteZoomOut,
             this.tsRteZoom,
             this.tsRteZoomIn});
-            this.tsRte.Location = new System.Drawing.Point(0, 65);
+            this.tsRte.Location = new System.Drawing.Point(0, 97);
             this.tsRte.Name = "tsRte";
             this.tsRte.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.tsRte.Size = new System.Drawing.Size(1176, 28);
@@ -1353,7 +1449,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlSummaryArea.Location = new System.Drawing.Point(0, 28);
             this.pnlSummaryArea.Name = "pnlSummaryArea";
             this.pnlSummaryArea.Padding = new System.Windows.Forms.Padding(10, 4, 10, 0);
-            this.pnlSummaryArea.Size = new System.Drawing.Size(1176, 37);
+            this.pnlSummaryArea.Size = new System.Drawing.Size(1176, 69);
             this.pnlSummaryArea.TabIndex = 1;
             // 
             // txtSummary
@@ -1363,9 +1459,10 @@ namespace CMS.Presentation.Modules.KMS
             this.txtSummary.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.txtSummary.Location = new System.Drawing.Point(168, 4);
             this.txtSummary.MaxLength = 1000;
+            this.txtSummary.Multiline = true;
             this.txtSummary.Name = "txtSummary";
             this.txtSummary.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtSummary.Size = new System.Drawing.Size(998, 27);
+            this.txtSummary.Size = new System.Drawing.Size(998, 65);
             this.txtSummary.TabIndex = 1;
             // 
             // lblSummary
@@ -1452,7 +1549,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlAttachUpload.Controls.Add(this.btnSelectFromDMS);
             this.pnlAttachUpload.Controls.Add(this.btnUploadFile);
             this.pnlAttachUpload.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlAttachUpload.Location = new System.Drawing.Point(4, 148);
+            this.pnlAttachUpload.Location = new System.Drawing.Point(4, 239);
             this.pnlAttachUpload.Name = "pnlAttachUpload";
             this.pnlAttachUpload.Padding = new System.Windows.Forms.Padding(8, 6, 8, 6);
             this.pnlAttachUpload.Size = new System.Drawing.Size(511, 54);
@@ -1509,7 +1606,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvAttachLinked.RowHeadersWidth = 51;
             this.dgvAttachLinked.RowTemplate.Height = 28;
             this.dgvAttachLinked.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvAttachLinked.Size = new System.Drawing.Size(511, 120);
+            this.dgvAttachLinked.Size = new System.Drawing.Size(511, 211);
             this.dgvAttachLinked.TabIndex = 1;
             this.dgvAttachLinked.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvAttachLinked_CellContentClick);
             // 
@@ -1615,7 +1712,7 @@ namespace CMS.Presentation.Modules.KMS
             this.colRelatedSummary,
             this.colRelatedSearchType,
             this.colRelatedSearchViews});
-            this.dgvRelatedSearch.Dock = System.Windows.Forms.DockStyle.Top;
+            this.dgvRelatedSearch.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvRelatedSearch.Location = new System.Drawing.Point(4, 274);
             this.dgvRelatedSearch.Name = "dgvRelatedSearch";
             this.dgvRelatedSearch.ReadOnly = true;
@@ -1623,7 +1720,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvRelatedSearch.RowHeadersWidth = 51;
             this.dgvRelatedSearch.RowTemplate.Height = 28;
             this.dgvRelatedSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvRelatedSearch.Size = new System.Drawing.Size(511, 300);
+            this.dgvRelatedSearch.Size = new System.Drawing.Size(511, 582);
             this.dgvRelatedSearch.TabIndex = 5;
             this.dgvRelatedSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvRelatedSearch_CellDoubleClick);
             // 
@@ -1790,12 +1887,13 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colCode
             // 
+            this.colCode.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
             this.colCode.HeaderText = "รหัสบทความ";
             this.colCode.MinimumWidth = 6;
             this.colCode.Name = "colCode";
             this.colCode.ReadOnly = true;
             this.colCode.Visible = false;
-            this.colCode.Width = 120;
+            this.colCode.Width = 125;
             // 
             // colTitle
             // 
@@ -2128,7 +2226,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvProgramsSearch.RowHeadersWidth = 51;
             this.dgvProgramsSearch.RowTemplate.Height = 28;
             this.dgvProgramsSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvProgramsSearch.Size = new System.Drawing.Size(511, 300);
+            this.dgvProgramsSearch.Size = new System.Drawing.Size(511, 31);
             this.dgvProgramsSearch.TabIndex = 5;
             this.dgvProgramsSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvProgramsSearch_CellDoubleClick);
             // 
@@ -2369,7 +2467,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvDocsSearch.RowHeadersWidth = 51;
             this.dgvDocsSearch.RowTemplate.Height = 28;
             this.dgvDocsSearch.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvDocsSearch.Size = new System.Drawing.Size(511, 300);
+            this.dgvDocsSearch.Size = new System.Drawing.Size(511, 31);
             this.dgvDocsSearch.TabIndex = 5;
             this.dgvDocsSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvDocsSearch_CellDoubleClick);
             // 
@@ -2726,42 +2824,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader.Text = "Mapping รายการที่เกี่ยวข้อง";
             this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // btnPreview
-            // 
-            this.btnPreview.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(232)))), ((int)(((byte)(244)))), ((int)(((byte)(253)))));
-            this.btnPreview.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnPreview.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(159)))), ((int)(((byte)(212)))));
-            this.btnPreview.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnPreview.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnPreview.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(82)))), ((int)(((byte)(118)))));
-            this.btnPreview.Location = new System.Drawing.Point(650, 7);
-            this.btnPreview.Margin = new System.Windows.Forms.Padding(0);
-            this.btnPreview.Name = "btnPreview";
-            this.btnPreview.Size = new System.Drawing.Size(88, 28);
-            this.btnPreview.TabIndex = 2;
-            this.btnPreview.Text = "👁️ Preview";
-            this.btnPreview.UseVisualStyleBackColor = false;
-            this.btnPreview.Visible = false;
-            this.btnPreview.Click += new System.EventHandler(this.BtnPreview_Click);
-            // 
-            // btnArchive
-            // 
-            this.btnArchive.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(139)))), ((int)(((byte)(90)))), ((int)(((byte)(43)))));
-            this.btnArchive.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnArchive.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(110)))), ((int)(((byte)(70)))), ((int)(((byte)(30)))));
-            this.btnArchive.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnArchive.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnArchive.ForeColor = System.Drawing.Color.White;
-            this.btnArchive.Location = new System.Drawing.Point(755, 7);
-            this.btnArchive.Margin = new System.Windows.Forms.Padding(0, 0, 4, 0);
-            this.btnArchive.Name = "btnArchive";
-            this.btnArchive.Size = new System.Drawing.Size(119, 28);
-            this.btnArchive.TabIndex = 3;
-            this.btnArchive.Text = "📦 Archive";
-            this.btnArchive.UseVisualStyleBackColor = false;
-            this.btnArchive.Visible = false;
-            this.btnArchive.Click += new System.EventHandler(this.BtnArchive_Click);
-            // 
             // KBEditorDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -3049,6 +3111,8 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label lblViewCount;
         private System.Windows.Forms.ComboBox cboCraf;
         private System.Windows.Forms.Label lblExpiry;
+        private System.Windows.Forms.Label lblTitleCategory;
+        private System.Windows.Forms.TextBox txtTitleCategory;
         private System.Windows.Forms.DataGridViewTextBoxColumn colNum;
         private System.Windows.Forms.DataGridViewTextBoxColumn colFilename;
         private System.Windows.Forms.DataGridViewTextBoxColumn colSize;
@@ -3080,6 +3144,8 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.TextBox txtTagInput;
         private System.Windows.Forms.DateTimePicker dtpExpiry;
         private System.Windows.Forms.Label lblLikeCount;
+        private System.Windows.Forms.DateTimePicker dtpPublished;
+        private System.Windows.Forms.Label lblPublished;
         private System.Windows.Forms.DateTimePicker dtpEffective;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnPreview;

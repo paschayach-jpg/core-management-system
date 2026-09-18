@@ -1,4 +1,5 @@
 using CMS.Controllers.KMS.KB.Interfaces;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
@@ -15,6 +16,28 @@ namespace CMS.Controllers.KMS.KB
         private readonly UserContext        _user;
 
         private int _currentPage = 1;
+
+        // ── Cross-reference folders: มาตรา (46) ↔ คำสั่ง (54) / หมวดภายใน (55) ──
+        private const int LawSectionCategoryId = 46;
+        private const int OrderCategoryId      = 54;
+        private const int InternalCategoryId   = 55;
+        private const string OrderFolderLabel    = "คำสั่ง (นายทะเบียน/กระทรวง)";
+        private const string InternalFolderLabel = "หมวดภายใน";
+        private const string LawFolderLabel      = "กฎหมาย";
+
+        /// <summary>source CategoryID → [(target CategoryID, folder label), ...]</summary>
+        private static readonly IDictionary<int, List<Tuple<int, string>>> LinkedFolderRules =
+            new Dictionary<int, List<Tuple<int, string>>>
+            {
+                { LawSectionCategoryId, new List<Tuple<int, string>>
+                    {
+                        Tuple.Create(OrderCategoryId,    OrderFolderLabel),
+                        Tuple.Create(InternalCategoryId, InternalFolderLabel),
+                    }
+                },
+                { OrderCategoryId,    new List<Tuple<int, string>> { Tuple.Create(LawSectionCategoryId, LawFolderLabel) } },
+                { InternalCategoryId, new List<Tuple<int, string>> { Tuple.Create(LawSectionCategoryId, LawFolderLabel) } },
+            };
 
         public KBMainController(
             IKBMainController  view,
@@ -42,12 +65,20 @@ namespace CMS.Controllers.KMS.KB
                 var counts           = new Dictionary<int, int>();
                 // CategoryID → (Title → article count with that exact title)
                 var titlesByCategory = new Dictionary<int, IDictionary<string, int>>();
+                // CategoryID → (Title → link folder อ้างอิงข้ามหมวดที่ต้องแสดงใต้ title-leaf นั้น)
+                var linkedFoldersByCategoryTitle = new Dictionary<int, IDictionary<string, List<KBLinkedFolder>>>();
 
                 try
                 {
                     // Archived (Status = 4) articles only ever appear under the "Archived"
                     // folder — exclude them from per-category counts/titles here.
-                    foreach (var a in _articleService.GetAll().Where(a => a.Status != 4))
+                    var activeArticles = _articleService.GetAll().Where(a => a.Status != 4).ToList();
+                    var articlesById   = activeArticles.ToDictionary(a => a.ArticleID);
+
+                    // CategoryID → (Title → ArticleIDs ในกลุ่มนั้น) ใช้ resolve cross-reference links
+                    var groupArticleIds = new Dictionary<int, Dictionary<string, List<int>>>();
+
+                    foreach (var a in activeArticles)
                     {
                         // per-category article count
                         if (!counts.ContainsKey(a.CategoryID)) counts[a.CategoryID] = 0;
@@ -64,13 +95,141 @@ namespace CMS.Controllers.KMS.KB
                         var titleMap = titlesByCategory[a.CategoryID];
                         if (!titleMap.ContainsKey(t)) titleMap[t] = 0;
                         titleMap[t]++;
+
+                        if (!groupArticleIds.ContainsKey(a.CategoryID))
+                            groupArticleIds[a.CategoryID] =
+                                new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+
+                        var idMap = groupArticleIds[a.CategoryID];
+                        if (!idMap.ContainsKey(t)) idMap[t] = new List<int>();
+                        idMap[t].Add(a.ArticleID);
+                    }
+
+                    // ── Cross-reference folders: มาตรา ↔ คำสั่ง/หมวดภายใน (ถือลิงก์เป็นสองทิศทางเสมอ) ──
+                    var linkGraph = BuildLawLinkGraph();
+
+                    foreach (var catEntry in groupArticleIds)
+                    {
+                        List<Tuple<int, string>> rules;
+                        if (!LinkedFolderRules.TryGetValue(catEntry.Key, out rules)) continue;
+
+                        foreach (var titleEntry in catEntry.Value)
+                        {
+                            var relatedIds = new HashSet<int>();
+                            foreach (var articleId in titleEntry.Value)
+                            {
+                                HashSet<int> linked;
+                                if (linkGraph.TryGetValue(articleId, out linked))
+                                    relatedIds.UnionWith(linked);
+                            }
+                            if (relatedIds.Count == 0) continue;
+
+                            var folders = new List<KBLinkedFolder>();
+                            foreach (var rule in rules)
+                            {
+                                int    targetCategoryId = rule.Item1;
+                                string label            = rule.Item2;
+
+                                var matched = relatedIds
+                                    .Select(id => { KBArticle art; articlesById.TryGetValue(id, out art); return art; })
+                                    .Where(art => art != null && art.CategoryID == targetCategoryId)
+                                    .ToList();
+
+                                if (matched.Count > 0)
+                                    folders.Add(new KBLinkedFolder { Label = label, Articles = matched });
+                            }
+
+                            if (folders.Count == 0) continue;
+
+                            if (!linkedFoldersByCategoryTitle.ContainsKey(catEntry.Key))
+                                linkedFoldersByCategoryTitle[catEntry.Key] =
+                                    new Dictionary<string, List<KBLinkedFolder>>(StringComparer.OrdinalIgnoreCase);
+
+                            linkedFoldersByCategoryTitle[catEntry.Key][titleEntry.Key] = folders;
+                        }
                     }
                 }
-                catch { /* article counts / titles are non-critical */ }
+                catch { /* article counts / titles / linked folders are non-critical */ }
 
-                _view.BindCategoryTree(categories, counts, titlesByCategory);
+                _view.BindCategoryTree(new KBCategoryTreeData
+                {
+                    Categories                   = categories,
+                    ArticleCounts                = counts,
+                    TitlesByCategory             = titlesByCategory,
+                    LinkedFoldersByCategoryTitle = linkedFoldersByCategoryTitle,
+                });
             }
             catch (Exception ex) { _view.ShowError("Load category failed: " + ex.Message); }
+        }
+
+        /// <summary>
+        /// สร้าง undirected graph ของลิงก์ KMS.t_KBArticleLink (EntityType=Law) — เพิ่ม edge ทั้ง 2 ทิศทางเสมอ
+        /// ไม่ว่า DB จะเก็บทิศทางไหนจริง (รองรับทั้งลิงก์ที่ import สร้างแบบ 2 ทิศทาง และลิงก์จากหน้า editor ที่สร้างทิศทางเดียว)
+        /// </summary>
+        private Dictionary<int, HashSet<int>> BuildLawLinkGraph()
+        {
+            var graph = new Dictionary<int, HashSet<int>>();
+            var links = _articleService.GetAllLinksByType((byte)KBEntityType.Law);
+
+            foreach (var link in links)
+            {
+                int entityId;
+                if (!int.TryParse(link.EntityID, out entityId)) continue;
+
+                AddEdge(graph, link.ArticleID, entityId);
+                AddEdge(graph, entityId, link.ArticleID);
+            }
+
+            return graph;
+        }
+
+        private static void AddEdge(Dictionary<int, HashSet<int>> graph, int from, int to)
+        {
+            HashSet<int> set;
+            if (!graph.TryGetValue(from, out set))
+            {
+                set = new HashSet<int>();
+                graph[from] = set;
+            }
+            set.Add(to);
+        }
+
+        /// <summary>
+        /// Called when the user clicks a cross-reference folder (or one of its child leaves)
+        /// in treeCategories. Renders exactly the given articles, bypassing the normal
+        /// category/title search since the IDs are already known from the link graph.
+        /// </summary>
+        public void OnLinkedArticlesSelected(IList<int> articleIds, string folderLabel)
+        {
+            _view.IsArchivedMode       = false;
+            _view.SelectedCategoryId   = null;
+            _view.SelectedArticleTitle = null;
+            _view.ArticleTitleText     = string.Format("  {0}", folderLabel);
+            LoadLinkedArticles(articleIds);
+        }
+
+        private void LoadLinkedArticles(IList<int> articleIds)
+        {
+            try
+            {
+                _view.ShowLoading();
+
+                var list = articleIds
+                    .Select(id => _articleService.GetById(id))
+                    .Where(a => a != null && a.Status != 4)
+                    .ToList();
+
+                foreach (var article in list)
+                    ResolveLatestVersion(article);
+
+                list.ForEach(x => x.ContentHTML = StripHtmlTags(x.ContentHTML));
+
+                _view.RenderArticles(list);
+                _view.ArticleCountText = string.Format("{0} บทความ", list.Count);
+                _view.RenderPagination(list.Count, 1, Math.Max(1, list.Count));
+            }
+            catch (Exception ex) { _view.ShowError("Load linked articles failed: " + ex.Message); }
+            finally { _view.HideLoading(); }
         }
 
         public void OnArchivedSelected()

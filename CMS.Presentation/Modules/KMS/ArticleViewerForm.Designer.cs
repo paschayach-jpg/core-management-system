@@ -40,6 +40,7 @@ namespace CMS.Presentation.Modules.KMS
             this.flpBadges = new System.Windows.Forms.FlowLayoutPanel();
             this.lblTypeBadge = new System.Windows.Forms.Label();
             this.lblCategoryBadge = new System.Windows.Forms.Label();
+            this.lblTitleCategory = new System.Windows.Forms.Label();
             this.lblStatusBadge = new System.Windows.Forms.Label();
             this.pnlSidebar = new System.Windows.Forms.Panel();
             this.pnlMappingSection = new System.Windows.Forms.Panel();
@@ -54,10 +55,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblAttachLinked = new System.Windows.Forms.Label();
             this.tabRelated = new System.Windows.Forms.TabPage();
             this.dgvRelatedLinked = new System.Windows.Forms.DataGridView();
-            this.colRelatedNum = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRelatedCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRelatedTitle = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRelatedType = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.lblRelatedLinked = new System.Windows.Forms.Label();
             this.tabWorkflow = new System.Windows.Forms.TabPage();
             this.dgvWorkflowLinked = new System.Windows.Forms.DataGridView();
@@ -92,6 +89,10 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingTitle = new System.Windows.Forms.Label();
             this.lblOfficialBadge = new System.Windows.Forms.Label();
             this.pnlVersionList = new System.Windows.Forms.Panel();
+            this.colRelatedNum = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedTitle = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedType = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             this.pnlToolbarSep.SuspendLayout();
@@ -305,9 +306,9 @@ namespace CMS.Presentation.Modules.KMS
             this.splitViewer.Size = new System.Drawing.Size(1100, 591);
             this.splitViewer.SplitterDistance = 400;
             this.splitViewer.TabIndex = 2;
-            //
+            // 
             // webContent
-            //
+            // 
             this.webContent.AllowWebBrowserDrop = false;
             this.webContent.Dock = System.Windows.Forms.DockStyle.Fill;
             this.webContent.IsWebBrowserContextMenuEnabled = false;
@@ -317,10 +318,10 @@ namespace CMS.Presentation.Modules.KMS
             this.webContent.Size = new System.Drawing.Size(400, 463);
             this.webContent.TabIndex = 1;
             this.webContent.Navigating += new System.Windows.Forms.WebBrowserNavigatingEventHandler(this.WebContent_Navigating);
-            //
-            // pnlZoomStatus — overlay indicator at the bottom of webContent
-            //
-            this.pnlZoomStatus.BackColor = System.Drawing.Color.FromArgb(235, 245, 251);
+            // 
+            // pnlZoomStatus
+            // 
+            this.pnlZoomStatus.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(235)))), ((int)(((byte)(245)))), ((int)(((byte)(251)))));
             this.pnlZoomStatus.Controls.Add(this.lblZoomIndicator);
             this.pnlZoomStatus.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlZoomStatus.Location = new System.Drawing.Point(0, 569);
@@ -328,12 +329,12 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlZoomStatus.Size = new System.Drawing.Size(400, 22);
             this.pnlZoomStatus.TabIndex = 2;
             this.pnlZoomStatus.Visible = false;
-            //
+            // 
             // lblZoomIndicator
-            //
+            // 
             this.lblZoomIndicator.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblZoomIndicator.Font = new System.Drawing.Font("Segoe UI", 8.5F);
-            this.lblZoomIndicator.ForeColor = System.Drawing.Color.FromArgb(46, 116, 181);
+            this.lblZoomIndicator.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
             this.lblZoomIndicator.Location = new System.Drawing.Point(0, 0);
             this.lblZoomIndicator.Name = "lblZoomIndicator";
             this.lblZoomIndicator.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
@@ -341,7 +342,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblZoomIndicator.TabIndex = 0;
             this.lblZoomIndicator.Text = "🔍 100%";
             this.lblZoomIndicator.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            //
+            // 
             // pnlInfoWrapper
             // 
             this.pnlInfoWrapper.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(159)))), ((int)(((byte)(212)))));
@@ -464,6 +465,7 @@ namespace CMS.Presentation.Modules.KMS
             this.flpBadges.BackColor = System.Drawing.Color.Transparent;
             this.flpBadges.Controls.Add(this.lblTypeBadge);
             this.flpBadges.Controls.Add(this.lblCategoryBadge);
+            this.flpBadges.Controls.Add(this.lblTitleCategory);
             this.flpBadges.Controls.Add(this.lblStatusBadge);
             this.flpBadges.Dock = System.Windows.Forms.DockStyle.Top;
             this.flpBadges.Location = new System.Drawing.Point(10, 8);
@@ -500,18 +502,32 @@ namespace CMS.Presentation.Modules.KMS
             this.lblCategoryBadge.TabIndex = 1;
             this.lblCategoryBadge.Text = "-";
             // 
+            // lblTitleCategory
+            // 
+            this.lblTitleCategory.AutoSize = true;
+            this.lblTitleCategory.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.lblTitleCategory.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
+            this.lblTitleCategory.ForeColor = System.Drawing.Color.White;
+            this.lblTitleCategory.Location = new System.Drawing.Point(84, 4);
+            this.lblTitleCategory.Margin = new System.Windows.Forms.Padding(0, 4, 6, 0);
+            this.lblTitleCategory.Name = "lblTitleCategory";
+            this.lblTitleCategory.Padding = new System.Windows.Forms.Padding(5, 2, 5, 2);
+            this.lblTitleCategory.Size = new System.Drawing.Size(25, 23);
+            this.lblTitleCategory.TabIndex = 2;
+            this.lblTitleCategory.Text = "-";
+            // 
             // lblStatusBadge
             // 
             this.lblStatusBadge.AutoSize = true;
             this.lblStatusBadge.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(245)))), ((int)(((byte)(227)))));
             this.lblStatusBadge.Font = new System.Drawing.Font("Segoe UI", 8F, System.Drawing.FontStyle.Bold);
             this.lblStatusBadge.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(132)))), ((int)(((byte)(73)))));
-            this.lblStatusBadge.Location = new System.Drawing.Point(84, 4);
+            this.lblStatusBadge.Location = new System.Drawing.Point(115, 4);
             this.lblStatusBadge.Margin = new System.Windows.Forms.Padding(0, 4, 6, 0);
             this.lblStatusBadge.Name = "lblStatusBadge";
             this.lblStatusBadge.Padding = new System.Windows.Forms.Padding(5, 2, 5, 2);
             this.lblStatusBadge.Size = new System.Drawing.Size(108, 23);
-            this.lblStatusBadge.TabIndex = 2;
+            this.lblStatusBadge.TabIndex = 3;
             this.lblStatusBadge.Text = "✅ Published";
             // 
             // pnlSidebar
@@ -629,6 +645,7 @@ namespace CMS.Presentation.Modules.KMS
             this.colAttachView.HeaderText = "ดูไฟล์";
             this.colAttachView.MinimumWidth = 6;
             this.colAttachView.Name = "colAttachView";
+            this.colAttachView.ReadOnly = true;
             this.colAttachView.Text = "👁️ ดู";
             this.colAttachView.UseColumnTextForButtonValue = true;
             this.colAttachView.Width = 80;
@@ -683,38 +700,6 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvRelatedLinked.Size = new System.Drawing.Size(680, 490);
             this.dgvRelatedLinked.TabIndex = 1;
             this.dgvRelatedLinked.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvRelatedLinked_CellClick);
-            // 
-            // colRelatedNum
-            // 
-            this.colRelatedNum.HeaderText = "#";
-            this.colRelatedNum.MinimumWidth = 6;
-            this.colRelatedNum.Name = "colRelatedNum";
-            this.colRelatedNum.ReadOnly = true;
-            this.colRelatedNum.Width = 40;
-            // 
-            // colRelatedCode
-            // 
-            this.colRelatedCode.HeaderText = "รหัส";
-            this.colRelatedCode.MinimumWidth = 6;
-            this.colRelatedCode.Name = "colRelatedCode";
-            this.colRelatedCode.ReadOnly = true;
-            this.colRelatedCode.Width = 110;
-            // 
-            // colRelatedTitle
-            // 
-            this.colRelatedTitle.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.colRelatedTitle.HeaderText = "ชื่อบทความ";
-            this.colRelatedTitle.MinimumWidth = 6;
-            this.colRelatedTitle.Name = "colRelatedTitle";
-            this.colRelatedTitle.ReadOnly = true;
-            // 
-            // colRelatedType
-            // 
-            this.colRelatedType.HeaderText = "ประเภท";
-            this.colRelatedType.MinimumWidth = 6;
-            this.colRelatedType.Name = "colRelatedType";
-            this.colRelatedType.ReadOnly = true;
-            this.colRelatedType.Width = 90;
             // 
             // lblRelatedLinked
             // 
@@ -1122,6 +1107,40 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlVersionList.Size = new System.Drawing.Size(200, 100);
             this.pnlVersionList.TabIndex = 0;
             // 
+            // colRelatedNum
+            // 
+            this.colRelatedNum.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colRelatedNum.FillWeight = 200F;
+            this.colRelatedNum.HeaderText = "#";
+            this.colRelatedNum.MinimumWidth = 6;
+            this.colRelatedNum.Name = "colRelatedNum";
+            this.colRelatedNum.ReadOnly = true;
+            this.colRelatedNum.Width = 47;
+            // 
+            // colRelatedCode
+            // 
+            this.colRelatedCode.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
+            this.colRelatedCode.HeaderText = "รหัส";
+            this.colRelatedCode.MinimumWidth = 6;
+            this.colRelatedCode.Name = "colRelatedCode";
+            this.colRelatedCode.ReadOnly = true;
+            // 
+            // colRelatedTitle
+            // 
+            this.colRelatedTitle.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.colRelatedTitle.HeaderText = "ชื่อบทความ";
+            this.colRelatedTitle.MinimumWidth = 6;
+            this.colRelatedTitle.Name = "colRelatedTitle";
+            this.colRelatedTitle.ReadOnly = true;
+            // 
+            // colRelatedType
+            // 
+            this.colRelatedType.HeaderText = "ประเภท";
+            this.colRelatedType.MinimumWidth = 6;
+            this.colRelatedType.Name = "colRelatedType";
+            this.colRelatedType.ReadOnly = true;
+            this.colRelatedType.Width = 90;
+            // 
             // ArticleViewerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
@@ -1139,11 +1158,11 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlHeader.ResumeLayout(false);
             this.pnlToolbar.ResumeLayout(false);
             this.pnlToolbarSep.ResumeLayout(false);
-            this.pnlZoomStatus.ResumeLayout(false);
             this.splitViewer.Panel1.ResumeLayout(false);
             this.splitViewer.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitViewer)).EndInit();
             this.splitViewer.ResumeLayout(false);
+            this.pnlZoomStatus.ResumeLayout(false);
             this.pnlInfoWrapper.ResumeLayout(false);
             this.pnlArticleInfo.ResumeLayout(false);
             this.tblMeta.ResumeLayout(false);
@@ -1185,7 +1204,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.FlowLayoutPanel  flpBadges;
         private System.Windows.Forms.Label            lblTypeBadge;
         private System.Windows.Forms.Label            lblCategoryBadge;
-        private System.Windows.Forms.Label            lblStatusBadge;
+        private System.Windows.Forms.Label            lblTitleCategory;
         private System.Windows.Forms.Label            lblOfficialBadge;
         private System.Windows.Forms.TableLayoutPanel tblMeta;
         private System.Windows.Forms.Label            lblCodeVersion;
@@ -1221,10 +1240,6 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Label            lblAttachLinked;
         // Related tab
         private System.Windows.Forms.DataGridView     dgvRelatedLinked;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedNum;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedCode;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedTitle;
-        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedType;
         private System.Windows.Forms.Label            lblRelatedLinked;
         // Workflow tab
         private System.Windows.Forms.DataGridView     dgvWorkflowLinked;
@@ -1255,5 +1270,10 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.DataGridViewTextBoxColumn colDeptName;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDeptType;
         private System.Windows.Forms.Label            lblDepartmentsLinked;
+        private System.Windows.Forms.Label lblStatusBadge;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedNum;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedCode;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedTitle;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colRelatedType;
     }
 }

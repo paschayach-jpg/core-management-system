@@ -383,9 +383,15 @@ namespace CMS.Presentation.Modules.KMS
             set { txtSummary.Text = value; }
         }
 
+        public string TitleCategory
+        {
+            get { return txtTitleCategory.Text.Trim(); }
+            set { txtTitleCategory.Text = value; }
+        }
+
         private string _pendingHtml   = string.Empty;
         private bool   _editorReady   = false;
-        private int    _genInfoExpandedHeight  = 220;
+        private int    _genInfoExpandedHeight  = 372;
         private int    _mappingExpandedWidth   = 529;
         private bool   _syncingToolbar = false;
         private bool   _applyingFormat = false;
@@ -496,6 +502,12 @@ namespace CMS.Presentation.Modules.KMS
         {
             get { return true; }
             set { }
+        }
+
+        public DateTime? PublishedDate
+        {
+            get { return dtpPublished.Value; }
+            set { if (value.HasValue) dtpPublished.Value = value.Value; }
         }
 
         public DateTime? EffectiveDate

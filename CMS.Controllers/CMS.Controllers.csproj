@@ -119,12 +119,14 @@
     <Compile Include="DMS\Document\UserAccessOrgLookupController.cs" />
     <Compile Include="DMS\Document\FolderTemplateController.cs" />
     <Compile Include="KMS\KB\Interfaces\IKBImportWizardController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBOrderImportWizardView.cs" />
     <Compile Include="KMS\KB\Interfaces\IKBMainController.cs" />
     <Compile Include="KMS\KB\Interfaces\IKBEditorController.cs" />
     <Compile Include="KMS\KB\Interfaces\IKBCategoryController.cs" />
     <Compile Include="KMS\KB\Interfaces\IArticleViewerController.cs" />
     <Compile Include="KMS\KB\Interfaces\IKBDashboardController.cs" />
     <Compile Include="KMS\KB\KBImportWizardController.cs" />
+    <Compile Include="KMS\KB\KBOrderImportWizardController.cs" />
     <Compile Include="KMS\KB\KBMainController.cs" />
     <Compile Include="KMS\KB\KBEditorController.cs" />
     <Compile Include="KMS\KB\KBCategoryController.cs" />

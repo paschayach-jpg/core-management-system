@@ -367,6 +367,18 @@
     <Compile Include="Modules\KMS\KBImportWizardForm.Designer.cs">
       <DependentUpon>KBImportWizardForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\KMS\KBImportTypeDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBImportTypeDialog.Designer.cs">
+      <DependentUpon>KBImportTypeDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\KMS\KBOrderImportWizardForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBOrderImportWizardForm.Designer.cs">
+      <DependentUpon>KBOrderImportWizardForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\KMS\KBDashboardForm.cs">
       <SubType>Form</SubType>
     </Compile>

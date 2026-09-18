@@ -20,13 +20,9 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string ArticleTitleText { set; }
         string ArticleCountText { set; }
         /// <summary>
-        /// titlesByCategory maps CategoryID → (Title → article count).
-        /// Used to render "📄 Title (N)" leaf nodes under each category.
+        /// Bind ต้นไม้หมวดหมู่ทั้งชุด รวมถึง folder อ้างอิงข้ามหมวด (มาตรา ↔ คำสั่ง/หมวดภายใน)
         /// </summary>
-        void BindCategoryTree(
-            IEnumerable<KBCategory>                  categories,
-            IDictionary<int, int>                    articleCounts,
-            IDictionary<int, IDictionary<string,int>> titlesByCategory);
+        void BindCategoryTree(KBCategoryTreeData data);
         int PageSize { get; }
         void RenderArticles(IEnumerable<KBArticle> articles);
         void RenderPagination(int totalCount, int currentPage, int pageSize);

@@ -381,6 +381,11 @@ namespace CMS.Services
             return _linkRepo.GetLinksForArticle(articleId, entityType);
         }
 
+        public IEnumerable<KBArticleLink> GetAllLinksByType(byte entityType)
+        {
+            return _linkRepo.GetAllByEntityType(entityType);
+        }
+
         public void SaveArticleLinks(int articleId, IEnumerable<KBArticleLink> links)
         {
             // Delete only links managed by the editor: Task (2), Program (3), Law (4)
