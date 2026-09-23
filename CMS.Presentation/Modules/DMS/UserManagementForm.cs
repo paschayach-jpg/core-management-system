@@ -50,6 +50,7 @@ namespace CMS.Presentation
         {
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyFilter(); };
             cmbStatus.SelectedIndexChanged += (s, e) => ApplyFilter();
+            cmbFilterColumn.SelectedIndexChanged += (s, e) => ApplyFilter();
             btnSearch.Click += (s, e) => ApplyFilter();
             btnCreate.Click += BtnCreate_Click;
             btnEdit.Click += BtnEdit_Click;
@@ -215,15 +216,33 @@ namespace CMS.Presentation
         {
             string kw = txtSearch.Text.Trim().ToLower();
             int status = cmbStatus.SelectedIndex; // 0=all, 1=active, 2=inactive
+            int col = cmbFilterColumn.SelectedIndex; // 0=all columns, 1=AD, 2=Display, 3=Employee, 4=Dept, 5=Div, 6=Position, 7=Role
 
             IEnumerable<UserAccount> result = _allUsers;
 
             if (!string.IsNullOrEmpty(kw))
-                result = result.Where(u =>
-                    (u.DisplayName ?? "").ToLower().Contains(kw) ||
-                    (u.ADUserName ?? "").ToLower().Contains(kw) ||
-                    (u.EmployeeCode ?? "").ToLower().Contains(kw) ||
-                    (u.DepartmentName ?? "").ToLower().Contains(kw));
+            {
+                switch (col)
+                {
+                    case 1: result = result.Where(u => (u.ADUserName ?? "").ToLower().Contains(kw)); break;
+                    case 2: result = result.Where(u => (u.DisplayName ?? "").ToLower().Contains(kw)); break;
+                    case 3: result = result.Where(u => (u.EmployeeCode ?? "").ToLower().Contains(kw)); break;
+                    case 4: result = result.Where(u => (u.DepartmentName ?? "").ToLower().Contains(kw)); break;
+                    case 5: result = result.Where(u => (u.DivisionName ?? "").ToLower().Contains(kw)); break;
+                    case 6: result = result.Where(u => (u.PositionName ?? "").ToLower().Contains(kw)); break;
+                    case 7: result = result.Where(u => RoleName(u.AppRole).ToLower().Contains(kw)); break;
+                    default:
+                        result = result.Where(u =>
+                            (u.DisplayName ?? "").ToLower().Contains(kw) ||
+                            (u.ADUserName ?? "").ToLower().Contains(kw) ||
+                            (u.EmployeeCode ?? "").ToLower().Contains(kw) ||
+                            (u.DepartmentName ?? "").ToLower().Contains(kw) ||
+                            (u.DivisionName ?? "").ToLower().Contains(kw) ||
+                            (u.PositionName ?? "").ToLower().Contains(kw) ||
+                            RoleName(u.AppRole).ToLower().Contains(kw));
+                        break;
+                }
+            }
 
             if (status == 1) result = result.Where(u => u.IsActive);
             if (status == 2) result = result.Where(u => !u.IsActive);
@@ -268,15 +287,15 @@ namespace CMS.Presentation
 
         private void LvUsers_SelectionChanged(object sender, EventArgs e)
         {
-            bool sel = lvUsers.SelectedItems.Count > 0;
-            btnEdit.Enabled = sel;
-            if (sel)
+            int count = lvUsers.SelectedItems.Count;
+            btnEdit.Enabled = count == 1;
+            btnToggle.Enabled = count > 0;
+
+            if (count == 1)
             {
                 var u = lvUsers.SelectedItems[0].Tag as UserAccount;
                 btnToggle.Text = (u != null && u.IsActive) ? "🔒 ปิดใช้งาน" : "🔓 เปิดใช้งาน";
-                btnToggle.Enabled = u != null;
 
-                // แสดงข้อมูลที่เลือก
                 if (u != null)
                 {
                     string selectionInfo = string.Format("เลือก: {0} ({1}) - {2}",
@@ -286,9 +305,14 @@ namespace CMS.Presentation
                     SetStatus(selectionInfo, Color.FromArgb(25, 55, 105));
                 }
             }
+            else if (count > 1)
+            {
+                btnToggle.Text = "🔄 สลับสถานะ";
+                SetStatus(string.Format("เลือก {0} รายการ", count), Color.FromArgb(25, 55, 105));
+            }
             else
             {
-                btnToggle.Enabled = false;
+                btnToggle.Text = "🔒 ปิดใช้งาน";
                 SetStatus(string.Format("ทั้งหมด {0} รายการ", lvUsers.Items.Count), Color.Gray);
             }
         }
@@ -317,49 +341,65 @@ namespace CMS.Presentation
 
         private void BtnToggle_Click(object sender, EventArgs e)
         {
-            if (lvUsers.SelectedItems.Count == 0) return;
-            var user = lvUsers.SelectedItems[0].Tag as UserAccount;
-            if (user == null) return;
+            var users = lvUsers.SelectedItems.Cast<ListViewItem>()
+                .Select(i => i.Tag as UserAccount)
+                .Where(u => u != null)
+                .ToList();
+            if (users.Count == 0) return;
 
-            string action = user.IsActive ? "ปิดใช้งาน" : "เปิดใช้งาน";
-            if (MessageBox.Show(
-                    string.Format("{0} ผู้ใช้ '{1}' ใช่หรือไม่?",
-                        action, user.DisplayName ?? user.ADUserName),
-                    "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
+            string confirmMsg = users.Count == 1
+                ? string.Format("{0} ผู้ใช้ '{1}' ใช่หรือไม่?",
+                    users[0].IsActive ? "ปิดใช้งาน" : "เปิดใช้งาน",
+                    users[0].DisplayName ?? users[0].ADUserName)
+                : string.Format("สลับสถานะผู้ใช้ที่เลือก {0} รายการ ใช่หรือไม่?", users.Count);
+
+            if (MessageBox.Show(confirmMsg, "ยืนยัน", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
                 != DialogResult.Yes) return;
 
-            try
+            int okCount = 0;
+            var errors = new List<string>();
+
+            foreach (var user in users)
             {
-                bool wasActive = user.IsActive;
-                if (user.IsActive)
-                    _userAdminController.DeactivateUser(user.UserID);
-                else
+                try
                 {
-                    user.IsActive = true;
-                    _userAdminController.UpdateUser(user);
+                    bool wasActive = user.IsActive;
+                    if (user.IsActive)
+                        _userAdminController.DeactivateUser(user.UserID);
+                    else
+                    {
+                        user.IsActive = true;
+                        _userAdminController.UpdateUser(user);
+                    }
+                    _auditLogController.Log(new AuditEntry
+                    {
+                        Module = "UserManagement",
+                        Action = wasActive ? "DEACTIVATE_USER" : "ACTIVATE_USER",
+                        UserID = _currentUser.UserID,
+                        TableName = "UserAccount",
+                        RecordID = user.UserID,
+                        NewValue = string.Format("User:{0} IsActive:{1}", user.ADUserName, !wasActive),
+                        MachineName = _currentUser.MachineName,
+                        IPAddress = _currentUser.IPAddress,
+                        SessionID = _currentUser.SessionID,
+                        Result = 1,
+                        AuditDate = DateTime.Now
+                    });
+                    okCount++;
                 }
-                _auditLogController.Log(new AuditEntry
+                catch (Exception ex)
                 {
-                    Module = "UserManagement",
-                    Action = wasActive ? "DEACTIVATE_USER" : "ACTIVATE_USER",
-                    UserID = _currentUser.UserID,
-                    TableName = "UserAccount",
-                    RecordID = user.UserID,
-                    NewValue = string.Format("User:{0} IsActive:{1}", user.ADUserName, !wasActive),
-                    MachineName = _currentUser.MachineName,
-                    IPAddress = _currentUser.IPAddress,
-                    SessionID = _currentUser.SessionID,
-                    Result = 1,
-                    AuditDate = DateTime.Now
-                });
-                LoadUsers();
-                SetStatus(string.Format("{0} '{1}' เรียบร้อย",
-                    action, user.DisplayName ?? user.ADUserName), Color.DarkGreen);
+                    errors.Add((user.DisplayName ?? user.ADUserName) + ": " + ex.Message);
+                }
             }
-            catch (Exception ex)
-            {
-                SetStatus("บันทึกไม่สำเร็จ: " + ex.Message, Color.Red);
-            }
+
+            LoadUsers();
+
+            if (errors.Count == 0)
+                SetStatus(string.Format("เปลี่ยนสถานะสำเร็จ {0} รายการ", okCount), Color.DarkGreen);
+            else
+                SetStatus(string.Format("สำเร็จ {0} รายการ, ล้มเหลว {1} รายการ: {2}",
+                    okCount, errors.Count, string.Join("; ", errors)), Color.Red);
         }
 
         // ─────────────────────────────────────────────────────────────────────

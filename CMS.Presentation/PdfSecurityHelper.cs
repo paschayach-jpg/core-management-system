@@ -114,7 +114,7 @@ namespace CMS.Presentation
             {
                 tempPath = Path.Combine(
                     Path.GetTempPath(),
-                    string.Format("restricted_{0:N}_{1}", Guid.NewGuid(), Path.GetFileName(sourcePath))
+                    string.Format("restricted_{0:N}{1}", Guid.NewGuid(), Path.GetExtension(sourcePath))
                 );
 
                 // ── Encrypt to temp file ───────────────────────────────────────
@@ -161,14 +161,17 @@ namespace CMS.Presentation
             catch (NullReferenceException ex)
             {
                 if (tempPath != null) TryDeleteFile(tempPath);
+                LogError(sourcePath, ex);
 
                 MessageBox.Show(
-                    string.Format("ไม่สามารถประมวลผล PDF นี้ได้ (โครงสร้างไฟล์อาจไม่รองรับ): {0}", ex.Message),
+                    "ไม่สามารถเปิดไฟล์ PDF นี้ได้ ไฟล์อาจมีฟอร์ม, ลายเซ็นดิจิทัล หรือโครงสร้างที่ไม่รองรับการเข้ารหัส\n" +
+                    "รายละเอียดถูกบันทึกไว้เพื่อการตรวจสอบแล้ว",
                     "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception ex)
             {
                 if (tempPath != null) TryDeleteFile(tempPath);
+                LogError(sourcePath, ex);
 
                 MessageBox.Show(
                     string.Format("เกิดข้อผิดพลาดในการเปิดไฟล์: {0}", ex.Message),
@@ -186,6 +189,22 @@ namespace CMS.Presentation
                 if (TryDeleteFile(path)) return;
             }
             System.Diagnostics.Debug.WriteLine(string.Format("[WARN] Could not delete temp file: {0}", path));
+        }
+
+        private static void LogError(string sourcePath, Exception ex)
+        {
+            try
+            {
+                string logPath = Path.Combine(Path.GetTempPath(), "cms_pdf_error.log");
+                string entry = string.Format(
+                    "[{0:yyyy-MM-dd HH:mm:ss}] source=\"{1}\"{2}{3}{2}{2}",
+                    DateTime.Now, sourcePath, Environment.NewLine, ex);
+                File.AppendAllText(logPath, entry);
+            }
+            catch (Exception logEx)
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format("[LogFail] {0}", logEx.Message));
+            }
         }
 
         private static bool TryDeleteFile(string path)

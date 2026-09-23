@@ -18,6 +18,7 @@ namespace CMS.Presentation
             this.pnlToolbar     = new System.Windows.Forms.Panel();
             this.txtSearch      = new System.Windows.Forms.TextBox();
             this.cmbStatus      = new System.Windows.Forms.ComboBox();
+            this.cmbFilterColumn = new System.Windows.Forms.ComboBox();
             this.btnSearch      = new System.Windows.Forms.Button();
             this.btnCreate      = new System.Windows.Forms.Button();
             this.btnEdit        = new System.Windows.Forms.Button();
@@ -62,7 +63,7 @@ namespace CMS.Presentation
             // ── pnlToolbar ───────────────────────────────────────────────────
             this.pnlToolbar.BackColor = System.Drawing.Color.FromArgb(243, 245, 250);
             this.pnlToolbar.Controls.AddRange(new System.Windows.Forms.Control[] {
-                this.txtSearch, this.cmbStatus, this.btnSearch,
+                this.txtSearch, this.cmbStatus, this.cmbFilterColumn, this.btnSearch,
                 this.btnCreate, this.btnEdit, this.btnToggle, this.btnRefresh });
             this.pnlToolbar.Dock    = System.Windows.Forms.DockStyle.Top;
             this.pnlToolbar.Height  = 46;
@@ -89,9 +90,22 @@ namespace CMS.Presentation
             this.cmbStatus.Font           = new System.Drawing.Font("Segoe UI", 10F);
             this.cmbStatus.SelectedIndex  = 0;
             //
+            // cmbFilterColumn
+            //
+            this.cmbFilterColumn.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbFilterColumn.Items.AddRange(new object[] {
+                "ทุกคอลัมน์", "ชื่อผู้ใช้ AD", "ชื่อ-นามสกุล", "รหัสพนักงาน",
+                "แผนก", "ฝ่าย", "ตำแหน่ง", "บทบาท" });
+            this.cmbFilterColumn.Left          = 342;
+            this.cmbFilterColumn.Top           = 8;
+            this.cmbFilterColumn.Width         = 130;
+            this.cmbFilterColumn.Name          = "cmbFilterColumn";
+            this.cmbFilterColumn.Font          = new System.Drawing.Font("Segoe UI", 10F);
+            this.cmbFilterColumn.SelectedIndex = 0;
+            //
             // btnSearch
             //
-            this.btnSearch.Left      = 342;
+            this.btnSearch.Left      = 480;
             this.btnSearch.Top       = 8;
             this.btnSearch.Width     = 80;
             this.btnSearch.Height    = 28;
@@ -105,7 +119,7 @@ namespace CMS.Presentation
             this.btnCreate.BackColor = System.Drawing.Color.FromArgb(31, 56, 100);
             this.btnCreate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCreate.ForeColor = System.Drawing.Color.White;
-            this.btnCreate.Left      = 440;
+            this.btnCreate.Left      = 578;
             this.btnCreate.Top       = 8;
             this.btnCreate.Width     = 100;
             this.btnCreate.Height    = 28;
@@ -118,7 +132,7 @@ namespace CMS.Presentation
             //
             this.btnEdit.Enabled  = false;
             this.btnEdit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnEdit.Left     = 548;
+            this.btnEdit.Left     = 686;
             this.btnEdit.Top      = 8;
             this.btnEdit.Width    = 90;
             this.btnEdit.Height   = 28;
@@ -130,7 +144,7 @@ namespace CMS.Presentation
             //
             this.btnToggle.Enabled  = false;
             this.btnToggle.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnToggle.Left     = 646;
+            this.btnToggle.Left     = 784;
             this.btnToggle.Top      = 8;
             this.btnToggle.Width    = 110;
             this.btnToggle.Height   = 28;
@@ -141,7 +155,7 @@ namespace CMS.Presentation
             // btnRefresh
             //
             this.btnRefresh.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRefresh.Left      = 764;
+            this.btnRefresh.Left      = 902;
             this.btnRefresh.Top       = 8;
             this.btnRefresh.Width     = 80;
             this.btnRefresh.Height    = 28;
@@ -159,7 +173,7 @@ namespace CMS.Presentation
             this.lvUsers.FullRowSelect = true;
             this.lvUsers.GridLines     = true;
             this.lvUsers.HideSelection = false;
-            this.lvUsers.MultiSelect   = false;
+            this.lvUsers.MultiSelect   = true;
             this.lvUsers.Name          = "lvUsers";
             this.lvUsers.View          = System.Windows.Forms.View.Details;
             this.lvUsers.TabIndex      = 2;
@@ -213,6 +227,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.Panel          pnlToolbar;
         private System.Windows.Forms.TextBox        txtSearch;
         private System.Windows.Forms.ComboBox       cmbStatus;
+        private System.Windows.Forms.ComboBox       cmbFilterColumn;
         private System.Windows.Forms.Button         btnSearch;
         private System.Windows.Forms.Button         btnCreate;
         private System.Windows.Forms.Button         btnEdit;
