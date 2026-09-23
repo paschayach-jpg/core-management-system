@@ -541,22 +541,6 @@ namespace CMS.Presentation
                         _lvVisibility.Items.Add(item);
                     }
 
-                    // If no explicit grants, show role-based fallback info
-                    if (grants.Count == 0)
-                    {
-                        var visibleOrgs = _visibilityController.GetVisibleOrgUnits(user.UserID, _currentUser).ToList();
-                        foreach (var org in visibleOrgs.Where(o => o.IsActive && !o.IsDeleted))
-                        {
-                            var item = new ListViewItem(org.OrgUnitNameTH ?? org.OrgUnitCode);
-                            item.SubItems.Add(org.OrgUnitCode ?? "");
-                            item.SubItems.Add("(ตามบทบาท)");
-                            item.SubItems.Add("—");
-                            item.Tag = org;
-                            item.ForeColor = Color.Gray;
-                            _lvVisibility.Items.Add(item);
-                        }
-                    }
-
                     SetStatus(_lblVisibilityStatus,
                         string.Format("{0} หน่วยงาน", _lvVisibility.Items.Count), Color.Gray);
                 }

@@ -64,6 +64,7 @@ namespace CMS.Presentation
         private readonly IUserOrgVisibilityController _userOrgVisibilityController;
         private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
         private readonly IFolderQuotaService _folderQuotaService;
+        private readonly CMS.Services.Interfaces.ILdapUserSearchService _ldapUserSearchService;
         private readonly UserContext _user;
 
         // Quick Access panel (Req 7)
@@ -191,7 +192,8 @@ namespace CMS.Presentation
                           IUserOrgVisibilityController userOrgVisibilityController = null,
                           IFolderReadLookupController folderReadLookupController = null,
                           CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
-                          IFolderQuotaService folderQuotaService = null)
+                          IFolderQuotaService folderQuotaService = null,
+                          CMS.Services.Interfaces.ILdapUserSearchService ldapUserSearchService = null)
         {
             if (user == null) throw new ArgumentNullException("user");
             if (folderCommandController == null) throw new ArgumentNullException("folderCommandController");
@@ -224,6 +226,7 @@ namespace CMS.Presentation
             _folderReadLookupController = folderReadLookupController ?? new FolderReadLookupController(null);
             _employeeApiService = employeeApiService;
             _folderQuotaService = folderQuotaService;
+            _ldapUserSearchService = ldapUserSearchService;
             _user = user;
 
             InitializeComponent();
@@ -2544,6 +2547,7 @@ namespace CMS.Presentation
                 RecycleBinController = _recycleBinController,
                 ShareLookupController = _shareLookupController,
                 EmployeeApiService = _employeeApiService,
+                LdapUserSearchService = _ldapUserSearchService,
                 SwitchToOrgView = SwitchToOrgView,
                 SwitchToMainMenuView = SwitchToMainMenuView,
                 TriggerArchive = TriggerArchive,
@@ -3482,6 +3486,17 @@ namespace CMS.Presentation
                         if (visibleIds.Add(child.OrgUnitID))
                             queue.Enqueue(child.OrgUnitID);
                 }
+            }
+
+            // รวม OrgUnit ที่ถูก grant สิทธิ์มองเห็นแบบ explicit (นอกเหนือจาก role-based)
+            if (_userOrgVisibilityController != null)
+            {
+                try
+                {
+                    foreach (var g in _userOrgVisibilityController.GetExplicitGrantsForUser(_user.UserID, _user))
+                        visibleIds.Add(g.OrgUnitID);
+                }
+                catch { }
             }
 
             return all.Where(o => visibleIds.Contains(o.OrgUnitID)).ToList();

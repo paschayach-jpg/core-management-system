@@ -109,6 +109,7 @@
     <Compile Include="Models\FolderQuotaChangeRequest.cs" />
     <!-- RGP (RG_Project) module -->
     <Compile Include="Models\ProjectAuditEntry.cs" />
+    <Compile Include="Models\ProjectAttachmentModel.cs" />
     <Compile Include="Models\EFilingRequestModel.cs" />
     <Compile Include="Models\ProjectDocumentWorkflowModel.cs" />
     <Compile Include="Models\ProjectMemberModel.cs" />

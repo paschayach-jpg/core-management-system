@@ -37,5 +37,14 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Upsert: Insert ถ้าใหม่ / Update ถ้ามีแล้ว คืน UserID และ isNew flag</summary>
         int RegisterOrUpdate(UserAccount account, string ipAddress, out bool isNew);
+
+        /// <summary>
+        /// Upsert from LDAP import: insert a new row with only the core LDAP-sourced fields
+        /// (ADUserName, DisplayName, Email, IsActive, PositionName, DepartmentName), or update
+        /// those same fields on an existing row matched by ADUserName. Does not touch
+        /// LastLoginDate/IP, EmployeeCode, or any Department/Division ID/HR field.
+        /// </summary>
+        int UpsertFromLdap(string adUserName, string displayName, string email, bool isActive,
+            string positionName, string departmentName, int? createdBy, out bool isNew);
     }
 }

@@ -100,7 +100,7 @@ namespace CMS.Presentation.Modules.ImportFile
             this.SuspendLayout();
 
             // Form settings
-            this.ClientSize = new Size(700, 520);
+            this.ClientSize = new Size(780, 520);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterParent;
             this.MaximizeBox = false;
@@ -121,7 +121,7 @@ namespace CMS.Presentation.Modules.ImportFile
                 Font = new Font("Segoe UI", 14f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = false,
-                Size = new Size(680, 60),
+                Size = new Size(760, 60),
                 Location = new Point(10, 0),
                 TextAlign = ContentAlignment.MiddleLeft
             };
@@ -132,7 +132,7 @@ namespace CMS.Presentation.Modules.ImportFile
             var pnlContent = new Panel
             {
                 Location = new Point(20, 80),
-                Size = new Size(660, 380),
+                Size = new Size(740, 380),
                 AutoScroll = true
             };
 
@@ -140,29 +140,29 @@ namespace CMS.Presentation.Modules.ImportFile
 
             // Label
             AddLabel(pnlContent, "Label:", 10, y);
-            txtLabel = new TextBox { Location = new Point(120, y), Size = new Size(200, 23) };
+            txtLabel = new TextBox { Location = new Point(95, y), Size = new Size(300, 23) };
             pnlContent.Controls.Add(txtLabel);
 
             // Position
-            AddLabel(pnlContent, "ตำแหน่ง:", 340, y);
-            txtPosition = new TextBox { Location = new Point(430, y), Size = new Size(220, 23) };
+            AddLabel(pnlContent, "ตำแหน่ง:", 410, y);
+            txtPosition = new TextBox { Location = new Point(485, y), Size = new Size(255, 23) };
             pnlContent.Controls.Add(txtPosition);
             y += 35;
 
             // LevelCode
             AddLabel(pnlContent, "LevelCode:", 10, y);
-            txtLevelCode = new TextBox { Location = new Point(120, y), Size = new Size(100, 23) };
+            txtLevelCode = new TextBox { Location = new Point(95, y), Size = new Size(100, 23) };
             pnlContent.Controls.Add(txtLevelCode);
             y += 35;
 
             // Department
             AddLabel(pnlContent, "แผนก:", 10, y);
-            txtDept = new TextBox { Location = new Point(120, y), Size = new Size(200, 23) };
+            txtDept = new TextBox { Location = new Point(95, y), Size = new Size(300, 23) };
             pnlContent.Controls.Add(txtDept);
 
             // Division
-            AddLabel(pnlContent, "ฝ่าย:", 340, y);
-            txtDiv = new TextBox { Location = new Point(430, y), Size = new Size(220, 23) };
+            AddLabel(pnlContent, "ฝ่าย:", 410, y);
+            txtDiv = new TextBox { Location = new Point(485, y), Size = new Size(255, 23) };
             pnlContent.Controls.Add(txtDiv);
             y += 45;
 
@@ -172,7 +172,7 @@ namespace CMS.Presentation.Modules.ImportFile
                 Text = "สิทธิ์การเข้าถึงตามระดับความลับ",
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
                 Location = new Point(10, y),
-                Size = new Size(640, 25),
+                Size = new Size(720, 25),
                 ForeColor = Color.FromArgb(31, 56, 100)
             };
             pnlContent.Controls.Add(lblPermissions);
@@ -208,7 +208,7 @@ namespace CMS.Presentation.Modules.ImportFile
             {
                 Text = "💾 บันทึก",
                 Size = new Size(120, 35),
-                Location = new Point(450, 12),
+                Location = new Point(530, 12),
                 BackColor = Color.FromArgb(56, 142, 60),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -222,7 +222,7 @@ namespace CMS.Presentation.Modules.ImportFile
             {
                 Text = "✖ ยกเลิก",
                 Size = new Size(120, 35),
-                Location = new Point(580, 12),
+                Location = new Point(660, 12),
                 BackColor = Color.FromArgb(120, 120, 120),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -257,7 +257,7 @@ namespace CMS.Presentation.Modules.ImportFile
             var pnlGroup = new Panel
             {
                 Location = new Point(10, y),
-                Size = new Size(640, 50),
+                Size = new Size(720, 50),
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = Color.FromArgb(250, 250, 250)
             };

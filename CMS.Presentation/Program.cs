@@ -477,7 +477,7 @@ namespace CMS.Presentation
                 var userAccountLookupController = new UserAccountLookupController(userAccountRepo);
                 var userAccessOrgLookupController = new UserAccessOrgLookupController(orgStructureService);
                 var userAdminController = new UserAdminController(userAccountRepo);
-                var userAdminWithHrController = new UserAdminController(userAccountRepo, hrDivisionRepository, hrDepartmentRepository, hrPositionRepository, hrPositionLevelRepository);
+                var userAdminWithHrController = new UserAdminController(userAccountRepo, hrDivisionRepository, hrDepartmentRepository, hrPositionRepository, hrPositionLevelRepository, hrPositionMappingRepository);
                 var menuManagementController = new MenuManagementController(menuService);
                 var approvalInboxController = new ApprovalInboxController(approvalService);
                 var recycleBinController = new RecycleBinController(folderService, orgStructureService, fileDocumentRepository);
@@ -502,6 +502,7 @@ namespace CMS.Presentation
                     userAccountRepo);
                 var employeeDirectoryController = new EmployeeDirectoryController(employeeApiService);
                 var userOrgVisibilityController = new UserOrgVisibilityController(userOrgVisibilityService);
+                var permissionAclLookupController = new PermissionAclLookupController(permissionRepository);
 
                 // ── Workflow Engine Controllers (MOD-008) ─────────────────────
                 var workflowController = new WorkflowController(workflowService, loggingService);
@@ -639,6 +640,7 @@ namespace CMS.Presentation
                     authorityConfigController: authorityConfigController,
                     employeeDirectoryController: employeeDirectoryController,
                     userOrgVisibilityController: userOrgVisibilityController,
+                    permissionAclLookupController: permissionAclLookupController,
                     employeeApiService: employeeApiService,
                     folderRepository: folderRepository,
                     kbCategoryService: kbCategoryService,

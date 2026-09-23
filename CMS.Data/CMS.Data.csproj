@@ -134,6 +134,7 @@
     <Compile Include="Interfaces\IProjectTaskRepository.cs" />
     <Compile Include="Interfaces\IProjectProgressRepository.cs" />
     <Compile Include="Interfaces\IProjectDocumentRepository.cs" />
+    <Compile Include="Interfaces\IProjectAttachmentRepository.cs" />
     <Compile Include="Interfaces\IEFilingRepository.cs" />
     <Compile Include="Interfaces\IProjectMemberRepository.cs" />
     <Compile Include="Interfaces\IProjectMemberRoleRepository.cs" />
@@ -150,6 +151,7 @@
     <Compile Include="Repositories\ProjectTaskRepository.cs" />
     <Compile Include="Repositories\ProjectProgressRepository.cs" />
     <Compile Include="Repositories\ProjectDocumentRepository.cs" />
+    <Compile Include="Repositories\ProjectAttachmentRepository.cs" />
     <Compile Include="Repositories\EFilingRepository.cs" />
     <Compile Include="Repositories\ProjectMemberRepository.cs" />
     <Compile Include="Repositories\ProjectMemberRoleRepository.cs" />
@@ -160,6 +162,9 @@
     <Compile Include="Repositories\TemplateDocRepository.cs" />
     <Compile Include="Repositories\EmployeeRepository.cs" />
     <Compile Include="Repositories\KmsRepository.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Scripts\storage\t_project_attachment.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

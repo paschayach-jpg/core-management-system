@@ -38,5 +38,13 @@ namespace CMS.Controllers.DMS.Document
 
             _folderAuthorityService.Delete(configLabel, userId);
         }
+
+        public Dictionary<int, FolderAuthorityConfig> ResolveForUser(UserAccount user)
+        {
+            if (_folderAuthorityService == null || user == null)
+                return new Dictionary<int, FolderAuthorityConfig>();
+
+            return _folderAuthorityService.ResolveForUser(user);
+        }
     }
 }
