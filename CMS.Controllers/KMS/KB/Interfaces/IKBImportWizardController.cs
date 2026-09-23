@@ -25,8 +25,12 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         /// <summary>Step 2 option: send e-mail notification after import.</summary>
         bool OptSendEmail    { get; }
 
-        /// <summary>Step 2 option: link imported articles to DMS files.</summary>
-        bool OptLinkDMS      { get; }
+        /// <summary>
+        /// Step 2 option (ประกาศ/คำสั่ง rows only): when an attachment download/DMS upload
+        /// fails, <c>true</c> fails the whole row; <c>false</c> inserts it anyway with a
+        /// warning note. Ignored for มาตรา (Law) rows, which have no attachment.
+        /// </summary>
+        bool OptSkipRowOnDownloadFailure { get; }
 
         /// <summary>Step 2 option: create articles as Draft instead of Published.</summary>
         bool OptCreateDraft  { get; }

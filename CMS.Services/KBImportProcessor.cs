@@ -1,149 +1,124 @@
 using CMS.Data.Interfaces;
 using CMS.Domain.Enums;
 using CMS.Domain.Models;
+using CMS.Services.DTOs;
 using CMS.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 
 namespace CMS.Services
 {
     /// <summary>
-    /// Orchestrates the three-phase KB import pipeline:
-    /// Phase 1 — row validation (no DB writes),
-    /// Phase 2 — category upsert (<c>KMS.m_KBCategory</c>),
-    /// Phase 3 — article + version insert (<c>KMS.t_KBArticle</c>, <c>KMS.t_KBVersion</c>).
+    /// Orchestrates the KB import pipeline for both supported Excel layouts (see
+    /// <see cref="KBExcelReader"/> and <see cref="KBImportRow.RowKind"/>):
+    ///
+    /// <b>Law</b> ("มาตรา" rows) — Phase 1: row validation, including <c>ArticleCode</c>
+    /// existence check (read-only DB access). Phase 2: article + version insert
+    /// (<c>KMS.t_KBArticle</c>, <c>KMS.t_KBVersion</c>). CategoryID is resolved from the
+    /// ArticleCode's 3-letter prefix — no category upsert is needed.
+    ///
+    /// <b>Order</b> ("ประกาศ/คำสั่ง" rows) — Phase 1: row validation, including resolving each
+    /// referenced parent law via <c>ArticleCode</c> exact match. Phase 2: attachment
+    /// download + DMS upload, article insert, attachment link, and bidirectional
+    /// <c>KMS.t_KBArticleLink</c> records to every resolved parent law. CategoryID is
+    /// resolved from the ประเภทลูก digit ("1"=ประกาศ→55, "2"=คำสั่ง→54).
     /// </summary>
     public class KBImportProcessor : IKBImportProcessorService
     {
-        private readonly IKBCategoryRepository _categoryRepo;
-        private readonly IKBArticleRepository  _articleRepo;
+        private readonly IKBArticleRepository     _articleRepo;
+        private readonly IKBVersionRepository     _versionRepo;
         private readonly IKBArticleLinkRepository _linkRepo;
-        private readonly IKBVersionRepository  _versionRepo;
-        private readonly ISubCommitteeRepository _subCommitteeRepo;
-        private readonly IHrDivisionRepository   _divisionRepo;
-        private readonly IHrDepartmentRepository _departmentRepo;
+        private readonly IKBArticleService        _articleService;
+        private readonly IFileService             _fileService;
+        private readonly LawFileDownloader        _downloader;
+
+        // ── ค่าคงที่ตามข้อกำหนด ──────────────────────────────────────────────
+        private const byte FixedArticleTypeLaw       = 5;   // Policy
+        private const byte FixedArticleTypeOrder     = 1;
+        private const byte FixedStatus               = 2;   // Review
+        private const int  FixedConfidentialityLevel = 0;
+
+        /// <summary>Folder ปลายทางของไฟล์แนบ (Order) — ตรงกับที่ KBEditorDialog ใช้ ("KMS Attachments")</summary>
+        private const int AttachmentFolderId = 437;
+
+        /// <summary>Law: ArticleCode 3 ตัวอักษรแรก → CategoryID (KMS.m_KBCategory)</summary>
+        private static readonly Dictionary<string, int> PrefixCategoryMap =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "PVI", 46 },   // LawSectionCategoryId — ดู KBMainController.cs
+        };
+
+        /// <summary>Order: ColC (ประเภทลูก) → CategoryID + ป้ายแสดงผล</summary>
+        private static readonly Dictionary<string, Tuple<int, string>> DocumentTypeMap =
+            new Dictionary<string, Tuple<int, string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "1", Tuple.Create(55, "ประกาศ") },
+            { "2", Tuple.Create(54, "คำสั่ง") },
+        };
 
         public KBImportProcessor(
-            IKBCategoryRepository    categoryRepo,
             IKBArticleRepository     articleRepo,
-            IKBArticleLinkRepository linkRepo,
             IKBVersionRepository     versionRepo,
-            ISubCommitteeRepository  subCommitteeRepo,
-            IHrDivisionRepository    divisionRepo,
-            IHrDepartmentRepository  departmentRepo)
+            IKBArticleLinkRepository linkRepo,
+            IKBArticleService        articleService,
+            IFileService             fileService,
+            LawFileDownloader        downloader)
         {
-            if (categoryRepo     == null) throw new ArgumentNullException("categoryRepo");
-            if (articleRepo      == null) throw new ArgumentNullException("articleRepo");
-            if (linkRepo         == null) throw new ArgumentNullException("linkRepo");
-            if (versionRepo      == null) throw new ArgumentNullException("versionRepo");
-            if (subCommitteeRepo == null) throw new ArgumentNullException("subCommitteeRepo");
-            if (divisionRepo     == null) throw new ArgumentNullException("divisionRepo");
-            if (departmentRepo   == null) throw new ArgumentNullException("departmentRepo");
+            if (articleRepo    == null) throw new ArgumentNullException("articleRepo");
+            if (versionRepo    == null) throw new ArgumentNullException("versionRepo");
+            if (linkRepo       == null) throw new ArgumentNullException("linkRepo");
+            if (articleService == null) throw new ArgumentNullException("articleService");
+            if (fileService    == null) throw new ArgumentNullException("fileService");
+            if (downloader     == null) throw new ArgumentNullException("downloader");
 
-            _categoryRepo     = categoryRepo;
-            _articleRepo      = articleRepo;
-            _linkRepo         = linkRepo;
-            _versionRepo      = versionRepo;
-            _subCommitteeRepo = subCommitteeRepo;
-            _divisionRepo     = divisionRepo;
-            _departmentRepo   = departmentRepo;
+            _articleRepo    = articleRepo;
+            _versionRepo    = versionRepo;
+            _linkRepo       = linkRepo;
+            _articleService = articleService;
+            _fileService    = fileService;
+            _downloader     = downloader;
         }
 
         // ── Phase 1: Validation ──────────────────────────────────────────────
 
         /// <summary>
         /// Validates each row and sets <see cref="KBImportRow.Status"/> /
-        /// <see cref="KBImportRow.StatusNote"/>.
-        /// No database access is performed.
+        /// <see cref="KBImportRow.StatusNote"/>. Read-only DB access only
+        /// (<see cref="IKBArticleRepository.ExistsByCode"/>, <see cref="IKBArticleRepository.GetByCode"/>)
+        /// — no writes.
         /// </summary>
         public void ValidateRows(IList<KBImportRow> rows)
         {
             if (rows == null) throw new ArgumentNullException("rows");
 
+            var seenCodes   = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var parentCache = new Dictionary<string, KBArticle>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var row in rows)
             {
-                ValidateSingleRow(row);
-            }
-        }
-
-        // ── Phase 2: Category upsert ─────────────────────────────────────────
-
-        /// <summary>
-        /// For each row whose <see cref="KBImportRow.Status"/> is not <c>"Error"</c>,
-        /// resolves or creates the parent and sub-category records in
-        /// <c>KMS.m_KBCategory</c> and sets <see cref="KBImportRow.ResolvedCategoryID"/>
-        /// to the sub-category's <c>CategoryID</c>.
-        /// An in-memory cache prevents redundant <c>GetByCode</c> calls within the batch.
-        /// </summary>
-        public void ResolveCategories(IList<KBImportRow> rows, string createdBy)
-        {
-            if (rows == null) throw new ArgumentNullException("rows");
-
-            var categoryMap = new Dictionary<string, string>(StringComparer.Ordinal);
-            string rawCategories = ConfigurationManager.AppSettings["KBCategories"] ?? string.Empty;
-            foreach (string entry in rawCategories.Split(';'))
-            {
-                int eq = entry.IndexOf('=');
-                if (eq > 0)
-                    categoryMap[entry.Substring(0, eq).Trim()] = entry.Substring(eq + 1).Trim();
-            }
-
-            var cache = new Dictionary<string, int>(StringComparer.Ordinal);
-            int counter = 1;
-            foreach (var row in rows)
-            {
+                // Rows already marked Error by the reader (unreadable row) are left as-is.
                 if (row.Status == "Error")
                     continue;
 
-                try
-                {
-                    string categoryName;
-                    if (!categoryMap.TryGetValue(row.ColA, out categoryName))
-                    {
-                        row.Status     = "Error";
-                        row.StatusNote = TruncateTo200(string.Format(
-                            "ไม่พบรหัสหมวดหมู่ '{0}' ในระบบ", row.ColA));
-                        continue;
-                    }
-
-                    int parentCategoryId = ResolveOrInsertCategory(
-                        code:      row.ColA,
-                        name:      categoryName,
-                        parentId:  null,
-                        sortOrder: counter,
-                        createdBy: createdBy,
-                        cache:     cache);
-
-                    int subCategoryId = ResolveOrInsertCategory(
-                        code:      row.ColB,
-                        name:      row.ColC,
-                        parentId:  parentCategoryId,
-                        sortOrder: counter,
-                        createdBy: createdBy,
-                        cache:     cache);
-
-                    row.ResolvedCategoryID = subCategoryId;
-                }
-                catch (Exception ex)
-                {
-                    row.Status     = "Error";
-                    row.StatusNote = TruncateTo200(ex.Message);
-                }
-                counter++;
+                if (row.RowKind == "Order")
+                    ValidateOrderRow(row, seenCodes, parentCache, _articleRepo);
+                else
+                    ValidateLawRow(row, seenCodes, _articleRepo);
             }
         }
 
-        // ── Phase 3: Article + version insert ───────────────────────────────
+        // ── Phase 2: Article insert ──────────────────────────────────────────
 
         /// <summary>
-        /// Inserts a <c>KBArticle</c> and a corresponding initial <c>KBVersion</c>
-        /// for each row in <paramref name="rows"/>.
-        /// Each row is wrapped in its own <c>try/catch</c>; a failure on one row
-        /// increments <paramref name="errorCount"/> and processing continues.
+        /// Inserts a <c>KBArticle</c> for each row in <paramref name="rows"/> (expected to be
+        /// pre-filtered to <c>Status == "Valid"</c> rows by the caller). Law rows also insert
+        /// an initial <c>KBVersion</c>; Order rows also download/upload the attachment and
+        /// link every resolved parent law. Each row is wrapped in its own <c>try/catch</c>;
+        /// a failure on one row increments <paramref name="errorCount"/> and processing continues.
         /// </summary>
         /// <param name="onProgress">
         /// Optional callback invoked after each row with (rowsProcessed, totalRows).
@@ -151,7 +126,8 @@ namespace CMS.Services
         /// </param>
         public void InsertArticles(
             IList<KBImportRow> rows,
-            string createdBy,
+            UserContext user,
+            bool skipRowOnDownloadFailure,
             out int successCount,
             out int errorCount,
             Action<int, int> onProgress)
@@ -162,94 +138,17 @@ namespace CMS.Services
             errorCount   = 0;
             int total    = rows.Count;
 
-            var allCodeMap = new Dictionary<string, string>(StringComparer.Ordinal);
-
-            // ── Load reference data once before the loop ─────────────────────
-            //var subCommitteeMap = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var sc in _subCommitteeRepo.GetAll())
-                allCodeMap[sc.SubCommitteeNameTH.Replace(" ", "")] = sc.SubCommitteeCode;
-
-            //var divisionMap = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var div in _divisionRepo.GetAll())
-                allCodeMap[div.DivisionName.Replace(" ", "")] = div.DivisionCode;
-
-            //var departmentMap = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var dept in _departmentRepo.GetAll())
-                allCodeMap[dept.DepartmentName.Replace(" ", "")] = dept.DepartmentCode;
-
-            //var merged_division_department = divisionMap.Concat(departmentMap).ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
+            string createdBy = user != null ? (user.AdIdentity ?? string.Empty) : string.Empty;
 
             for (int i = 0; i < total; i++)
             {
                 var row = rows[i];
                 try
                 {
-                    // ── Validate & resolve Sub-Committee (ColU) ─────────────────
-                    var listCode = new List<string>();
-                    if (!string.IsNullOrEmpty(row.ColU))
-                    {
-                        foreach (string rawName in row.ColU.Split('|'))
-                        {
-                            string nameNoSpace = rawName.Replace(" ", "");
-                            if (string.IsNullOrEmpty(nameNoSpace)) continue;
-                            string scCode;
-                            if (!allCodeMap.TryGetValue(nameNoSpace, out scCode))
-                                throw new InvalidOperationException("ไม่พบข้อมูล sub committee");
-                            listCode.Add(scCode);
-                        }
-                    }
-                    
-                    //var dvs_dept_codes = new List<string>();
-                    if (!string.IsNullOrEmpty(row.ColV))
-                    {
-                        foreach (string rawName in row.ColV.Split('|'))
-                        {
-                            string nameNoSpace = rawName.Replace(" ", "");
-                            if (string.IsNullOrEmpty(nameNoSpace)) continue;
-                            string divCode;
-                            if (!allCodeMap.TryGetValue(nameNoSpace, out divCode))
-                                throw new InvalidOperationException("ไม่พบข้อมูล ฝ่าย/แผนก");
-                            listCode.Add(divCode);
-                        }
-                    }
-
-                    var article = new KBArticle
-                    {
-                        ArticleCode      = row.ArticleCode,
-                        Title            = row.ColE,
-                        ContentHTML      = row.ColT,
-                        Summary          = row.Summary,
-                        CategoryID       = row.ResolvedCategoryID,
-                        ArticleType      = 5,
-                        Status           = 2,
-                        CurrentVersion   = 1,
-                        PublishedDate    = row.PublishedDateParsed,
-                        ExpiryDate       = row.ExpiryDateParsed,
-                        ReviewDueDate    = null,
-                        ViewCount        = 0,
-                        LikeCount        = 0,
-                        IsOfficialPolicy = false,
-                        Tags             = BuildTags(row.ColC, row.ColE),
-                        CreatedBy        = createdBy,
-                        CreatedDate      = DateTime.Now,
-                    };
-
-                    int articleId = _articleRepo.Insert(article);
-
-                    var version = new KBVersion
-                    {
-                        ArticleID         = articleId,
-                        VersionNumber     = 1,
-                        ContentSnapshot   = row.ColT,
-                        CreatedBy         = createdBy,
-                        CreatedDate       = DateTime.Now,
-                    };
-
-                    _versionRepo.Insert(version);
-
-                    // ── Insert KBArticleLink records ─────────────────────────────
-                    foreach (string code in listCode)
-                        _linkRepo.Insert(new KBArticleLink { ArticleID = articleId, EntityType = (byte)KBEntityType.Department, EntityID = code, CreatedBy = createdBy, CreatedDate = DateTime.Now });
+                    if (row.RowKind == "Order")
+                        InsertOrderArticle(row, user, createdBy, skipRowOnDownloadFailure);
+                    else
+                        InsertLawArticle(row, createdBy);
 
                     successCount++;
                 }
@@ -265,206 +164,466 @@ namespace CMS.Services
             }
         }
 
+        private void InsertLawArticle(KBImportRow row, string createdBy)
+        {
+            // Defensive re-check — the DB may have changed since ValidateRows ran.
+            if (string.IsNullOrEmpty(row.ArticleCode))
+                throw new InvalidOperationException("คอลัมน์ A (ArticleCode) ว่าง");
+            if (_articleRepo.ExistsByCode(row.ArticleCode))
+                throw new InvalidOperationException(string.Format(
+                    "ArticleCode '{0}' มีอยู่ในระบบแล้ว", row.ArticleCode));
+
+            var article = new KBArticle
+            {
+                ArticleCode           = row.ArticleCode,
+                Title                 = row.Title,
+                ContentHTML           = ConvertPlainTextToHtml(row.RawContent),
+                Summary               = row.Summary,
+                TitleCategory         = row.TitleCategory,
+                CategoryID            = row.ResolvedCategoryID,
+                ArticleType           = FixedArticleTypeLaw,
+                Status                = FixedStatus,
+                CurrentVersion        = 1,
+                PublishedDate         = row.PublishedDateParsed,
+                EffectiveDate         = row.EffectiveDateParsed,
+                IsOfficialPolicy      = false,
+                Tags                  = row.Tags,
+                ConfidentialityLevel  = FixedConfidentialityLevel,
+                CreatedBy             = createdBy,
+                CreatedDate           = DateTime.Now,
+            };
+
+            int articleId = _articleRepo.Insert(article);
+            row.ImportedArticleId = articleId;
+
+            var version = new KBVersion
+            {
+                ArticleID       = articleId,
+                VersionNumber   = 1,
+                ContentSnapshot = article.ContentHTML,
+                CreatedBy       = createdBy,
+                CreatedDate     = DateTime.Now,
+            };
+            _versionRepo.Insert(version);
+
+            row.Status     = "Valid";
+            row.StatusNote = string.Empty;
+        }
+
+        private void InsertOrderArticle(KBImportRow row, UserContext user, string createdBy, bool skipRowOnDownloadFailure)
+        {
+            var notes = new List<string>();
+
+            // ── ArticleCode ──────────────────────────────────────────────────
+            if (string.IsNullOrWhiteSpace(row.ArticleCode))
+                throw new InvalidOperationException("คอลัมน์ B/C/D ไม่ครบ ไม่สามารถสร้าง ArticleCode ได้");
+            if (_articleRepo.ExistsByCode(row.ArticleCode))
+                throw new InvalidOperationException(string.Format(
+                    "ArticleCode '{0}' มีอยู่ในระบบแล้ว", row.ArticleCode));
+
+            Tuple<int, string> docType;
+            if (!DocumentTypeMap.TryGetValue(row.OrderTypeDigit ?? string.Empty, out docType))
+                throw new InvalidOperationException(string.Format(
+                    "คอลัมน์ C (ประเภทลูก): ค่า '{0}' ต้องเป็น 1 (ประกาศ) หรือ 2 (คำสั่ง) เท่านั้น", row.OrderTypeDigit));
+
+            // ── ไฟล์แนบ ──────────────────────────────────────────────────────
+            int? fileId = null;
+            var download = _downloader.Download(row.AttachmentUrl, row.AttachmentFileName);
+
+            if (download.Success)
+            {
+                string uploadError;
+                fileId = UploadToDms(download, user, out uploadError);
+                if (fileId == null)
+                {
+                    if (skipRowOnDownloadFailure)
+                        throw new InvalidOperationException("อัปโหลดไฟล์แนบไม่สำเร็จ: " + uploadError);
+                    notes.Add("อัปโหลดไฟล์แนบไม่สำเร็จ: " + uploadError);
+                }
+            }
+            else
+            {
+                if (skipRowOnDownloadFailure)
+                    throw new InvalidOperationException(download.ErrorMessage);
+                notes.Add(download.ErrorMessage);
+            }
+
+            // ── บทความ ───────────────────────────────────────────────────────
+            var article = new KBArticle
+            {
+                ArticleCode           = row.ArticleCode,
+                Title                 = row.Title,
+                TitleCategory         = row.TitleCategory,
+                ContentHTML           = ConvertPlainTextToHtml(row.RawContent),
+                Summary               = row.Summary,
+                PublishedDate         = row.PublishedDateParsed,
+                EffectiveDate         = row.EffectiveDateParsed,
+                CategoryID            = docType.Item1,
+                ArticleType           = FixedArticleTypeOrder,
+                Status                = FixedStatus,
+                ConfidentialityLevel  = FixedConfidentialityLevel,
+                CreatedBy             = createdBy,
+            };
+
+            int articleId = _articleRepo.Insert(article);
+            row.ImportedArticleId = articleId;
+
+            // ── ผูกไฟล์แนบเข้ากับบทความ ───────────────────────────────────────
+            if (fileId.HasValue)
+            {
+                row.UploadedFileId = fileId.Value;
+                try
+                {
+                    _articleService.SaveArticleAttachments(
+                        articleId, new List<int> { fileId.Value }, createdBy);
+                }
+                catch (Exception ex)
+                {
+                    notes.Add("ผูกไฟล์แนบไม่สำเร็จ: " + ex.Message);
+                }
+            }
+
+            // ── link กฎหมายแม่ทุกตัวใน ParentCodes (ถ้าตัวไหน error ให้ข้ามและแจ้ง) ─
+            for (int i = 0; i < row.ParentCodes.Count; i++)
+            {
+                string code = row.ParentCodes[i];
+
+                int sectionArticleId = i < row.ResolvedParentArticleIds.Count ? row.ResolvedParentArticleIds[i] : 0;
+                if (sectionArticleId <= 0)
+                {
+                    notes.Add(string.Format("ข้าม link '{0}' (ไม่พบกฎหมายแม่ในระบบ)", code));
+                    continue;
+                }
+
+                try
+                {
+                    string entityId      = sectionArticleId.ToString();
+                    string articleIdStr  = articleId.ToString();
+
+                    // ── ไป: ประกาศ/คำสั่งใหม่ → มาตรา ───────────────────────
+                    if (!_linkRepo.Exists(articleId, (byte)KBEntityType.Law, entityId))
+                    {
+                        _linkRepo.Insert(new KBArticleLink
+                        {
+                            ArticleID   = articleId,
+                            EntityType  = (byte)KBEntityType.Law,
+                            EntityID    = entityId,
+                            CreatedBy   = createdBy,
+                            CreatedDate = DateTime.Now,
+                        });
+                    }
+
+                    // ── กลับ: มาตรา → ประกาศ/คำสั่งใหม่ (reference ไป-กลับ) ──
+                    if (!_linkRepo.Exists(sectionArticleId, (byte)KBEntityType.Law, articleIdStr))
+                    {
+                        _linkRepo.Insert(new KBArticleLink
+                        {
+                            ArticleID   = sectionArticleId,
+                            EntityType  = (byte)KBEntityType.Law,
+                            EntityID    = articleIdStr,
+                            CreatedBy   = createdBy,
+                            CreatedDate = DateTime.Now,
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    notes.Add(string.Format("ข้าม link '{0}': {1}", code, ex.Message));
+                }
+            }
+
+            if (notes.Count > 0)
+            {
+                row.Status     = "Warn";
+                row.StatusNote = TruncateTo200(string.Join("; ", notes));
+            }
+            else
+            {
+                row.Status     = "Valid";
+                row.StatusNote = string.Empty;
+            }
+        }
+
         // ── Static helpers (internal — directly testable) ────────────────────
 
         /// <summary>
-        /// Returns <c>true</c> when <paramref name="value"/> is a sentinel placeholder
-        /// (<c>"-"</c> or <c>"ไม่มีค่า"</c>, exact case-sensitive match).
+        /// Converts plain text (Law column P / Order column I) into HTML before it is stored in
+        /// <c>t_KBArticle.ContentHTML</c>. Both <c>ArticleViewerForm</c> and <c>KBEditorDialog</c>
+        /// set this value straight into an HTML DOM without further conversion — storing raw
+        /// <c>\n</c>/<c>\t</c> would collapse per the HTML whitespace spec, so the text is
+        /// HTML-encoded first and then <c>\n</c> → <c>&lt;br&gt;</c> / <c>\t</c> → 4x <c>&amp;nbsp;</c>.
         /// </summary>
-        internal static bool IsSentinel(string value)
+        internal static string ConvertPlainTextToHtml(string raw)
         {
-            return value == "-" || value == "ไม่มีค่า";
+            if (string.IsNullOrEmpty(raw)) return string.Empty;
+
+            string normalized = raw.Replace("\r\n", "\n").Replace("\r", "\n");
+            string encoded    = WebUtility.HtmlEncode(normalized);
+            encoded = encoded.Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+            encoded = encoded.Replace("\n", "<br>");
+            return encoded;
         }
 
         /// <summary>
-        /// Builds the <c>ArticleCode</c> by joining non-null, non-empty, non-sentinel
-        /// values from columns A, B, D, F, H, J, L, N, P with NO separator (concatenated
-        /// directly without spaces).
+        /// Resolves a Law <c>CategoryID</c> from the first 3 characters of <paramref name="articleCode"/>
+        /// via <see cref="PrefixCategoryMap"/>. Returns <c>false</c> (not found) when unmapped.
         /// </summary>
-        internal static string BuildArticleCode(KBImportRow row)
+        internal static bool TryResolveLawCategoryId(string articleCode, out int categoryId)
         {
-            if (row == null) throw new ArgumentNullException("row");
+            categoryId = 0;
+            if (string.IsNullOrEmpty(articleCode) || articleCode.Length < 3)
+                return false;
 
-            var segments = new[]
+            string prefix = articleCode.Substring(0, 3);
+            return PrefixCategoryMap.TryGetValue(prefix, out categoryId);
+        }
+
+        // ── Private helpers — validation ──────────────────────────────────────
+
+        /// <summary>
+        /// Validates a single Law row and sets its <see cref="KBImportRow.Status"/> and
+        /// <see cref="KBImportRow.StatusNote"/>. On success, also sets the computed
+        /// <c>ArticleCode</c>/<c>Title</c>/<c>Tags</c>/<c>Summary</c>/<c>TitleCategory</c>/<c>ResolvedCategoryID</c>.
+        /// </summary>
+        private static void ValidateLawRow(KBImportRow row, HashSet<string> seenCodes, IKBArticleRepository articleRepo)
+        {
+            string raw = row.ColA;
+
+            // ── Column A ("Code รวม") — blank ⇒ Skip ──────────────────────────
+            if (string.IsNullOrEmpty(raw))
             {
-                row.ColA, row.ColB, row.ColD, row.ColF,
-                row.ColH, row.ColJ, row.ColL, row.ColN, row.ColP
-            };
+                row.Status     = "Skip";
+                row.StatusNote = "คอลัมน์ A (Code รวม) ว่าง — ข้ามแถวนี้";
+                return;
+            }
 
-            return string.Concat(segments
-                .Where(v => !string.IsNullOrEmpty(v) && !IsSentinel(v)));
-        }
-
-        /// <summary>
-        /// Builds the <c>Summary</c> by joining non-null, non-empty, non-sentinel
-        /// values from columns E, G, I, K, M, O, Q with a single space.
-        /// Each segment is trimmed before evaluation; empty strings (after trim),
-        /// <c>"-"</c>, and <c>"ไม่มีค่า"</c> are excluded from the concatenation.
-        /// </summary>
-        internal static string BuildSummary(KBImportRow row)
-        {
-            if (row == null) throw new ArgumentNullException("row");
-
-            var segments = new[]
+            // ── Derive the 22-digit ArticleCode from column A ─────────────────
+            // A is up to 27 digits: first 22 = ArticleCode, last 5 = child-document
+            // sequence ("00000" means this row is the law section itself; anything else
+            // is a คำสั่ง/ประกาศ child row, imported instead from the Order-layout file).
+            // A bare 22-digit value (no suffix) is treated as already being the law section.
+            string code;
+            if (raw.Length == 27)
             {
-                row.ColE, row.ColG, row.ColI, row.ColK,
-                row.ColM, row.ColO, row.ColQ
-            };
+                string suffix = raw.Substring(22, 5);
+                if (suffix != "00000")
+                {
+                    row.Status     = "Skip";
+                    row.StatusNote = string.Format(
+                        "คอลัมน์ A: '{0}' เป็นข้อมูลประกาศ/คำสั่ง (นำเข้าจากไฟล์ ประกาศ/คำสั่ง แยกต่างหาก) — ข้ามแถวนี้", raw);
+                    return;
+                }
+                code = raw.Substring(0, 22);
+            }
+            else if (raw.Length == 22)
+            {
+                code = raw;
+            }
+            else
+            {
+                row.Status     = "Error";
+                row.StatusNote = string.Format(
+                    "คอลัมน์ A: ความยาวไม่ถูกต้อง (คาดหวัง 22 หรือ 27 หลัก แต่พบ {0} หลัก) — '{1}'", raw.Length, raw);
+                return;
+            }
 
-            return string.Join(" ", segments
-                .Select(v => v == null ? string.Empty : v.Trim())
-                .Where(v => v.Length > 0 && !IsSentinel(v)));
-        }
+            // ── ArticleCode already-known (exists / duplicate-in-file) ⇒ Skip ──
+            if (seenCodes.Contains(code))
+            {
+                row.Status     = "Skip";
+                row.StatusNote = string.Format("ArticleCode '{0}' ซ้ำกับแถวก่อนหน้าในไฟล์เดียวกัน — ข้ามแถวนี้", code);
+                return;
+            }
 
-        /// <summary>
-        /// Builds the <c>Tags</c> field as <c>"{colC}, {colE}"</c>.
-        /// </summary>
-        internal static string BuildTags(string colC, string colE)
-        {
-            return string.Format("{0}, {1}", colC, colE);
-        }
+            if (articleRepo.ExistsByCode(code))
+            {
+                row.Status     = "Skip";
+                row.StatusNote = string.Format("ArticleCode '{0}' มีอยู่แล้วในระบบ — ข้ามแถวนี้", code);
+                seenCodes.Add(code);
+                return;
+            }
 
-        // ── Private helpers ──────────────────────────────────────────────────
+            seenCodes.Add(code);
 
-        /// <summary>
-        /// Validates a single row and sets its <see cref="KBImportRow.Status"/> and
-        /// <see cref="KBImportRow.StatusNote"/>.
-        /// </summary>
-        private static void ValidateSingleRow(KBImportRow row)
-        {
             var errors = new List<string>();
 
-            // ── Required columns (null/empty check) ──────────────────────────
-            // Columns: A, B, C, D, E, F, H, J, L, N, P, R, T
-            CheckRequired(row.ColA, "A", errors);
-            CheckRequired(row.ColB, "B", errors);
-            CheckRequired(row.ColC, "C", errors);
-            CheckRequired(row.ColD, "D", errors);
-            CheckRequired(row.ColE, "E", errors);
-            CheckRequired(row.ColF, "F", errors);
-            CheckRequired(row.ColH, "H", errors);
-            CheckRequired(row.ColJ, "J", errors);
-            CheckRequired(row.ColL, "L", errors);
-            CheckRequired(row.ColN, "N", errors);
-            CheckRequired(row.ColP, "P", errors);
-            CheckRequired(row.ColT, "T", errors);
-            CheckRequired(row.ColU, "U", errors);
-            CheckRequired(row.ColV, "V", errors);
+            // ── Column C — required, numeric (source of Title/Tags) ───────────
+            int sectionNumber = 0;
+            if (string.IsNullOrEmpty(row.ColC))
+                errors.Add("คอลัมน์ C (มาตรา): จำเป็นต้องระบุ");
+            else if (!Regex.IsMatch(row.ColC, @"^\d+$") || !int.TryParse(row.ColC, out sectionNumber))
+                errors.Add(string.Format("คอลัมน์ C (มาตรา): ค่า '{0}' ต้องเป็นตัวเลขเท่านั้น", row.ColC));
 
-            // ── Column R (PublishedDate) — required + parse check ─────────────
-            if (string.IsNullOrEmpty(row.ColR))
-            {
-                errors.Add("คอลัมน์ R: PublishedDate จำเป็นต้องระบุ");
-            }
-            else if (!row.PublishedDateParsed.HasValue)
-            {
-                errors.Add(string.Format(
-                    "คอลัมน์ R: ไม่สามารถแปลงวันที่ได้ — '{0}'", row.ColR));
-            }
+            // ── Column P — required (source of ContentHTML) ───────────────────
+            if (string.IsNullOrWhiteSpace(row.RawContent))
+                errors.Add("คอลัมน์ P (บัญญัติไว้ว่า): จำเป็นต้องระบุ");
 
-            // ── Column S (ExpiryDate) — optional, but if present must parse ───
-            if (!string.IsNullOrEmpty(row.ColS)
-                && !IsSentinel(row.ColS)
-                && !row.ExpiryDateParsed.HasValue)
-            {
-                errors.Add(string.Format(
-                    "คอลัมน์ S: ไม่สามารถแปลงวันที่ได้ — '{0}'", row.ColS));
-            }
+            // ── Column N (วันที่ประกาศ) / O (วันที่มีผลบังคับใช้) — optional, but if
+            // present must parse (already attempted in the reader; a non-empty raw
+            // value with no parsed result means it failed to parse) ────────────
+            if (!string.IsNullOrEmpty(row.RawPublishedDate) && !row.PublishedDateParsed.HasValue)
+                errors.Add(string.Format("คอลัมน์ N (วันที่ประกาศ): ไม่สามารถแปลงวันที่ได้ — '{0}'", row.RawPublishedDate));
 
-            // ── Code columns — numeric-only (excluding sentinels) ─────────────
-            // Columns: B, D, F, H, J, L, N, P
-            // Column A is intentionally excluded — it holds a text-based category
-            // code (e.g. "LW") and must NOT be validated as numeric.
-            CheckNumericCode(row.ColB, "B", errors);
-            CheckNumericCode(row.ColD, "D", errors);
-            CheckNumericCode(row.ColF, "F", errors);
-            CheckNumericCode(row.ColH, "H", errors);
-            CheckNumericCode(row.ColJ, "J", errors);
-            CheckNumericCode(row.ColL, "L", errors);
-            CheckNumericCode(row.ColN, "N", errors);
-            CheckNumericCode(row.ColP, "P", errors);
+            if (!string.IsNullOrEmpty(row.RawEffectiveDate) && !row.EffectiveDateParsed.HasValue)
+                errors.Add(string.Format("คอลัมน์ O (วันที่มีผลบังคับใช้): ไม่สามารถแปลงวันที่ได้ — '{0}'", row.RawEffectiveDate));
+
+            // ── CategoryID — resolved from ArticleCode's 3-letter prefix ──────
+            int categoryId;
+            if (!TryResolveLawCategoryId(code, out categoryId))
+                errors.Add(string.Format("ไม่พบ CategoryID สำหรับรหัสขึ้นต้น '{0}'",
+                    code.Length >= 3 ? code.Substring(0, 3) : code));
 
             if (errors.Count > 0)
             {
                 row.Status     = "Error";
                 row.StatusNote = string.Join("; ", errors);
+                return;
+            }
+
+            row.Status             = "Valid";
+            row.StatusNote         = null;
+            row.ArticleCode        = code;
+            row.Title              = "มาตรา " + sectionNumber;
+            row.Tags               = row.Title;
+            row.Summary            = string.IsNullOrWhiteSpace(row.RawSummary) ? null : row.RawSummary.Trim();
+            row.TitleCategory      = string.IsNullOrWhiteSpace(row.RawTitleCategory) ? null : row.RawTitleCategory.Trim();
+            row.ResolvedCategoryID = categoryId;
+            row.DocumentTypeLabel  = "มาตรา";
+        }
+
+        /// <summary>
+        /// Validates a single Order row and sets its <see cref="KBImportRow.Status"/> and
+        /// <see cref="KBImportRow.StatusNote"/>. On success, also sets the computed
+        /// <c>ArticleCode</c>/<c>Title</c>/<c>Summary</c>/<c>TitleCategory</c>/<c>ResolvedCategoryID</c>/
+        /// <c>ResolvedParentArticleIds</c>.
+        /// </summary>
+        private static void ValidateOrderRow(
+            KBImportRow row, HashSet<string> seenCodes,
+            Dictionary<string, KBArticle> parentCache, IKBArticleRepository articleRepo)
+        {
+            string finalCode = row.FinalCodeChoices.Count > 0 ? row.FinalCodeChoices[0] : null;
+            row.ArticleCode  = finalCode;
+
+            var errors = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(finalCode))
+            {
+                errors.Add("คอลัมน์ B/C/D (Code กฎหมายแม่/ประเภทลูก/เอกสารลูก) ไม่ครบ ไม่สามารถสร้าง ArticleCode ได้");
+            }
+            else if (seenCodes.Contains(finalCode))
+            {
+                errors.Add(string.Format("ArticleCode '{0}' ซ้ำกับแถวอื่นในไฟล์", finalCode));
+            }
+            else if (articleRepo.ExistsByCode(finalCode))
+            {
+                errors.Add(string.Format("ArticleCode '{0}' มีอยู่ในระบบแล้ว", finalCode));
             }
             else
             {
-                row.Status      = "Valid";
-                row.StatusNote  = null;
-                row.ArticleCode = BuildArticleCode(row);
-                row.Summary     = BuildSummary(row);
+                seenCodes.Add(finalCode);
             }
-        }
 
-        /// <summary>
-        /// Adds an error message to <paramref name="errors"/> when
-        /// <paramref name="value"/> is null or empty.
-        /// </summary>
-        private static void CheckRequired(string value, string columnLetter, List<string> errors)
-        {
-            if (string.IsNullOrEmpty(value))
-                errors.Add(string.Format("คอลัมน์ {0}: จำเป็นต้องระบุ", columnLetter));
-        }
-
-        /// <summary>
-        /// Adds an error message to <paramref name="errors"/> when
-        /// <paramref name="value"/> is non-empty, non-sentinel, and contains
-        /// non-numeric characters.
-        /// </summary>
-        private static void CheckNumericCode(string value, string columnLetter, List<string> errors)
-        {
-            if (string.IsNullOrEmpty(value) || IsSentinel(value))
-                return;
-
-            if (!Regex.IsMatch(value, @"^\d+$"))
+            Tuple<int, string> docType;
+            if (!DocumentTypeMap.TryGetValue(row.OrderTypeDigit ?? string.Empty, out docType))
             {
                 errors.Add(string.Format(
-                    "คอลัมน์ {0}: ค่า '{1}' ต้องเป็นตัวเลขเท่านั้น", columnLetter, value));
+                    "คอลัมน์ C (ประเภทลูก): ค่า '{0}' ต้องเป็น 1 (ประกาศ) หรือ 2 (คำสั่ง) เท่านั้น", row.OrderTypeDigit));
             }
+            else
+            {
+                row.ResolvedCategoryID = docType.Item1;
+                row.DocumentTypeLabel  = docType.Item2;
+            }
+
+            if (string.IsNullOrWhiteSpace(row.RawContent))
+                errors.Add("คอลัมน์ I (บัญญัติไว้ว่า) ห้ามว่าง");
+
+            if (string.IsNullOrWhiteSpace(row.AttachmentFileName))
+                errors.Add("คอลัมน์ K (ชื่อไฟล์) ห้ามว่าง");
+
+            if (row.ParentCodes.Count == 0)
+            {
+                errors.Add("คอลัมน์ B (Code กฎหมายแม่) ห้ามว่าง");
+            }
+            else
+            {
+                var resolvedIds = new List<int>();
+                var notFound    = new List<string>();
+
+                foreach (var code in row.ParentCodes)
+                {
+                    KBArticle match;
+                    if (!parentCache.TryGetValue(code, out match))
+                    {
+                        match = articleRepo.GetByCode(code);
+                        parentCache[code] = match;
+                    }
+
+                    if (match == null) notFound.Add(code);
+                    else               resolvedIds.Add(match.ArticleID);
+                }
+
+                row.ResolvedParentArticleIds = resolvedIds;
+                if (notFound.Count > 0)
+                    errors.Add("ไม่พบกฎหมายแม่ในระบบ: " + string.Join(", ", notFound));
+            }
+
+            if (!string.IsNullOrEmpty(row.RawPublishedDate) && !row.PublishedDateParsed.HasValue)
+                errors.Add(string.Format("คอลัมน์ G (วันที่ประกาศ): ไม่สามารถแปลงวันที่ได้ — '{0}'", row.RawPublishedDate));
+
+            if (!string.IsNullOrEmpty(row.RawEffectiveDate) && !row.EffectiveDateParsed.HasValue)
+                errors.Add(string.Format("คอลัมน์ H (วันที่มีผลบังคับใช้): ไม่สามารถแปลงวันที่ได้ — '{0}'", row.RawEffectiveDate));
+
+            if (errors.Count > 0)
+            {
+                row.Status     = "Error";
+                row.StatusNote = string.Join("; ", errors);
+                return;
+            }
+
+            row.Status        = "Valid";
+            row.StatusNote    = null;
+            row.Title          = row.RawTitle;
+            row.Summary        = row.RawSummary;
+            row.TitleCategory  = row.RawTitleCategory;
         }
 
-        /// <summary>
-        /// Resolves a category by <paramref name="code"/> from the in-memory
-        /// <paramref name="cache"/> or the database, inserting a new record when
-        /// none exists.  Returns the resolved <c>CategoryID</c>.
-        /// </summary>
-        private int ResolveOrInsertCategory(
-            string code,
-            string name,
-            int?   parentId,
-            int    sortOrder,
-            string createdBy,
-            Dictionary<string, int> cache)
+        // ── Private helpers — misc ────────────────────────────────────────────
+
+        private int? UploadToDms(LawFileDownloadResult download, UserContext user, out string errorMessage)
         {
-            int existingId;
-            if (cache.TryGetValue(code, out existingId))
-                return existingId;
+            errorMessage = null;
 
-            KBCategory existing = _categoryRepo.GetByCode(code);
-            if (existing != null)
+            using (var stream = new MemoryStream(download.Content))
             {
-                cache[code] = existing.CategoryID;
-                return existing.CategoryID;
+                var request = new FileUploadRequest
+                {
+                    FileName          = download.FileName,
+                    FileStream        = stream,
+                    FileSizeBytes     = download.Content.Length,
+                    MimeType          = download.MimeType,
+                    OverwriteExisting = false,
+                };
+
+                var results = _fileService.UploadFiles(
+                    new List<FileUploadRequest> { request }, AttachmentFolderId, user);
+
+                var result = results == null ? null : results.FirstOrDefault();
+
+                if (result == null)
+                {
+                    errorMessage = "ไม่ได้รับผลลัพธ์จากระบบจัดเก็บไฟล์";
+                    return null;
+                }
+
+                if (!result.Success || !result.FileDocumentId.HasValue)
+                {
+                    errorMessage = result.ErrorMessage ?? "ไม่ทราบสาเหตุ";
+                    return null;
+                }
+
+                return result.FileDocumentId.Value;
             }
-
-            // Not found — insert a new category record.
-            var newCategory = new KBCategory
-            {
-                CategoryCode     = code,
-                CategoryName     = name,
-                Icon             = "6",
-                SortOrder        = sortOrder,
-                IsActive         = true,
-                CreatedBy        = createdBy,
-                CreatedDate      = DateTime.Now,
-                ParentCategoryID = parentId,
-            };
-
-            int newId = _categoryRepo.Insert(newCategory);
-            cache[code] = newId;
-            return newId;
         }
 
         /// <summary>

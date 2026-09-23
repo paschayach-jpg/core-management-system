@@ -25,6 +25,22 @@ namespace CMS.Presentation.Modules.KMS
         public ArticleCardControl()
         {
             InitializeComponent();
+            flowLayoutPanel1.SizeChanged += (s, e) => UpdateCardHeight();
+        }
+
+        /// <summary>
+        /// flowLayoutPanel1 เป็น AutoSize ตาม lblSummary แล้ว (ไม่ fix width/height) — ส่วนพี่น้องที่เหลือ
+        /// ใน pnlContent (pHeaderRight/pnlMeta/pnlActions/panelFooter) ยังคงสูงคงที่ จึงรวมความสูงทั้งหมด
+        /// แล้วปรับความสูงของการ์ดทั้งใบตาม เพื่อไม่ให้ summary ที่ยาวขึ้นโดนตัด/บีบซ่อนอยู่ใน panel ที่ fix สูงเท่าเดิม
+        /// </summary>
+        private void UpdateCardHeight()
+        {
+            int total = pnlContent.Padding.Top + pnlContent.Padding.Bottom
+                      + pHeaderRight.Height + pnlMeta.Height + flowLayoutPanel1.Height
+                      + pnlActions.Height + panelFooter.Height;
+
+            if (total > 0 && Height != total)
+                Height = total;
         }
 
         // ── Data binding ─────────────────────────────────────────────────────────
@@ -46,12 +62,15 @@ namespace CMS.Presentation.Modules.KMS
             lblStatus.Text        = a.StatusName;
             lblVersion.Text       = "Version " + a.CurrentVersion;
             lblCategory.Text      = a.CategoryName ?? "-";
+            lblTitleCategory.Text = a.TitleCategory ?? "-";
             lblSummary.Text       = a.Summary ?? string.Empty;
             lblShowEntity.Text    = a.LinkedEntities ?? "-";
             lblViewCount.Text     = a.ViewCount.ToString();
             lblLikeCount.Text     = a.LikeCount.ToString();
             lblTags.Text          = string.IsNullOrEmpty(a.Tags) ? "-" : a.Tags;
             btnSendReview.Visible = (a.Status == 1);
+
+            UpdateCardHeight();
         }
 
         private static Color GetStatusColor(byte status)

@@ -13,9 +13,11 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string ArticleCode { get; set; }
         string Title { get; set; }
         string Summary { get; set; }
+        string TitleCategory { get; set; }
         string ContentHTML { get; set; }
         string Tags { get; set; }
         int SelectedCrafLevelCode { get; set; }
+        System.DateTime? PublishedDate { get; set; }
         System.DateTime? EffectiveDate { get; set; }
         System.DateTime? ExpiryDate { get; set; }
         int SelectedCategoryId { get; set; }

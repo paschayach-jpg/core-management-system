@@ -63,6 +63,34 @@ namespace CMS.Data.Repositories
             return results;
         }
 
+        public IEnumerable<KBArticleLink> GetAllByEntityType(byte entityType)
+        {
+            var results = new List<KBArticleLink>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                const string sql = @"
+                    SELECT LinkID, ArticleID, EntityType, EntityID, CreatedBy, CreatedDate
+                    FROM   KMS.t_KBArticleLink
+                    WHERE  EntityType = @EntityType";
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@EntityType", entityType);
+
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        while (r.Read())
+                        {
+                            results.Add(Map(r));
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+
         public int Insert(KBArticleLink link)
         {
             using (var conn = new SqlConnection(_connectionString))
@@ -84,6 +112,29 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@CreatedDate", link.CreatedDate);
 
                     return Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+        }
+
+        public bool Exists(int articleId, byte entityType, string entityId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                const string sql = @"
+                    SELECT TOP 1 1
+                    FROM   KMS.t_KBArticleLink
+                    WHERE  ArticleID = @ArticleID
+                      AND  EntityType = @EntityType
+                      AND  EntityID = @EntityID";
+
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ArticleID", articleId);
+                    cmd.Parameters.AddWithValue("@EntityType", entityType);
+                    cmd.Parameters.AddWithValue("@EntityID", entityId ?? string.Empty);
+                    return cmd.ExecuteScalar() != null;
                 }
             }
         }

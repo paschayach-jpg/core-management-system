@@ -90,11 +90,10 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
-        /// Imports validated rows by resolving/creating categories and inserting
-        /// <see cref="KBArticle"/> + <see cref="KBVersion"/> records via
-        /// <see cref="KBImportProcessor"/>. Import options are read from the view at
-        /// call time. On completion calls
-        /// <see cref="IKBImportWizardController.ShowImportComplete"/>.
+        /// Imports validated rows by inserting <see cref="KBArticle"/> + <see cref="KBVersion"/>
+        /// records via <see cref="KBImportProcessor"/>. Rows marked <c>Skip</c> (blank/duplicate/
+        /// already-exists ArticleCode) or <c>Error</c> are excluded before the import attempt.
+        /// On completion calls <see cref="IKBImportWizardController.ShowImportComplete"/>.
         /// </summary>
         public void ExecuteImport()
         {
@@ -106,69 +105,49 @@ namespace CMS.Controllers.KMS.KB
                     return;
                 }
 
-                bool skipWarnings = _view.OptSkipWarning;
-                string createdBy  = _user.AdIdentity ?? _user.UserID.ToString();
-
-                // ── Phase 1: filter rows ─────────────────────────────────────
-                _view.SetProgress(5, "กำลังกรองแถวข้อมูล...");
-                var rowsToImport    = new List<KBImportRow>();
-                var skippedRows     = new List<KBImportRow>();   // pre-import excluded rows
-                int preFilterErrors = 0;
+                // ── Phase 1: filter rows — only "Valid" rows are attempted ────
+                _view.SetProgress(10, "กำลังกรองแถวข้อมูล...");
+                var rowsToImport = new List<KBImportRow>();
+                var skippedRows  = new List<KBImportRow>();   // pre-import excluded rows
 
                 foreach (var row in _lastValidation.Rows)
                 {
-                    if (row.Status == "Error")                { preFilterErrors++; skippedRows.Add(row); continue; }
-                    if (row.Status == "Warn" && skipWarnings) { preFilterErrors++; skippedRows.Add(row); continue; }
-                    rowsToImport.Add(row);
+                    if (row.Status == "Valid") rowsToImport.Add(row);
+                    else                       skippedRows.Add(row);
                 }
-                _view.SetProgress(15, string.Format("กรองแล้ว: {0} รายการพร้อมนำเข้า", rowsToImport.Count));
+                _view.SetProgress(20, string.Format("กรองแล้ว: {0} รายการพร้อมนำเข้า", rowsToImport.Count));
 
-                // ── Phase 2: category upsert ─────────────────────────────────
-                _view.SetProgress(20, "กำลังสร้าง/ค้นหาหมวดหมู่...");
-                _processor.ResolveCategories(rowsToImport, createdBy);
-                _view.SetProgress(40, "หมวดหมู่เรียบร้อย");
-
-                // Rows that failed ResolveCategories are now "Error" — exclude them
-                var readyToInsert   = new List<KBImportRow>();
-                int categoryErrors  = 0;
-                foreach (var row in rowsToImport)
-                {
-                    if (row.Status == "Error") categoryErrors++;
-                    else                       readyToInsert.Add(row);
-                }
-
-                // ── Phase 3: article + version insert (per-row progress) ─────
+                // ── Phase 2: article + version insert (per-row progress) ─────
                 int successCount;
                 int errorCount;
-                int totalToInsert = readyToInsert.Count;
 
                 _processor.InsertArticles(
-                    readyToInsert,
-                    createdBy,
+                    rowsToImport,
+                    _user,
+                    _view.OptSkipRowOnDownloadFailure,
                     out successCount,
                     out errorCount,
                     onProgress: (done, total) =>
                     {
-                        // Map 0→total onto 40%→99% so 100% marks true completion.
+                        // Map 0→total onto 20%→99% so 100% marks true completion.
                         int pct = total == 0 ? 99
-                            : 40 + (done * 59 / total);
+                            : 20 + (done * 79 / total);
                         _view.SetProgress(pct,
                             string.Format("กำลังนำเข้าบทความ... {0}/{1}", done, total));
                     });
 
                 _view.SetProgress(100, "นำเข้าเสร็จสิ้น");
 
-                // Collect rows that failed DURING import (category resolution or DB insert).
-                var importFailedRows = new List<KBImportRow>();
-                foreach (var row in rowsToImport)
-                    if (row.Status == "Error") importFailedRows.Add(row);
+                // Collect rows that failed DURING import (ExistsByCode race or DB insert failure).
+                var importFailedRows = rowsToImport.Where(r => r.Status == "Error").ToList();
 
-                int totalErrors = preFilterErrors + categoryErrors + errorCount;
+                int totalErrors = skippedRows.Count(r => r.Status == "Error") + errorCount;
                 var summary = new KBImportValidationResult
                 {
                     TotalRecords     = _lastValidation.TotalRecords,
                     ValidRecords     = successCount,
-                    WarningRecords   = _lastValidation.WarningRecords,
+                    WarningRecords   = 0,
+                    SkippedRecords   = _lastValidation.SkippedRecords,
                     ErrorRecords     = totalErrors,
                     IsSuccess        = true,
                     Message          = totalErrors == 0
@@ -192,18 +171,18 @@ namespace CMS.Controllers.KMS.KB
 
         /// <summary>
         /// Builds a <see cref="KBImportValidationResult"/> from a validated list of
-        /// rows, counting Valid, Warn, and Error statuses.
+        /// rows, counting Valid, Skip, and Error statuses.
         /// </summary>
         private static KBImportValidationResult BuildValidationResult(IList<KBImportRow> rows)
         {
             int valid   = 0;
-            int warn    = 0;
+            int skipped = 0;
             int error   = 0;
 
             foreach (var row in rows)
             {
                 if (row.Status == "Valid")      valid++;
-                else if (row.Status == "Warn")  warn++;
+                else if (row.Status == "Skip")  skipped++;
                 else                            error++;
             }
 
@@ -211,7 +190,7 @@ namespace CMS.Controllers.KMS.KB
             {
                 TotalRecords   = rows.Count,
                 ValidRecords   = valid,
-                WarningRecords = warn,
+                SkippedRecords = skipped,
                 ErrorRecords   = error,
                 Rows           = rows,
             };

@@ -101,7 +101,6 @@ namespace CMS.Presentation.Modules.KMS
 
             InitTemplateCombo();
             PopulateColumnReference();
-            BuildValidationItems();
 
             // Wire upload-zone dashed border and drag events
             pnlUploadZone.Paint     += PnlUploadZone_Paint;
@@ -117,6 +116,7 @@ namespace CMS.Presentation.Modules.KMS
             // Wire summary pill click filters (task 1)
             AddClickRecursive(pnlPillTotal, (s, ev) => ApplyPreviewFilter("Total"));
             AddClickRecursive(pnlPillValid, (s, ev) => ApplyPreviewFilter("Valid"));
+            AddClickRecursive(pnlPillSkip,  (s, ev) => ApplyPreviewFilter("Skip"));
             AddClickRecursive(pnlPillError, (s, ev) => ApplyPreviewFilter("Error"));
 
             // Wire stat panel click filters (task 2)
@@ -146,7 +146,7 @@ namespace CMS.Presentation.Modules.KMS
         public bool OptSkipWarning  { get { return chkSkipWarning.Checked;  } }
         public bool OptAutoCategory { get { return chkAutoCategory.Checked; } }
         public bool OptSendEmail    { get { return chkSendEmail.Checked;    } }
-        public bool OptLinkDMS      { get { return chkLinkDMS.Checked;      } }
+        public bool OptSkipRowOnDownloadFailure { get { return chkLinkDMS.Checked; } }
         public bool OptCreateDraft  { get { return chkCreateDraft.Checked;  } }
         public bool OptAuditLog     { get { return chkAuditLog.Checked;     } }
 
@@ -162,14 +162,13 @@ namespace CMS.Presentation.Modules.KMS
 
             lblTotalCount.Text = result.TotalRecords.ToString();
             lblValidCount.Text = result.ValidRecords.ToString();
-            //lblWarnCount.Text  = result.WarningRecords.ToString();
+            lblSkipCount.Text  = result.SkippedRecords.ToString();
             lblErrorCount.Text = result.ErrorRecords.ToString();
 
             btnImport.Text = string.Format(
-                "📥  นำเข้า ({0} รายการ)", result.ValidRecords + result.WarningRecords);
+                "📥  นำเข้า ({0} รายการ)", result.ValidRecords);
 
             PopulatePreviewGrid(result.Rows);
-            BindValidationItems(result);
             ShowStep(2);
             SetStatus("ตรวจสอบข้อมูลเรียบร้อย");
         }
@@ -184,14 +183,17 @@ namespace CMS.Presentation.Modules.KMS
 
             lblCompleteTotalNum.Text   = summary.TotalRecords.ToString();
             lblCompleteSuccessNum.Text = summary.ValidRecords.ToString();
-            //lblCompleteWarnNum.Text    = summary.WarningRecords.ToString();
-            lblCompleteSkipNum.Text    = summary.ErrorRecords.ToString();
 
             var skipped = summary.SkippedRows      ?? new List<KBImportRow>();
             var failed  = summary.ImportFailedRows ?? new List<KBImportRow>();
+            var warned  = (summary.Rows ?? new List<KBImportRow>()).Where(r => r.Status == "Warn").ToList();
 
             var allProblemRows = new List<KBImportRow>(skipped);
             allProblemRows.AddRange(failed);
+            allProblemRows.AddRange(warned);
+
+            // "Skip" stat panel = everything not fully successful (Skip + Error + Warn rows).
+            lblCompleteSkipNum.Text = allProblemRows.Count.ToString();
 
             // Derive success rows for stat filter (task 2)
             _errSkipRows = allProblemRows;
@@ -318,22 +320,26 @@ namespace CMS.Presentation.Modules.KMS
             pnlUploadZone.Visible   = true;
             pnlUploadSection.Height = 316;
             btnNext.Enabled         = false;
-            lblFileHint.Visible     = true;
             SetStatus("ลบไฟล์แล้ว");
         }
 
         private void BtnDownloadTemplate_Click(object sender, EventArgs e)
         {
+            var selected = cboTemplate.SelectedItem as ComboItem;
+            bool isOrder = selected != null && selected.Value == 2;
+
             using (var dlg = new SaveFileDialog())
             {
                 dlg.Title            = "บันทึก Template";
-                dlg.FileName         = "template.xlsx";
+                dlg.FileName         = isOrder ? "template_ประกาศคำสั่ง.xlsx" : "template_กฎหมาย.xlsx";
                 dlg.Filter           = "Excel Workbook (*.xlsx)|*.xlsx";
                 dlg.DefaultExt       = "xlsx";
 
                 if (dlg.ShowDialog() != DialogResult.OK) return;
 
-                var resourceName = "CMS.Presentation.template.xlsx";
+                var resourceName = isOrder
+                    ? "CMS.Presentation.template_order.xlsx"
+                    : "CMS.Presentation.template.xlsx";
                 using (var src = System.Reflection.Assembly.GetExecutingAssembly()
                                        .GetManifestResourceStream(resourceName))
                 {
@@ -403,8 +409,9 @@ namespace CMS.Presentation.Modules.KMS
                 string.Format(
                     "ต้องการนำเข้าข้อมูล {0} รายการ ใช่หรือไม่?\n\n" +
                     "✅  พร้อมนำเข้า :  {1} รายการ\n" +
-                    "⛔  ข้อผิดพลาด :  {2} รายการ (จะข้าม)",
-                    lblTotalCount.Text, lblValidCount.Text, lblErrorCount.Text),
+                    "⏭  ข้าม :  {2} รายการ\n" +
+                    "⛔  ข้อผิดพลาด :  {3} รายการ (จะข้าม)",
+                    lblTotalCount.Text, lblValidCount.Text, lblSkipCount.Text, lblErrorCount.Text),
                 "ยืนยันการนำเข้า", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (confirm != DialogResult.Yes) return;
 
@@ -456,7 +463,6 @@ namespace CMS.Presentation.Modules.KMS
             pnlUploadZone.Visible   = true;
             pnlUploadSection.Height = 316;
             btnNext.Enabled         = false;
-            lblFileHint.Visible     = true;
             _allRows      = new List<KBImportRow>();
             _filteredRows = new List<KBImportRow>();
             _gridPage     = 0;
@@ -471,6 +477,7 @@ namespace CMS.Presentation.Modules.KMS
             _errCurrentPage        = 0;
             SetPillActive(pnlPillTotal,   false);
             SetPillActive(pnlPillValid,   false);
+            SetPillActive(pnlPillSkip,    false);
             SetPillActive(pnlPillError,   false);
             SetPillActive(pnlStatTotal,   false);
             SetPillActive(pnlStatSuccess, false);
@@ -551,41 +558,22 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitPreviewGridColumns()
         {
-            var colNo          = new DataGridViewTextBoxColumn { Name = "colNo",          HeaderText = "#",                    MinimumWidth = 30,  Width = 46,  ReadOnly = true };
-            var colStatus      = new DataGridViewTextBoxColumn { Name = "colStatus",      HeaderText = "สถานะ",                MinimumWidth = 40,  Width = 73,  ReadOnly = true };
-            var colNote        = new DataGridViewTextBoxColumn { Name = "colNote",        HeaderText = "หมายเหตุ",             MinimumWidth = 200,              ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill };
-            var colArticleCode = new DataGridViewTextBoxColumn { Name = "colArticleCode", HeaderText = "ArticleCode",          MinimumWidth = 60,  Width = 108, ReadOnly = true, Visible = false };
-            var colColA        = new DataGridViewTextBoxColumn { Name = "colColA",        HeaderText = "A - รหัสกฎหมาย",       MinimumWidth = 40,  Width = 128, ReadOnly = true };
-            var colColB        = new DataGridViewTextBoxColumn { Name = "colColB",        HeaderText = "B",                    MinimumWidth = 40,  Width = 46,  ReadOnly = true };
-            var colCatName     = new DataGridViewTextBoxColumn { Name = "colCatName",     HeaderText = "C - ชื่อกฎหมาย",       MinimumWidth = 40,  Width = 121, ReadOnly = true };
-            var colColD        = new DataGridViewTextBoxColumn { Name = "colColD",        HeaderText = "D - Section",          MinimumWidth = 40,  Width = 60, ReadOnly = true };
-            var colTitle       = new DataGridViewTextBoxColumn { Name = "colTitle",       HeaderText = "E - ชื่อบทความ",       MinimumWidth = 40,  Width = 118, ReadOnly = true };
-            var colColF        = new DataGridViewTextBoxColumn { Name = "colColF",        HeaderText = "F",                    MinimumWidth = 40,  Width = 45,  ReadOnly = true };
-            var colColG        = new DataGridViewTextBoxColumn { Name = "colColG",        HeaderText = "G",                    MinimumWidth = 40,  Width = 48,  ReadOnly = true };
-            var colColH        = new DataGridViewTextBoxColumn { Name = "colColH",        HeaderText = "H - Subsection1",      MinimumWidth = 40,  Width = 45, ReadOnly = true };
-            var colColI        = new DataGridViewTextBoxColumn { Name = "colColI",        HeaderText = "I",                    MinimumWidth = 40,  Width = 42,  ReadOnly = true };
-            var colColJ        = new DataGridViewTextBoxColumn { Name = "colColJ",        HeaderText = "J - Subsection2",      MinimumWidth = 40,  Width = 45, ReadOnly = true };
-            var colColK        = new DataGridViewTextBoxColumn { Name = "colColK",        HeaderText = "K",                    MinimumWidth = 40,  Width = 46,  ReadOnly = true };
-            var colColL        = new DataGridViewTextBoxColumn { Name = "colColL",        HeaderText = "L - Paragraph",        MinimumWidth = 40,  Width = 45, ReadOnly = true };
-            var colColM        = new DataGridViewTextBoxColumn { Name = "colColM",        HeaderText = "M",                    MinimumWidth = 40,  Width = 51,  ReadOnly = true };
-            var colColN        = new DataGridViewTextBoxColumn { Name = "colColN",        HeaderText = "N - หนังสือประเภท",    MinimumWidth = 40,  Width = 45, ReadOnly = true };
-            var colColO        = new DataGridViewTextBoxColumn { Name = "colColO",        HeaderText = "O",                    MinimumWidth = 40,  Width = 49,  ReadOnly = true };
-            var colColP        = new DataGridViewTextBoxColumn { Name = "colColP",        HeaderText = "P - ฉบับที่",           MinimumWidth = 40,  Width = 45,  ReadOnly = true };
-            var colColQ        = new DataGridViewTextBoxColumn { Name = "colColQ",        HeaderText = "Q",                    MinimumWidth = 40,  Width = 49,  ReadOnly = true };
-            var colPublished   = new DataGridViewTextBoxColumn { Name = "colPublished",   HeaderText = "R - วันที่เผยแพร่",    MinimumWidth = 40,  Width = 123, ReadOnly = true };
-            var colExpiry      = new DataGridViewTextBoxColumn { Name = "colExpiry",      HeaderText = "S - วันหมดอายุ",       MinimumWidth = 40,  Width = 117, ReadOnly = true };
-            var colContentHtml = new DataGridViewTextBoxColumn { Name = "colContentHtml", HeaderText = "T - เนื้อหา",          MinimumWidth = 40,  Width = 92,  ReadOnly = true };
-            var colColU        = new DataGridViewTextBoxColumn { Name = "colColU",        HeaderText = "U - คณะอนุกรรมการ",   MinimumWidth = 40,  Width = 150, ReadOnly = true };
-            var colColV        = new DataGridViewTextBoxColumn { Name = "colColV",        HeaderText = "V - ฝ่ายที่รับผิดชอบ", MinimumWidth = 40,  Width = 143, ReadOnly = true };
-            var colSummary     = new DataGridViewTextBoxColumn { Name = "colSummary",     HeaderText = "Summary",              MinimumWidth = 40,  Width = 96,  ReadOnly = true, Visible = false };
+            var colNo             = new DataGridViewTextBoxColumn { Name = "colNo",             HeaderText = "#",              MinimumWidth = 30,  Width = 46,  ReadOnly = true };
+            var colStatus         = new DataGridViewTextBoxColumn { Name = "colStatus",         HeaderText = "สถานะ",          MinimumWidth = 40,  Width = 90,  ReadOnly = true };
+            var colKind           = new DataGridViewTextBoxColumn { Name = "colKind",           HeaderText = "ประเภท",         MinimumWidth = 60,  Width = 80,  ReadOnly = true };
+            var colNote           = new DataGridViewTextBoxColumn { Name = "colNote",           HeaderText = "หมายเหตุ",       MinimumWidth = 60,  Width = 100, ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, Resizable = DataGridViewTriState.True };
+            var colArticleCode    = new DataGridViewTextBoxColumn { Name = "colArticleCode",    HeaderText = "ArticleCode",    MinimumWidth = 60,  Width = 190, ReadOnly = true };
+            var colTitle          = new DataGridViewTextBoxColumn { Name = "colTitle",          HeaderText = "ชื่อ / Tags",     MinimumWidth = 40,  Width = 160, ReadOnly = true };
+            var colSummary        = new DataGridViewTextBoxColumn { Name = "colSummary",        HeaderText = "Summary",        MinimumWidth = 80,  Width = 160, ReadOnly = true };
+            var colPublished      = new DataGridViewTextBoxColumn { Name = "colPublished",      HeaderText = "วันที่ประกาศ",   MinimumWidth = 60,  Width = 100, ReadOnly = true };
+            var colEffective      = new DataGridViewTextBoxColumn { Name = "colEffective",      HeaderText = "วันที่บังคับใช้", MinimumWidth = 60, Width = 110, ReadOnly = true };
+            var colTitleCategory  = new DataGridViewTextBoxColumn { Name = "colTitleCategory",  HeaderText = "TitleCategory",  MinimumWidth = 60,  Width = 140, ReadOnly = true };
+            var colCategoryId     = new DataGridViewTextBoxColumn { Name = "colCategoryId",     HeaderText = "CategoryID",     MinimumWidth = 40,  Width = 80,  ReadOnly = true };
+            var colContentHtml    = new DataGridViewTextBoxColumn { Name = "colContentHtml",    HeaderText = "เนื้อหา", MinimumWidth = 60, Width = 60, ReadOnly = true };
 
             dgvPreview.Columns.AddRange(new DataGridViewColumn[] {
-                colNo, colStatus, colNote, colArticleCode,
-                colColA, colColB, colCatName, colColD, colTitle,
-                colColF, colColG, colColH, colColI, colColJ, colColK,
-                colColL, colColM, colColN, colColO, colColP, colColQ,
-                colPublished, colExpiry, colContentHtml,
-                colColU, colColV, colSummary
+                colNo, colStatus, colKind, colNote, colArticleCode,
+                colTitle, colSummary, colPublished, colEffective, colTitleCategory, colCategoryId, colContentHtml
             });
         }
 
@@ -594,7 +582,8 @@ namespace CMS.Presentation.Modules.KMS
         private void InitTemplateCombo()
         {
             cboTemplate.Items.Clear();
-            cboTemplate.Items.Add(new ComboItem("Wiki Page", 5));
+            cboTemplate.Items.Add(new ComboItem("กฎหมาย (มาตรา)", 1));
+            cboTemplate.Items.Add(new ComboItem("ประกาศ/คำสั่ง", 2));
             cboTemplate.SelectedIndex = 0;
         }
         private class ComboItem
@@ -615,152 +604,91 @@ namespace CMS.Presentation.Modules.KMS
         }
         // Column Reference Population
 
+        private sealed class ColRef
+        {
+            public string Letter, Field, Type, Example;
+            public bool Required;
+            public ColRef(string letter, string field, string type, bool required, string example)
+            {
+                Letter = letter; Field = field; Type = type; Required = required; Example = example;
+            }
+        }
+
+        /// <summary>
+        /// Column spec for the 20-column "มาตรา" (law-matrix, "Code รวม") layout —
+        /// header row's column C must read "มาตรา" for KBExcelReader to detect this layout.
+        /// Columns not listed here (D,E,F,...) exist in the real file but are ignored.
+        /// </summary>
+        private static readonly ColRef[] LawColumnRefs =
+        {
+            new ColRef("A", "Code รวม (ArticleCode) — 22 หรือ 27 หลัก, 5 หลักท้าย=00000 คือแถวกฎหมาย, ต่างจากนี้=ข้ามไปก่อน (เป็นข้อมูลประกาศ/คำสั่ง)",
+                "Text", true, "PVI000153500001000000000000"),
+            new ColRef("B", "Code กฎหมายแม่ — สำรองไว้สำหรับอ้างอิงในอนาคต (ยังไม่ใช้งาน)",
+                "Text", false, "PVI0001535000010000000"),
+            new ColRef("C", "มาตรา — ใช้สร้าง Title/Tags เช่น 0035=\"มาตรา 35\"; 3 ตัวอักษรแรกของ Code รวมใช้หา CategoryID เช่น PVI=46",
+                "Numeric", true, "0001"),
+            new ColRef("M", "ชื่อ (Summary)", "Text", false, "พระราชบัญญัติประกันวินาศภัย พ.ศ. 2535 มาตรา 1"),
+            new ColRef("N", "วันที่ประกาศ (PublishedDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "10/4/2535"),
+            new ColRef("O", "วันที่มีผลบังคับใช้ (EffectiveDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "11/4/2535"),
+            new ColRef("P", "บัญญัติไว้ว่า คำสั่งที่เกี่ยวข้อง (ContentHTML)", "Text (Plain Text)", true, "มาตรา 1 พระราชบัญญัตินี้เรียกว่า..."),
+            new ColRef("S", "กฎหมายอ้างอิง (TitleCategory)", "Text", false, "มาตรา 4 วรรคสอง"),
+        };
+
+        /// <summary>
+        /// Column spec for the 12-column "ประกาศ/คำสั่ง" layout — header row's column C must
+        /// read "ประเภทลูก" for KBExcelReader to detect this layout. Column A ("Code รวม") is
+        /// a formula in the source file and is not read directly — ArticleCode is computed
+        /// from columns B+C+D instead.
+        /// </summary>
+        private static readonly ColRef[] OrderColumnRefs =
+        {
+            new ColRef("A", "Code รวม — สูตรในไฟล์ต้นฉบับ ระบบคำนวณเองจาก B+C+D ไม่อ่านค่านี้ตรง ๆ",
+                "Text (Formula)", false, "(คำนวณอัตโนมัติ)"),
+            new ColRef("B", "Code กฎหมายแม่ — รหัสมาตราที่อ้างถึง (หลายบรรทัดได้ถ้าอ้างถึงหลายมาตรา)",
+                "Text", true, "PVI0029535000020000000"),
+            new ColRef("C", "ประเภทลูก — 1=ประกาศ (CategoryID 55), 2=คำสั่ง (CategoryID 54)",
+                "1 หรือ 2", true, "2"),
+            new ColRef("D", "เอกสารลูก — เลขที่เอกสาร ต่อท้าย ArticleCode", "Text", true, "0025"),
+            new ColRef("E", "ชื่อ (Title)", "Text", true, "ให้เพิ่มเติมเงื่อนไขการระงับข้อพิพาท..."),
+            new ColRef("F", "คำสั่งที่ (TitleCategory)", "Text", false, "คำสั่งที่ 95/2541"),
+            new ColRef("G", "วันที่ประกาศ (PublishedDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "19/11/2541"),
+            new ColRef("H", "วันที่มีผลบังคับใช้ (EffectiveDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "19/11/2541"),
+            new ColRef("I", "บัญญัติไว้ว่า (ContentHTML)", "Text (Plain Text)", true, "อาศัยอำนาจตามความในมาตรา..."),
+            new ColRef("J", "ประเด็นสำคัญ (Summary)", "Text", false, "1. ให้บริษัทกำหนดเงื่อนไข..."),
+            new ColRef("K", "ชื่อไฟล์ — เซลล์ต้องมี hyperlink ไปยังไฟล์แนบจริงด้วย", "Text (+Hyperlink)", true, "1. คำสั่งที่ 95-2541...pdf"),
+            new ColRef("L", "กฎหมายอ้างอิง — แสดงผลเท่านั้น ไม่ใช้ประมวลผล", "Text", false, "มาตรา 29 วรรคสอง"),
+        };
+
         private void PopulateColumnReference()
         {
             lvColumnRef.Items.Clear();
+            lvColumnRef.Groups.Clear();
 
-            // Columns A–T as defined in requirements.md (Requirement 1.2)
-            // Required columns: A, B, C, D, E, F, H, J, L, N, P, R, T
-            var cols = new[]
-            {
-                new { L="A",  F="รหัสหมวดหมู่หลัก (ParentCategory)",  T="Text",                          R=true,  E="LW" },
-                new { L="B",  F="รหัสหมวดหมู่ย่อย (SubCategory)",     T="Numeric",                       R=true,  E="03" },
-                new { L="C",  F="ชื่อหมวดหมู่ (CategoryName)",        T="Text",                          R=true,  E="กฎหมายประกันภัย" },
-                new { L="D",  F="รหัสส่วนที่ 3 (code segment 3)",      T="Numeric",                       R=true,  E="003" },
-                new { L="E",  F="ชื่อบทความ / สรุปส่วนที่ 1",         T="Text",                          R=true,  E="มาตรา 31" },
-                new { L="F",  F="รหัสส่วนที่ 4 (code segment 4)",      T="Numeric",                       R=true,  E="1" },
-                new { L="G",  F="สรุปส่วนที่ 2 (summary segment 2)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
-                new { L="H",  F="รหัสส่วนที่ 5 (code segment 5)",      T="Numeric",                       R=true,  E="0002" },
-                new { L="I",  F="สรุปส่วนที่ 3 (summary segment 3)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="ไม่มีค่า" },
-                new { L="J",  F="รหัสส่วนที่ 6 (code segment 6)",      T="Numeric",                       R=true,  E="03" },
-                new { L="K",  F="สรุปส่วนที่ 4 (summary segment 4)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
-                new { L="L",  F="รหัสส่วนที่ 7 (code segment 7)",      T="Numeric",                       R=true,  E="0000" },
-                new { L="M",  F="สรุปส่วนที่ 5 (summary segment 5)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
-                new { L="N",  F="รหัสส่วนที่ 8 (code segment 8)",      T="Numeric",                       R=true,  E="000" },
-                new { L="O",  F="สรุปส่วนที่ 6 (summary segment 6)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
-                new { L="P",  F="รหัสส่วนที่ 9 (code segment 9)",      T="Numeric",                       R=true,  E="0" },
-                new { L="Q",  F="สรุปส่วนที่ 7 (summary segment 7)",   T="Text หรือ \"-\" / \"ไม่มีค่า\"", R=false, E="-" },
-                new { L="R",  F="วันที่เผยแพร่ (PublishedDate)",       T="Date — Thai B.E. text เช่น \"9 เมษายน 2535\"", R=true,  E="9 เมษายน 2535" },
-                new { L="S",  F="วันหมดอายุ (ExpiryDate)",             T="Date — Thai B.E. text (ไม่บังคับ)",             R=false, E="31 ธันวาคม 2570" },
-                new { L="T",  F="เนื้อหาบทความ (ContentHTML)",        T="Text (HTML หรือ Plain Text)",   R=true,  E="<p>เนื้อหา...</p>" },
-                new { L="U",  F="คณะอนุกรรมการ",        T="Text (คั่นด้วย pipe |)",   R=true,  E="คณะกรรมการบริหาร1|คณะกรรมการบริหาร2"},
-                new { L="V",  F="ฝ่าย/แผนก",        T="Text (คั่นด้วย pipe |)",   R=true,  E="รับประกันภัย|ฝ่ายบริหาร|รับประกัน 2|สำรวจภัย"},
-            };
+            var grpLaw = new ListViewGroup("ไฟล์กฎหมาย (มาตรา) — ตรวจจับอัตโนมัติเมื่อหัวตาราง column C = \"มาตรา\"");
+            var grpOrder = new ListViewGroup("ไฟล์ประกาศ/คำสั่ง — ตรวจจับอัตโนมัติเมื่อหัวตาราง column C = \"ประเภทลูก\"");
+            lvColumnRef.Groups.Add(grpLaw);
+            lvColumnRef.Groups.Add(grpOrder);
 
+            AddColumnRefRows(LawColumnRefs, grpLaw);
+            AddColumnRefRows(OrderColumnRefs, grpOrder);
+        }
+
+        private void AddColumnRefRows(ColRef[] cols, ListViewGroup group)
+        {
             foreach (var c in cols)
             {
-                var item = new ListViewItem(c.L);
-                item.SubItems.Add(c.F);
-                item.SubItems.Add(c.T);
-                item.SubItems.Add(c.R ? "✱ จำเป็น" : "ไม่บังคับ");
-                item.SubItems.Add(c.E);
+                var item = new ListViewItem(c.Letter);
+                item.Group = group;
+                item.SubItems.Add(c.Field);
+                item.SubItems.Add(c.Type);
+                item.SubItems.Add(c.Required ? "✱ จำเป็น" : "ไม่บังคับ");
+                item.SubItems.Add(c.Example);
                 item.UseItemStyleForSubItems = false;
-                item.SubItems[3].ForeColor   = c.R
+                item.SubItems[3].ForeColor   = c.Required
                     ? Color.FromArgb(192, 57, 43)
                     : Color.FromArgb(127, 140, 141);
                 lvColumnRef.Items.Add(item);
             }
-        }
-
-        // Validation Items Management
-
-        private void BuildValidationItems()
-        {
-            // Called on form load with placeholder text; real data arrives via BindValidationItems().
-            SetValItem(1, "⏳", "รูปแบบไฟล์",          "รอการตรวจสอบ...", false);
-            SetValItem(2, "⏳", "โครงสร้าง Template",   "รอการตรวจสอบ...", false);
-            SetValItem(3, "⏳", "แถวที่มีข้อผิดพลาด",   "รอการตรวจสอบ...", false);
-            SetValItem(5, "⏳", "วันที่ (R/S)",          "รอการตรวจสอบ...", false);
-        }
-
-        /// <summary>
-        /// Refreshes pnlValidationItems based on the actual validation result.
-        /// Called from ShowValidationResult() after PopulatePreviewGrid().
-        /// </summary>
-        private void BindValidationItems(KBImportValidationResult result)
-        {
-            var rows = result.Rows ?? new List<KBImportRow>();
-
-            // Item 1 — File format (always passes if we got a result back)
-            SetValItem(1, "✅", "รูปแบบไฟล์: Excel (.xlsx)",
-                "ไฟล์ถูกต้องและสามารถเปิดได้", true);
-
-            // Item 2 — Template structure: data rows found
-            bool structureOk = result.TotalRecords > 0;
-            SetValItem(2,
-                structureOk ? "✅" : "❌",
-                structureOk ? "โครงสร้าง Template: ถูกต้อง" : "โครงสร้าง Template: ไม่ถูกต้อง",
-                structureOk
-                    ? string.Format("พบ {0} แถวข้อมูล — คอลัมน์ครบตาม Template", result.TotalRecords)
-                    : "ไม่พบข้อมูลในไฟล์ หรือ Template ไม่ตรง",
-                structureOk);
-
-            // Item 3 — Error rows: total count of all rows with errors (combines former items 3 & 6)
-            int errorCount = result.ErrorRecords;
-            bool noErrors  = errorCount == 0;
-            SetValItem(3,
-                noErrors ? "✅" : "❌",
-                noErrors ? "ข้อผิดพลาด: ไม่พบ"
-                         : string.Format("ข้อผิดพลาด: {0} แถว", errorCount),
-                noErrors ? "ไม่พบแถวที่มีข้อผิดพลาด — ข้อมูลพร้อมนำเข้าทุกแถว"
-                         : string.Format("{0} แถวมีข้อผิดพลาด (ดูรายละเอียดใน Gridview)", errorCount),
-                noErrors);
-
-            // Item 5 — Date parse errors: rows with unparseable PublishedDate or ExpiryDate
-            int dateBadCount = 0;
-            foreach (var r in rows)
-                if (r.Status == "Error" && r.StatusNote != null &&
-                    r.StatusNote.IndexOf("แปลงวันที่", StringComparison.OrdinalIgnoreCase) >= 0)
-                    dateBadCount++;
-
-            bool dateOk = dateBadCount == 0;
-            SetValItem(5,
-                dateOk ? "✅" : "❌",
-                dateOk ? "วันที่ (R/S): แปลงได้ทุกแถว"
-                       : string.Format("วันที่ (R/S): แปลงไม่ได้ {0} แถว", dateBadCount),
-                dateOk ? "คอลัมน์ R (PublishedDate) และ S (ExpiryDate) แปลงเป็น ค.ศ. ได้ทุกแถว"
-                       : string.Format("{0} แถวมีรูปแบบวันที่ที่ไม่รู้จัก — ตรวจสอบคอลัมน์ R/S", dateBadCount),
-                dateOk);
-
-        }
-
-        /// <summary>Updates one validation item row (icon, title, detail, stripe colour).</summary>
-        private void SetValItem(int item, string icon, string title, string detail, bool ok)
-        {
-            Label lblIcon, lblTitle, lblDetail;
-            Panel stripe;
-            switch (item)
-            {
-                case 1: lblIcon=lblValItem1Icon; lblTitle=lblValItem1Title; lblDetail=lblValItem1Detail; stripe=pnlValItem1Stripe; break;
-                case 2: lblIcon=lblValItem2Icon; lblTitle=lblValItem2Title; lblDetail=lblValItem2Detail; stripe=pnlValItem2Stripe; break;
-                case 3: lblIcon=lblValItem3Icon; lblTitle=lblValItem3Title; lblDetail=lblValItem3Detail; stripe=pnlValItem3Stripe; break;
-                case 5: lblIcon=lblValItem5Icon; lblTitle=lblValItem5Title; lblDetail=lblValItem5Detail; stripe=pnlValItem5Stripe; break;
-                default: lblIcon=lblValItem6Icon; lblTitle=lblValItem6Title; lblDetail=lblValItem6Detail; stripe=pnlValItem6Stripe; break;
-            }
-            lblIcon.Text   = icon;
-            lblTitle.Text  = title;
-            lblDetail.Text = detail;
-
-            // stripe colour: green=ok, amber=warn(⚠️), red=error(❌), grey=pending
-            if (icon == "✅")      stripe.BackColor = Color.FromArgb(39, 174, 96);
-            else if (icon == "⚠️") stripe.BackColor = Color.FromArgb(243, 156, 18);
-            else if (icon == "❌") stripe.BackColor = Color.FromArgb(192, 57, 43);
-            else                   stripe.BackColor = Color.FromArgb(189, 195, 199);
-
-            // also tint the panel background to match
-            Panel pnl;
-            switch (item)
-            {
-                case 1: pnl = pnlValItem1; break;
-                case 2: pnl = pnlValItem2; break;
-                case 3: pnl = pnlValItem3; break;
-                case 5: pnl = pnlValItem5; break;
-                default: pnl = pnlValItem6; break;
-            }
-            if (icon == "✅")      pnl.BackColor = Color.FromArgb(240, 255, 244);
-            else if (icon == "⚠️") pnl.BackColor = Color.FromArgb(254, 249, 231);
-            else if (icon == "❌") pnl.BackColor = Color.FromArgb(253, 237, 236);
-            else                   pnl.BackColor = Color.FromArgb(248, 250, 253);
         }
 
         // Step Navigation
@@ -876,7 +804,6 @@ namespace CMS.Presentation.Modules.KMS
                 _uploadedTime.ToString("HH:mm"));
 
             btnNext.Enabled     = true;
-            lblFileHint.Visible = false;
             SetStatus(string.Format("✅  อัปโหลดไฟล์ \"{0}\" สำเร็จ", _uploadedFileName));
         }
 
@@ -914,6 +841,7 @@ namespace CMS.Presentation.Modules.KMS
             RefreshGridPage();
             SetPillActive(pnlPillTotal, false);
             SetPillActive(pnlPillValid, false);
+            SetPillActive(pnlPillSkip,  false);
             SetPillActive(pnlPillError, false);
         }
 
@@ -932,38 +860,29 @@ namespace CMS.Presentation.Modules.KMS
                     var r = _filteredRows[i];
                     try
                     {
+                        // column A ว่าง/ไม่มีข้อมูล (มาตรา row ที่ validate ไม่ผ่านตั้งแต่ต้น) ⇒ ประเภทว่าง
+                        bool colABlank = r.RowKind == "Law" && string.IsNullOrEmpty(r.ColA);
+                        string kindDisplay = colABlank ? string.Empty : (r.DocumentTypeLabel ?? r.RowKind);
+
                         int idx = dgvPreview.Rows.Add(
                             r.RowNumber.ToString(),
                             StatusLabel(r.Status),
+                            S(kindDisplay),
                             FormatPreviewNote(r),
-                            S(r.ArticleCode),
-                            S(r.ColA),
-                            S(r.ColB),
-                            S(r.ColC),
-                            S(r.ColD),
-                            S(r.ColE),
-                            S(r.ColF),
-                            S(r.ColG),
-                            S(r.ColH),
-                            S(r.ColI),
-                            S(r.ColJ),
-                            S(r.ColK),
-                            S(r.ColL),
-                            S(r.ColM),
-                            S(r.ColN),
-                            S(r.ColO),
-                            S(r.ColP),
-                            S(r.ColQ),
-                            S(r.ColR),
-                            S(r.ColS),
-                            S(r.ColT, 300),
-                            S(r.ColU),
-                            S(r.ColV),
-                            S(r.Summary));
+                            S(r.ArticleCode ?? r.ColA),
+                            S(r.Title ?? r.Tags),
+                            S(r.Summary),
+                            r.PublishedDateParsed.HasValue ? r.PublishedDateParsed.Value.ToString("dd/MM/yyyy") : S(r.RawPublishedDate),
+                            r.EffectiveDateParsed.HasValue ? r.EffectiveDateParsed.Value.ToString("dd/MM/yyyy") : S(r.RawEffectiveDate),
+                            S(r.TitleCategory),
+                            r.ResolvedCategoryID > 0 ? r.ResolvedCategoryID.ToString() : string.Empty,
+                            S(r.RawContent, 300));
 
                         var dgvRow = dgvPreview.Rows[idx];
                         if (r.Status == "Error")
                             dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(253, 237, 236);
+                        else if (r.Status == "Skip")
+                            dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(235, 244, 253);
                         else if (r.Status == "Warn")
                             dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(254, 249, 231);
                         else if ((i - start) % 2 == 1)
@@ -1008,6 +927,7 @@ namespace CMS.Presentation.Modules.KMS
         private static string StatusLabel(string status)
         {
             if (status == "Valid") return "✅  Valid";
+            if (status == "Skip")  return "⏭  ข้าม";
             if (status == "Warn")  return "⚠️  Warn";
             if (status == "Error") return "❌  Error";
             return "⏳";
@@ -1017,7 +937,8 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (status == "Error") return 0;
             if (status == "Warn")  return 1;
-            return 2;
+            if (status == "Skip")  return 2;
+            return 3;
         }
 
         private static string S(string value, int maxLen = 500)
@@ -1034,9 +955,9 @@ namespace CMS.Presentation.Modules.KMS
             if (string.IsNullOrEmpty(note))
                 return r.Status == "Error" ? "ข้อผิดพลาดไม่ระบุ" : string.Empty;
 
-            // Warn and Error: StatusNote is already a user-facing, semicolon-joined
-            // list of specific Thai validation messages produced by ValidateSingleRow /
-            // ResolveCategories / KBExcelReader — surface it directly.
+            // Skip and Error: StatusNote is already a user-facing, semicolon-joined
+            // list of specific Thai validation messages produced by KBImportProcessor —
+            // surface it directly.
             return S(note, 300);
         }
 
@@ -1062,10 +983,10 @@ namespace CMS.Presentation.Modules.KMS
             int quarter   = total / 4;
             int remainder = total - quarter * 4;   // absorb rounding in the last pill
 
-            // Pills use DockStyle.Left, so order matters: Total → Valid → Warn → Error
+            // Pills use DockStyle.Left, so order matters: Total → Valid → Skip → Error
             pnlPillTotal.Width = quarter;
             pnlPillValid.Width = quarter;
-            //pnlPillWarn.Width  = quarter;
+            pnlPillSkip.Width  = quarter;
             pnlPillError.Width = quarter + remainder;
         }
 
@@ -1107,7 +1028,10 @@ namespace CMS.Presentation.Modules.KMS
             switch (filter)
             {
                 case "Valid":
-                    _filteredRows = _allRows.Where(r => r.Status != "Error").ToList();
+                    _filteredRows = _allRows.Where(r => r.Status == "Valid").ToList();
+                    break;
+                case "Skip":
+                    _filteredRows = _allRows.Where(r => r.Status == "Skip").ToList();
                     break;
                 case "Error":
                     _filteredRows = _allRows.Where(r => r.Status == "Error").ToList();
@@ -1120,6 +1044,7 @@ namespace CMS.Presentation.Modules.KMS
             RefreshGridPage();
             SetPillActive(pnlPillTotal, filter == "Total");
             SetPillActive(pnlPillValid, filter == "Valid");
+            SetPillActive(pnlPillSkip,  filter == "Skip");
             SetPillActive(pnlPillError, filter == "Error");
         }
 
@@ -1176,9 +1101,14 @@ namespace CMS.Presentation.Modules.KMS
                     reason      = "✅ นำเข้าสำเร็จ";
                     relatedData = string.Empty;
                 }
+                else if (row.Status == "Skip")
+                {
+                    reason      = "⏭ ข้ามอัตโนมัติ";
+                    relatedData = S(row.StatusNote ?? string.Empty, 300);
+                }
                 else if (row.Status == "Warn")
                 {
-                    reason      = "⚠️ ข้ามตามตัวเลือก";
+                    reason      = "⚠️ นำเข้าสำเร็จแต่มีข้อสังเกต";
                     relatedData = S(row.StatusNote ?? string.Empty, 300);
                 }
                 else
@@ -1207,17 +1137,19 @@ namespace CMS.Presentation.Modules.KMS
 
                 int idx = dgvFailedRows.Rows.Add(
                     row.RowNumber,
-                    row.ArticleCode ?? string.Empty,
-                    string.Format("{0} > {1}", row.ColA, row.ColB),
-                    row.ColE ?? string.Empty,
+                    row.ArticleCode ?? row.ColA ?? string.Empty,
+                    row.DocumentTypeLabel ?? row.RowKind ?? string.Empty,
+                    row.Title ?? row.Tags ?? string.Empty,
                     relatedData,
                     reason);
 
                 Color rowColor = row.Status == "Valid"
                     ? Color.FromArgb(240, 255, 244)
-                    : row.Status == "Warn"
-                        ? Color.FromArgb(254, 249, 231)
-                        : Color.FromArgb(253, 237, 236);
+                    : row.Status == "Skip"
+                        ? Color.FromArgb(235, 244, 253)
+                        : row.Status == "Warn"
+                            ? Color.FromArgb(254, 249, 231)
+                            : Color.FromArgb(253, 237, 236);
                 dgvFailedRows.Rows[idx].DefaultCellStyle.BackColor = rowColor;
             }
 
@@ -1259,7 +1191,7 @@ namespace CMS.Presentation.Modules.KMS
                 note.IndexOf("truncated", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 reason      = "❌ ค่าในคอลัมน์ยาวเกินขนาดที่กำหนด";
-                relatedData = "ตรวจสอบคอลัมน์ที่มีข้อความยาว (E, C, T)";
+                relatedData = "ตรวจสอบคอลัมน์ที่มีข้อความยาว (A, P)";
                 return;
             }
 
@@ -1287,10 +1219,18 @@ namespace CMS.Presentation.Modules.KMS
                 return;
             }
 
-            // Category code not found (from ResolveCategories)
-            if (note.IndexOf("ไม่พบรหัสหมวดหมู่", StringComparison.OrdinalIgnoreCase) >= 0)
+            // CategoryID could not be resolved from the ArticleCode's 3-letter prefix
+            if (note.IndexOf("ไม่พบ CategoryID", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                reason      = "❌ รหัสหมวดหมู่ไม่ถูกต้อง";
+                reason      = "❌ รหัสขึ้นต้น (prefix) ไม่ถูกต้อง";
+                relatedData = note;
+                return;
+            }
+
+            // PublishedDate / EffectiveDate (columns N/O) could not be parsed
+            if (note.IndexOf("ไม่สามารถแปลงวันที่ได้", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ รูปแบบวันที่ไม่ถูกต้อง (N/O)";
                 relatedData = note;
                 return;
             }

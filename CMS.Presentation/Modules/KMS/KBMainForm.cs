@@ -201,6 +201,14 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.Initialize();
         }
 
+        private void KBMainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            // ปิดโมดูล KMS (MDI child ปิด) หรือ logout (MDI parent ปิด → cascade มาปิด child นี้ก่อน)
+            // ต้อง dispose ArticleViewerForm ทั้งตัวที่ active และที่ค้างอยู่ใน history stack
+            // ไม่งั้นฟอร์มที่ยังไม่ถูก Back ออกให้หมด (แต่ละอันมี WebBrowser control) จะรั่วอยู่ในหน่วยความจำ
+            CloseActiveViewer();
+        }
+
         // work around bug scrollbar in right on Form
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern bool ShowScrollBar(IntPtr hWnd, int wBar, bool bShow);
@@ -259,12 +267,9 @@ namespace CMS.Presentation.Modules.KMS
         public string ArticleTitleText  { set { lblArticleTitle.Text = value; } }
         public string ArticleCountText  { set { lblPageInfo.Text = value; } }
 
-        public void BindCategoryTree(
-            IEnumerable<KBCategory>                    categories,
-            IDictionary<int, int>                      articleCounts,
-            IDictionary<int, IDictionary<string, int>> titlesByCategory)
+        public void BindCategoryTree(KBCategoryTreeData data)
         {
-            BuildCategoryTree(categories.ToList(), articleCounts, titlesByCategory);
+            BuildCategoryTree(data);
         }
 
         public bool IsArchivedMode
@@ -291,6 +296,17 @@ namespace CMS.Presentation.Modules.KMS
 
         /// <summary>Tag object placed on the fixed "Archived" tree node.</summary>
         private sealed class ArchivedNode { }
+
+        /// <summary>
+        /// Tag object placed on a cross-reference "folder" node (e.g. "คำสั่ง (นายทะเบียน/กระทรวง)"
+        /// under a มาตรา node, or "กฎหมาย" under a คำสั่ง/หมวดภายใน node) and on every child leaf
+        /// underneath it — clicking the folder or any of its children shows the same full group.
+        /// </summary>
+        private sealed class LinkedFolderNode
+        {
+            public List<int> ArticleIds { get; set; }
+            public string    Label      { get; set; }
+        }
 
         public void RenderArticles(IEnumerable<KBArticle> articles)
         {
@@ -323,9 +339,9 @@ namespace CMS.Presentation.Modules.KMS
                     0,                          // 0  colRowNum
                     a.CategoryName,             // 1  colCategory
                     a.Title,                    // 2  colTitle
-                    a.Summary,                  // 3  colCode (Summary)
+                    a.TitleCategory,            // 3  colCode (TitleCategory)
                     a.ContentHTML.Length >= 200 ? $"{a.ContentHTML.Substring(0, 200)}...read more" : a.ContentHTML, // 4 colContentHtml
-                    a.PublishedDate,            // 5  colPublishedDate
+                    a.EffectiveDate,            // 5  colEffectiveDate
                     a.ExpiryDate,               // 6  colExpiryDate (CalendarColumn)
                     IsArticleActive(a) ? "ON" : "OFF", // 7  colActive
                     a.LinkedEntities,           // 8  colOrgDivDept
@@ -414,7 +430,7 @@ namespace CMS.Presentation.Modules.KMS
                 }
             }
 
-            pnlPaginationButtons.Visible = totalPages > 1;
+            //pnlPaginationButtons.Visible = totalPages > 1;
         }
 
         // ── Tab selection ────────────────────────────────────────────────────────
@@ -470,6 +486,14 @@ namespace CMS.Presentation.Modules.KMS
                 return;
             }
 
+            // Cross-reference folder (or one of its child leaves) → show the whole linked group
+            var lf = e.Node.Tag as LinkedFolderNode;
+            if (lf != null)
+            {
+                _presenter.OnLinkedArticlesSelected(lf.ArticleIds, lf.Label);
+                return;
+            }
+
             // Category node → existing behaviour
             var cat = e.Node.Tag as KBCategory;
             if (cat == null) return;
@@ -514,6 +538,9 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnImportExcel_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
+
+            // KBImportWizardForm auto-detects the Excel layout (กฎหมาย/มาตรา vs ประกาศ/คำสั่ง)
+            // from the file's header row, so there is no type-picker step anymore.
             ShowImportWizardEmbedded();
         }
 
@@ -866,13 +893,13 @@ namespace CMS.Presentation.Modules.KMS
             btnClearFilter.Click += BtnClearFilter_Click;
         }
 
-        private void BuildCategoryTree(
-            List<KBCategory>                           categories,
-            IDictionary<int, int>                      articleCounts,
-            IDictionary<int, IDictionary<string, int>> titlesByCategory)
+        private void BuildCategoryTree(KBCategoryTreeData data)
         {
             treeCategories.BeginUpdate();
             treeCategories.Nodes.Clear();
+
+            var categories    = data.Categories.ToList();
+            var articleCounts = data.ArticleCounts;
 
             int totalCount = articleCounts.Values.Sum();
             string rootLabel = totalCount > 0
@@ -888,7 +915,7 @@ namespace CMS.Presentation.Modules.KMS
                 .Where(c => c.IsActive && !c.ParentCategoryID.HasValue)
                 .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
             foreach (var cat in roots)
-                rootNode.Nodes.Add(BuildCategoryNode(cat, categories, articleCounts, titlesByCategory));
+                rootNode.Nodes.Add(BuildCategoryNode(cat, categories, data));
 
             var archivedTreeNode = new TreeNode("📁 Archived")
             {
@@ -907,11 +934,13 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         private TreeNode BuildCategoryNode(
-            KBCategory                                 cat,
-            List<KBCategory>                           allCategories,
-            IDictionary<int, int>                      articleCounts,
-            IDictionary<int, IDictionary<string, int>> titlesByCategory)
+            KBCategory        cat,
+            List<KBCategory>  allCategories,
+            KBCategoryTreeData data)
         {
+            var articleCounts    = data.ArticleCounts;
+            var titlesByCategory = data.TitlesByCategory;
+
             int    count = articleCounts.ContainsKey(cat.CategoryID) ? articleCounts[cat.CategoryID] : 0;
             string label = count > 0
                 ? string.Format("📁 {0}", cat.CategoryName)
@@ -928,12 +957,16 @@ namespace CMS.Presentation.Modules.KMS
                 .Where(c => c.IsActive && c.ParentCategoryID == cat.CategoryID)
                 .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
             foreach (var child in children)
-                node.Nodes.Add(BuildCategoryNode(child, allCategories, articleCounts, titlesByCategory));
+                node.Nodes.Add(BuildCategoryNode(child, allCategories, data));
 
             // ── Title leaf-nodes: "📄 Title (N)" ────────────────────────────────
             IDictionary<string, int> titleMap;
             if (titlesByCategory != null && titlesByCategory.TryGetValue(cat.CategoryID, out titleMap))
             {
+                IDictionary<string, List<KBLinkedFolder>> linkedFoldersByTitle = null;
+                if (data.LinkedFoldersByCategoryTitle != null)
+                    data.LinkedFoldersByCategoryTitle.TryGetValue(cat.CategoryID, out linkedFoldersByTitle);
+
                 foreach (var kvp in titleMap.OrderBy(x => x.Key, NaturalStringComparer.Instance))
                 {
                     string nodeLabel = string.Format("📄 {0}", kvp.Key);
@@ -947,6 +980,47 @@ namespace CMS.Presentation.Modules.KMS
                                     },
                         ForeColor = Color.FromArgb(50, 80, 140),
                     };
+
+                    // ── Cross-reference folders (มาตรา ↔ คำสั่ง/หมวดภายใน) ─────────
+                    List<KBLinkedFolder> linkedFolders;
+                    if (linkedFoldersByTitle != null && linkedFoldersByTitle.TryGetValue(kvp.Key, out linkedFolders))
+                    {
+                        foreach (var folder in linkedFolders)
+                        {
+                            var orderedArticles = folder.Articles
+                                .OrderBy(a2 => a2.Title, NaturalStringComparer.Instance)
+                                .ToList();
+
+                            var folderTag = new LinkedFolderNode
+                            {
+                                ArticleIds = orderedArticles.Select(a2 => a2.ArticleID).ToList(),
+                                Label      = folder.Label,
+                            };
+
+                            var folderNode = new TreeNode(string.Format("🔗 {0} ({1})", folder.Label, orderedArticles.Count))
+                            {
+                                Tag       = folderTag,
+                                ForeColor = Color.FromArgb(120, 90, 40),
+                            };
+
+                            foreach (var linkedArticle in orderedArticles)
+                            {
+                                // item เดี่ยวใต้ folder → คลิกแล้วแสดงเฉพาะรายการนั้น (ต่างจากคลิกที่ตัว folder ซึ่งแสดงทั้งกลุ่ม)
+                                folderNode.Nodes.Add(new TreeNode(string.Format("📄 {0}", linkedArticle.Title))
+                                {
+                                    Tag = new LinkedFolderNode
+                                    {
+                                        ArticleIds = new List<int> { linkedArticle.ArticleID },
+                                        Label      = string.Format("{0}  ›  {1}", folder.Label, linkedArticle.Title),
+                                    },
+                                    ForeColor = Color.FromArgb(120, 90, 40),
+                                });
+                            }
+
+                            titleNode.Nodes.Add(folderNode);
+                        }
+                    }
+
                     node.Nodes.Add(titleNode);
                 }
             }
@@ -1086,10 +1160,15 @@ namespace CMS.Presentation.Modules.KMS
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn {
                 Name = "colTitle", 
-                HeaderText = "อ้างอิง", 
+                HeaderText = "อ้างอิง",
                 ReadOnly = true,
-                DefaultCellStyle = lft,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                Width = 400,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleLeft,
+                    Padding = new Padding(4, 0, 0, 0),
+                    WrapMode = DataGridViewTriState.True
+                }
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -1114,7 +1193,7 @@ namespace CMS.Presentation.Modules.KMS
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
-                Name = "colPublishedDate",
+                Name = "colEffectiveDate",
                 HeaderText = "วันที่มีผลบังคับใช้",
                 ReadOnly = true,
                 DefaultCellStyle = { Format = "dd/MM/yyyy" },

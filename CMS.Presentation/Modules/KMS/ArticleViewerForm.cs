@@ -27,6 +27,7 @@ namespace CMS.Presentation.Modules.KMS
         private string                        _pendingHtml     = string.Empty;
         private IFileBrowseController         _fileBrowseController;
         private UserContext                   _user;
+        private bool                          _initialTabDefaulted = false;
 
         /// <summary>The ArticleID currently displayed; used by KBMainForm history stack.</summary>
         public int CurrentArticleId { get { return _article != null ? _article.ArticleID : 0; } }
@@ -74,6 +75,8 @@ namespace CMS.Presentation.Modules.KMS
             InitWebView();
             AdjustSplitter();
             splitViewer.Resize += (s, ev) => AdjustSplitter();
+            pnlHeader.Resize += (s, ev) => AdjustHeaderHeight();
+            pnlSummaryWrapper.Resize += (s, ev) => AdjustSummaryHeight();
             _presenter.Initialize();
             // Default tab — populate attachments immediately
             PopulateAttachTab();
@@ -87,6 +90,7 @@ namespace CMS.Presentation.Modules.KMS
             _article = article;
             PopulateHeader();
             PopulateInfoBox();
+            PopulateSummaryBox();
             BeginInvoke(new Action(LoadContent));
         }
 
@@ -106,6 +110,18 @@ namespace CMS.Presentation.Modules.KMS
         public void BindAttachments(IEnumerable<FileDocument> files)
         {
             _attachments = files ?? new List<FileDocument>();
+
+            // ตอนเปิดหน้าครั้งแรก ถ้าไม่มีไฟล์แนบเลย ให้ default ไปที่ tabRelated แทน tabAttach
+            if (!_initialTabDefaulted)
+            {
+                _initialTabDefaulted = true;
+                if (!_attachments.Any() && tabMapping.SelectedTab == tabAttach)
+                {
+                    tabMapping.SelectedTab = tabRelated;   // SelectedIndexChanged จะ populate tabRelated เอง
+                    return;
+                }
+            }
+
             // Refresh the Attach tab if it is currently selected
             if (tabMapping.SelectedTab == tabAttach)
                 PopulateAttachTab();
@@ -257,6 +273,7 @@ namespace CMS.Presentation.Modules.KMS
                     i.ToString(),
                     a.ArticleCode ?? "-",
                     a.Title ?? "(ไม่มีชื่อ)",
+                    a.TitleCategory ?? "-",
                     a.ArticleTypeName ?? "-");
                 dgvRelatedLinked.Rows[idx].Tag = a;
                 i++;
@@ -307,16 +324,72 @@ namespace CMS.Presentation.Modules.KMS
 
         private void AdjustSplitter()
         {
-            int available = splitViewer.Width
-                            - splitViewer.Panel2MinSize
-                            - splitViewer.SplitterWidth;
-            if (available >= splitViewer.Panel1MinSize)
-                splitViewer.SplitterDistance = available;
+            // แบ่งกึ่งกลางจอระหว่างเนื้อหาบทความ (Panel1) กับ sidebar/pnlMappingSection (Panel2)
+            // แทนที่จะบีบ Panel2 ให้เหลือแค่ขนาดต่ำสุดทุกครั้งที่เปิด/ย่อ-ขยายฟอร์ม (ผู้ใช้ต้องคอยลากขยายเองซ้ำๆ)
+            int min = splitViewer.Panel1MinSize;
+            int max = splitViewer.Width - splitViewer.Panel2MinSize - splitViewer.SplitterWidth;
+            if (max < min) return;
+
+            int target = (splitViewer.Width - splitViewer.SplitterWidth) / 2;
+            if (target < min) target = min;
+            if (target > max) target = max;
+
+            splitViewer.SplitterDistance = target;
         }
 
         private void PopulateHeader()
         {
-            lblViewerTitle.Text = "  👁️ ดูบทความ: " + (_article.Title ?? "(ไม่มีชื่อ)");
+            lblViewerTitle.Text = "  👁️ ดูบทความ: " + (_article.TitleCategory ?? "(ไม่มีชื่อ)");
+            AdjustHeaderHeight();
+        }
+
+        /// <summary>
+        /// pnlHeader สูงคงที่ (36px) ตาม design เดิม — ถ้าชื่อบทความยาวหรือมีขึ้นบรรทัดใหม่ (เช่น column E
+        /// ที่มี \n ฝังมาจาก Excel) lblViewerTitle (Dock=Fill) จะ word-wrap เองอยู่แล้วแต่โดน pnlHeader
+        /// ตัดพอดี — วัดความสูงที่ต้องใช้จริงตามความกว้างปัจจุบันแล้วปรับ pnlHeader ให้พอดีทุกครั้งที่ข้อความ
+        /// หรือความกว้างเปลี่ยน (เรียกจาก Resize ด้วย เพื่อรองรับตอนย่อ-ขยายหน้าต่าง)
+        /// </summary>
+        private void AdjustHeaderHeight()
+        {
+            int width = lblViewerTitle.ClientSize.Width;
+            if (width <= 0) return;
+
+            var flags = TextFormatFlags.WordBreak | TextFormatFlags.Left | TextFormatFlags.NoPrefix;
+            Size measured = TextRenderer.MeasureText(lblViewerTitle.Text, lblViewerTitle.Font,
+                new Size(width, int.MaxValue), flags);
+
+            const int minHeight = 36;
+            int needed = Math.Max(minHeight, measured.Height + 12);
+            if (pnlHeader.Height != needed)
+                pnlHeader.Height = needed;
+        }
+
+        private void PopulateSummaryBox()
+        {
+            // เนื้อหา Summary เป็นข้อความล้วน (ไม่ใช่ HTML) — lblSummaryInfo เป็น Label ธรรมดา
+            // จึงแสดง \n (ขึ้นบรรทัดใหม่) และ \t (tab) ที่ฝังมาจากข้อมูลได้ถูกต้องอยู่แล้วโดยไม่ต้องแปลงอะไรเพิ่ม
+            string summary = _article.Summary;
+            lblSummaryInfo.Text = "📝 สรุปย่อ: " + (string.IsNullOrWhiteSpace(summary) ? "-" : summary);
+            AdjustSummaryHeight();
+        }
+
+        /// <summary>
+        /// pnlSummaryWrapper (Dock=Top) ต้องปรับความสูงตามเนื้อหาจริงเหมือน pnlHeader/AdjustHeaderHeight —
+        /// lblSummaryInfo word-wrap เองอยู่แล้วแต่ถ้าความสูง parent ไม่พอ บรรทัดที่ล้นจะโดนตัด
+        /// </summary>
+        private void AdjustSummaryHeight()
+        {
+            int width = lblSummaryInfo.ClientSize.Width;
+            if (width <= 0) return;
+
+            var flags = TextFormatFlags.WordBreak | TextFormatFlags.Left | TextFormatFlags.NoPrefix;
+            Size measured = TextRenderer.MeasureText(lblSummaryInfo.Text, lblSummaryInfo.Font,
+                new Size(width, int.MaxValue), flags);
+
+            const int minHeight = 48;
+            int needed = Math.Max(minHeight, measured.Height + pnlSummaryBox.Padding.Vertical + pnlSummaryWrapper.Padding.Vertical);
+            if (pnlSummaryWrapper.Height != needed)
+                pnlSummaryWrapper.Height = needed;
         }
 
         private void PopulateInfoBox()
@@ -331,6 +404,8 @@ namespace CMS.Presentation.Modules.KMS
             lblStatusBadge.ForeColor = statusFore;
             lblStatusBadge.BackColor = statusBack;
             lblStatusBadge.Text      = GetStatusText(_article.Status);
+
+            lblTitleCategory.Text = _article.TitleCategory ?? "-";
 
             lblOfficialBadge.Visible = _article.IsOfficialPolicy;
             if (_article.IsOfficialPolicy && !flpBadges.Controls.Contains(lblOfficialBadge))
