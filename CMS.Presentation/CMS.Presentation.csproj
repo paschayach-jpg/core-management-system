@@ -433,6 +433,9 @@
     <Compile Include="Modules\DMS\UserPermissionSummaryForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Modules\DMS\UserPermissionDiagnosticForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Modules\DMS\RecycleBinForm.cs">
       <SubType>Form</SubType>
     </Compile>

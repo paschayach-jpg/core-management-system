@@ -63,11 +63,19 @@ namespace CMS.Domain.Models
             return cfg;
         }
 
-        /// <summary>ตรวจสอบว่า User มีสิทธิ์ View folder ที่มี ConfidentialityLevel นี้</summary>
+        /// <summary>
+        /// ตรวจสอบว่า User มีสิทธิ์ View folder ที่มี ConfidentialityLevel นี้
+        /// Level 4 (PC — ทั่วไป): สิทธิ์ดูเป็นสิทธิ์พื้นฐานของทุกคน — ถ้าไม่มี FolderAuthorityConfig
+        /// row ที่ match เลย (cfg == null) ให้ผ่านโดย default; ถ้ามี row ที่ match แต่ตั้ง CanView=false
+        /// ไว้ชัดเจน ให้เคารพค่านั้น (ไม่ override)
+        /// </summary>
         public bool CanViewFolder(int confidentialityLevel)
         {
             var cfg = GetAuthority(confidentialityLevel);
-            return cfg != null && cfg.CanView;
+            if (cfg == null)
+                return confidentialityLevel == 4;
+
+            return cfg.CanView;
         }
 
         /// <summary>ตรวจสอบว่า User มีสิทธิ์ Add ใน folder ที่มี ConfidentialityLevel นี้</summary>

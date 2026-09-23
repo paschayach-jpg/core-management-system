@@ -14,5 +14,11 @@ namespace CMS.Services.Interfaces
 
         /// <summary>Lookup single user by sAMAccountName.</summary>
         LdapUserResult GetByUsername(string samAccountName);
+
+        /// <summary>
+        /// Enumerate every user in the domain (paged, beyond AD's 1000-item default cap).
+        /// Includes disabled accounts (IsActive=false) so callers can deactivate existing rows.
+        /// </summary>
+        List<LdapUserResult> SearchAllUsers(int pageSize = 1000, int? maxResults = null);
     }
 }

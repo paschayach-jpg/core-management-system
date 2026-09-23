@@ -95,6 +95,7 @@ namespace CMS.Data.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
+                int newUserId;
                 using (var cmd = new SqlCommand("EMS.sp_InsertUserAccount", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
@@ -104,8 +105,23 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@AppRole",     (byte)account.AppRole);
                     cmd.Parameters.AddWithValue("@OrgUnitID",   account.OrgUnitID);
                     cmd.Parameters.AddWithValue("@CreatedBy",   (object)account.CreatedBy ?? DBNull.Value);
-                    return Convert.ToInt32(cmd.ExecuteScalar());
+                    newUserId = Convert.ToInt32(cmd.ExecuteScalar());
                 }
+
+                // sp_InsertUserAccount ไม่รับ @EmployeeCode (SP อยู่ใน DB ไม่มี migration script ใน repo) —
+                // เติมค่าด้วย UPDATE ต่อทันทีแทนการแก้ SP
+                if (!string.IsNullOrWhiteSpace(account.EmployeeCode))
+                {
+                    using (var upd = new SqlCommand(
+                        "UPDATE EMS.UserAccount SET EmployeeCode = @EmployeeCode WHERE UserID = @UserID", conn))
+                    {
+                        upd.Parameters.AddWithValue("@UserID",       newUserId);
+                        upd.Parameters.AddWithValue("@EmployeeCode", account.EmployeeCode);
+                        upd.ExecuteNonQuery();
+                    }
+                }
+
+                return newUserId;
             }
         }
 
@@ -251,6 +267,77 @@ namespace CMS.Data.Repositories
                         ins.Parameters.AddWithValue("@OrgUnitID",    account.OrgUnitID > 0 ? account.OrgUnitID : 1);
                         ins.Parameters.AddWithValue("@EmployeeCode", (object)account.EmployeeCode ?? DBNull.Value);
                         ins.Parameters.AddWithValue("@IPAddress",    (object)ipAddress            ?? DBNull.Value);
+                        isNew = true;
+                        return Convert.ToInt32(ins.ExecuteScalar());
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Upsert from LDAP import: existing row → update core fields only;
+        /// new row → insert with just the core LDAP fields, everything else default/null.
+        /// </summary>
+        public int UpsertFromLdap(string adUserName, string displayName, string email, bool isActive,
+            string positionName, string departmentName, int? createdBy, out bool isNew)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+
+                int existingId = 0;
+                using (var chk = new SqlCommand(
+                    "SELECT UserID FROM EMS.UserAccount WHERE ADUserName = @ADUserName", conn))
+                {
+                    chk.Parameters.AddWithValue("@ADUserName", adUserName);
+                    var result = chk.ExecuteScalar();
+                    if (result != null && result != DBNull.Value)
+                        existingId = Convert.ToInt32(result);
+                }
+
+                if (existingId > 0)
+                {
+                    using (var upd = new SqlCommand(@"
+                        UPDATE EMS.UserAccount SET
+                            DisplayName    = @DisplayName,
+                            Email          = @Email,
+                            IsActive       = @IsActive,
+                            PositionName   = @PositionName,
+                            DepartmentName = @DepartmentName,
+                            UpdatedAt      = GETUTCDATE()
+                        WHERE UserID = @UserID", conn))
+                    {
+                        upd.Parameters.AddWithValue("@UserID",         existingId);
+                        upd.Parameters.AddWithValue("@DisplayName",    displayName ?? adUserName);
+                        upd.Parameters.AddWithValue("@Email",          (object)email          ?? DBNull.Value);
+                        upd.Parameters.AddWithValue("@IsActive",       isActive);
+                        upd.Parameters.AddWithValue("@PositionName",   (object)positionName   ?? DBNull.Value);
+                        upd.Parameters.AddWithValue("@DepartmentName", (object)departmentName ?? DBNull.Value);
+                        upd.ExecuteNonQuery();
+                    }
+                    isNew = false;
+                    return existingId;
+                }
+                else
+                {
+                    using (var ins = new SqlCommand(@"
+                        INSERT INTO EMS.UserAccount
+                            (ADUserName, DisplayName, Email, AppRole, OrgUnitID,
+                             IsActive, ConsentGiven, PositionName, DepartmentName,
+                             CreatedBy, CreatedDate, UpdatedAt)
+                        VALUES
+                            (@ADUserName, @DisplayName, @Email, 1, 1,
+                             @IsActive, 0, @PositionName, @DepartmentName,
+                             @CreatedBy, GETUTCDATE(), GETUTCDATE());
+                        SELECT SCOPE_IDENTITY();", conn))
+                    {
+                        ins.Parameters.AddWithValue("@ADUserName",     adUserName);
+                        ins.Parameters.AddWithValue("@DisplayName",    displayName ?? adUserName);
+                        ins.Parameters.AddWithValue("@Email",          (object)email          ?? DBNull.Value);
+                        ins.Parameters.AddWithValue("@IsActive",       isActive);
+                        ins.Parameters.AddWithValue("@PositionName",   (object)positionName   ?? DBNull.Value);
+                        ins.Parameters.AddWithValue("@DepartmentName", (object)departmentName ?? DBNull.Value);
+                        ins.Parameters.AddWithValue("@CreatedBy",      (object)createdBy      ?? DBNull.Value);
                         isNew = true;
                         return Convert.ToInt32(ins.ExecuteScalar());
                     }

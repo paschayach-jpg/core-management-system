@@ -13,19 +13,22 @@ namespace CMS.Controllers.DMS.Document
         private readonly IHrDepartmentRepository _hrDepartmentRepository;
         private readonly IHrPositionRepository _hrPositionRepository;
         private readonly IHrPositionLevelRepository _hrPositionLevelRepository;
+        private readonly IHrPositionMappingRepository _hrPositionMappingRepository;
 
         public UserAdminController(
             IUserAccountRepository userAccountRepository = null,
             IHrDivisionRepository hrDivisionRepository = null,
             IHrDepartmentRepository hrDepartmentRepository = null,
             IHrPositionRepository hrPositionRepository = null,
-            IHrPositionLevelRepository hrPositionLevelRepository = null)
+            IHrPositionLevelRepository hrPositionLevelRepository = null,
+            IHrPositionMappingRepository hrPositionMappingRepository = null)
         {
             _userAccountRepository = userAccountRepository;
             _hrDivisionRepository = hrDivisionRepository;
             _hrDepartmentRepository = hrDepartmentRepository;
             _hrPositionRepository = hrPositionRepository;
             _hrPositionLevelRepository = hrPositionLevelRepository;
+            _hrPositionMappingRepository = hrPositionMappingRepository;
         }
 
         public IList<UserAccount> GetAllUsers()
@@ -102,6 +105,17 @@ namespace CMS.Controllers.DMS.Document
                 positionName);
         }
 
+        public int UpsertFromLdap(string adUserName, string displayName, string email, bool isActive,
+            string positionName, string departmentName, int? createdBy, out bool isNew)
+        {
+            isNew = false;
+            if (_userAccountRepository == null)
+                return 0;
+
+            return _userAccountRepository.UpsertFromLdap(
+                adUserName, displayName, email, isActive, positionName, departmentName, createdBy, out isNew);
+        }
+
         public IList<HrDivision> GetDivisions()
         {
             if (_hrDivisionRepository == null)
@@ -132,6 +146,14 @@ namespace CMS.Controllers.DMS.Document
                 return new List<HrPositionLevel>();
 
             return _hrPositionLevelRepository.GetAll().ToList();
+        }
+
+        public IList<HrPositionMapping> GetPositionMappings()
+        {
+            if (_hrPositionMappingRepository == null)
+                return new List<HrPositionMapping>();
+
+            return _hrPositionMappingRepository.GetAll().ToList();
         }
     }
 }

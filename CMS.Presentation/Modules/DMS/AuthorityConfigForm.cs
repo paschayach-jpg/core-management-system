@@ -334,8 +334,8 @@ namespace CMS.Presentation
 
             AddTextCol("colPosition", "ตำแหน่ง",          DataGridViewAutoSizeColumnMode.Fill, 28);
             AddTextCol("colLevelCode","ระดับ",              DataGridViewAutoSizeColumnMode.Fill, 5);
-            AddTextCol("colDept",     "แผนก",              DataGridViewAutoSizeColumnMode.Fill, 25);
-            AddTextCol("colDiv",      "ฝ่าย",              DataGridViewAutoSizeColumnMode.Fill, 22);
+            AddTextCol("colDept",     "แผนก",              DataGridViewAutoSizeColumnMode.AllCells, 25);
+            AddTextCol("colDiv",      "ฝ่าย",              DataGridViewAutoSizeColumnMode.AllCells, 22);
 
             AddCheckCol("colHC_V","ดู",36); AddCheckCol("colHC_A","เพิ่ม",36);
             AddCheckCol("colHC_E","แก้ไข",36); AddCheckCol("colHC_Ap","อนุมัติ",36);

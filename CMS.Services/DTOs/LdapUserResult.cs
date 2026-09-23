@@ -7,6 +7,8 @@ namespace CMS.Services.DTOs
         public string Mail           { get; set; }
         public string Department     { get; set; }
         public string Title          { get; set; }
+        public string EmployeeId     { get; set; }
+        public bool   IsActive       { get; set; }
 
         public string DropdownLabel
         {

@@ -18,19 +18,23 @@ namespace CMS.Presentation
         private readonly IUserAdminController _userAdminController;
         private readonly UserContext _currentUser;
         private readonly IAuditLogController _auditLogController;
+        private readonly CMS.Services.Interfaces.ILdapUserSearchService _ldapUserSearchService;
 
         private List<UserAccount> _allUsers = new List<UserAccount>();
         private List<HrDivision> _divisions = new List<HrDivision>();
         private List<HrDepartment> _departments = new List<HrDepartment>();
         private List<HrPosition> _positions = new List<HrPosition>();
         private List<HrPositionLevel> _levels = new List<HrPositionLevel>();
+        private List<HrPositionMapping> _positionMappings = new List<HrPositionMapping>();
 
         public UserManagementForm(IUserAdminController userAdminController, UserContext currentUser,
-                                   CMS.Services.Interfaces.IAuditService auditService = null)
+                                   CMS.Services.Interfaces.IAuditService auditService = null,
+                                   CMS.Services.Interfaces.ILdapUserSearchService ldapUserSearchService = null)
         {
             _userAdminController = userAdminController;
             _currentUser = currentUser;
             _auditLogController = new AuditLogController(auditService);
+            _ldapUserSearchService = ldapUserSearchService;
 
             InitializeComponent();
             WireEvents();
@@ -75,6 +79,9 @@ namespace CMS.Presentation
 
                 try { _levels = _userAdminController.GetPositionLevels().OrderBy(l => l.LevelCode).ToList(); }
                 catch { _levels = new List<HrPositionLevel>(); }
+
+                try { _positionMappings = _userAdminController.GetPositionMappings().ToList(); }
+                catch { _positionMappings = new List<HrPositionMapping>(); }
             }
 
             // ── Phase 2: Fallback — สร้างจาก UserAccount ถ้า HR table ยังว่าง ──
@@ -515,8 +522,44 @@ namespace CMS.Presentation
             addSectionBar("ข้อมูลพื้นฐาน", y); y += 34;
 
             addLbl("ชื่อผู้ใช้ AD:", y);
-            var txtAD = addTxt(user.ADUserName ?? "", y);
-            if (!isNew) txtAD.ReadOnly = true;  // AD username ไม่ควรเปลี่ยนหลังสร้าง
+            TextBox txtAD;
+            Button btnAdSearch = null;
+            bool showAdSearch = isNew && _ldapUserSearchService != null;
+            if (showAdSearch)
+            {
+                txtAD = new TextBox
+                {
+                    Left = tx,
+                    Top = y,
+                    Width = fw - 96,
+                    Height = inputH,
+                    Text = user.ADUserName ?? "",
+                    Font = uiFont,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    BackColor = Color.White,
+                };
+                pnlBody.Controls.Add(txtAD);
+
+                btnAdSearch = new Button
+                {
+                    Left = tx + fw - 92,
+                    Top = y,
+                    Width = 92,
+                    Height = inputH,
+                    Text = "🔍 ค้นหา AD",
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(37, 99, 235),
+                    ForeColor = Color.White,
+                    Cursor = Cursors.Hand,
+                };
+                btnAdSearch.FlatAppearance.BorderSize = 0;
+                pnlBody.Controls.Add(btnAdSearch);
+            }
+            else
+            {
+                txtAD = addTxt(user.ADUserName ?? "", y);
+                if (!isNew) txtAD.ReadOnly = true;  // AD username ไม่ควรเปลี่ยนหลังสร้าง
+            }
             y += rowH;
 
             addLbl("ชื่อ-นามสกุล:", y);
@@ -526,6 +569,25 @@ namespace CMS.Presentation
             addLbl("รหัสพนักงาน:", y);
             var txtEmpCode = addTxt(user.EmployeeCode ?? "", y);
             y += rowH;
+
+            if (showAdSearch)
+            {
+                btnAdSearch.Click += (s, e) =>
+                {
+                    using (var adSearchDlg = new CMS.Presentation.Modules.Workflow.DelegateSearchDialog(
+                        null, _ldapUserSearchService, null, _currentUser.ADUserName))
+                    {
+                        if (adSearchDlg.ShowDialog(this) == DialogResult.OK && adSearchDlg.SelectedUser != null)
+                        {
+                            txtAD.Text = adSearchDlg.SelectedUser.SamAccountName;
+                            if (string.IsNullOrWhiteSpace(txtDisplay.Text))
+                                txtDisplay.Text = adSearchDlg.SelectedUser.DisplayName;
+                            if (string.IsNullOrWhiteSpace(txtEmpCode.Text))
+                                txtEmpCode.Text = adSearchDlg.SelectedUser.EmployeeId;
+                        }
+                    }
+                };
+            }
 
             addLbl("บทบาท:", y);
             var cmbRole = addCmb(y);
@@ -695,12 +757,63 @@ namespace CMS.Presentation
 
             addLbl("ตำแหน่ง:", y);
             var cmbPos = addCmb(y);
-            cmbPos.Items.Add(new HrPosition { PositionCode = "", PositionName = "-- ไม่เปลี่ยน / ไม่ระบุ --" });
-            foreach (var p in _positions) cmbPos.Items.Add(p);
             cmbPos.DisplayMember = "PositionName";
-            cmbPos.SelectedIndex = 0;
-            SelectPosition(cmbPos, user);
             y += rowH;
+
+            // ตำแหน่งกรองตามแผนกที่เลือก (ผ่าน m_PositionMapping): ฝ่าย → แผนก → ตำแหน่ง
+            // autoSelect=true → pre-select ตำแหน่งเดิมของ user (initial load only)
+            // autoSelect=false → แค่กรองตามแผนก ไม่ override ให้เลือกเอง
+            Action<bool> populatePos = (autoSelect) =>
+            {
+                cmbPos.Items.Clear();
+                cmbPos.Items.Add(new HrPosition { PositionCode = "", PositionName = "-- ไม่เปลี่ยน / ไม่ระบุ --" });
+
+                var selDept = cmbDept.SelectedItem as HrDepartment;
+                List<HrPosition> posList = null;
+                if (_positionMappings.Count > 0 && selDept != null && selDept.DepartmentID > 0)
+                {
+                    posList = _positionMappings
+                        .Where(m => m.DepartmentID == selDept.DepartmentID)
+                        .GroupBy(m => m.PositionID)
+                        .Select(g => new HrPosition
+                        {
+                            PositionID = g.Key,
+                            PositionCode = g.First().PositionCode,
+                            PositionName = g.First().PositionName,
+                            LevelCode = g.First().Level
+                        })
+                        .OrderBy(p => p.PositionName)
+                        .ToList();
+                }
+
+                // ไม่มี mapping data หรือยังไม่เลือกแผนก → fallback แสดงตำแหน่งทั้งหมด
+                if (posList == null || posList.Count == 0)
+                    posList = _positions.ToList();
+
+                foreach (var p in posList) cmbPos.Items.Add(p);
+                cmbPos.SelectedIndex = 0;
+
+                if (autoSelect)
+                {
+                    SelectPosition(cmbPos, user);
+
+                    // ถ้า pre-select ไม่เจอในรายการที่กรองแล้ว ให้เพิ่มค่าปัจจุบันของผู้ใช้เข้าไปชั่วคราว
+                    if (cmbPos.SelectedIndex == 0 && !string.IsNullOrWhiteSpace(user.PositionName))
+                    {
+                        var currentPos = new HrPosition
+                        {
+                            PositionCode = "",
+                            PositionName = user.PositionName,
+                            LevelCode = user.LevelCode
+                        };
+                        cmbPos.Items.Add(currentPos);
+                        cmbPos.SelectedIndex = cmbPos.Items.Count - 1;
+                    }
+                }
+            };
+
+            populatePos(true);   // initial load — pre-select ตำแหน่งเดิมของ user
+            cmbDept.SelectedIndexChanged += (s, ev) => populatePos(false);
 
             addLbl("Level:", y);
             var cmbLevel = addCmb(y);
