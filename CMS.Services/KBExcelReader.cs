@@ -10,26 +10,38 @@ using NPOI.XSSF.UserModel;
 namespace CMS.Services
 {
     /// <summary>
-    /// Reads <c>import_article.xlsx</c> and maps each data row (row 4 onward on the
-    /// first worksheet) to a <see cref="KBImportRow"/>.
-    /// Uses NPOI 2.5.6. No validation logic is performed here — that is the
-    /// responsibility of <see cref="KBImportProcessor"/>.
+    /// Reads a KB import Excel file — header row 1, data from row 2, first worksheet only —
+    /// and maps each data row to a <see cref="KBImportRow"/>. Auto-detects which of the two
+    /// supported layouts the file uses from its header row (column C text) and reads
+    /// accordingly:
+    ///
+    /// <b>Law</b> (20-column "law-matrix", header C = "มาตรา"): A=Code รวม  C=มาตรา  M=ชื่อ
+    /// N=วันที่ประกาศ  O=วันที่มีผลบังคับใช้  P=บัญญัติไว้ว่า คำสั่งที่เกี่ยวข้อง  S=กฎหมายอ้างอิง
+    /// (other columns, including B "Code กฎหมายแม่", are ignored for now).
+    ///
+    /// <b>Order</b> (12-column "ประกาศ/คำสั่ง", header C = "ประเภทลูก"): A=Code รวม (สูตร —
+    /// ไม่อ่าน, คำนวณเองจาก B+C+D)  B=Code กฎหมายแม่(หลายบรรทัด)  C=ประเภทลูก (1=ประกาศ, 2=คำสั่ง)
+    /// D=เอกสารลูก  E=ชื่อ  F=คำสั่งที่  G=วันที่ประกาศ  H=วันที่มีผลบังคับใช้  I=บัญญัติไว้ว่า
+    /// J=ประเด็นสำคัญ  K=ชื่อไฟล์(+hyperlink)  L=กฎหมายอ้างอิง.
+    ///
+    /// Uses NPOI 2.5.6, evaluating formula cells live (a saved-but-not-recalculated workbook
+    /// otherwise leaves formula cells' cached value blank). No business-rule validation is
+    /// performed here — that is the responsibility of <see cref="KBImportProcessor"/>.
     /// </summary>
     public class KBExcelReader : IKBExcelReaderService
     {
-        // ── Supported text-date formats (InvariantCulture) ───────────────────
+        private const int DataStartRowIndex = 1;   // แถว 2 ใน Excel
+
         private static readonly string[] DateFormats =
         {
-            "dd/MM/yyyy",
             "d/M/yyyy",
+            "dd/MM/yyyy",
             "yyyy-MM-dd",
             "yyyy/MM/dd"
         };
 
-        // ── Thai month name → month number map ───────────────────────────────
-        // Covers both full names and common abbreviations used in Thai Excel files.
-        private static readonly System.Collections.Generic.Dictionary<string, int> ThaiMonths =
-            new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, int> ThaiMonths =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
             { "มกราคม",   1 }, { "ม.ค.",  1 },
             { "กุมภาพันธ์", 2 }, { "ก.พ.", 2 },
@@ -49,36 +61,16 @@ namespace CMS.Services
 
         /// <summary>
         /// Opens the file at <paramref name="filePath"/> and returns one
-        /// <see cref="KBImportRow"/> per data row (rows 4 onward on the first
-        /// worksheet).  Returns an empty list when the file has no data rows.
+        /// <see cref="KBImportRow"/> per data row (row 2 onward on the first worksheet).
+        /// Returns an empty list when the file has no data rows.
         /// </summary>
         /// <exception cref="KBExcelReadException">
-        /// Thrown when the file does not exist, is not a valid <c>.xlsx</c>, or is
-        /// locked by another process.
+        /// Thrown when the file does not exist, is not a valid <c>.xlsx</c>, is locked by
+        /// another process, or its header row doesn't match either supported layout.
         /// </exception>
         public virtual IList<KBImportRow> ReadRows(string filePath)
         {
-            if (!File.Exists(filePath))
-                throw new KBExcelReadException(filePath, "ไม่พบไฟล์ดังกล่าวในระบบ");
-
-            IWorkbook workbook;
-            try
-            {
-                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    workbook = new XSSFWorkbook(fs);
-                }
-            }
-            catch (IOException ex)
-            {
-                throw new KBExcelReadException(filePath, ex.Message, ex);
-            }
-            catch (Exception ex)
-            {
-                // Catches InvalidDataException, ZipException, etc. from NPOI when the
-                // file is not a valid .xlsx archive.
-                throw new KBExcelReadException(filePath, "ไฟล์ไม่ใช่รูปแบบ .xlsx ที่ถูกต้อง: " + ex.Message, ex);
-            }
+            IWorkbook workbook = OpenWorkbook(filePath);
 
             var rows = new List<KBImportRow>();
 
@@ -86,71 +78,30 @@ namespace CMS.Services
             if (sheet == null)
                 return rows;
 
-            // Rows 0–2 are header rows; data starts at row index 3 (Excel row 4).
+            IFormulaEvaluator evaluator = workbook.GetCreationHelper().CreateFormulaEvaluator();
+
+            string rowKind = DetectRowKind(sheet.GetRow(0), evaluator);
+            if (rowKind == null)
+                throw new KBExcelReadException(filePath,
+                    "ไม่รู้จักรูปแบบไฟล์ Excel นี้ — ตรวจสอบว่าเป็น template กฎหมาย (มาตรา) หรือ ประกาศ/คำสั่ง ที่ถูกต้อง");
+
             int lastRowIndex = sheet.LastRowNum;
-            for (int rowIdx = 3; rowIdx <= lastRowIndex; rowIdx++)
+            for (int rowIdx = DataStartRowIndex; rowIdx <= lastRowIndex; rowIdx++)
             {
                 IRow excelRow = sheet.GetRow(rowIdx);
                 if (excelRow == null)
                     continue;
 
                 // Skip entirely blank rows (all cells null or empty).
-                if (IsRowBlank(excelRow))
+                if (IsRowBlank(excelRow, evaluator))
                     continue;
 
                 KBImportRow row;
                 try
                 {
-                    row = new KBImportRow
-                    {
-                        RowNumber = rowIdx + 1,   // 1-based: row index 3 → RowNumber 4
-
-                        ColA = GetCellText(excelRow.GetCell(0)),
-                        ColB = GetCellText(excelRow.GetCell(1)),
-                        ColC = GetCellText(excelRow.GetCell(2)),
-                        ColD = GetCellText(excelRow.GetCell(3)),
-                        ColE = GetCellText(excelRow.GetCell(4)),
-                        ColF = GetCellText(excelRow.GetCell(5)),
-                        ColG = GetCellText(excelRow.GetCell(6)),
-                        ColH = GetCellText(excelRow.GetCell(7)),
-                        ColI = GetCellText(excelRow.GetCell(8)),
-                        ColJ = GetCellText(excelRow.GetCell(9)),
-                        ColK = GetCellText(excelRow.GetCell(10)),
-                        ColL = GetCellText(excelRow.GetCell(11)),
-                        ColM = GetCellText(excelRow.GetCell(12)),
-                        ColN = GetCellText(excelRow.GetCell(13)),
-                        ColO = GetCellText(excelRow.GetCell(14)),
-                        ColP = GetCellText(excelRow.GetCell(15)),
-                        ColQ = GetCellText(excelRow.GetCell(16)),
-                        ColT = GetCellText(excelRow.GetCell(19)),
-                        ColU = GetCellText(excelRow.GetCell(20)),
-                        ColV = GetCellText(excelRow.GetCell(21)),
-                        ColAA = GetCellText(excelRow.GetCell(26)),
-
-                    };
-
-                    row.Title    = row.ColE;
-                    row.Tags     = string.Format("{0}, {1}", row.ColC, row.ColE);
-                    row.Category = string.Format("{0} > {1}", row.ColA, row.ColB);
-
-                    // ── Column R — PublishedDate ─────────────────────────────
-                    ICell cellR = excelRow.GetCell(17);
-                    string rError;
-                    DateTime? publishedDate = TryParseDateCell(cellR, out rError);
-                    row.PublishedDateParsed = publishedDate;
-                    row.ColR = publishedDate.HasValue
-                        ? publishedDate.Value.ToString("dd/MM/yyyy")
-                        : GetCellText(cellR);
-
-                    // ── Column S — ExpiryDate ────────────────────────────────
-                    ICell cellS = excelRow.GetCell(18);
-                    string sError;
-                    DateTime? expiryDate = TryParseDateCell(cellS, out sError);
-                    row.ExpiryDateParsed = expiryDate;
-                    row.ColS = expiryDate.HasValue
-                        ? expiryDate.Value.ToString("dd/MM/yyyy")
-                        : GetCellText(cellS);
-                    row.ExpiryDate = row.ColS;
+                    row = rowKind == "Order"
+                        ? ReadOrderRow(excelRow, rowIdx, evaluator)
+                        : ReadLawRow(excelRow, rowIdx, evaluator);
                 }
                 catch (Exception ex)
                 {
@@ -158,6 +109,7 @@ namespace CMS.Services
                     row = new KBImportRow
                     {
                         RowNumber  = rowIdx + 1,
+                        RowKind    = rowKind,
                         Status     = "Error",
                         StatusNote = SafeTruncate("อ่านข้อมูล Excel ไม่สำเร็จ: " + ex.Message, 200),
                     };
@@ -169,17 +121,153 @@ namespace CMS.Services
             return rows;
         }
 
+        // ── Layout detection ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// Detects which layout a file uses from its header row's column C text.
+        /// Returns "Law", "Order", or <c>null</c> when neither matches.
+        /// </summary>
+        private static string DetectRowKind(IRow headerRow, IFormulaEvaluator evaluator)
+        {
+            string colC = GetCellText(headerRow == null ? null : headerRow.GetCell(2), evaluator).Trim();
+            if (colC == "มาตรา") return "Law";
+            if (colC == "ประเภทลูก") return "Order";
+            return null;
+        }
+
+        // ── Row readers ──────────────────────────────────────────────────────
+
+        private static KBImportRow ReadLawRow(IRow excelRow, int rowIdx, IFormulaEvaluator evaluator)
+        {
+            var row = new KBImportRow
+            {
+                RowNumber = rowIdx + 1,   // 1-based: row index 1 → RowNumber 2
+                RowKind   = "Law",
+
+                ColA            = GetCellText(excelRow.GetCell(0), evaluator).Trim(),    // A — Code รวม
+                ColC            = GetCellText(excelRow.GetCell(2), evaluator).Trim(),    // C — มาตรา
+                RawSummary      = GetCellText(excelRow.GetCell(12), evaluator).Trim(),   // M — ชื่อ
+                RawPublishedDate = GetCellText(excelRow.GetCell(13), evaluator).Trim(),  // N — วันที่ประกาศ
+                RawEffectiveDate = GetCellText(excelRow.GetCell(14), evaluator).Trim(),  // O — วันที่มีผลบังคับใช้
+                RawContent      = GetCellText(excelRow.GetCell(15), evaluator),          // P — บัญญัติไว้ว่า
+                RawTitleCategory = GetCellText(excelRow.GetCell(18), evaluator).Trim(),  // S — กฎหมายอ้างอิง
+            };
+
+            string ignoredError;
+            row.PublishedDateParsed = TryParseDateCell(excelRow.GetCell(13), evaluator, out ignoredError);
+            row.EffectiveDateParsed = TryParseDateCell(excelRow.GetCell(14), evaluator, out ignoredError);
+
+            return row;
+        }
+
+        private static KBImportRow ReadOrderRow(IRow excelRow, int rowIdx, IFormulaEvaluator evaluator)
+        {
+            var row = new KBImportRow
+            {
+                RowNumber = rowIdx + 1,
+                RowKind   = "Order",
+
+                ParentCodes      = SplitLines(GetCellText(excelRow.GetCell(1), evaluator)),   // B — Code กฎหมายแม่
+                OrderTypeDigit   = GetCellText(excelRow.GetCell(2), evaluator).Trim(),         // C — ประเภทลูก
+                OrderDocNumber   = GetCellText(excelRow.GetCell(3), evaluator).Trim(),         // D — เอกสารลูก
+                RawTitle         = GetCellText(excelRow.GetCell(4), evaluator).Trim(),         // E — ชื่อ
+                RawTitleCategory = GetCellText(excelRow.GetCell(5), evaluator).Trim(),         // F — คำสั่งที่
+                RawPublishedDate = GetCellText(excelRow.GetCell(6), evaluator).Trim(),         // G — วันที่ประกาศ
+                RawEffectiveDate = GetCellText(excelRow.GetCell(7), evaluator).Trim(),         // H — วันที่มีผลบังคับใช้
+                RawContent       = GetCellText(excelRow.GetCell(8), evaluator),                // I — บัญญัติไว้ว่า
+                RawSummary       = GetCellText(excelRow.GetCell(9), evaluator),                // J — ประเด็นสำคัญ
+                SectionsRaw      = GetCellText(excelRow.GetCell(11), evaluator).Trim(),        // L — กฎหมายอ้างอิง
+            };
+
+            row.FinalCodeChoices = BuildFinalCodeChoices(row.ParentCodes, row.OrderTypeDigit, row.OrderDocNumber);
+
+            // column K — ข้อความคือชื่อไฟล์ ส่วน URL จริงอยู่ใน hyperlink ของเซลล์
+            ICell fileCell = excelRow.GetCell(10);
+            row.AttachmentFileName = GetCellText(fileCell, evaluator).Trim();
+            row.AttachmentUrl      = GetHyperlinkAddress(fileCell);
+
+            string ignoredError;
+            row.PublishedDateParsed = TryParseDateCell(excelRow.GetCell(6), evaluator, out ignoredError);
+            row.EffectiveDateParsed = TryParseDateCell(excelRow.GetCell(7), evaluator, out ignoredError);
+
+            return row;
+        }
+
         // ── Private helpers ──────────────────────────────────────────────────
 
         /// <summary>
-        /// Returns the string representation of <paramref name="cell"/>'s value,
-        /// handling all common cell types.  Returns <see cref="string.Empty"/> for
-        /// a null cell.
+        /// สร้าง final combined code ต่อ parent code หนึ่งบรรทัด = parentCode + typeDigit + docNumber
+        /// (mirror ของสูตร Excel เดิมใน column A ของไฟล์ "Order": <c>IF(OR(B="",C="",D="",C="NA",D="NA"),"",...)</c>)
+        /// คืนรายการว่างถ้า typeDigit/docNumber ว่างหรือเป็น "NA" หรือไม่มี parent code เลย
         /// </summary>
-        private static string GetCellText(ICell cell)
+        private static IList<string> BuildFinalCodeChoices(IList<string> parentCodes, string typeDigit, string docNumber)
         {
-            if (cell == null)
-                return string.Empty;
+            var result = new List<string>();
+
+            bool typeValid = !string.IsNullOrEmpty(typeDigit) && !string.Equals(typeDigit, "NA", StringComparison.OrdinalIgnoreCase);
+            bool docValid  = !string.IsNullOrEmpty(docNumber) && !string.Equals(docNumber, "NA", StringComparison.OrdinalIgnoreCase);
+            if (!typeValid || !docValid || parentCodes == null)
+                return result;
+
+            foreach (var parent in parentCodes)
+                result.Add(parent + typeDigit + docNumber);
+
+            return result;
+        }
+
+        /// <summary>แตกเซลล์ที่มีหลายบรรทัด (Alt+Enter ใน Excel) เป็นรายการ ตัดช่องว่างแต่ละบรรทัด</summary>
+        private static IList<string> SplitLines(string raw)
+        {
+            var result = new List<string>();
+            if (string.IsNullOrWhiteSpace(raw)) return result;
+
+            var parts = raw.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            foreach (var part in parts)
+            {
+                string trimmed = part.Trim();
+                if (trimmed.Length > 0) result.Add(trimmed);
+            }
+            return result;
+        }
+
+        private static IWorkbook OpenWorkbook(string filePath)
+        {
+            if (!File.Exists(filePath))
+                throw new KBExcelReadException(filePath, "ไม่พบไฟล์ดังกล่าวในระบบ");
+
+            try
+            {
+                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    return new XSSFWorkbook(fs);
+            }
+            catch (IOException ex)
+            {
+                throw new KBExcelReadException(filePath, ex.Message, ex);
+            }
+            catch (Exception ex)
+            {
+                throw new KBExcelReadException(filePath,
+                    "ไฟล์ไม่ใช่รูปแบบ .xlsx ที่ถูกต้อง: " + ex.Message, ex);
+            }
+        }
+
+        private static string GetHyperlinkAddress(ICell cell)
+        {
+            if (cell == null) return null;
+            try
+            {
+                IHyperlink link = cell.Hyperlink;
+                return link == null ? null : link.Address;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string GetCellText(ICell cell, IFormulaEvaluator evaluator)
+        {
+            if (cell == null) return string.Empty;
 
             switch (cell.CellType)
             {
@@ -195,18 +283,18 @@ namespace CMS.Services
                     return cell.BooleanCellValue.ToString();
 
                 case CellType.Formula:
-                    // Use the cached result rather than re-evaluating (avoids needing
-                    // a formula evaluator and works even when the workbook is read-only).
-                    switch (cell.CachedFormulaResultType)
+                    // ประเมินสูตรสด แทนการอ่านค่า cache ของไฟล์ (อาจว่างถ้า Excel ยังไม่ได้ recalculate ก่อน save)
+                    CellValue result = evaluator.Evaluate(cell);
+                    switch (result.CellType)
                     {
                         case CellType.Numeric:
                             if (DateUtil.IsCellDateFormatted(cell))
-                                return cell.DateCellValue.ToString("dd/MM/yyyy");
-                            return cell.NumericCellValue.ToString(CultureInfo.InvariantCulture);
+                                return DateUtil.GetJavaDate(result.NumberValue).ToString("dd/MM/yyyy");
+                            return result.NumberValue.ToString(CultureInfo.InvariantCulture);
                         case CellType.String:
-                            return cell.StringCellValue ?? string.Empty;
+                            return result.StringValue ?? string.Empty;
                         case CellType.Boolean:
-                            return cell.BooleanCellValue.ToString();
+                            return result.BooleanValue.ToString();
                         default:
                             return string.Empty;
                     }
@@ -219,126 +307,76 @@ namespace CMS.Services
         }
 
         /// <summary>
-        /// Attempts to parse <paramref name="cell"/> as a <see cref="DateTime"/>.
-        /// Handles both native Excel date serial numbers and text strings.
-        /// Always applies <see cref="ApplyAdYearCorrection"/> so the result is A.D.
+        /// แปลงเซลล์เป็นวันที่ รองรับทั้ง Excel serial, สูตร, และข้อความ (รวมวันที่แบบไทย)
+        /// ผลลัพธ์เป็น ค.ศ. เสมอ (ปี พ.ศ. จะถูกลบ 543) คืน <c>null</c> (ไม่มี error) ถ้าเซลล์ว่าง
         /// </summary>
-        /// <param name="cell">The cell to parse (may be null).</param>
-        /// <param name="errorMessage">
-        /// Set to a non-null Thai error string when the cell contains a non-empty
-        /// value that cannot be parsed; otherwise <c>null</c>.
-        /// </param>
-        /// <returns>
-        /// The parsed <see cref="DateTime"/> in A.D., or <c>null</c> when the cell
-        /// is empty/null (no error) or unparseable (error set).
-        /// </returns>
-        private static DateTime? TryParseDateCell(ICell cell, out string errorMessage)
+        private static DateTime? TryParseDateCell(ICell cell, IFormulaEvaluator evaluator, out string errorMessage)
         {
             errorMessage = null;
 
             if (cell == null || cell.CellType == CellType.Blank)
                 return null;
 
-            // ── Case 1: native Excel date serial (Numeric cell with date format) ──
             if (cell.CellType == CellType.Numeric && DateUtil.IsCellDateFormatted(cell))
             {
-                try
-                {
-                    DateTime dt = cell.DateCellValue;
-                    return ApplyAdYearCorrection(dt);
-                }
+                try { return ApplyAdYearCorrection(cell.DateCellValue); }
                 catch (Exception ex)
                 {
-                    errorMessage = string.Format("ไม่สามารถแปลงค่า serial เป็นวันที่ได้: {0}", ex.Message);
+                    errorMessage = "ไม่สามารถแปลงค่า serial เป็นวันที่ได้: " + ex.Message;
                     return null;
                 }
             }
 
-            // ── Case 2: formula that resolves to a date ──────────────────────
-            if (cell.CellType == CellType.Formula
-                && cell.CachedFormulaResultType == CellType.Numeric
-                && DateUtil.IsCellDateFormatted(cell))
+            if (cell.CellType == CellType.Formula && DateUtil.IsCellDateFormatted(cell))
             {
-                try
+                CellValue result = evaluator.Evaluate(cell);
+                if (result.CellType == CellType.Numeric)
                 {
-                    DateTime dt = cell.DateCellValue;
-                    return ApplyAdYearCorrection(dt);
-                }
-                catch (Exception ex)
-                {
-                    errorMessage = string.Format("ไม่สามารถแปลงค่า serial เป็นวันที่ได้: {0}", ex.Message);
-                    return null;
+                    try { return ApplyAdYearCorrection(DateUtil.GetJavaDate(result.NumberValue)); }
+                    catch (Exception ex)
+                    {
+                        errorMessage = "ไม่สามารถแปลงค่า serial เป็นวันที่ได้: " + ex.Message;
+                        return null;
+                    }
                 }
             }
 
-            // ── Case 3: text string ──────────────────────────────────────────
-            string raw = GetCellText(cell).Trim();
-
+            string raw = GetCellText(cell, evaluator).Trim();
             if (string.IsNullOrEmpty(raw))
                 return null;
 
-            // Try standard numeric formats first (dd/MM/yyyy, yyyy-MM-dd, etc.)
             DateTime parsed;
-            if (DateTime.TryParseExact(
-                    raw,
-                    DateFormats,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out parsed))
-            {
+            if (DateTime.TryParseExact(raw, DateFormats, CultureInfo.InvariantCulture,
+                                       DateTimeStyles.None, out parsed))
                 return ApplyAdYearCorrection(parsed);
-            }
 
-            // Try Thai long-form: "9 เมษายน 2535" or "09 เม.ย. 2535"
-            DateTime? thaiParsed = TryParseThaiLongDate(raw);
-            if (thaiParsed.HasValue)
-                return thaiParsed.Value;   // ApplyAdYearCorrection already applied inside
+            DateTime? thai = TryParseThaiLongDate(raw);
+            if (thai.HasValue) return thai.Value;
 
-            // Could not parse with any supported format.
             errorMessage = string.Format("รูปแบบวันที่ไม่ถูกต้อง: '{0}'", raw);
             return null;
         }
 
-        /// <summary>
-        /// Parses Thai long-form date strings such as <c>"9 เมษายน 2535"</c> or
-        /// <c>"09 เม.ย. 2535"</c>.  The year is treated as Thai Buddhist Era (B.E.)
-        /// when it is greater than 2400, and <see cref="ApplyAdYearCorrection"/> is
-        /// applied so the returned value is always A.D.
-        /// Returns <c>null</c> when the string does not match the expected pattern.
-        /// </summary>
+        /// <summary>แปลงวันที่แบบไทย เช่น "9 เมษายน 2535" / "09 เม.ย. 2535"</summary>
         private static DateTime? TryParseThaiLongDate(string raw)
         {
-            if (string.IsNullOrEmpty(raw))
-                return null;
+            if (string.IsNullOrEmpty(raw)) return null;
 
-            // Expected pattern: {day} {thaiMonthName} {year}
-            // e.g. "9 เมษายน 2535"  or  "09 เม.ย. 2535"
             var parts = raw.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 3)
-                return null;
+            if (parts.Length < 3) return null;
 
             int day, year;
-            if (!int.TryParse(parts[0], out day))
-                return null;
+            if (!int.TryParse(parts[0], out day)) return null;
+            if (!int.TryParse(parts[parts.Length - 1], out year)) return null;
 
-            // Year is always the last token
-            if (!int.TryParse(parts[parts.Length - 1], out year))
-                return null;
-
-            // Month name is everything between day and year (handles multi-word names)
             string monthToken = string.Join(" ", parts, 1, parts.Length - 2).Trim();
 
             int month;
-            if (!ThaiMonths.TryGetValue(monthToken, out month))
-                return null;
-
-            if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1)
-                return null;
+            if (!ThaiMonths.TryGetValue(monthToken, out month)) return null;
+            if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1) return null;
 
             try
             {
-                // Construct using Gregorian calendar explicitly to avoid any
-                // ThaiBuddhistCalendar influence from the current thread culture.
                 var dt = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Unspecified);
                 return ApplyAdYearCorrection(dt);
             }
@@ -348,15 +386,9 @@ namespace CMS.Services
             }
         }
 
-        /// <summary>
-        /// Converts a Thai Buddhist Era year to A.D. when necessary.
-        /// If <paramref name="dt"/>.Year is greater than 2400 (indicating B.E.),
-        /// subtracts 543 years.  Otherwise returns <paramref name="dt"/> unchanged.
-        /// </summary>
+        /// <summary>ปีมากกว่า 2400 ถือว่าเป็น พ.ศ. จึงลบ 543 ให้เป็น ค.ศ.</summary>
         private static DateTime ApplyAdYearCorrection(DateTime dt)
         {
-            // Thai B.E. years are ~543 years ahead of A.D.
-            // e.g. B.E. 2567 → A.D. 2024
             return dt.Year > 2400 ? dt.AddYears(-543) : dt;
         }
 
@@ -370,15 +402,14 @@ namespace CMS.Services
         /// Returns <c>true</c> when every cell in <paramref name="row"/> is null or
         /// produces an empty string — used to skip padding rows at the end of the sheet.
         /// </summary>
-        private static bool IsRowBlank(IRow row)
+        private static bool IsRowBlank(IRow row, IFormulaEvaluator evaluator)
         {
             if (row == null) return true;
             for (int c = row.FirstCellNum; c < row.LastCellNum; c++)
             {
                 ICell cell = row.GetCell(c);
-                if (cell != null && cell.CellType != CellType.Blank
-                    && !string.IsNullOrEmpty(GetCellText(cell)))
-                    return false;
+                if (cell == null || cell.CellType == CellType.Blank) continue;
+                if (!string.IsNullOrWhiteSpace(GetCellText(cell, evaluator))) return false;
             }
             return true;
         }

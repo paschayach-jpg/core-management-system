@@ -16,11 +16,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStripe = new System.Windows.Forms.Panel();
             this.pnlContent = new System.Windows.Forms.Panel();
             this.panelFooter = new System.Windows.Forms.Panel();
-            this.panelButton = new System.Windows.Forms.Panel();
-            this.btnSendReview = new System.Windows.Forms.Button();
-            this.btnShare = new System.Windows.Forms.Button();
-            this.btnEdit = new System.Windows.Forms.Button();
-            this.btnRead = new System.Windows.Forms.Button();
             this.pnlStats = new System.Windows.Forms.FlowLayoutPanel();
             this.lblViewIcon = new System.Windows.Forms.Label();
             this.lblViewCount = new System.Windows.Forms.Label();
@@ -28,9 +23,16 @@ namespace CMS.Presentation.Modules.KMS
             this.lblLikeCount = new System.Windows.Forms.Label();
             this.lblTagsIcon = new System.Windows.Forms.Label();
             this.lblTags = new System.Windows.Forms.Label();
+            this.panelButton = new System.Windows.Forms.Panel();
+            this.btnSendReview = new System.Windows.Forms.Button();
+            this.btnShare = new System.Windows.Forms.Button();
+            this.btnEdit = new System.Windows.Forms.Button();
+            this.btnRead = new System.Windows.Forms.Button();
             this.pnlActions = new System.Windows.Forms.Panel();
             this.panelArticelItem = new System.Windows.Forms.Panel();
             this.lblContent = new System.Windows.Forms.Label();
+            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            this.lblSummary = new System.Windows.Forms.Label();
             this.pnlMeta = new System.Windows.Forms.FlowLayoutPanel();
             this.lblStatus = new System.Windows.Forms.Label();
             this.lblMetaSep3 = new System.Windows.Forms.Label();
@@ -39,23 +41,26 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMetaSep2 = new System.Windows.Forms.Label();
             this.lblVersion = new System.Windows.Forms.Label();
             this.lblMetaSep1 = new System.Windows.Forms.Label();
-            this.lblSummary = new System.Windows.Forms.Label();
             this.pHeaderRight = new System.Windows.Forms.Panel();
+            this.lblTitle = new System.Windows.Forms.Label();
+            this.lblTitleCategory = new System.Windows.Forms.Label();
+            this.pnlHeaderMeta = new System.Windows.Forms.FlowLayoutPanel();
             this.label4 = new System.Windows.Forms.Label();
             this.lblShowEntity = new System.Windows.Forms.Label();
-            this.lblTitle = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.lblPublishedDate = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.lblExpiryDate = new System.Windows.Forms.Label();
             this.pnlContent.SuspendLayout();
             this.panelFooter.SuspendLayout();
-            this.panelButton.SuspendLayout();
             this.pnlStats.SuspendLayout();
+            this.panelButton.SuspendLayout();
             this.pnlActions.SuspendLayout();
             this.panelArticelItem.SuspendLayout();
+            this.flowLayoutPanel1.SuspendLayout();
             this.pnlMeta.SuspendLayout();
             this.pHeaderRight.SuspendLayout();
+            this.pnlHeaderMeta.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlStripe
@@ -66,7 +71,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStripe.Location = new System.Drawing.Point(0, 0);
             this.pnlStripe.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlStripe.Name = "pnlStripe";
-            this.pnlStripe.Size = new System.Drawing.Size(5, 134);
+            this.pnlStripe.Size = new System.Drawing.Size(5, 172);
             this.pnlStripe.TabIndex = 0;
             this.pnlStripe.Click += new System.EventHandler(this.OnCardClick);
             this.pnlStripe.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
@@ -76,6 +81,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlContent.Controls.Add(this.panelFooter);
             this.pnlContent.Controls.Add(this.pnlActions);
+            this.pnlContent.Controls.Add(this.flowLayoutPanel1);
             this.pnlContent.Controls.Add(this.pnlMeta);
             this.pnlContent.Controls.Add(this.pHeaderRight);
             this.pnlContent.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -84,7 +90,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlContent.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlContent.Name = "pnlContent";
             this.pnlContent.Padding = new System.Windows.Forms.Padding(12, 6, 10, 5);
-            this.pnlContent.Size = new System.Drawing.Size(868, 134);
+            this.pnlContent.Size = new System.Drawing.Size(883, 172);
             this.pnlContent.TabIndex = 1;
             this.pnlContent.Click += new System.EventHandler(this.OnCardClick);
             this.pnlContent.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
@@ -92,108 +98,14 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // panelFooter
             // 
-            this.panelFooter.Controls.Add(this.panelButton);
             this.panelFooter.Controls.Add(this.pnlStats);
+            this.panelFooter.Controls.Add(this.panelButton);
             this.panelFooter.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelFooter.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.panelFooter.Location = new System.Drawing.Point(12, 97);
+            this.panelFooter.Location = new System.Drawing.Point(12, 129);
             this.panelFooter.Name = "panelFooter";
-            this.panelFooter.Size = new System.Drawing.Size(846, 39);
+            this.panelFooter.Size = new System.Drawing.Size(861, 39);
             this.panelFooter.TabIndex = 5;
-            // 
-            // panelButton
-            // 
-            this.panelButton.Controls.Add(this.btnSendReview);
-            this.panelButton.Controls.Add(this.btnShare);
-            this.panelButton.Controls.Add(this.btnEdit);
-            this.panelButton.Controls.Add(this.btnRead);
-            this.panelButton.Dock = System.Windows.Forms.DockStyle.Right;
-            this.panelButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.panelButton.Location = new System.Drawing.Point(406, 0);
-            this.panelButton.Name = "panelButton";
-            this.panelButton.Size = new System.Drawing.Size(440, 39);
-            this.panelButton.TabIndex = 5;
-            // 
-            // btnSendReview
-            // 
-            this.btnSendReview.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
-            this.btnSendReview.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnSendReview.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnSendReview.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
-            this.btnSendReview.FlatAppearance.BorderSize = 0;
-            this.btnSendReview.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(82)))), ((int)(((byte)(190)))), ((int)(((byte)(128)))));
-            this.btnSendReview.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSendReview.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSendReview.ForeColor = System.Drawing.Color.White;
-            this.btnSendReview.Location = new System.Drawing.Point(299, 0);
-            this.btnSendReview.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.btnSendReview.Name = "btnSendReview";
-            this.btnSendReview.Size = new System.Drawing.Size(141, 39);
-            this.btnSendReview.TabIndex = 3;
-            this.btnSendReview.Text = "📤 Send Review";
-            this.btnSendReview.UseVisualStyleBackColor = false;
-            this.btnSendReview.Visible = false;
-            this.btnSendReview.Click += new System.EventHandler(this.btnSendReview_Click);
-            // 
-            // btnShare
-            // 
-            this.btnShare.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
-            this.btnShare.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnShare.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnShare.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
-            this.btnShare.FlatAppearance.BorderSize = 0;
-            this.btnShare.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(93)))), ((int)(((byte)(173)))), ((int)(((byte)(226)))));
-            this.btnShare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnShare.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnShare.ForeColor = System.Drawing.Color.White;
-            this.btnShare.Location = new System.Drawing.Point(214, 0);
-            this.btnShare.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.btnShare.Name = "btnShare";
-            this.btnShare.Size = new System.Drawing.Size(85, 39);
-            this.btnShare.TabIndex = 2;
-            this.btnShare.Text = "🔗 Share";
-            this.btnShare.UseVisualStyleBackColor = false;
-            this.btnShare.Click += new System.EventHandler(this.btnShare_Click);
-            // 
-            // btnEdit
-            // 
-            this.btnEdit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(156)))), ((int)(((byte)(18)))));
-            this.btnEdit.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnEdit.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnEdit.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(156)))), ((int)(((byte)(18)))));
-            this.btnEdit.FlatAppearance.BorderSize = 0;
-            this.btnEdit.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(176)))), ((int)(((byte)(65)))));
-            this.btnEdit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnEdit.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnEdit.ForeColor = System.Drawing.Color.White;
-            this.btnEdit.Location = new System.Drawing.Point(109, 0);
-            this.btnEdit.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.btnEdit.Name = "btnEdit";
-            this.btnEdit.Size = new System.Drawing.Size(105, 39);
-            this.btnEdit.TabIndex = 1;
-            this.btnEdit.Text = "✏️ Edit";
-            this.btnEdit.UseVisualStyleBackColor = false;
-            this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
-            // 
-            // btnRead
-            // 
-            this.btnRead.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnRead.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnRead.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnRead.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnRead.FlatAppearance.BorderSize = 0;
-            this.btnRead.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(88)))), ((int)(((byte)(144)))), ((int)(((byte)(196)))));
-            this.btnRead.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRead.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRead.ForeColor = System.Drawing.Color.White;
-            this.btnRead.Location = new System.Drawing.Point(0, 0);
-            this.btnRead.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.btnRead.Name = "btnRead";
-            this.btnRead.Size = new System.Drawing.Size(109, 39);
-            this.btnRead.TabIndex = 0;
-            this.btnRead.Text = "👁️ Read";
-            this.btnRead.UseVisualStyleBackColor = false;
-            this.btnRead.Click += new System.EventHandler(this.btnRead_Click);
             // 
             // pnlStats
             // 
@@ -203,12 +115,12 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStats.Controls.Add(this.lblLikeCount);
             this.pnlStats.Controls.Add(this.lblTagsIcon);
             this.pnlStats.Controls.Add(this.lblTags);
-            this.pnlStats.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlStats.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlStats.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pnlStats.Location = new System.Drawing.Point(0, 0);
             this.pnlStats.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlStats.Name = "pnlStats";
-            this.pnlStats.Size = new System.Drawing.Size(846, 39);
+            this.pnlStats.Size = new System.Drawing.Size(421, 39);
             this.pnlStats.TabIndex = 3;
             this.pnlStats.WrapContents = false;
             this.pnlStats.Click += new System.EventHandler(this.OnCardClick);
@@ -330,16 +242,110 @@ namespace CMS.Presentation.Modules.KMS
             this.lblTags.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
             this.lblTags.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             // 
+            // panelButton
+            // 
+            this.panelButton.Controls.Add(this.btnSendReview);
+            this.panelButton.Controls.Add(this.btnShare);
+            this.panelButton.Controls.Add(this.btnEdit);
+            this.panelButton.Controls.Add(this.btnRead);
+            this.panelButton.Dock = System.Windows.Forms.DockStyle.Right;
+            this.panelButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.panelButton.Location = new System.Drawing.Point(421, 0);
+            this.panelButton.Name = "panelButton";
+            this.panelButton.Size = new System.Drawing.Size(440, 39);
+            this.panelButton.TabIndex = 5;
+            // 
+            // btnSendReview
+            // 
+            this.btnSendReview.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
+            this.btnSendReview.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnSendReview.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnSendReview.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
+            this.btnSendReview.FlatAppearance.BorderSize = 0;
+            this.btnSendReview.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(82)))), ((int)(((byte)(190)))), ((int)(((byte)(128)))));
+            this.btnSendReview.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnSendReview.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSendReview.ForeColor = System.Drawing.Color.White;
+            this.btnSendReview.Location = new System.Drawing.Point(299, 0);
+            this.btnSendReview.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.btnSendReview.Name = "btnSendReview";
+            this.btnSendReview.Size = new System.Drawing.Size(141, 39);
+            this.btnSendReview.TabIndex = 3;
+            this.btnSendReview.Text = "📤 Send Review";
+            this.btnSendReview.UseVisualStyleBackColor = false;
+            this.btnSendReview.Visible = false;
+            this.btnSendReview.Click += new System.EventHandler(this.btnSendReview_Click);
+            // 
+            // btnShare
+            // 
+            this.btnShare.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
+            this.btnShare.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnShare.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnShare.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
+            this.btnShare.FlatAppearance.BorderSize = 0;
+            this.btnShare.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(93)))), ((int)(((byte)(173)))), ((int)(((byte)(226)))));
+            this.btnShare.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnShare.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnShare.ForeColor = System.Drawing.Color.White;
+            this.btnShare.Location = new System.Drawing.Point(214, 0);
+            this.btnShare.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.btnShare.Name = "btnShare";
+            this.btnShare.Size = new System.Drawing.Size(85, 39);
+            this.btnShare.TabIndex = 2;
+            this.btnShare.Text = "🔗 Share";
+            this.btnShare.UseVisualStyleBackColor = false;
+            this.btnShare.Click += new System.EventHandler(this.btnShare_Click);
+            // 
+            // btnEdit
+            // 
+            this.btnEdit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(156)))), ((int)(((byte)(18)))));
+            this.btnEdit.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnEdit.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnEdit.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(156)))), ((int)(((byte)(18)))));
+            this.btnEdit.FlatAppearance.BorderSize = 0;
+            this.btnEdit.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(176)))), ((int)(((byte)(65)))));
+            this.btnEdit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEdit.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnEdit.ForeColor = System.Drawing.Color.White;
+            this.btnEdit.Location = new System.Drawing.Point(109, 0);
+            this.btnEdit.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.btnEdit.Name = "btnEdit";
+            this.btnEdit.Size = new System.Drawing.Size(105, 39);
+            this.btnEdit.TabIndex = 1;
+            this.btnEdit.Text = "✏️ Edit";
+            this.btnEdit.UseVisualStyleBackColor = false;
+            this.btnEdit.Click += new System.EventHandler(this.btnEdit_Click);
+            // 
+            // btnRead
+            // 
+            this.btnRead.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnRead.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRead.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnRead.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnRead.FlatAppearance.BorderSize = 0;
+            this.btnRead.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(88)))), ((int)(((byte)(144)))), ((int)(((byte)(196)))));
+            this.btnRead.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRead.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRead.ForeColor = System.Drawing.Color.White;
+            this.btnRead.Location = new System.Drawing.Point(0, 0);
+            this.btnRead.Margin = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.btnRead.Name = "btnRead";
+            this.btnRead.Size = new System.Drawing.Size(109, 39);
+            this.btnRead.TabIndex = 0;
+            this.btnRead.Text = "👁️ Read";
+            this.btnRead.UseVisualStyleBackColor = false;
+            this.btnRead.Click += new System.EventHandler(this.btnRead_Click);
+            // 
             // pnlActions
             // 
             this.pnlActions.Controls.Add(this.panelArticelItem);
             this.pnlActions.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlActions.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.pnlActions.Location = new System.Drawing.Point(12, 64);
+            this.pnlActions.Location = new System.Drawing.Point(12, 96);
             this.pnlActions.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlActions.Name = "pnlActions";
             this.pnlActions.Padding = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.pnlActions.Size = new System.Drawing.Size(846, 33);
+            this.pnlActions.Size = new System.Drawing.Size(861, 33);
             this.pnlActions.TabIndex = 4;
             // 
             // panelArticelItem
@@ -349,7 +355,7 @@ namespace CMS.Presentation.Modules.KMS
             this.panelArticelItem.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.panelArticelItem.Location = new System.Drawing.Point(0, 3);
             this.panelArticelItem.Name = "panelArticelItem";
-            this.panelArticelItem.Size = new System.Drawing.Size(846, 30);
+            this.panelArticelItem.Size = new System.Drawing.Size(861, 30);
             this.panelArticelItem.TabIndex = 6;
             // 
             // lblContent
@@ -358,10 +364,39 @@ namespace CMS.Presentation.Modules.KMS
             this.lblContent.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblContent.Location = new System.Drawing.Point(0, 0);
             this.lblContent.Name = "lblContent";
-            this.lblContent.Size = new System.Drawing.Size(846, 30);
+            this.lblContent.Size = new System.Drawing.Size(861, 30);
             this.lblContent.TabIndex = 0;
             this.lblContent.Text = "เนื้อหา";
             this.lblContent.Click += new System.EventHandler(this.OnCardClick);
+            // 
+            // flowLayoutPanel1
+            // 
+            this.flowLayoutPanel1.AutoSize = true;
+            this.flowLayoutPanel1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.flowLayoutPanel1.Controls.Add(this.lblSummary);
+            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.flowLayoutPanel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(12, 69);
+            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(861, 27);
+            this.flowLayoutPanel1.TabIndex = 7;
+            this.flowLayoutPanel1.WrapContents = false;
+            // 
+            // lblSummary
+            // 
+            this.lblSummary.AutoSize = true;
+            this.lblSummary.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
+            this.lblSummary.Location = new System.Drawing.Point(0, 2);
+            this.lblSummary.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
+            this.lblSummary.Name = "lblSummary";
+            this.lblSummary.Size = new System.Drawing.Size(116, 25);
+            this.lblSummary.TabIndex = 2;
+            this.lblSummary.Text = "สรุปบทความ...";
+            this.lblSummary.Click += new System.EventHandler(this.OnCardClick);
+            this.lblSummary.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblSummary.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             // 
             // pnlMeta
             // 
@@ -372,13 +407,12 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMeta.Controls.Add(this.lblMetaSep2);
             this.pnlMeta.Controls.Add(this.lblVersion);
             this.pnlMeta.Controls.Add(this.lblMetaSep1);
-            this.pnlMeta.Controls.Add(this.lblSummary);
             this.pnlMeta.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlMeta.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pnlMeta.Location = new System.Drawing.Point(12, 39);
             this.pnlMeta.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.pnlMeta.Name = "pnlMeta";
-            this.pnlMeta.Size = new System.Drawing.Size(846, 25);
+            this.pnlMeta.Size = new System.Drawing.Size(861, 30);
             this.pnlMeta.TabIndex = 1;
             this.pnlMeta.WrapContents = false;
             this.pnlMeta.Click += new System.EventHandler(this.OnCardClick);
@@ -493,45 +527,76 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMetaSep1.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
             this.lblMetaSep1.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             // 
-            // lblSummary
-            // 
-            this.lblSummary.AutoSize = true;
-            this.lblSummary.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblSummary.Location = new System.Drawing.Point(333, 2);
-            this.lblSummary.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
-            this.lblSummary.Name = "lblSummary";
-            this.lblSummary.Size = new System.Drawing.Size(116, 25);
-            this.lblSummary.TabIndex = 2;
-            this.lblSummary.Text = "สรุปบทความ...";
-            this.lblSummary.Click += new System.EventHandler(this.OnCardClick);
-            this.lblSummary.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblSummary.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
             // pHeaderRight
             // 
-            this.pHeaderRight.Controls.Add(this.label4);
-            this.pHeaderRight.Controls.Add(this.lblShowEntity);
             this.pHeaderRight.Controls.Add(this.lblTitle);
-            this.pHeaderRight.Controls.Add(this.label2);
-            this.pHeaderRight.Controls.Add(this.lblPublishedDate);
-            this.pHeaderRight.Controls.Add(this.label3);
-            this.pHeaderRight.Controls.Add(this.lblExpiryDate);
+            this.pHeaderRight.Controls.Add(this.lblTitleCategory);
+            this.pHeaderRight.Controls.Add(this.pnlHeaderMeta);
             this.pHeaderRight.Dock = System.Windows.Forms.DockStyle.Top;
             this.pHeaderRight.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.pHeaderRight.Location = new System.Drawing.Point(12, 6);
             this.pHeaderRight.Name = "pHeaderRight";
             this.pHeaderRight.Padding = new System.Windows.Forms.Padding(0, 5, 5, 0);
-            this.pHeaderRight.Size = new System.Drawing.Size(846, 33);
+            this.pHeaderRight.Size = new System.Drawing.Size(861, 33);
             this.pHeaderRight.TabIndex = 6;
+            // 
+            // lblTitle
+            // 
+            this.lblTitle.AutoEllipsis = true;
+            this.lblTitle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
+            this.lblTitle.Location = new System.Drawing.Point(0, 5);
+            this.lblTitle.Margin = new System.Windows.Forms.Padding(0);
+            this.lblTitle.Name = "lblTitle";
+            this.lblTitle.Size = new System.Drawing.Size(193, 28);
+            this.lblTitle.TabIndex = 0;
+            this.lblTitle.Text = "ชื่อบทความ";
+            this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.lblTitle.Click += new System.EventHandler(this.OnCardClick);
+            this.lblTitle.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
+            this.lblTitle.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
+            // 
+            // lblTitleCategory
+            // 
+            this.lblTitleCategory.AutoSize = true;
+            this.lblTitleCategory.Dock = System.Windows.Forms.DockStyle.Right;
+            this.lblTitleCategory.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTitleCategory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
+            this.lblTitleCategory.Location = new System.Drawing.Point(193, 5);
+            this.lblTitleCategory.Margin = new System.Windows.Forms.Padding(0);
+            this.lblTitleCategory.Name = "lblTitleCategory";
+            this.lblTitleCategory.Padding = new System.Windows.Forms.Padding(6, 0, 0, 0);
+            this.lblTitleCategory.Size = new System.Drawing.Size(93, 25);
+            this.lblTitleCategory.TabIndex = 12;
+            this.lblTitleCategory.Text = "category";
+            this.lblTitleCategory.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // pnlHeaderMeta
+            // 
+            this.pnlHeaderMeta.AutoSize = true;
+            this.pnlHeaderMeta.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.pnlHeaderMeta.Controls.Add(this.label4);
+            this.pnlHeaderMeta.Controls.Add(this.lblShowEntity);
+            this.pnlHeaderMeta.Controls.Add(this.label2);
+            this.pnlHeaderMeta.Controls.Add(this.lblPublishedDate);
+            this.pnlHeaderMeta.Controls.Add(this.label3);
+            this.pnlHeaderMeta.Controls.Add(this.lblExpiryDate);
+            this.pnlHeaderMeta.Dock = System.Windows.Forms.DockStyle.Right;
+            this.pnlHeaderMeta.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.pnlHeaderMeta.Location = new System.Drawing.Point(286, 5);
+            this.pnlHeaderMeta.Margin = new System.Windows.Forms.Padding(0);
+            this.pnlHeaderMeta.Name = "pnlHeaderMeta";
+            this.pnlHeaderMeta.Size = new System.Drawing.Size(570, 28);
+            this.pnlHeaderMeta.TabIndex = 13;
+            this.pnlHeaderMeta.WrapContents = false;
             // 
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Dock = System.Windows.Forms.DockStyle.Right;
             this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.label4.Location = new System.Drawing.Point(271, 5);
+            this.label4.Location = new System.Drawing.Point(0, 2);
             this.label4.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(141, 25);
@@ -541,10 +606,9 @@ namespace CMS.Presentation.Modules.KMS
             // lblShowEntity
             // 
             this.lblShowEntity.AutoSize = true;
-            this.lblShowEntity.Dock = System.Windows.Forms.DockStyle.Right;
             this.lblShowEntity.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblShowEntity.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblShowEntity.Location = new System.Drawing.Point(412, 5);
+            this.lblShowEntity.Location = new System.Drawing.Point(141, 2);
             this.lblShowEntity.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.lblShowEntity.Name = "lblShowEntity";
             this.lblShowEntity.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
@@ -552,30 +616,12 @@ namespace CMS.Presentation.Modules.KMS
             this.lblShowEntity.TabIndex = 10;
             this.lblShowEntity.Text = "xx";
             // 
-            // lblTitle
-            // 
-            this.lblTitle.AutoSize = true;
-            this.lblTitle.Dock = System.Windows.Forms.DockStyle.Left;
-            this.lblTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
-            this.lblTitle.Location = new System.Drawing.Point(0, 5);
-            this.lblTitle.Margin = new System.Windows.Forms.Padding(0);
-            this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(93, 25);
-            this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "ชื่อบทความ";
-            this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.lblTitle.Click += new System.EventHandler(this.OnCardClick);
-            this.lblTitle.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
-            this.lblTitle.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
-            // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Dock = System.Windows.Forms.DockStyle.Right;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.label2.Location = new System.Drawing.Point(454, 5);
+            this.label2.Location = new System.Drawing.Point(183, 2);
             this.label2.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(101, 25);
@@ -585,10 +631,9 @@ namespace CMS.Presentation.Modules.KMS
             // lblPublishedDate
             // 
             this.lblPublishedDate.AutoSize = true;
-            this.lblPublishedDate.Dock = System.Windows.Forms.DockStyle.Right;
             this.lblPublishedDate.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblPublishedDate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblPublishedDate.Location = new System.Drawing.Point(555, 5);
+            this.lblPublishedDate.Location = new System.Drawing.Point(284, 0);
             this.lblPublishedDate.Margin = new System.Windows.Forms.Padding(0);
             this.lblPublishedDate.Name = "lblPublishedDate";
             this.lblPublishedDate.Padding = new System.Windows.Forms.Padding(0, 0, 10, 0);
@@ -600,10 +645,9 @@ namespace CMS.Presentation.Modules.KMS
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Dock = System.Windows.Forms.DockStyle.Right;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.label3.Location = new System.Drawing.Point(661, 5);
+            this.label3.Location = new System.Drawing.Point(390, 2);
             this.label3.Margin = new System.Windows.Forms.Padding(0, 2, 0, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(115, 25);
@@ -613,10 +657,9 @@ namespace CMS.Presentation.Modules.KMS
             // lblExpiryDate
             // 
             this.lblExpiryDate.AutoSize = true;
-            this.lblExpiryDate.Dock = System.Windows.Forms.DockStyle.Right;
             this.lblExpiryDate.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblExpiryDate.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(100)))), ((int)(((byte)(130)))));
-            this.lblExpiryDate.Location = new System.Drawing.Point(776, 5);
+            this.lblExpiryDate.Location = new System.Drawing.Point(505, 0);
             this.lblExpiryDate.Margin = new System.Windows.Forms.Padding(0);
             this.lblExpiryDate.Name = "lblExpiryDate";
             this.lblExpiryDate.Size = new System.Drawing.Size(65, 25);
@@ -635,21 +678,26 @@ namespace CMS.Presentation.Modules.KMS
             this.Cursor = System.Windows.Forms.Cursors.Hand;
             this.Margin = new System.Windows.Forms.Padding(0, 0, 0, 5);
             this.Name = "ArticleCardControl";
-            this.Size = new System.Drawing.Size(873, 134);
+            this.Size = new System.Drawing.Size(888, 172);
             this.Click += new System.EventHandler(this.OnCardClick);
             this.MouseEnter += new System.EventHandler(this.OnCardMouseEnter);
             this.MouseLeave += new System.EventHandler(this.OnCardMouseLeave);
             this.pnlContent.ResumeLayout(false);
+            this.pnlContent.PerformLayout();
             this.panelFooter.ResumeLayout(false);
-            this.panelButton.ResumeLayout(false);
             this.pnlStats.ResumeLayout(false);
             this.pnlStats.PerformLayout();
+            this.panelButton.ResumeLayout(false);
             this.pnlActions.ResumeLayout(false);
             this.panelArticelItem.ResumeLayout(false);
+            this.flowLayoutPanel1.ResumeLayout(false);
+            this.flowLayoutPanel1.PerformLayout();
             this.pnlMeta.ResumeLayout(false);
             this.pnlMeta.PerformLayout();
             this.pHeaderRight.ResumeLayout(false);
             this.pHeaderRight.PerformLayout();
+            this.pnlHeaderMeta.ResumeLayout(false);
+            this.pnlHeaderMeta.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -683,11 +731,14 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel panelButton;
         private System.Windows.Forms.Label lblContent;
         private System.Windows.Forms.Panel pHeaderRight;
+        private System.Windows.Forms.FlowLayoutPanel pnlHeaderMeta;
         private System.Windows.Forms.Label lblExpiryDate;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label lblPublishedDate;
         private System.Windows.Forms.Label lblShowEntity;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label lblTitleCategory;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
     }
 }

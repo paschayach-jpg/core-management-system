@@ -176,12 +176,12 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 const string sql = @"
                     INSERT INTO KMS.t_KBArticle
-                        (ArticleCode, Title, ContentHTML, Summary, CategoryID, ArticleType,
-                         Status, CurrentVersion, PublishedDate, ExpiryDate, ReviewDueDate, IsOfficialPolicy,
+                        (ArticleCode, Title, ContentHTML, Summary, TitleCategory, CategoryID, ArticleType,
+                         Status, CurrentVersion, PublishedDate, EffectiveDate, ExpiryDate, ReviewDueDate, IsOfficialPolicy,
                          Tags, ConfidentialityLevel, CreatedBy, CreatedDate, ViewCount, LikeCount)
                     VALUES
-                        (@ArticleCode, @Title, @ContentHTML, @Summary, @CategoryID, @ArticleType,
-                         @Status, 1, @EffectiveDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
+                        (@ArticleCode, @Title, @ContentHTML, @Summary, @TitleCategory, @CategoryID, @ArticleType,
+                         @Status, 1, @PublishedDate, @EffectiveDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
                          @Tags, @ConfidentialityLevel, @CreatedBy, GETDATE(), 0, 0);
                     SELECT SCOPE_IDENTITY();";
                 using (var cmd = new SqlCommand(sql, conn))
@@ -202,10 +202,12 @@ namespace CMS.Data.Repositories
                         Title                = @Title,
                         ContentHTML          = @ContentHTML,
                         Summary              = @Summary,
+                        TitleCategory        = @TitleCategory,
                         CategoryID           = @CategoryID,
                         ArticleType          = @ArticleType,
                         Status               = @Status,
-                        PublishedDate        = @EffectiveDate,
+                        PublishedDate        = @PublishedDate,
+                        EffectiveDate        = @EffectiveDate,
                         ExpiryDate           = @ExpiryDate,
                         ReviewDueDate        = @ReviewDueDate,
                         IsOfficialPolicy     = @IsOfficialPolicy,
@@ -290,6 +292,95 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public bool ExistsByCode(string articleCode)
+        {
+            if (string.IsNullOrWhiteSpace(articleCode)) return false;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT TOP 1 1
+                    FROM   KMS.t_KBArticle
+                    WHERE  ArticleCode = @ArticleCode";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ArticleCode", articleCode);
+                    return cmd.ExecuteScalar() != null;
+                }
+            }
+        }
+
+        public KBArticle GetByCode(string articleCode)
+        {
+            if (string.IsNullOrWhiteSpace(articleCode)) return null;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT TOP 1 ArticleID, ArticleCode, TitleCategory
+                    FROM   KMS.t_KBArticle
+                    WHERE  ArticleCode = @ArticleCode
+                      AND  (IsDelete = 0 OR IsDelete IS NULL)";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ArticleCode", articleCode);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        if (r.Read())
+                        {
+                            return new KBArticle
+                            {
+                                ArticleID     = r.GetInt32(r.GetOrdinal("ArticleID")),
+                                ArticleCode   = r["ArticleCode"]   as string,
+                                TitleCategory = r["TitleCategory"] as string,
+                            };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        public IEnumerable<KBArticle> FindByNormalizedTitleCategory(string normalizedKey)
+        {
+            var results = new List<KBArticle>();
+            if (string.IsNullOrWhiteSpace(normalizedKey)) return results;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                // ตัด space / tab / CR / LF / non-breaking space ออกจาก TitleCategory ก่อนเทียบ
+                const string sql = @"
+                    SELECT ArticleID, ArticleCode, TitleCategory
+                    FROM   KMS.t_KBArticle
+                    WHERE  (IsDelete = 0 OR IsDelete IS NULL)
+                      AND  REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+                               ISNULL(TitleCategory, N''),
+                               N' ', N''), NCHAR(9), N''), NCHAR(10), N''), NCHAR(13), N''), NCHAR(160), N'')
+                           = @Key
+                    ORDER BY ArticleCode ASC";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Key", normalizedKey);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        while (r.Read())
+                        {
+                            results.Add(new KBArticle
+                            {
+                                ArticleID     = r.GetInt32(r.GetOrdinal("ArticleID")),
+                                ArticleCode   = r["ArticleCode"]   as string,
+                                TitleCategory = r["TitleCategory"] as string,
+                            });
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+
         // ── Helpers ──────────────────────────────────────────────────────────
 
         private static bool HasColumn(IDataReader r, string name)
@@ -305,9 +396,11 @@ namespace CMS.Data.Repositories
             cmd.Parameters.AddWithValue("@Title",            a.Title            ?? string.Empty);
             cmd.Parameters.AddWithValue("@ContentHTML",      (object)a.ContentHTML      ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Summary",          (object)a.Summary          ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@TitleCategory",    (object)a.TitleCategory    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CategoryID",       a.CategoryID);
             cmd.Parameters.AddWithValue("@ArticleType",      a.ArticleType);
             cmd.Parameters.AddWithValue("@Status",           a.Status);
+            cmd.Parameters.AddWithValue("@PublishedDate",    (object)a.PublishedDate    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@EffectiveDate",    (object)a.EffectiveDate    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ExpiryDate",       (object)a.ExpiryDate       ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ReviewDueDate",    (object)a.ReviewDueDate    ?? DBNull.Value);
@@ -326,12 +419,13 @@ namespace CMS.Data.Repositories
                 Title            = r["Title"]         as string,
                 ContentHTML      = r["ContentHTML"]   as string,
                 Summary          = r["Summary"]       as string,
+                TitleCategory    = r["TitleCategory"] as string,
                 CategoryID       = r.GetInt32(r.GetOrdinal("CategoryID")),
                 ArticleType      = r.IsDBNull(r.GetOrdinal("ArticleType"))  ? (byte)0 : r.GetByte(r.GetOrdinal("ArticleType")),
                 Status           = r.IsDBNull(r.GetOrdinal("Status"))       ? (byte)1 : r.GetByte(r.GetOrdinal("Status")),
                 CurrentVersion   = r.IsDBNull(r.GetOrdinal("CurrentVersion")) ? 1 : r.GetInt32(r.GetOrdinal("CurrentVersion")),
                 PublishedDate    = r.IsDBNull(r.GetOrdinal("PublishedDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("PublishedDate")),
-                EffectiveDate    = r.IsDBNull(r.GetOrdinal("PublishedDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("PublishedDate")),
+                EffectiveDate    = r.IsDBNull(r.GetOrdinal("EffectiveDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("EffectiveDate")),
                 ExpiryDate       = r.IsDBNull(r.GetOrdinal("ExpiryDate"))     ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("ExpiryDate")),
                 ReviewDueDate    = r.IsDBNull(r.GetOrdinal("ReviewDueDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("ReviewDueDate")),
                 ViewCount        = r.IsDBNull(r.GetOrdinal("ViewCount"))   ? 0 : r.GetInt32(r.GetOrdinal("ViewCount")),

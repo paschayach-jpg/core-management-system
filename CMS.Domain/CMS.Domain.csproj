@@ -86,6 +86,8 @@
     <Compile Include="Models\KBVersion.cs" />
     <Compile Include="Models\KBArticleLink.cs" />
     <Compile Include="Models\KBArticleAttachment.cs" />
+    <Compile Include="Models\KBLinkedFolder.cs" />
+    <Compile Include="Models\KBCategoryTreeData.cs" />
     <Compile Include="Models\KBImportValidationResult.cs" />
     <Compile Include="Models\MenuItem.cs" />
     <Compile Include="Models\KBDashboardStats.cs" />

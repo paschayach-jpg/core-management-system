@@ -61,6 +61,9 @@ namespace CMS.Services.Interfaces
         /// <summary>ดึง links ของบทความ optionally กรองด้วย entityType</summary>
         IEnumerable<KBArticleLink> GetArticleLinks(int articleId, byte? entityType = null);
 
+        /// <summary>ดึง links ทั้งหมดในระบบสำหรับ entityType ที่ระบุ (ไม่กรอง ArticleID) ใช้สร้าง in-memory link graph</summary>
+        IEnumerable<KBArticleLink> GetAllLinksByType(byte entityType);
+
         /// <summary>ลบ links ทั้งหมดแล้ว insert รายการใหม่ทั้งหมด (atomic replace)</summary>
         void SaveArticleLinks(int articleId, IEnumerable<KBArticleLink> links);
 

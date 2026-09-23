@@ -145,6 +145,7 @@
     <Compile Include="KBExcelReadException.cs" />
     <Compile Include="KBExcelReader.cs" />
     <Compile Include="KBImportProcessor.cs" />
+    <Compile Include="LawFileDownloader.cs" />
     <Compile Include="Interfaces\IWorkflowService.cs" />
     <Compile Include="Interfaces\IWorkflowTemplateService.cs" />
     <Compile Include="Interfaces\ISLACalculator.cs" />

@@ -13,6 +13,7 @@ namespace CMS.Domain.Models
         public int    TotalRecords   { get; set; }
         public int    ValidRecords   { get; set; }
         public int    WarningRecords { get; set; }
+        public int    SkippedRecords { get; set; }
         public int    ErrorRecords   { get; set; }
 
         /// <summary>True when used as an import-complete summary and the import succeeded.</summary>
@@ -24,13 +25,13 @@ namespace CMS.Domain.Models
         public IList<KBImportRow> Rows { get; set; }
 
         /// <summary>
-        /// Rows excluded before the import attempt — pre-validation errors and
-        /// warn-skipped rows (when OptSkipWarning is true).
+        /// Rows excluded before the import attempt — pre-validation errors and rows skipped
+        /// (blank ArticleCode / already exists / duplicate within the file).
         /// </summary>
         public IList<KBImportRow> SkippedRows { get; set; }
 
         /// <summary>
-        /// Rows that were attempted during import but failed (category resolution or DB insert).
+        /// Rows that were attempted during import but failed (DB insert failure).
         /// Does NOT include rows skipped before the import started.
         /// </summary>
         public IList<KBImportRow> ImportFailedRows { get; set; }
@@ -45,51 +46,79 @@ namespace CMS.Domain.Models
 
     /// <summary>
     /// Represents one row of the imported Excel file together with its validation status.
+    /// The KB Import Wizard accepts two Excel layouts, auto-detected by
+    /// <see cref="CMS.Services.KBExcelReader"/> from the header row (see <see cref="RowKind"/>):
+    ///
+    /// <b>"Law"</b> — 20-column "law-matrix" layout (1 row = 1 มาตรา). Column A ("Code รวม") is
+    /// 22 or 27 digits: the first 22 are the law-section <c>ArticleCode</c> and the last 5 are a
+    /// child-document sequence ("00000" = the law section itself, processed here; anything else
+    /// is a คำสั่ง/ประกาศ child row, handled as a Order row from a different file instead).
+    ///
+    /// <b>"Order"</b> — 12-column "ประกาศ/คำสั่ง" layout (1 row = 1 order/announcement, possibly
+    /// referencing several parent law sections via <see cref="ParentCodes"/>). ArticleCode is
+    /// computed as the first parent code + a 1-digit type ("1"=ประกาศ, "2"=คำสั่ง) + a 4-digit
+    /// document sequence.
+    ///
+    /// Raw fields below are grouped by which layout populates them; fields under "shared" are
+    /// populated by both layouts, from different source columns (see <see cref="CMS.Services.KBExcelReader"/>).
     /// </summary>
     public class KBImportRow
     {
         public int    RowNumber   { get; set; }
-        public string Title       { get; set; }
-        public string ArticleType { get; set; }
-        public string Category    { get; set; }
-        public string CrafLevel   { get; set; }
-        public string Tags        { get; set; }
-        public string ExpiryDate  { get; set; }
-        /// <summary>"Valid", "Warn", or "Error"</summary>
+
+        /// <summary>"Valid", "Skip", or "Error"</summary>
         public string Status      { get; set; }
-        /// <summary>Optional human-readable note explaining a Warn or Error status.</summary>
+        /// <summary>Human-readable note explaining a Skip or Error status.</summary>
         public string StatusNote  { get; set; }
 
-        // ── Raw parsed values from Excel ───────────────────────────────
-        public string ColA  { get; set; }   // ParentCategory code segment
-        public string ColB  { get; set; }   // SubCategory code segment
-        public string ColC  { get; set; }   // CategoryName
-        public string ColD  { get; set; }   // code segment 3
-        public string ColE  { get; set; }   // title / summary segment 1
-        public string ColF  { get; set; }   // code segment 4
-        public string ColG  { get; set; }   // summary segment 2
-        public string ColH  { get; set; }   // code segment 5
-        public string ColI  { get; set; }   // summary segment 3
-        public string ColJ  { get; set; }   // code segment 6
-        public string ColK  { get; set; }   // summary segment 4
-        public string ColL  { get; set; }   // code segment 7
-        public string ColM  { get; set; }   // summary segment 5
-        public string ColN  { get; set; }   // code segment 8
-        public string ColO  { get; set; }   // summary segment 6
-        public string ColP  { get; set; }   // code segment 9
-        public string ColQ  { get; set; }   // summary segment 7
-        public string ColR  { get; set; }   // PublishedDate raw text
-        public string ColS  { get; set; }   // ExpiryDate raw text
-        public string ColT  { get; set; }   // ContentHTML
-        public string ColU  { get; set; }   // คณะอนุกรรมการ
-        public string ColV  { get; set; }   // ฝ่ายที่รับผิดชอบ
-        public string ColAA  { get; set; }   // ฝ่ายที่รับผิดชอบ
+        /// <summary>"Law" or "Order" — which Excel layout this row came from (detected from the header row).</summary>
+        public string RowKind     { get; set; }
+
+        // ── Raw values — Law layout only ─────────────────────────────────────
+        public string ColA  { get; set; }   // Code รวม (22 or 27 digits) → ArticleCode source
+        public string ColC  { get; set; }   // มาตรา → Title/Tags source
+
+        // ── Raw values — Order layout only ───────────────────────────────────
+        public string OrderTypeDigit      { get; set; }   // ประเภทลูก — "1"=ประกาศ, "2"=คำสั่ง
+        public string OrderDocNumber      { get; set; }   // เอกสารลูก — เลขที่เอกสาร
+        public string AttachmentFileName  { get; set; }   // ชื่อไฟล์ (ข้อความในเซลล์)
+        public string AttachmentUrl       { get; set; }   // URL จริง (hyperlink ของเซลล์)
+        public string SectionsRaw         { get; set; }   // กฎหมายอ้างอิง (ข้อความ ใช้แสดงผลเท่านั้น)
+        public IList<string> ParentCodes      { get; set; }   // Code กฎหมายแม่ (1 รายการต่อบรรทัดในเซลล์)
+        public IList<string> FinalCodeChoices { get; set; }   // ParentCodes[i] + OrderTypeDigit + OrderDocNumber
+        public IList<int>    ResolvedParentArticleIds { get; set; }   // ArticleID ของแต่ละ ParentCodes ที่พบในระบบ (ตั้งค่าโดย ValidateRows)
+
+        // ── Raw values — shared meaning, different source column per RowKind ─
+        public string RawTitle         { get; set; }   // Order: ชื่อ. (Law derives Title from ColC instead.)
+        public string RawTitleCategory { get; set; }   // Law: กฎหมายอ้างอิง. Order: คำสั่งที่.
+        public string RawSummary       { get; set; }   // Law: ชื่อ. Order: ประเด็นสำคัญ.
+        public string RawContent       { get; set; }   // Law: บัญญัติไว้ว่า คำสั่งที่เกี่ยวข้อง. Order: บัญญัติไว้ว่า.
+        public string RawPublishedDate { get; set; }   // วันที่ประกาศ (raw text)
+        public string RawEffectiveDate { get; set; }   // วันที่มีผลบังคับใช้ (raw text)
+
+        public DateTime? PublishedDateParsed { get; set; }
+        public DateTime? EffectiveDateParsed { get; set; }
 
         // ── Computed / resolved fields (set by processor) ───────────────────
-        public string    ArticleCode         { get; set; }
-        public string    Summary             { get; set; }
-        public DateTime? PublishedDateParsed { get; set; }
-        public DateTime? ExpiryDateParsed    { get; set; }
-        public int       ResolvedCategoryID  { get; set; }   // sub-category CategoryID
+        public string ArticleCode        { get; set; }   // Law: first 22 chars of ColA. Order: FinalCodeChoices[0].
+        public string Title              { get; set; }
+        public string Tags               { get; set; }
+        public string Summary            { get; set; }
+        public string TitleCategory      { get; set; }
+        public int    ResolvedCategoryID { get; set; }
+        /// <summary>Display label for the resolved CategoryID: "มาตรา" (Law), "ประกาศ" or "คำสั่ง" (Order).</summary>
+        public string DocumentTypeLabel  { get; set; }
+
+        // ── Import-time results (Order only) ─────────────────────────────────
+        public int  ImportedArticleId { get; set; }
+        public int? UploadedFileId    { get; set; }
+
+        public KBImportRow()
+        {
+            Status                    = "Valid";
+            ParentCodes               = new List<string>();
+            FinalCodeChoices          = new List<string>();
+            ResolvedParentArticleIds  = new List<int>();
+        }
     }
 }
