@@ -96,8 +96,6 @@
     <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Resources\BRD2.md" />
-    <EmbeddedResource Include="template.xlsx" />
-    <EmbeddedResource Include="template_order.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <!-- Root: Shell -->
