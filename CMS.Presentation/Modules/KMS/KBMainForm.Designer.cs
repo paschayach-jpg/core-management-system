@@ -842,7 +842,6 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel           pnlCategoryHost;  // created in KBMainForm.cs constructor
         private System.Windows.Forms.Panel           pnlEditorHost;    // created in KBMainForm.cs constructor
         private System.Windows.Forms.Panel           pnlImportHost;    // created in KBMainForm.cs constructor
-        private System.Windows.Forms.Panel           pnlOrderImportHost; // created in KBMainForm.cs constructor
         private System.Windows.Forms.Panel           panelMainRight;
         private System.Windows.Forms.Panel           pnlLeftHeader;
         private System.Windows.Forms.Label           lblCategoryHeader;

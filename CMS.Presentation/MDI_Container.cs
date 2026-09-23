@@ -1762,10 +1762,8 @@ namespace CMS.Presentation
                 });
 
             // importWizardFactory — สร้าง KBImportWizardForm พร้อม presenter สำหรับฝังใน KBMainForm
+            // (รองรับทั้งไฟล์กฎหมาย/มาตรา และไฟล์ประกาศ/คำสั่ง — ตรวจจับอัตโนมัติจากหัวตาราง)
             form.AttachImportWizardFactory(() => CreateKBImportWizardForm());
-
-            // orderImportWizardFactory — สร้าง KBOrderImportWizardForm (ประกาศ/คำสั่ง) สำหรับฝังใน KBMainForm
-            form.AttachOrderImportWizardFactory(() => CreateKBOrderImportWizardForm());
 
             // dashboardFactory — สร้าง KBDashboardForm พร้อม presenter
             form.AttachDashboardFactory(() =>
@@ -1804,42 +1802,28 @@ namespace CMS.Presentation
         /// <summary>
         /// Composition-root helper: สร้าง KBImportWizardForm พร้อม presenter ครบชุด
         /// โดยไม่ ShowDialog — ส่งคืนฟอร์มพร้อมฝังใน panel ของ KBMainForm
+        /// รองรับทั้งไฟล์กฎหมาย/มาตรา และไฟล์ประกาศ/คำสั่ง (KBExcelReader ตรวจจับ layout
+        /// จากหัวตารางอัตโนมัติ, KBImportProcessor แยก logic ตาม RowKind ภายใน)
         /// </summary>
         private KBImportWizardForm CreateKBImportWizardForm()
-        {
-            var wizard          = new KBImportWizardForm(_currentUser);
-            var excelReader     = new CMS.Services.KBExcelReader();
-            var processor       = new CMS.Services.KBImportProcessor(
-                _kbCategoryRepository, _kbArticleRepository, _kbArticleLinkRepository, _kbVersionRepository,
-                _subCommitteeRepository, _hrDivisionRepository, _hrDepartmentRepository);
-            var wizardPresenter = new KBImportWizardController(
-                wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
-            wizard.AttachPresenter(wizardPresenter);
-            return wizard;
-        }
-
-        /// <summary>
-        /// Composition-root helper: สร้าง KBOrderImportWizardForm (ประกาศ/คำสั่ง) พร้อม presenter ครบชุด
-        /// โดยไม่ ShowDialog — ส่งคืนฟอร์มพร้อมฝังใน panel ของ KBMainForm
-        /// </summary>
-        private CMS.Presentation.Modules.KMS.KBOrderImportWizardForm CreateKBOrderImportWizardForm()
         {
             if (_fileService == null)
             {
                 MessageBox.Show(
-                    "ไม่พบ File Service — ไม่สามารถเปิดหน้านำเข้า ประกาศ/คำสั่ง ได้",
+                    "ไม่พบ File Service — ไม่สามารถเปิดหน้านำเข้าข้อมูลได้",
                     "อยู่ระหว่างการพัฒนา", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return null;
             }
 
-            var wizard    = new CMS.Presentation.Modules.KMS.KBOrderImportWizardForm(_currentUser);
-            var reader    = new CMS.Services.KBOrderExcelReader();
-            var downloader = new CMS.Services.LawFileDownloader();
-            var processor = new CMS.Services.KBOrderImportProcessor(
-                _kbArticleRepository, _kbArticleLinkRepository, _kbArticleService, _fileService, downloader);
-            var presenter = new CMS.Controllers.KMS.KB.KBOrderImportWizardController(
-                wizard, reader, processor, _currentUser);
-            wizard.AttachPresenter(presenter);
+            var wizard          = new KBImportWizardForm(_currentUser);
+            var excelReader     = new CMS.Services.KBExcelReader();
+            var downloader      = new CMS.Services.LawFileDownloader();
+            var processor       = new CMS.Services.KBImportProcessor(
+                _kbArticleRepository, _kbVersionRepository, _kbArticleLinkRepository,
+                _kbArticleService, _fileService, downloader);
+            var wizardPresenter = new KBImportWizardController(
+                wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
+            wizard.AttachPresenter(wizardPresenter);
             return wizard;
         }
 

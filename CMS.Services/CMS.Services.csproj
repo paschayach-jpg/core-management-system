@@ -115,8 +115,6 @@
     <Compile Include="Interfaces\IKBArticleService.cs" />
     <Compile Include="Interfaces\IKBExcelReaderService.cs" />
     <Compile Include="Interfaces\IKBImportProcessorService.cs" />
-    <Compile Include="Interfaces\IKBOrderExcelReaderService.cs" />
-    <Compile Include="Interfaces\IKBOrderImportProcessorService.cs" />
     <Compile Include="Interfaces\IKBDashboardService.cs" />
     <Compile Include="DTOs\ShareAccessResult.cs" />
     <Compile Include="DTOs\CreateExternalShareRequest.cs" />
@@ -147,8 +145,6 @@
     <Compile Include="KBExcelReadException.cs" />
     <Compile Include="KBExcelReader.cs" />
     <Compile Include="KBImportProcessor.cs" />
-    <Compile Include="KBOrderExcelReader.cs" />
-    <Compile Include="KBOrderImportProcessor.cs" />
     <Compile Include="LawFileDownloader.cs" />
     <Compile Include="Interfaces\IWorkflowService.cs" />
     <Compile Include="Interfaces\IWorkflowTemplateService.cs" />

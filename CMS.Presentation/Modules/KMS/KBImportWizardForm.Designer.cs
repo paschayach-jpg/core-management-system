@@ -81,13 +81,6 @@
             this.lblGridPage = new System.Windows.Forms.Label();
             this.btnGridPrev = new System.Windows.Forms.Button();
             this.btnGridNext = new System.Windows.Forms.Button();
-            this.pnlActStep2 = new System.Windows.Forms.Panel();
-            this.pnlProgress = new System.Windows.Forms.Panel();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
-            this.lblProgressText = new System.Windows.Forms.Label();
-            this.btnCancel2 = new System.Windows.Forms.Button();
-            this.btnBack = new System.Windows.Forms.Button();
-            this.btnImport = new System.Windows.Forms.Button();
             this.pnlImportOptions = new System.Windows.Forms.Panel();
             this.chkSkipWarning = new System.Windows.Forms.CheckBox();
             this.chkAutoCategory = new System.Windows.Forms.CheckBox();
@@ -100,6 +93,9 @@
             this.pnlPillError = new System.Windows.Forms.Panel();
             this.lblErrorCount = new System.Windows.Forms.Label();
             this.lblErrorLabel = new System.Windows.Forms.Label();
+            this.pnlPillSkip = new System.Windows.Forms.Panel();
+            this.lblSkipCount = new System.Windows.Forms.Label();
+            this.lblSkipLabel = new System.Windows.Forms.Label();
             this.pnlPillValid = new System.Windows.Forms.Panel();
             this.lblValidCount = new System.Windows.Forms.Label();
             this.lblValidLabel = new System.Windows.Forms.Label();
@@ -108,36 +104,13 @@
             this.lblTotalLabel = new System.Windows.Forms.Label();
             this.pnlPreviewHdr = new System.Windows.Forms.Panel();
             this.lblPreviewHdr = new System.Windows.Forms.Label();
-            this.pnlValidation = new System.Windows.Forms.Panel();
-            this.pnlValidationBody = new System.Windows.Forms.Panel();
-            this.pnlValidationItems = new System.Windows.Forms.Panel();
-            this.pnlValItem6 = new System.Windows.Forms.Panel();
-            this.pnlValItem6Stripe = new System.Windows.Forms.Panel();
-            this.lblValItem6Icon = new System.Windows.Forms.Label();
-            this.lblValItem6Title = new System.Windows.Forms.Label();
-            this.lblValItem6Detail = new System.Windows.Forms.Label();
-            this.pnlValItem5 = new System.Windows.Forms.Panel();
-            this.pnlValItem5Stripe = new System.Windows.Forms.Panel();
-            this.lblValItem5Icon = new System.Windows.Forms.Label();
-            this.lblValItem5Title = new System.Windows.Forms.Label();
-            this.lblValItem5Detail = new System.Windows.Forms.Label();
-            this.pnlValItem3 = new System.Windows.Forms.Panel();
-            this.pnlValItem3Stripe = new System.Windows.Forms.Panel();
-            this.lblValItem3Icon = new System.Windows.Forms.Label();
-            this.lblValItem3Title = new System.Windows.Forms.Label();
-            this.lblValItem3Detail = new System.Windows.Forms.Label();
-            this.pnlValItem2 = new System.Windows.Forms.Panel();
-            this.pnlValItem2Stripe = new System.Windows.Forms.Panel();
-            this.lblValItem2Icon = new System.Windows.Forms.Label();
-            this.lblValItem2Title = new System.Windows.Forms.Label();
-            this.lblValItem2Detail = new System.Windows.Forms.Label();
-            this.pnlValItem1 = new System.Windows.Forms.Panel();
-            this.pnlValItem1Stripe = new System.Windows.Forms.Panel();
-            this.lblValItem1Icon = new System.Windows.Forms.Label();
-            this.lblValItem1Title = new System.Windows.Forms.Label();
-            this.lblValItem1Detail = new System.Windows.Forms.Label();
-            this.pnlValidationHdr = new System.Windows.Forms.Panel();
-            this.lblValidationHdr = new System.Windows.Forms.Label();
+            this.pnlActStep2 = new System.Windows.Forms.Panel();
+            this.btnImport = new System.Windows.Forms.Button();
+            this.pnlProgress = new System.Windows.Forms.Panel();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.lblProgressText = new System.Windows.Forms.Label();
+            this.btnCancel2 = new System.Windows.Forms.Button();
+            this.btnBack = new System.Windows.Forms.Button();
             this.pnlStep1 = new System.Windows.Forms.Panel();
             this.pnlStep1Inner = new System.Windows.Forms.Panel();
             this.pnlColumnRef = new System.Windows.Forms.Panel();
@@ -166,7 +139,6 @@
             this.lblUploadText = new System.Windows.Forms.Label();
             this.lblUploadIcon = new System.Windows.Forms.Label();
             this.pnlUploadSectionHdr = new System.Windows.Forms.Panel();
-            this.lblFileHint = new System.Windows.Forms.Label();
             this.lblUploadSectionHdr = new System.Windows.Forms.Label();
             this.pnlActStep1 = new System.Windows.Forms.Panel();
             this.pnlTemplateRow = new System.Windows.Forms.Panel();
@@ -204,23 +176,15 @@
             this.pnlPreviewGrid.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvPreview)).BeginInit();
             this.pnlGridPager.SuspendLayout();
-            this.pnlActStep2.SuspendLayout();
-            this.pnlProgress.SuspendLayout();
             this.pnlImportOptions.SuspendLayout();
             this.pnlSummaryPills.SuspendLayout();
             this.pnlPillError.SuspendLayout();
+            this.pnlPillSkip.SuspendLayout();
             this.pnlPillValid.SuspendLayout();
             this.pnlPillTotal.SuspendLayout();
             this.pnlPreviewHdr.SuspendLayout();
-            this.pnlValidation.SuspendLayout();
-            this.pnlValidationBody.SuspendLayout();
-            this.pnlValidationItems.SuspendLayout();
-            this.pnlValItem6.SuspendLayout();
-            this.pnlValItem5.SuspendLayout();
-            this.pnlValItem3.SuspendLayout();
-            this.pnlValItem2.SuspendLayout();
-            this.pnlValItem1.SuspendLayout();
-            this.pnlValidationHdr.SuspendLayout();
+            this.pnlActStep2.SuspendLayout();
+            this.pnlProgress.SuspendLayout();
             this.pnlStep1.SuspendLayout();
             this.pnlStep1Inner.SuspendLayout();
             this.pnlColumnRef.SuspendLayout();
@@ -245,10 +209,10 @@
             this.pnlErrorDetail.Controls.Add(this.pnlErrPager);
             this.pnlErrorDetail.Controls.Add(this.lblErrorDetailHdr);
             this.pnlErrorDetail.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlErrorDetail.Location = new System.Drawing.Point(20, 297);
+            this.pnlErrorDetail.Location = new System.Drawing.Point(20, 226);
             this.pnlErrorDetail.Name = "pnlErrorDetail";
             this.pnlErrorDetail.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.pnlErrorDetail.Size = new System.Drawing.Size(1394, 122);
+            this.pnlErrorDetail.Size = new System.Drawing.Size(1394, 193);
             this.pnlErrorDetail.TabIndex = 10;
             this.pnlErrorDetail.Visible = false;
             // 
@@ -292,7 +256,7 @@
             this.dgvFailedRows.RowHeadersWidth = 51;
             this.dgvFailedRows.RowTemplate.Height = 26;
             this.dgvFailedRows.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvFailedRows.Size = new System.Drawing.Size(1394, 44);
+            this.dgvFailedRows.Size = new System.Drawing.Size(1394, 115);
             this.dgvFailedRows.TabIndex = 0;
             // 
             // colFRow
@@ -313,27 +277,30 @@
             // 
             // colFCat
             // 
-            this.colFCat.HeaderText = "หมวดหมู่ (A>B)";
+            this.colFCat.HeaderText = "ประเภท";
             this.colFCat.MinimumWidth = 6;
             this.colFCat.Name = "colFCat";
             this.colFCat.ReadOnly = true;
-            this.colFCat.Width = 163;
+            this.colFCat.Width = 97;
             // 
             // colFTitle
             // 
-            this.colFTitle.HeaderText = "ชื่อบทความ (E)";
+            this.colFTitle.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
+            this.colFTitle.HeaderText = "ชื่อ / Tags";
             this.colFTitle.MinimumWidth = 6;
             this.colFTitle.Name = "colFTitle";
             this.colFTitle.ReadOnly = true;
-            this.colFTitle.Width = 155;
+            this.colFTitle.Width = 120;
             // 
             // colFRaw
             // 
+            this.colFRaw.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.None;
             this.colFRaw.HeaderText = "ข้อมูลที่เกี่ยวข้อง";
             this.colFRaw.MinimumWidth = 6;
             this.colFRaw.Name = "colFRaw";
             this.colFRaw.ReadOnly = true;
-            this.colFRaw.Width = 164;
+            this.colFRaw.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.colFRaw.Width = 125;
             // 
             // colFReason
             // 
@@ -350,7 +317,7 @@
             this.pnlErrPager.Controls.Add(this.btnErrNext);
             this.pnlErrPager.Controls.Add(this.btnErrPrev);
             this.pnlErrPager.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlErrPager.Location = new System.Drawing.Point(0, 86);
+            this.pnlErrPager.Location = new System.Drawing.Point(0, 157);
             this.pnlErrPager.Name = "pnlErrPager";
             this.pnlErrPager.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
             this.pnlErrPager.Size = new System.Drawing.Size(1394, 36);
@@ -596,7 +563,7 @@
             this.pnlStep3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep3.Controls.Add(this.pnlStep3Inner);
             this.pnlStep3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep3.Location = new System.Drawing.Point(0, 1438);
+            this.pnlStep3.Location = new System.Drawing.Point(0, 1418);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Padding = new System.Windows.Forms.Padding(60, 20, 60, 20);
             this.pnlStep3.Size = new System.Drawing.Size(1554, 569);
@@ -680,7 +647,7 @@
             this.btnImportNew.ForeColor = System.Drawing.Color.White;
             this.btnImportNew.Location = new System.Drawing.Point(148, 9);
             this.btnImportNew.Name = "btnImportNew";
-            this.btnImportNew.Size = new System.Drawing.Size(170, 32);
+            this.btnImportNew.Size = new System.Drawing.Size(252, 32);
             this.btnImportNew.TabIndex = 1;
             this.btnImportNew.Text = "📥  นำเข้าไฟล์ใหม่";
             this.btnImportNew.UseVisualStyleBackColor = false;
@@ -693,9 +660,9 @@
             this.pnlCompleteStats.Controls.Add(this.pnlStatSuccess);
             this.pnlCompleteStats.Controls.Add(this.pnlStatTotal);
             this.pnlCompleteStats.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlCompleteStats.Location = new System.Drawing.Point(20, 140);
+            this.pnlCompleteStats.Location = new System.Drawing.Point(20, 114);
             this.pnlCompleteStats.Name = "pnlCompleteStats";
-            this.pnlCompleteStats.Size = new System.Drawing.Size(1394, 157);
+            this.pnlCompleteStats.Size = new System.Drawing.Size(1394, 112);
             this.pnlCompleteStats.TabIndex = 0;
             // 
             // pnlStatSkip
@@ -707,7 +674,7 @@
             this.pnlStatSkip.Location = new System.Drawing.Point(674, 0);
             this.pnlStatSkip.Name = "pnlStatSkip";
             this.pnlStatSkip.Padding = new System.Windows.Forms.Padding(12, 6, 12, 6);
-            this.pnlStatSkip.Size = new System.Drawing.Size(342, 157);
+            this.pnlStatSkip.Size = new System.Drawing.Size(342, 112);
             this.pnlStatSkip.TabIndex = 3;
             // 
             // lblCompleteSkipNum
@@ -715,21 +682,21 @@
             this.lblCompleteSkipNum.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblCompleteSkipNum.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.lblCompleteSkipNum.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblCompleteSkipNum.Location = new System.Drawing.Point(12, 6);
+            this.lblCompleteSkipNum.Location = new System.Drawing.Point(12, 55);
             this.lblCompleteSkipNum.Name = "lblCompleteSkipNum";
-            this.lblCompleteSkipNum.Size = new System.Drawing.Size(318, 76);
+            this.lblCompleteSkipNum.Size = new System.Drawing.Size(318, 48);
             this.lblCompleteSkipNum.TabIndex = 0;
             this.lblCompleteSkipNum.Text = "0";
             this.lblCompleteSkipNum.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblCompleteSkipLbl
             // 
-            this.lblCompleteSkipLbl.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblCompleteSkipLbl.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblCompleteSkipLbl.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblCompleteSkipLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblCompleteSkipLbl.Location = new System.Drawing.Point(12, 82);
+            this.lblCompleteSkipLbl.Location = new System.Drawing.Point(12, 6);
             this.lblCompleteSkipLbl.Name = "lblCompleteSkipLbl";
-            this.lblCompleteSkipLbl.Size = new System.Drawing.Size(318, 69);
+            this.lblCompleteSkipLbl.Size = new System.Drawing.Size(318, 49);
             this.lblCompleteSkipLbl.TabIndex = 1;
             this.lblCompleteSkipLbl.Text = "ข้าม";
             this.lblCompleteSkipLbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -743,7 +710,7 @@
             this.pnlStatSuccess.Location = new System.Drawing.Point(337, 0);
             this.pnlStatSuccess.Name = "pnlStatSuccess";
             this.pnlStatSuccess.Padding = new System.Windows.Forms.Padding(12, 6, 12, 6);
-            this.pnlStatSuccess.Size = new System.Drawing.Size(337, 157);
+            this.pnlStatSuccess.Size = new System.Drawing.Size(337, 112);
             this.pnlStatSuccess.TabIndex = 1;
             // 
             // lblCompleteSuccessNum
@@ -751,21 +718,21 @@
             this.lblCompleteSuccessNum.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblCompleteSuccessNum.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.lblCompleteSuccessNum.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
-            this.lblCompleteSuccessNum.Location = new System.Drawing.Point(12, 6);
+            this.lblCompleteSuccessNum.Location = new System.Drawing.Point(12, 55);
             this.lblCompleteSuccessNum.Name = "lblCompleteSuccessNum";
-            this.lblCompleteSuccessNum.Size = new System.Drawing.Size(313, 76);
+            this.lblCompleteSuccessNum.Size = new System.Drawing.Size(313, 48);
             this.lblCompleteSuccessNum.TabIndex = 0;
             this.lblCompleteSuccessNum.Text = "0";
             this.lblCompleteSuccessNum.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblCompleteSuccessLbl
             // 
-            this.lblCompleteSuccessLbl.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblCompleteSuccessLbl.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblCompleteSuccessLbl.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblCompleteSuccessLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblCompleteSuccessLbl.Location = new System.Drawing.Point(12, 82);
+            this.lblCompleteSuccessLbl.Location = new System.Drawing.Point(12, 6);
             this.lblCompleteSuccessLbl.Name = "lblCompleteSuccessLbl";
-            this.lblCompleteSuccessLbl.Size = new System.Drawing.Size(313, 69);
+            this.lblCompleteSuccessLbl.Size = new System.Drawing.Size(313, 49);
             this.lblCompleteSuccessLbl.TabIndex = 1;
             this.lblCompleteSuccessLbl.Text = "สำเร็จ";
             this.lblCompleteSuccessLbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -779,7 +746,7 @@
             this.pnlStatTotal.Location = new System.Drawing.Point(0, 0);
             this.pnlStatTotal.Name = "pnlStatTotal";
             this.pnlStatTotal.Padding = new System.Windows.Forms.Padding(12, 6, 12, 6);
-            this.pnlStatTotal.Size = new System.Drawing.Size(337, 157);
+            this.pnlStatTotal.Size = new System.Drawing.Size(337, 112);
             this.pnlStatTotal.TabIndex = 0;
             // 
             // lblCompleteTotalNum
@@ -787,21 +754,21 @@
             this.lblCompleteTotalNum.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblCompleteTotalNum.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.lblCompleteTotalNum.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.lblCompleteTotalNum.Location = new System.Drawing.Point(12, 6);
+            this.lblCompleteTotalNum.Location = new System.Drawing.Point(12, 55);
             this.lblCompleteTotalNum.Name = "lblCompleteTotalNum";
-            this.lblCompleteTotalNum.Size = new System.Drawing.Size(313, 76);
+            this.lblCompleteTotalNum.Size = new System.Drawing.Size(313, 48);
             this.lblCompleteTotalNum.TabIndex = 0;
             this.lblCompleteTotalNum.Text = "0";
             this.lblCompleteTotalNum.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // lblCompleteTotalLbl
             // 
-            this.lblCompleteTotalLbl.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblCompleteTotalLbl.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblCompleteTotalLbl.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblCompleteTotalLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblCompleteTotalLbl.Location = new System.Drawing.Point(12, 82);
+            this.lblCompleteTotalLbl.Location = new System.Drawing.Point(12, 6);
             this.lblCompleteTotalLbl.Name = "lblCompleteTotalLbl";
-            this.lblCompleteTotalLbl.Size = new System.Drawing.Size(313, 69);
+            this.lblCompleteTotalLbl.Size = new System.Drawing.Size(313, 49);
             this.lblCompleteTotalLbl.TabIndex = 1;
             this.lblCompleteTotalLbl.Text = "ทั้งหมด";
             this.lblCompleteTotalLbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -811,7 +778,7 @@
             this.lblCompleteSub.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblCompleteSub.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblCompleteSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblCompleteSub.Location = new System.Drawing.Point(20, 116);
+            this.lblCompleteSub.Location = new System.Drawing.Point(20, 90);
             this.lblCompleteSub.Name = "lblCompleteSub";
             this.lblCompleteSub.Size = new System.Drawing.Size(1394, 24);
             this.lblCompleteSub.TabIndex = 1;
@@ -823,7 +790,7 @@
             this.lblCompleteTitle.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblCompleteTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.lblCompleteTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(132)))), ((int)(((byte)(73)))));
-            this.lblCompleteTitle.Location = new System.Drawing.Point(20, 80);
+            this.lblCompleteTitle.Location = new System.Drawing.Point(20, 54);
             this.lblCompleteTitle.Name = "lblCompleteTitle";
             this.lblCompleteTitle.Size = new System.Drawing.Size(1394, 36);
             this.lblCompleteTitle.TabIndex = 2;
@@ -836,7 +803,7 @@
             this.lblCompleteIcon.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblCompleteIcon.Location = new System.Drawing.Point(20, 20);
             this.lblCompleteIcon.Name = "lblCompleteIcon";
-            this.lblCompleteIcon.Size = new System.Drawing.Size(1394, 60);
+            this.lblCompleteIcon.Size = new System.Drawing.Size(1394, 34);
             this.lblCompleteIcon.TabIndex = 3;
             this.lblCompleteIcon.Text = "✅";
             this.lblCompleteIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -867,11 +834,12 @@
             // 
             this.pnlStep2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlStep2.Controls.Add(this.pnlStep2Inner);
+            this.pnlStep2.Controls.Add(this.pnlActStep2);
             this.pnlStep2.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlStep2.Location = new System.Drawing.Point(0, 709);
             this.pnlStep2.Name = "pnlStep2";
             this.pnlStep2.Padding = new System.Windows.Forms.Padding(16, 8, 16, 16);
-            this.pnlStep2.Size = new System.Drawing.Size(1554, 729);
+            this.pnlStep2.Size = new System.Drawing.Size(1554, 709);
             this.pnlStep2.TabIndex = 1;
             this.pnlStep2.Visible = false;
             // 
@@ -882,11 +850,10 @@
             this.pnlStep2Inner.Controls.Add(this.pnlImportOptions);
             this.pnlStep2Inner.Controls.Add(this.pnlSummaryPills);
             this.pnlStep2Inner.Controls.Add(this.pnlPreviewHdr);
-            this.pnlStep2Inner.Controls.Add(this.pnlValidation);
             this.pnlStep2Inner.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep2Inner.Location = new System.Drawing.Point(16, 8);
+            this.pnlStep2Inner.Location = new System.Drawing.Point(16, 53);
             this.pnlStep2Inner.Name = "pnlStep2Inner";
-            this.pnlStep2Inner.Size = new System.Drawing.Size(1522, 710);
+            this.pnlStep2Inner.Size = new System.Drawing.Size(1522, 652);
             this.pnlStep2Inner.TabIndex = 0;
             // 
             // pnlPreviewGrid
@@ -894,18 +861,16 @@
             this.pnlPreviewGrid.BackColor = System.Drawing.Color.White;
             this.pnlPreviewGrid.Controls.Add(this.dgvPreview);
             this.pnlPreviewGrid.Controls.Add(this.pnlGridPager);
-            this.pnlPreviewGrid.Controls.Add(this.pnlActStep2);
             this.pnlPreviewGrid.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlPreviewGrid.Location = new System.Drawing.Point(310, 259);
+            this.pnlPreviewGrid.Location = new System.Drawing.Point(0, 259);
             this.pnlPreviewGrid.Name = "pnlPreviewGrid";
-            this.pnlPreviewGrid.Size = new System.Drawing.Size(1212, 451);
+            this.pnlPreviewGrid.Size = new System.Drawing.Size(1522, 393);
             this.pnlPreviewGrid.TabIndex = 2;
             // 
             // dgvPreview
             // 
             this.dgvPreview.AllowUserToAddRows = false;
             this.dgvPreview.AllowUserToDeleteRows = false;
-            this.dgvPreview.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
             this.dgvPreview.BackgroundColor = System.Drawing.Color.White;
             this.dgvPreview.BorderStyle = System.Windows.Forms.BorderStyle.None;
             dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
@@ -934,7 +899,7 @@
             this.dgvPreview.RowHeadersWidth = 51;
             this.dgvPreview.RowTemplate.Height = 26;
             this.dgvPreview.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvPreview.Size = new System.Drawing.Size(1212, 374);
+            this.dgvPreview.Size = new System.Drawing.Size(1522, 337);
             this.dgvPreview.TabIndex = 0;
             // 
             // pnlGridPager
@@ -944,10 +909,10 @@
             this.pnlGridPager.Controls.Add(this.btnGridPrev);
             this.pnlGridPager.Controls.Add(this.btnGridNext);
             this.pnlGridPager.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlGridPager.Location = new System.Drawing.Point(0, 374);
+            this.pnlGridPager.Location = new System.Drawing.Point(0, 337);
             this.pnlGridPager.Name = "pnlGridPager";
             this.pnlGridPager.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.pnlGridPager.Size = new System.Drawing.Size(1212, 36);
+            this.pnlGridPager.Size = new System.Drawing.Size(1522, 56);
             this.pnlGridPager.TabIndex = 1;
             // 
             // lblGridPage
@@ -955,9 +920,9 @@
             this.lblGridPage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblGridPage.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblGridPage.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(116)))), ((int)(((byte)(139)))));
-            this.lblGridPage.Location = new System.Drawing.Point(108, 4);
+            this.lblGridPage.Location = new System.Drawing.Point(181, 4);
             this.lblGridPage.Name = "lblGridPage";
-            this.lblGridPage.Size = new System.Drawing.Size(996, 28);
+            this.lblGridPage.Size = new System.Drawing.Size(1169, 48);
             this.lblGridPage.TabIndex = 1;
             this.lblGridPage.Text = "หน้า 1 / 1  (0 รายการ)";
             this.lblGridPage.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -973,7 +938,7 @@
             this.btnGridPrev.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
             this.btnGridPrev.Location = new System.Drawing.Point(8, 4);
             this.btnGridPrev.Name = "btnGridPrev";
-            this.btnGridPrev.Size = new System.Drawing.Size(100, 28);
+            this.btnGridPrev.Size = new System.Drawing.Size(173, 48);
             this.btnGridPrev.TabIndex = 0;
             this.btnGridPrev.Text = "◀  ก่อนหน้า";
             this.btnGridPrev.UseVisualStyleBackColor = false;
@@ -988,112 +953,13 @@
             this.btnGridNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnGridNext.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.btnGridNext.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnGridNext.Location = new System.Drawing.Point(1104, 4);
+            this.btnGridNext.Location = new System.Drawing.Point(1350, 4);
             this.btnGridNext.Name = "btnGridNext";
-            this.btnGridNext.Size = new System.Drawing.Size(100, 28);
+            this.btnGridNext.Size = new System.Drawing.Size(164, 48);
             this.btnGridNext.TabIndex = 2;
             this.btnGridNext.Text = "ถัดไป  ▶";
             this.btnGridNext.UseVisualStyleBackColor = false;
             this.btnGridNext.Click += new System.EventHandler(this.BtnGridNext_Click);
-            // 
-            // pnlActStep2
-            // 
-            this.pnlActStep2.BackColor = System.Drawing.Color.Transparent;
-            this.pnlActStep2.Controls.Add(this.pnlProgress);
-            this.pnlActStep2.Controls.Add(this.btnCancel2);
-            this.pnlActStep2.Controls.Add(this.btnBack);
-            this.pnlActStep2.Controls.Add(this.btnImport);
-            this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlActStep2.Location = new System.Drawing.Point(0, 410);
-            this.pnlActStep2.Name = "pnlActStep2";
-            this.pnlActStep2.Size = new System.Drawing.Size(1212, 41);
-            this.pnlActStep2.TabIndex = 1;
-            this.pnlActStep2.Visible = false;
-            // 
-            // pnlProgress
-            // 
-            this.pnlProgress.BackColor = System.Drawing.Color.Transparent;
-            this.pnlProgress.Controls.Add(this.progressBar);
-            this.pnlProgress.Controls.Add(this.lblProgressText);
-            this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlProgress.Location = new System.Drawing.Point(872, 0);
-            this.pnlProgress.Name = "pnlProgress";
-            this.pnlProgress.Padding = new System.Windows.Forms.Padding(0, 10, 20, 10);
-            this.pnlProgress.Size = new System.Drawing.Size(340, 41);
-            this.pnlProgress.TabIndex = 3;
-            this.pnlProgress.Visible = false;
-            // 
-            // progressBar
-            // 
-            this.progressBar.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.progressBar.Location = new System.Drawing.Point(0, 10);
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(320, 5);
-            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.progressBar.TabIndex = 0;
-            // 
-            // lblProgressText
-            // 
-            this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.lblProgressText.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblProgressText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblProgressText.Location = new System.Drawing.Point(0, 15);
-            this.lblProgressText.Name = "lblProgressText";
-            this.lblProgressText.Size = new System.Drawing.Size(320, 16);
-            this.lblProgressText.TabIndex = 1;
-            this.lblProgressText.Text = "กำลังนำเข้าข้อมูล...";
-            this.lblProgressText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // btnCancel2
-            // 
-            this.btnCancel2.BackColor = System.Drawing.Color.White;
-            this.btnCancel2.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnCancel2.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnCancel2.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
-            this.btnCancel2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancel2.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.btnCancel2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.btnCancel2.Location = new System.Drawing.Point(310, 0);
-            this.btnCancel2.Name = "btnCancel2";
-            this.btnCancel2.Size = new System.Drawing.Size(100, 41);
-            this.btnCancel2.TabIndex = 2;
-            this.btnCancel2.Text = "✕  ยกเลิก";
-            this.btnCancel2.UseVisualStyleBackColor = false;
-            this.btnCancel2.Click += new System.EventHandler(this.BtnCancel_Click);
-            // 
-            // btnBack
-            // 
-            this.btnBack.BackColor = System.Drawing.Color.White;
-            this.btnBack.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnBack.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnBack.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
-            this.btnBack.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBack.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.btnBack.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
-            this.btnBack.Location = new System.Drawing.Point(190, 0);
-            this.btnBack.Name = "btnBack";
-            this.btnBack.Size = new System.Drawing.Size(120, 41);
-            this.btnBack.TabIndex = 1;
-            this.btnBack.Text = "◄  ย้อนกลับ";
-            this.btnBack.UseVisualStyleBackColor = false;
-            this.btnBack.Click += new System.EventHandler(this.BtnBack_Click);
-            // 
-            // btnImport
-            // 
-            this.btnImport.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
-            this.btnImport.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnImport.Dock = System.Windows.Forms.DockStyle.Left;
-            this.btnImport.FlatAppearance.BorderSize = 0;
-            this.btnImport.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnImport.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.btnImport.ForeColor = System.Drawing.Color.White;
-            this.btnImport.Location = new System.Drawing.Point(0, 0);
-            this.btnImport.Name = "btnImport";
-            this.btnImport.Size = new System.Drawing.Size(190, 41);
-            this.btnImport.TabIndex = 0;
-            this.btnImport.Text = "📥  เริ่มนำเข้าข้อมูล";
-            this.btnImport.UseVisualStyleBackColor = false;
-            this.btnImport.Click += new System.EventHandler(this.BtnImport_Click);
             // 
             // pnlImportOptions
             // 
@@ -1106,10 +972,10 @@
             this.pnlImportOptions.Controls.Add(this.chkAuditLog);
             this.pnlImportOptions.Controls.Add(this.lblOptionsHeader);
             this.pnlImportOptions.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlImportOptions.Location = new System.Drawing.Point(310, 139);
+            this.pnlImportOptions.Location = new System.Drawing.Point(0, 139);
             this.pnlImportOptions.Name = "pnlImportOptions";
             this.pnlImportOptions.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.pnlImportOptions.Size = new System.Drawing.Size(1212, 120);
+            this.pnlImportOptions.Size = new System.Drawing.Size(1522, 120);
             this.pnlImportOptions.TabIndex = 1;
             this.pnlImportOptions.Visible = false;
             // 
@@ -1155,6 +1021,8 @@
             // 
             // chkLinkDMS
             // 
+            this.chkLinkDMS.Checked = true;
+            this.chkLinkDMS.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkLinkDMS.Cursor = System.Windows.Forms.Cursors.Hand;
             this.chkLinkDMS.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.chkLinkDMS.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
@@ -1162,7 +1030,7 @@
             this.chkLinkDMS.Name = "chkLinkDMS";
             this.chkLinkDMS.Size = new System.Drawing.Size(400, 22);
             this.chkLinkDMS.TabIndex = 3;
-            this.chkLinkDMS.Text = "เชื่อมโยงกับเอกสาร DMS";
+            this.chkLinkDMS.Text = "ข้ามแถวถ้าอัปโหลดไฟล์แนบ (DMS) ไม่สำเร็จ (เฉพาะ ประกาศ/คำสั่ง)";
             this.chkLinkDMS.UseVisualStyleBackColor = true;
             // 
             // chkCreateDraft
@@ -1198,7 +1066,7 @@
             this.lblOptionsHeader.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblOptionsHeader.Location = new System.Drawing.Point(8, 4);
             this.lblOptionsHeader.Name = "lblOptionsHeader";
-            this.lblOptionsHeader.Size = new System.Drawing.Size(1196, 20);
+            this.lblOptionsHeader.Size = new System.Drawing.Size(1506, 20);
             this.lblOptionsHeader.TabIndex = 6;
             this.lblOptionsHeader.Text = "⚙️  ตัวเลือกการนำเข้า";
             // 
@@ -1206,13 +1074,14 @@
             // 
             this.pnlSummaryPills.BackColor = System.Drawing.Color.Transparent;
             this.pnlSummaryPills.Controls.Add(this.pnlPillError);
+            this.pnlSummaryPills.Controls.Add(this.pnlPillSkip);
             this.pnlSummaryPills.Controls.Add(this.pnlPillValid);
             this.pnlSummaryPills.Controls.Add(this.pnlPillTotal);
             this.pnlSummaryPills.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlSummaryPills.Location = new System.Drawing.Point(310, 36);
+            this.pnlSummaryPills.Location = new System.Drawing.Point(0, 36);
             this.pnlSummaryPills.Name = "pnlSummaryPills";
             this.pnlSummaryPills.Padding = new System.Windows.Forms.Padding(0, 4, 0, 4);
-            this.pnlSummaryPills.Size = new System.Drawing.Size(1212, 103);
+            this.pnlSummaryPills.Size = new System.Drawing.Size(1522, 103);
             this.pnlSummaryPills.TabIndex = 2;
             // 
             // pnlPillError
@@ -1221,10 +1090,10 @@
             this.pnlPillError.Controls.Add(this.lblErrorCount);
             this.pnlPillError.Controls.Add(this.lblErrorLabel);
             this.pnlPillError.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlPillError.Location = new System.Drawing.Point(806, 4);
+            this.pnlPillError.Location = new System.Drawing.Point(909, 4);
             this.pnlPillError.Name = "pnlPillError";
             this.pnlPillError.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
-            this.pnlPillError.Size = new System.Drawing.Size(403, 95);
+            this.pnlPillError.Size = new System.Drawing.Size(303, 95);
             this.pnlPillError.TabIndex = 3;
             // 
             // lblErrorCount
@@ -1234,7 +1103,7 @@
             this.lblErrorCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblErrorCount.Location = new System.Drawing.Point(12, 8);
             this.lblErrorCount.Name = "lblErrorCount";
-            this.lblErrorCount.Size = new System.Drawing.Size(379, 45);
+            this.lblErrorCount.Size = new System.Drawing.Size(279, 45);
             this.lblErrorCount.TabIndex = 0;
             this.lblErrorCount.Text = "0";
             this.lblErrorCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -1246,10 +1115,46 @@
             this.lblErrorLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblErrorLabel.Location = new System.Drawing.Point(12, 57);
             this.lblErrorLabel.Name = "lblErrorLabel";
-            this.lblErrorLabel.Size = new System.Drawing.Size(379, 30);
+            this.lblErrorLabel.Size = new System.Drawing.Size(279, 30);
             this.lblErrorLabel.TabIndex = 1;
             this.lblErrorLabel.Text = "ข้อผิดพลาด";
             this.lblErrorLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // pnlPillSkip
+            // 
+            this.pnlPillSkip.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(235)))), ((int)(((byte)(244)))), ((int)(((byte)(253)))));
+            this.pnlPillSkip.Controls.Add(this.lblSkipCount);
+            this.pnlPillSkip.Controls.Add(this.lblSkipLabel);
+            this.pnlPillSkip.Dock = System.Windows.Forms.DockStyle.Left;
+            this.pnlPillSkip.Location = new System.Drawing.Point(606, 4);
+            this.pnlPillSkip.Name = "pnlPillSkip";
+            this.pnlPillSkip.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
+            this.pnlPillSkip.Size = new System.Drawing.Size(303, 95);
+            this.pnlPillSkip.TabIndex = 2;
+            // 
+            // lblSkipCount
+            // 
+            this.lblSkipCount.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblSkipCount.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
+            this.lblSkipCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(41)))), ((int)(((byte)(128)))), ((int)(((byte)(185)))));
+            this.lblSkipCount.Location = new System.Drawing.Point(12, 8);
+            this.lblSkipCount.Name = "lblSkipCount";
+            this.lblSkipCount.Size = new System.Drawing.Size(279, 45);
+            this.lblSkipCount.TabIndex = 0;
+            this.lblSkipCount.Text = "0";
+            this.lblSkipCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lblSkipLabel
+            // 
+            this.lblSkipLabel.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblSkipLabel.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblSkipLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblSkipLabel.Location = new System.Drawing.Point(12, 57);
+            this.lblSkipLabel.Name = "lblSkipLabel";
+            this.lblSkipLabel.Size = new System.Drawing.Size(279, 30);
+            this.lblSkipLabel.TabIndex = 1;
+            this.lblSkipLabel.Text = "ข้าม";
+            this.lblSkipLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // pnlPillValid
             // 
@@ -1257,10 +1162,10 @@
             this.pnlPillValid.Controls.Add(this.lblValidCount);
             this.pnlPillValid.Controls.Add(this.lblValidLabel);
             this.pnlPillValid.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlPillValid.Location = new System.Drawing.Point(403, 4);
+            this.pnlPillValid.Location = new System.Drawing.Point(303, 4);
             this.pnlPillValid.Name = "pnlPillValid";
             this.pnlPillValid.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
-            this.pnlPillValid.Size = new System.Drawing.Size(403, 95);
+            this.pnlPillValid.Size = new System.Drawing.Size(303, 95);
             this.pnlPillValid.TabIndex = 1;
             // 
             // lblValidCount
@@ -1270,7 +1175,7 @@
             this.lblValidCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
             this.lblValidCount.Location = new System.Drawing.Point(12, 8);
             this.lblValidCount.Name = "lblValidCount";
-            this.lblValidCount.Size = new System.Drawing.Size(379, 45);
+            this.lblValidCount.Size = new System.Drawing.Size(279, 45);
             this.lblValidCount.TabIndex = 0;
             this.lblValidCount.Text = "0";
             this.lblValidCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -1282,7 +1187,7 @@
             this.lblValidLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblValidLabel.Location = new System.Drawing.Point(12, 57);
             this.lblValidLabel.Name = "lblValidLabel";
-            this.lblValidLabel.Size = new System.Drawing.Size(379, 30);
+            this.lblValidLabel.Size = new System.Drawing.Size(279, 30);
             this.lblValidLabel.TabIndex = 1;
             this.lblValidLabel.Text = "พร้อมนำเข้า";
             this.lblValidLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -1296,7 +1201,7 @@
             this.pnlPillTotal.Location = new System.Drawing.Point(0, 4);
             this.pnlPillTotal.Name = "pnlPillTotal";
             this.pnlPillTotal.Padding = new System.Windows.Forms.Padding(12, 8, 12, 8);
-            this.pnlPillTotal.Size = new System.Drawing.Size(403, 95);
+            this.pnlPillTotal.Size = new System.Drawing.Size(303, 95);
             this.pnlPillTotal.TabIndex = 0;
             // 
             // lblTotalCount
@@ -1306,7 +1211,7 @@
             this.lblTotalCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
             this.lblTotalCount.Location = new System.Drawing.Point(12, 8);
             this.lblTotalCount.Name = "lblTotalCount";
-            this.lblTotalCount.Size = new System.Drawing.Size(379, 45);
+            this.lblTotalCount.Size = new System.Drawing.Size(279, 45);
             this.lblTotalCount.TabIndex = 0;
             this.lblTotalCount.Text = "0";
             this.lblTotalCount.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -1318,7 +1223,7 @@
             this.lblTotalLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblTotalLabel.Location = new System.Drawing.Point(12, 57);
             this.lblTotalLabel.Name = "lblTotalLabel";
-            this.lblTotalLabel.Size = new System.Drawing.Size(379, 30);
+            this.lblTotalLabel.Size = new System.Drawing.Size(279, 30);
             this.lblTotalLabel.TabIndex = 1;
             this.lblTotalLabel.Text = "ทั้งหมด";
             this.lblTotalLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -1328,9 +1233,9 @@
             this.pnlPreviewHdr.BackColor = System.Drawing.Color.Transparent;
             this.pnlPreviewHdr.Controls.Add(this.lblPreviewHdr);
             this.pnlPreviewHdr.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlPreviewHdr.Location = new System.Drawing.Point(310, 0);
+            this.pnlPreviewHdr.Location = new System.Drawing.Point(0, 0);
             this.pnlPreviewHdr.Name = "pnlPreviewHdr";
-            this.pnlPreviewHdr.Size = new System.Drawing.Size(1212, 36);
+            this.pnlPreviewHdr.Size = new System.Drawing.Size(1522, 36);
             this.pnlPreviewHdr.TabIndex = 3;
             // 
             // lblPreviewHdr
@@ -1340,352 +1245,109 @@
             this.lblPreviewHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblPreviewHdr.Location = new System.Drawing.Point(0, 0);
             this.lblPreviewHdr.Name = "lblPreviewHdr";
-            this.lblPreviewHdr.Size = new System.Drawing.Size(1212, 36);
+            this.lblPreviewHdr.Size = new System.Drawing.Size(1522, 36);
             this.lblPreviewHdr.TabIndex = 0;
             this.lblPreviewHdr.Text = "👁  Preview ข้อมูล";
             this.lblPreviewHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // pnlValidation
+            // pnlActStep2
             // 
-            this.pnlValidation.BackColor = System.Drawing.Color.Transparent;
-            this.pnlValidation.Controls.Add(this.pnlValidationBody);
-            this.pnlValidation.Controls.Add(this.pnlValidationHdr);
-            this.pnlValidation.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlValidation.Location = new System.Drawing.Point(0, 0);
-            this.pnlValidation.Name = "pnlValidation";
-            this.pnlValidation.Size = new System.Drawing.Size(310, 710);
-            this.pnlValidation.TabIndex = 4;
+            this.pnlActStep2.BackColor = System.Drawing.Color.Transparent;
+            this.pnlActStep2.Controls.Add(this.btnImport);
+            this.pnlActStep2.Controls.Add(this.pnlProgress);
+            this.pnlActStep2.Controls.Add(this.btnCancel2);
+            this.pnlActStep2.Controls.Add(this.btnBack);
+            this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlActStep2.Location = new System.Drawing.Point(16, 8);
+            this.pnlActStep2.Name = "pnlActStep2";
+            this.pnlActStep2.Size = new System.Drawing.Size(1522, 45);
+            this.pnlActStep2.TabIndex = 1;
+            this.pnlActStep2.Visible = false;
             // 
-            // pnlValidationBody
+            // btnImport
             // 
-            this.pnlValidationBody.BackColor = System.Drawing.Color.White;
-            this.pnlValidationBody.Controls.Add(this.pnlValidationItems);
-            this.pnlValidationBody.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlValidationBody.Location = new System.Drawing.Point(0, 36);
-            this.pnlValidationBody.Name = "pnlValidationBody";
-            this.pnlValidationBody.Size = new System.Drawing.Size(310, 674);
-            this.pnlValidationBody.TabIndex = 0;
+            this.btnImport.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
+            this.btnImport.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnImport.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnImport.FlatAppearance.BorderSize = 0;
+            this.btnImport.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnImport.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
+            this.btnImport.ForeColor = System.Drawing.Color.White;
+            this.btnImport.Location = new System.Drawing.Point(220, 0);
+            this.btnImport.Name = "btnImport";
+            this.btnImport.Size = new System.Drawing.Size(252, 45);
+            this.btnImport.TabIndex = 0;
+            this.btnImport.Text = "📥  เริ่มนำเข้าข้อมูล";
+            this.btnImport.UseVisualStyleBackColor = false;
+            this.btnImport.Click += new System.EventHandler(this.BtnImport_Click);
             // 
-            // pnlValidationItems
+            // pnlProgress
             // 
-            this.pnlValidationItems.BackColor = System.Drawing.Color.Transparent;
-            this.pnlValidationItems.Controls.Add(this.pnlValItem6);
-            this.pnlValidationItems.Controls.Add(this.pnlValItem5);
-            this.pnlValidationItems.Controls.Add(this.pnlValItem3);
-            this.pnlValidationItems.Controls.Add(this.pnlValItem2);
-            this.pnlValidationItems.Controls.Add(this.pnlValItem1);
-            this.pnlValidationItems.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlValidationItems.Location = new System.Drawing.Point(0, 0);
-            this.pnlValidationItems.Name = "pnlValidationItems";
-            this.pnlValidationItems.Size = new System.Drawing.Size(310, 674);
-            this.pnlValidationItems.TabIndex = 0;
+            this.pnlProgress.BackColor = System.Drawing.Color.Transparent;
+            this.pnlProgress.Controls.Add(this.progressBar);
+            this.pnlProgress.Controls.Add(this.lblProgressText);
+            this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Right;
+            this.pnlProgress.Location = new System.Drawing.Point(1182, 0);
+            this.pnlProgress.Name = "pnlProgress";
+            this.pnlProgress.Padding = new System.Windows.Forms.Padding(0, 10, 20, 10);
+            this.pnlProgress.Size = new System.Drawing.Size(340, 45);
+            this.pnlProgress.TabIndex = 3;
+            this.pnlProgress.Visible = false;
             // 
-            // pnlValItem6
+            // progressBar
             // 
-            this.pnlValItem6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(253)))), ((int)(((byte)(237)))), ((int)(((byte)(236)))));
-            this.pnlValItem6.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlValItem6.Controls.Add(this.pnlValItem6Stripe);
-            this.pnlValItem6.Controls.Add(this.lblValItem6Icon);
-            this.pnlValItem6.Controls.Add(this.lblValItem6Title);
-            this.pnlValItem6.Controls.Add(this.lblValItem6Detail);
-            this.pnlValItem6.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlValItem6.Location = new System.Drawing.Point(0, 240);
-            this.pnlValItem6.Name = "pnlValItem6";
-            this.pnlValItem6.Size = new System.Drawing.Size(310, 372);
-            this.pnlValItem6.TabIndex = 5;
-            this.pnlValItem6.Visible = false;
+            this.progressBar.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.progressBar.Location = new System.Drawing.Point(0, 10);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.Size = new System.Drawing.Size(320, 9);
+            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.progressBar.TabIndex = 0;
             // 
-            // pnlValItem6Stripe
+            // lblProgressText
             // 
-            this.pnlValItem6Stripe.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
-            this.pnlValItem6Stripe.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlValItem6Stripe.Location = new System.Drawing.Point(0, 0);
-            this.pnlValItem6Stripe.Name = "pnlValItem6Stripe";
-            this.pnlValItem6Stripe.Size = new System.Drawing.Size(4, 42);
-            this.pnlValItem6Stripe.TabIndex = 0;
+            this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblProgressText.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.lblProgressText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
+            this.lblProgressText.Location = new System.Drawing.Point(0, 19);
+            this.lblProgressText.Name = "lblProgressText";
+            this.lblProgressText.Size = new System.Drawing.Size(320, 16);
+            this.lblProgressText.TabIndex = 1;
+            this.lblProgressText.Text = "กำลังนำเข้าข้อมูล...";
+            this.lblProgressText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // lblValItem6Icon
+            // btnCancel2
             // 
-            this.lblValItem6Icon.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem6Icon.Location = new System.Drawing.Point(10, 18);
-            this.lblValItem6Icon.Name = "lblValItem6Icon";
-            this.lblValItem6Icon.Size = new System.Drawing.Size(24, 24);
-            this.lblValItem6Icon.TabIndex = 1;
-            this.lblValItem6Icon.Text = "⏳";
-            this.lblValItem6Icon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.btnCancel2.BackColor = System.Drawing.Color.White;
+            this.btnCancel2.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCancel2.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnCancel2.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
+            this.btnCancel2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCancel2.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.btnCancel2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
+            this.btnCancel2.Location = new System.Drawing.Point(120, 0);
+            this.btnCancel2.Name = "btnCancel2";
+            this.btnCancel2.Size = new System.Drawing.Size(100, 45);
+            this.btnCancel2.TabIndex = 2;
+            this.btnCancel2.Text = "✕  ยกเลิก";
+            this.btnCancel2.UseVisualStyleBackColor = false;
+            this.btnCancel2.Click += new System.EventHandler(this.BtnCancel_Click);
             // 
-            // lblValItem6Title
+            // btnBack
             // 
-            this.lblValItem6Title.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblValItem6Title.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblValItem6Title.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.lblValItem6Title.Location = new System.Drawing.Point(38, 8);
-            this.lblValItem6Title.Name = "lblValItem6Title";
-            this.lblValItem6Title.Size = new System.Drawing.Size(268, 18);
-            this.lblValItem6Title.TabIndex = 2;
-            this.lblValItem6Title.Text = "แถวที่มีข้อผิดพลาด";
-            // 
-            // lblValItem6Detail
-            // 
-            this.lblValItem6Detail.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.lblValItem6Detail.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem6Detail.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.lblValItem6Detail.Location = new System.Drawing.Point(0, 42);
-            this.lblValItem6Detail.Name = "lblValItem6Detail";
-            this.lblValItem6Detail.Size = new System.Drawing.Size(308, 328);
-            this.lblValItem6Detail.TabIndex = 3;
-            this.lblValItem6Detail.Text = "รอการตรวจสอบ...";
-            // 
-            // pnlValItem5
-            // 
-            this.pnlValItem5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(255)))), ((int)(((byte)(244)))));
-            this.pnlValItem5.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlValItem5.Controls.Add(this.pnlValItem5Stripe);
-            this.pnlValItem5.Controls.Add(this.lblValItem5Icon);
-            this.pnlValItem5.Controls.Add(this.lblValItem5Title);
-            this.pnlValItem5.Controls.Add(this.lblValItem5Detail);
-            this.pnlValItem5.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlValItem5.Location = new System.Drawing.Point(0, 180);
-            this.pnlValItem5.Name = "pnlValItem5";
-            this.pnlValItem5.Size = new System.Drawing.Size(310, 60);
-            this.pnlValItem5.TabIndex = 4;
-            // 
-            // pnlValItem5Stripe
-            // 
-            this.pnlValItem5Stripe.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
-            this.pnlValItem5Stripe.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlValItem5Stripe.Location = new System.Drawing.Point(0, 0);
-            this.pnlValItem5Stripe.Name = "pnlValItem5Stripe";
-            this.pnlValItem5Stripe.Size = new System.Drawing.Size(4, 58);
-            this.pnlValItem5Stripe.TabIndex = 0;
-            // 
-            // lblValItem5Icon
-            // 
-            this.lblValItem5Icon.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem5Icon.Location = new System.Drawing.Point(10, 18);
-            this.lblValItem5Icon.Name = "lblValItem5Icon";
-            this.lblValItem5Icon.Size = new System.Drawing.Size(24, 24);
-            this.lblValItem5Icon.TabIndex = 1;
-            this.lblValItem5Icon.Text = "⏳";
-            this.lblValItem5Icon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblValItem5Title
-            // 
-            this.lblValItem5Title.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblValItem5Title.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblValItem5Title.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.lblValItem5Title.Location = new System.Drawing.Point(38, 8);
-            this.lblValItem5Title.Name = "lblValItem5Title";
-            this.lblValItem5Title.Size = new System.Drawing.Size(268, 18);
-            this.lblValItem5Title.TabIndex = 2;
-            this.lblValItem5Title.Text = "ข้อมูล CRAF";
-            // 
-            // lblValItem5Detail
-            // 
-            this.lblValItem5Detail.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblValItem5Detail.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem5Detail.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.lblValItem5Detail.Location = new System.Drawing.Point(38, 28);
-            this.lblValItem5Detail.Name = "lblValItem5Detail";
-            this.lblValItem5Detail.Size = new System.Drawing.Size(268, 28);
-            this.lblValItem5Detail.TabIndex = 3;
-            this.lblValItem5Detail.Text = "รอการตรวจสอบ...";
-            // 
-            // pnlValItem3
-            // 
-            this.pnlValItem3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(255)))), ((int)(((byte)(244)))));
-            this.pnlValItem3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlValItem3.Controls.Add(this.pnlValItem3Stripe);
-            this.pnlValItem3.Controls.Add(this.lblValItem3Icon);
-            this.pnlValItem3.Controls.Add(this.lblValItem3Title);
-            this.pnlValItem3.Controls.Add(this.lblValItem3Detail);
-            this.pnlValItem3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlValItem3.Location = new System.Drawing.Point(0, 120);
-            this.pnlValItem3.Name = "pnlValItem3";
-            this.pnlValItem3.Size = new System.Drawing.Size(310, 60);
-            this.pnlValItem3.TabIndex = 2;
-            // 
-            // pnlValItem3Stripe
-            // 
-            this.pnlValItem3Stripe.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
-            this.pnlValItem3Stripe.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlValItem3Stripe.Location = new System.Drawing.Point(0, 0);
-            this.pnlValItem3Stripe.Name = "pnlValItem3Stripe";
-            this.pnlValItem3Stripe.Size = new System.Drawing.Size(4, 58);
-            this.pnlValItem3Stripe.TabIndex = 0;
-            // 
-            // lblValItem3Icon
-            // 
-            this.lblValItem3Icon.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem3Icon.Location = new System.Drawing.Point(10, 18);
-            this.lblValItem3Icon.Name = "lblValItem3Icon";
-            this.lblValItem3Icon.Size = new System.Drawing.Size(24, 24);
-            this.lblValItem3Icon.TabIndex = 1;
-            this.lblValItem3Icon.Text = "⏳";
-            this.lblValItem3Icon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblValItem3Title
-            // 
-            this.lblValItem3Title.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblValItem3Title.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblValItem3Title.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.lblValItem3Title.Location = new System.Drawing.Point(38, 8);
-            this.lblValItem3Title.Name = "lblValItem3Title";
-            this.lblValItem3Title.Size = new System.Drawing.Size(268, 18);
-            this.lblValItem3Title.TabIndex = 2;
-            this.lblValItem3Title.Text = "คอลัมน์จำเป็น";
-            // 
-            // lblValItem3Detail
-            // 
-            this.lblValItem3Detail.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblValItem3Detail.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem3Detail.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.lblValItem3Detail.Location = new System.Drawing.Point(38, 28);
-            this.lblValItem3Detail.Name = "lblValItem3Detail";
-            this.lblValItem3Detail.Size = new System.Drawing.Size(268, 28);
-            this.lblValItem3Detail.TabIndex = 3;
-            this.lblValItem3Detail.Text = "รอการตรวจสอบ...";
-            // 
-            // pnlValItem2
-            // 
-            this.pnlValItem2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(255)))), ((int)(((byte)(244)))));
-            this.pnlValItem2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlValItem2.Controls.Add(this.pnlValItem2Stripe);
-            this.pnlValItem2.Controls.Add(this.lblValItem2Icon);
-            this.pnlValItem2.Controls.Add(this.lblValItem2Title);
-            this.pnlValItem2.Controls.Add(this.lblValItem2Detail);
-            this.pnlValItem2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlValItem2.Location = new System.Drawing.Point(0, 60);
-            this.pnlValItem2.Name = "pnlValItem2";
-            this.pnlValItem2.Size = new System.Drawing.Size(310, 60);
-            this.pnlValItem2.TabIndex = 1;
-            // 
-            // pnlValItem2Stripe
-            // 
-            this.pnlValItem2Stripe.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
-            this.pnlValItem2Stripe.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlValItem2Stripe.Location = new System.Drawing.Point(0, 0);
-            this.pnlValItem2Stripe.Name = "pnlValItem2Stripe";
-            this.pnlValItem2Stripe.Size = new System.Drawing.Size(4, 58);
-            this.pnlValItem2Stripe.TabIndex = 0;
-            // 
-            // lblValItem2Icon
-            // 
-            this.lblValItem2Icon.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem2Icon.Location = new System.Drawing.Point(10, 18);
-            this.lblValItem2Icon.Name = "lblValItem2Icon";
-            this.lblValItem2Icon.Size = new System.Drawing.Size(24, 24);
-            this.lblValItem2Icon.TabIndex = 1;
-            this.lblValItem2Icon.Text = "⏳";
-            this.lblValItem2Icon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblValItem2Title
-            // 
-            this.lblValItem2Title.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblValItem2Title.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblValItem2Title.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.lblValItem2Title.Location = new System.Drawing.Point(38, 8);
-            this.lblValItem2Title.Name = "lblValItem2Title";
-            this.lblValItem2Title.Size = new System.Drawing.Size(268, 18);
-            this.lblValItem2Title.TabIndex = 2;
-            this.lblValItem2Title.Text = "โครงสร้าง Template";
-            // 
-            // lblValItem2Detail
-            // 
-            this.lblValItem2Detail.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblValItem2Detail.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem2Detail.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.lblValItem2Detail.Location = new System.Drawing.Point(38, 28);
-            this.lblValItem2Detail.Name = "lblValItem2Detail";
-            this.lblValItem2Detail.Size = new System.Drawing.Size(268, 28);
-            this.lblValItem2Detail.TabIndex = 3;
-            this.lblValItem2Detail.Text = "รอการตรวจสอบ...";
-            // 
-            // pnlValItem1
-            // 
-            this.pnlValItem1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(255)))), ((int)(((byte)(244)))));
-            this.pnlValItem1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pnlValItem1.Controls.Add(this.pnlValItem1Stripe);
-            this.pnlValItem1.Controls.Add(this.lblValItem1Icon);
-            this.pnlValItem1.Controls.Add(this.lblValItem1Title);
-            this.pnlValItem1.Controls.Add(this.lblValItem1Detail);
-            this.pnlValItem1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlValItem1.Location = new System.Drawing.Point(0, 0);
-            this.pnlValItem1.Name = "pnlValItem1";
-            this.pnlValItem1.Size = new System.Drawing.Size(310, 60);
-            this.pnlValItem1.TabIndex = 0;
-            // 
-            // pnlValItem1Stripe
-            // 
-            this.pnlValItem1Stripe.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(174)))), ((int)(((byte)(96)))));
-            this.pnlValItem1Stripe.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlValItem1Stripe.Location = new System.Drawing.Point(0, 0);
-            this.pnlValItem1Stripe.Name = "pnlValItem1Stripe";
-            this.pnlValItem1Stripe.Size = new System.Drawing.Size(4, 58);
-            this.pnlValItem1Stripe.TabIndex = 0;
-            // 
-            // lblValItem1Icon
-            // 
-            this.lblValItem1Icon.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem1Icon.Location = new System.Drawing.Point(10, 18);
-            this.lblValItem1Icon.Name = "lblValItem1Icon";
-            this.lblValItem1Icon.Size = new System.Drawing.Size(24, 24);
-            this.lblValItem1Icon.TabIndex = 1;
-            this.lblValItem1Icon.Text = "⏳";
-            this.lblValItem1Icon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lblValItem1Title
-            // 
-            this.lblValItem1Title.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblValItem1Title.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblValItem1Title.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.lblValItem1Title.Location = new System.Drawing.Point(38, 8);
-            this.lblValItem1Title.Name = "lblValItem1Title";
-            this.lblValItem1Title.Size = new System.Drawing.Size(268, 18);
-            this.lblValItem1Title.TabIndex = 2;
-            this.lblValItem1Title.Text = "รูปแบบไฟล์";
-            // 
-            // lblValItem1Detail
-            // 
-            this.lblValItem1Detail.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblValItem1Detail.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblValItem1Detail.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(74)))), ((int)(((byte)(85)))), ((int)(((byte)(104)))));
-            this.lblValItem1Detail.Location = new System.Drawing.Point(38, 28);
-            this.lblValItem1Detail.Name = "lblValItem1Detail";
-            this.lblValItem1Detail.Size = new System.Drawing.Size(268, 28);
-            this.lblValItem1Detail.TabIndex = 3;
-            this.lblValItem1Detail.Text = "รอการตรวจสอบ...";
-            // 
-            // pnlValidationHdr
-            // 
-            this.pnlValidationHdr.BackColor = System.Drawing.Color.Transparent;
-            this.pnlValidationHdr.Controls.Add(this.lblValidationHdr);
-            this.pnlValidationHdr.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlValidationHdr.Location = new System.Drawing.Point(0, 0);
-            this.pnlValidationHdr.Name = "pnlValidationHdr";
-            this.pnlValidationHdr.Size = new System.Drawing.Size(310, 36);
-            this.pnlValidationHdr.TabIndex = 1;
-            // 
-            // lblValidationHdr
-            // 
-            this.lblValidationHdr.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblValidationHdr.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblValidationHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblValidationHdr.Location = new System.Drawing.Point(0, 0);
-            this.lblValidationHdr.Name = "lblValidationHdr";
-            this.lblValidationHdr.Size = new System.Drawing.Size(310, 36);
-            this.lblValidationHdr.TabIndex = 0;
-            this.lblValidationHdr.Text = "🔍  ผลการตรวจสอบ";
-            this.lblValidationHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnBack.BackColor = System.Drawing.Color.White;
+            this.btnBack.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnBack.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnBack.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(189)))), ((int)(((byte)(195)))), ((int)(((byte)(199)))));
+            this.btnBack.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBack.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.btnBack.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
+            this.btnBack.Location = new System.Drawing.Point(0, 0);
+            this.btnBack.Name = "btnBack";
+            this.btnBack.Size = new System.Drawing.Size(120, 45);
+            this.btnBack.TabIndex = 1;
+            this.btnBack.Text = "◄  ย้อนกลับ";
+            this.btnBack.UseVisualStyleBackColor = false;
+            this.btnBack.Click += new System.EventHandler(this.BtnBack_Click);
             // 
             // pnlStep1
             // 
@@ -1991,24 +1653,12 @@
             // pnlUploadSectionHdr
             // 
             this.pnlUploadSectionHdr.BackColor = System.Drawing.Color.Transparent;
-            this.pnlUploadSectionHdr.Controls.Add(this.lblFileHint);
             this.pnlUploadSectionHdr.Controls.Add(this.lblUploadSectionHdr);
             this.pnlUploadSectionHdr.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlUploadSectionHdr.Location = new System.Drawing.Point(0, 0);
             this.pnlUploadSectionHdr.Name = "pnlUploadSectionHdr";
             this.pnlUploadSectionHdr.Size = new System.Drawing.Size(1522, 36);
             this.pnlUploadSectionHdr.TabIndex = 1;
-            // 
-            // lblFileHint
-            // 
-            this.lblFileHint.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblFileHint.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(183)))), ((int)(((byte)(119)))), ((int)(((byte)(13)))));
-            this.lblFileHint.Location = new System.Drawing.Point(418, 3);
-            this.lblFileHint.Name = "lblFileHint";
-            this.lblFileHint.Size = new System.Drawing.Size(279, 37);
-            this.lblFileHint.TabIndex = 2;
-            this.lblFileHint.Text = "⚠  กรุณาเลือกไฟล์ Excel ก่อนกดถัดไป";
-            this.lblFileHint.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblUploadSectionHdr
             // 
@@ -2058,6 +1708,7 @@
             this.cboTemplate.Name = "cboTemplate";
             this.cboTemplate.Size = new System.Drawing.Size(408, 36);
             this.cboTemplate.TabIndex = 0;
+            this.cboTemplate.Visible = false;
             // 
             // btnDownloadTemplate
             // 
@@ -2074,6 +1725,7 @@
             this.btnDownloadTemplate.TabIndex = 1;
             this.btnDownloadTemplate.Text = "⬇  ดาวน์โหลด";
             this.btnDownloadTemplate.UseVisualStyleBackColor = false;
+            this.btnDownloadTemplate.Visible = false;
             this.btnDownloadTemplate.Click += new System.EventHandler(this.BtnDownloadTemplate_Click);
             // 
             // lblTemplateLabel
@@ -2087,6 +1739,7 @@
             this.lblTemplateLabel.TabIndex = 2;
             this.lblTemplateLabel.Text = "Template:";
             this.lblTemplateLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.lblTemplateLabel.Visible = false;
             // 
             // btnCancel
             // 
@@ -2230,23 +1883,15 @@
             this.pnlPreviewGrid.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvPreview)).EndInit();
             this.pnlGridPager.ResumeLayout(false);
-            this.pnlActStep2.ResumeLayout(false);
-            this.pnlProgress.ResumeLayout(false);
             this.pnlImportOptions.ResumeLayout(false);
             this.pnlSummaryPills.ResumeLayout(false);
             this.pnlPillError.ResumeLayout(false);
+            this.pnlPillSkip.ResumeLayout(false);
             this.pnlPillValid.ResumeLayout(false);
             this.pnlPillTotal.ResumeLayout(false);
             this.pnlPreviewHdr.ResumeLayout(false);
-            this.pnlValidation.ResumeLayout(false);
-            this.pnlValidationBody.ResumeLayout(false);
-            this.pnlValidationItems.ResumeLayout(false);
-            this.pnlValItem6.ResumeLayout(false);
-            this.pnlValItem5.ResumeLayout(false);
-            this.pnlValItem3.ResumeLayout(false);
-            this.pnlValItem2.ResumeLayout(false);
-            this.pnlValItem1.ResumeLayout(false);
-            this.pnlValidationHdr.ResumeLayout(false);
+            this.pnlActStep2.ResumeLayout(false);
+            this.pnlProgress.ResumeLayout(false);
             this.pnlStep1.ResumeLayout(false);
             this.pnlStep1Inner.ResumeLayout(false);
             this.pnlColumnRef.ResumeLayout(false);
@@ -2289,36 +1934,6 @@
         // Step 2
         private System.Windows.Forms.Panel    pnlStep2;
         private System.Windows.Forms.Panel    pnlStep2Inner;
-        private System.Windows.Forms.Panel    pnlValidation;
-        private System.Windows.Forms.Panel    pnlValidationHdr;
-        private System.Windows.Forms.Label    lblValidationHdr;
-        private System.Windows.Forms.Panel    pnlValidationBody;
-        private System.Windows.Forms.Panel    pnlValidationItems;
-        private System.Windows.Forms.Panel    pnlValItem1;
-        private System.Windows.Forms.Panel    pnlValItem1Stripe;
-        private System.Windows.Forms.Label    lblValItem1Icon;
-        private System.Windows.Forms.Label    lblValItem1Title;
-        private System.Windows.Forms.Label    lblValItem1Detail;
-        private System.Windows.Forms.Panel    pnlValItem2;
-        private System.Windows.Forms.Panel    pnlValItem2Stripe;
-        private System.Windows.Forms.Label    lblValItem2Icon;
-        private System.Windows.Forms.Label    lblValItem2Title;
-        private System.Windows.Forms.Label    lblValItem2Detail;
-        private System.Windows.Forms.Panel    pnlValItem3;
-        private System.Windows.Forms.Panel    pnlValItem3Stripe;
-        private System.Windows.Forms.Label    lblValItem3Icon;
-        private System.Windows.Forms.Label    lblValItem3Title;
-        private System.Windows.Forms.Label    lblValItem3Detail;
-        private System.Windows.Forms.Panel    pnlValItem5;
-        private System.Windows.Forms.Panel    pnlValItem5Stripe;
-        private System.Windows.Forms.Label    lblValItem5Icon;
-        private System.Windows.Forms.Label    lblValItem5Title;
-        private System.Windows.Forms.Label    lblValItem5Detail;
-        private System.Windows.Forms.Panel    pnlValItem6;
-        private System.Windows.Forms.Panel    pnlValItem6Stripe;
-        private System.Windows.Forms.Label    lblValItem6Icon;
-        private System.Windows.Forms.Label    lblValItem6Title;
-        private System.Windows.Forms.Label    lblValItem6Detail;
         private System.Windows.Forms.Panel    pnlPreviewHdr;
         private System.Windows.Forms.Label    lblPreviewHdr;
         private System.Windows.Forms.Panel    pnlSummaryPills;
@@ -2331,6 +1946,9 @@
         private System.Windows.Forms.Panel    pnlPillError;
         private System.Windows.Forms.Label    lblErrorCount;
         private System.Windows.Forms.Label    lblErrorLabel;
+        private System.Windows.Forms.Panel    pnlPillSkip;
+        private System.Windows.Forms.Label    lblSkipCount;
+        private System.Windows.Forms.Label    lblSkipLabel;
         private System.Windows.Forms.Panel             pnlPreviewGrid;
         private System.Windows.Forms.DataGridView      dgvPreview;
         private System.Windows.Forms.Panel             pnlGridPager;
@@ -2369,7 +1987,6 @@
         private System.Windows.Forms.Button   btnNext;
         private System.Windows.Forms.Button   btnCancel;
         private System.Windows.Forms.Button   btnBackToMain;
-        private System.Windows.Forms.Label    lblFileHint;
         private System.Windows.Forms.Button   btnDemo;
         private System.Windows.Forms.Panel    pnlActStep2;
         private System.Windows.Forms.Button   btnImport;
@@ -2427,17 +2044,18 @@
         private System.Windows.Forms.Panel                      pnlErrorDetail;
         private System.Windows.Forms.Label                      lblErrorDetailHdr;
         private System.Windows.Forms.DataGridView               dgvFailedRows;
-        private System.Windows.Forms.DataGridViewTextBoxColumn  colFRow;
-        private System.Windows.Forms.DataGridViewTextBoxColumn  colFCode;
-        private System.Windows.Forms.DataGridViewTextBoxColumn  colFCat;
-        private System.Windows.Forms.DataGridViewTextBoxColumn  colFTitle;
-        private System.Windows.Forms.DataGridViewTextBoxColumn  colFRaw;
-        private System.Windows.Forms.DataGridViewTextBoxColumn  colFReason;
         private System.Windows.Forms.Panel                      pnlErrPager;
         private System.Windows.Forms.Button                     btnErrPrev;
         private System.Windows.Forms.Label                      lblErrPage;
         private System.Windows.Forms.Button                     btnErrNext;
 
         #endregion
+
+        private System.Windows.Forms.DataGridViewTextBoxColumn colFRow;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colFCode;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colFCat;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colFTitle;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colFRaw;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colFReason;
     }
 }

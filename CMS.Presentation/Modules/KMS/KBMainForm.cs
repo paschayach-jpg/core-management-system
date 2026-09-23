@@ -56,9 +56,6 @@ namespace CMS.Presentation.Modules.KMS
         // ── Import wizard embedded panel state ───────────────────────────────────
         private KBImportWizardForm _activeImportForm = null;
 
-        // ── Order (ประกาศ/คำสั่ง) import wizard embedded panel state ─────────────
-        private KBOrderImportWizardForm _activeOrderImportForm = null;
-
         // ── Loading overlay ────────────────────────────────────────────────────────
         private CMS.Presentation.UserControls.LoadingOverlayControl _loadingOverlay;
 
@@ -71,8 +68,6 @@ namespace CMS.Presentation.Modules.KMS
         private Func<KBCategoryForm> _categoryFormFactory;
         /// <summary>Creates and returns a pre-wired KBImportWizardForm ready to be embedded.</summary>
         private Func<KBImportWizardForm> _importWizardFactory;
-        /// <summary>Creates and returns a pre-wired KBOrderImportWizardForm ready to be embedded.</summary>
-        private Func<KBOrderImportWizardForm> _orderImportWizardFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBDashboardForm. Returns DialogResult.</summary>
         private Func<DialogResult> _dashboardFactory;
 
@@ -128,17 +123,6 @@ namespace CMS.Presentation.Modules.KMS
             Controls.Add(pnlImportHost);
             pnlImportHost.BringToFront();
 
-            // pnlOrderImportHost hosts the embedded KBOrderImportWizardForm (ประกาศ/คำสั่ง)
-            pnlOrderImportHost = new System.Windows.Forms.Panel
-            {
-                Name      = "pnlOrderImportHost",
-                BackColor = System.Drawing.Color.White,
-                Dock      = System.Windows.Forms.DockStyle.Fill,
-                Visible   = false,
-            };
-            Controls.Add(pnlOrderImportHost);
-            pnlOrderImportHost.BringToFront();
-
             splitMain.BringToFront();          // restore splitMain as the visible default layer
 
             // LoadingOverlayControl — sits in splitMain.Panel2 over panelMainRight.
@@ -190,15 +174,6 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachImportWizardFactory(Func<KBImportWizardForm> factory)
         {
             _importWizardFactory = factory;
-        }
-
-        /// <summary>
-        /// Inject the factory used to create the ประกาศ/คำสั่ง import wizard with its
-        /// pre-wired presenter. Must be called before the form is shown.
-        /// </summary>
-        public void AttachOrderImportWizardFactory(Func<KBOrderImportWizardForm> factory)
-        {
-            _orderImportWizardFactory = factory;
         }
 
         /// <summary>
@@ -564,20 +539,9 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
 
-            using (var dlg = new KBImportTypeDialog())
-            {
-                if (dlg.ShowDialog(this) != DialogResult.OK) return;
-
-                switch (dlg.SelectedTypeCode)
-                {
-                    case 1:  // กฎหมาย — wizard เดิม
-                        ShowImportWizardEmbedded();
-                        break;
-                    case 8:  // คำสั่ง — wizard ใหม่
-                        ShowOrderImportWizardEmbedded();
-                        break;
-                }
-            }
+            // KBImportWizardForm auto-detects the Excel layout (กฎหมาย/มาตรา vs ประกาศ/คำสั่ง)
+            // from the file's header row, so there is no type-picker step anymore.
+            ShowImportWizardEmbedded();
         }
 
         private void BtnReports_Click(object sender, EventArgs e)
@@ -779,52 +743,6 @@ namespace CMS.Presentation.Modules.KMS
             pnlImportHost.Controls.Remove(_activeImportForm);
             _activeImportForm.Dispose();
             _activeImportForm = null;
-        }
-
-        // ── ประกาศ/คำสั่ง import wizard (full-screen over splitMain) ─────────────
-
-        private void ShowOrderImportWizardEmbedded()
-        {
-            CloseActiveOrderImportForm();
-
-            var importForm = _orderImportWizardFactory != null ? _orderImportWizardFactory() : null;
-            if (importForm == null) return;
-
-            importForm.BackRequested  += OnOrderImportBackRequested;
-            importForm.TopLevel        = false;
-            importForm.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
-            importForm.Dock            = System.Windows.Forms.DockStyle.Fill;
-
-            splitMain.Visible = false;
-            pnlOrderImportHost.Controls.Add(importForm);
-            pnlOrderImportHost.Visible = true;
-            pnlOrderImportHost.BringToFront();
-            importForm.Show();
-
-            _activeOrderImportForm = importForm;
-        }
-
-        private void OnOrderImportBackRequested(object sender, EventArgs e)
-        {
-            CloseActiveOrderImportForm();
-
-            pnlOrderImportHost.Visible = false;
-            splitMain.Visible          = true;
-
-            if (_presenter != null)
-            {
-                _presenter.LoadCategoryTree();
-                _presenter.LoadArticles();
-            }
-        }
-
-        private void CloseActiveOrderImportForm()
-        {
-            if (_activeOrderImportForm == null) return;
-            _activeOrderImportForm.BackRequested -= OnOrderImportBackRequested;
-            pnlOrderImportHost.Controls.Remove(_activeOrderImportForm);
-            _activeOrderImportForm.Dispose();
-            _activeOrderImportForm = null;
         }
 
         // ── Viewer navigation (full-screen over splitMain) ───────────────────────

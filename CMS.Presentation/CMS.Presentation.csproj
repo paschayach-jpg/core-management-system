@@ -18,7 +18,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>\\150.1.8.23\AppForUser\cmspopp\</PublishUrl>
+    <PublishUrl>\\150.1.8.23\AppForUser\cms\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Unc</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
@@ -28,8 +28,9 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <InstallUrl>\\150.1.8.23\AppForUser\cmspopp\</InstallUrl>
-    <ApplicationRevision>1</ApplicationRevision>
+    <InstallUrl>\\150.1.8.23\AppForUser\cms\</InstallUrl>
+    <UpdateUrl>\\150.1.8.23\AppForUser\cms\</UpdateUrl>
+    <ApplicationRevision>2</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -83,6 +84,7 @@
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
@@ -95,6 +97,7 @@
     <None Include="packages.config" />
     <None Include="Resources\BRD2.md" />
     <EmbeddedResource Include="template.xlsx" />
+    <EmbeddedResource Include="template_order.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <!-- Root: Shell -->
@@ -366,18 +369,6 @@
     </Compile>
     <Compile Include="Modules\KMS\KBImportWizardForm.Designer.cs">
       <DependentUpon>KBImportWizardForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Modules\KMS\KBImportTypeDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Modules\KMS\KBImportTypeDialog.Designer.cs">
-      <DependentUpon>KBImportTypeDialog.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Modules\KMS\KBOrderImportWizardForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Modules\KMS\KBOrderImportWizardForm.Designer.cs">
-      <DependentUpon>KBOrderImportWizardForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\KMS\KBDashboardForm.cs">
       <SubType>Form</SubType>
