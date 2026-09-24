@@ -55,7 +55,7 @@ namespace CMS.Services
                 {
                     searcher.PropertiesToLoad.AddRange(new[]
                     {
-                        "sAMAccountName", "displayName", "mail", "department", "title"
+                        "sAMAccountName", "displayName", "mail", "department", "title", "employeeID"
                     });
                     searcher.SizeLimit = maxResults;
                     searcher.PageSize  = maxResults;
@@ -97,7 +97,7 @@ namespace CMS.Services
                 {
                     searcher.PropertiesToLoad.AddRange(new[]
                     {
-                        "sAMAccountName", "displayName", "mail", "department", "title"
+                        "sAMAccountName", "displayName", "mail", "department", "title", "employeeID"
                     });
 
                     var sr = searcher.FindOne();
@@ -110,9 +110,60 @@ namespace CMS.Services
             }
         }
 
+        public List<LdapUserResult> SearchAllUsers(int pageSize = 1000, int? maxResults = null)
+        {
+            var results = new List<LdapUserResult>();
+
+            if (string.IsNullOrEmpty(_ldapPath))
+                return results;
+
+            try
+            {
+                // Includes disabled accounts on purpose — callers need to see IsActive=false
+                // for users that already exist, unlike Search() which excludes them.
+                const string filter = "(&(objectClass=user)(objectCategory=person)(sAMAccountName=*))";
+
+                using (var entry = new DirectoryEntry(_ldapPath, _ldapUsername, _ldapPassword,
+                    AuthenticationTypes.Secure))
+                using (var searcher = new DirectorySearcher(entry, filter))
+                {
+                    searcher.PropertiesToLoad.AddRange(new[]
+                    {
+                        "sAMAccountName", "displayName", "mail", "department", "title", "employeeID", "userAccountControl"
+                    });
+                    searcher.PageSize = pageSize;
+                    if (maxResults.HasValue)
+                        searcher.SizeLimit = maxResults.Value;
+                    searcher.ClientTimeout = TimeSpan.FromMinutes(5);
+                    searcher.ServerTimeLimit = TimeSpan.FromMinutes(5);
+
+                    using (var found = searcher.FindAll())
+                    {
+                        foreach (SearchResult sr in found)
+                        {
+                            var u = MapResult(sr, includeActiveFlag: true);
+                            if (u != null)
+                                results.Add(u);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("LDAP search failed: " + ex.Message, ex);
+            }
+
+            return results;
+        }
+
         // ─── Helpers ─────────────────────────────────────────────────────────────
 
         private static LdapUserResult MapResult(SearchResult sr)
+        {
+            return MapResult(sr, includeActiveFlag: false);
+        }
+
+        private static LdapUserResult MapResult(SearchResult sr, bool includeActiveFlag)
         {
             string sam = GetProp(sr, "sAMAccountName");
             if (string.IsNullOrEmpty(sam))
@@ -124,8 +175,20 @@ namespace CMS.Services
                 DisplayName    = GetProp(sr, "displayName") ?? sam,
                 Mail           = GetProp(sr, "mail"),
                 Department     = GetProp(sr, "department"),
-                Title          = GetProp(sr, "title")
+                Title          = GetProp(sr, "title"),
+                EmployeeId     = GetProp(sr, "employeeID"),
+                IsActive       = includeActiveFlag ? IsAccountActive(sr) : true
             };
+        }
+
+        private static bool IsAccountActive(SearchResult sr)
+        {
+            string uacRaw = GetProp(sr, "userAccountControl");
+            int uac;
+            if (string.IsNullOrEmpty(uacRaw) || !int.TryParse(uacRaw, out uac))
+                return true; // unknown -> assume active rather than silently deactivating
+            const int ACCOUNTDISABLE = 0x2;
+            return (uac & ACCOUNTDISABLE) == 0;
         }
 
         private static string GetProp(SearchResult sr, string name)

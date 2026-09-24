@@ -92,6 +92,7 @@ namespace CMS.Presentation.Modules.Workflow
             };
             lstResults.Columns.Add("Username", 100);
             lstResults.Columns.Add("ชื่อ-นามสกุล", 180);
+            lstResults.Columns.Add("รหัสพนักงาน", 90);
             lstResults.Columns.Add("ตำแหน่ง", 130);
             lstResults.Columns.Add("แผนก/ฝ่าย", 130);
             lstResults.DoubleClick += LstResults_DoubleClick;
@@ -199,6 +200,7 @@ namespace CMS.Presentation.Modules.Workflow
                         {
                             SamAccountName = emp.EmployeeCode,
                             DisplayName = emp.DisplayName,
+                            EmployeeId = emp.EmployeeCode,
                             Department = emp.DepartmentNameTh ?? emp.DepartmentNameEn,
                             Title = "พนักงาน",
                             Mail = emp.EmployeeCode + "@company.co.th"
@@ -218,6 +220,7 @@ namespace CMS.Presentation.Modules.Workflow
                     {
                         var item = new ListViewItem(u.SamAccountName);
                         item.SubItems.Add(u.DisplayName ?? "");
+                        item.SubItems.Add(u.EmployeeId ?? "");
                         item.SubItems.Add(u.Title ?? "");
                         item.SubItems.Add(u.Department ?? "");
                         item.Tag = u;

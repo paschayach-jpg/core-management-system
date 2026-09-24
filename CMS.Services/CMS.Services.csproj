@@ -237,12 +237,14 @@
     <Compile Include="Interfaces\IProjectProgressService.cs" />
     <Compile Include="Interfaces\IProjectTaskService.cs" />
     <Compile Include="Interfaces\IProjectDocumentService.cs" />
+    <Compile Include="Interfaces\IProjectAttachmentService.cs" />
     <Compile Include="ProjectAuditService.cs" />
     <Compile Include="ProjectService.cs" />
     <Compile Include="ProjectStateService.cs" />
     <Compile Include="ProjectProgressService.cs" />
     <Compile Include="ProjectTaskService.cs" />
     <Compile Include="ProjectDocumentService.cs" />
+    <Compile Include="ProjectAttachmentService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

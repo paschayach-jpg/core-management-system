@@ -28,9 +28,14 @@ namespace CMS.Controllers.DMS.Document.Interfaces
             string divisionNameTh,
             string positionName);
 
+        /// <summary>Upsert a user from LDAP import data (core fields only).</summary>
+        int UpsertFromLdap(string adUserName, string displayName, string email, bool isActive,
+            string positionName, string departmentName, int? createdBy, out bool isNew);
+
         IList<HrDivision> GetDivisions();
         IList<HrDepartment> GetDepartments();
         IList<HrPosition> GetPositions();
         IList<HrPositionLevel> GetPositionLevels();
+        IList<HrPositionMapping> GetPositionMappings();
     }
 }

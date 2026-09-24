@@ -37,6 +37,7 @@ namespace CMS.Presentation
         public IShareLookupController ShareLookupController { get; set; }
         public IEmployeeApiService EmployeeApiService { get; set; }
         public IFolderQuotaService FolderQuotaService { get; set; }
+        public ILdapUserSearchService LdapUserSearchService { get; set; }
 
         public Action SwitchToOrgView { get; set; }
         public Action SwitchToMainMenuView { get; set; }

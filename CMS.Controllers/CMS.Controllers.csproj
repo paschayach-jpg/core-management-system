@@ -69,6 +69,7 @@
     <Compile Include="DMS\Document\Interfaces\IFileDocumentLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFilePermissionAclController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFolderPermissionLookupController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IPermissionAclLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuthorityConfigController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuthorityOrgLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IUserAccessOrgLookupController.cs" />
@@ -114,6 +115,7 @@
     <Compile Include="DMS\Document\FilePermissionAclController.cs" />
     <Compile Include="DMS\Document\FilePermissionCommandController.cs" />
     <Compile Include="DMS\Document\FolderPermissionLookupController.cs" />
+    <Compile Include="DMS\Document\PermissionAclLookupController.cs" />
     <Compile Include="DMS\Document\AuthorityConfigController.cs" />
     <Compile Include="DMS\Document\AuthorityOrgLookupController.cs" />
     <Compile Include="DMS\Document\UserAccessOrgLookupController.cs" />
@@ -154,6 +156,7 @@
     <Compile Include="RGP\ProjectTaskController.cs" />
     <Compile Include="RGP\ProjectProgressController.cs" />
     <Compile Include="RGP\ProjectDocumentController.cs" />
+    <Compile Include="RGP\ProjectAttachmentController.cs" />
     <Compile Include="RGP\ProjectMemberController.cs" />
     <Compile Include="RGP\ProjectMemberRoleController.cs" />
     <Compile Include="RGP\ProjectStateMemberController.cs" />

@@ -75,6 +75,7 @@ namespace CMS.Presentation
         private readonly IAuthorityConfigController _authorityConfigController;
         private readonly IEmployeeDirectoryController _employeeDirectoryController;
         private readonly IUserOrgVisibilityController _userOrgVisibilityController;
+        private readonly IPermissionAclLookupController _permissionAclLookupController;
         private readonly CMS.Services.Interfaces.IEmployeeApiService _employeeApiService;
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
@@ -213,6 +214,7 @@ namespace CMS.Presentation
             IAuthorityConfigController authorityConfigController = null,
             IEmployeeDirectoryController employeeDirectoryController = null,
             IUserOrgVisibilityController userOrgVisibilityController = null,
+            IPermissionAclLookupController permissionAclLookupController = null,
             CMS.Services.Interfaces.IEmployeeApiService employeeApiService = null,
             Data.Repositories.FolderRepository folderRepository = null,
             CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
@@ -296,6 +298,7 @@ namespace CMS.Presentation
             _authorityConfigController = authorityConfigController;
             _employeeDirectoryController = employeeDirectoryController;
             _userOrgVisibilityController = userOrgVisibilityController;
+            _permissionAclLookupController = permissionAclLookupController;
             _employeeApiService = employeeApiService;
             _rgpProjectController = rgpProjectController;
             _rgpStateController = rgpStateController;
@@ -1197,6 +1200,7 @@ namespace CMS.Presentation
                 new ToolStripMenuItem("⚙️ ตั้งค่าระบบ",            null, (s, e) => OpenSysConfig()),
                 new ToolStripMenuItem("🔐 จัดการสิทธิ์ Authority", null, (s, e) => OpenAuthorityConfig()),
                 new ToolStripMenuItem("🔄 Sync ข้อมูลพนักงาน",    null, (s, e) => SyncEmployeeFromApi()),
+                new ToolStripMenuItem("📥 Import ผู้ใช้จาก AD",    null, (s, e) => ImportUsersFromLdap()),
                 new ToolStripSeparator(),
                 new ToolStripMenuItem("📚 ห้องสมุดความรู้ (KMS)",  null, (s, e) => OpenKnowledgeBase()),
                 new ToolStripMenuItem("⚙️ ตั้งค่า KB Category",    null, (s, e) => OpenKBCategorySettings()),
@@ -1552,10 +1556,11 @@ namespace CMS.Presentation
                     folderSettingsController: _folderSettingsController,
                     folderPermissionLookupController: _folderPermissionLookupController,
                     userAccountLookupController: _userAccountLookupController,
-                    userAdminController: _userAdminController,
+                    userAdminController: _userAdminWithHrController,
                     userOrgVisibilityController: _userOrgVisibilityController,
                     folderReadLookupController: _folderReadLookupController,
-                    folderQuotaService: _quotaService
+                    folderQuotaService: _quotaService,
+                    ldapUserSearchService: _ldapUserSearchService
                 );
 
                 // Wire event handlers
@@ -1717,6 +1722,13 @@ namespace CMS.Presentation
                 existing.Activate();
                 return;
             }
+
+            // ให้ Form ลูกของ RGP (Frm_Project_Detail) เปิด dialog อัปโหลด/เลือกไฟล์ DMS ได้
+            // ด้วยอินสแตนซ์ชุดเดียวกับที่ MDI ใช้ (เหมือนที่ KBEditorDialog ได้รับผ่าน ctor)
+            CMS.Presentation.Modules.RGP.RgpDmsContext.Set(
+                _fileUploadController, _fileBrowseController, _folderReadLookupController,
+                _folderCommandController, _uploadCheckpointController, _fileCommandController,
+                _networkDriveHelper);
 
             var form = new CMS.Presentation.Modules.RGP.Frm_Project_List(
                 _rgpProjectController, _rgpStateController, _rgpTaskController,
@@ -2040,11 +2052,12 @@ namespace CMS.Presentation
                 folderSettingsController: _folderSettingsController,
                 folderPermissionLookupController: _folderPermissionLookupController,
                 userAccountLookupController: _userAccountLookupController,
-                userAdminController: _userAdminController,
+                userAdminController: _userAdminWithHrController,
                 userOrgVisibilityController: _userOrgVisibilityController,
                 folderReadLookupController: _folderReadLookupController,
                 employeeApiService: _employeeApiService,
-                folderQuotaService: _quotaService);
+                folderQuotaService: _quotaService,
+                ldapUserSearchService: _ldapUserSearchService);
             folderForm.OpenPermissionRequested += (s, folder) => OpenFolderSettingsForFolder(folder);
             folderForm.OpenFilePermissionRequested += (s, file) => OpenFilePermissionDialog(file);
             folderForm.SelectionChanged += (s, ev) => UpdateMoveControlsState();
@@ -2081,6 +2094,9 @@ namespace CMS.Presentation
                 case "SyncEmployee":
                     SyncEmployeeFromApi();
                     return true;
+                case "ImportAdUsers":
+                    ImportUsersFromLdap();
+                    return true;
                 case "KnowledgeBaseForm":
                 case "KBMainForm":
                     OpenKnowledgeBase();
@@ -2107,6 +2123,9 @@ namespace CMS.Presentation
                     return true;
                 case "UserAccess":
                     OpenUserAccess();
+                    return true;
+                case "UserPermissionDiagnostic":
+                    OpenUserPermissionDiagnostic();
                     return true;
                 case "MenuManagement":
                     OpenMenuManagement();
@@ -2303,6 +2322,26 @@ namespace CMS.Presentation
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
+        public void OpenUserPermissionDiagnostic()
+        {
+            if (_userAdminController == null)
+            {
+                MessageBox.Show("User admin service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var form = new UserPermissionDiagnosticForm(
+                _userAdminController,
+                _userOrgVisibilityController,
+                _authorityConfigController,
+                _permissionAclLookupController,
+                _shareLookupController,
+                _currentUser);
+
+            OpenChildForm(form, true);
+        }
+
         public void OpenQuotaConfig()
         {
             if (_quotaService == null || _orgStructureService == null)
@@ -2443,6 +2482,84 @@ namespace CMS.Presentation
             }
         }
 
+        private void ImportUsersFromLdap()
+        {
+            if (_ldapUserSearchService == null || _userAdminController == null)
+            {
+                MessageBox.Show("LDAP service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                "ต้องการ Import ผู้ใช้จาก Active Directory ทั้งหมดหรือไม่?\n\n" +
+                "ระบบจะสร้าง user ใหม่สำหรับ account ที่ยังไม่มีในระบบ\n" +
+                "และอัพเดท DisplayName / Email / ตำแหน่ง / แผนก / สถานะ ให้ user ที่มีอยู่แล้ว",
+                "Import ผู้ใช้จาก AD",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirm != DialogResult.Yes) return;
+
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+
+                List<CMS.Services.DTOs.LdapUserResult> adUsers;
+                try
+                {
+                    adUsers = _ldapUserSearchService.SearchAllUsers();
+                }
+                catch (Exception ex)
+                {
+                    Cursor = Cursors.Default;
+                    MessageBox.Show("ไม่สามารถเชื่อมต่อ Active Directory ได้: " + ex.Message,
+                        "Import ผู้ใช้จาก AD", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                int created = 0, updated = 0, failed = 0;
+                var errors = new List<string>();
+
+                foreach (var u in adUsers)
+                {
+                    try
+                    {
+                        bool isNew;
+                        _userAdminController.UpsertFromLdap(
+                            u.SamAccountName, u.DisplayName, u.Mail, u.IsActive,
+                            u.Title, u.Department, _currentUser.UserID, out isNew);
+
+                        if (isNew) created++; else updated++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failed++;
+                        if (errors.Count < 20)
+                            errors.Add(u.SamAccountName + ": " + ex.Message);
+                    }
+                }
+
+                Cursor = Cursors.Default;
+
+                string summary = string.Format(
+                    "Import เสร็จสิ้น\n\nทั้งหมด: {0} คน\n+ สร้างใหม่: {1} คน\n✓ อัพเดท: {2} คน\n✗ ผิดพลาด: {3} คน",
+                    adUsers.Count, created, updated, failed);
+
+                if (errors.Count > 0)
+                    summary += "\n\n" + string.Join("\n", errors);
+
+                MessageBox.Show(summary, "Import ผู้ใช้จาก AD",
+                    MessageBoxButtons.OK, failed > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                Cursor = Cursors.Default;
+                MessageBox.Show("เกิดข้อผิดพลาด: " + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void OpenUserAccess()
         {
             if (_userAdminController == null || _userAccessOrgLookupController == null)
@@ -2502,7 +2619,8 @@ namespace CMS.Presentation
             OpenChildForm(new UserManagementForm(
                 _userAdminWithHrController,
                 _currentUser,
-                _auditService));
+                _auditService,
+                _ldapUserSearchService));
         }
 
         private void OpenPdpaConsent()

@@ -69,7 +69,7 @@ namespace CMS.Presentation
                         return ShowTargetForm(context, new OrgStructureForm(context.OrgStructureService, context.User, null));
 
                     case "UserManagement":
-                        return ShowTargetForm(context, new UserManagementForm(context.UserAdminController, context.User, context.AuditService));
+                        return ShowTargetForm(context, new UserManagementForm(context.UserAdminController, context.User, context.AuditService, context.LdapUserSearchService));
 
                     case "UserAccess":
                         if (context.OrgLookupController == null && context.OrgStructureService == null)
@@ -168,6 +168,11 @@ namespace CMS.Presentation
                     case "AuthorityConfig":
                         if (!TryRequestMdiAction(context, "AuthorityConfig"))
                             MessageBox.Show("Authority Config ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
+                    case "UserPermissionDiagnostic":
+                        if (!TryRequestMdiAction(context, "UserPermissionDiagnostic"))
+                            MessageBox.Show("User Permission Diagnostic ต้องเปิดผ่าน MDI Container ที่มี service ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return true;
 
                     case "FolderTemplate":

@@ -6,8 +6,9 @@ namespace CMS.Presentation
 {
     public enum LoginErrorType
     {
-        EmptyCredentials,   // ไม่กรอกข้อมูลให้ครบ
-        InvalidCredentials  // Username หรือ Password ไม่ถูกต้อง
+        EmptyCredentials,     // ไม่กรอกข้อมูลให้ครบ
+        InvalidCredentials,   // Username หรือ Password ไม่ถูกต้อง
+        InvalidUsernameChars  // ชื่อผู้ใช้งานมีอักขระที่ไม่อนุญาต (เช่น ภาษาไทย)
     }
 
     /// <summary>
@@ -43,6 +44,15 @@ namespace CMS.Presentation
             string actionText = isEmpty
                 ? "กรอกข้อมูลให้ครบถ้วนทั้ง Username และ Password\nแล้วกดปุ่ม Login อีกครั้ง"
                 : "ตรวจสอบ Username และ Password ให้ถูกต้อง\nหากลืม Password กรุณาติดต่อ IT Helpdesk";
+
+            if (errorType == LoginErrorType.InvalidUsernameChars)
+            {
+                iconText   = "⌨️";
+                titleText  = "ชื่อผู้ใช้งานไม่ถูกต้อง";
+                caseLabel  = "รูปแบบไม่ถูกต้อง  |  ชื่อผู้ใช้งานมีอักขระที่ไม่อนุญาต";
+                descText   = "ชื่อผู้ใช้งาน (AD Username) ต้องเป็นภาษาอังกฤษเท่านั้น\nไม่รองรับภาษาไทยหรืออักขระที่ไม่ใช่ ASCII";
+                actionText = "กรอกชื่อผู้ใช้งานเป็นตัวอักษรภาษาอังกฤษ ตัวเลข\nหรือ . _ - เท่านั้น แล้วลองใหม่อีกครั้ง";
+            }
 
             // ── Form ───────────────────────────────────────────────────────
             Text            = "DMS Insurance — เข้าสู่ระบบ";

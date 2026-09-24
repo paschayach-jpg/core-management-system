@@ -140,7 +140,7 @@
             this.pnlDashboard.Controls.Add(this.pnlDashLeft);
             this.pnlDashboard.Controls.Add(this.lblDashTitle);
             this.pnlDashboard.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlDashboard.Location = new System.Drawing.Point(0, 56);
+            this.pnlDashboard.Location = new System.Drawing.Point(0, 52);
             this.pnlDashboard.Margin = new System.Windows.Forms.Padding(4);
             this.pnlDashboard.Name = "pnlDashboard";
             this.pnlDashboard.Size = new System.Drawing.Size(1469, 694);
@@ -152,7 +152,7 @@
             this.pnlDashContent.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(255)))));
             this.pnlDashContent.Controls.Add(this.splitContainer1);
             this.pnlDashContent.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlDashContent.Location = new System.Drawing.Point(404, 62);
+            this.pnlDashContent.Location = new System.Drawing.Point(304, 50);
             this.pnlDashContent.Margin = new System.Windows.Forms.Padding(4);
             this.pnlDashContent.Name = "pnlDashContent";
             this.pnlDashContent.Padding = new System.Windows.Forms.Padding(20);
@@ -164,7 +164,7 @@
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
             this.splitContainer1.IsSplitterFixed = true;
-            this.splitContainer1.Location = new System.Drawing.Point(27, 25);
+            this.splitContainer1.Location = new System.Drawing.Point(20, 20);
             this.splitContainer1.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
@@ -195,7 +195,7 @@
             this.lblRecentFiles.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
             this.lblRecentFiles.Location = new System.Drawing.Point(200, 217);
             this.lblRecentFiles.Name = "lblRecentFiles";
-            this.lblRecentFiles.Size = new System.Drawing.Size(198, 25);
+            this.lblRecentFiles.Size = new System.Drawing.Size(159, 20);
             this.lblRecentFiles.TabIndex = 8;
             this.lblRecentFiles.Text = "📄 ไฟล์ที่อัปโหลดล่าสุด";
             // 
@@ -325,7 +325,7 @@
             // splitterDash
             // 
             this.splitterDash.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(197)))), ((int)(((byte)(211)))), ((int)(((byte)(232)))));
-            this.splitterDash.Location = new System.Drawing.Point(399, 62);
+            this.splitterDash.Location = new System.Drawing.Point(300, 50);
             this.splitterDash.Margin = new System.Windows.Forms.Padding(4);
             this.splitterDash.Name = "splitterDash";
             this.splitterDash.Size = new System.Drawing.Size(4, 644);
@@ -341,7 +341,7 @@
             this.pnlDashLeft.Controls.Add(this.pnlTreeViewToggle);
             this.pnlDashLeft.Controls.Add(this.lblTreeTitle);
             this.pnlDashLeft.Dock = System.Windows.Forms.DockStyle.Left;
-            this.pnlDashLeft.Location = new System.Drawing.Point(0, 62);
+            this.pnlDashLeft.Location = new System.Drawing.Point(0, 50);
             this.pnlDashLeft.Margin = new System.Windows.Forms.Padding(4);
             this.pnlDashLeft.Name = "pnlDashLeft";
             this.pnlDashLeft.Padding = new System.Windows.Forms.Padding(8);
@@ -379,7 +379,7 @@
             this.pnlTreeViewToggle.Controls.Add(this.btnToggleByOrg);
             this.pnlTreeViewToggle.Controls.Add(this.btnToggleByConfidentiality);
             this.pnlTreeViewToggle.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlTreeViewToggle.Location = new System.Drawing.Point(11, 47);
+            this.pnlTreeViewToggle.Location = new System.Drawing.Point(8, 38);
             this.pnlTreeViewToggle.Margin = new System.Windows.Forms.Padding(4);
             this.pnlTreeViewToggle.Name = "pnlTreeViewToggle";
             this.pnlTreeViewToggle.Padding = new System.Windows.Forms.Padding(0, 4, 0, 4);
@@ -394,7 +394,7 @@
             this.btnToggleByOrg.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnToggleByOrg.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnToggleByOrg.ForeColor = System.Drawing.Color.White;
-            this.btnToggleByOrg.Location = new System.Drawing.Point(0, 5);
+            this.btnToggleByOrg.Location = new System.Drawing.Point(0, 4);
             this.btnToggleByOrg.Margin = new System.Windows.Forms.Padding(4);
             this.btnToggleByOrg.Name = "btnToggleByOrg";
             this.btnToggleByOrg.Size = new System.Drawing.Size(103, 28);
@@ -410,7 +410,7 @@
             this.btnToggleByConfidentiality.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnToggleByConfidentiality.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnToggleByConfidentiality.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(87)))), ((int)(((byte)(154)))));
-            this.btnToggleByConfidentiality.Location = new System.Drawing.Point(0, 5);
+            this.btnToggleByConfidentiality.Location = new System.Drawing.Point(0, 4);
             this.btnToggleByConfidentiality.Margin = new System.Windows.Forms.Padding(4);
             this.btnToggleByConfidentiality.Name = "btnToggleByConfidentiality";
             this.btnToggleByConfidentiality.Size = new System.Drawing.Size(282, 28);
@@ -719,7 +719,7 @@
             // btnRibbonUpload
             // 
             this.btnRibbonUpload.Name = "btnRibbonUpload";
-            this.btnRibbonUpload.Size = new System.Drawing.Size(97, 27);
+            this.btnRibbonUpload.Size = new System.Drawing.Size(81, 24);
             this.btnRibbonUpload.Text = "📤 อัปโหลด";
             this.btnRibbonUpload.ToolTipText = "อัปโหลดไฟล์ไปยัง Folder ที่เลือก";
             this.btnRibbonUpload.Visible = false;
