@@ -292,6 +292,39 @@ namespace CMS.Data.Repositories
             }
         }
 
+        // ── Excel Import Template Config support ────────────────────────────────
+
+        private static readonly HashSet<string> NonImportableColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "ArticleID", "CreatedBy", "CreatedDate", "ReviewedBy", "ReviewedDate",
+            "UpdatedBy", "UpdatedDate", "ViewCount", "LikeCount", "IsDelete", "CurrentVersion",
+        };
+
+        public IList<string> GetImportableTargetColumns()
+        {
+            var results = new List<string>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT COLUMN_NAME
+                    FROM   INFORMATION_SCHEMA.COLUMNS
+                    WHERE  TABLE_SCHEMA = 'KMS' AND TABLE_NAME = 't_KBArticle'
+                    ORDER BY ORDINAL_POSITION";
+                using (var cmd = new SqlCommand(sql, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        string columnName = reader.GetString(0);
+                        if (!NonImportableColumns.Contains(columnName))
+                            results.Add(columnName);
+                    }
+                }
+            }
+            return results;
+        }
+
         public bool ExistsByCode(string articleCode)
         {
             if (string.IsNullOrWhiteSpace(articleCode)) return false;

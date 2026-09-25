@@ -112,6 +112,7 @@
     <Compile Include="Interfaces\IShareAccessService.cs" />
     <Compile Include="Interfaces\IMenuService.cs" />
     <Compile Include="Interfaces\IKBCategoryService.cs" />
+    <Compile Include="Interfaces\IKBImportTemplateService.cs" />
     <Compile Include="Interfaces\IKBArticleService.cs" />
     <Compile Include="Interfaces\IKBExcelReaderService.cs" />
     <Compile Include="Interfaces\IKBImportProcessorService.cs" />
@@ -140,6 +141,7 @@
     <Compile Include="ShareAccessService.cs" />
     <Compile Include="MenuService.cs" />
     <Compile Include="KBCategoryService.cs" />
+    <Compile Include="KBImportTemplateService.cs" />
     <Compile Include="KBArticleService.cs" />
     <Compile Include="KBDashboardService.cs" />
     <Compile Include="KBExcelReadException.cs" />

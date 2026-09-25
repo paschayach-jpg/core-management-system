@@ -70,6 +70,8 @@ namespace CMS.Presentation.Modules.KMS
         private Func<KBImportWizardForm> _importWizardFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBDashboardForm. Returns DialogResult.</summary>
         private Func<DialogResult> _dashboardFactory;
+        /// <summary>Creates, wires, and shows a pre-wired KBImportTemplateConfigForm. Returns DialogResult.</summary>
+        private Func<DialogResult> _importTemplateConfigFactory;
 
 
         public KBMainForm()
@@ -183,6 +185,15 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachDashboardFactory(Func<DialogResult> factory)
         {
             _dashboardFactory = factory;
+        }
+
+        /// <summary>
+        /// Inject the factory used to create and show the Excel Import Template Config screen
+        /// with its pre-wired presenter. Must be called before the form is shown.
+        /// </summary>
+        public void AttachImportTemplateConfigFactory(Func<DialogResult> factory)
+        {
+            _importTemplateConfigFactory = factory;
         }
 
         // ── Form events ──────────────────────────────────────────────────────────
@@ -543,6 +554,13 @@ namespace CMS.Presentation.Modules.KMS
             if (_presenter == null) return;
             if (_dashboardFactory == null) return;
             _dashboardFactory();
+        }
+
+        private void BtnImportTemplateConfig_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            if (_importTemplateConfigFactory == null) return;
+            _importTemplateConfigFactory();
         }
 
         private void BtnImportExcel_Click(object sender, EventArgs e)
