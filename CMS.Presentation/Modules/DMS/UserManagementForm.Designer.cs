@@ -24,6 +24,9 @@ namespace CMS.Presentation
             this.btnEdit        = new System.Windows.Forms.Button();
             this.btnToggle      = new System.Windows.Forms.Button();
             this.btnRefresh     = new System.Windows.Forms.Button();
+            this.pnlFilterRow2  = new System.Windows.Forms.Panel();
+            this.lblDeptFilter  = new System.Windows.Forms.Label();
+            this.cmbDeptFilter  = new System.Windows.Forms.ComboBox();
             this.lvUsers        = new System.Windows.Forms.ListView();
             this.colID          = new System.Windows.Forms.ColumnHeader();
             this.colAD          = new System.Windows.Forms.ColumnHeader();
@@ -40,6 +43,7 @@ namespace CMS.Presentation
 
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
+            this.pnlFilterRow2.SuspendLayout();
             this.SuspendLayout();
 
             // ── pnlHeader ────────────────────────────────────────────────────
@@ -88,7 +92,7 @@ namespace CMS.Presentation
             this.cmbStatus.Width          = 120;
             this.cmbStatus.Name           = "cmbStatus";
             this.cmbStatus.Font           = new System.Drawing.Font("Segoe UI", 10F);
-            this.cmbStatus.SelectedIndex  = 0;
+            this.cmbStatus.SelectedIndex  = 1; // default "ใช้งาน" — ลด noise จากผู้ใช้ที่ปิดใช้แล้ว
             //
             // cmbFilterColumn
             //
@@ -163,6 +167,37 @@ namespace CMS.Presentation
             this.btnRefresh.Text      = "🔄 รีเฟรช";
             this.btnRefresh.Font      = new System.Drawing.Font("Segoe UI", 9F);
 
+            // ── pnlFilterRow2 ────────────────────────────────────────────────
+            this.pnlFilterRow2.BackColor = System.Drawing.Color.FromArgb(233, 237, 246);
+            this.pnlFilterRow2.Controls.AddRange(new System.Windows.Forms.Control[] {
+                this.lblDeptFilter, this.cmbDeptFilter });
+            this.pnlFilterRow2.Dock     = System.Windows.Forms.DockStyle.Top;
+            this.pnlFilterRow2.Height   = 40;
+            this.pnlFilterRow2.Name     = "pnlFilterRow2";
+            this.pnlFilterRow2.Padding  = new System.Windows.Forms.Padding(6, 6, 6, 0);
+            this.pnlFilterRow2.TabIndex = 2;
+            //
+            // lblDeptFilter
+            //
+            this.lblDeptFilter.Left      = 6;
+            this.lblDeptFilter.Top       = 10;
+            this.lblDeptFilter.Width     = 50;
+            this.lblDeptFilter.Height    = 22;
+            this.lblDeptFilter.Name      = "lblDeptFilter";
+            this.lblDeptFilter.Text      = "แผนก:";
+            this.lblDeptFilter.Font      = new System.Drawing.Font("Segoe UI", 9.5F);
+            this.lblDeptFilter.ForeColor = System.Drawing.Color.FromArgb(55, 65, 90);
+            this.lblDeptFilter.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // cmbDeptFilter
+            //
+            this.cmbDeptFilter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbDeptFilter.Left          = 60;
+            this.cmbDeptFilter.Top           = 7;
+            this.cmbDeptFilter.Width         = 260;
+            this.cmbDeptFilter.Name          = "cmbDeptFilter";
+            this.cmbDeptFilter.Font          = new System.Drawing.Font("Segoe UI", 10F);
+
             // ── lvUsers ──────────────────────────────────────────────────────
             this.lvUsers.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
                 this.colID, this.colAD, this.colDisplay, this.colEmployee,
@@ -206,6 +241,7 @@ namespace CMS.Presentation
             this.BackColor           = System.Drawing.Color.White;
             this.ClientSize          = new System.Drawing.Size(1100, 680);
             this.Controls.Add(this.lvUsers);
+            this.Controls.Add(this.pnlFilterRow2);
             this.Controls.Add(this.pnlToolbar);
             this.Controls.Add(this.pnlHeader);
             this.Controls.Add(this.lblStatusBar);
@@ -218,6 +254,7 @@ namespace CMS.Presentation
             this.pnlHeader.ResumeLayout(false);
             this.pnlToolbar.ResumeLayout(false);
             this.pnlToolbar.PerformLayout();
+            this.pnlFilterRow2.ResumeLayout(false);
             this.ResumeLayout(false);
         }
 
@@ -233,6 +270,9 @@ namespace CMS.Presentation
         private System.Windows.Forms.Button         btnEdit;
         private System.Windows.Forms.Button         btnToggle;
         private System.Windows.Forms.Button         btnRefresh;
+        private System.Windows.Forms.Panel          pnlFilterRow2;
+        private System.Windows.Forms.Label          lblDeptFilter;
+        private System.Windows.Forms.ComboBox       cmbDeptFilter;
         private System.Windows.Forms.ListView       lvUsers;
         private System.Windows.Forms.ColumnHeader   colID;
         private System.Windows.Forms.ColumnHeader   colAD;

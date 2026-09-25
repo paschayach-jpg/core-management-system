@@ -25,6 +25,10 @@ namespace CMS.Presentation
         private List<UserAccount> _allUsers = new List<UserAccount>();
         private List<OrgUnit> _allOrgs = new List<OrgUnit>();
 
+        private const string AllDeptLabel = "-- ทุกแผนก --";
+        private int _sortColumn = 0;
+        private SortOrder _sortOrder = SortOrder.Ascending;
+
         // Tab 3 controls (created programmatically)
         private TabPage _tabVisibility;
         private ListView _lvVisibility;
@@ -141,9 +145,11 @@ namespace CMS.Presentation
             // Tab 1
             _txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) FilterUsers(); };
             _cmbRoleFilter.SelectedIndexChanged += (s, e) => FilterUsers();
+            _cmbDeptFilter.SelectedIndexChanged += (s, e) => FilterUsers();
             btnFind.Click += (s, e) => FilterUsers();
             _lvUsers.SelectedIndexChanged += LvUsers_SelectionChanged;
             _lvUsers.DoubleClick += BtnChangeRole_Click;
+            _lvUsers.ColumnClick += LvUsers_ColumnClick;
             _btnChangeRole.Click += BtnChangeRole_Click;
             _btnDeactivate.Click += BtnDeactivate_Click;
             _btnAssignOrg.Click += BtnAssignOrg_Click;
@@ -191,6 +197,7 @@ namespace CMS.Presentation
                     ? _orgLookupController.GetHierarchy() ?? Enumerable.Empty<OrgUnit>()
                     : Enumerable.Empty<OrgUnit>()).ToList();
 
+                PopulateDepartmentFilter();
                 FilterUsers();
                 LoadOrgTree();
                 SetStatus(_lblStatus,
@@ -202,10 +209,32 @@ namespace CMS.Presentation
             }
         }
 
+        private void PopulateDepartmentFilter()
+        {
+            string prevSelection = _cmbDeptFilter.SelectedItem as string;
+
+            _cmbDeptFilter.Items.Clear();
+            _cmbDeptFilter.Items.Add(AllDeptLabel);
+
+            var depts = _allUsers
+                .Where(u => !string.IsNullOrWhiteSpace(u.DepartmentName))
+                .Select(u => u.DepartmentName.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            foreach (var d in depts) _cmbDeptFilter.Items.Add(d);
+
+            if (prevSelection != null && _cmbDeptFilter.Items.Contains(prevSelection))
+                _cmbDeptFilter.SelectedItem = prevSelection;   // คงค่า filter ที่เลือกไว้ตอน refresh
+            else
+                _cmbDeptFilter.SelectedIndex = 0;
+        }
+
         private void FilterUsers()
         {
             string search = _txtSearch.Text.Trim().ToLower();
             int roleIdx = _cmbRoleFilter.SelectedIndex;
+            string deptFilter = _cmbDeptFilter.SelectedIndex > 0 ? _cmbDeptFilter.SelectedItem as string : null;
 
             IEnumerable<UserAccount> result = _allUsers;
 
@@ -217,6 +246,9 @@ namespace CMS.Presentation
 
             if (roleIdx > 0)
                 result = result.Where(u => u.AppRole == roleIdx);
+
+            if (!string.IsNullOrEmpty(deptFilter))
+                result = result.Where(u => string.Equals((u.DepartmentName ?? "").Trim(), deptFilter, StringComparison.OrdinalIgnoreCase));
 
             PopulateUserList(result.ToList());
         }
@@ -237,6 +269,8 @@ namespace CMS.Presentation
                 item.ForeColor = u.IsActive ? Color.Black : Color.DimGray;
                 _lvUsers.Items.Add(item);
             }
+            _lvUsers.ListViewItemSorter = new ListViewItemComparer(_sortColumn, _sortOrder);
+            _lvUsers.Sort();
             _lvUsers.EndUpdate();
         }
 
@@ -327,6 +361,50 @@ namespace CMS.Presentation
         // ─────────────────────────────────────────────────────────────────────
         // Event Handlers
         // ─────────────────────────────────────────────────────────────────────
+
+        private void LvUsers_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            if (e.Column == _sortColumn)
+                _sortOrder = _sortOrder == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
+            else
+            {
+                _sortColumn = e.Column;
+                _sortOrder = SortOrder.Ascending;
+            }
+
+            _lvUsers.ListViewItemSorter = new ListViewItemComparer(_sortColumn, _sortOrder);
+            _lvUsers.Sort();
+        }
+
+        // เรียงตามข้อความในคอลัมน์ที่คลิก — ลอง parse ตัวเลขก่อน ไม่ได้ค่อย fallback เรียงตัวอักษร
+        private class ListViewItemComparer : System.Collections.IComparer
+        {
+            private readonly int _col;
+            private readonly SortOrder _order;
+
+            public ListViewItemComparer(int col, SortOrder order)
+            {
+                _col = col;
+                _order = order;
+            }
+
+            public int Compare(object x, object y)
+            {
+                var itemX = (ListViewItem)x;
+                var itemY = (ListViewItem)y;
+                string textX = itemX.SubItems.Count > _col ? itemX.SubItems[_col].Text : "";
+                string textY = itemY.SubItems.Count > _col ? itemY.SubItems[_col].Text : "";
+
+                int result;
+                double numX, numY;
+                if (double.TryParse(textX, out numX) && double.TryParse(textY, out numY))
+                    result = numX.CompareTo(numY);
+                else
+                    result = string.Compare(textX, textY, StringComparison.CurrentCultureIgnoreCase);
+
+                return _order == SortOrder.Descending ? -result : result;
+            }
+        }
 
         private void LvUsers_SelectionChanged(object sender, EventArgs e)
         {
