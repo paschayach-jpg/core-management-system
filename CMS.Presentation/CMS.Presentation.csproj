@@ -344,6 +344,12 @@
     <Compile Include="Modules\KMS\KBCategoryForm.Designer.cs">
       <DependentUpon>KBCategoryForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\KMS\KBImportTemplateConfigForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBImportTemplateConfigForm.Designer.cs">
+      <DependentUpon>KBImportTemplateConfigForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\KMS\KBMainForm.cs">
       <SubType>Form</SubType>
     </Compile>

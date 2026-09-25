@@ -70,6 +70,8 @@ namespace CMS.Presentation.Modules.KMS
         private Func<KBImportWizardForm> _importWizardFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBDashboardForm. Returns DialogResult.</summary>
         private Func<DialogResult> _dashboardFactory;
+        /// <summary>Creates, wires, and shows a pre-wired KBImportTemplateConfigForm. Returns DialogResult.</summary>
+        private Func<DialogResult> _importTemplateConfigFactory;
 
 
         public KBMainForm()
@@ -183,6 +185,15 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachDashboardFactory(Func<DialogResult> factory)
         {
             _dashboardFactory = factory;
+        }
+
+        /// <summary>
+        /// Inject the factory used to create and show the Excel Import Template Config screen
+        /// with its pre-wired presenter. Must be called before the form is shown.
+        /// </summary>
+        public void AttachImportTemplateConfigFactory(Func<DialogResult> factory)
+        {
+            _importTemplateConfigFactory = factory;
         }
 
         // ── Form events ──────────────────────────────────────────────────────────
@@ -500,6 +511,16 @@ namespace CMS.Presentation.Modules.KMS
             _presenter.OnCategorySelected(cat.CategoryID, cat.CategoryName);
         }
 
+        /// <summary>
+        /// AfterSelect ไม่ fire ถ้าคลิกโหนดที่ selected อยู่แล้ว (WinForms TreeView behavior)
+        /// ทำให้คลิกเมนู/หมวดหมู่ซ้ำที่ node เดิมแล้วไม่มีอะไรเกิดขึ้น — เรียก logic เดิมซ้ำเองในกรณีนี้
+        /// </summary>
+        private void TreeCategories_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            if (e.Node != null && treeCategories.SelectedNode == e.Node)
+                TreeCategories_AfterSelect(sender, new TreeViewEventArgs(e.Node));
+        }
+
         // ── Article card click ───────────────────────────────────────────────────
 
         private void OnArticleCardClick(KBArticle article)
@@ -533,6 +554,13 @@ namespace CMS.Presentation.Modules.KMS
             if (_presenter == null) return;
             if (_dashboardFactory == null) return;
             _dashboardFactory();
+        }
+
+        private void BtnImportTemplateConfig_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            if (_importTemplateConfigFactory == null) return;
+            _importTemplateConfigFactory();
         }
 
         private void BtnImportExcel_Click(object sender, EventArgs e)
@@ -874,10 +902,12 @@ namespace CMS.Presentation.Modules.KMS
 
             cboSearchField.DataSource = new[]
             {
-                new { Id = 1, Description = "ชื่อบทความ"    },
-                new { Id = 2, Description = "เนื้อหาบทความ" },
-                new { Id = 3, Description = "Tag"           },
-                new { Id = 4, Description = "Summary"       },
+                new { Id = 1, Description = "ทั้งหมด"        },
+                new { Id = 2, Description = "ชื่อบทความ"    },
+                new { Id = 3, Description = "เนื้อหาบทความ" },
+                new { Id = 4, Description = "Tag"           },
+                new { Id = 5, Description = "Summary"       },
+                new { Id = 6, Description = "หมวดหมู่ของชื่อบทความ"    },
             };
             cboSearchField.DisplayMember = "Description";
             cboSearchField.ValueMember   = "Id";

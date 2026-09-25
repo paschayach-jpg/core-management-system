@@ -71,6 +71,16 @@ namespace CMS.Presentation.Modules.KMS
             ClearDirty();
         }
 
+        /// <summary>
+        /// AfterSelect ไม่ fire ถ้าคลิกโหนดที่ selected อยู่แล้ว (WinForms TreeView behavior)
+        /// ทำให้คลิกเมนู/หมวดหมู่ซ้ำที่ node เดิมแล้วไม่มีอะไรเกิดขึ้น — เรียก logic เดิมซ้ำเองในกรณีนี้
+        /// </summary>
+        private void TreeCategories_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            if (e.Node != null && treeCategories.SelectedNode == e.Node)
+                TreeCategories_AfterSelect(sender, new TreeViewEventArgs(e.Node));
+        }
+
         private void TxtSearch_TextChanged(object sender, EventArgs e)
         {
             RefreshTree();

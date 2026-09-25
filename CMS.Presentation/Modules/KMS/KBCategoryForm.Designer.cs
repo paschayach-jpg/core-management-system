@@ -954,7 +954,8 @@ namespace CMS.Presentation.Modules.KMS
             this.treeCategories.Size = new System.Drawing.Size(370, 720);
             this.treeCategories.TabIndex = 0;
             this.treeCategories.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeCategories_AfterSelect);
-            // 
+            this.treeCategories.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.TreeCategories_NodeMouseClick);
+            //
             // pnlLeftFooter
             // 
             this.pnlLeftFooter.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(235)))), ((int)(((byte)(240)))), ((int)(((byte)(248)))));

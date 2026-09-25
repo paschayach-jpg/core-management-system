@@ -34,5 +34,12 @@ namespace CMS.Data.Interfaces
 
         void SoftDelete(int articleId);
         void UpdateExpiryDate(int articleId, DateTime? expiryDate);
+
+        /// <summary>
+        /// คืนรายชื่อคอลัมน์จริงของ KMS.t_KBArticle ที่ใช้เป็นเป้าหมาย mapping ในหน้า config Excel Import Template
+        /// (query สดจาก INFORMATION_SCHEMA.COLUMNS แล้วตัดคอลัมน์ audit/system ออก)
+        /// เรียงตาม ORDINAL_POSITION ของตารางจริง
+        /// </summary>
+        IList<string> GetImportableTargetColumns();
     }
 }

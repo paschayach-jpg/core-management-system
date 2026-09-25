@@ -78,31 +78,54 @@ namespace CMS.Services
             var _keyword = new string(keyword.Where(c => !char.IsWhiteSpace(c)).ToArray());
             switch (searchFieldId)
             {
-                case 1:
+                case 1: // ทั้งหมด — ค้นทุก field
                     return results.Where(a =>
-                        a.Title != null &&
-                        string.Equals(new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray()), _keyword, StringComparison.OrdinalIgnoreCase));
+                        MatchesTitle(a, _keyword) || MatchesContent(a, _keyword) || MatchesTags(a, _keyword) ||
+                        MatchesSummary(a, _keyword) || MatchesTitleCategory(a, _keyword));
                 case 2:
-                    return results.Where(a =>
-                        (a.ContentHTML != null && new string(StripHtmlTags(a.ContentHTML).Where(c => !char.IsWhiteSpace(c)).ToArray()).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
+                    return results.Where(a => MatchesTitle(a, _keyword));
                 case 3:
-                    return results.Where(a =>
-                        (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
+                    return results.Where(a => MatchesContent(a, _keyword));
                 case 4:
-                    return results.Where(a =>
-                    {
-                        if (string.IsNullOrEmpty(a.Summary))
-                            return false;
-
-                        var summary = new string(
-                            a.Summary.Where(c => !char.IsWhiteSpace(c))
-                                     .ToArray());
-
-                        return summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0;
-                    });
+                    return results.Where(a => MatchesTags(a, _keyword));
+                case 5:
+                    return results.Where(a => MatchesSummary(a, _keyword));
+                case 6:
+                    return results.Where(a => MatchesTitleCategory(a, _keyword));
                 default:
                     return results;
             }
+        }
+
+        private static bool MatchesTitle(KBArticle a, string keyword)
+        {
+            return a.Title != null &&
+                string.Equals(new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray()), keyword, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool MatchesContent(KBArticle a, string keyword)
+        {
+            return a.ContentHTML != null &&
+                new string(StripHtmlTags(a.ContentHTML).Where(c => !char.IsWhiteSpace(c)).ToArray()).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool MatchesTags(KBArticle a, string keyword)
+        {
+            return a.Tags != null && a.Tags.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool MatchesSummary(KBArticle a, string keyword)
+        {
+            if (string.IsNullOrEmpty(a.Summary)) return false;
+            var summary = new string(a.Summary.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            return summary.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool MatchesTitleCategory(KBArticle a, string keyword)
+        {
+            if (string.IsNullOrEmpty(a.TitleCategory)) return false;
+            var titleCategory = new string(a.TitleCategory.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            return titleCategory.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public KBArticle GetById(int articleId)
