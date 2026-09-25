@@ -36,6 +36,8 @@ namespace CMS.Presentation
             this.lblRole = new System.Windows.Forms.Label();
             this._cmbRoleFilter = new System.Windows.Forms.ComboBox();
             this.btnFind = new System.Windows.Forms.Button();
+            this.lblDept = new System.Windows.Forms.Label();
+            this._cmbDeptFilter = new System.Windows.Forms.ComboBox();
             this.tabOrg = new System.Windows.Forms.TabPage();
             this.splitOrg = new System.Windows.Forms.SplitContainer();
             this.pnlOrgLeft = new System.Windows.Forms.Panel();
@@ -231,6 +233,8 @@ namespace CMS.Presentation
             this.pnlSearch.Controls.Add(this.lblRole);
             this.pnlSearch.Controls.Add(this._cmbRoleFilter);
             this.pnlSearch.Controls.Add(this.btnFind);
+            this.pnlSearch.Controls.Add(this.lblDept);
+            this.pnlSearch.Controls.Add(this._cmbDeptFilter);
             this.pnlSearch.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlSearch.Location = new System.Drawing.Point(8, 8);
             this.pnlSearch.Name = "pnlSearch";
@@ -284,7 +288,24 @@ namespace CMS.Presentation
             this.btnFind.Size = new System.Drawing.Size(80, 28);
             this.btnFind.TabIndex = 4;
             this.btnFind.Text = "ค้นหา";
-            // 
+            //
+            // lblDept
+            //
+            this.lblDept.Location = new System.Drawing.Point(580, 12);
+            this.lblDept.Name = "lblDept";
+            this.lblDept.Size = new System.Drawing.Size(48, 23);
+            this.lblDept.TabIndex = 5;
+            this.lblDept.Text = "แผนก:";
+            this.lblDept.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            //
+            // _cmbDeptFilter
+            //
+            this._cmbDeptFilter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this._cmbDeptFilter.Location = new System.Drawing.Point(632, 8);
+            this._cmbDeptFilter.Name = "_cmbDeptFilter";
+            this._cmbDeptFilter.Size = new System.Drawing.Size(180, 25);
+            this._cmbDeptFilter.TabIndex = 6;
+            //
             // tabOrg
             // 
             this.tabOrg.Controls.Add(this.splitOrg);
@@ -486,6 +507,8 @@ namespace CMS.Presentation
         private System.Windows.Forms.Label          lblRole;
         private System.Windows.Forms.ComboBox       _cmbRoleFilter;
         private System.Windows.Forms.Button         btnFind;
+        private System.Windows.Forms.Label          lblDept;
+        private System.Windows.Forms.ComboBox       _cmbDeptFilter;
         private System.Windows.Forms.ListView       _lvUsers;
         private System.Windows.Forms.ColumnHeader   colDisplayName;
         private System.Windows.Forms.ColumnHeader   colADUser;

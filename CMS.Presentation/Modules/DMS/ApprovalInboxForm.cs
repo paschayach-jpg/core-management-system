@@ -107,8 +107,11 @@ namespace CMS.Presentation
 
         private void chkSelectAll_CheckedChanged(object sender, EventArgs e)
         {
+            // cache ค่า target ก่อน loop — ItemChecked handler จะ set chkSelectAll.Checked
+            // กลับเป็น false ทันทีที่เจอ partial selection ถ้าอ่าน property สดทุกรอบจะ uncheck ตัวเองกลาง loop
+            bool target = chkSelectAll.Checked;
             foreach (ListViewItem item in lvRequests.Items)
-                item.Checked = chkSelectAll.Checked;
+                item.Checked = target;
         }
 
         private void UpdateButtonState()

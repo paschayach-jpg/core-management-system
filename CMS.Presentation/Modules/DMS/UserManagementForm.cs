@@ -27,6 +27,11 @@ namespace CMS.Presentation
         private List<HrPositionLevel> _levels = new List<HrPositionLevel>();
         private List<HrPositionMapping> _positionMappings = new List<HrPositionMapping>();
 
+        private static readonly Font boldLevelFont = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+
+        private int _sortColumn = -1;
+        private SortOrder _sortOrder = SortOrder.None;
+
         public UserManagementForm(IUserAdminController userAdminController, UserContext currentUser,
                                    CMS.Services.Interfaces.IAuditService auditService = null,
                                    CMS.Services.Interfaces.ILdapUserSearchService ldapUserSearchService = null)
@@ -51,6 +56,7 @@ namespace CMS.Presentation
             txtSearch.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) ApplyFilter(); };
             cmbStatus.SelectedIndexChanged += (s, e) => ApplyFilter();
             cmbFilterColumn.SelectedIndexChanged += (s, e) => ApplyFilter();
+            cmbDeptFilter.SelectedIndexChanged += (s, e) => ApplyFilter();
             btnSearch.Click += (s, e) => ApplyFilter();
             btnCreate.Click += BtnCreate_Click;
             btnEdit.Click += BtnEdit_Click;
@@ -58,6 +64,7 @@ namespace CMS.Presentation
             btnRefresh.Click += (s, e) => LoadUsers();
             lvUsers.SelectedIndexChanged += LvUsers_SelectionChanged;
             lvUsers.DoubleClick += BtnEdit_Click;
+            lvUsers.ColumnClick += LvUsers_ColumnClick;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -203,13 +210,39 @@ namespace CMS.Presentation
                     ? _userAdminController.GetAllUsers() ?? Enumerable.Empty<UserAccount>()
                     : Enumerable.Empty<UserAccount>()).ToList();
 
+                PopulateDepartmentFilter();
                 ApplyFilter();
-                SetStatus(string.Format("โหลดสำเร็จ: {0} ผู้ใช้", _allUsers.Count), Color.Gray);
+                string filterLabel = cmbStatus.SelectedIndex == 1 ? " (กำลังกรอง: ใช้งาน)"
+                    : cmbStatus.SelectedIndex == 2 ? " (กำลังกรอง: ปิดใช้งาน)" : "";
+                SetStatus(string.Format("โหลดสำเร็จ: {0} ผู้ใช้{1}", _allUsers.Count, filterLabel), Color.Gray);
             }
             catch (Exception ex)
             {
                 SetStatus("โหลดข้อมูลไม่สำเร็จ: " + ex.Message, Color.Red);
             }
+        }
+
+        private const string AllDeptLabel = "-- ทุกแผนก --";
+
+        private void PopulateDepartmentFilter()
+        {
+            string prevSelection = cmbDeptFilter.SelectedItem as string;
+
+            cmbDeptFilter.Items.Clear();
+            cmbDeptFilter.Items.Add(AllDeptLabel);
+
+            var depts = _allUsers
+                .Where(u => !string.IsNullOrWhiteSpace(u.DepartmentName))
+                .Select(u => u.DepartmentName.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            foreach (var d in depts) cmbDeptFilter.Items.Add(d);
+
+            if (prevSelection != null && cmbDeptFilter.Items.Contains(prevSelection))
+                cmbDeptFilter.SelectedItem = prevSelection;   // คงค่า filter ที่เลือกไว้ตอน refresh
+            else
+                cmbDeptFilter.SelectedIndex = 0;
         }
 
         private void ApplyFilter()
@@ -247,6 +280,13 @@ namespace CMS.Presentation
             if (status == 1) result = result.Where(u => u.IsActive);
             if (status == 2) result = result.Where(u => !u.IsActive);
 
+            string deptFilter = cmbDeptFilter.SelectedIndex > 0 ? cmbDeptFilter.SelectedItem as string : null;
+            if (!string.IsNullOrEmpty(deptFilter))
+                result = result.Where(u => string.Equals((u.DepartmentName ?? "").Trim(), deptFilter, StringComparison.OrdinalIgnoreCase));
+
+            // เมื่อดู "ทุกสถานะ" ให้ active ขึ้นก่อนเสมอ เจอผู้ใช้ที่ใช้งานง่ายกว่า
+            if (status == 0) result = result.OrderByDescending(u => u.IsActive);
+
             PopulateList(result.ToList());
         }
 
@@ -263,15 +303,25 @@ namespace CMS.Presentation
                 item.SubItems.Add(u.DepartmentName ?? "");
                 item.SubItems.Add(u.DivisionName ?? "");
                 item.SubItems.Add(u.PositionName ?? "");
-                item.SubItems.Add(u.LevelCode ?? "");
+                var subLevel = item.SubItems.Add(u.LevelCode ?? "");
                 item.SubItems.Add(RoleName(u.AppRole));
                 item.SubItems.Add(u.IsActive ? "ใช้งาน" : "ปิดใช้");
                 item.SubItems.Add(u.LastLoginDate.HasValue
                     ? u.LastLoginDate.Value.ToString("dd/MM/yy HH:mm") : "—");
                 item.Tag = u;
                 item.ForeColor = u.IsActive ? Color.Black : Color.DimGray;
+
+                // เน้นพื้นหลังทั้งแถวเมื่อ Level มีค่า — สื่อว่า "ระบุ Level แล้ว พร้อมใช้งาน"
+                if (!string.IsNullOrWhiteSpace(u.LevelCode))
+                {
+                    item.BackColor = u.IsActive
+                        ? Color.FromArgb(200, 235, 210)   // เขียวอ่อน = active + มี Level
+                        : Color.FromArgb(225, 235, 225);  // เขียวจางลง เมื่อ inactive
+                    subLevel.Font = boldLevelFont;
+                }
                 lvUsers.Items.Add(item);
             }
+            if (_sortColumn != -1) lvUsers.Sort();   // คงลำดับ sort เดิมไว้หลัง filter/refresh ใหม่
             lvUsers.EndUpdate();
 
             // แสดง status พร้อมจำนวนรายการ
@@ -284,6 +334,50 @@ namespace CMS.Presentation
         // ─────────────────────────────────────────────────────────────────────
         // Event Handlers
         // ─────────────────────────────────────────────────────────────────────
+
+        private void LvUsers_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            if (e.Column == _sortColumn)
+                _sortOrder = _sortOrder == SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
+            else
+            {
+                _sortColumn = e.Column;
+                _sortOrder = SortOrder.Ascending;
+            }
+
+            lvUsers.ListViewItemSorter = new ListViewItemComparer(_sortColumn, _sortOrder);
+            lvUsers.Sort();
+        }
+
+        // เรียงตามข้อความในคอลัมน์ที่คลิก — ลอง parse ตัวเลขก่อน (เช่น ID) ไม่ได้ค่อย fallback เรียงตัวอักษร
+        private class ListViewItemComparer : System.Collections.IComparer
+        {
+            private readonly int _col;
+            private readonly SortOrder _order;
+
+            public ListViewItemComparer(int col, SortOrder order)
+            {
+                _col = col;
+                _order = order;
+            }
+
+            public int Compare(object x, object y)
+            {
+                var itemX = (ListViewItem)x;
+                var itemY = (ListViewItem)y;
+                string textX = itemX.SubItems.Count > _col ? itemX.SubItems[_col].Text : "";
+                string textY = itemY.SubItems.Count > _col ? itemY.SubItems[_col].Text : "";
+
+                int result;
+                double numX, numY;
+                if (double.TryParse(textX, out numX) && double.TryParse(textY, out numY))
+                    result = numX.CompareTo(numY);
+                else
+                    result = string.Compare(textX, textY, StringComparison.CurrentCultureIgnoreCase);
+
+                return _order == SortOrder.Descending ? -result : result;
+            }
+        }
 
         private void LvUsers_SelectionChanged(object sender, EventArgs e)
         {
