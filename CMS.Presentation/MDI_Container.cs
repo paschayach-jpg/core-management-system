@@ -1848,15 +1848,22 @@ namespace CMS.Presentation
                     "อยู่ระหว่างการพัฒนา", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return null;
             }
+            if (_kbImportTemplateService == null)
+            {
+                MessageBox.Show(
+                    "ไม่พบ Excel Import Template service — ไม่สามารถเปิดหน้านำเข้าข้อมูลได้",
+                    "อยู่ระหว่างการพัฒนา", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
 
             var wizard          = new KBImportWizardForm(_currentUser);
             var excelReader     = new CMS.Services.KBExcelReader();
             var downloader      = new CMS.Services.LawFileDownloader();
             var processor       = new CMS.Services.KBImportProcessor(
-                _kbArticleRepository, _kbVersionRepository, _kbArticleLinkRepository,
+                _kbArticleRepository, _kbArticleLinkRepository,
                 _kbArticleService, _fileService, downloader);
             var wizardPresenter = new KBImportWizardController(
-                wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _currentUser);
+                wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _kbImportTemplateService, _currentUser);
             wizard.AttachPresenter(wizardPresenter);
             return wizard;
         }

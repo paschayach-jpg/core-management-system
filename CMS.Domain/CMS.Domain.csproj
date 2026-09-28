@@ -90,6 +90,7 @@
     <Compile Include="Models\ExcelColumnPreview.cs" />
     <Compile Include="Models\KBArticleTypeOption.cs" />
     <Compile Include="Models\KBArticleTypeCatalog.cs" />
+    <Compile Include="Models\KBImportLayoutTypeCatalog.cs" />
     <Compile Include="Models\KBVersion.cs" />
     <Compile Include="Models\KBArticleLink.cs" />
     <Compile Include="Models\KBArticleAttachment.cs" />

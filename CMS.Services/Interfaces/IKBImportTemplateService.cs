@@ -25,6 +25,12 @@ namespace CMS.Services.Interfaces
         /// <summary>รายการค่า ArticleType คงที่ (1-5) สำหรับ dropdown</summary>
         IList<KBArticleTypeOption> GetArticleTypeOptions();
 
+        /// <summary>
+        /// Derive LayoutType ("Law"/"Order") จาก categoryId — ไล่ ParentCategoryID ขึ้นไปจนเจอหมวด
+        /// "กฎหมาย" (CategoryCode = "LW") หรือไม่ ใช้แทนการเก็บ LayoutType แยกใน Template
+        /// </summary>
+        string GetEffectiveLayoutType(int categoryId);
+
         /// <summary>เพิ่ม/แก้ไข Template พร้อม mapping ทั้งหมด คืน TemplateID</summary>
         int SaveTemplate(KBImportTemplate template, IList<KBImportTemplateColumnRow> rows, UserContext user);
 

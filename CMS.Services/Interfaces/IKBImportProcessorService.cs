@@ -6,7 +6,11 @@ namespace CMS.Services.Interfaces
 {
     public interface IKBImportProcessorService
     {
-        void ValidateRows(IList<KBImportRow> rows);
+        /// <param name="resolvedCategoryId">
+        /// CategoryID configured on the KB Import Template selected in the Wizard — applied to
+        /// every row in this batch (both Law and Order layouts). Must be greater than 0.
+        /// </param>
+        void ValidateRows(IList<KBImportRow> rows, int resolvedCategoryId);
 
         /// <param name="user">
         /// Current user — needed (not just a "createdBy" string) because Order rows upload
@@ -17,10 +21,15 @@ namespace CMS.Services.Interfaces
         /// whole row (no insert); <c>false</c> inserts the article anyway with a warning note.
         /// Ignored for Law rows (no attachment involved).
         /// </param>
+        /// <param name="resolvedArticleType">
+        /// ArticleType configured on the KB Import Template selected in the Wizard — applied to
+        /// every row in this batch (both Law and Order layouts). Must be greater than 0.
+        /// </param>
         void InsertArticles(
             IList<KBImportRow> rows,
             UserContext user,
             bool skipRowOnDownloadFailure,
+            byte resolvedArticleType,
             out int successCount,
             out int errorCount,
             Action<int, int> onProgress);

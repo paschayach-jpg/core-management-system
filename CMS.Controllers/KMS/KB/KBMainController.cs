@@ -17,27 +17,14 @@ namespace CMS.Controllers.KMS.KB
 
         private int _currentPage = 1;
 
-        // ── Cross-reference folders: มาตรา (46) ↔ คำสั่ง (54) / หมวดภายใน (55) ──
-        private const int LawSectionCategoryId = 46;
-        private const int OrderCategoryId      = 54;
-        private const int InternalCategoryId   = 55;
+        // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้หมวด "กฎหมาย"/LW) ↔ คำสั่ง (OR) / หมวดภายใน (AN) ──
+        // Resolved จาก CategoryCode สด ๆ ทุกครั้งที่โหลด (ดู ResolveCrossReferenceCategoryIds/IsLawCategory
+        // ด้านล่าง) แทนที่จะ hardcode ตัวเลข CategoryID ตรง ๆ — ตัวเลข CategoryID เปลี่ยนได้ถ้าตาราง
+        // m_KBCategory ถูกสร้างใหม่ (เคยเกิดมาแล้วครั้งหนึ่ง ทำให้ค่า hardcode เดิม 46/54/55 หลุด) แต่
+        // CategoryCode เป็น business key ที่ตั้งใจให้คงที่
         private const string OrderFolderLabel    = "คำสั่ง (นายทะเบียน/กระทรวง)";
         private const string InternalFolderLabel = "หมวดภายใน";
         private const string LawFolderLabel      = "กฎหมาย";
-
-        /// <summary>source CategoryID → [(target CategoryID, folder label), ...]</summary>
-        private static readonly IDictionary<int, List<Tuple<int, string>>> LinkedFolderRules =
-            new Dictionary<int, List<Tuple<int, string>>>
-            {
-                { LawSectionCategoryId, new List<Tuple<int, string>>
-                    {
-                        Tuple.Create(OrderCategoryId,    OrderFolderLabel),
-                        Tuple.Create(InternalCategoryId, InternalFolderLabel),
-                    }
-                },
-                { OrderCategoryId,    new List<Tuple<int, string>> { Tuple.Create(LawSectionCategoryId, LawFolderLabel) } },
-                { InternalCategoryId, new List<Tuple<int, string>> { Tuple.Create(LawSectionCategoryId, LawFolderLabel) } },
-            };
 
         public KBMainController(
             IKBMainController  view,
@@ -105,13 +92,40 @@ namespace CMS.Controllers.KMS.KB
                         idMap[t].Add(a.ArticleID);
                     }
 
-                    // ── Cross-reference folders: มาตรา ↔ คำสั่ง/หมวดภายใน (ถือลิงก์เป็นสองทิศทางเสมอ) ──
-                    var linkGraph = BuildLawLinkGraph();
+                    // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้ LW) ↔ คำสั่ง(OR)/หมวดภายใน(AN) ──
+                    // (ถือลิงก์เป็นสองทิศทางเสมอ) — resolve CategoryID ของ OR/AN จาก CategoryCode สด ๆ
+                    // และเช็คฝั่งกฎหมายด้วยการไล่ ParentCategoryID แทนเทียบ CategoryID คงที่ตัวเดียว
+                    // เพื่อให้ใช้ได้กับกฎหมายทุกฉบับ (PVI, PLI, OIC, ...) ไม่ใช่แค่ฉบับที่ hardcode ไว้
+                    var linkGraph    = BuildLawLinkGraph();
+                    var categoryById = categories.ToDictionary(c => c.CategoryID);
+                    int? orderCategoryId    = FindCategoryIdByCode(categories, "OR");
+                    int? internalCategoryId = FindCategoryIdByCode(categories, "AN");
 
                     foreach (var catEntry in groupArticleIds)
                     {
-                        List<Tuple<int, string>> rules;
-                        if (!LinkedFolderRules.TryGetValue(catEntry.Key, out rules)) continue;
+                        List<Tuple<Func<KBArticle, bool>, string>> rules = null;
+
+                        if (IsLawCategory(catEntry.Key, categoryById))
+                        {
+                            rules = new List<Tuple<Func<KBArticle, bool>, string>>();
+                            if (orderCategoryId.HasValue)
+                                rules.Add(Tuple.Create<Func<KBArticle, bool>, string>(
+                                    art => art.CategoryID == orderCategoryId.Value, OrderFolderLabel));
+                            if (internalCategoryId.HasValue)
+                                rules.Add(Tuple.Create<Func<KBArticle, bool>, string>(
+                                    art => art.CategoryID == internalCategoryId.Value, InternalFolderLabel));
+                        }
+                        else if ((orderCategoryId.HasValue && catEntry.Key == orderCategoryId.Value) ||
+                                 (internalCategoryId.HasValue && catEntry.Key == internalCategoryId.Value))
+                        {
+                            rules = new List<Tuple<Func<KBArticle, bool>, string>>
+                            {
+                                Tuple.Create<Func<KBArticle, bool>, string>(
+                                    art => IsLawCategory(art.CategoryID, categoryById), LawFolderLabel),
+                            };
+                        }
+
+                        if (rules == null || rules.Count == 0) continue;
 
                         foreach (var titleEntry in catEntry.Value)
                         {
@@ -127,12 +141,12 @@ namespace CMS.Controllers.KMS.KB
                             var folders = new List<KBLinkedFolder>();
                             foreach (var rule in rules)
                             {
-                                int    targetCategoryId = rule.Item1;
-                                string label            = rule.Item2;
+                                var    matches = rule.Item1;
+                                string label   = rule.Item2;
 
                                 var matched = relatedIds
                                     .Select(id => { KBArticle art; articlesById.TryGetValue(id, out art); return art; })
-                                    .Where(art => art != null && art.CategoryID == targetCategoryId)
+                                    .Where(art => art != null && matches(art))
                                     .ToList();
 
                                 if (matched.Count > 0)
@@ -192,6 +206,33 @@ namespace CMS.Controllers.KMS.KB
                 graph[from] = set;
             }
             set.Add(to);
+        }
+
+        /// <summary>คืน CategoryID ของ category ที่มี CategoryCode ตรงกับที่ระบุ (case-insensitive) หรือ null ถ้าไม่เจอ</summary>
+        private static int? FindCategoryIdByCode(IList<KBCategory> categories, string categoryCode)
+        {
+            var match = categories.FirstOrDefault(c => string.Equals(c.CategoryCode, categoryCode, StringComparison.OrdinalIgnoreCase));
+            return match != null ? (int?)match.CategoryID : null;
+        }
+
+        /// <summary>
+        /// true ถ้า <paramref name="categoryId"/> ไล่ ParentCategoryID ขึ้นไปเจอ category ที่ CategoryCode = "LW"
+        /// (หมวด "กฎหมาย" ราก) — ใช้ระบุว่าเป็นกฎหมายฉบับใดก็ได้ (PVI, PLI, OIC, ...) ไม่ใช่แค่ฉบับเดียว
+        /// </summary>
+        private static bool IsLawCategory(int categoryId, Dictionary<int, KBCategory> categoryById)
+        {
+            var visited = new HashSet<int>();
+            int current = categoryId;
+            KBCategory cat;
+            while (categoryById.TryGetValue(current, out cat))
+            {
+                if (string.Equals(cat.CategoryCode, "LW", StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!cat.ParentCategoryID.HasValue || !visited.Add(current))
+                    return false;
+                current = cat.ParentCategoryID.Value;
+            }
+            return false;
         }
 
         /// <summary>

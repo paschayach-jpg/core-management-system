@@ -321,6 +321,10 @@ namespace CMS.Presentation.Modules.KMS
             dgvColumnMapping.AllowUserToAddRows = false;
             dgvColumnMapping.RowHeadersVisible = false;
             dgvColumnMapping.CellValueChanged += DgvColumnMapping_CellValueChanged;
+
+            colExcelMapping.ToolTipText =
+                "พิมพ์ชื่อคอลัมน์ Excel ตรง ๆ (เช่น C) หรือหัวตาราง เพื่อ map แบบตรง\n" +
+                "หรือผสมข้อความคงที่กับคอลัมน์ในรูปแบบ {X} สำหรับค่าที่ต้องคำนวณ เช่น \"มาตรา {C}\"";
         }
 
         private void SetupExcelPreviewGrid()

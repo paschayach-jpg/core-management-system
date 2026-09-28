@@ -192,6 +192,59 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public int InsertWithVersion(KBArticle article, KBVersion version)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        int articleId;
+                        const string articleSql = @"
+                            INSERT INTO KMS.t_KBArticle
+                                (ArticleCode, Title, ContentHTML, Summary, TitleCategory, CategoryID, ArticleType,
+                                 Status, CurrentVersion, PublishedDate, EffectiveDate, ExpiryDate, ReviewDueDate, IsOfficialPolicy,
+                                 Tags, ConfidentialityLevel, CreatedBy, CreatedDate, ViewCount, LikeCount)
+                            VALUES
+                                (@ArticleCode, @Title, @ContentHTML, @Summary, @TitleCategory, @CategoryID, @ArticleType,
+                                 @Status, 1, @PublishedDate, @EffectiveDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
+                                 @Tags, @ConfidentialityLevel, @CreatedBy, GETDATE(), 0, 0);
+                            SELECT SCOPE_IDENTITY();";
+                        using (var cmd = new SqlCommand(articleSql, conn, tx))
+                        {
+                            AddParams(cmd, article);
+                            articleId = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        const string versionSql = @"
+                            INSERT INTO KMS.t_KBVersion
+                                (ArticleID, VersionNumber, ContentSnapshot, ChangeDescription, CreatedBy, CreatedDate)
+                            VALUES
+                                (@ArticleID, @VersionNumber, @ContentSnapshot, @ChangeDescription, @CreatedBy, GETDATE());";
+                        using (var cmd = new SqlCommand(versionSql, conn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@ArticleID",         articleId);
+                            cmd.Parameters.AddWithValue("@VersionNumber",     version.VersionNumber);
+                            cmd.Parameters.AddWithValue("@ContentSnapshot",   (object)version.ContentSnapshot   ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@ChangeDescription", (object)version.ChangeDescription ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@CreatedBy",         version.CreatedBy ?? string.Empty);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        tx.Commit();
+                        return articleId;
+                    }
+                    catch
+                    {
+                        tx.Rollback();
+                        throw;
+                    }
+                }
+            }
+        }
+
         public void Update(KBArticle article)
         {
             using (var conn = new SqlConnection(_connectionString))

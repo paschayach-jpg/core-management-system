@@ -92,7 +92,7 @@ namespace CMS.Controllers.KMS.KB
             {
                 var template = new KBImportTemplate
                 {
-                    TemplateID  = _view.EditingTemplateId ?? 0,
+                    TemplateID   = _view.EditingTemplateId ?? 0,
                     TemplateName = _view.TemplateName,
                     Description  = _view.TemplateDescription,
                     SortOrder    = 0,

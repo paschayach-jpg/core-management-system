@@ -13,7 +13,7 @@ namespace CMS.Domain.Models
         private static readonly Dictionary<string, string> Descriptions = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
         {
             { "ArticleCode",         "รหัสบทความ เช่น KB-2566-001" },
-            { "Title",               "ชื่อเรื่อง/หัวข้อบทความ" },
+            { "Title",               "ชื่อเรื่อง/หัวข้อบทความ — ถ้าต้องคำนวณจากคอลัมน์ Excel (เช่น กฎหมาย/มาตรา) ให้ผสมข้อความคงที่กับคอลัมน์ในรูปแบบ {X} เช่น \"มาตรา {C}\"" },
             { "ContentHTML",         "เนื้อหาบทความ (HTML)" },
             { "Summary",             "สรุปย่อของบทความ" },
             { "TitleCategory",       "หมวดหัวข้อ/เลขมาตรา (nvarchar(500), migrated from Summary)" },

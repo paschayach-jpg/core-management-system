@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using CMS.Data.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
@@ -21,6 +22,9 @@ namespace CMS.Services
         /// <summary>ชื่อคอลัมน์เป้าหมายที่ใช้ dropdown เลือกค่าคงที่แทนการ map จาก Excel — ไม่รวมใน validation ห้าม map ซ้ำ</summary>
         private static readonly HashSet<string> FixedValueTargetColumns =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CategoryID", "ArticleType" };
+
+        /// <summary>จับ token รูปแบบ {ชื่อคอลัมน์} ที่ถูกต้อง เช่น "{C}" ใน "มาตรา {C}"</summary>
+        private static readonly Regex FormulaPlaceholderPattern = new Regex(@"\{[^{}]+\}", RegexOptions.Compiled);
 
         public KBImportTemplateService(
             IKBImportTemplateRepository repo,
@@ -105,8 +109,16 @@ namespace CMS.Services
             if (mappedRows.Count == 0)
                 throw new InvalidOperationException("ต้องมีการ Map อย่างน้อย 1 คอลัมน์");
 
+            foreach (var row in mappedRows)
+            {
+                string formulaError;
+                if (!TryValidateFormulaSyntax(row.ExcelColumnRef, out formulaError))
+                    throw new InvalidOperationException(string.Format("คอลัมน์ \"{0}\": {1}", row.TargetColumnName, formulaError));
+            }
+
             var duplicates = mappedRows
                 .Where(r => !FixedValueTargetColumns.Contains(r.TargetColumnName)) // CategoryID/ArticleType เป็นค่าคงที่ ไม่ใช่การใช้คอลัมน์ Excel จึงไม่นับซ้ำ
+                .Where(r => !IsFormulaMapping(r.ExcelColumnRef)) // formula เช่น "มาตรา {C}" ใช้คอลัมน์ต้นทางร่วมกันได้ (เช่น Title/Tags ของกฎหมาย) จึงไม่นับซ้ำ
                 .GroupBy(r => r.ExcelColumnRef.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Where(g => g.Count() > 1)
                 .Select(g => g.Key)
@@ -167,6 +179,57 @@ namespace CMS.Services
                 AuditDate = DateTime.Now,
                 Result    = 1
             });
+        }
+
+        // ── Private helpers — formula mapping (เช่น Title ของกฎหมาย = "มาตรา {C}") ──────
+
+        /// <summary>true ถ้าค่า mapping เป็น formula ที่ผสมข้อความคงที่กับ placeholder {ชื่อคอลัมน์} แทนที่จะ map ตรงจากคอลัมน์เดียว</summary>
+        private static bool IsFormulaMapping(string excelColumnRef)
+        {
+            return excelColumnRef != null && (excelColumnRef.IndexOf('{') >= 0 || excelColumnRef.IndexOf('}') >= 0);
+        }
+
+        /// <summary>ตรวจว่า placeholder {ชื่อคอลัมน์} ในค่า mapping มีวงเล็บปีกกาเปิด-ปิดครบคู่ ไม่ใช้กับค่า mapping ตรงแบบธรรมดา</summary>
+        private static bool TryValidateFormulaSyntax(string value, out string error)
+        {
+            error = null;
+            if (string.IsNullOrEmpty(value) || !IsFormulaMapping(value))
+                return true;
+
+            string stripped = FormulaPlaceholderPattern.Replace(value, string.Empty);
+            if (stripped.IndexOf('{') >= 0 || stripped.IndexOf('}') >= 0)
+            {
+                error = "รูปแบบ {ชื่อคอลัมน์} ไม่ถูกต้อง ต้องมีวงเล็บปีกกาเปิด-ปิดครบคู่ เช่น \"มาตรา {C}\"";
+                return false;
+            }
+            return true;
+        }
+
+        // ── LayoutType — derived from CategoryID, not stored ───────────────────
+
+        /// <summary>
+        /// Derive ค่า LayoutType ("Law"/"Order") จาก <paramref name="categoryId"/> โดยไล่
+        /// <see cref="KBCategory.ParentCategoryID"/> ขึ้นไปจนกว่าจะเจอ category ที่ CategoryCode = "LW"
+        /// (หมวด "กฎหมาย" ราก) — เจอแปลว่า Law, ไม่เจอ (root, CategoryCode &lt;&gt; "LW") แปลว่า Order
+        /// ใช้แทนการเก็บ LayoutType เป็น field แยกใน Template เพราะ CategoryID ที่ config ไว้อยู่แล้ว
+        /// บอกได้อยู่แล้วว่าเป็นกฎหมายหรือไม่ ไม่มีทางตั้งขัดแย้งกันเองได้อีกต่อไป
+        /// </summary>
+        public string GetEffectiveLayoutType(int categoryId)
+        {
+            var byId = _categoryRepo.GetAll().ToDictionary(c => c.CategoryID);
+
+            var visited = new HashSet<int>();
+            int current = categoryId;
+            KBCategory cat;
+            while (byId.TryGetValue(current, out cat))
+            {
+                if (string.Equals(cat.CategoryCode, "LW", StringComparison.OrdinalIgnoreCase))
+                    return KBImportLayoutTypeCatalog.Law;
+                if (!cat.ParentCategoryID.HasValue || !visited.Add(current))
+                    return KBImportLayoutTypeCatalog.Order;
+                current = cat.ParentCategoryID.Value;
+            }
+            throw new InvalidOperationException(string.Format("ไม่พบ CategoryID {0} ในระบบ", categoryId));
         }
     }
 }

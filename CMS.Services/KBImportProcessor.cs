@@ -18,65 +18,54 @@ namespace CMS.Services
     ///
     /// <b>Law</b> ("มาตรา" rows) — Phase 1: row validation, including <c>ArticleCode</c>
     /// existence check (read-only DB access). Phase 2: article + version insert
-    /// (<c>KMS.t_KBArticle</c>, <c>KMS.t_KBVersion</c>). CategoryID is resolved from the
-    /// ArticleCode's 3-letter prefix — no category upsert is needed.
+    /// (<c>KMS.t_KBArticle</c>, <c>KMS.t_KBVersion</c>). CategoryID/ArticleType are resolved
+    /// externally from the KB Import Template selected in the Wizard (see
+    /// <see cref="ValidateRows"/>/<see cref="InsertArticles"/>) — not hardcoded here.
     ///
     /// <b>Order</b> ("ประกาศ/คำสั่ง" rows) — Phase 1: row validation, including resolving each
     /// referenced parent law via <c>ArticleCode</c> exact match. Phase 2: attachment
     /// download + DMS upload, article insert, attachment link, and bidirectional
-    /// <c>KMS.t_KBArticleLink</c> records to every resolved parent law. CategoryID is
-    /// resolved from the ประเภทลูก digit ("1"=ประกาศ→55, "2"=คำสั่ง→54).
+    /// <c>KMS.t_KBArticleLink</c> records to every resolved parent law. CategoryID/ArticleType
+    /// are resolved externally from the selected Template, same as Law; the ประเภทลูก digit
+    /// ("1"=ประกาศ, "2"=คำสั่ง) is still required and used for the display label / ArticleCode.
     /// </summary>
     public class KBImportProcessor : IKBImportProcessorService
     {
         private readonly IKBArticleRepository     _articleRepo;
-        private readonly IKBVersionRepository     _versionRepo;
         private readonly IKBArticleLinkRepository _linkRepo;
         private readonly IKBArticleService        _articleService;
         private readonly IFileService             _fileService;
         private readonly LawFileDownloader        _downloader;
 
         // ── ค่าคงที่ตามข้อกำหนด ──────────────────────────────────────────────
-        private const byte FixedArticleTypeLaw       = 5;   // Policy
-        private const byte FixedArticleTypeOrder     = 1;
         private const byte FixedStatus               = 2;   // Review
         private const int  FixedConfidentialityLevel = 0;
 
         /// <summary>Folder ปลายทางของไฟล์แนบ (Order) — ตรงกับที่ KBEditorDialog ใช้ ("KMS Attachments")</summary>
         private const int AttachmentFolderId = 437;
 
-        /// <summary>Law: ArticleCode 3 ตัวอักษรแรก → CategoryID (KMS.m_KBCategory)</summary>
-        private static readonly Dictionary<string, int> PrefixCategoryMap =
-            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        /// <summary>Order: ColC (ประเภทลูก) → ป้ายแสดงผล (CategoryID มาจาก Template ที่เลือกใน Wizard แทน)</summary>
+        private static readonly Dictionary<string, string> DocumentTypeLabelMap =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            { "PVI", 46 },   // LawSectionCategoryId — ดู KBMainController.cs
-        };
-
-        /// <summary>Order: ColC (ประเภทลูก) → CategoryID + ป้ายแสดงผล</summary>
-        private static readonly Dictionary<string, Tuple<int, string>> DocumentTypeMap =
-            new Dictionary<string, Tuple<int, string>>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "1", Tuple.Create(55, "ประกาศ") },
-            { "2", Tuple.Create(54, "คำสั่ง") },
+            { "1", "ประกาศ" },
+            { "2", "คำสั่ง" },
         };
 
         public KBImportProcessor(
             IKBArticleRepository     articleRepo,
-            IKBVersionRepository     versionRepo,
             IKBArticleLinkRepository linkRepo,
             IKBArticleService        articleService,
             IFileService             fileService,
             LawFileDownloader        downloader)
         {
             if (articleRepo    == null) throw new ArgumentNullException("articleRepo");
-            if (versionRepo    == null) throw new ArgumentNullException("versionRepo");
             if (linkRepo       == null) throw new ArgumentNullException("linkRepo");
             if (articleService == null) throw new ArgumentNullException("articleService");
             if (fileService    == null) throw new ArgumentNullException("fileService");
             if (downloader     == null) throw new ArgumentNullException("downloader");
 
             _articleRepo    = articleRepo;
-            _versionRepo    = versionRepo;
             _linkRepo       = linkRepo;
             _articleService = articleService;
             _fileService    = fileService;
@@ -91,9 +80,15 @@ namespace CMS.Services
         /// (<see cref="IKBArticleRepository.ExistsByCode"/>, <see cref="IKBArticleRepository.GetByCode"/>)
         /// — no writes.
         /// </summary>
-        public void ValidateRows(IList<KBImportRow> rows)
+        /// <param name="resolvedCategoryId">
+        /// CategoryID configured on the KB Import Template selected in the Wizard — applied to
+        /// every row in this batch (both Law and Order layouts). Must be greater than 0.
+        /// </param>
+        public void ValidateRows(IList<KBImportRow> rows, int resolvedCategoryId)
         {
             if (rows == null) throw new ArgumentNullException("rows");
+            if (resolvedCategoryId <= 0)
+                throw new ArgumentException("resolvedCategoryId ต้องมากกว่า 0 — Template ที่เลือกยังไม่ได้ตั้งค่า CategoryID", "resolvedCategoryId");
 
             var seenCodes   = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var parentCache = new Dictionary<string, KBArticle>(StringComparer.OrdinalIgnoreCase);
@@ -104,10 +99,20 @@ namespace CMS.Services
                 if (row.Status == "Error")
                     continue;
 
-                if (row.RowKind == "Order")
-                    ValidateOrderRow(row, seenCodes, parentCache, _articleRepo);
-                else
-                    ValidateLawRow(row, seenCodes, _articleRepo);
+                switch (row.RowKind)
+                {
+                    case KBImportLayoutTypeCatalog.Order:
+                        ValidateOrderRow(row, seenCodes, parentCache, _articleRepo, resolvedCategoryId);
+                        break;
+                    case KBImportLayoutTypeCatalog.Law:
+                        ValidateLawRow(row, seenCodes, _articleRepo, resolvedCategoryId);
+                        break;
+                    default:
+                        // Unknown RowKind must not be silently treated as Law — fail just this row.
+                        row.Status     = "Error";
+                        row.StatusNote = string.Format("ไม่รู้จัก RowKind '{0}'", row.RowKind);
+                        break;
+                }
             }
         }
 
@@ -120,6 +125,10 @@ namespace CMS.Services
         /// link every resolved parent law. Each row is wrapped in its own <c>try/catch</c>;
         /// a failure on one row increments <paramref name="errorCount"/> and processing continues.
         /// </summary>
+        /// <param name="resolvedArticleType">
+        /// ArticleType configured on the KB Import Template selected in the Wizard — applied to
+        /// every row in this batch (both Law and Order layouts). Must be greater than 0.
+        /// </param>
         /// <param name="onProgress">
         /// Optional callback invoked after each row with (rowsProcessed, totalRows).
         /// Use to update a progress bar in the UI.
@@ -128,11 +137,14 @@ namespace CMS.Services
             IList<KBImportRow> rows,
             UserContext user,
             bool skipRowOnDownloadFailure,
+            byte resolvedArticleType,
             out int successCount,
             out int errorCount,
             Action<int, int> onProgress)
         {
             if (rows == null) throw new ArgumentNullException("rows");
+            if (resolvedArticleType == 0)
+                throw new ArgumentException("resolvedArticleType ต้องมากกว่า 0 — Template ที่เลือกยังไม่ได้ตั้งค่า ArticleType", "resolvedArticleType");
 
             successCount = 0;
             errorCount   = 0;
@@ -145,10 +157,18 @@ namespace CMS.Services
                 var row = rows[i];
                 try
                 {
-                    if (row.RowKind == "Order")
-                        InsertOrderArticle(row, user, createdBy, skipRowOnDownloadFailure);
-                    else
-                        InsertLawArticle(row, createdBy);
+                    switch (row.RowKind)
+                    {
+                        case KBImportLayoutTypeCatalog.Order:
+                            InsertOrderArticle(row, user, createdBy, skipRowOnDownloadFailure, resolvedArticleType);
+                            break;
+                        case KBImportLayoutTypeCatalog.Law:
+                            InsertLawArticle(row, createdBy, resolvedArticleType);
+                            break;
+                        default:
+                            // Unknown RowKind must not be silently treated as Law.
+                            throw new InvalidOperationException(string.Format("ไม่รู้จัก RowKind '{0}'", row.RowKind));
+                    }
 
                     successCount++;
                 }
@@ -164,7 +184,7 @@ namespace CMS.Services
             }
         }
 
-        private void InsertLawArticle(KBImportRow row, string createdBy)
+        private void InsertLawArticle(KBImportRow row, string createdBy, byte resolvedArticleType)
         {
             // Defensive re-check — the DB may have changed since ValidateRows ran.
             if (string.IsNullOrEmpty(row.ArticleCode))
@@ -181,7 +201,7 @@ namespace CMS.Services
                 Summary               = row.Summary,
                 TitleCategory         = row.TitleCategory,
                 CategoryID            = row.ResolvedCategoryID,
-                ArticleType           = FixedArticleTypeLaw,
+                ArticleType           = resolvedArticleType,
                 Status                = FixedStatus,
                 CurrentVersion        = 1,
                 PublishedDate         = row.PublishedDateParsed,
@@ -193,24 +213,24 @@ namespace CMS.Services
                 CreatedDate           = DateTime.Now,
             };
 
-            int articleId = _articleRepo.Insert(article);
-            row.ImportedArticleId = articleId;
-
+            // Article + first Version inserted in one DB transaction — a Version-insert failure
+            // rolls back the Article insert too, instead of leaving an orphan KBArticle with no
+            // KBVersion (which previously happened and got misreported as "duplicate key").
             var version = new KBVersion
             {
-                ArticleID       = articleId,
                 VersionNumber   = 1,
                 ContentSnapshot = article.ContentHTML,
                 CreatedBy       = createdBy,
                 CreatedDate     = DateTime.Now,
             };
-            _versionRepo.Insert(version);
+            int articleId = _articleRepo.InsertWithVersion(article, version);
+            row.ImportedArticleId = articleId;
 
             row.Status     = "Valid";
             row.StatusNote = string.Empty;
         }
 
-        private void InsertOrderArticle(KBImportRow row, UserContext user, string createdBy, bool skipRowOnDownloadFailure)
+        private void InsertOrderArticle(KBImportRow row, UserContext user, string createdBy, bool skipRowOnDownloadFailure, byte resolvedArticleType)
         {
             var notes = new List<string>();
 
@@ -221,8 +241,10 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format(
                     "ArticleCode '{0}' มีอยู่ในระบบแล้ว", row.ArticleCode));
 
-            Tuple<int, string> docType;
-            if (!DocumentTypeMap.TryGetValue(row.OrderTypeDigit ?? string.Empty, out docType))
+            // Defensive re-check — the DB may have changed since ValidateRows ran (ArticleCode
+            // existence above); the digit itself was already validated then too, re-checked here
+            // for consistency since InsertArticles may be called any time after ValidateRows.
+            if (!DocumentTypeLabelMap.ContainsKey(row.OrderTypeDigit ?? string.Empty))
                 throw new InvalidOperationException(string.Format(
                     "คอลัมน์ C (ประเภทลูก): ค่า '{0}' ต้องเป็น 1 (ประกาศ) หรือ 2 (คำสั่ง) เท่านั้น", row.OrderTypeDigit));
 
@@ -258,8 +280,8 @@ namespace CMS.Services
                 Summary               = row.Summary,
                 PublishedDate         = row.PublishedDateParsed,
                 EffectiveDate         = row.EffectiveDateParsed,
-                CategoryID            = docType.Item1,
-                ArticleType           = FixedArticleTypeOrder,
+                CategoryID            = row.ResolvedCategoryID,
+                ArticleType           = resolvedArticleType,
                 Status                = FixedStatus,
                 ConfidentialityLevel  = FixedConfidentialityLevel,
                 CreatedBy             = createdBy,
@@ -364,20 +386,6 @@ namespace CMS.Services
             return encoded;
         }
 
-        /// <summary>
-        /// Resolves a Law <c>CategoryID</c> from the first 3 characters of <paramref name="articleCode"/>
-        /// via <see cref="PrefixCategoryMap"/>. Returns <c>false</c> (not found) when unmapped.
-        /// </summary>
-        internal static bool TryResolveLawCategoryId(string articleCode, out int categoryId)
-        {
-            categoryId = 0;
-            if (string.IsNullOrEmpty(articleCode) || articleCode.Length < 3)
-                return false;
-
-            string prefix = articleCode.Substring(0, 3);
-            return PrefixCategoryMap.TryGetValue(prefix, out categoryId);
-        }
-
         // ── Private helpers — validation ──────────────────────────────────────
 
         /// <summary>
@@ -385,7 +393,7 @@ namespace CMS.Services
         /// <see cref="KBImportRow.StatusNote"/>. On success, also sets the computed
         /// <c>ArticleCode</c>/<c>Title</c>/<c>Tags</c>/<c>Summary</c>/<c>TitleCategory</c>/<c>ResolvedCategoryID</c>.
         /// </summary>
-        private static void ValidateLawRow(KBImportRow row, HashSet<string> seenCodes, IKBArticleRepository articleRepo)
+        private static void ValidateLawRow(KBImportRow row, HashSet<string> seenCodes, IKBArticleRepository articleRepo, int resolvedCategoryId)
         {
             string raw = row.ColA;
 
@@ -467,12 +475,6 @@ namespace CMS.Services
             if (!string.IsNullOrEmpty(row.RawEffectiveDate) && !row.EffectiveDateParsed.HasValue)
                 errors.Add(string.Format("คอลัมน์ O (วันที่มีผลบังคับใช้): ไม่สามารถแปลงวันที่ได้ — '{0}'", row.RawEffectiveDate));
 
-            // ── CategoryID — resolved from ArticleCode's 3-letter prefix ──────
-            int categoryId;
-            if (!TryResolveLawCategoryId(code, out categoryId))
-                errors.Add(string.Format("ไม่พบ CategoryID สำหรับรหัสขึ้นต้น '{0}'",
-                    code.Length >= 3 ? code.Substring(0, 3) : code));
-
             if (errors.Count > 0)
             {
                 row.Status     = "Error";
@@ -483,11 +485,13 @@ namespace CMS.Services
             row.Status             = "Valid";
             row.StatusNote         = null;
             row.ArticleCode        = code;
-            row.Title              = "มาตรา " + sectionNumber;
+            // RawTitle is only ever populated when the selected Template maps "Title" (see
+            // KBExcelReader.ApplyFieldOverrides) — otherwise fall back to the standard "มาตรา N" title.
+            row.Title              = !string.IsNullOrWhiteSpace(row.RawTitle) ? row.RawTitle.Trim() : "มาตรา " + sectionNumber;
             row.Tags               = row.Title;
             row.Summary            = string.IsNullOrWhiteSpace(row.RawSummary) ? null : row.RawSummary.Trim();
             row.TitleCategory      = string.IsNullOrWhiteSpace(row.RawTitleCategory) ? null : row.RawTitleCategory.Trim();
-            row.ResolvedCategoryID = categoryId;
+            row.ResolvedCategoryID = resolvedCategoryId;
             row.DocumentTypeLabel  = "มาตรา";
         }
 
@@ -499,7 +503,7 @@ namespace CMS.Services
         /// </summary>
         private static void ValidateOrderRow(
             KBImportRow row, HashSet<string> seenCodes,
-            Dictionary<string, KBArticle> parentCache, IKBArticleRepository articleRepo)
+            Dictionary<string, KBArticle> parentCache, IKBArticleRepository articleRepo, int resolvedCategoryId)
         {
             string finalCode = row.FinalCodeChoices.Count > 0 ? row.FinalCodeChoices[0] : null;
             row.ArticleCode  = finalCode;
@@ -523,17 +527,20 @@ namespace CMS.Services
                 seenCodes.Add(finalCode);
             }
 
-            Tuple<int, string> docType;
-            if (!DocumentTypeMap.TryGetValue(row.OrderTypeDigit ?? string.Empty, out docType))
+            string docTypeLabel;
+            if (!DocumentTypeLabelMap.TryGetValue(row.OrderTypeDigit ?? string.Empty, out docTypeLabel))
             {
                 errors.Add(string.Format(
                     "คอลัมน์ C (ประเภทลูก): ค่า '{0}' ต้องเป็น 1 (ประกาศ) หรือ 2 (คำสั่ง) เท่านั้น", row.OrderTypeDigit));
             }
             else
             {
-                row.ResolvedCategoryID = docType.Item1;
-                row.DocumentTypeLabel  = docType.Item2;
+                row.ResolvedCategoryID = resolvedCategoryId;
+                row.DocumentTypeLabel  = docTypeLabel;
             }
+
+            if (string.IsNullOrWhiteSpace(row.RawTitle))
+                errors.Add("คอลัมน์ E (ชื่อ) ห้ามว่าง");
 
             if (string.IsNullOrWhiteSpace(row.RawContent))
                 errors.Add("คอลัมน์ I (บัญญัติไว้ว่า) ห้ามว่าง");
