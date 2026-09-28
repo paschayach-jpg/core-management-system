@@ -2,6 +2,8 @@
 // ❌ Forbidden usings: CMS.Services, CMS.Data
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using CMS.Controllers.KMS.KB.Interfaces;
 using CMS.Controllers.KMS.KB;
@@ -11,8 +13,9 @@ namespace CMS.Presentation.Modules.KMS
 {
     /// <summary>
     /// หน้า config Excel Import Template สำหรับ Knowledge Base (MOD-006)
-    /// รองรับ: เพิ่ม / แก้ไข / Soft-Delete Template และ mapping คอลัมน์ Excel -> KMS.t_KBArticle
-    /// เปิดเป็น MDI child ผ่านเมนู "⚙️ ระบบ" (เหมือน KBCategoryForm)
+    /// รองรับ: เพิ่ม / แก้ไข / Soft-Delete Template, อัปโหลด Excel เพื่อดูตัวอย่างคอลัมน์
+    /// และคลิกเลือกคอลัมน์ Excel เพื่อ mapping เข้ากับคอลัมน์ปลายทาง (มี highlight สีให้เห็นคู่ที่จับกัน)
+    /// เปิดจากปุ่มในหัวฟอร์ม KBMainForm (ไม่ผ่านเมนู admin ใดๆ)
     /// </summary>
     public partial class KBImportTemplateConfigForm : Form, IKBImportTemplateConfigController
     {
@@ -20,6 +23,33 @@ namespace CMS.Presentation.Modules.KMS
         private readonly UserContext _user;
 
         private List<KBImportTemplate> _templates = new List<KBImportTemplate>();
+        private List<ExcelColumnPreview> _excelColumns = new List<ExcelColumnPreview>();
+        private List<KBCategory> _categoryOptions = new List<KBCategory>();
+        private List<KBArticleTypeOption> _articleTypeOptions = new List<KBArticleTypeOption>();
+
+        /// <summary>ชื่อคอลัมน์เป้าหมายที่ใช้ dropdown เลือกค่าคงที่ (ไม่ใช่ mapping จาก Excel)</summary>
+        private static readonly HashSet<string> FixedValueTargetColumns =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CategoryID", "ArticleType" };
+
+        // ── Click-to-map bookkeeping: TargetColumnName -> excel column index / highlight color ──
+        private readonly Dictionary<string, int>   _targetToExcelColumnIndex = new Dictionary<string, int>();
+        private readonly Dictionary<string, Color> _targetHighlightColor     = new Dictionary<string, Color>();
+        private int _nextColorIndex = 0;
+
+        /// <summary>กันการวน sync ซ้ำระหว่าง dgvColumnMapping กับ dgvExcelPreview เวลาโค้ดตั้งค่า cell เอง</summary>
+        private bool _suppressMappingSync = false;
+
+        private static readonly Color[] HighlightPalette =
+        {
+            Color.FromArgb(200, 230, 201), // green
+            Color.FromArgb(255, 224, 178), // orange
+            Color.FromArgb(187, 222, 251), // blue
+            Color.FromArgb(255, 205, 210), // pink
+            Color.FromArgb(225, 190, 231), // purple
+            Color.FromArgb(255, 249, 196), // yellow
+            Color.FromArgb(178, 235, 242), // cyan
+            Color.FromArgb(215, 204, 200), // brown
+        };
 
         public event EventHandler BackRequested;
 
@@ -49,6 +79,7 @@ namespace CMS.Presentation.Modules.KMS
                 return;
             }
             SetupColumnMappingGrid();
+            SetupExcelPreviewGrid();
             _presenter.Initialize();
         }
 
@@ -72,6 +103,49 @@ namespace CMS.Presentation.Modules.KMS
             var template = dgvTemplates.SelectedRows[0].Tag as KBImportTemplate;
             if (template == null) return;
             _presenter.OnTemplateSelected(template);
+        }
+
+        private void BtnUploadExcel_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            using (var dlg = new OpenFileDialog())
+            {
+                dlg.Title = "เลือกไฟล์ Excel Template";
+                dlg.Filter = "Excel Files (*.xlsx;*.xlsm)|*.xlsx;*.xlsm";
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                _presenter.OnExcelFileSelected(dlg.FileName);
+            }
+        }
+
+        private void DgvExcelPreview_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            HandleExcelColumnClick(e.ColumnIndex, e.Clicks, 0);
+        }
+
+        private void DgvExcelPreview_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            HandleExcelColumnClick(e.ColumnIndex, e.Clicks, e.RowIndex);
+        }
+
+        /// <summary>
+        /// จุดรวมของการคลิกเลือกคอลัมน์ Excel — ใช้ร่วมกันทั้งคลิกที่หัวคอลัมน์และคลิกที่ cell ข้อมูล
+        /// คลิกครั้งเดียว = เลือก/mapping, ดับเบิลคลิก = ยกเลิก mapping
+        /// </summary>
+        private void HandleExcelColumnClick(int columnIndex, int clicks, int rowIndex)
+        {
+            if (columnIndex < 0 || columnIndex >= _excelColumns.Count) return;
+
+            if (clicks >= 2)
+            {
+                UnassignExcelColumn(columnIndex);
+                return;
+            }
+
+            bool assigned = AssignExcelColumnToActiveTarget(columnIndex);
+            if (!assigned) return;
+
+            MoveExcelPreviewFocusRight(columnIndex, rowIndex);
+            MoveColumnMappingFocusDown();
         }
 
         private void BtnSave_Click(object sender, EventArgs e)
@@ -137,11 +211,66 @@ namespace CMS.Presentation.Modules.KMS
 
         public void BindColumnGrid(IEnumerable<KBImportTemplateColumnRow> rows)
         {
+            ResetAllMappingBookkeeping();
+
             dgvColumnMapping.Rows.Clear();
             foreach (var row in rows)
             {
                 int rowIndex = dgvColumnMapping.Rows.Add(row.TargetColumnName, row.ColumnDescription, row.ExcelColumnRef);
                 dgvColumnMapping.Rows[rowIndex].Tag = row;
+            }
+
+            ApplySpecialColumnEditors();
+        }
+
+        public void BindCategoryOptions(IEnumerable<KBCategory> categories)
+        {
+            _categoryOptions = new List<KBCategory>(categories);
+        }
+
+        public void BindArticleTypeOptions(IEnumerable<KBArticleTypeOption> options)
+        {
+            _articleTypeOptions = new List<KBArticleTypeOption>(options);
+        }
+
+        public void BindExcelPreview(IEnumerable<ExcelColumnPreview> columns)
+        {
+            _excelColumns = new List<ExcelColumnPreview>(columns);
+
+            // ไฟล์ใหม่ = ดัชนีคอลัมน์เดิมใช้อ้างอิงไม่ได้แล้ว ล้างเฉพาะสถานะ/สีของการคลิกเลือก
+            // (ไม่ล้างค่าข้อความ mapping ที่กรอกไว้แล้ว เผื่อ admin พิมพ์เองหรืออัปโหลดไฟล์ผิดแล้วอัปใหม่)
+            _targetToExcelColumnIndex.Clear();
+            _targetHighlightColor.Clear();
+            _nextColorIndex = 0;
+            foreach (DataGridViewRow row in dgvColumnMapping.Rows)
+                ResetTargetRowHighlight(row);
+
+            dgvExcelPreview.Columns.Clear();
+            dgvExcelPreview.Rows.Clear();
+
+            foreach (var col in _excelColumns)
+            {
+                var gridCol = new DataGridViewTextBoxColumn
+                {
+                    Name = "colExcel_" + col.ColumnIndex,
+                    HeaderText = col.ColumnRef,
+                    ReadOnly = true,
+                    Width = 110,
+                };
+                dgvExcelPreview.Columns.Add(gridCol);
+            }
+
+            if (_excelColumns.Count == 0) return;
+
+            int headerRowIndex = dgvExcelPreview.Rows.Add();
+            int sampleRowIndex = dgvExcelPreview.Rows.Add();
+            dgvExcelPreview.Rows[headerRowIndex].HeaderCell.Value = "หัวตาราง";
+            dgvExcelPreview.Rows[sampleRowIndex].HeaderCell.Value = "ตัวอย่างข้อมูล";
+
+            for (int i = 0; i < _excelColumns.Count; i++)
+            {
+                dgvExcelPreview.Rows[headerRowIndex].Cells[i].Value = _excelColumns[i].HeaderText;
+                dgvExcelPreview.Rows[sampleRowIndex].Cells[i].Value = _excelColumns[i].SampleValue;
             }
         }
 
@@ -191,6 +320,264 @@ namespace CMS.Presentation.Modules.KMS
             dgvColumnMapping.AutoGenerateColumns = false;
             dgvColumnMapping.AllowUserToAddRows = false;
             dgvColumnMapping.RowHeadersVisible = false;
+            dgvColumnMapping.CellValueChanged += DgvColumnMapping_CellValueChanged;
+        }
+
+        private void SetupExcelPreviewGrid()
+        {
+            dgvExcelPreview.AutoGenerateColumns = false;
+            dgvExcelPreview.AllowUserToAddRows = false;
+            dgvExcelPreview.AllowUserToDeleteRows = false;
+            dgvExcelPreview.RowHeadersVisible = true;
+            dgvExcelPreview.RowHeadersWidth = 90;
+            dgvExcelPreview.ColumnHeaderMouseClick += DgvExcelPreview_ColumnHeaderMouseClick;
+            dgvExcelPreview.CellMouseClick += DgvExcelPreview_CellMouseClick;
+        }
+
+        /// <summary>
+        /// เปลี่ยนเซลล์ mapping ของแถว CategoryID / ArticleType ให้เป็น dropdown เลือกค่าคงที่
+        /// แทนช่อง text mapping ปกติ (แถวอื่นยังคง map จาก Excel ตามเดิม)
+        /// </summary>
+        private void ApplySpecialColumnEditors()
+        {
+            foreach (DataGridViewRow row in dgvColumnMapping.Rows)
+            {
+                var data = row.Tag as KBImportTemplateColumnRow;
+                if (data == null) continue;
+
+                if (string.Equals(data.TargetColumnName, "CategoryID", StringComparison.OrdinalIgnoreCase))
+                    ApplyCategoryComboCell(row);
+                else if (string.Equals(data.TargetColumnName, "ArticleType", StringComparison.OrdinalIgnoreCase))
+                    ApplyArticleTypeComboCell(row);
+            }
+        }
+
+        private void ApplyCategoryComboCell(DataGridViewRow row)
+        {
+            string existingValue = Convert.ToString(row.Cells[colExcelMapping.Index].Value ?? string.Empty).Trim();
+
+            var combo = new DataGridViewComboBoxCell
+            {
+                DataSource = _categoryOptions,
+                DisplayMember = "CategoryName",
+                ValueMember = "CategoryID",
+                DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox,
+            };
+            row.Cells[colExcelMapping.Index] = combo;
+
+            int categoryId;
+            if (int.TryParse(existingValue, out categoryId) && _categoryOptions.Any(c => c.CategoryID == categoryId))
+                row.Cells[colExcelMapping.Index].Value = categoryId;
+        }
+
+        private void ApplyArticleTypeComboCell(DataGridViewRow row)
+        {
+            string existingValue = Convert.ToString(row.Cells[colExcelMapping.Index].Value ?? string.Empty).Trim();
+
+            var combo = new DataGridViewComboBoxCell
+            {
+                DataSource = _articleTypeOptions,
+                DisplayMember = "Description",
+                ValueMember = "ArticleType",
+                DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox,
+            };
+            row.Cells[colExcelMapping.Index] = combo;
+
+            byte articleType;
+            if (byte.TryParse(existingValue, out articleType) && _articleTypeOptions.Any(o => o.ArticleType == articleType))
+                row.Cells[colExcelMapping.Index].Value = articleType;
+        }
+
+        /// <summary>
+        /// Two-way binding: ถ้า admin ลบ/แก้ข้อความในช่อง mapping ของ dgvColumnMapping โดยตรง
+        /// (พิมพ์ลบเอง หรือกด Delete) ให้ล้าง highlight ฝั่ง dgvExcelPreview ตามไปด้วยเมื่อค่าว่างลง
+        /// </summary>
+        private void DgvColumnMapping_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (_suppressMappingSync) return;
+            if (e.RowIndex < 0 || e.ColumnIndex != colExcelMapping.Index) return;
+
+            var row = dgvColumnMapping.Rows[e.RowIndex];
+            var targetRowData = row.Tag as KBImportTemplateColumnRow;
+            if (targetRowData == null) return;
+
+            string cellText = Convert.ToString(row.Cells[colExcelMapping.Index].Value ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(cellText))
+            {
+                string targetKey = targetRowData.TargetColumnName;
+                if (_targetToExcelColumnIndex.ContainsKey(targetKey))
+                    ClearTargetMapping(targetKey);
+            }
+        }
+
+        private void ResetAllMappingBookkeeping()
+        {
+            _targetToExcelColumnIndex.Clear();
+            _targetHighlightColor.Clear();
+            _nextColorIndex = 0;
+            for (int i = 0; i < dgvExcelPreview.Columns.Count; i++)
+                ResetExcelColumnHighlight(i);
+        }
+
+        /// <summary>
+        /// Map คอลัมน์ Excel ที่ index ที่คลิก เข้ากับแถวเป้าหมายที่กำลัง active อยู่ใน dgvColumnMapping
+        /// (แถวที่ admin คลิกเลือกไว้ล่าสุด) พร้อม highlight สีให้เห็นคู่ที่จับกัน
+        /// คืนค่า true เมื่อ mapping ใหม่เกิดขึ้นจริง (ใช้ตัดสินใจว่าจะขยับ focus ต่อหรือไม่)
+        /// </summary>
+        private bool AssignExcelColumnToActiveTarget(int excelColumnIndex)
+        {
+            var targetRow = dgvColumnMapping.CurrentRow != null
+                ? dgvColumnMapping.CurrentRow.Tag as KBImportTemplateColumnRow
+                : null;
+            if (targetRow == null)
+            {
+                MessageBox.Show(
+                    "กรุณาคลิกเลือกแถวคอลัมน์ปลายทางในตาราง Mapping ก่อน แล้วค่อยคลิกเลือกคอลัมน์ Excel ด้านล่าง",
+                    "เลือกคอลัมน์ปลายทางก่อน", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+
+            string targetKey = targetRow.TargetColumnName;
+
+            if (FixedValueTargetColumns.Contains(targetKey))
+            {
+                MessageBox.Show(
+                    "คอลัมน์ปลายทางนี้เลือกค่าจาก dropdown ในตาราง Mapping โดยตรง ไม่ต้อง map จากไฟล์ Excel",
+                    "ไม่ต้อง Map จาก Excel", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+
+            // คอลัมน์ Excel นี้ถูก target อื่นเลือกไปแล้ว → ห้ามเลือกซ้ำ (1 คอลัมน์ Excel ใช้ได้ครั้งเดียว)
+            foreach (var kvp in _targetToExcelColumnIndex)
+            {
+                if (kvp.Value == excelColumnIndex && kvp.Key != targetKey)
+                {
+                    MessageBox.Show(
+                        string.Format("คอลัมน์ Excel \"{0}\" ถูกเลือกไปแล้วสำหรับคอลัมน์ปลายทาง \"{1}\"\n\nกรุณาเลือกคอลัมน์อื่น หรือดับเบิลคลิกที่คอลัมน์นี้เพื่อยกเลิกการเลือกเดิมก่อน",
+                            GetExcelColumnDisplayName(excelColumnIndex), kvp.Key),
+                        "คอลัมน์นี้ถูกเลือกไปแล้ว", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+            }
+
+            // target ที่ active อยู่มี mapping เดิมอยู่แล้ว
+            int oldExcelIndex;
+            if (_targetToExcelColumnIndex.TryGetValue(targetKey, out oldExcelIndex))
+            {
+                if (oldExcelIndex == excelColumnIndex) return false; // คลิกคอลัมน์เดิมซ้ำ ไม่ต้องทำอะไร
+                ResetExcelColumnHighlight(oldExcelIndex); // เปลี่ยนไปคอลัมน์ใหม่ → ล้าง highlight คอลัมน์เดิมออกก่อน
+            }
+
+            Color color;
+            if (!_targetHighlightColor.TryGetValue(targetKey, out color))
+            {
+                color = HighlightPalette[_nextColorIndex % HighlightPalette.Length];
+                _nextColorIndex++;
+                _targetHighlightColor[targetKey] = color;
+            }
+
+            _targetToExcelColumnIndex[targetKey] = excelColumnIndex;
+
+            _suppressMappingSync = true;
+            try { dgvColumnMapping.CurrentRow.Cells[colExcelMapping.Index].Value = _excelColumns[excelColumnIndex].ColumnRef; }
+            finally { _suppressMappingSync = false; }
+            HighlightTargetRow(dgvColumnMapping.CurrentRow, color);
+
+            HighlightExcelColumn(excelColumnIndex, color);
+            return true;
+        }
+
+        private void UnassignExcelColumn(int excelColumnIndex)
+        {
+            string targetKey = null;
+            foreach (var kvp in _targetToExcelColumnIndex)
+            {
+                if (kvp.Value == excelColumnIndex) { targetKey = kvp.Key; break; }
+            }
+            if (targetKey == null) return;
+            ClearTargetMapping(targetKey);
+        }
+
+        private void ClearTargetMapping(string targetKey)
+        {
+            int excelIndex;
+            if (_targetToExcelColumnIndex.TryGetValue(targetKey, out excelIndex))
+            {
+                ResetExcelColumnHighlight(excelIndex);
+                _targetToExcelColumnIndex.Remove(targetKey);
+            }
+            _targetHighlightColor.Remove(targetKey);
+
+            foreach (DataGridViewRow row in dgvColumnMapping.Rows)
+            {
+                var r = row.Tag as KBImportTemplateColumnRow;
+                if (r != null && r.TargetColumnName == targetKey)
+                {
+                    _suppressMappingSync = true;
+                    try { row.Cells[colExcelMapping.Index].Value = string.Empty; }
+                    finally { _suppressMappingSync = false; }
+                    ResetTargetRowHighlight(row);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>ขยับ CurrentCell ของ dgvExcelPreview ไปคอลัมน์ถัดขวา 1 คอลัมน์ — ไม่ขยับถ้าอยู่คอลัมน์สุดท้ายแล้ว</summary>
+        private void MoveExcelPreviewFocusRight(int currentColumnIndex, int rowIndex)
+        {
+            int nextColumnIndex = currentColumnIndex + 1;
+            if (nextColumnIndex >= dgvExcelPreview.Columns.Count) return;
+            if (dgvExcelPreview.Rows.Count == 0) return;
+            int targetRowIndex = (rowIndex >= 0 && rowIndex < dgvExcelPreview.Rows.Count) ? rowIndex : 0;
+            dgvExcelPreview.CurrentCell = dgvExcelPreview.Rows[targetRowIndex].Cells[nextColumnIndex];
+        }
+
+        /// <summary>ขยับ CurrentCell ของ dgvColumnMapping ไปแถวถัดลง 1 แถว — ไม่ขยับถ้าอยู่แถวสุดท้ายแล้ว</summary>
+        private void MoveColumnMappingFocusDown()
+        {
+            if (dgvColumnMapping.CurrentCell == null) return;
+            int nextRowIndex = dgvColumnMapping.CurrentCell.RowIndex + 1;
+            if (nextRowIndex >= dgvColumnMapping.Rows.Count) return;
+            int columnIndex = dgvColumnMapping.CurrentCell.ColumnIndex;
+            dgvColumnMapping.CurrentCell = dgvColumnMapping.Rows[nextRowIndex].Cells[columnIndex];
+        }
+
+        private string GetExcelColumnDisplayName(int excelColumnIndex)
+        {
+            var col = _excelColumns[excelColumnIndex];
+            return string.IsNullOrWhiteSpace(col.HeaderText)
+                ? col.ColumnRef
+                : string.Format("{0} ({1})", col.ColumnRef, col.HeaderText);
+        }
+
+        private void HighlightTargetRow(DataGridViewRow row, Color color)
+        {
+            row.Cells[colTargetColumn.Index].Style.BackColor = color;
+            row.Cells[colDescription.Index].Style.BackColor = color;
+            row.Cells[colExcelMapping.Index].Style.BackColor = color;
+        }
+
+        private void ResetTargetRowHighlight(DataGridViewRow row)
+        {
+            row.Cells[colTargetColumn.Index].Style.BackColor = dgvColumnMapping.DefaultCellStyle.BackColor;
+            row.Cells[colDescription.Index].Style.BackColor = dgvColumnMapping.DefaultCellStyle.BackColor;
+            row.Cells[colExcelMapping.Index].Style.BackColor = dgvColumnMapping.DefaultCellStyle.BackColor;
+        }
+
+        private void HighlightExcelColumn(int excelColumnIndex, Color color)
+        {
+            foreach (DataGridViewRow row in dgvExcelPreview.Rows)
+                row.Cells[excelColumnIndex].Style.BackColor = color;
+            dgvExcelPreview.Columns[excelColumnIndex].HeaderCell.Style.BackColor = color;
+        }
+
+        private void ResetExcelColumnHighlight(int excelColumnIndex)
+        {
+            if (excelColumnIndex < 0 || excelColumnIndex >= dgvExcelPreview.Columns.Count) return;
+            foreach (DataGridViewRow row in dgvExcelPreview.Rows)
+                row.Cells[excelColumnIndex].Style.BackColor = dgvExcelPreview.DefaultCellStyle.BackColor;
+            dgvExcelPreview.Columns[excelColumnIndex].HeaderCell.Style.BackColor =
+                dgvExcelPreview.ColumnHeadersDefaultCellStyle.BackColor;
         }
     }
 }

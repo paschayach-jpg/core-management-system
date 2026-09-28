@@ -170,7 +170,8 @@ namespace CMS.Presentation
                 // ── KB Services (MOD-006) ─────────────────────────────────────
                 var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);
                 var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, kbArticleLinkRepository, kbArticleAttachmentRepository, fileDocumentRepository, auditService);
-                var kbImportTemplateService = new KBImportTemplateService(kbImportTemplateRepository, kbArticleRepository, auditService);
+                var kbImportTemplateService = new KBImportTemplateService(kbImportTemplateRepository, kbArticleRepository, kbCategoryRepository, auditService);
+                var excelTemplatePreviewService = new ExcelTemplatePreviewService();
                 var kbDashboardService = new KBDashboardService(kbDashboardRepository, loggingService);
 
                 // ── Workflow Engine Services (MOD-008) ────────────────────────
@@ -648,6 +649,7 @@ namespace CMS.Presentation
                     kbCategoryService: kbCategoryService,
                     kbArticleService: kbArticleService,
                     kbImportTemplateService: kbImportTemplateService,
+                    excelTemplatePreviewService: excelTemplatePreviewService,
                     workflowService: workflowService,
                     slaCalculator: slaCalculator,
                     workflowTemplateService: workflowTemplateService,

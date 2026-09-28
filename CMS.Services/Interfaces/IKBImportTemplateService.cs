@@ -19,6 +19,12 @@ namespace CMS.Services.Interfaces
         /// </summary>
         IList<KBImportTemplateColumnRow> GetTemplateColumnGrid(int? templateId);
 
+        /// <summary>รายการหมวดหมู่สำหรับ dropdown เลือก CategoryID (ไม่รวม CategoryCode = "LW")</summary>
+        IEnumerable<KBCategory> GetCategoryOptions();
+
+        /// <summary>รายการค่า ArticleType คงที่ (1-5) สำหรับ dropdown</summary>
+        IList<KBArticleTypeOption> GetArticleTypeOptions();
+
         /// <summary>เพิ่ม/แก้ไข Template พร้อม mapping ทั้งหมด คืน TemplateID</summary>
         int SaveTemplate(KBImportTemplate template, IList<KBImportTemplateColumnRow> rows, UserContext user);
 

@@ -31,6 +31,11 @@ namespace CMS.Presentation.Modules.KMS
             this.txtTemplateDescription = new System.Windows.Forms.TextBox();
             this.lblTemplateName = new System.Windows.Forms.Label();
             this.txtTemplateName = new System.Windows.Forms.TextBox();
+            this.pnlExcelPreview = new System.Windows.Forms.Panel();
+            this.dgvExcelPreview = new System.Windows.Forms.DataGridView();
+            this.pnlExcelPreviewHeader = new System.Windows.Forms.Panel();
+            this.btnUploadExcel = new System.Windows.Forms.Button();
+            this.lblExcelPreviewTitle = new System.Windows.Forms.Label();
             this.divider = new System.Windows.Forms.Panel();
             this.pnlLeft = new System.Windows.Forms.Panel();
             this.dgvTemplates = new System.Windows.Forms.DataGridView();
@@ -44,6 +49,9 @@ namespace CMS.Presentation.Modules.KMS
             ((System.ComponentModel.ISupportInitialize)(this.dgvColumnMapping)).BeginInit();
             this.pnlButtons.SuspendLayout();
             this.pnlEditCard.SuspendLayout();
+            this.pnlExcelPreview.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvExcelPreview)).BeginInit();
+            this.pnlExcelPreviewHeader.SuspendLayout();
             this.pnlLeft.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvTemplates)).BeginInit();
             this.pnlLeftHeader.SuspendLayout();
@@ -105,6 +113,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlRight.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlRight.Controls.Add(this.dgvColumnMapping);
             this.pnlRight.Controls.Add(this.pnlButtons);
+            this.pnlRight.Controls.Add(this.pnlExcelPreview);
             this.pnlRight.Controls.Add(this.pnlEditCard);
             this.pnlRight.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlRight.Location = new System.Drawing.Point(281, 0);
@@ -260,6 +269,70 @@ namespace CMS.Presentation.Modules.KMS
             this.txtTemplateName.Size = new System.Drawing.Size(350, 23);
             this.txtTemplateName.TabIndex = 1;
             //
+            // pnlExcelPreview
+            //
+            this.pnlExcelPreview.Controls.Add(this.dgvExcelPreview);
+            this.pnlExcelPreview.Controls.Add(this.pnlExcelPreviewHeader);
+            this.pnlExcelPreview.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlExcelPreview.Location = new System.Drawing.Point(12, 102);
+            this.pnlExcelPreview.Name = "pnlExcelPreview";
+            this.pnlExcelPreview.Size = new System.Drawing.Size(895, 180);
+            this.pnlExcelPreview.TabIndex = 3;
+            //
+            // dgvExcelPreview
+            //
+            this.dgvExcelPreview.AllowUserToAddRows = false;
+            this.dgvExcelPreview.AllowUserToDeleteRows = false;
+            this.dgvExcelPreview.AutoGenerateColumns = false;
+            this.dgvExcelPreview.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvExcelPreview.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvExcelPreview.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.dgvExcelPreview.Location = new System.Drawing.Point(0, 34);
+            this.dgvExcelPreview.Name = "dgvExcelPreview";
+            this.dgvExcelPreview.Size = new System.Drawing.Size(895, 146);
+            this.dgvExcelPreview.TabIndex = 0;
+            //
+            // pnlExcelPreviewHeader
+            //
+            this.pnlExcelPreviewHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(235)))), ((int)(((byte)(242)))), ((int)(((byte)(255)))));
+            this.pnlExcelPreviewHeader.Controls.Add(this.lblExcelPreviewTitle);
+            this.pnlExcelPreviewHeader.Controls.Add(this.btnUploadExcel);
+            this.pnlExcelPreviewHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlExcelPreviewHeader.Location = new System.Drawing.Point(0, 0);
+            this.pnlExcelPreviewHeader.Name = "pnlExcelPreviewHeader";
+            this.pnlExcelPreviewHeader.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
+            this.pnlExcelPreviewHeader.Size = new System.Drawing.Size(895, 34);
+            this.pnlExcelPreviewHeader.TabIndex = 1;
+            //
+            // lblExcelPreviewTitle
+            //
+            this.lblExcelPreviewTitle.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblExcelPreviewTitle.Font = new System.Drawing.Font("Segoe UI", 8.5F, System.Drawing.FontStyle.Bold);
+            this.lblExcelPreviewTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
+            this.lblExcelPreviewTitle.Location = new System.Drawing.Point(4, 0);
+            this.lblExcelPreviewTitle.Name = "lblExcelPreviewTitle";
+            this.lblExcelPreviewTitle.Size = new System.Drawing.Size(701, 34);
+            this.lblExcelPreviewTitle.TabIndex = 0;
+            this.lblExcelPreviewTitle.Text = "ตัวอย่างคอลัมน์จาก Excel — คลิกหัวคอลัมน์เพื่อเลือก Mapping ให้แถวที่กำลังเลือกอยู่ (ดับเบิลคลิก = ยกเลิก)";
+            this.lblExcelPreviewTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // btnUploadExcel
+            //
+            this.btnUploadExcel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(120)))), ((int)(((byte)(215)))));
+            this.btnUploadExcel.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnUploadExcel.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnUploadExcel.FlatAppearance.BorderSize = 0;
+            this.btnUploadExcel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnUploadExcel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.btnUploadExcel.ForeColor = System.Drawing.Color.White;
+            this.btnUploadExcel.Location = new System.Drawing.Point(705, 0);
+            this.btnUploadExcel.Name = "btnUploadExcel";
+            this.btnUploadExcel.Size = new System.Drawing.Size(190, 34);
+            this.btnUploadExcel.TabIndex = 1;
+            this.btnUploadExcel.Text = "📂 อัปโหลด Excel Template";
+            this.btnUploadExcel.UseVisualStyleBackColor = false;
+            this.btnUploadExcel.Click += new System.EventHandler(this.BtnUploadExcel_Click);
+            //
             // divider
             //
             this.divider.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
@@ -350,7 +423,7 @@ namespace CMS.Presentation.Modules.KMS
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1200, 800);
+            this.ClientSize = new System.Drawing.Size(1200, 900);
             this.Controls.Add(this.pnlMain);
             this.Controls.Add(this.pnlHeader);
             this.Name = "KBImportTemplateConfigForm";
@@ -363,6 +436,9 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlButtons.ResumeLayout(false);
             this.pnlEditCard.ResumeLayout(false);
             this.pnlEditCard.PerformLayout();
+            this.pnlExcelPreview.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dgvExcelPreview)).EndInit();
+            this.pnlExcelPreviewHeader.ResumeLayout(false);
             this.pnlLeft.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvTemplates)).EndInit();
             this.pnlLeftHeader.ResumeLayout(false);
@@ -387,6 +463,11 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.TextBox txtTemplateDescription;
         private System.Windows.Forms.Label lblTemplateName;
         private System.Windows.Forms.TextBox txtTemplateName;
+        private System.Windows.Forms.Panel pnlExcelPreview;
+        private System.Windows.Forms.DataGridView dgvExcelPreview;
+        private System.Windows.Forms.Panel pnlExcelPreviewHeader;
+        private System.Windows.Forms.Button btnUploadExcel;
+        private System.Windows.Forms.Label lblExcelPreviewTitle;
         private System.Windows.Forms.Panel divider;
         private System.Windows.Forms.Panel pnlLeft;
         private System.Windows.Forms.DataGridView dgvTemplates;

@@ -80,6 +80,7 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
         private readonly CMS.Services.Interfaces.IKBImportTemplateService _kbImportTemplateService;
+        private readonly CMS.Services.Interfaces.IExcelTemplatePreviewService _excelTemplatePreviewService;
         private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
         private readonly CMS.Controllers.RGP.ProjectController _rgpProjectController;
@@ -221,6 +222,7 @@ namespace CMS.Presentation
             CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
             CMS.Services.Interfaces.IKBArticleService kbArticleService = null,
             CMS.Services.Interfaces.IKBImportTemplateService kbImportTemplateService = null,
+            CMS.Services.Interfaces.IExcelTemplatePreviewService excelTemplatePreviewService = null,
             IWorkflowService workflowService = null,
             ISLACalculator slaCalculator = null,
             CMS.Services.Interfaces.IWorkflowTemplateService workflowTemplateService = null,
@@ -312,6 +314,7 @@ namespace CMS.Presentation
             _kbCategoryService = kbCategoryService;
             _kbArticleService = kbArticleService;
             _kbImportTemplateService = kbImportTemplateService;
+            _excelTemplatePreviewService = excelTemplatePreviewService;
             _workflowService = workflowService;
             _slaCalculator = slaCalculator;
             _workflowTemplateService = workflowTemplateService;
@@ -1800,7 +1803,7 @@ namespace CMS.Presentation
                     return DialogResult.Cancel;
                 }
                 var configForm = new KBImportTemplateConfigForm(_currentUser);
-                var configPresenter = new KBImportTemplateConfigController(configForm, _kbImportTemplateService, _currentUser);
+                var configPresenter = new KBImportTemplateConfigController(configForm, _kbImportTemplateService, _excelTemplatePreviewService, _currentUser);
                 configForm.AttachPresenter(configPresenter);
                 configForm.BackRequested += (s, e) => configForm.Close();
                 return configForm.ShowDialog(this);

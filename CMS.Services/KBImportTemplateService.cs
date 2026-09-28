@@ -15,18 +15,26 @@ namespace CMS.Services
     {
         private readonly IKBImportTemplateRepository _repo;
         private readonly IKBArticleRepository        _articleRepo;
+        private readonly IKBCategoryRepository       _categoryRepo;
         private readonly IAuditService               _auditService;
+
+        /// <summary>ชื่อคอลัมน์เป้าหมายที่ใช้ dropdown เลือกค่าคงที่แทนการ map จาก Excel — ไม่รวมใน validation ห้าม map ซ้ำ</summary>
+        private static readonly HashSet<string> FixedValueTargetColumns =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CategoryID", "ArticleType" };
 
         public KBImportTemplateService(
             IKBImportTemplateRepository repo,
             IKBArticleRepository        articleRepo,
+            IKBCategoryRepository       categoryRepo,
             IAuditService               auditService)
         {
             if (repo         == null) throw new ArgumentNullException("repo");
             if (articleRepo  == null) throw new ArgumentNullException("articleRepo");
+            if (categoryRepo == null) throw new ArgumentNullException("categoryRepo");
             if (auditService == null) throw new ArgumentNullException("auditService");
             _repo         = repo;
             _articleRepo  = articleRepo;
+            _categoryRepo = categoryRepo;
             _auditService = auditService;
         }
 
@@ -69,6 +77,18 @@ namespace CMS.Services
             return rows;
         }
 
+        /// <summary>รายการหมวดหมู่สำหรับ dropdown เลือก CategoryID (ไม่รวม CategoryCode = "LW")</summary>
+        public IEnumerable<KBCategory> GetCategoryOptions()
+        {
+            return _categoryRepo.GetAll().Where(c => !string.Equals(c.CategoryCode, "LW", StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>รายการค่า ArticleType คงที่ (1-5) สำหรับ dropdown</summary>
+        public IList<KBArticleTypeOption> GetArticleTypeOptions()
+        {
+            return KBArticleTypeCatalog.GetOptions();
+        }
+
         // ── Write ─────────────────────────────────────────────────────────────
 
         public int SaveTemplate(KBImportTemplate template, IList<KBImportTemplateColumnRow> rows, UserContext user)
@@ -86,6 +106,7 @@ namespace CMS.Services
                 throw new InvalidOperationException("ต้องมีการ Map อย่างน้อย 1 คอลัมน์");
 
             var duplicates = mappedRows
+                .Where(r => !FixedValueTargetColumns.Contains(r.TargetColumnName)) // CategoryID/ArticleType เป็นค่าคงที่ ไม่ใช่การใช้คอลัมน์ Excel จึงไม่นับซ้ำ
                 .GroupBy(r => r.ExcelColumnRef.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Where(g => g.Count() > 1)
                 .Select(g => g.Key)
