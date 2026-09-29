@@ -80,6 +80,7 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
         private readonly CMS.Services.Interfaces.IKBImportTemplateService _kbImportTemplateService;
+        private readonly CMS.Services.Interfaces.IKBArticleDisplayProfileService _kbArticleDisplayProfileService;
         private readonly CMS.Services.Interfaces.IExcelTemplatePreviewService _excelTemplatePreviewService;
         private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
         private readonly CMS.Services.Interfaces.IKBDashboardService _kbDashboardService;
@@ -222,6 +223,7 @@ namespace CMS.Presentation
             CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
             CMS.Services.Interfaces.IKBArticleService kbArticleService = null,
             CMS.Services.Interfaces.IKBImportTemplateService kbImportTemplateService = null,
+            CMS.Services.Interfaces.IKBArticleDisplayProfileService kbArticleDisplayProfileService = null,
             CMS.Services.Interfaces.IExcelTemplatePreviewService excelTemplatePreviewService = null,
             IWorkflowService workflowService = null,
             ISLACalculator slaCalculator = null,
@@ -314,6 +316,7 @@ namespace CMS.Presentation
             _kbCategoryService = kbCategoryService;
             _kbArticleService = kbArticleService;
             _kbImportTemplateService = kbImportTemplateService;
+            _kbArticleDisplayProfileService = kbArticleDisplayProfileService;
             _excelTemplatePreviewService = excelTemplatePreviewService;
             _workflowService = workflowService;
             _slaCalculator = slaCalculator;
@@ -1751,9 +1754,16 @@ namespace CMS.Presentation
                 return;
             }
 
+            if (_kbArticleDisplayProfileService == null)
+            {
+                MessageBox.Show("Article Display Profile service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             var form = new KBMainForm();
             var presenter = new KBMainController(
-                form, _kbCategoryService, _kbArticleService, _currentUser);
+                form, _kbCategoryService, _kbArticleService, _kbArticleDisplayProfileService, _currentUser);
 
             form.AttachPresenter(presenter, _currentUser);
             form.AttachFactories(
@@ -1804,6 +1814,16 @@ namespace CMS.Presentation
                 }
                 var configForm = new KBImportTemplateConfigForm(_currentUser);
                 var configPresenter = new KBImportTemplateConfigController(configForm, _kbImportTemplateService, _excelTemplatePreviewService, _currentUser);
+                configForm.AttachPresenter(configPresenter);
+                configForm.BackRequested += (s, e) => configForm.Close();
+                return configForm.ShowDialog(this);
+            });
+
+            // displayProfileConfigFactory — สร้าง KBArticleDisplayProfileConfigForm พร้อม presenter
+            form.AttachDisplayProfileConfigFactory(() =>
+            {
+                var configForm = new KBArticleDisplayProfileConfigForm(_currentUser);
+                var configPresenter = new KBArticleDisplayProfileConfigController(configForm, _kbArticleDisplayProfileService, _kbCategoryService, _currentUser);
                 configForm.AttachPresenter(configPresenter);
                 configForm.BackRequested += (s, e) => configForm.Close();
                 return configForm.ShowDialog(this);

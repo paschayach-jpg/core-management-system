@@ -24,6 +24,14 @@ namespace CMS.Domain.Models
         public string   CreatedBy        { get; set; }
         public DateTime CreatedDate      { get; set; }
 
+        /// <summary>
+        /// FK → KMS.m_KBArticleDisplayProfile (nullable) — profile ที่กำหนด header/การซ่อนแสดงคอลัมน์ของ
+        /// dgvArticles/ArticleCardControl สำหรับหมวดนี้ ถ้าเป็น null จะ inherit จาก ancestor ที่ใกล้ที่สุด
+        /// ที่มีค่านี้ตั้งไว้ (ดู KBArticleDisplayProfileService.GetEffectiveDisplaySettings) ถ้าไม่มีเลย
+        /// ตลอดสายจะใช้ default ตาม KBArticleDisplaySlotCatalog
+        /// </summary>
+        public int?     DisplayProfileID { get; set; }
+
         // Display helper — set by repository when joining parent name
         public string ParentCategoryName { get; set; }
 

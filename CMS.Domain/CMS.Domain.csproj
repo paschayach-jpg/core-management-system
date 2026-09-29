@@ -91,6 +91,11 @@
     <Compile Include="Models\KBArticleTypeOption.cs" />
     <Compile Include="Models\KBArticleTypeCatalog.cs" />
     <Compile Include="Models\KBImportLayoutTypeCatalog.cs" />
+    <Compile Include="Models\KBArticleDisplayProfile.cs" />
+    <Compile Include="Models\KBArticleDisplayProfileColumn.cs" />
+    <Compile Include="Models\KBArticleDisplayProfileColumnRow.cs" />
+    <Compile Include="Models\KBArticleDisplaySlotCatalog.cs" />
+    <Compile Include="Models\KBColumnDisplaySetting.cs" />
     <Compile Include="Models\KBVersion.cs" />
     <Compile Include="Models\KBArticleLink.cs" />
     <Compile Include="Models\KBArticleAttachment.cs" />

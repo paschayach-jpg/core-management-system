@@ -41,6 +41,12 @@ namespace CMS.Presentation.Modules.KMS
         private List<KBArticle> _cachedArticles    = new List<KBArticle>();
         private bool            _tab2NeedsRefresh  = true;
 
+        /// <summary>
+        /// Header label + การซ่อนแสดงคอลัมน์ของ dgvArticles/ArticleCardControl ที่ resolve แล้วสำหรับหมวด
+        /// ที่กำลังดูอยู่ (ตั้งค่าโดย ApplyColumnDisplay) — เริ่มต้นเป็นค่า default ตายตัวเดิมก่อนมีการเลือกหมวดใดๆ
+        /// </summary>
+        private IDictionary<string, KBColumnDisplaySetting> _currentColumnDisplay = KBArticleDisplaySlotCatalog.GetAllDefaults();
+
         // ── Suppress AfterSelect during programmatic tree population ─────────────
         private bool _suppressCategorySelect = false;
 
@@ -73,6 +79,8 @@ namespace CMS.Presentation.Modules.KMS
         private Func<DialogResult> _dashboardFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBImportTemplateConfigForm. Returns DialogResult.</summary>
         private Func<DialogResult> _importTemplateConfigFactory;
+        /// <summary>Creates, wires, and shows a pre-wired KBArticleDisplayProfileConfigForm. Returns DialogResult.</summary>
+        private Func<DialogResult> _displayProfileConfigFactory;
 
 
         public KBMainForm()
@@ -195,6 +203,15 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachImportTemplateConfigFactory(Func<DialogResult> factory)
         {
             _importTemplateConfigFactory = factory;
+        }
+
+        /// <summary>
+        /// Inject the factory used to create and show the Article Display Profile Config screen
+        /// with its pre-wired presenter. Must be called before the form is shown.
+        /// </summary>
+        public void AttachDisplayProfileConfigFactory(Func<DialogResult> factory)
+        {
+            _displayProfileConfigFactory = factory;
         }
 
         // ── Form events ──────────────────────────────────────────────────────────
@@ -334,6 +351,43 @@ namespace CMS.Presentation.Modules.KMS
                 _tab2NeedsRefresh = true;
         }
 
+        /// <summary>
+        /// รับ header label/การซ่อนแสดงคอลัมน์ที่ resolve แล้วจาก presenter (ตาม Article Display Profile
+        /// ของหมวดที่กำลังดูอยู่) — null/ว่าง แปลว่ากลับไปใช้ default ตายตัวเดิมทั้งหมด (เช่นตอนดู Archived/
+        /// cross-reference ที่ไม่มี CategoryID เดียวให้ resolve) ต้อง apply ทั้ง dgvArticles (คอลัมน์ header/
+        /// Visible ตรงๆ) และเก็บไว้ให้ PopulateCards ส่งต่อให้ ArticleCardControl แต่ละใบด้วย
+        /// </summary>
+        public void ApplyColumnDisplay(IDictionary<string, KBColumnDisplaySetting> settings)
+        {
+            _currentColumnDisplay = (settings != null && settings.Count > 0)
+                ? settings
+                : KBArticleDisplaySlotCatalog.GetAllDefaults();
+
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.Title,          "colTitle");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.TitleCategory,  "colCode");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.ContentHTML,    "colContentHtml");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.EffectiveDate,  "colEffectiveDate");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.ExpiryDate,     "colExpiryDate");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.LinkedEntities, "colOrgDivDept");
+            // PublishedDate ไม่มีคอลัมน์ใน dgvArticles — ใช้แค่ใน ArticleCardControl
+
+            // ถ้ากำลังอยู่ tab การ์ดอยู่แล้วตอนสลับหมวด ต้อง re-render ทันทีด้วย label ชุดใหม่
+            if (tabArticles.SelectedTab == tabPage2)
+                PopulateCards(_cachedArticles);
+            else
+                _tab2NeedsRefresh = true;
+        }
+
+        private void ApplyGridColumnDisplay(string slotKey, string columnName)
+        {
+            KBColumnDisplaySetting setting;
+            if (!_currentColumnDisplay.TryGetValue(slotKey, out setting)) return;
+            var col = dgvArticles.Columns[columnName];
+            if (col == null) return;
+            col.HeaderText = setting.Label ?? string.Empty;
+            col.Visible    = setting.Visible;
+        }
+
         private static bool IsArticleActive(KBArticle a)
         {
             return a.ExpiryDate == null || a.ExpiryDate.Value.Date > DateTime.Today;
@@ -377,6 +431,7 @@ namespace CMS.Presentation.Modules.KMS
             foreach (var a in articles)
             {
                 var card = new ArticleCardControl();
+                card.DisplayColumn     = _currentColumnDisplay;
                 card.Article           = a;
                 card.CardClicked      += (s, ev) => OnArticleCardClick(ev);
                 card.ReadClicked      += (s, ev) => OnArticleCardClick(ev);
@@ -566,6 +621,16 @@ namespace CMS.Presentation.Modules.KMS
             if (_presenter == null) return;
             if (_importTemplateConfigFactory == null) return;
             _importTemplateConfigFactory();
+        }
+
+        private void BtnDisplayProfileConfig_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            if (_displayProfileConfigFactory == null) return;
+            _displayProfileConfigFactory();
+
+            // Profile ที่แก้อาจกระทบหมวดที่กำลังดูอยู่ — โหลดต้นไม้หมวดหมู่ใหม่ให้แน่ใจว่า tree/label ตรงกัน
+            _presenter.LoadCategoryTree();
         }
 
         private void BtnImportExcel_Click(object sender, EventArgs e)

@@ -75,6 +75,7 @@
     <Compile Include="Interfaces\IShareTokenRepository.cs" />
     <Compile Include="Interfaces\IKBCategoryRepository.cs" />
     <Compile Include="Interfaces\IKBImportTemplateRepository.cs" />
+    <Compile Include="Interfaces\IKBArticleDisplayProfileRepository.cs" />
     <Compile Include="Interfaces\IKBArticleRepository.cs" />
     <Compile Include="Interfaces\IKBVersionRepository.cs" />
     <Compile Include="Interfaces\IKBArticleLinkRepository.cs" />
@@ -115,6 +116,7 @@
     <Compile Include="Repositories\ShareTokenRepository.cs" />
     <Compile Include="Repositories\KBCategoryRepository.cs" />
     <Compile Include="Repositories\KBImportTemplateRepository.cs" />
+    <Compile Include="Repositories\KBArticleDisplayProfileRepository.cs" />
     <Compile Include="Repositories\KBArticleRepository.cs" />
     <Compile Include="Repositories\KBVersionRepository.cs" />
     <Compile Include="Repositories\KBArticleLinkRepository.cs" />

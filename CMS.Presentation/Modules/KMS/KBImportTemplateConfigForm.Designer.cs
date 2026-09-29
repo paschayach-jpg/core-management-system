@@ -31,6 +31,10 @@ namespace CMS.Presentation.Modules.KMS
             this.txtTemplateDescription = new System.Windows.Forms.TextBox();
             this.lblTemplateName = new System.Windows.Forms.Label();
             this.txtTemplateName = new System.Windows.Forms.TextBox();
+            this.lblCategoryConfig = new System.Windows.Forms.Label();
+            this.cboCategoryConfig = new System.Windows.Forms.ComboBox();
+            this.lblArticleTypeConfig = new System.Windows.Forms.Label();
+            this.cboArticleTypeConfig = new System.Windows.Forms.ComboBox();
             this.pnlExcelPreview = new System.Windows.Forms.Panel();
             this.dgvExcelPreview = new System.Windows.Forms.DataGridView();
             this.pnlExcelPreviewHeader = new System.Windows.Forms.Panel();
@@ -227,10 +231,14 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlEditCard.Controls.Add(this.txtTemplateDescription);
             this.pnlEditCard.Controls.Add(this.lblTemplateName);
             this.pnlEditCard.Controls.Add(this.txtTemplateName);
+            this.pnlEditCard.Controls.Add(this.lblCategoryConfig);
+            this.pnlEditCard.Controls.Add(this.cboCategoryConfig);
+            this.pnlEditCard.Controls.Add(this.lblArticleTypeConfig);
+            this.pnlEditCard.Controls.Add(this.cboArticleTypeConfig);
             this.pnlEditCard.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlEditCard.Location = new System.Drawing.Point(12, 12);
             this.pnlEditCard.Name = "pnlEditCard";
-            this.pnlEditCard.Size = new System.Drawing.Size(895, 90);
+            this.pnlEditCard.Size = new System.Drawing.Size(895, 127);
             this.pnlEditCard.TabIndex = 0;
             //
             // lblTemplateDescription
@@ -268,6 +276,42 @@ namespace CMS.Presentation.Modules.KMS
             this.txtTemplateName.Name = "txtTemplateName";
             this.txtTemplateName.Size = new System.Drawing.Size(350, 23);
             this.txtTemplateName.TabIndex = 1;
+            //
+            // lblCategoryConfig
+            //
+            this.lblCategoryConfig.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblCategoryConfig.Location = new System.Drawing.Point(3, 89);
+            this.lblCategoryConfig.Name = "lblCategoryConfig";
+            this.lblCategoryConfig.Size = new System.Drawing.Size(120, 22);
+            this.lblCategoryConfig.TabIndex = 4;
+            this.lblCategoryConfig.Text = "หมวดหมู่ (CategoryID) *";
+            //
+            // cboCategoryConfig
+            //
+            this.cboCategoryConfig.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboCategoryConfig.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboCategoryConfig.Location = new System.Drawing.Point(130, 86);
+            this.cboCategoryConfig.Name = "cboCategoryConfig";
+            this.cboCategoryConfig.Size = new System.Drawing.Size(250, 23);
+            this.cboCategoryConfig.TabIndex = 5;
+            //
+            // lblArticleTypeConfig
+            //
+            this.lblArticleTypeConfig.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblArticleTypeConfig.Location = new System.Drawing.Point(400, 89);
+            this.lblArticleTypeConfig.Name = "lblArticleTypeConfig";
+            this.lblArticleTypeConfig.Size = new System.Drawing.Size(150, 22);
+            this.lblArticleTypeConfig.TabIndex = 6;
+            this.lblArticleTypeConfig.Text = "ประเภทบทความ (ArticleType) *";
+            //
+            // cboArticleTypeConfig
+            //
+            this.cboArticleTypeConfig.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboArticleTypeConfig.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboArticleTypeConfig.Location = new System.Drawing.Point(555, 86);
+            this.cboArticleTypeConfig.Name = "cboArticleTypeConfig";
+            this.cboArticleTypeConfig.Size = new System.Drawing.Size(250, 23);
+            this.cboArticleTypeConfig.TabIndex = 7;
             //
             // pnlExcelPreview
             //
@@ -463,6 +507,10 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.TextBox txtTemplateDescription;
         private System.Windows.Forms.Label lblTemplateName;
         private System.Windows.Forms.TextBox txtTemplateName;
+        private System.Windows.Forms.Label lblCategoryConfig;
+        private System.Windows.Forms.ComboBox cboCategoryConfig;
+        private System.Windows.Forms.Label lblArticleTypeConfig;
+        private System.Windows.Forms.ComboBox cboArticleTypeConfig;
         private System.Windows.Forms.Panel pnlExcelPreview;
         private System.Windows.Forms.DataGridView dgvExcelPreview;
         private System.Windows.Forms.Panel pnlExcelPreviewHeader;

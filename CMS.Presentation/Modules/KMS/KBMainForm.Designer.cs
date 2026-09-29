@@ -15,6 +15,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.btnImportTemplateConfig = new System.Windows.Forms.Button();
+            this.btnDisplayProfileConfig = new System.Windows.Forms.Button();
             this.btnDashboard = new System.Windows.Forms.Button();
             this.btnSettings = new System.Windows.Forms.Button();
             this.lblTitle = new System.Windows.Forms.Label();
@@ -88,6 +89,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.pnlHeader.Controls.Add(this.btnImportTemplateConfig);
+            this.pnlHeader.Controls.Add(this.btnDisplayProfileConfig);
             this.pnlHeader.Controls.Add(this.btnDashboard);
             this.pnlHeader.Controls.Add(this.btnSettings);
             this.pnlHeader.Controls.Add(this.lblTitle);
@@ -114,7 +116,25 @@ namespace CMS.Presentation.Modules.KMS
             this.btnImportTemplateConfig.Text = "🔧 Import Template";
             this.btnImportTemplateConfig.UseVisualStyleBackColor = false;
             this.btnImportTemplateConfig.Click += new System.EventHandler(this.BtnImportTemplateConfig_Click);
-            // 
+            //
+            // btnDisplayProfileConfig
+            //
+            this.btnDisplayProfileConfig.BackColor = System.Drawing.Color.Transparent;
+            this.btnDisplayProfileConfig.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnDisplayProfileConfig.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnDisplayProfileConfig.FlatAppearance.BorderSize = 0;
+            this.btnDisplayProfileConfig.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(74)))), ((int)(((byte)(111)))));
+            this.btnDisplayProfileConfig.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDisplayProfileConfig.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDisplayProfileConfig.ForeColor = System.Drawing.Color.White;
+            this.btnDisplayProfileConfig.Location = new System.Drawing.Point(850, 0);
+            this.btnDisplayProfileConfig.Name = "btnDisplayProfileConfig";
+            this.btnDisplayProfileConfig.Size = new System.Drawing.Size(220, 32);
+            this.btnDisplayProfileConfig.TabIndex = 3;
+            this.btnDisplayProfileConfig.Text = "🏷️ Display Profile";
+            this.btnDisplayProfileConfig.UseVisualStyleBackColor = false;
+            this.btnDisplayProfileConfig.Click += new System.EventHandler(this.BtnDisplayProfileConfig_Click);
+            //
             // btnDashboard
             // 
             this.btnDashboard.BackColor = System.Drawing.Color.Transparent;
@@ -857,6 +877,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel           pnlHeader;
         private System.Windows.Forms.Label           lblTitle;
         private System.Windows.Forms.Button          btnImportTemplateConfig;
+        private System.Windows.Forms.Button          btnDisplayProfileConfig;
         private System.Windows.Forms.Button          btnDashboard;
         private System.Windows.Forms.Button          btnSettings;
         private System.Windows.Forms.SplitContainer  splitMain;

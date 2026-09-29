@@ -106,6 +106,15 @@ namespace CMS.Services
                 throw new InvalidOperationException(string.Format("มี Template ชื่อ \"{0}\" อยู่แล้ว", template.TemplateName.Trim()));
 
             var mappedRows = rows.Where(r => !string.IsNullOrWhiteSpace(r.ExcelColumnRef)).ToList();
+
+            // CategoryID/ArticleType เป็น dropdown แยกบนหน้าจอ (ไม่ใช่แถวใน grid mapping) แต่ยังต้องมีการ
+            // เลือกจริงเสมอ — default ของ dropdown คือ "ทั้งหมด" (ExcelColumnRef ว่าง) ซึ่งใช้เป็น fixed
+            // value ตอน import ไม่ได้ ต้องเลือกให้ชัดเจนก่อนบันทึกทุกครั้ง
+            if (!mappedRows.Any(r => string.Equals(r.TargetColumnName, "CategoryID", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("กรุณาเลือกหมวดหมู่ (CategoryID) ก่อนบันทึก — ยังเป็น \"ทั้งหมด\" อยู่");
+            if (!mappedRows.Any(r => string.Equals(r.TargetColumnName, "ArticleType", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("กรุณาเลือกประเภทบทความ (ArticleType) ก่อนบันทึก — ยังเป็น \"ทั้งหมด\" อยู่");
+
             if (mappedRows.Count == 0)
                 throw new InvalidOperationException("ต้องมีการ Map อย่างน้อย 1 คอลัมน์");
 

@@ -107,8 +107,8 @@
             this.pnlActStep2 = new System.Windows.Forms.Panel();
             this.btnImport = new System.Windows.Forms.Button();
             this.pnlProgress = new System.Windows.Forms.Panel();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.lblProgressText = new System.Windows.Forms.Label();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.btnCancel2 = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
             this.pnlStep1 = new System.Windows.Forms.Panel();
@@ -1294,15 +1294,6 @@
             this.pnlProgress.TabIndex = 3;
             this.pnlProgress.Visible = false;
             // 
-            // progressBar
-            // 
-            this.progressBar.Dock = System.Windows.Forms.DockStyle.Top;
-            this.progressBar.Location = new System.Drawing.Point(0, 10);
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(355, 17);
-            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.progressBar.TabIndex = 0;
-            // 
             // lblProgressText
             // 
             this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Top;
@@ -1314,6 +1305,15 @@
             this.lblProgressText.TabIndex = 1;
             this.lblProgressText.Text = "กำลังนำเข้าข้อมูล...";
             this.lblProgressText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // progressBar
+            // 
+            this.progressBar.Dock = System.Windows.Forms.DockStyle.Top;
+            this.progressBar.Location = new System.Drawing.Point(0, 10);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.Size = new System.Drawing.Size(355, 17);
+            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.progressBar.TabIndex = 0;
             // 
             // btnCancel2
             // 

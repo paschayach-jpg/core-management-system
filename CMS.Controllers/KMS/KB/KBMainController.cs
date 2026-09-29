@@ -10,10 +10,11 @@ namespace CMS.Controllers.KMS.KB
 {
     public class KBMainController
     {
-        private readonly IKBMainController  _view;
-        private readonly IKBCategoryService _categoryService;
-        private readonly IKBArticleService  _articleService;
-        private readonly UserContext        _user;
+        private readonly IKBMainController               _view;
+        private readonly IKBCategoryService               _categoryService;
+        private readonly IKBArticleService                _articleService;
+        private readonly IKBArticleDisplayProfileService  _displayProfileService;
+        private readonly UserContext                      _user;
 
         private int _currentPage = 1;
 
@@ -34,19 +35,22 @@ namespace CMS.Controllers.KMS.KB
         private const string LawFolderLabel      = "กฎหมาย";
 
         public KBMainController(
-            IKBMainController  view,
-            IKBCategoryService categoryService,
-            IKBArticleService  articleService,
-            UserContext        user)
+            IKBMainController              view,
+            IKBCategoryService              categoryService,
+            IKBArticleService               articleService,
+            IKBArticleDisplayProfileService displayProfileService,
+            UserContext                     user)
         {
-            if (view            == null) throw new ArgumentNullException("view");
-            if (categoryService == null) throw new ArgumentNullException("categoryService");
-            if (articleService  == null) throw new ArgumentNullException("articleService");
-            if (user            == null) throw new ArgumentNullException("user");
-            _view            = view;
-            _categoryService = categoryService;
-            _articleService  = articleService;
-            _user            = user;
+            if (view                  == null) throw new ArgumentNullException("view");
+            if (categoryService       == null) throw new ArgumentNullException("categoryService");
+            if (articleService        == null) throw new ArgumentNullException("articleService");
+            if (displayProfileService == null) throw new ArgumentNullException("displayProfileService");
+            if (user                  == null) throw new ArgumentNullException("user");
+            _view                  = view;
+            _categoryService       = categoryService;
+            _articleService        = articleService;
+            _displayProfileService = displayProfileService;
+            _user                  = user;
         }
 
         public void Initialize() { LoadCategoryTree(); }
@@ -254,6 +258,7 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedArticleTitle = null;
             _view.ArticleTitleText     = string.Format("  {0}", folderLabel);
             _linkedArticleIds          = articleIds;
+            ApplyColumnDisplayForCategory(null); // มุมมองข้ามหมวด ไม่มี CategoryID เดียวให้ resolve profile
             LoadArticles();
         }
 
@@ -264,6 +269,7 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedArticleTitle = null;
             _view.ArticleTitleText     = "  \U0001F4E6 Archived";
             _linkedArticleIds          = null;
+            ApplyColumnDisplayForCategory(null); // Archived รวมทุกหมวด ไม่มี CategoryID เดียวให้ resolve profile
             LoadArticles();
         }
 
@@ -276,6 +282,7 @@ namespace CMS.Controllers.KMS.KB
                 ? string.Format("  {0}", categoryName)
                 : "  ทุกหมวดหมู่";
             _linkedArticleIds          = null;
+            ApplyColumnDisplayForCategory(categoryId);
             LoadArticles();
         }
 
@@ -290,7 +297,23 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedArticleTitle = title;
             _view.ArticleTitleText     = string.Format("  {0}  ›  {1}", categoryName, title);
             _linkedArticleIds          = null;
+            ApplyColumnDisplayForCategory(categoryId);
             LoadArticles();
+        }
+
+        /// <summary>
+        /// Resolve และส่ง header label/การซ่อนแสดงคอลัมน์ของ dgvArticles/ArticleCardControl ให้ view —
+        /// categoryId เป็น null (มุมมองข้ามหมวด เช่น Archived/cross-reference) จะสั่งกลับไปใช้ default ตายตัว
+        /// </summary>
+        private void ApplyColumnDisplayForCategory(int? categoryId)
+        {
+            try
+            {
+                _view.ApplyColumnDisplay(categoryId.HasValue
+                    ? _displayProfileService.GetEffectiveDisplaySettings(categoryId.Value)
+                    : null);
+            }
+            catch { /* การแสดงผล header เป็นเรื่องรอง — ไม่ให้ล้มทั้งหน้าถ้า resolve ไม่ได้ */ }
         }
 
         public void LoadArticles()

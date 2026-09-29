@@ -27,7 +27,11 @@ namespace CMS.Presentation.Modules.KMS
         private List<KBCategory> _categoryOptions = new List<KBCategory>();
         private List<KBArticleTypeOption> _articleTypeOptions = new List<KBArticleTypeOption>();
 
-        /// <summary>ชื่อคอลัมน์เป้าหมายที่ใช้ dropdown เลือกค่าคงที่ (ไม่ใช่ mapping จาก Excel)</summary>
+        /// <summary>DisplayOrder เดิมของแถว CategoryID/ArticleType ที่โหลดมา — เก็บไว้ round-trip กลับตอน save เฉยๆ ไม่มีผลต่อการแสดงผล เพราะย้ายออกจาก grid ไปเป็น dropdown แยกแล้ว</summary>
+        private int _categoryColumnDisplayOrder = 0;
+        private int _articleTypeColumnDisplayOrder = 0;
+
+        /// <summary>ชื่อคอลัมน์เป้าหมายที่ใช้ dropdown เลือกค่าคงที่ (ไม่ใช่ mapping จาก Excel — ย้ายออกจาก dgvColumnMapping ไปเป็น cboCategoryConfig/cboArticleTypeConfig บน pnlEditCard แล้ว)</summary>
         private static readonly HashSet<string> FixedValueTargetColumns =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CategoryID", "ArticleType" };
 
@@ -206,6 +210,9 @@ namespace CMS.Presentation.Modules.KMS
             {
                 int rowIndex = dgvTemplates.Rows.Add(t.TemplateName + (t.IsActive ? string.Empty : "  (ปิด)"));
                 dgvTemplates.Rows[rowIndex].Tag = t;
+                dgvTemplates.Rows[rowIndex].DefaultCellStyle.BackColor = t.IsActive
+                    ? Color.FromArgb(223, 247, 227)   // เขียวอ่อน — ใช้งานอยู่
+                    : Color.FromArgb(253, 223, 221);  // แดงอ่อน — ปิดใช้งานแล้ว
             }
         }
 
@@ -214,23 +221,80 @@ namespace CMS.Presentation.Modules.KMS
             ResetAllMappingBookkeeping();
 
             dgvColumnMapping.Rows.Clear();
+
+            KBImportTemplateColumnRow categoryRow = null;
+            KBImportTemplateColumnRow articleTypeRow = null;
+
             foreach (var row in rows)
             {
+                // CategoryID/ArticleType ไม่ใช่แถวใน grid นี้แล้ว — ย้ายไปเป็น dropdown บน pnlEditCard
+                if (string.Equals(row.TargetColumnName, "CategoryID", StringComparison.OrdinalIgnoreCase))
+                {
+                    categoryRow = row;
+                    continue;
+                }
+                if (string.Equals(row.TargetColumnName, "ArticleType", StringComparison.OrdinalIgnoreCase))
+                {
+                    articleTypeRow = row;
+                    continue;
+                }
+
                 int rowIndex = dgvColumnMapping.Rows.Add(row.TargetColumnName, row.ColumnDescription, row.ExcelColumnRef);
                 dgvColumnMapping.Rows[rowIndex].Tag = row;
             }
 
-            ApplySpecialColumnEditors();
+            ApplyCategoryConfigSelection(categoryRow);
+            ApplyArticleTypeConfigSelection(articleTypeRow);
         }
 
         public void BindCategoryOptions(IEnumerable<KBCategory> categories)
         {
             _categoryOptions = new List<KBCategory>(categories);
+
+            var withAll = new List<KBCategory> { new KBCategory { CategoryID = 0, CategoryName = "ทั้งหมด" } };
+            withAll.AddRange(_categoryOptions);
+
+            cboCategoryConfig.DataSource = null;
+            cboCategoryConfig.DataSource = withAll;
+            cboCategoryConfig.DisplayMember = "CategoryName";
+            cboCategoryConfig.ValueMember = "CategoryID";
         }
 
         public void BindArticleTypeOptions(IEnumerable<KBArticleTypeOption> options)
         {
             _articleTypeOptions = new List<KBArticleTypeOption>(options);
+
+            var withAll = new List<KBArticleTypeOption> { new KBArticleTypeOption { ArticleType = 0, Description = "ทั้งหมด" } };
+            withAll.AddRange(_articleTypeOptions);
+
+            cboArticleTypeConfig.DataSource = null;
+            cboArticleTypeConfig.DataSource = withAll;
+            cboArticleTypeConfig.DisplayMember = "Description";
+            cboArticleTypeConfig.ValueMember = "ArticleType";
+        }
+
+        /// <summary>เลือกค่าใน cboCategoryConfig ตามที่ Template เดิมตั้งไว้ (ถ้ามี) ไม่งั้น default = "ทั้งหมด" (index 0)</summary>
+        private void ApplyCategoryConfigSelection(KBImportTemplateColumnRow row)
+        {
+            _categoryColumnDisplayOrder = row != null ? row.DisplayOrder : 0;
+
+            int categoryId;
+            if (row != null && int.TryParse(row.ExcelColumnRef, out categoryId) && _categoryOptions.Any(c => c.CategoryID == categoryId))
+                cboCategoryConfig.SelectedValue = categoryId;
+            else
+                cboCategoryConfig.SelectedIndex = 0;
+        }
+
+        /// <summary>เลือกค่าใน cboArticleTypeConfig ตามที่ Template เดิมตั้งไว้ (ถ้ามี) ไม่งั้น default = "ทั้งหมด" (index 0)</summary>
+        private void ApplyArticleTypeConfigSelection(KBImportTemplateColumnRow row)
+        {
+            _articleTypeColumnDisplayOrder = row != null ? row.DisplayOrder : 0;
+
+            byte articleType;
+            if (row != null && byte.TryParse(row.ExcelColumnRef, out articleType) && _articleTypeOptions.Any(o => o.ArticleType == articleType))
+                cboArticleTypeConfig.SelectedValue = articleType;
+            else
+                cboArticleTypeConfig.SelectedIndex = 0;
         }
 
         public void BindExcelPreview(IEnumerable<ExcelColumnPreview> columns)
@@ -277,6 +341,25 @@ namespace CMS.Presentation.Modules.KMS
         public IList<KBImportTemplateColumnRow> ReadColumnGridEdits()
         {
             var result = new List<KBImportTemplateColumnRow>();
+
+            var categoryId = cboCategoryConfig.SelectedIndex > 0 ? (int)cboCategoryConfig.SelectedValue : 0;
+            result.Add(new KBImportTemplateColumnRow
+            {
+                TargetColumnName  = "CategoryID",
+                ColumnDescription = KBArticleColumnCatalog.DescribeColumn("CategoryID"),
+                ExcelColumnRef    = categoryId > 0 ? categoryId.ToString() : string.Empty,
+                DisplayOrder      = _categoryColumnDisplayOrder,
+            });
+
+            var articleType = cboArticleTypeConfig.SelectedIndex > 0 ? (byte)cboArticleTypeConfig.SelectedValue : (byte)0;
+            result.Add(new KBImportTemplateColumnRow
+            {
+                TargetColumnName  = "ArticleType",
+                ColumnDescription = KBArticleColumnCatalog.DescribeColumn("ArticleType"),
+                ExcelColumnRef    = articleType > 0 ? articleType.ToString() : string.Empty,
+                DisplayOrder      = _articleTypeColumnDisplayOrder,
+            });
+
             foreach (DataGridViewRow gridRow in dgvColumnMapping.Rows)
             {
                 var source = gridRow.Tag as KBImportTemplateColumnRow;
@@ -300,6 +383,10 @@ namespace CMS.Presentation.Modules.KMS
             btnDelete.Enabled = false;
             dgvTemplates.ClearSelection();
             dgvColumnMapping.Rows.Clear();
+            if (cboCategoryConfig.Items.Count > 0) cboCategoryConfig.SelectedIndex = 0;
+            if (cboArticleTypeConfig.Items.Count > 0) cboArticleTypeConfig.SelectedIndex = 0;
+            _categoryColumnDisplayOrder = 0;
+            _articleTypeColumnDisplayOrder = 0;
             txtTemplateName.Focus();
         }
 
@@ -336,60 +423,6 @@ namespace CMS.Presentation.Modules.KMS
             dgvExcelPreview.RowHeadersWidth = 90;
             dgvExcelPreview.ColumnHeaderMouseClick += DgvExcelPreview_ColumnHeaderMouseClick;
             dgvExcelPreview.CellMouseClick += DgvExcelPreview_CellMouseClick;
-        }
-
-        /// <summary>
-        /// เปลี่ยนเซลล์ mapping ของแถว CategoryID / ArticleType ให้เป็น dropdown เลือกค่าคงที่
-        /// แทนช่อง text mapping ปกติ (แถวอื่นยังคง map จาก Excel ตามเดิม)
-        /// </summary>
-        private void ApplySpecialColumnEditors()
-        {
-            foreach (DataGridViewRow row in dgvColumnMapping.Rows)
-            {
-                var data = row.Tag as KBImportTemplateColumnRow;
-                if (data == null) continue;
-
-                if (string.Equals(data.TargetColumnName, "CategoryID", StringComparison.OrdinalIgnoreCase))
-                    ApplyCategoryComboCell(row);
-                else if (string.Equals(data.TargetColumnName, "ArticleType", StringComparison.OrdinalIgnoreCase))
-                    ApplyArticleTypeComboCell(row);
-            }
-        }
-
-        private void ApplyCategoryComboCell(DataGridViewRow row)
-        {
-            string existingValue = Convert.ToString(row.Cells[colExcelMapping.Index].Value ?? string.Empty).Trim();
-
-            var combo = new DataGridViewComboBoxCell
-            {
-                DataSource = _categoryOptions,
-                DisplayMember = "CategoryName",
-                ValueMember = "CategoryID",
-                DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox,
-            };
-            row.Cells[colExcelMapping.Index] = combo;
-
-            int categoryId;
-            if (int.TryParse(existingValue, out categoryId) && _categoryOptions.Any(c => c.CategoryID == categoryId))
-                row.Cells[colExcelMapping.Index].Value = categoryId;
-        }
-
-        private void ApplyArticleTypeComboCell(DataGridViewRow row)
-        {
-            string existingValue = Convert.ToString(row.Cells[colExcelMapping.Index].Value ?? string.Empty).Trim();
-
-            var combo = new DataGridViewComboBoxCell
-            {
-                DataSource = _articleTypeOptions,
-                DisplayMember = "Description",
-                ValueMember = "ArticleType",
-                DisplayStyle = DataGridViewComboBoxDisplayStyle.ComboBox,
-            };
-            row.Cells[colExcelMapping.Index] = combo;
-
-            byte articleType;
-            if (byte.TryParse(existingValue, out articleType) && _articleTypeOptions.Any(o => o.ArticleType == articleType))
-                row.Cells[colExcelMapping.Index].Value = articleType;
         }
 
         /// <summary>
