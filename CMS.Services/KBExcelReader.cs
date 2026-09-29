@@ -467,7 +467,7 @@ namespace CMS.Services
             {
                 case CellType.Numeric:
                     if (DateUtil.IsCellDateFormatted(cell))
-                        return cell.DateCellValue.ToString("dd/MM/yyyy");
+                        return cell.DateCellValue.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
                     return cell.NumericCellValue.ToString(CultureInfo.InvariantCulture);
 
                 case CellType.String:
@@ -483,7 +483,7 @@ namespace CMS.Services
                     {
                         case CellType.Numeric:
                             if (DateUtil.IsCellDateFormatted(cell))
-                                return DateUtil.GetJavaDate(result.NumberValue).ToString("dd/MM/yyyy");
+                                return DateUtil.GetJavaDate(result.NumberValue).ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
                             return result.NumberValue.ToString(CultureInfo.InvariantCulture);
                         case CellType.String:
                             return result.StringValue ?? string.Empty;

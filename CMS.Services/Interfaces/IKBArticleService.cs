@@ -14,6 +14,14 @@ namespace CMS.Services.Interfaces
         IEnumerable<KBArticle> GetByCategory(int categoryId);
         IEnumerable<KBArticle> Search(string keyword, int? categoryId, byte? status, byte? articleType);
         IEnumerable<KBArticle> SearchByType(string keyword, int? categoryId, byte? status, byte? articleType, int searchFieldId);
+
+        /// <summary>
+        /// ใช้ criteria การค้นหาแบบเดียวกับ <see cref="SearchByType"/> (searchFieldId 1-6) กับรายการ
+        /// บทความที่โหลดมาแล้ว แทนที่จะ query ใหม่ตาม CategoryID — สำหรับกรณีที่รายการมาจากแหล่งอื่น เช่น
+        /// กลุ่มบทความ cross-reference (มาตรา ↔ คำสั่ง) ที่ resolve จาก link graph
+        /// </summary>
+        IEnumerable<KBArticle> FilterByKeyword(IEnumerable<KBArticle> articles, string keyword, int searchFieldId);
+
         KBArticle GetById(int articleId);
 
         /// <summary>

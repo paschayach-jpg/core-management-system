@@ -851,7 +851,7 @@
             this.pnlStep2Inner.Controls.Add(this.pnlSummaryPills);
             this.pnlStep2Inner.Controls.Add(this.pnlPreviewHdr);
             this.pnlStep2Inner.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep2Inner.Location = new System.Drawing.Point(16, 53);
+            this.pnlStep2Inner.Location = new System.Drawing.Point(16, 69);
             this.pnlStep2Inner.Name = "pnlStep2Inner";
             this.pnlStep2Inner.Size = new System.Drawing.Size(1526, 652);
             this.pnlStep2Inner.TabIndex = 0;
@@ -1260,7 +1260,7 @@
             this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlActStep2.Location = new System.Drawing.Point(16, 8);
             this.pnlActStep2.Name = "pnlActStep2";
-            this.pnlActStep2.Size = new System.Drawing.Size(1526, 45);
+            this.pnlActStep2.Size = new System.Drawing.Size(1526, 61);
             this.pnlActStep2.TabIndex = 1;
             this.pnlActStep2.Visible = false;
             // 
@@ -1275,7 +1275,7 @@
             this.btnImport.ForeColor = System.Drawing.Color.White;
             this.btnImport.Location = new System.Drawing.Point(220, 0);
             this.btnImport.Name = "btnImport";
-            this.btnImport.Size = new System.Drawing.Size(252, 45);
+            this.btnImport.Size = new System.Drawing.Size(252, 61);
             this.btnImport.TabIndex = 0;
             this.btnImport.Text = "📥  เริ่มนำเข้าข้อมูล";
             this.btnImport.UseVisualStyleBackColor = false;
@@ -1284,33 +1284,33 @@
             // pnlProgress
             // 
             this.pnlProgress.BackColor = System.Drawing.Color.Transparent;
-            this.pnlProgress.Controls.Add(this.progressBar);
             this.pnlProgress.Controls.Add(this.lblProgressText);
+            this.pnlProgress.Controls.Add(this.progressBar);
             this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlProgress.Location = new System.Drawing.Point(1186, 0);
+            this.pnlProgress.Location = new System.Drawing.Point(1151, 0);
             this.pnlProgress.Name = "pnlProgress";
             this.pnlProgress.Padding = new System.Windows.Forms.Padding(0, 10, 20, 10);
-            this.pnlProgress.Size = new System.Drawing.Size(340, 45);
+            this.pnlProgress.Size = new System.Drawing.Size(375, 61);
             this.pnlProgress.TabIndex = 3;
             this.pnlProgress.Visible = false;
             // 
             // progressBar
             // 
-            this.progressBar.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.progressBar.Dock = System.Windows.Forms.DockStyle.Top;
             this.progressBar.Location = new System.Drawing.Point(0, 10);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(320, 9);
+            this.progressBar.Size = new System.Drawing.Size(355, 17);
             this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.progressBar.TabIndex = 0;
             // 
             // lblProgressText
             // 
-            this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblProgressText.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblProgressText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblProgressText.Location = new System.Drawing.Point(0, 19);
+            this.lblProgressText.Location = new System.Drawing.Point(0, 27);
             this.lblProgressText.Name = "lblProgressText";
-            this.lblProgressText.Size = new System.Drawing.Size(320, 16);
+            this.lblProgressText.Size = new System.Drawing.Size(355, 25);
             this.lblProgressText.TabIndex = 1;
             this.lblProgressText.Text = "กำลังนำเข้าข้อมูล...";
             this.lblProgressText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1326,7 +1326,7 @@
             this.btnCancel2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.btnCancel2.Location = new System.Drawing.Point(120, 0);
             this.btnCancel2.Name = "btnCancel2";
-            this.btnCancel2.Size = new System.Drawing.Size(100, 45);
+            this.btnCancel2.Size = new System.Drawing.Size(100, 61);
             this.btnCancel2.TabIndex = 2;
             this.btnCancel2.Text = "✕  ยกเลิก";
             this.btnCancel2.UseVisualStyleBackColor = false;
@@ -1343,7 +1343,7 @@
             this.btnBack.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.btnBack.Location = new System.Drawing.Point(0, 0);
             this.btnBack.Name = "btnBack";
-            this.btnBack.Size = new System.Drawing.Size(120, 45);
+            this.btnBack.Size = new System.Drawing.Size(120, 61);
             this.btnBack.TabIndex = 1;
             this.btnBack.Text = "◄  ย้อนกลับ";
             this.btnBack.UseVisualStyleBackColor = false;

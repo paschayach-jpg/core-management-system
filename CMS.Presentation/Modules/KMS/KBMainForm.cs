@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -471,6 +472,10 @@ namespace CMS.Presentation.Modules.KMS
         private void TreeCategories_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (_presenter == null || e.Node == null || _suppressCategorySelect) return;
+
+            // เลือก node/root node ใด ๆ ในต้นไม้หมวดหมู่ ต้องเคลียร์คำค้นเดิมทิ้งเสมอ — ไม่งั้นคำค้นที่ค้าง
+            // จากหมวดก่อนหน้าจะไปกรองซ้ำกับรายการของหมวดใหม่ที่เพิ่งเลือกโดยผู้ใช้ไม่ได้ตั้งใจ
+            txtToolbarSearch.Text = string.Empty;
 
             // Root node (Tag == null) — reset archived mode
             if (e.Node.Tag == null)
@@ -1027,7 +1032,8 @@ namespace CMS.Presentation.Modules.KMS
                                 Label      = folder.Label,
                             };
 
-                            var folderNode = new TreeNode(string.Format("🔗 {0} ({1})", folder.Label, orderedArticles.Count))
+                            //var folderNode = new TreeNode(string.Format("🔗 {0} ({1})", folder.Label, orderedArticles.Count))
+                            var folderNode = new TreeNode(string.Format("🔗 {0}", folder.Label))
                             {
                                 Tag       = folderTag,
                                 ForeColor = Color.FromArgb(120, 90, 40),
@@ -1474,6 +1480,29 @@ namespace CMS.Presentation.Modules.KMS
                 e.CellStyle.ForeColor = Color.White;
                 e.FormattingApplied   = true;
             }
+            else if (col == "colEffectiveDate")
+            {
+                if (e.Value is DateTime)
+                {
+                    e.Value = FormatBuddhistDate((DateTime)e.Value);
+                    e.FormattingApplied = true;
+                }
+            }
+        }
+
+        /// <summary>ปฏิทินพุทธศักราชของ .NET เอง (ไม่ใช่ CultureInfo.CurrentCulture) ใช้คำนวณปี พ.ศ. โดยตรง
+        /// ไม่พึ่งพา region/culture ของเครื่องที่รันเลย — บางเครื่องตั้ง Windows region เป็นไทยและ .NET จะ
+        /// เซ็ต CultureInfo.CurrentCulture.Calendar เป็น ThaiBuddhistCalendar โดยอัตโนมัติอยู่แล้ว ถ้าใช้
+        /// date.ToString("dd/MM/yyyy") เฉย ๆ (ไม่ระบุ culture) เครื่องแบบนั้นจะเห็น พ.ศ. อยู่แล้วโดยไม่ตั้งใจ
+        /// และถ้าโค้ดไปบวก +543 ซ้ำเข้าไปอีกชั้นจะกลายเป็นปีผิดทันที (ค.ศ.+543+543) — ต่างเครื่อง/ต่าง region
+        /// จึงได้ผลไม่ตรงกัน วิธีนี้ระบุปฏิทินตรง ๆ (ThaiBuddhistCalendar) และดึง Day/Month จาก DateTime
+        /// (ซึ่ง .NET รับประกันว่าเป็นค่าคงที่ไม่ขึ้นกับ culture เสมอ) จึงได้ผลลัพธ์เดียวกันทุกเครื่องแน่นอน</summary>
+        private static readonly Calendar ThaiBuddhistCalendarInstance = new ThaiBuddhistCalendar();
+
+        private static string FormatBuddhistDate(DateTime date)
+        {
+            int buddhistYear = ThaiBuddhistCalendarInstance.GetYear(date);
+            return string.Format(CultureInfo.InvariantCulture, "{0:00}/{1:00}/{2}", date.Day, date.Month, buddhistYear);
         }
 
         private void DgvArticles_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -1615,7 +1644,7 @@ namespace CMS.Presentation.Modules.KMS
                 System.ComponentModel.TypeConverter formattedValueTypeConverter,
                 DataGridViewDataErrorContexts context)
             {
-                if (value is DateTime) return ((DateTime)value).ToString("dd/MM/yyyy");
+                if (value is DateTime) return FormatBuddhistDate((DateTime)value);
                 return string.Empty;
             }
         }

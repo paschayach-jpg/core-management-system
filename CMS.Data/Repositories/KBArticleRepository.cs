@@ -351,6 +351,11 @@ namespace CMS.Data.Repositories
         {
             "ArticleID", "CreatedBy", "CreatedDate", "ReviewedBy", "ReviewedDate",
             "UpdatedBy", "UpdatedDate", "ViewCount", "LikeCount", "IsDelete", "CurrentVersion",
+            // Excel import (KBImportWizardForm/KBImportProcessor) sets these itself — as a fixed
+            // constant (Status, ConfidentialityLevel) or computed internally (Tags, IsOfficialPolicy)
+            // — and never reads a Template ExcelColumnRef mapping for them. ReviewDueDate isn't set
+            // by the import flow at all. None of the 5 should be offered as a mappable target column.
+            "Status", "ConfidentialityLevel", "ReviewDueDate", "IsOfficialPolicy", "Tags",
         };
 
         public IList<string> GetImportableTargetColumns()

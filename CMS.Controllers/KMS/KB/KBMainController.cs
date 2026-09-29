@@ -17,6 +17,13 @@ namespace CMS.Controllers.KMS.KB
 
         private int _currentPage = 1;
 
+        /// <summary>
+        /// เมื่อไม่ใช่ null แปลว่ากำลังดูกลุ่ม cross-reference (มาตรา ↔ คำสั่ง/หมวดภายใน) ที่คลิกจากโหนด
+        /// 🔗 ใน treeCategories — LoadArticlesAtPage จะดึงเฉพาะ ArticleID เหล่านี้แทนการ query ตาม
+        /// CategoryID (ซึ่งกลุ่มนี้ไม่มี CategoryID เดียวที่ใช้ query ได้) ถูกเคลียร์เมื่อสลับไปโหมดอื่น
+        /// </summary>
+        private IList<int> _linkedArticleIds;
+
         // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้หมวด "กฎหมาย"/LW) ↔ คำสั่ง (OR) / หมวดภายใน (AN) ──
         // Resolved จาก CategoryCode สด ๆ ทุกครั้งที่โหลด (ดู ResolveCrossReferenceCategoryIds/IsLawCategory
         // ด้านล่าง) แทนที่จะ hardcode ตัวเลข CategoryID ตรง ๆ — ตัวเลข CategoryID เปลี่ยนได้ถ้าตาราง
@@ -246,31 +253,8 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedCategoryId   = null;
             _view.SelectedArticleTitle = null;
             _view.ArticleTitleText     = string.Format("  {0}", folderLabel);
-            LoadLinkedArticles(articleIds);
-        }
-
-        private void LoadLinkedArticles(IList<int> articleIds)
-        {
-            try
-            {
-                _view.ShowLoading();
-
-                var list = articleIds
-                    .Select(id => _articleService.GetById(id))
-                    .Where(a => a != null && a.Status != 4)
-                    .ToList();
-
-                foreach (var article in list)
-                    ResolveLatestVersion(article);
-
-                list.ForEach(x => x.ContentHTML = StripHtmlTags(x.ContentHTML));
-
-                _view.RenderArticles(list);
-                _view.ArticleCountText = string.Format("{0} บทความ", list.Count);
-                _view.RenderPagination(list.Count, 1, Math.Max(1, list.Count));
-            }
-            catch (Exception ex) { _view.ShowError("Load linked articles failed: " + ex.Message); }
-            finally { _view.HideLoading(); }
+            _linkedArticleIds          = articleIds;
+            LoadArticles();
         }
 
         public void OnArchivedSelected()
@@ -279,6 +263,7 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedCategoryId   = null;
             _view.SelectedArticleTitle = null;
             _view.ArticleTitleText     = "  \U0001F4E6 Archived";
+            _linkedArticleIds          = null;
             LoadArticles();
         }
 
@@ -290,6 +275,7 @@ namespace CMS.Controllers.KMS.KB
             _view.ArticleTitleText     = categoryId.HasValue
                 ? string.Format("  {0}", categoryName)
                 : "  ทุกหมวดหมู่";
+            _linkedArticleIds          = null;
             LoadArticles();
         }
 
@@ -303,6 +289,7 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedCategoryId   = categoryId;
             _view.SelectedArticleTitle = title;
             _view.ArticleTitleText     = string.Format("  {0}  ›  {1}", categoryName, title);
+            _linkedArticleIds          = null;
             LoadArticles();
         }
 
@@ -333,17 +320,29 @@ namespace CMS.Controllers.KMS.KB
                 string titleFilter   = _view.SelectedArticleTitle;
                 int    pageSize      = _view.PageSize;
 
-                if (!isArchived && !catId.HasValue) return;
+                List<KBArticle> list;
+                if (_linkedArticleIds != null)
+                {
+                    // Cross-reference group (มาตรา ↔ คำสั่ง/หมวดภายใน) — ไม่มี CategoryID เดียวให้ query
+                    // ตาม ดึงเฉพาะ ArticleID ที่ resolve ไว้แล้วจาก link graph แล้วค้นหา/กรองคำค้นบน
+                    // รายการนี้โดยตรง ด้วย criteria เดียวกับ SearchByType (เดิมจุดนี้ไม่รองรับการค้นหาเลย)
+                    list = _linkedArticleIds
+                        .Select(id => _articleService.GetById(id))
+                        .Where(a => a != null && a.Status != 4)
+                        .ToList();
+                    list = _articleService.FilterByKeyword(list, keyword, searchFieldId).ToList();
+                }
+                else
+                {
+                    if (!isArchived && !catId.HasValue) return;
 
-                IEnumerable<KBArticle> articles;
-                articles = _articleService.SearchByType(keyword, catId, statusFilter, typeFilter, searchFieldId);
+                    list = _articleService.SearchByType(keyword, catId, statusFilter, typeFilter, searchFieldId).ToList();
 
-                var list = articles.ToList();
-
-                // Archived (Status = 4) articles must only show up under the "Archived"
-                // folder, never mixed into a category's regular listing.
-                if (!isArchived)
-                    list = list.Where(a => a.Status != 4).ToList();
+                    // Archived (Status = 4) articles must only show up under the "Archived"
+                    // folder, never mixed into a category's regular listing.
+                    if (!isArchived)
+                        list = list.Where(a => a.Status != 4).ToList();
+                }
 
                 if (!string.IsNullOrEmpty(titleFilter))
                     list = list.Where(a => string.Equals(
@@ -369,32 +368,6 @@ namespace CMS.Controllers.KMS.KB
             finally
             {
                 _view.HideLoading();
-            }
-        }
-
-        private static IEnumerable<KBArticle> ApplyKeywordFilter(
-            IEnumerable<KBArticle> articles, string keyword, int searchFieldId)
-        {
-            var _keyword = new string(keyword.Where(c => !char.IsWhiteSpace(c)).ToArray());
-            switch (searchFieldId)
-            {
-                case 1:
-                    
-                    return articles.Where(a =>
-                        a.Title != null &&
-                        string.Equals(new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray()), _keyword, StringComparison.OrdinalIgnoreCase));
-                case 2:
-                    return articles.Where(a =>
-                        (a.ContentHTML != null && new string(StripHtmlTags(a.ContentHTML).Where(c => !char.IsWhiteSpace(c)).ToArray()).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
-                case 3:
-                    return articles.Where(a =>
-                        (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
-                case 4:
-                    return articles.Where(a =>
-                        a.Summary != null &&
-                        a.Summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0);
-                default:
-                    return articles;
             }
         }
 

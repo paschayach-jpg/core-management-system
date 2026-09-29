@@ -51,10 +51,19 @@ namespace CMS.Presentation.Modules.KMS
             set { _article = value; if (value != null) BindArticle(value); }
         }
 
+        /// <summary>ความยาวข้อความสูงสุดของ lblTitle/lblTitleCategory บน card — ยาวเกินนี้จะดันให้ card บิดเบี้ยว</summary>
+        private const int MaxCardLabelLength = 100;
+
+        private static string TruncateCardLabel(string text)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= MaxCardLabelLength) return text;
+            return text.Substring(0, MaxCardLabelLength) + ".....";
+        }
+
         private void BindArticle(KBArticle a)
         {
             pnlStripe.BackColor   = GetStatusColor(a.Status);
-            lblTitle.Text         = a.IsOfficialPolicy ? "🏛 " + a.Title : a.Title ?? "(ไม่มีชื่อ)";
+            lblTitle.Text         = TruncateCardLabel(a.IsOfficialPolicy ? "🏛 " + a.Title : a.Title ?? "(ไม่มีชื่อ)");
             lblPublishedDate.Text = !string.IsNullOrEmpty(a.PublishedDate?.ToString()) ? a.PublishedDate.Value.ToString("dd/MM/yyyy") : "-";
             lblExpiryDate.Text    = !string.IsNullOrEmpty(a.ExpiryDate?.ToString()) ? a.ExpiryDate.Value.ToString("dd/MM/yyyy") : "-";
             lblArticleType.Text   = a.ArticleTypeName;
@@ -62,7 +71,7 @@ namespace CMS.Presentation.Modules.KMS
             lblStatus.Text        = a.StatusName;
             lblVersion.Text       = "Version " + a.CurrentVersion;
             lblCategory.Text      = a.CategoryName ?? "-";
-            lblTitleCategory.Text = a.TitleCategory ?? "-";
+            lblTitleCategory.Text = TruncateCardLabel(a.TitleCategory ?? "-");
             lblSummary.Text       = a.Summary ?? string.Empty;
             lblShowEntity.Text    = a.LinkedEntities ?? "-";
             lblViewCount.Text     = a.ViewCount.ToString();
