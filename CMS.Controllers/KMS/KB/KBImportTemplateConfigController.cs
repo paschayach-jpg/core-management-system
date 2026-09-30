@@ -41,12 +41,12 @@ namespace CMS.Controllers.KMS.KB
         {
             try
             {
-                _view.BindCategoryOptions(_service.GetCategoryOptions());
+                _view.BindLayoutOptions(_service.GetLayoutOptions());
                 _view.BindArticleTypeOptions(_service.GetArticleTypeOptions());
             }
             catch (Exception ex)
             {
-                _view.ShowError("โหลดตัวเลือก Category/ArticleType ล้มเหลว: " + ex.Message);
+                _view.ShowError("โหลดตัวเลือกประเภทไฟล์/ArticleType ล้มเหลว: " + ex.Message);
             }
         }
 

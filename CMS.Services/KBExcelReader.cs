@@ -74,22 +74,25 @@ namespace CMS.Services
 
         /// <summary>
         /// Opens the file at <paramref name="filePath"/> and returns one
-        /// <see cref="KBImportRow"/> per data row (row 2 onward on the first worksheet).
-        /// Returns an empty list when the file has no data rows.
+        /// <see cref="KBImportRow"/> per data row (row 2 onward on the first worksheet) in
+        /// <see cref="KBExcelReadResult.Rows"/> (empty when the file has no data rows), plus the layout detected
+        /// from the file and the Template mappings that point at a column/header the file does not have
+        /// (<see cref="KBExcelReadResult.MappingProblems"/>).
         /// </summary>
         /// <exception cref="KBExcelReadException">
         /// Thrown when the file does not exist, is not a valid <c>.xlsx</c>, is locked by
         /// another process, or its header row doesn't match either supported layout.
         /// </exception>
-        public virtual IList<KBImportRow> ReadRows(string filePath, IList<KBImportTemplateColumnRow> templateColumns)
+        public virtual KBExcelReadResult ReadRows(string filePath, IList<KBImportTemplateColumnRow> templateColumns)
         {
             IWorkbook workbook = OpenWorkbook(filePath);
 
-            var rows = new List<KBImportRow>();
+            var rows   = new List<KBImportRow>();
+            var result = new KBExcelReadResult { Rows = rows };
 
             ISheet sheet = workbook.GetSheetAt(0);
             if (sheet == null)
-                return rows;
+                return result;
 
             IFormulaEvaluator evaluator = workbook.GetCreationHelper().CreateFormulaEvaluator();
             IRow headerRow = sheet.GetRow(0);
@@ -100,6 +103,9 @@ namespace CMS.Services
             if (rowKind == null)
                 throw new KBExcelReadException(filePath,
                     "ไม่รู้จักรูปแบบไฟล์ Excel นี้ — ตรวจสอบว่าเป็น template กฎหมาย (มาตรา) หรือ เอกสารที่ไม่ใช่กฎหมาย (ประกาศ/คำสั่ง/ระเบียบ ฯลฯ) ที่ถูกต้อง");
+
+            result.DetectedLayout = rowKind;
+            int columnCount = ComputeColumnCount(sheet);
 
             int lastRowIndex = sheet.LastRowNum;
             for (int rowIdx = DataStartRowIndex; rowIdx <= lastRowIndex; rowIdx++)
@@ -136,7 +142,9 @@ namespace CMS.Services
                 rows.Add(row);
             }
 
-            return rows;
+            // mapping ของ Template ที่ชี้ไปคอลัมน์/หัวตารางที่ไม่มีในไฟล์ (เดิมได้ค่าว่างเงียบ ๆ ทำให้เนื้อหาหายโดยไม่มี error)
+            result.MappingProblems = FindMappingProblems(overrides, headerRow, evaluator, columnCount, rowKind);
+            return result;
         }
 
         // ── Layout detection ─────────────────────────────────────────────────
@@ -395,10 +403,20 @@ namespace CMS.Services
 
         private static int ResolveColumnIndex(string colRef, IRow headerRow, IFormulaEvaluator evaluator)
         {
-            int colIndex = ColumnLetterToIndex(colRef);
-            if (colIndex < 0)
-                colIndex = FindColumnIndexByHeaderText(headerRow, colRef, evaluator);
-            return colIndex;
+            int letterIndex = ColumnLetterToIndex(colRef);
+            int headerWidth = headerRow == null ? 0 : Math.Max((int)headerRow.LastCellNum, 0);
+
+            // ตัวอักษรคอลัมน์ที่อยู่ในความกว้างของแถวหัวตาราง → ใช้ตามนั้น
+            if (letterIndex >= 0 && letterIndex < headerWidth)
+                return letterIndex;
+
+            // ข้อความล้วนตัวอักษรอาจเป็นหัวตารางภาษาอังกฤษ (เช่น "Summary") ไม่ใช่ตัวอักษรคอลัมน์ — ลองจับคู่หัวตารางก่อน
+            int headerIndex = FindColumnIndexByHeaderText(headerRow, colRef, evaluator);
+            if (headerIndex >= 0)
+                return headerIndex;
+
+            // ไม่เจอหัวตาราง: คงพฤติกรรมเดิม (ตัวอักษรที่เกินความกว้างหัวตารางอาจยังมีข้อมูลอยู่ใต้หัวตารางที่ว่าง)
+            return letterIndex;
         }
 
         /// <summary>แปลงตัวอักษรคอลัมน์ Excel ("A".."Z","AA"...) เป็น index เริ่มที่ 0 คืน -1 ถ้าไม่ใช่รูปแบบตัวอักษรล้วน</summary>
@@ -429,6 +447,85 @@ namespace CMS.Services
                     return c;
             }
             return -1;
+        }
+
+        // ── Template mapping ↔ โครงสร้างไฟล์ ──────────────────────────────────
+
+        /// <summary>จำนวนคอลัมน์สูงสุดที่พบในไฟล์ (นับจากทุกแถวของ sheet แรก รวมแถวหัวตาราง)</summary>
+        private static int ComputeColumnCount(ISheet sheet)
+        {
+            int count = 0;
+            for (int i = sheet.FirstRowNum; i <= sheet.LastRowNum; i++)
+            {
+                IRow row = sheet.GetRow(i);
+                if (row != null && row.LastCellNum > count)
+                    count = row.LastCellNum;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// ตรวจว่าทุก mapping ของ Template (column ref ตรง ๆ และ {X} ในสูตร) ชี้ไปคอลัมน์/หัวตารางที่มีอยู่จริงในไฟล์ —
+        /// ref ที่หาไม่เจอจะอ่านได้ค่าว่างเงียบ ๆ ทำให้เนื้อหาหายหรือผิดคอลัมน์โดยไม่มี error จึงรายงานล่วงหน้า
+        /// </summary>
+        private static IList<string> FindMappingProblems(
+            Dictionary<string, string> overrides, IRow headerRow, IFormulaEvaluator evaluator, int columnCount, string rowKind)
+        {
+            var problems = new List<string>();
+
+            foreach (var kvp in overrides)
+            {
+                // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ไฟล์กฎหมายไม่อ่านแถว Attachment จึงไม่ต้องตรวจ
+                if (rowKind == KBImportLayoutTypeCatalog.Law
+                    && string.Equals(kvp.Key, KBArticleColumnCatalog.AttachmentTargetColumn, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                foreach (string colRef in ExtractColumnRefs(kvp.Value))
+                {
+                    int letterIndex = ColumnLetterToIndex(colRef);
+                    if (letterIndex >= 0 && letterIndex < columnCount) continue;                    // ตัวอักษรคอลัมน์ที่มีในไฟล์
+                    if (FindColumnIndexByHeaderText(headerRow, colRef, evaluator) >= 0) continue;   // หัวตารางที่มีในไฟล์
+
+                    problems.Add(letterIndex >= 0
+                        ? string.Format("{0} → \"{1}\": ไม่พบคอลัมน์นี้ในไฟล์ (ไฟล์มี {2} คอลัมน์: A–{3})",
+                            kvp.Key, colRef, columnCount, columnCount > 0 ? ColumnIndexToLetters(columnCount - 1) : "-")
+                        : string.Format("{0} → \"{1}\": ไม่พบหัวตารางนี้ในไฟล์", kvp.Key, colRef));
+                }
+            }
+
+            return problems;
+        }
+
+        /// <summary>คืน column ref ทุกตัวที่ mapping นี้อ่านค่า: ทั้งสตริงถ้าเป็น ref ตรง ๆ, หรือแต่ละ {X} ถ้าเป็นสูตร</summary>
+        private static IEnumerable<string> ExtractColumnRefs(string expression)
+        {
+            if (string.IsNullOrWhiteSpace(expression)) yield break;
+
+            if (expression.IndexOf('{') < 0)
+            {
+                yield return expression.Trim();
+                yield break;
+            }
+
+            foreach (Match m in TemplateExpressionPlaceholderPattern.Matches(expression))
+            {
+                string colRef = m.Groups[1].Value.Trim();
+                if (colRef.Length > 0) yield return colRef;
+            }
+        }
+
+        /// <summary>แปลง index เริ่มที่ 0 เป็นตัวอักษรคอลัมน์ Excel (0→"A", 25→"Z", 26→"AA")</summary>
+        private static string ColumnIndexToLetters(int index)
+        {
+            int dividend = index + 1;
+            string name  = string.Empty;
+            while (dividend > 0)
+            {
+                int modulo = (dividend - 1) % 26;
+                name = (char)('A' + modulo) + name;
+                dividend = (dividend - modulo) / 26;
+            }
+            return name;
         }
 
         // ── Private helpers ──────────────────────────────────────────────────

@@ -1856,8 +1856,8 @@ namespace CMS.Presentation
         /// <summary>
         /// Composition-root helper: สร้าง KBImportWizardForm พร้อม presenter ครบชุด
         /// โดยไม่ ShowDialog — ส่งคืนฟอร์มพร้อมฝังใน panel ของ KBMainForm
-        /// รองรับทั้งไฟล์กฎหมาย/มาตรา และไฟล์ประกาศ/คำสั่ง (KBExcelReader ตรวจจับ layout
-        /// จากหัวตารางอัตโนมัติ, KBImportProcessor แยก logic ตาม RowKind ภายใน)
+        /// รองรับทั้งไฟล์กฎหมาย/มาตรา และไฟล์ที่ไม่ใช่กฎหมาย (KBExcelReader ตรวจจับ layout
+        /// จาก ArticleCode, KBImportProcessor แยก logic ตาม RowKind และหา CategoryID ของแต่ละแถวเอง)
         /// </summary>
         private KBImportWizardForm CreateKBImportWizardForm()
         {
@@ -1875,12 +1875,19 @@ namespace CMS.Presentation
                     "อยู่ระหว่างการพัฒนา", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return null;
             }
+            if (_kbCategoryRepository == null)
+            {
+                MessageBox.Show(
+                    "ไม่พบ KB Category repository — ไม่สามารถเปิดหน้านำเข้าข้อมูลได้ (ใช้หา CategoryID ของแต่ละแถวจาก ArticleCode)",
+                    "อยู่ระหว่างการพัฒนา", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
 
             var wizard          = new KBImportWizardForm(_currentUser);
             var excelReader     = new CMS.Services.KBExcelReader();
             var downloader      = new CMS.Services.LawFileDownloader();
             var processor       = new CMS.Services.KBImportProcessor(
-                _kbArticleRepository, _kbArticleLinkRepository,
+                _kbArticleRepository, _kbArticleLinkRepository, _kbCategoryRepository,
                 _kbArticleService, _fileService, downloader);
             var wizardPresenter = new KBImportWizardController(
                 wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _kbImportTemplateService, _currentUser);

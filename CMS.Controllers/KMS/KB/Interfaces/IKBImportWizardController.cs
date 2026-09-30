@@ -17,27 +17,12 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         /// <summary>TemplateID of the selected KB Import Template (from the combo box), or null if none selected.</summary>
         int? SelectedTemplateId { get; }
 
-        /// <summary>Step 2 option: skip rows with warnings.</summary>
-        bool OptSkipWarning  { get; }
-
-        /// <summary>Step 2 option: auto-create missing categories.</summary>
-        bool OptAutoCategory { get; }
-
-        /// <summary>Step 2 option: send e-mail notification after import.</summary>
-        bool OptSendEmail    { get; }
-
         /// <summary>
         /// Step 2 option (ประกาศ/คำสั่ง rows only): when an attachment download/DMS upload
         /// fails, <c>true</c> fails the whole row; <c>false</c> inserts it anyway with a
         /// warning note. Ignored for มาตรา (Law) rows, which have no attachment.
         /// </summary>
         bool OptSkipRowOnDownloadFailure { get; }
-
-        /// <summary>Step 2 option: create articles as Draft instead of Published.</summary>
-        bool OptCreateDraft  { get; }
-
-        /// <summary>Step 2 option: write audit-log entries for every imported article.</summary>
-        bool OptAuditLog     { get; }
 
         // ── Presenter → View: push results ──────────────────────────────────────
 

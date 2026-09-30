@@ -5,12 +5,15 @@ namespace CMS.Services.Interfaces
 {
     public interface IKBExcelReaderService
     {
+        /// <summary>
+        /// อ่านไฟล์ Excel คืนแถวข้อมูล + layout ที่ตรวจพบจากไฟล์ + รายการ mapping ของ Template ที่ชี้ไปคอลัมน์/หัวตารางที่ไม่มีในไฟล์
+        /// (<see cref="KBExcelReadResult.MappingProblems"/> — ผู้เรียกควรหยุดก่อน validate รายแถวถ้าไม่ว่าง)
+        /// </summary>
         /// <param name="templateColumns">
         /// Column mapping จาก Template ที่เลือก (KBImportTemplateService.GetTemplateColumnGrid) —
-        /// Title/TitleCategory/Summary/ContentHTML/PublishedDate/EffectiveDate ที่มี ExcelColumnRef
-        /// กำหนดไว้จะถูกอ่านตาม mapping นี้แทนตำแหน่งคอลัมน์ตายตัว (ตัวอื่น รวมถึง ArticleCode ยัง
-        /// hardcode ต่อ layout เหมือนเดิม)
+        /// ArticleCode/Title/TitleCategory/Summary/ContentHTML/PublishedDate/EffectiveDate/Attachment ที่มี ExcelColumnRef
+        /// กำหนดไว้จะถูกอ่านตาม mapping นี้ (ไฟล์กฎหมายที่ไม่ได้ map ฟิลด์เนื้อหายังใช้ตำแหน่งคอลัมน์ตายตัวเป็นค่าเริ่มต้น)
         /// </param>
-        IList<KBImportRow> ReadRows(string filePath, IList<KBImportTemplateColumnRow> templateColumns);
+        KBExcelReadResult ReadRows(string filePath, IList<KBImportTemplateColumnRow> templateColumns);
     }
 }

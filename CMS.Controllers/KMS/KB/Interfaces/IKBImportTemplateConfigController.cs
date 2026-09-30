@@ -22,8 +22,8 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         /// <summary>แสดงคอลัมน์ที่อ่านได้จากไฟล์ Excel template ที่ admin อัปโหลด ให้คลิกเลือกเป็น mapping</summary>
         void BindExcelPreview(IEnumerable<ExcelColumnPreview> columns);
 
-        /// <summary>รายการหมวดหมู่ (ไม่รวม CategoryCode = "LW") สำหรับ dropdown เลือก CategoryID ในแถว mapping</summary>
-        void BindCategoryOptions(IEnumerable<KBCategory> categories);
+        /// <summary>ตัวเลือกประเภทไฟล์ของ Template (กฎหมาย / ไม่ใช่กฎหมาย) สำหรับ dropdown "ประเภทไฟล์" — view เติมตัวเลือก "ยังไม่เลือก" เอง</summary>
+        void BindLayoutOptions(IEnumerable<KBImportLayoutOption> options);
 
         /// <summary>รายการค่า ArticleType คงที่ (1-5) สำหรับ dropdown เลือกในแถว mapping</summary>
         void BindArticleTypeOptions(IEnumerable<KBArticleTypeOption> options);

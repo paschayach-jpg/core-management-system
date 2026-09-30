@@ -101,8 +101,9 @@ namespace CMS.Presentation.Modules.KMS
 
             // Template row (label + combo + download button) is hidden by default in the
             // Designer from when the wizard relied purely on layout auto-detection with no
-            // Template picker. CategoryID/ArticleType now come from the selected Template
-            // (see KBImportWizardController.ValidateFile), so it must always be shown.
+            // Template picker. The file layout (Law/NonLaw) and ArticleType come from the selected Template
+            // (see KBImportWizardController.ValidateFile) while CategoryID is resolved per row from the
+            // ArticleCode, so the picker must always be shown.
             lblTemplateLabel.Visible    = true;
             cboTemplate.Visible         = true;
             btnDownloadTemplate.Visible = true;
@@ -154,12 +155,7 @@ namespace CMS.Presentation.Modules.KMS
                 return selected != null ? (int?)selected.Value : null;
             }
         }
-        public bool OptSkipWarning  { get { return chkSkipWarning.Checked;  } }
-        public bool OptAutoCategory { get { return chkAutoCategory.Checked; } }
-        public bool OptSendEmail    { get { return chkSendEmail.Checked;    } }
         public bool OptSkipRowOnDownloadFailure { get { return chkLinkDMS.Checked; } }
-        public bool OptCreateDraft  { get { return chkCreateDraft.Checked;  } }
-        public bool OptAuditLog     { get { return chkAuditLog.Checked;     } }
 
         // Methods
 
@@ -184,7 +180,12 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         public void BindTemplateColumnReference(IEnumerable<KBImportTemplateColumnRow> columns, string templateName)
         {
-            var mapped = columns.Where(c => !string.IsNullOrWhiteSpace(c.ExcelColumnRef)).OrderBy(c => c.DisplayOrder).ToList();
+            // LayoutType/ArticleType เป็นค่าที่เลือกจาก dropdown ใน Template ไม่ใช่คอลัมน์ Excel จึงไม่แสดงในรายการนี้
+            var mapped = columns
+                .Where(c => !string.IsNullOrWhiteSpace(c.ExcelColumnRef)
+                         && !string.Equals(c.TargetColumnName, KBArticleColumnCatalog.LayoutTypeTargetColumn, StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(c.TargetColumnName, "ArticleType", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(c => c.DisplayOrder).ToList();
             if (mapped.Count == 0 || string.IsNullOrEmpty(templateName))
             {
                 PopulateColumnReference();
@@ -630,7 +631,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             var colNo             = new DataGridViewTextBoxColumn { Name = "colNo",             HeaderText = "#",              MinimumWidth = 30,  Width = 46,  ReadOnly = true };
             var colStatus         = new DataGridViewTextBoxColumn { Name = "colStatus",         HeaderText = "สถานะ",          MinimumWidth = 40,  Width = 90,  ReadOnly = true };
-            var colKind           = new DataGridViewTextBoxColumn { Name = "colKind",           HeaderText = "ประเภท",         MinimumWidth = 60,  Width = 80,  ReadOnly = true };
+            var colKind           = new DataGridViewTextBoxColumn { Name = "colKind",           HeaderText = "ประเภท",         MinimumWidth = 60,  Width = 130, ReadOnly = true };
             var colNote           = new DataGridViewTextBoxColumn { Name = "colNote",           HeaderText = "หมายเหตุ",       MinimumWidth = 60,  Width = 100, ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, Resizable = DataGridViewTriState.True };
             var colArticleCode    = new DataGridViewTextBoxColumn { Name = "colArticleCode",    HeaderText = "ArticleCode",    MinimumWidth = 60,  Width = 190, ReadOnly = true };
             var colTitle          = new DataGridViewTextBoxColumn { Name = "colTitle",          HeaderText = "ชื่อ / Tags",     MinimumWidth = 40,  Width = 160, ReadOnly = true };
@@ -678,18 +679,18 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         /// <summary>
-        /// Column spec for the 20-column "มาตรา" (law-matrix, "Code รวม") layout —
-        /// header row's column C must read "มาตรา" for KBExcelReader to detect this layout.
+        /// Column spec for the 20-column "มาตรา" (law-matrix, "Code รวม") layout — KBExcelReader detects it from the
+        /// Code รวม (27 chars ending in 00000; header column C = "มาตรา" is only the fallback).
         /// Columns not listed here (D,E,F,...) exist in the real file but are ignored.
         /// </summary>
         private static readonly ColRef[] LawColumnRefs =
         {
-            new ColRef("A", "Code รวม (ArticleCode) — 22 หรือ 27 หลัก, 5 หลักท้าย=00000 คือแถวกฎหมาย, ต่างจากนี้=ข้ามไปก่อน (เป็นข้อมูลประกาศ/คำสั่ง)",
+            new ColRef("A", "Code รวม (ArticleCode) — 27 หลัก ลงท้าย 00000; 3 ตัวแรก = รหัสกฎหมาย (เช่น PVI, RVA) ระบบหาหมวดกฎหมายเอง; ตัวที่ 4-7 = เลขมาตรา — Template ต้อง Map",
                 "Text", true, "PVI000153500001000000000000"),
             new ColRef("B", "Code กฎหมายแม่ — สำรองไว้สำหรับอ้างอิงในอนาคต (ยังไม่ใช้งาน)",
                 "Text", false, "PVI0001535000010000000"),
-            new ColRef("C", "มาตรา — ใช้สร้าง Title/Tags เช่น 0035=\"มาตรา 35\"; 3 ตัวอักษรแรกของ Code รวมใช้หา CategoryID เช่น PVI=46",
-                "Numeric", true, "0001"),
+            new ColRef("C", "มาตรา — ไม่อ่านค่านี้แล้ว (Title/Tags สร้างจากเลขมาตราตัวที่ 4-7 ของ Code รวม เช่น 0035=\"มาตรา 35\")",
+                "Numeric", false, "0001"),
             new ColRef("M", "ชื่อ (Summary)", "Text", false, "พระราชบัญญัติประกันวินาศภัย พ.ศ. 2535 มาตรา 1"),
             new ColRef("N", "วันที่ประกาศ (PublishedDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "10/4/2535"),
             new ColRef("O", "วันที่มีผลบังคับใช้ (EffectiveDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "11/4/2535"),
@@ -698,27 +699,26 @@ namespace CMS.Presentation.Modules.KMS
         };
 
         /// <summary>
-        /// Column spec for the 12-column "ประกาศ/คำสั่ง" layout — header row's column C must
-        /// read "ประเภทลูก" for KBExcelReader to detect this layout. Column A ("Code รวม") is
-        /// a formula in the source file and is not read directly — ArticleCode is computed
-        /// from columns B+C+D instead.
+        /// Column spec for the 12-column layout of non-law documents (AN/OR/SO/RG/CI/MR) — KBExcelReader detects it from the
+        /// Code รวม (27 chars NOT ending in 00000, digit 23 = 1-6; header column C = "ประเภทลูก" is only the fallback).
+        /// Every field is read through the Template mapping — there are no fixed column positions.
         /// </summary>
-        private static readonly ColRef[] OrderColumnRefs =
+        private static readonly ColRef[] NonLawColumnRefs =
         {
-            new ColRef("A", "Code รวม — สูตรในไฟล์ต้นฉบับ ระบบคำนวณเองจาก B+C+D ไม่อ่านค่านี้ตรง ๆ",
-                "Text (Formula)", false, "(คำนวณอัตโนมัติ)"),
-            new ColRef("B", "Code กฎหมายแม่ — รหัสมาตราที่อ้างถึง (หลายบรรทัดได้ถ้าอ้างถึงหลายมาตรา)",
-                "Text", true, "PVI0029535000020000000"),
-            new ColRef("C", "ประเภทลูก — 1=ประกาศ (CategoryID 55), 2=คำสั่ง (CategoryID 54)",
-                "1 หรือ 2", true, "2"),
-            new ColRef("D", "เอกสารลูก — เลขที่เอกสาร ต่อท้าย ArticleCode", "Text", true, "0025"),
-            new ColRef("E", "ชื่อ (Title)", "Text", true, "ให้เพิ่มเติมเงื่อนไขการระงับข้อพิพาท..."),
+            new ColRef("A", "Code รวม (ArticleCode) — 27 หลัก ไม่ลงท้าย 00000; 22 ตัวแรก = Code กฎหมายแม่ (ระบบ link ให้), ตัวที่ 23 = ประเภท (1=AN 2=OR 3=SO 4=RG 5=CI 6=MR) ระบบหาหมวดเอง — Template ต้อง Map",
+                "Text", true, "PVI002953500002000000020025"),
+            new ColRef("B", "Code กฎหมายแม่ — ไม่อ่านค่านี้แล้ว (ใช้ 22 ตัวแรกของ Code รวมแทน)",
+                "Text", false, "PVI0029535000020000000"),
+            new ColRef("C", "ประเภทลูก — ไม่อ่านค่านี้แล้ว (ใช้ตัวที่ 23 ของ Code รวมแทน)",
+                "1-6", false, "2"),
+            new ColRef("D", "เอกสารลูก — ไม่อ่านค่านี้แล้ว (เลขที่เอกสารอยู่ใน 4 ตัวท้ายของ Code รวม)", "Text", false, "0025"),
+            new ColRef("E", "ชื่อ (Title) — Template ต้อง Map", "Text", true, "ให้เพิ่มเติมเงื่อนไขการระงับข้อพิพาท..."),
             new ColRef("F", "คำสั่งที่ (TitleCategory)", "Text", false, "คำสั่งที่ 95/2541"),
             new ColRef("G", "วันที่ประกาศ (PublishedDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "19/11/2541"),
             new ColRef("H", "วันที่มีผลบังคับใช้ (EffectiveDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "19/11/2541"),
-            new ColRef("I", "บัญญัติไว้ว่า (ContentHTML)", "Text (Plain Text)", true, "อาศัยอำนาจตามความในมาตรา..."),
+            new ColRef("I", "บัญญัติไว้ว่า (ContentHTML) — Template ต้อง Map", "Text (Plain Text)", true, "อาศัยอำนาจตามความในมาตรา..."),
             new ColRef("J", "ประเด็นสำคัญ (Summary)", "Text", false, "1. ให้บริษัทกำหนดเงื่อนไข..."),
-            new ColRef("K", "ชื่อไฟล์ — เซลล์ต้องมี hyperlink ไปยังไฟล์แนบจริงด้วย", "Text (+Hyperlink)", true, "1. คำสั่งที่ 95-2541...pdf"),
+            new ColRef("K", "ชื่อไฟล์ (Attachment) — Template ต้อง Map; เซลล์ต้องมี hyperlink ไปยังไฟล์แนบจริงด้วย", "Text (+Hyperlink)", true, "1. คำสั่งที่ 95-2541...pdf"),
             new ColRef("L", "กฎหมายอ้างอิง — แสดงผลเท่านั้น ไม่ใช้ประมวลผล", "Text", false, "มาตรา 29 วรรคสอง"),
         };
 
@@ -727,13 +727,13 @@ namespace CMS.Presentation.Modules.KMS
             lvColumnRef.Items.Clear();
             lvColumnRef.Groups.Clear();
 
-            var grpLaw = new ListViewGroup("ไฟล์กฎหมาย (มาตรา) — ตรวจจับอัตโนมัติเมื่อหัวตาราง column C = \"มาตรา\"");
-            var grpOrder = new ListViewGroup("ไฟล์ประกาศ/คำสั่ง — ตรวจจับอัตโนมัติเมื่อหัวตาราง column C = \"ประเภทลูก\"");
+            var grpLaw = new ListViewGroup("ไฟล์กฎหมาย (มาตรา) — ตรวจจับอัตโนมัติจาก Code รวมที่ลงท้าย 00000");
+            var grpNonLaw = new ListViewGroup("ไฟล์ที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR) — ตรวจจับอัตโนมัติจาก Code รวมที่ตัวที่ 23 = 1-6");
             lvColumnRef.Groups.Add(grpLaw);
-            lvColumnRef.Groups.Add(grpOrder);
+            lvColumnRef.Groups.Add(grpNonLaw);
 
             AddColumnRefRows(LawColumnRefs, grpLaw);
-            AddColumnRefRows(OrderColumnRefs, grpOrder);
+            AddColumnRefRows(NonLawColumnRefs, grpNonLaw);
         }
 
         private void AddColumnRefRows(ColRef[] cols, ListViewGroup group)
@@ -924,10 +924,13 @@ namespace CMS.Presentation.Modules.KMS
                     try
                     {
                         // DocumentTypeLabel is only set once a row resolves successfully (see
-                        // KBImportProcessor.ValidateLawRow/ValidateOrderRow) — blank for any row
-                        // that didn't resolve (empty ColA, bad ประเภทลูก digit, etc.) instead of
-                        // falling back to the raw RowKind value.
+                        // KBImportProcessor.ValidateLawRow/ValidateNonLawRow) — blank for any row
+                        // that didn't resolve (empty ColA, bad type digit, etc.) instead of
+                        // falling back to the raw RowKind value. DocumentTypeCode = the category found from the
+                        // row's ArticleCode (e.g. RVA / OR) — shown so the user can verify the category before importing.
                         string kindDisplay = r.DocumentTypeLabel ?? string.Empty;
+                        if (kindDisplay.Length > 0 && !string.IsNullOrEmpty(r.DocumentTypeCode))
+                            kindDisplay += " (" + r.DocumentTypeCode + ")";
 
                         int idx = dgvPreview.Rows.Add(
                             r.RowNumber.ToString(),
@@ -1287,10 +1290,16 @@ namespace CMS.Presentation.Modules.KMS
                 return;
             }
 
-            // CategoryID could not be resolved from the ArticleCode's 3-letter prefix
-            if (note.IndexOf("ไม่พบ CategoryID", StringComparison.OrdinalIgnoreCase) >= 0)
+            // CategoryID could not be resolved from the row's ArticleCode (KBImportCategoryResolver): law prefix / document
+            // type not in the category table, category inactive, or the code belongs to the wrong group (law vs non-law)
+            if (note.IndexOf("ไม่พบ CategoryID", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("หมวดกฎหมาย", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("หมวดประเภทเอกสาร", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("รหัสกฎหมาย", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("รหัสประเภทเอกสาร", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                note.IndexOf("อยู่ใต้หมวด", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                reason      = "❌ รหัสขึ้นต้น (prefix) ไม่ถูกต้อง";
+                reason      = "❌ หาหมวดจาก ArticleCode ไม่ได้ (รหัสกฎหมาย/ประเภทเอกสารไม่ถูกต้อง)";
                 relatedData = note;
                 return;
             }

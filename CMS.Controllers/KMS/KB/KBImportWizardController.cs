@@ -145,42 +145,61 @@ namespace CMS.Controllers.KMS.KB
                     return;
                 }
 
-                int  resolvedCategoryId;
-                byte resolvedArticleType;
+                // ชั้น 0 — Template ต้องตั้งค่าครบ (ประเภทไฟล์, ArticleType, ArticleCode, และ Title/ContentHTML/Attachment ถ้าไม่ใช่กฎหมาย)
+                // Template เก่าที่บันทึกไว้ก่อนกฎชุดนี้อาจไม่ครบ — บอกว่าขาดอะไรแล้วให้กลับไปแก้ที่หน้า config
+                var templateProblems = _templateService.GetTemplateProblems(templateColumns);
+                if (templateProblems.Count > 0)
+                {
+                    _view.ShowError(string.Format(
+                        "Template \"{0}\" ตั้งค่ายังไม่ครบ กรุณาแก้ที่หน้า config template ก่อน:\n• {1}",
+                        template.TemplateName, string.Join("\n• ", templateProblems)));
+                    return;
+                }
+
+                string templateLayoutType;
+                byte   resolvedArticleType;
                 string resolveError;
-                if (!TryResolveTemplateFixedValues(templateColumns, out resolvedCategoryId, out resolvedArticleType, out resolveError))
+                if (!TryResolveTemplateFixedValues(templateColumns, out templateLayoutType, out resolvedArticleType, out resolveError))
                 {
                     _view.ShowError(resolveError);
                     return;
                 }
 
-                IList<KBImportRow> rows = _excelReader.ReadRows(filePath, templateColumns);
+                KBExcelReadResult readResult = _excelReader.ReadRows(filePath, templateColumns);
+                IList<KBImportRow> rows      = readResult.Rows;
 
-                // Effective LayoutType is derived from the Template's configured CategoryID (see
-                // KBImportTemplateService.GetEffectiveLayoutType) and must match the layout
-                // KBExcelReader actually detected from the file's header row — otherwise
-                // CategoryID/ArticleType resolved above would be silently applied to the wrong
-                // kind of document.
-                string templateLayoutType = _templateService.GetEffectiveLayoutType(resolvedCategoryId);
-                if (rows.Count > 0 && !string.Equals(rows[0].RowKind, templateLayoutType, StringComparison.OrdinalIgnoreCase))
+                // ประเภทไฟล์ (Law/NonLaw) ที่ตรวจพบจากไฟล์ (ArticleCode) ต้องตรงกับประเภทไฟล์ที่ Template ตั้งไว้ — ไม่งั้น mapping
+                // ของอีกประเภทหนึ่งจะถูกใช้อ่านไฟล์ผิดคอลัมน์ (นำเข้าเนื้อหาผิดโดยไม่มี error) ตรวจก่อนตรวจ mapping เพราะถ้าเลือก Template
+                // ผิดประเภท คอลัมน์ที่ map ไว้ย่อมไม่ตรงกับไฟล์อยู่แล้ว รายการคอลัมน์ที่ขาดจะบดบังสาเหตุจริง
+                // ข้อความแจ้งเป็นประเภทของ "ไฟล์" ที่ upload เพื่อให้ผู้ใช้เลือก Template ให้ตรงกับไฟล์
+                if (rows.Count > 0 && !string.Equals(readResult.DetectedLayout, templateLayoutType, StringComparison.OrdinalIgnoreCase))
                 {
+                    string fileKind = string.Equals(readResult.DetectedLayout, KBImportLayoutTypeCatalog.Law, StringComparison.OrdinalIgnoreCase)
+                        ? "กฎหมาย"
+                        : "ที่ไม่ใช่กฎหมาย";
+
+                    _view.ShowError(string.Format("ไฟล์ที่ upload เป็นรูปแบบ {0} กรุณาเลือก Template ให้ถูกต้อง", fileKind));
+                    return;
+                }
+
+                // mapping ของ Template ต้องชี้ไปคอลัมน์/หัวตารางที่มีอยู่จริงในไฟล์ (เดิมหาไม่เจอแล้วได้ค่าว่างเงียบ ๆ
+                // ทำให้เนื้อหาหาย/ผิดคอลัมน์โดยไม่มี error) — หยุดที่ Step 1 พร้อมรายการที่หาไม่เจอ
+                if (readResult.MappingProblems.Count > 0)
+                {
+                    const int maxListed = 15;
+                    var listed = readResult.MappingProblems.Take(maxListed).ToList();
+                    string more = readResult.MappingProblems.Count > maxListed
+                        ? string.Format("\n… และอีก {0} รายการ", readResult.MappingProblems.Count - maxListed)
+                        : string.Empty;
+
                     _view.ShowError(string.Format(
-                        "ไฟล์ที่อัปโหลดเป็นรูปแบบ \"{0}\" แต่ Template \"{1}\" ใช้ CategoryID ของ \"{2}\"\n\nกรุณาเลือก Template ให้ตรงกับไฟล์",
-                        KBImportLayoutTypeCatalog.Describe(rows[0].RowKind), template.TemplateName, KBImportLayoutTypeCatalog.Describe(templateLayoutType)));
+                        "ไฟล์ที่อัปโหลดไม่ตรงกับ Template \"{0}\" — Template map คอลัมน์ที่ไม่มีในไฟล์:\n• {1}{2}\n\nกรุณาเลือก Template ให้ตรงกับไฟล์ หรือแก้ Template ที่หน้า config",
+                        template.TemplateName, string.Join("\n• ", listed), more));
                     return;
                 }
 
-                // ไฟล์ผิด Template ทั้งไฟล์ (เช่น ไฟล์กฎหมาย RVA แต่เลือก Template ของ PVI) — หยุดอยู่ที่ Step 1 ให้เลือกใหม่
-                // แทนที่จะพาไป Step 2 ที่ทุกแถวเป็น Error
-                string templateCategoryCode = _templateService.GetTemplateCategoryCode(resolvedCategoryId);
-                string mismatch = _processor.GetTemplateMismatchMessage(rows, templateCategoryCode);
-                if (mismatch != null)
-                {
-                    _view.ShowError(mismatch + "\n\nกรุณาเลือก Template ให้ตรงกับไฟล์ (Template ที่เลือก: \"" + template.TemplateName + "\")");
-                    return;
-                }
-
-                _processor.ValidateRows(rows, resolvedCategoryId, templateCategoryCode);
+                // ชั้น 3-4 — หา CategoryID ของแต่ละแถวจาก ArticleCode (ไม่ผูกกับ Template) แล้วตรวจกฎรายแถว
+                _processor.ValidateRows(rows);
 
                 _lastValidation          = BuildValidationResult(rows);
                 _lastResolvedArticleType = resolvedArticleType;
@@ -290,30 +309,22 @@ namespace CMS.Controllers.KMS.KB
         // ── Private helpers ──────────────────────────────────────────────────────
 
         /// <summary>
-        /// Resolves the CategoryID/ArticleType fixed values configured on the given Template's
-        /// column mapping (<see cref="KBImportTemplateColumnRow.ExcelColumnRef"/> for the
-        /// "CategoryID"/"ArticleType" rows — set via the dropdown in KBImportTemplateConfigForm).
-        /// Returns <c>false</c> with a user-facing Thai error message when either is missing or
-        /// not configured.
+        /// Resolves the fixed values configured on the given Template's mapping (dropdowns in KBImportTemplateConfigForm):
+        /// the file layout ("Law"/"NonLaw" — the virtual "LayoutType" row) and the "ArticleType" row. CategoryID is not part
+        /// of a Template anymore — it is resolved per row from the ArticleCode (see <see cref="KBImportProcessor.ValidateRows"/>).
+        /// Returns <c>false</c> with a user-facing Thai error message when either is missing or not configured.
         /// </summary>
-        private bool TryResolveTemplateFixedValues(IList<KBImportTemplateColumnRow> columns, out int categoryId, out byte articleType, out string error)
+        private bool TryResolveTemplateFixedValues(IList<KBImportTemplateColumnRow> columns, out string layoutType, out byte articleType, out string error)
         {
-            categoryId  = 0;
+            layoutType  = null;
             articleType = 0;
             error       = null;
 
-            // Template เก่าที่บันทึกไว้ก่อนบังคับ map ArticleCode — ต้องกลับไปแก้ที่หน้า config ก่อนใช้งาน
-            var articleCodeRow = columns.FirstOrDefault(c => string.Equals(c.TargetColumnName, "ArticleCode", StringComparison.OrdinalIgnoreCase));
-            if (articleCodeRow == null || string.IsNullOrWhiteSpace(articleCodeRow.ExcelColumnRef))
+            var layoutRow = columns.FirstOrDefault(c => string.Equals(c.TargetColumnName, KBArticleColumnCatalog.LayoutTypeTargetColumn, StringComparison.OrdinalIgnoreCase));
+            layoutType = layoutRow != null ? KBImportLayoutTypeCatalog.Normalize(layoutRow.ExcelColumnRef) : null;
+            if (layoutType == null)
             {
-                error = "Template ที่เลือกยังไม่ได้ Map คอลัมน์ ArticleCode (Code รวม) กรุณาตั้งค่าที่หน้า config template ก่อน";
-                return false;
-            }
-
-            var categoryRow = columns.FirstOrDefault(c => string.Equals(c.TargetColumnName, "CategoryID", StringComparison.OrdinalIgnoreCase));
-            if (categoryRow == null || !int.TryParse(categoryRow.ExcelColumnRef, out categoryId) || categoryId <= 0)
-            {
-                error = "Template ที่เลือกยังไม่ได้ตั้งค่า CategoryID กรุณาตั้งค่าที่หน้า config template ก่อน";
+                error = "Template ที่เลือกยังไม่ได้เลือกประเภทไฟล์ (กฎหมาย / ไม่ใช่กฎหมาย) กรุณาตั้งค่าที่หน้า config template ก่อน";
                 return false;
             }
 

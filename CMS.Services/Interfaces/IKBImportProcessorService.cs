@@ -6,18 +6,12 @@ namespace CMS.Services.Interfaces
 {
     public interface IKBImportProcessorService
     {
-        /// <param name="resolvedCategoryId">
-        /// CategoryID configured on the KB Import Template selected in the Wizard — applied to
-        /// every row in this batch (both Law and NonLaw layouts). Must be greater than 0.
-        /// </param>
-        void ValidateRows(IList<KBImportRow> rows, int resolvedCategoryId, string templateCategoryCode);
-
         /// <summary>
-        /// ตรวจระดับไฟล์ว่า Code รวมในไฟล์เป็นของหมวดเดียวกับ Template ที่เลือกหรือไม่ (Law: prefix 3 ตัวแรก เช่น RVA,
-        /// NonLaw: ตัวที่ 23 → AN/OR/SO/RG/CI/MR) คืนข้อความอธิบายเมื่อ "ทุกแถวที่อ่านรหัสได้" ไม่ตรงกับ Template
-        /// (ไฟล์ผิด Template ทั้งไฟล์) คืน null ถ้าตรงกัน หรือยังสรุปไม่ได้ (ไม่มีแถวที่อ่านรหัสได้) — ปล่อยให้ ValidateRows รายงานรายแถวต่อ
+        /// ตรวจแต่ละแถวและตั้ง <see cref="KBImportRow.Status"/>/<see cref="KBImportRow.StatusNote"/> — CategoryID ของแต่ละแถว
+        /// หาจาก ArticleCode ของแถวนั้น (กฎหมาย: 3 ตัวแรกของ Code รวม, ไม่ใช่กฎหมาย: ตัวที่ 23) ไม่ผูกกับ Template
+        /// จึงรับได้หลายกฎหมาย/หลายประเภทในไฟล์เดียว แถวที่หาหมวดไม่ได้เป็น Error รายแถว
         /// </summary>
-        string GetTemplateMismatchMessage(IList<KBImportRow> rows, string templateCategoryCode);
+        void ValidateRows(IList<KBImportRow> rows);
 
         /// <param name="user">
         /// Current user — needed (not just a "createdBy" string) because NonLaw rows upload

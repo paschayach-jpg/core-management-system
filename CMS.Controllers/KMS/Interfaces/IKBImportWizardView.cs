@@ -16,23 +16,8 @@ namespace CMS.Controllers.KMS.Interfaces
         /// <summary>Display name of the selected import template (from the combo box).</summary>
         string SelectedTemplate { get; }
 
-        /// <summary>Step 2 option: skip rows with warnings.</summary>
-        bool OptSkipWarning  { get; }
-
-        /// <summary>Step 2 option: auto-create missing categories.</summary>
-        bool OptAutoCategory { get; }
-
-        /// <summary>Step 2 option: send e-mail notification after import.</summary>
-        bool OptSendEmail    { get; }
-
         /// <summary>Step 2 option: link imported articles to DMS files.</summary>
         bool OptLinkDMS      { get; }
-
-        /// <summary>Step 2 option: create articles as Draft instead of Published.</summary>
-        bool OptCreateDraft  { get; }
-
-        /// <summary>Step 2 option: write audit-log entries for every imported article.</summary>
-        bool OptAuditLog     { get; }
 
         // ── Presenter → View: push results ──────────────────────────────────────
 

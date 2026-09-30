@@ -4,7 +4,7 @@ namespace CMS.Domain.Models
 {
     /// <summary>
     /// ค่า LayoutType คงที่ ("Law"/"NonLaw") ที่ใช้ร่วมกันระหว่าง KBImportRow.RowKind (ตั้งค่าโดย
-    /// KBExcelReader) และค่าที่ KBImportTemplateService.GetEffectiveLayoutType derive จาก CategoryID
+    /// KBExcelReader จากไฟล์) และประเภทไฟล์ที่ Template เก็บไว้เป็นแถว mapping เสมือน LayoutType
     /// — รวมไว้จุดเดียวกันค่า/label หลุดไม่ตรงกันระหว่างไฟล์ ถ้าเพิ่ม layout ใหม่ในอนาคตให้แก้ที่นี่ที่เดียว
     /// </summary>
     public static class KBImportLayoutTypeCatalog
@@ -87,6 +87,37 @@ namespace CMS.Domain.Models
                 case '6': return "กฎกระทรวง";     // MR
                 default:  return string.Empty;
             }
+        }
+
+        /// <summary>
+        /// คืนค่า LayoutType มาตรฐาน ("Law"/"NonLaw") จากข้อความที่อ่านมา (ไม่สนตัวพิมพ์เล็ก-ใหญ่/ช่องว่างหัวท้าย)
+        /// หรือ <c>null</c> ถ้าเป็นค่าว่าง/ไม่รู้จัก — ใช้กับค่า LayoutType ที่ Template เก็บเป็นแถว mapping เสมือน
+        /// (<see cref="KBArticleColumnCatalog.LayoutTypeTargetColumn"/>)
+        /// </summary>
+        public static string Normalize(string layoutType)
+        {
+            if (string.IsNullOrWhiteSpace(layoutType)) return null;
+
+            string trimmed = layoutType.Trim();
+            if (string.Equals(trimmed, Law, StringComparison.OrdinalIgnoreCase))    return Law;
+            if (string.Equals(trimmed, NonLaw, StringComparison.OrdinalIgnoreCase)) return NonLaw;
+            return null;
+        }
+
+        /// <summary>true ถ้า <paramref name="layoutType"/> เป็น "Law" หรือ "NonLaw"</summary>
+        public static bool IsValid(string layoutType)
+        {
+            return Normalize(layoutType) != null;
+        }
+
+        /// <summary>ตัวเลือกประเภทไฟล์ของ Template สำหรับ dropdown ในหน้า config (ยังไม่รวมตัวเลือก "ยังไม่เลือก" — view เติมเอง)</summary>
+        public static System.Collections.Generic.IList<KBImportLayoutOption> GetLayoutOptions()
+        {
+            return new System.Collections.Generic.List<KBImportLayoutOption>
+            {
+                new KBImportLayoutOption { LayoutType = Law,    Description = Describe(Law) },
+                new KBImportLayoutOption { LayoutType = NonLaw, Description = "ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR)" },
+            };
         }
 
         /// <summary>คำอธิบายภาษาไทยของค่า LayoutType; คืนค่าตัวเองถ้าไม่รู้จัก (กันข้อมูลเพี้ยนพังหน้าจอ)</summary>

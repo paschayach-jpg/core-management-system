@@ -100,10 +100,14 @@ namespace CMS.Domain.Models
         public string Tags               { get; set; }
         public string Summary            { get; set; }
         public string TitleCategory      { get; set; }
+        /// <summary>CategoryID ที่หาได้จาก ArticleCode ของแถวนี้ตอน validate (Template ไม่ผูกหมวดแล้ว) — 0 = ยังหาไม่ได้</summary>
         public int    ResolvedCategoryID { get; set; }
         /// <summary>Display label for the resolved CategoryID: "มาตรา" (Law), "ประกาศ" or "คำสั่ง" (NonLaw).</summary>
         public string DocumentTypeLabel  { get; set; }
-        /// <summary>NonLaw เท่านั้น: CategoryCode ของประเภทเอกสาร (AN/OR/SO/RG/CI/MR) จากตัวที่ 23 ของ Code รวม</summary>
+        /// <summary>
+        /// CategoryCode ของหมวดที่หาได้จาก ArticleCode ของแถวนี้ (ตั้งค่าโดย KBImportProcessor ผ่าน KBImportCategoryResolver):
+        /// Law = รหัสกฎหมาย 3 ตัวแรกของ Code รวม (เช่น PVI, RVA), NonLaw = ประเภทเอกสารจากตัวที่ 23 (AN/OR/SO/RG/CI/MR)
+        /// </summary>
         public string DocumentTypeCode   { get; set; }
 
         // ── Import-time results (Order only) ─────────────────────────────────
