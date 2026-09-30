@@ -9,22 +9,46 @@ namespace CMS.Controllers.KMS.KB
     {
         private readonly IKBImportTemplateConfigController _view;
         private readonly IKBImportTemplateService           _service;
+        private readonly IExcelTemplatePreviewService        _excelPreviewService;
         private readonly UserContext                        _user;
 
         public KBImportTemplateConfigController(
             IKBImportTemplateConfigController view,
             IKBImportTemplateService           service,
+            IExcelTemplatePreviewService       excelPreviewService,
             UserContext                        user)
         {
-            if (view    == null) throw new ArgumentNullException("view");
-            if (service == null) throw new ArgumentNullException("service");
-            if (user    == null) throw new ArgumentNullException("user");
-            _view    = view;
-            _service = service;
-            _user    = user;
+            if (view                == null) throw new ArgumentNullException("view");
+            if (service              == null) throw new ArgumentNullException("service");
+            if (excelPreviewService  == null) throw new ArgumentNullException("excelPreviewService");
+            if (user                 == null) throw new ArgumentNullException("user");
+            _view                = view;
+            _service             = service;
+            _excelPreviewService = excelPreviewService;
+            _user                = user;
         }
 
-        public void Initialize() { LoadTemplates(); }
+        public void Initialize()
+        {
+            LoadTemplates();
+            LoadDropdownOptions();
+            // แสดง default grid (คอลัมน์เป้าหมายทั้งหมดจาก KMS.t_KBArticle) ทันทีที่เปิดฟอร์ม
+            // โดยไม่ต้องรอให้ admin กดปุ่ม "Template ใหม่" ก่อน
+            OnNewTemplate();
+        }
+
+        private void LoadDropdownOptions()
+        {
+            try
+            {
+                _view.BindCategoryOptions(_service.GetCategoryOptions());
+                _view.BindArticleTypeOptions(_service.GetArticleTypeOptions());
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("โหลดตัวเลือก Category/ArticleType ล้มเหลว: " + ex.Message);
+            }
+        }
 
         public void LoadTemplates()
         {
@@ -40,7 +64,8 @@ namespace CMS.Controllers.KMS.KB
                 _view.EditingTemplateId    = template.TemplateID;
                 _view.TemplateName         = template.TemplateName;
                 _view.TemplateDescription  = template.Description;
-                _view.DeleteEnabled        = template.IsActive;
+                _view.DeleteEnabled        = true;
+                _view.RecordIsActive       = template.IsActive;
                 _view.BindColumnGrid(_service.GetTemplateColumnGrid(template.TemplateID));
             }
             catch (Exception ex)
@@ -68,7 +93,7 @@ namespace CMS.Controllers.KMS.KB
             {
                 var template = new KBImportTemplate
                 {
-                    TemplateID  = _view.EditingTemplateId ?? 0,
+                    TemplateID   = _view.EditingTemplateId ?? 0,
                     TemplateName = _view.TemplateName,
                     Description  = _view.TemplateDescription,
                     SortOrder    = 0,
@@ -85,6 +110,21 @@ namespace CMS.Controllers.KMS.KB
             }
         }
 
+        public void OnExcelFileSelected(string filePath)
+        {
+            try
+            {
+                var columns = _excelPreviewService.ReadColumnPreview(filePath);
+                if (columns.Count == 0)
+                    _view.ShowError("ไม่พบข้อมูลแถวหัวตารางในไฟล์ Excel นี้");
+                _view.BindExcelPreview(columns);
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("อ่านไฟล์ Excel ไม่สำเร็จ: " + ex.Message);
+            }
+        }
+
         public void Delete()
         {
             if (!_view.EditingTemplateId.HasValue) return;
@@ -98,6 +138,22 @@ namespace CMS.Controllers.KMS.KB
             catch (Exception ex)
             {
                 _view.ShowError("ปิดใช้งานล้มเหลว: " + ex.Message);
+            }
+        }
+
+        public void Activate()
+        {
+            if (!_view.EditingTemplateId.HasValue) return;
+            try
+            {
+                _service.ActivateTemplate(_view.EditingTemplateId.Value, _user);
+                _view.ShowSuccess("เปิดใช้งาน Template สำเร็จ");
+                _view.ClearForm();
+                LoadTemplates();
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("เปิดใช้งานล้มเหลว: " + ex.Message);
             }
         }
     }

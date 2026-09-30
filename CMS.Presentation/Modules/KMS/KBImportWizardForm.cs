@@ -99,8 +99,20 @@ namespace CMS.Presentation.Modules.KMS
                 _user.AdIdentity ?? "ผู้ใช้งาน",
                 DateTime.Now.ToString("dd/MM/yyyy"));
 
-            InitTemplateCombo();
+            // Template row (label + combo + download button) is hidden by default in the
+            // Designer from when the wizard relied purely on layout auto-detection with no
+            // Template picker. CategoryID/ArticleType now come from the selected Template
+            // (see KBImportWizardController.ValidateFile), so it must always be shown.
+            lblTemplateLabel.Visible    = true;
+            cboTemplate.Visible         = true;
+            btnDownloadTemplate.Visible = true;
+
+            // Static reference table first — LoadTemplates() below auto-selects the first
+            // template, which fires SelectedIndexChanged and replaces this with that
+            // template's actual mapping (see CboTemplate_SelectedIndexChanged).
             PopulateColumnReference();
+            cboTemplate.SelectedIndexChanged += CboTemplate_SelectedIndexChanged;
+            _presenter.LoadTemplates();
 
             // Wire upload-zone dashed border and drag events
             pnlUploadZone.Paint     += PnlUploadZone_Paint;
@@ -134,13 +146,12 @@ namespace CMS.Presentation.Modules.KMS
         // Properties
 
         public string SelectedFilePath { get { return _uploadedFilePath; } }
-        public string SelectedTemplate
+        public int? SelectedTemplateId
         {
             get
             {
-                return cboTemplate.SelectedItem != null
-                    ? cboTemplate.SelectedItem.ToString()
-                    : string.Empty;
+                var selected = cboTemplate.SelectedItem as ComboItem;
+                return selected != null ? (int?)selected.Value : null;
             }
         }
         public bool OptSkipWarning  { get { return chkSkipWarning.Checked;  } }
@@ -151,6 +162,52 @@ namespace CMS.Presentation.Modules.KMS
         public bool OptAuditLog     { get { return chkAuditLog.Checked;     } }
 
         // Methods
+
+        /// <summary>
+        /// Binds the KB Import Templates configured in KBImportTemplateConfigForm to
+        /// <c>cboTemplate</c>. Called once by the presenter after the form loads.
+        /// </summary>
+        public void BindTemplateOptions(IEnumerable<KBImportTemplate> templates)
+        {
+            cboTemplate.Items.Clear();
+            foreach (var t in templates)
+                cboTemplate.Items.Add(new ComboItem(t.TemplateName, t.TemplateID));
+
+            if (cboTemplate.Items.Count > 0)
+                cboTemplate.SelectedIndex = 0;
+        }
+
+        /// <summary>
+        /// Refreshes the column-reference panel (lvColumnRef) with the selected Template's actual
+        /// column mapping, replacing the static kBExcelReader reference table. Falls back to that
+        /// static table when no template is selected or it has no mapped columns.
+        /// </summary>
+        public void BindTemplateColumnReference(IEnumerable<KBImportTemplateColumnRow> columns, string templateName)
+        {
+            var mapped = columns.Where(c => !string.IsNullOrWhiteSpace(c.ExcelColumnRef)).OrderBy(c => c.DisplayOrder).ToList();
+            if (mapped.Count == 0 || string.IsNullOrEmpty(templateName))
+            {
+                PopulateColumnReference();
+                return;
+            }
+
+            lvColumnRef.Items.Clear();
+            lvColumnRef.Groups.Clear();
+
+            var group = new ListViewGroup(string.Format("Mapping ของ Template ที่เลือก: {0}", templateName));
+            lvColumnRef.Groups.Add(group);
+
+            foreach (var col in mapped)
+            {
+                var item = new ListViewItem(col.ExcelColumnRef);
+                item.Group = group;
+                item.SubItems.Add(col.TargetColumnName);
+                item.SubItems.Add(string.Empty);
+                item.SubItems.Add(string.Empty);
+                item.SubItems.Add(col.ColumnDescription);
+                lvColumnRef.Items.Add(item);
+            }
+        }
 
         /// <summary>
         /// Receives validation results from the presenter, updates summary pills and
@@ -323,10 +380,23 @@ namespace CMS.Presentation.Modules.KMS
             SetStatus("ลบไฟล์แล้ว");
         }
 
+        private void CboTemplate_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_presenter != null)
+                _presenter.OnTemplateSelected();
+        }
+
         private void BtnDownloadTemplate_Click(object sender, EventArgs e)
         {
-            var selected = cboTemplate.SelectedItem as ComboItem;
-            bool isOrder = selected != null && selected.Value == 2;
+            // cboTemplate now lists admin-configured Templates (KBImportTemplateConfigForm), not
+            // a fixed 2-item layout picker — so which blank sample file to hand out is asked
+            // directly here instead, decoupled from the Template selection.
+            var layoutChoice = MessageBox.Show(
+                "เลือกรูปแบบไฟล์ตัวอย่างที่ต้องการดาวน์โหลด\n\n" +
+                "กด \"Yes\" สำหรับ กฎหมาย (มาตรา)\nกด \"No\" สำหรับ เอกสารที่ไม่ใช่กฎหมาย (ประกาศ/คำสั่ง/ระเบียบ ฯลฯ)",
+                "เลือกรูปแบบ Template", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            if (layoutChoice == DialogResult.Cancel) return;
+            bool isOrder = layoutChoice == DialogResult.No;
 
             using (var dlg = new SaveFileDialog())
             {
@@ -524,30 +594,30 @@ namespace CMS.Presentation.Modules.KMS
                     pnlStepProgress.Width, pnlStepProgress.Height - 1);
 
             // draw rounded circles over each badge label
-            foreach (var (lbl, active, done) in new[]
-            {
-                (lblStep1Circle, _currentStep == 1, _currentStep > 1),
-                (lblStep2Circle, _currentStep == 2, _currentStep > 2),
-                (lblStep3Circle, _currentStep == 3, _currentStep > 3),
-            })
-            {
-                var r = new Rectangle(
-                    lbl.Parent.Left + lbl.Left,
-                    lbl.Parent.Top  + lbl.Top,
-                    lbl.Width, lbl.Height);
+            DrawStepCircle(g, lblStep1Circle, _currentStep == 1, _currentStep > 1);
+            DrawStepCircle(g, lblStep2Circle, _currentStep == 2, _currentStep > 2);
+            DrawStepCircle(g, lblStep3Circle, _currentStep == 3, _currentStep > 3);
+        }
 
-                Color fill = done   ? Color.FromArgb(39, 174, 96)  :
-                             active ? Color.FromArgb(46, 116, 181) :
-                                      Color.FromArgb(230, 236, 245);
+        /// <summary>วาดวงกลมสีทับ label ตัวเลขของ step หนึ่งขั้นในแถบ step progress (เขียว=เสร็จแล้ว, น้ำเงิน=กำลังทำ, เทา=ยังไม่ถึง)</summary>
+        private static void DrawStepCircle(Graphics g, Label lbl, bool active, bool done)
+        {
+            var r = new Rectangle(
+                lbl.Parent.Left + lbl.Left,
+                lbl.Parent.Top  + lbl.Top,
+                lbl.Width, lbl.Height);
 
-                using (var brush = new System.Drawing.SolidBrush(fill))
-                    g.FillEllipse(brush, r);
+            Color fill = done   ? Color.FromArgb(39, 174, 96)  :
+                         active ? Color.FromArgb(46, 116, 181) :
+                                  Color.FromArgb(230, 236, 245);
 
-                // subtle ring for inactive
-                if (!active && !done)
-                    using (var pen = new Pen(Color.FromArgb(189, 195, 199), 1.5f))
-                        g.DrawEllipse(pen, r);
-            }
+            using (var brush = new System.Drawing.SolidBrush(fill))
+                g.FillEllipse(brush, r);
+
+            // subtle ring for inactive
+            if (!active && !done)
+                using (var pen = new Pen(Color.FromArgb(189, 195, 199), 1.5f))
+                    g.DrawEllipse(pen, r);
         }
 
         #endregion
@@ -577,15 +647,8 @@ namespace CMS.Presentation.Modules.KMS
             });
         }
 
-        // Template Initialization
+        // Template combo item — wraps a KBImportTemplate for display in cboTemplate (see BindTemplateOptions)
 
-        private void InitTemplateCombo()
-        {
-            cboTemplate.Items.Clear();
-            cboTemplate.Items.Add(new ComboItem("กฎหมาย (มาตรา)", 1));
-            cboTemplate.Items.Add(new ComboItem("ประกาศ/คำสั่ง", 2));
-            cboTemplate.SelectedIndex = 0;
-        }
         private class ComboItem
         {
             public string Display { get; private set; }
@@ -860,9 +923,11 @@ namespace CMS.Presentation.Modules.KMS
                     var r = _filteredRows[i];
                     try
                     {
-                        // column A ว่าง/ไม่มีข้อมูล (มาตรา row ที่ validate ไม่ผ่านตั้งแต่ต้น) ⇒ ประเภทว่าง
-                        bool colABlank = r.RowKind == "Law" && string.IsNullOrEmpty(r.ColA);
-                        string kindDisplay = colABlank ? string.Empty : (r.DocumentTypeLabel ?? r.RowKind);
+                        // DocumentTypeLabel is only set once a row resolves successfully (see
+                        // KBImportProcessor.ValidateLawRow/ValidateOrderRow) — blank for any row
+                        // that didn't resolve (empty ColA, bad ประเภทลูก digit, etc.) instead of
+                        // falling back to the raw RowKind value.
+                        string kindDisplay = r.DocumentTypeLabel ?? string.Empty;
 
                         int idx = dgvPreview.Rows.Add(
                             r.RowNumber.ToString(),
@@ -872,8 +937,11 @@ namespace CMS.Presentation.Modules.KMS
                             S(r.ArticleCode ?? r.ColA),
                             S(r.Title ?? r.Tags),
                             S(r.Summary),
-                            r.PublishedDateParsed.HasValue ? r.PublishedDateParsed.Value.ToString("dd/MM/yyyy") : S(r.RawPublishedDate),
-                            r.EffectiveDateParsed.HasValue ? r.EffectiveDateParsed.Value.ToString("dd/MM/yyyy") : S(r.RawEffectiveDate),
+                            // Preview mirrors the Excel cell exactly (RawPublishedDate/RawEffectiveDate,
+                            // e.g. พ.ศ. as typed) — PublishedDateParsed/EffectiveDateParsed (already
+                            // converted to ค.ศ.) still drive the actual insert into t_KBArticle unchanged.
+                            S(r.RawPublishedDate),
+                            S(r.RawEffectiveDate),
                             S(r.TitleCategory),
                             r.ResolvedCategoryID > 0 ? r.ResolvedCategoryID.ToString() : string.Empty,
                             S(r.RawContent, 300));

@@ -54,7 +54,7 @@ namespace CMS.Domain.Models
     /// child-document sequence ("00000" = the law section itself, processed here; anything else
     /// is a คำสั่ง/ประกาศ child row, handled as a Order row from a different file instead).
     ///
-    /// <b>"Order"</b> — 12-column "ประกาศ/คำสั่ง" layout (1 row = 1 order/announcement, possibly
+    /// <b>"NonLaw"</b> — 12-column layout ของเอกสารที่ไม่ใช่กฎหมาย (OR/AN/SO/RG/CI/MR) (1 row = 1 order/announcement, possibly
     /// referencing several parent law sections via <see cref="ParentCodes"/>). ArticleCode is
     /// computed as the first parent code + a 1-digit type ("1"=ประกาศ, "2"=คำสั่ง) + a 4-digit
     /// document sequence.
@@ -71,25 +71,20 @@ namespace CMS.Domain.Models
         /// <summary>Human-readable note explaining a Skip or Error status.</summary>
         public string StatusNote  { get; set; }
 
-        /// <summary>"Law" or "Order" — which Excel layout this row came from (detected from the header row).</summary>
+        /// <summary>"Law" or "NonLaw" — which Excel layout this row came from (detected from the header row).</summary>
         public string RowKind     { get; set; }
 
         // ── Raw values — Law layout only ─────────────────────────────────────
-        public string ColA  { get; set; }   // Code รวม (22 or 27 digits) → ArticleCode source
-        public string ColC  { get; set; }   // มาตรา → Title/Tags source
+        public string ColA  { get; set; }   // Code รวม 27 หลัก (Template mapping ArticleCode) → ArticleCode source (Order ใช้ field นี้ด้วย)
 
-        // ── Raw values — Order layout only ───────────────────────────────────
-        public string OrderTypeDigit      { get; set; }   // ประเภทลูก — "1"=ประกาศ, "2"=คำสั่ง
-        public string OrderDocNumber      { get; set; }   // เอกสารลูก — เลขที่เอกสาร
+        // ── Raw values — NonLaw layout only ───────────────────────────────────
         public string AttachmentFileName  { get; set; }   // ชื่อไฟล์ (ข้อความในเซลล์)
         public string AttachmentUrl       { get; set; }   // URL จริง (hyperlink ของเซลล์)
-        public string SectionsRaw         { get; set; }   // กฎหมายอ้างอิง (ข้อความ ใช้แสดงผลเท่านั้น)
         public IList<string> ParentCodes      { get; set; }   // Code กฎหมายแม่ (1 รายการต่อบรรทัดในเซลล์)
-        public IList<string> FinalCodeChoices { get; set; }   // ParentCodes[i] + OrderTypeDigit + OrderDocNumber
         public IList<int>    ResolvedParentArticleIds { get; set; }   // ArticleID ของแต่ละ ParentCodes ที่พบในระบบ (ตั้งค่าโดย ValidateRows)
 
         // ── Raw values — shared meaning, different source column per RowKind ─
-        public string RawTitle         { get; set; }   // Order: ชื่อ. (Law derives Title from ColC instead.)
+        public string RawTitle         { get; set; }   // Order: ชื่อ. (Law derives Title from the section digits of ColA.)
         public string RawTitleCategory { get; set; }   // Law: กฎหมายอ้างอิง. Order: คำสั่งที่.
         public string RawSummary       { get; set; }   // Law: ชื่อ. Order: ประเด็นสำคัญ.
         public string RawContent       { get; set; }   // Law: บัญญัติไว้ว่า คำสั่งที่เกี่ยวข้อง. Order: บัญญัติไว้ว่า.
@@ -100,14 +95,16 @@ namespace CMS.Domain.Models
         public DateTime? EffectiveDateParsed { get; set; }
 
         // ── Computed / resolved fields (set by processor) ───────────────────
-        public string ArticleCode        { get; set; }   // Law: first 22 chars of ColA. Order: FinalCodeChoices[0].
+        public string ArticleCode        { get; set; }   // Law: first 22 chars of ColA. Order: Code รวมที่ Template map ไว้ (ColA).
         public string Title              { get; set; }
         public string Tags               { get; set; }
         public string Summary            { get; set; }
         public string TitleCategory      { get; set; }
         public int    ResolvedCategoryID { get; set; }
-        /// <summary>Display label for the resolved CategoryID: "มาตรา" (Law), "ประกาศ" or "คำสั่ง" (Order).</summary>
+        /// <summary>Display label for the resolved CategoryID: "มาตรา" (Law), "ประกาศ" or "คำสั่ง" (NonLaw).</summary>
         public string DocumentTypeLabel  { get; set; }
+        /// <summary>NonLaw เท่านั้น: CategoryCode ของประเภทเอกสาร (AN/OR/SO/RG/CI/MR) จากตัวที่ 23 ของ Code รวม</summary>
+        public string DocumentTypeCode   { get; set; }
 
         // ── Import-time results (Order only) ─────────────────────────────────
         public int  ImportedArticleId { get; set; }
@@ -117,7 +114,6 @@ namespace CMS.Domain.Models
         {
             Status                    = "Valid";
             ParentCodes               = new List<string>();
-            FinalCodeChoices          = new List<string>();
             ResolvedParentArticleIds  = new List<int>();
         }
     }

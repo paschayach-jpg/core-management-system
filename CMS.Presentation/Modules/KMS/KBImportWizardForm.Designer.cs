@@ -107,8 +107,8 @@
             this.pnlActStep2 = new System.Windows.Forms.Panel();
             this.btnImport = new System.Windows.Forms.Button();
             this.pnlProgress = new System.Windows.Forms.Panel();
-            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.lblProgressText = new System.Windows.Forms.Label();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
             this.btnCancel2 = new System.Windows.Forms.Button();
             this.btnBack = new System.Windows.Forms.Button();
             this.pnlStep1 = new System.Windows.Forms.Panel();
@@ -212,7 +212,7 @@
             this.pnlErrorDetail.Location = new System.Drawing.Point(20, 226);
             this.pnlErrorDetail.Name = "pnlErrorDetail";
             this.pnlErrorDetail.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.pnlErrorDetail.Size = new System.Drawing.Size(1394, 193);
+            this.pnlErrorDetail.Size = new System.Drawing.Size(1398, 193);
             this.pnlErrorDetail.TabIndex = 10;
             this.pnlErrorDetail.Visible = false;
             // 
@@ -256,7 +256,7 @@
             this.dgvFailedRows.RowHeadersWidth = 51;
             this.dgvFailedRows.RowTemplate.Height = 26;
             this.dgvFailedRows.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvFailedRows.Size = new System.Drawing.Size(1394, 115);
+            this.dgvFailedRows.Size = new System.Drawing.Size(1398, 115);
             this.dgvFailedRows.TabIndex = 0;
             // 
             // colFRow
@@ -265,7 +265,7 @@
             this.colFRow.MinimumWidth = 6;
             this.colFRow.Name = "colFRow";
             this.colFRow.ReadOnly = true;
-            this.colFRow.Width = 131;
+            this.colFRow.Width = 106;
             // 
             // colFCode
             // 
@@ -273,7 +273,7 @@
             this.colFCode.MinimumWidth = 6;
             this.colFCode.Name = "colFCode";
             this.colFCode.ReadOnly = true;
-            this.colFCode.Width = 143;
+            this.colFCode.Width = 115;
             // 
             // colFCat
             // 
@@ -281,7 +281,7 @@
             this.colFCat.MinimumWidth = 6;
             this.colFCat.Name = "colFCat";
             this.colFCat.ReadOnly = true;
-            this.colFCat.Width = 97;
+            this.colFCat.Width = 79;
             // 
             // colFTitle
             // 
@@ -320,7 +320,7 @@
             this.pnlErrPager.Location = new System.Drawing.Point(0, 157);
             this.pnlErrPager.Name = "pnlErrPager";
             this.pnlErrPager.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.pnlErrPager.Size = new System.Drawing.Size(1394, 36);
+            this.pnlErrPager.Size = new System.Drawing.Size(1398, 36);
             this.pnlErrPager.TabIndex = 3;
             // 
             // lblErrPage
@@ -329,7 +329,7 @@
             this.lblErrPage.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblErrPage.Location = new System.Drawing.Point(108, 4);
             this.lblErrPage.Name = "lblErrPage";
-            this.lblErrPage.Size = new System.Drawing.Size(1178, 28);
+            this.lblErrPage.Size = new System.Drawing.Size(1182, 28);
             this.lblErrPage.TabIndex = 1;
             this.lblErrPage.Text = "หน้า 1 / 1  (0 รายการ)";
             this.lblErrPage.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -340,7 +340,7 @@
             this.btnErrNext.Enabled = false;
             this.btnErrNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnErrNext.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.btnErrNext.Location = new System.Drawing.Point(1286, 4);
+            this.btnErrNext.Location = new System.Drawing.Point(1290, 4);
             this.btnErrNext.Name = "btnErrNext";
             this.btnErrNext.Size = new System.Drawing.Size(100, 28);
             this.btnErrNext.TabIndex = 2;
@@ -369,7 +369,7 @@
             this.lblErrorDetailHdr.Location = new System.Drawing.Point(0, 8);
             this.lblErrorDetailHdr.Name = "lblErrorDetailHdr";
             this.lblErrorDetailHdr.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.lblErrorDetailHdr.Size = new System.Drawing.Size(1394, 34);
+            this.lblErrorDetailHdr.Size = new System.Drawing.Size(1398, 34);
             this.lblErrorDetailHdr.TabIndex = 1;
             this.lblErrorDetailHdr.Text = "⚠️  รายการที่ถูกข้ามหรือล้มเหลว";
             this.lblErrorDetailHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -566,7 +566,7 @@
             this.pnlStep3.Location = new System.Drawing.Point(0, 1418);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Padding = new System.Windows.Forms.Padding(60, 20, 60, 20);
-            this.pnlStep3.Size = new System.Drawing.Size(1554, 569);
+            this.pnlStep3.Size = new System.Drawing.Size(1558, 569);
             this.pnlStep3.TabIndex = 2;
             this.pnlStep3.Visible = false;
             // 
@@ -577,7 +577,7 @@
             this.pnlStep3Inner.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlStep3Inner.Location = new System.Drawing.Point(60, 20);
             this.pnlStep3Inner.Name = "pnlStep3Inner";
-            this.pnlStep3Inner.Size = new System.Drawing.Size(1434, 529);
+            this.pnlStep3Inner.Size = new System.Drawing.Size(1438, 529);
             this.pnlStep3Inner.TabIndex = 0;
             // 
             // pnlCompleteWrap
@@ -588,7 +588,7 @@
             this.pnlCompleteWrap.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlCompleteWrap.Location = new System.Drawing.Point(0, 0);
             this.pnlCompleteWrap.Name = "pnlCompleteWrap";
-            this.pnlCompleteWrap.Size = new System.Drawing.Size(1434, 529);
+            this.pnlCompleteWrap.Size = new System.Drawing.Size(1438, 529);
             this.pnlCompleteWrap.TabIndex = 0;
             // 
             // pnlCompleteBody
@@ -604,7 +604,7 @@
             this.pnlCompleteBody.Location = new System.Drawing.Point(0, 40);
             this.pnlCompleteBody.Name = "pnlCompleteBody";
             this.pnlCompleteBody.Padding = new System.Windows.Forms.Padding(20);
-            this.pnlCompleteBody.Size = new System.Drawing.Size(1434, 489);
+            this.pnlCompleteBody.Size = new System.Drawing.Size(1438, 489);
             this.pnlCompleteBody.TabIndex = 0;
             // 
             // pnlActStep3
@@ -615,7 +615,7 @@
             this.pnlActStep3.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.pnlActStep3.Location = new System.Drawing.Point(20, 419);
             this.pnlActStep3.Name = "pnlActStep3";
-            this.pnlActStep3.Size = new System.Drawing.Size(1394, 50);
+            this.pnlActStep3.Size = new System.Drawing.Size(1398, 50);
             this.pnlActStep3.TabIndex = 2;
             this.pnlActStep3.Visible = false;
             // 
@@ -662,7 +662,7 @@
             this.pnlCompleteStats.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlCompleteStats.Location = new System.Drawing.Point(20, 114);
             this.pnlCompleteStats.Name = "pnlCompleteStats";
-            this.pnlCompleteStats.Size = new System.Drawing.Size(1394, 112);
+            this.pnlCompleteStats.Size = new System.Drawing.Size(1398, 112);
             this.pnlCompleteStats.TabIndex = 0;
             // 
             // pnlStatSkip
@@ -780,7 +780,7 @@
             this.lblCompleteSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblCompleteSub.Location = new System.Drawing.Point(20, 90);
             this.lblCompleteSub.Name = "lblCompleteSub";
-            this.lblCompleteSub.Size = new System.Drawing.Size(1394, 24);
+            this.lblCompleteSub.Size = new System.Drawing.Size(1398, 24);
             this.lblCompleteSub.TabIndex = 1;
             this.lblCompleteSub.Text = "บทความทั้งหมดได้ถูกนำเข้าไปยัง Knowledge Base เรียบร้อยแล้ว";
             this.lblCompleteSub.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -792,7 +792,7 @@
             this.lblCompleteTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(132)))), ((int)(((byte)(73)))));
             this.lblCompleteTitle.Location = new System.Drawing.Point(20, 54);
             this.lblCompleteTitle.Name = "lblCompleteTitle";
-            this.lblCompleteTitle.Size = new System.Drawing.Size(1394, 36);
+            this.lblCompleteTitle.Size = new System.Drawing.Size(1398, 36);
             this.lblCompleteTitle.TabIndex = 2;
             this.lblCompleteTitle.Text = "นำเข้าข้อมูลสำเร็จ!";
             this.lblCompleteTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -803,7 +803,7 @@
             this.lblCompleteIcon.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblCompleteIcon.Location = new System.Drawing.Point(20, 20);
             this.lblCompleteIcon.Name = "lblCompleteIcon";
-            this.lblCompleteIcon.Size = new System.Drawing.Size(1394, 34);
+            this.lblCompleteIcon.Size = new System.Drawing.Size(1398, 34);
             this.lblCompleteIcon.TabIndex = 3;
             this.lblCompleteIcon.Text = "✅";
             this.lblCompleteIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -815,7 +815,7 @@
             this.pnlCompleteHdr.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlCompleteHdr.Location = new System.Drawing.Point(0, 0);
             this.pnlCompleteHdr.Name = "pnlCompleteHdr";
-            this.pnlCompleteHdr.Size = new System.Drawing.Size(1434, 40);
+            this.pnlCompleteHdr.Size = new System.Drawing.Size(1438, 40);
             this.pnlCompleteHdr.TabIndex = 1;
             // 
             // lblCompleteHdr
@@ -825,7 +825,7 @@
             this.lblCompleteHdr.ForeColor = System.Drawing.Color.White;
             this.lblCompleteHdr.Location = new System.Drawing.Point(0, 0);
             this.lblCompleteHdr.Name = "lblCompleteHdr";
-            this.lblCompleteHdr.Size = new System.Drawing.Size(1434, 40);
+            this.lblCompleteHdr.Size = new System.Drawing.Size(1438, 40);
             this.lblCompleteHdr.TabIndex = 0;
             this.lblCompleteHdr.Text = "✅  ผลการนำเข้าข้อมูล";
             this.lblCompleteHdr.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -839,7 +839,7 @@
             this.pnlStep2.Location = new System.Drawing.Point(0, 709);
             this.pnlStep2.Name = "pnlStep2";
             this.pnlStep2.Padding = new System.Windows.Forms.Padding(16, 8, 16, 16);
-            this.pnlStep2.Size = new System.Drawing.Size(1554, 709);
+            this.pnlStep2.Size = new System.Drawing.Size(1558, 709);
             this.pnlStep2.TabIndex = 1;
             this.pnlStep2.Visible = false;
             // 
@@ -851,9 +851,9 @@
             this.pnlStep2Inner.Controls.Add(this.pnlSummaryPills);
             this.pnlStep2Inner.Controls.Add(this.pnlPreviewHdr);
             this.pnlStep2Inner.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlStep2Inner.Location = new System.Drawing.Point(16, 53);
+            this.pnlStep2Inner.Location = new System.Drawing.Point(16, 69);
             this.pnlStep2Inner.Name = "pnlStep2Inner";
-            this.pnlStep2Inner.Size = new System.Drawing.Size(1522, 652);
+            this.pnlStep2Inner.Size = new System.Drawing.Size(1526, 652);
             this.pnlStep2Inner.TabIndex = 0;
             // 
             // pnlPreviewGrid
@@ -864,7 +864,7 @@
             this.pnlPreviewGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlPreviewGrid.Location = new System.Drawing.Point(0, 259);
             this.pnlPreviewGrid.Name = "pnlPreviewGrid";
-            this.pnlPreviewGrid.Size = new System.Drawing.Size(1522, 393);
+            this.pnlPreviewGrid.Size = new System.Drawing.Size(1526, 393);
             this.pnlPreviewGrid.TabIndex = 2;
             // 
             // dgvPreview
@@ -899,7 +899,7 @@
             this.dgvPreview.RowHeadersWidth = 51;
             this.dgvPreview.RowTemplate.Height = 26;
             this.dgvPreview.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvPreview.Size = new System.Drawing.Size(1522, 337);
+            this.dgvPreview.Size = new System.Drawing.Size(1526, 337);
             this.dgvPreview.TabIndex = 0;
             // 
             // pnlGridPager
@@ -912,7 +912,7 @@
             this.pnlGridPager.Location = new System.Drawing.Point(0, 337);
             this.pnlGridPager.Name = "pnlGridPager";
             this.pnlGridPager.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.pnlGridPager.Size = new System.Drawing.Size(1522, 56);
+            this.pnlGridPager.Size = new System.Drawing.Size(1526, 56);
             this.pnlGridPager.TabIndex = 1;
             // 
             // lblGridPage
@@ -922,7 +922,7 @@
             this.lblGridPage.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(116)))), ((int)(((byte)(139)))));
             this.lblGridPage.Location = new System.Drawing.Point(181, 4);
             this.lblGridPage.Name = "lblGridPage";
-            this.lblGridPage.Size = new System.Drawing.Size(1169, 48);
+            this.lblGridPage.Size = new System.Drawing.Size(1173, 48);
             this.lblGridPage.TabIndex = 1;
             this.lblGridPage.Text = "หน้า 1 / 1  (0 รายการ)";
             this.lblGridPage.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -953,7 +953,7 @@
             this.btnGridNext.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnGridNext.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.btnGridNext.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnGridNext.Location = new System.Drawing.Point(1350, 4);
+            this.btnGridNext.Location = new System.Drawing.Point(1354, 4);
             this.btnGridNext.Name = "btnGridNext";
             this.btnGridNext.Size = new System.Drawing.Size(164, 48);
             this.btnGridNext.TabIndex = 2;
@@ -975,7 +975,7 @@
             this.pnlImportOptions.Location = new System.Drawing.Point(0, 139);
             this.pnlImportOptions.Name = "pnlImportOptions";
             this.pnlImportOptions.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.pnlImportOptions.Size = new System.Drawing.Size(1522, 120);
+            this.pnlImportOptions.Size = new System.Drawing.Size(1526, 120);
             this.pnlImportOptions.TabIndex = 1;
             this.pnlImportOptions.Visible = false;
             // 
@@ -1066,7 +1066,7 @@
             this.lblOptionsHeader.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblOptionsHeader.Location = new System.Drawing.Point(8, 4);
             this.lblOptionsHeader.Name = "lblOptionsHeader";
-            this.lblOptionsHeader.Size = new System.Drawing.Size(1506, 20);
+            this.lblOptionsHeader.Size = new System.Drawing.Size(1510, 20);
             this.lblOptionsHeader.TabIndex = 6;
             this.lblOptionsHeader.Text = "⚙️  ตัวเลือกการนำเข้า";
             // 
@@ -1081,7 +1081,7 @@
             this.pnlSummaryPills.Location = new System.Drawing.Point(0, 36);
             this.pnlSummaryPills.Name = "pnlSummaryPills";
             this.pnlSummaryPills.Padding = new System.Windows.Forms.Padding(0, 4, 0, 4);
-            this.pnlSummaryPills.Size = new System.Drawing.Size(1522, 103);
+            this.pnlSummaryPills.Size = new System.Drawing.Size(1526, 103);
             this.pnlSummaryPills.TabIndex = 2;
             // 
             // pnlPillError
@@ -1235,7 +1235,7 @@
             this.pnlPreviewHdr.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlPreviewHdr.Location = new System.Drawing.Point(0, 0);
             this.pnlPreviewHdr.Name = "pnlPreviewHdr";
-            this.pnlPreviewHdr.Size = new System.Drawing.Size(1522, 36);
+            this.pnlPreviewHdr.Size = new System.Drawing.Size(1526, 36);
             this.pnlPreviewHdr.TabIndex = 3;
             // 
             // lblPreviewHdr
@@ -1245,7 +1245,7 @@
             this.lblPreviewHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblPreviewHdr.Location = new System.Drawing.Point(0, 0);
             this.lblPreviewHdr.Name = "lblPreviewHdr";
-            this.lblPreviewHdr.Size = new System.Drawing.Size(1522, 36);
+            this.lblPreviewHdr.Size = new System.Drawing.Size(1526, 36);
             this.lblPreviewHdr.TabIndex = 0;
             this.lblPreviewHdr.Text = "👁  Preview ข้อมูล";
             this.lblPreviewHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1260,7 +1260,7 @@
             this.pnlActStep2.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlActStep2.Location = new System.Drawing.Point(16, 8);
             this.pnlActStep2.Name = "pnlActStep2";
-            this.pnlActStep2.Size = new System.Drawing.Size(1522, 45);
+            this.pnlActStep2.Size = new System.Drawing.Size(1526, 61);
             this.pnlActStep2.TabIndex = 1;
             this.pnlActStep2.Visible = false;
             // 
@@ -1275,7 +1275,7 @@
             this.btnImport.ForeColor = System.Drawing.Color.White;
             this.btnImport.Location = new System.Drawing.Point(220, 0);
             this.btnImport.Name = "btnImport";
-            this.btnImport.Size = new System.Drawing.Size(252, 45);
+            this.btnImport.Size = new System.Drawing.Size(252, 61);
             this.btnImport.TabIndex = 0;
             this.btnImport.Text = "📥  เริ่มนำเข้าข้อมูล";
             this.btnImport.UseVisualStyleBackColor = false;
@@ -1284,36 +1284,36 @@
             // pnlProgress
             // 
             this.pnlProgress.BackColor = System.Drawing.Color.Transparent;
-            this.pnlProgress.Controls.Add(this.progressBar);
             this.pnlProgress.Controls.Add(this.lblProgressText);
+            this.pnlProgress.Controls.Add(this.progressBar);
             this.pnlProgress.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlProgress.Location = new System.Drawing.Point(1182, 0);
+            this.pnlProgress.Location = new System.Drawing.Point(1151, 0);
             this.pnlProgress.Name = "pnlProgress";
             this.pnlProgress.Padding = new System.Windows.Forms.Padding(0, 10, 20, 10);
-            this.pnlProgress.Size = new System.Drawing.Size(340, 45);
+            this.pnlProgress.Size = new System.Drawing.Size(375, 61);
             this.pnlProgress.TabIndex = 3;
             this.pnlProgress.Visible = false;
             // 
-            // progressBar
-            // 
-            this.progressBar.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.progressBar.Location = new System.Drawing.Point(0, 10);
-            this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(320, 9);
-            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-            this.progressBar.TabIndex = 0;
-            // 
             // lblProgressText
             // 
-            this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.lblProgressText.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblProgressText.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblProgressText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
-            this.lblProgressText.Location = new System.Drawing.Point(0, 19);
+            this.lblProgressText.Location = new System.Drawing.Point(0, 27);
             this.lblProgressText.Name = "lblProgressText";
-            this.lblProgressText.Size = new System.Drawing.Size(320, 16);
+            this.lblProgressText.Size = new System.Drawing.Size(355, 25);
             this.lblProgressText.TabIndex = 1;
             this.lblProgressText.Text = "กำลังนำเข้าข้อมูล...";
             this.lblProgressText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // progressBar
+            // 
+            this.progressBar.Dock = System.Windows.Forms.DockStyle.Top;
+            this.progressBar.Location = new System.Drawing.Point(0, 10);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.Size = new System.Drawing.Size(355, 17);
+            this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.progressBar.TabIndex = 0;
             // 
             // btnCancel2
             // 
@@ -1326,7 +1326,7 @@
             this.btnCancel2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.btnCancel2.Location = new System.Drawing.Point(120, 0);
             this.btnCancel2.Name = "btnCancel2";
-            this.btnCancel2.Size = new System.Drawing.Size(100, 45);
+            this.btnCancel2.Size = new System.Drawing.Size(100, 61);
             this.btnCancel2.TabIndex = 2;
             this.btnCancel2.Text = "✕  ยกเลิก";
             this.btnCancel2.UseVisualStyleBackColor = false;
@@ -1343,7 +1343,7 @@
             this.btnBack.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.btnBack.Location = new System.Drawing.Point(0, 0);
             this.btnBack.Name = "btnBack";
-            this.btnBack.Size = new System.Drawing.Size(120, 45);
+            this.btnBack.Size = new System.Drawing.Size(120, 61);
             this.btnBack.TabIndex = 1;
             this.btnBack.Text = "◄  ย้อนกลับ";
             this.btnBack.UseVisualStyleBackColor = false;
@@ -1358,7 +1358,7 @@
             this.pnlStep1.Location = new System.Drawing.Point(0, 0);
             this.pnlStep1.Name = "pnlStep1";
             this.pnlStep1.Padding = new System.Windows.Forms.Padding(16);
-            this.pnlStep1.Size = new System.Drawing.Size(1554, 709);
+            this.pnlStep1.Size = new System.Drawing.Size(1558, 709);
             this.pnlStep1.TabIndex = 0;
             // 
             // pnlStep1Inner
@@ -1369,7 +1369,7 @@
             this.pnlStep1Inner.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlStep1Inner.Location = new System.Drawing.Point(16, 64);
             this.pnlStep1Inner.Name = "pnlStep1Inner";
-            this.pnlStep1Inner.Size = new System.Drawing.Size(1522, 629);
+            this.pnlStep1Inner.Size = new System.Drawing.Size(1526, 629);
             this.pnlStep1Inner.TabIndex = 0;
             // 
             // pnlColumnRef
@@ -1380,7 +1380,7 @@
             this.pnlColumnRef.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlColumnRef.Location = new System.Drawing.Point(0, 280);
             this.pnlColumnRef.Name = "pnlColumnRef";
-            this.pnlColumnRef.Size = new System.Drawing.Size(1522, 349);
+            this.pnlColumnRef.Size = new System.Drawing.Size(1526, 349);
             this.pnlColumnRef.TabIndex = 0;
             // 
             // pnlColumnRefBody
@@ -1390,7 +1390,7 @@
             this.pnlColumnRefBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlColumnRefBody.Location = new System.Drawing.Point(0, 36);
             this.pnlColumnRefBody.Name = "pnlColumnRefBody";
-            this.pnlColumnRefBody.Size = new System.Drawing.Size(1522, 313);
+            this.pnlColumnRefBody.Size = new System.Drawing.Size(1526, 313);
             this.pnlColumnRefBody.TabIndex = 0;
             // 
             // lvColumnRef
@@ -1409,7 +1409,7 @@
             this.lvColumnRef.HideSelection = false;
             this.lvColumnRef.Location = new System.Drawing.Point(0, 0);
             this.lvColumnRef.Name = "lvColumnRef";
-            this.lvColumnRef.Size = new System.Drawing.Size(1522, 313);
+            this.lvColumnRef.Size = new System.Drawing.Size(1526, 313);
             this.lvColumnRef.TabIndex = 0;
             this.lvColumnRef.UseCompatibleStateImageBehavior = false;
             this.lvColumnRef.View = System.Windows.Forms.View.Details;
@@ -1446,7 +1446,7 @@
             this.pnlColumnRefHdr.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlColumnRefHdr.Location = new System.Drawing.Point(0, 0);
             this.pnlColumnRefHdr.Name = "pnlColumnRefHdr";
-            this.pnlColumnRefHdr.Size = new System.Drawing.Size(1522, 36);
+            this.pnlColumnRefHdr.Size = new System.Drawing.Size(1526, 36);
             this.pnlColumnRefHdr.TabIndex = 1;
             // 
             // lblColumnRefHdr
@@ -1456,7 +1456,7 @@
             this.lblColumnRefHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblColumnRefHdr.Location = new System.Drawing.Point(0, 0);
             this.lblColumnRefHdr.Name = "lblColumnRefHdr";
-            this.lblColumnRefHdr.Size = new System.Drawing.Size(1522, 33);
+            this.lblColumnRefHdr.Size = new System.Drawing.Size(1526, 33);
             this.lblColumnRefHdr.TabIndex = 0;
             this.lblColumnRefHdr.Text = "📋  รูปแบบ Column ใน Template";
             this.lblColumnRefHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1469,7 +1469,7 @@
             this.pnlUploadSection.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlUploadSection.Location = new System.Drawing.Point(0, 0);
             this.pnlUploadSection.Name = "pnlUploadSection";
-            this.pnlUploadSection.Size = new System.Drawing.Size(1522, 280);
+            this.pnlUploadSection.Size = new System.Drawing.Size(1526, 280);
             this.pnlUploadSection.TabIndex = 1;
             // 
             // pnlUploadSectionBody
@@ -1481,7 +1481,7 @@
             this.pnlUploadSectionBody.Location = new System.Drawing.Point(0, 36);
             this.pnlUploadSectionBody.Name = "pnlUploadSectionBody";
             this.pnlUploadSectionBody.Padding = new System.Windows.Forms.Padding(0, 4, 16, 0);
-            this.pnlUploadSectionBody.Size = new System.Drawing.Size(1522, 244);
+            this.pnlUploadSectionBody.Size = new System.Drawing.Size(1526, 244);
             this.pnlUploadSectionBody.TabIndex = 0;
             // 
             // pnlUploadedFile
@@ -1494,7 +1494,7 @@
             this.pnlUploadedFile.Location = new System.Drawing.Point(0, 176);
             this.pnlUploadedFile.Name = "pnlUploadedFile";
             this.pnlUploadedFile.Padding = new System.Windows.Forms.Padding(8);
-            this.pnlUploadedFile.Size = new System.Drawing.Size(1506, 60);
+            this.pnlUploadedFile.Size = new System.Drawing.Size(1510, 60);
             this.pnlUploadedFile.TabIndex = 1;
             this.pnlUploadedFile.Visible = false;
             // 
@@ -1506,7 +1506,7 @@
             this.pnlFileInfo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlFileInfo.Location = new System.Drawing.Point(48, 8);
             this.pnlFileInfo.Name = "pnlFileInfo";
-            this.pnlFileInfo.Size = new System.Drawing.Size(1414, 44);
+            this.pnlFileInfo.Size = new System.Drawing.Size(1418, 44);
             this.pnlFileInfo.TabIndex = 0;
             // 
             // lblUploadedFileMeta
@@ -1517,7 +1517,7 @@
             this.lblUploadedFileMeta.Location = new System.Drawing.Point(0, 20);
             this.lblUploadedFileMeta.Name = "lblUploadedFileMeta";
             this.lblUploadedFileMeta.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.lblUploadedFileMeta.Size = new System.Drawing.Size(1414, 18);
+            this.lblUploadedFileMeta.Size = new System.Drawing.Size(1418, 18);
             this.lblUploadedFileMeta.TabIndex = 0;
             this.lblUploadedFileMeta.Text = "Excel Workbook  •  0.0 MB  •  00:00 น.";
             // 
@@ -1529,7 +1529,7 @@
             this.lblUploadedFileName.Location = new System.Drawing.Point(0, 0);
             this.lblUploadedFileName.Name = "lblUploadedFileName";
             this.lblUploadedFileName.Padding = new System.Windows.Forms.Padding(4, 2, 0, 0);
-            this.lblUploadedFileName.Size = new System.Drawing.Size(1414, 20);
+            this.lblUploadedFileName.Size = new System.Drawing.Size(1418, 20);
             this.lblUploadedFileName.TabIndex = 1;
             this.lblUploadedFileName.Text = "filename.xlsx";
             // 
@@ -1542,7 +1542,7 @@
             this.btnRemoveFile.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnRemoveFile.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.btnRemoveFile.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            this.btnRemoveFile.Location = new System.Drawing.Point(1462, 8);
+            this.btnRemoveFile.Location = new System.Drawing.Point(1466, 8);
             this.btnRemoveFile.Name = "btnRemoveFile";
             this.btnRemoveFile.Size = new System.Drawing.Size(36, 44);
             this.btnRemoveFile.TabIndex = 1;
@@ -1574,7 +1574,7 @@
             this.pnlUploadZone.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlUploadZone.Location = new System.Drawing.Point(0, 4);
             this.pnlUploadZone.Name = "pnlUploadZone";
-            this.pnlUploadZone.Size = new System.Drawing.Size(1506, 172);
+            this.pnlUploadZone.Size = new System.Drawing.Size(1510, 172);
             this.pnlUploadZone.TabIndex = 2;
             // 
             // lblUploadHint
@@ -1584,7 +1584,7 @@
             this.lblUploadHint.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblUploadHint.Location = new System.Drawing.Point(0, 148);
             this.lblUploadHint.Name = "lblUploadHint";
-            this.lblUploadHint.Size = new System.Drawing.Size(1506, 18);
+            this.lblUploadHint.Size = new System.Drawing.Size(1510, 18);
             this.lblUploadHint.TabIndex = 4;
             this.lblUploadHint.Text = ".xlsx  .xls  ·  ไม่เกิน 10 MB";
             this.lblUploadHint.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -1595,7 +1595,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 86);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1506, 62);
+            this.panel1.Size = new System.Drawing.Size(1510, 62);
             this.panel1.TabIndex = 5;
             // 
             // btnSelectFile
@@ -1609,7 +1609,7 @@
             this.btnSelectFile.ForeColor = System.Drawing.Color.White;
             this.btnSelectFile.Location = new System.Drawing.Point(0, 0);
             this.btnSelectFile.Name = "btnSelectFile";
-            this.btnSelectFile.Size = new System.Drawing.Size(1506, 62);
+            this.btnSelectFile.Size = new System.Drawing.Size(1510, 62);
             this.btnSelectFile.TabIndex = 3;
             this.btnSelectFile.Text = "📂  เลือกไฟล์";
             this.btnSelectFile.UseVisualStyleBackColor = false;
@@ -1622,7 +1622,7 @@
             this.lblUploadSub.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(127)))), ((int)(((byte)(140)))), ((int)(((byte)(141)))));
             this.lblUploadSub.Location = new System.Drawing.Point(0, 68);
             this.lblUploadSub.Name = "lblUploadSub";
-            this.lblUploadSub.Size = new System.Drawing.Size(1506, 18);
+            this.lblUploadSub.Size = new System.Drawing.Size(1510, 18);
             this.lblUploadSub.TabIndex = 2;
             this.lblUploadSub.Text = "หรือ";
             this.lblUploadSub.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -1634,7 +1634,7 @@
             this.lblUploadText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblUploadText.Location = new System.Drawing.Point(0, 36);
             this.lblUploadText.Name = "lblUploadText";
-            this.lblUploadText.Size = new System.Drawing.Size(1506, 32);
+            this.lblUploadText.Size = new System.Drawing.Size(1510, 32);
             this.lblUploadText.TabIndex = 1;
             this.lblUploadText.Text = "ลาก Excel มาวางที่นี่";
             this.lblUploadText.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -1645,7 +1645,7 @@
             this.lblUploadIcon.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblUploadIcon.Location = new System.Drawing.Point(0, 0);
             this.lblUploadIcon.Name = "lblUploadIcon";
-            this.lblUploadIcon.Size = new System.Drawing.Size(1506, 36);
+            this.lblUploadIcon.Size = new System.Drawing.Size(1510, 36);
             this.lblUploadIcon.TabIndex = 0;
             this.lblUploadIcon.Text = "📊";
             this.lblUploadIcon.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -1657,7 +1657,7 @@
             this.pnlUploadSectionHdr.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlUploadSectionHdr.Location = new System.Drawing.Point(0, 0);
             this.pnlUploadSectionHdr.Name = "pnlUploadSectionHdr";
-            this.pnlUploadSectionHdr.Size = new System.Drawing.Size(1522, 36);
+            this.pnlUploadSectionHdr.Size = new System.Drawing.Size(1526, 36);
             this.pnlUploadSectionHdr.TabIndex = 1;
             // 
             // lblUploadSectionHdr
@@ -1667,7 +1667,7 @@
             this.lblUploadSectionHdr.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
             this.lblUploadSectionHdr.Location = new System.Drawing.Point(0, 0);
             this.lblUploadSectionHdr.Name = "lblUploadSectionHdr";
-            this.lblUploadSectionHdr.Size = new System.Drawing.Size(1522, 36);
+            this.lblUploadSectionHdr.Size = new System.Drawing.Size(1526, 36);
             this.lblUploadSectionHdr.TabIndex = 0;
             this.lblUploadSectionHdr.Text = "📁  Step 1 — อัพโหลดไฟล์ Excel";
             this.lblUploadSectionHdr.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -1682,7 +1682,7 @@
             this.pnlActStep1.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlActStep1.Location = new System.Drawing.Point(16, 16);
             this.pnlActStep1.Name = "pnlActStep1";
-            this.pnlActStep1.Size = new System.Drawing.Size(1522, 48);
+            this.pnlActStep1.Size = new System.Drawing.Size(1526, 48);
             this.pnlActStep1.TabIndex = 0;
             // 
             // pnlTemplateRow
@@ -1692,7 +1692,7 @@
             this.pnlTemplateRow.Controls.Add(this.btnDownloadTemplate);
             this.pnlTemplateRow.Controls.Add(this.lblTemplateLabel);
             this.pnlTemplateRow.Dock = System.Windows.Forms.DockStyle.Right;
-            this.pnlTemplateRow.Location = new System.Drawing.Point(686, 0);
+            this.pnlTemplateRow.Location = new System.Drawing.Point(690, 0);
             this.pnlTemplateRow.Name = "pnlTemplateRow";
             this.pnlTemplateRow.Padding = new System.Windows.Forms.Padding(5, 8, 0, 0);
             this.pnlTemplateRow.Size = new System.Drawing.Size(633, 48);
@@ -1706,7 +1706,7 @@
             this.cboTemplate.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.cboTemplate.Location = new System.Drawing.Point(85, 8);
             this.cboTemplate.Name = "cboTemplate";
-            this.cboTemplate.Size = new System.Drawing.Size(408, 36);
+            this.cboTemplate.Size = new System.Drawing.Size(408, 29);
             this.cboTemplate.TabIndex = 0;
             this.cboTemplate.Visible = false;
             // 
@@ -1785,7 +1785,7 @@
             this.btnDemo.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDemo.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.btnDemo.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            this.btnDemo.Location = new System.Drawing.Point(1319, 0);
+            this.btnDemo.Location = new System.Drawing.Point(1323, 0);
             this.btnDemo.Name = "btnDemo";
             this.btnDemo.Size = new System.Drawing.Size(203, 48);
             this.btnDemo.TabIndex = 3;

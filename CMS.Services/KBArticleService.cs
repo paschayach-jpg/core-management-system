@@ -73,34 +73,46 @@ namespace CMS.Services
         public IEnumerable<KBArticle> SearchByType(string keyword, int? categoryId, byte? status, byte? articleType, int searchFieldId)
         {
             var results = _articleRepo.Search(categoryId, status, articleType);
-            if (string.IsNullOrWhiteSpace(keyword)) return results;
+            return FilterByKeyword(results, keyword, searchFieldId);
+        }
+
+        /// <summary>
+        /// ใช้ criteria การค้นหาแบบเดียวกับ <see cref="SearchByType"/> กับรายการบทความที่มีอยู่แล้วในหน่วยความจำ
+        /// (เช่น กลุ่มบทความที่ resolve จาก link graph ของโหนด cross-reference ในต้นไม้หมวดหมู่ ซึ่งไม่ได้มาจาก
+        /// query ตาม CategoryID ตรง ๆ จึงใช้ <see cref="SearchByType"/> ค้นหาซ้ำไม่ได้)
+        /// </summary>
+        public IEnumerable<KBArticle> FilterByKeyword(IEnumerable<KBArticle> articles, string keyword, int searchFieldId)
+        {
+            if (string.IsNullOrWhiteSpace(keyword)) return articles;
 
             var _keyword = new string(keyword.Where(c => !char.IsWhiteSpace(c)).ToArray());
             switch (searchFieldId)
             {
                 case 1: // ทั้งหมด — ค้นทุก field
-                    return results.Where(a =>
+                    return articles.Where(a =>
                         MatchesTitle(a, _keyword) || MatchesContent(a, _keyword) || MatchesTags(a, _keyword) ||
                         MatchesSummary(a, _keyword) || MatchesTitleCategory(a, _keyword));
                 case 2:
-                    return results.Where(a => MatchesTitle(a, _keyword));
+                    return articles.Where(a => MatchesTitle(a, _keyword));
                 case 3:
-                    return results.Where(a => MatchesContent(a, _keyword));
+                    return articles.Where(a => MatchesContent(a, _keyword));
                 case 4:
-                    return results.Where(a => MatchesTags(a, _keyword));
+                    return articles.Where(a => MatchesTags(a, _keyword));
                 case 5:
-                    return results.Where(a => MatchesSummary(a, _keyword));
+                    return articles.Where(a => MatchesSummary(a, _keyword));
                 case 6:
-                    return results.Where(a => MatchesTitleCategory(a, _keyword));
+                    return articles.Where(a => MatchesTitleCategory(a, _keyword));
                 default:
-                    return results;
+                    return articles;
             }
         }
 
+        /// <summary>ค้นหาแบบ substring (ไม่สนช่องว่าง) ให้ behavior เหมือนกับ field อื่น ๆ ทั้งหมด (Content/Tags/Summary/TitleCategory)</summary>
         private static bool MatchesTitle(KBArticle a, string keyword)
         {
-            return a.Title != null &&
-                string.Equals(new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray()), keyword, StringComparison.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(a.Title)) return false;
+            var title = new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            return title.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static bool MatchesContent(KBArticle a, string keyword)

@@ -13,8 +13,20 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string TemplateDescription { get; set; }
         bool DeleteEnabled { set; }
 
+        /// <summary>สถานะของรายการที่เลือก — ใช้สลับปุ่มระหว่าง "ปิดใช้งาน" / "เปิดใช้งาน"</summary>
+        bool RecordIsActive { set; }
+
         void BindTemplateList(IEnumerable<KBImportTemplate> templates);
         void BindColumnGrid(IEnumerable<KBImportTemplateColumnRow> rows);
+
+        /// <summary>แสดงคอลัมน์ที่อ่านได้จากไฟล์ Excel template ที่ admin อัปโหลด ให้คลิกเลือกเป็น mapping</summary>
+        void BindExcelPreview(IEnumerable<ExcelColumnPreview> columns);
+
+        /// <summary>รายการหมวดหมู่ (ไม่รวม CategoryCode = "LW") สำหรับ dropdown เลือก CategoryID ในแถว mapping</summary>
+        void BindCategoryOptions(IEnumerable<KBCategory> categories);
+
+        /// <summary>รายการค่า ArticleType คงที่ (1-5) สำหรับ dropdown เลือกในแถว mapping</summary>
+        void BindArticleTypeOptions(IEnumerable<KBArticleTypeOption> options);
 
         /// <summary>อ่านค่าที่ admin กรอกในช่อง mapping ของ grid กลับออกมา</summary>
         IList<KBImportTemplateColumnRow> ReadColumnGridEdits();

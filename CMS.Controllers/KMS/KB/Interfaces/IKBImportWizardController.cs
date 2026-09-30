@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CMS.Domain.Models;
 
 namespace CMS.Controllers.KMS.KB.Interfaces
@@ -13,8 +14,8 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         /// <summary>Full path of the Excel file the user has selected/dropped.</summary>
         string SelectedFilePath { get; }
 
-        /// <summary>Display name of the selected import template (from the combo box).</summary>
-        string SelectedTemplate { get; }
+        /// <summary>TemplateID of the selected KB Import Template (from the combo box), or null if none selected.</summary>
+        int? SelectedTemplateId { get; }
 
         /// <summary>Step 2 option: skip rows with warnings.</summary>
         bool OptSkipWarning  { get; }
@@ -39,6 +40,16 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         bool OptAuditLog     { get; }
 
         // ── Presenter → View: push results ──────────────────────────────────────
+
+        /// <summary>Binds the list of configured KB Import Templates to the template combo box.</summary>
+        void BindTemplateOptions(IEnumerable<KBImportTemplate> templates);
+
+        /// <summary>
+        /// Refreshes the column-reference panel (lvColumnRef) to preview the selected Template's
+        /// actual column mapping. Empty <paramref name="columns"/>/<paramref name="templateName"/>
+        /// means no template is selected — the view should fall back to its static reference table.
+        /// </summary>
+        void BindTemplateColumnReference(IEnumerable<KBImportTemplateColumnRow> columns, string templateName);
 
         /// <summary>
         /// Called after <see cref="KBImportWizardController.ValidateFile"/> succeeds.

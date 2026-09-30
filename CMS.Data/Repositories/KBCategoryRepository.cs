@@ -29,6 +29,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
+                           c.DisplayProfileID,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -53,6 +54,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
+                           c.DisplayProfileID,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -77,6 +79,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
+                           c.DisplayProfileID,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -102,6 +105,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
+                           c.DisplayProfileID,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -128,10 +132,10 @@ namespace CMS.Data.Repositories
                 const string sql = @"
                     INSERT INTO KMS.m_KBCategory
                         (ParentCategoryID, CategoryCode, CategoryName, Icon,
-                         Description, SortOrder, IsActive, CreatedBy, CreatedDate)
+                         Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID)
                     VALUES
                         (@ParentCategoryID, @CategoryCode, @CategoryName, @Icon,
-                         @Description, @SortOrder, 1, @CreatedBy, GETDATE());
+                         @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID);
                     SELECT SCOPE_IDENTITY();";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -153,7 +157,8 @@ namespace CMS.Data.Repositories
                         CategoryName     = @CategoryName,
                         Icon             = @Icon,
                         Description      = @Description,
-                        SortOrder        = @SortOrder
+                        SortOrder        = @SortOrder,
+                        DisplayProfileID = @DisplayProfileID
                     WHERE CategoryID = @CategoryID";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -189,6 +194,7 @@ namespace CMS.Data.Repositories
             cmd.Parameters.AddWithValue("@Description",      (object)c.Description ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@SortOrder",        c.SortOrder);
             cmd.Parameters.AddWithValue("@CreatedBy",        c.CreatedBy ?? string.Empty);
+            cmd.Parameters.AddWithValue("@DisplayProfileID",  (object)c.DisplayProfileID ?? DBNull.Value);
         }
 
         private static KBCategory Map(IDataReader r)
@@ -205,6 +211,7 @@ namespace CMS.Data.Repositories
                 IsActive           = !r.IsDBNull(r.GetOrdinal("IsActive")) && r.GetBoolean(r.GetOrdinal("IsActive")),
                 CreatedBy          = r["CreatedBy"]        as string,
                 CreatedDate        = r.IsDBNull(r.GetOrdinal("CreatedDate")) ? DateTime.MinValue : r.GetDateTime(r.GetOrdinal("CreatedDate")),
+                DisplayProfileID   = r.IsDBNull(r.GetOrdinal("DisplayProfileID")) ? (int?)null : r.GetInt32(r.GetOrdinal("DisplayProfileID")),
                 ParentCategoryName = r["ParentCategoryName"] as string,
             };
         }

@@ -30,5 +30,12 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         void HideLoading();
         void ShowError(string message);
         void ShowReport(string reportText);
+
+        /// <summary>
+        /// Header label + การซ่อนแสดงคอลัมน์ของ dgvArticles/ArticleCardControl ที่ resolve แล้วสำหรับหมวด
+        /// ที่กำลังดูอยู่ (ดู KBArticleDisplayProfileService.GetEffectiveDisplaySettings) — null/ว่าง แปลว่า
+        /// ให้กลับไปใช้ค่า default ตายตัวเดิม (ใช้ตอนดูมุมมองที่ไม่ผูกกับ category เดียว เช่น cross-reference)
+        /// </summary>
+        void ApplyColumnDisplay(IDictionary<string, KBColumnDisplaySetting> settings);
     }
 }

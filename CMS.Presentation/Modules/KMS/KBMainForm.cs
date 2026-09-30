@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -39,6 +40,12 @@ namespace CMS.Presentation.Modules.KMS
         // ── Article cache for grid / card dual-render ────────────────────────────
         private List<KBArticle> _cachedArticles    = new List<KBArticle>();
         private bool            _tab2NeedsRefresh  = true;
+
+        /// <summary>
+        /// Header label + การซ่อนแสดงคอลัมน์ของ dgvArticles/ArticleCardControl ที่ resolve แล้วสำหรับหมวด
+        /// ที่กำลังดูอยู่ (ตั้งค่าโดย ApplyColumnDisplay) — เริ่มต้นเป็นค่า default ตายตัวเดิมก่อนมีการเลือกหมวดใดๆ
+        /// </summary>
+        private IDictionary<string, KBColumnDisplaySetting> _currentColumnDisplay = KBArticleDisplaySlotCatalog.GetAllDefaults();
 
         // ── Suppress AfterSelect during programmatic tree population ─────────────
         private bool _suppressCategorySelect = false;
@@ -72,6 +79,8 @@ namespace CMS.Presentation.Modules.KMS
         private Func<DialogResult> _dashboardFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBImportTemplateConfigForm. Returns DialogResult.</summary>
         private Func<DialogResult> _importTemplateConfigFactory;
+        /// <summary>Creates, wires, and shows a pre-wired KBArticleDisplayProfileConfigForm. Returns DialogResult.</summary>
+        private Func<DialogResult> _displayProfileConfigFactory;
 
 
         public KBMainForm()
@@ -194,6 +203,15 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachImportTemplateConfigFactory(Func<DialogResult> factory)
         {
             _importTemplateConfigFactory = factory;
+        }
+
+        /// <summary>
+        /// Inject the factory used to create and show the Article Display Profile Config screen
+        /// with its pre-wired presenter. Must be called before the form is shown.
+        /// </summary>
+        public void AttachDisplayProfileConfigFactory(Func<DialogResult> factory)
+        {
+            _displayProfileConfigFactory = factory;
         }
 
         // ── Form events ──────────────────────────────────────────────────────────
@@ -333,6 +351,43 @@ namespace CMS.Presentation.Modules.KMS
                 _tab2NeedsRefresh = true;
         }
 
+        /// <summary>
+        /// รับ header label/การซ่อนแสดงคอลัมน์ที่ resolve แล้วจาก presenter (ตาม Article Display Profile
+        /// ของหมวดที่กำลังดูอยู่) — null/ว่าง แปลว่ากลับไปใช้ default ตายตัวเดิมทั้งหมด (เช่นตอนดู Archived/
+        /// cross-reference ที่ไม่มี CategoryID เดียวให้ resolve) ต้อง apply ทั้ง dgvArticles (คอลัมน์ header/
+        /// Visible ตรงๆ) และเก็บไว้ให้ PopulateCards ส่งต่อให้ ArticleCardControl แต่ละใบด้วย
+        /// </summary>
+        public void ApplyColumnDisplay(IDictionary<string, KBColumnDisplaySetting> settings)
+        {
+            _currentColumnDisplay = (settings != null && settings.Count > 0)
+                ? settings
+                : KBArticleDisplaySlotCatalog.GetAllDefaults();
+
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.Title,          "colTitle");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.TitleCategory,  "colCode");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.ContentHTML,    "colContentHtml");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.EffectiveDate,  "colEffectiveDate");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.ExpiryDate,     "colExpiryDate");
+            ApplyGridColumnDisplay(KBArticleDisplaySlotCatalog.LinkedEntities, "colOrgDivDept");
+            // PublishedDate ไม่มีคอลัมน์ใน dgvArticles — ใช้แค่ใน ArticleCardControl
+
+            // ถ้ากำลังอยู่ tab การ์ดอยู่แล้วตอนสลับหมวด ต้อง re-render ทันทีด้วย label ชุดใหม่
+            if (tabArticles.SelectedTab == tabPage2)
+                PopulateCards(_cachedArticles);
+            else
+                _tab2NeedsRefresh = true;
+        }
+
+        private void ApplyGridColumnDisplay(string slotKey, string columnName)
+        {
+            KBColumnDisplaySetting setting;
+            if (!_currentColumnDisplay.TryGetValue(slotKey, out setting)) return;
+            var col = dgvArticles.Columns[columnName];
+            if (col == null) return;
+            col.HeaderText = setting.Label ?? string.Empty;
+            col.Visible    = setting.Visible;
+        }
+
         private static bool IsArticleActive(KBArticle a)
         {
             return a.ExpiryDate == null || a.ExpiryDate.Value.Date > DateTime.Today;
@@ -376,6 +431,7 @@ namespace CMS.Presentation.Modules.KMS
             foreach (var a in articles)
             {
                 var card = new ArticleCardControl();
+                card.DisplayColumn     = _currentColumnDisplay;
                 card.Article           = a;
                 card.CardClicked      += (s, ev) => OnArticleCardClick(ev);
                 card.ReadClicked      += (s, ev) => OnArticleCardClick(ev);
@@ -472,6 +528,10 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null || e.Node == null || _suppressCategorySelect) return;
 
+            // เลือก node/root node ใด ๆ ในต้นไม้หมวดหมู่ ต้องเคลียร์คำค้นเดิมทิ้งเสมอ — ไม่งั้นคำค้นที่ค้าง
+            // จากหมวดก่อนหน้าจะไปกรองซ้ำกับรายการของหมวดใหม่ที่เพิ่งเลือกโดยผู้ใช้ไม่ได้ตั้งใจ
+            txtToolbarSearch.Text = string.Empty;
+
             // Root node (Tag == null) — reset archived mode
             if (e.Node.Tag == null)
             {
@@ -561,6 +621,16 @@ namespace CMS.Presentation.Modules.KMS
             if (_presenter == null) return;
             if (_importTemplateConfigFactory == null) return;
             _importTemplateConfigFactory();
+        }
+
+        private void BtnDisplayProfileConfig_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            if (_displayProfileConfigFactory == null) return;
+            _displayProfileConfigFactory();
+
+            // Profile ที่แก้อาจกระทบหมวดที่กำลังดูอยู่ — โหลดต้นไม้หมวดหมู่ใหม่ให้แน่ใจว่า tree/label ตรงกัน
+            _presenter.LoadCategoryTree();
         }
 
         private void BtnImportExcel_Click(object sender, EventArgs e)
@@ -1027,7 +1097,8 @@ namespace CMS.Presentation.Modules.KMS
                                 Label      = folder.Label,
                             };
 
-                            var folderNode = new TreeNode(string.Format("🔗 {0} ({1})", folder.Label, orderedArticles.Count))
+                            //var folderNode = new TreeNode(string.Format("🔗 {0} ({1})", folder.Label, orderedArticles.Count))
+                            var folderNode = new TreeNode(string.Format("🔗 {0}", folder.Label))
                             {
                                 Tag       = folderTag,
                                 ForeColor = Color.FromArgb(120, 90, 40),
@@ -1192,22 +1263,26 @@ namespace CMS.Presentation.Modules.KMS
                 Name = "colTitle", 
                 HeaderText = "อ้างอิง",
                 ReadOnly = true,
-                Width = 400,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
-                    Padding = new Padding(4, 0, 0, 0),
-                    WrapMode = DataGridViewTriState.True
-                }
+                    Padding = new Padding(4, 0, 0, 0)
+                },
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colCode",
                 HeaderText = "",
-                Width = 105,
                 ReadOnly = true,
-                DefaultCellStyle = lft,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                Width = 250,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleLeft,
+                    Padding = new Padding(4, 0, 0, 0),
+                    WrapMode = DataGridViewTriState.True
+                },
+
             });
             dgvArticles.Columns.Add(new DataGridViewLinkColumn
             {
@@ -1474,6 +1549,29 @@ namespace CMS.Presentation.Modules.KMS
                 e.CellStyle.ForeColor = Color.White;
                 e.FormattingApplied   = true;
             }
+            else if (col == "colEffectiveDate")
+            {
+                if (e.Value is DateTime)
+                {
+                    e.Value = FormatBuddhistDate((DateTime)e.Value);
+                    e.FormattingApplied = true;
+                }
+            }
+        }
+
+        /// <summary>ปฏิทินพุทธศักราชของ .NET เอง (ไม่ใช่ CultureInfo.CurrentCulture) ใช้คำนวณปี พ.ศ. โดยตรง
+        /// ไม่พึ่งพา region/culture ของเครื่องที่รันเลย — บางเครื่องตั้ง Windows region เป็นไทยและ .NET จะ
+        /// เซ็ต CultureInfo.CurrentCulture.Calendar เป็น ThaiBuddhistCalendar โดยอัตโนมัติอยู่แล้ว ถ้าใช้
+        /// date.ToString("dd/MM/yyyy") เฉย ๆ (ไม่ระบุ culture) เครื่องแบบนั้นจะเห็น พ.ศ. อยู่แล้วโดยไม่ตั้งใจ
+        /// และถ้าโค้ดไปบวก +543 ซ้ำเข้าไปอีกชั้นจะกลายเป็นปีผิดทันที (ค.ศ.+543+543) — ต่างเครื่อง/ต่าง region
+        /// จึงได้ผลไม่ตรงกัน วิธีนี้ระบุปฏิทินตรง ๆ (ThaiBuddhistCalendar) และดึง Day/Month จาก DateTime
+        /// (ซึ่ง .NET รับประกันว่าเป็นค่าคงที่ไม่ขึ้นกับ culture เสมอ) จึงได้ผลลัพธ์เดียวกันทุกเครื่องแน่นอน</summary>
+        private static readonly Calendar ThaiBuddhistCalendarInstance = new ThaiBuddhistCalendar();
+
+        private static string FormatBuddhistDate(DateTime date)
+        {
+            int buddhistYear = ThaiBuddhistCalendarInstance.GetYear(date);
+            return string.Format(CultureInfo.InvariantCulture, "{0:00}/{1:00}/{2}", date.Day, date.Month, buddhistYear);
         }
 
         private void DgvArticles_CellEndEdit(object sender, DataGridViewCellEventArgs e)
@@ -1615,7 +1713,7 @@ namespace CMS.Presentation.Modules.KMS
                 System.ComponentModel.TypeConverter formattedValueTypeConverter,
                 DataGridViewDataErrorContexts context)
             {
-                if (value is DateTime) return ((DateTime)value).ToString("dd/MM/yyyy");
+                if (value is DateTime) return FormatBuddhistDate((DateTime)value);
                 return string.Empty;
             }
         }

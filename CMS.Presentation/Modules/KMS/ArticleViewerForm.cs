@@ -369,7 +369,7 @@ namespace CMS.Presentation.Modules.KMS
             // เนื้อหา Summary เป็นข้อความล้วน (ไม่ใช่ HTML) — lblSummaryInfo เป็น Label ธรรมดา
             // จึงแสดง \n (ขึ้นบรรทัดใหม่) และ \t (tab) ที่ฝังมาจากข้อมูลได้ถูกต้องอยู่แล้วโดยไม่ต้องแปลงอะไรเพิ่ม
             string summary = _article.Summary;
-            lblSummaryInfo.Text = "📝 สรุปย่อ: " + (string.IsNullOrWhiteSpace(summary) ? "-" : summary);
+            lblSummaryInfo.Text = $"📝 สรุปย่อ: {Environment.NewLine}" + (string.IsNullOrWhiteSpace(summary) ? "-" : summary);
             AdjustSummaryHeight();
         }
 

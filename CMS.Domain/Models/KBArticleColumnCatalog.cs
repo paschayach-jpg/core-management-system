@@ -10,10 +10,17 @@ namespace CMS.Domain.Models
     /// </summary>
     public static class KBArticleColumnCatalog
     {
+        /// <summary>
+        /// ชื่อแถวเสมือนใน mapping ของ Template สำหรับคอลัมน์ Excel ที่เก็บชื่อไฟล์แนบ (+ hyperlink) ของไฟล์ประกาศ/คำสั่ง —
+        /// ไม่ใช่คอลัมน์จริงของ t_KBArticle (ไฟล์แนบอยู่ใน DMS) จึงถูกต่อท้ายรายการคอลัมน์โดย KBImportTemplateService
+        /// </summary>
+        public const string AttachmentTargetColumn = "Attachment";
+
         private static readonly Dictionary<string, string> Descriptions = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
         {
-            { "ArticleCode",         "รหัสบทความ เช่น KB-2566-001" },
-            { "Title",               "ชื่อเรื่อง/หัวข้อบทความ" },
+            { "ArticleCode",         "Code รวม 27 หลัก (กฎหมายลงท้าย 00000 / ประกาศ-คำสั่งตัวที่ 23 = ประเภท 1-6) ใช้ตรวจประเภทไฟล์และหากฎหมายแม่ (22 ตัวแรก)" },
+            { AttachmentTargetColumn, "ไฟล์แนบของประกาศ/คำสั่ง — คอลัมน์ Excel ที่เป็นชื่อไฟล์ (มี hyperlink) ใช้เฉพาะ Template ประกาศ/คำสั่ง" },
+            { "Title",               "ชื่อเรื่อง/หัวข้อบทความ — ถ้าต้องคำนวณจากคอลัมน์ Excel (เช่น กฎหมาย/มาตรา) ให้ผสมข้อความคงที่กับคอลัมน์ในรูปแบบ {X} เช่น \"มาตรา {C}\"" },
             { "ContentHTML",         "เนื้อหาบทความ (HTML)" },
             { "Summary",             "สรุปย่อของบทความ" },
             { "TitleCategory",       "หมวดหัวข้อ/เลขมาตรา (nvarchar(500), migrated from Summary)" },

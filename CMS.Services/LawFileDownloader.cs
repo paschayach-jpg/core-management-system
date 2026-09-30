@@ -32,7 +32,7 @@ namespace CMS.Services
         public LawFileDownloadResult Download(string url, string preferredFileName)
         {
             if (string.IsNullOrWhiteSpace(preferredFileName))
-                return Fail("ไม่พบชื่อไฟล์ในเซลล์ (column K)");
+                return Fail("ไม่พบชื่อไฟล์ในเซลล์ที่ Template map เป็น Attachment");
 
             string name = preferredFileName.Trim();
 

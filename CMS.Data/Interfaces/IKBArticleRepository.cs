@@ -11,6 +11,13 @@ namespace CMS.Data.Interfaces
         IEnumerable<KBArticle> Search(int? categoryId, byte? status, byte? articleType);
         KBArticle GetById(int articleId);
         int Insert(KBArticle article);
+
+        /// <summary>
+        /// Insert KBArticle และ KBVersion (VersionNumber จาก <paramref name="version"/>) แรกของบทความนั้น
+        /// ในธุรกรรมเดียวกัน — ถ้า version insert ล้มเหลว article insert จะถูก rollback ไปด้วย ป้องกันไม่ให้
+        /// เหลือ KBArticle ที่ไม่มี KBVersion คู่กัน (orphan) คืนค่า ArticleID ใหม่
+        /// </summary>
+        int InsertWithVersion(KBArticle article, KBVersion version);
         void Update(KBArticle article);
         void UpdateStatus(int articleId, byte status, string reviewedBy);
         void IncrementViewCount(int articleId);
