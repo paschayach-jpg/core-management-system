@@ -393,7 +393,7 @@ namespace CMS.Presentation.Modules.KMS
             // directly here instead, decoupled from the Template selection.
             var layoutChoice = MessageBox.Show(
                 "เลือกรูปแบบไฟล์ตัวอย่างที่ต้องการดาวน์โหลด\n\n" +
-                "กด \"Yes\" สำหรับ กฎหมาย (มาตรา)\nกด \"No\" สำหรับ ประกาศ/คำสั่ง",
+                "กด \"Yes\" สำหรับ กฎหมาย (มาตรา)\nกด \"No\" สำหรับ เอกสารที่ไม่ใช่กฎหมาย (ประกาศ/คำสั่ง/ระเบียบ ฯลฯ)",
                 "เลือกรูปแบบ Template", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
             if (layoutChoice == DialogResult.Cancel) return;
             bool isOrder = layoutChoice == DialogResult.No;

@@ -20,20 +20,19 @@ namespace CMS.Services
     /// N=วันที่ประกาศ  O=วันที่มีผลบังคับใช้  P=บัญญัติไว้ว่า คำสั่งที่เกี่ยวข้อง  S=กฎหมายอ้างอิง
     /// (other columns, including B "Code กฎหมายแม่", are ignored for now).
     ///
-    /// <b>Order</b> (12-column "ประกาศ/คำสั่ง", header C = "ประเภทลูก"): A=Code รวม (สูตร —
-    /// ไม่อ่าน, คำนวณเองจาก B+C+D)  B=Code กฎหมายแม่(หลายบรรทัด)  C=ประเภทลูก (1=ประกาศ, 2=คำสั่ง)
-    /// D=เอกสารลูก  E=ชื่อ  F=คำสั่งที่  G=วันที่ประกาศ  H=วันที่มีผลบังคับใช้  I=บัญญัติไว้ว่า
-    /// J=ประเด็นสำคัญ  K=ชื่อไฟล์(+hyperlink)  L=กฎหมายอ้างอิง.
+    /// <b>NonLaw</b> (12-column, header C = "ประเภทลูก" — OR/AN/SO/RG/CI/MR): A=Code รวม (สูตร —
+    /// อ่านผ่าน mapping ArticleCode ของ Template)  B=Code กฎหมายแม่(หลายบรรทัด)  C=ประเภทลูก (1=ประกาศ, 2=คำสั่ง)
+    /// D=เอกสารลูก (ไม่อ่านแล้ว)  E=ชื่อ  F=คำสั่งที่  G=วันที่ประกาศ  H=วันที่มีผลบังคับใช้  I=บัญญัติไว้ว่า
+    /// J=ประเด็นสำคัญ  K=ชื่อไฟล์(+hyperlink)  L=กฎหมายอ้างอิง (ไม่อ่าน).
     ///
     /// Uses NPOI 2.5.6, evaluating formula cells live (a saved-but-not-recalculated workbook
     /// otherwise leaves formula cells' cached value blank). No business-rule validation is
     /// performed here — that is the responsibility of <see cref="KBImportProcessor"/>.
     ///
-    /// The fixed column positions above are the baseline for Title/TitleCategory/Summary/
-    /// ContentHTML/PublishedDate/EffectiveDate only — <see cref="ReadRows"/> overrides them per
-    /// the selected KB Import Template's column mapping when configured (see
-    /// <see cref="ApplyFieldOverrides"/>). ArticleCode/CategoryID/ArticleType and everything
-    /// Order-specific (ParentCodes, attachment) always come from the fixed positions.
+    /// ArticleCode (Code รวม) บังคับ map ในทุก Template — Law อ่านฟิลด์ที่เหลือจากตำแหน่งตายตัวข้างบนเป็นค่าเริ่มต้น
+    /// (Title/TitleCategory/Summary/ContentHTML/PublishedDate/EffectiveDate ทับได้ด้วย mapping) ส่วน NonLaw อ่านทุกฟิลด์
+    /// (รวม Attachment) จาก Template mapping เท่านั้น ไม่มีตำแหน่งตายตัว (see <see cref="ApplyFieldOverrides"/>).
+    /// CategoryID/ArticleType มาจากค่าคงที่ใน Template
     /// </summary>
     public class KBExcelReader : IKBExcelReaderService
     {
@@ -41,7 +40,7 @@ namespace CMS.Services
 
         /// <summary>Target column ที่ยอม override ตำแหน่งตายตัวด้วย Template mapping ได้ (ไม่รวม ArticleCode/CategoryID/ArticleType)</summary>
         private static readonly string[] OverridableTargetColumns =
-            { "Title", "TitleCategory", "Summary", "ContentHTML", "PublishedDate", "EffectiveDate" };
+            { "ArticleCode", "Title", "TitleCategory", "Summary", "ContentHTML", "PublishedDate", "EffectiveDate", "Attachment" };
 
         /// <summary>จับ token รูปแบบ {ชื่อคอลัมน์} ในค่า mapping ของ Template เช่น "{C}" ใน "มาตรา {C}"</summary>
         private static readonly Regex TemplateExpressionPlaceholderPattern = new Regex(@"\{([^{}]+)\}", RegexOptions.Compiled);
@@ -95,12 +94,12 @@ namespace CMS.Services
             IFormulaEvaluator evaluator = workbook.GetCreationHelper().CreateFormulaEvaluator();
             IRow headerRow = sheet.GetRow(0);
 
-            string rowKind = DetectRowKind(headerRow, evaluator);
+            var overrides = BuildFieldOverrides(templateColumns);
+
+            string rowKind = DetectRowKind(sheet, headerRow, evaluator, overrides);
             if (rowKind == null)
                 throw new KBExcelReadException(filePath,
-                    "ไม่รู้จักรูปแบบไฟล์ Excel นี้ — ตรวจสอบว่าเป็น template กฎหมาย (มาตรา) หรือ ประกาศ/คำสั่ง ที่ถูกต้อง");
-
-            var overrides = BuildFieldOverrides(templateColumns);
+                    "ไม่รู้จักรูปแบบไฟล์ Excel นี้ — ตรวจสอบว่าเป็น template กฎหมาย (มาตรา) หรือ เอกสารที่ไม่ใช่กฎหมาย (ประกาศ/คำสั่ง/ระเบียบ ฯลฯ) ที่ถูกต้อง");
 
             int lastRowIndex = sheet.LastRowNum;
             for (int rowIdx = DataStartRowIndex; rowIdx <= lastRowIndex; rowIdx++)
@@ -116,8 +115,8 @@ namespace CMS.Services
                 KBImportRow row;
                 try
                 {
-                    row = rowKind == KBImportLayoutTypeCatalog.Order
-                        ? ReadOrderRow(excelRow, rowIdx, evaluator)
+                    row = rowKind == KBImportLayoutTypeCatalog.NonLaw
+                        ? ReadNonLawRow(excelRow, rowIdx, evaluator)
                         : ReadLawRow(excelRow, rowIdx, evaluator);
 
                     ApplyFieldOverrides(row, excelRow, headerRow, evaluator, overrides);
@@ -143,14 +142,45 @@ namespace CMS.Services
         // ── Layout detection ─────────────────────────────────────────────────
 
         /// <summary>
-        /// Detects which layout a file uses from its header row's column C text.
-        /// Returns "Law", "Order", or <c>null</c> when neither matches.
+        /// Detects which layout a file uses จากค่า Code รวม (mapping ArticleCode) ของแถวข้อมูลแรกที่ไม่ว่าง:
+        /// <see cref="KBImportLayoutTypeCatalog.IsLawCode"/> → Law, <see cref="KBImportLayoutTypeCatalog.IsNonLawCode"/> → Order
+        /// ถ้ารหัสผิดรูปแบบทั้งสองแบบ (หรือไฟล์ไม่มีแถวข้อมูล) ใช้ข้อความหัวตารางคอลัมน์ C ตัดสินแทน เพื่อให้ validate
+        /// รายแถวรายงาน error ได้ Returns "Law", "NonLaw", or <c>null</c> when neither matches.
         /// </summary>
-        private static string DetectRowKind(IRow headerRow, IFormulaEvaluator evaluator)
+        private static string DetectRowKind(ISheet sheet, IRow headerRow, IFormulaEvaluator evaluator, Dictionary<string, string> overrides)
+        {
+            string articleCodeExpr;
+            if (overrides.TryGetValue("ArticleCode", out articleCodeExpr))
+            {
+                for (int rowIdx = DataStartRowIndex; rowIdx <= sheet.LastRowNum; rowIdx++)
+                {
+                    IRow excelRow = sheet.GetRow(rowIdx);
+                    if (excelRow == null || IsRowBlank(excelRow, evaluator)) continue;
+
+                    string code = FirstLine(ResolveTemplateExpression(articleCodeExpr, headerRow, excelRow, evaluator));
+                    if (string.IsNullOrEmpty(code)) continue;
+
+                    if (KBImportLayoutTypeCatalog.IsLawCode(code))  return KBImportLayoutTypeCatalog.Law;
+                    if (KBImportLayoutTypeCatalog.IsNonLawCode(code)) return KBImportLayoutTypeCatalog.NonLaw;
+                    break; // รูปแบบ Code ไม่เข้าเงื่อนไขใดเลย — ให้หัวตารางตัดสินต่อ แล้วให้ validate รายแถวรายงาน error
+                }
+            }
+
+            return DetectRowKindFromHeader(headerRow, evaluator);
+        }
+
+        /// <summary>บรรทัดแรกที่ไม่ว่างของข้อความหลายบรรทัด (เซลล์ที่ใส่หลายค่าด้วย Alt+Enter) — ว่างถ้าไม่มี</summary>
+        private static string FirstLine(string raw)
+        {
+            var lines = SplitLines(raw);
+            return lines.Count > 0 ? lines[0] : string.Empty;
+        }
+
+        private static string DetectRowKindFromHeader(IRow headerRow, IFormulaEvaluator evaluator)
         {
             string colC = GetCellText(headerRow == null ? null : headerRow.GetCell(2), evaluator).Trim();
             if (colC == "มาตรา") return KBImportLayoutTypeCatalog.Law;
-            if (colC == "ประเภทลูก") return KBImportLayoutTypeCatalog.Order;
+            if (colC == "ประเภทลูก") return KBImportLayoutTypeCatalog.NonLaw;
             return null;
         }
 
@@ -163,8 +193,7 @@ namespace CMS.Services
                 RowNumber = rowIdx + 1,   // 1-based: row index 1 → RowNumber 2
                 RowKind   = KBImportLayoutTypeCatalog.Law,
 
-                ColA            = GetCellText(excelRow.GetCell(0), evaluator).Trim(),    // A — Code รวม
-                ColC            = GetCellText(excelRow.GetCell(2), evaluator).Trim(),    // C — มาตรา
+                // Code รวม (ArticleCode) มาจาก Template mapping (ApplyFieldOverrides) ไม่อ่านคอลัมน์ A ตามตำแหน่ง
                 RawSummary      = GetCellText(excelRow.GetCell(12), evaluator).Trim(),   // M — ชื่อ
                 RawPublishedDate = GetCellText(excelRow.GetCell(13), evaluator).Trim(),  // N — วันที่ประกาศ
                 RawEffectiveDate = GetCellText(excelRow.GetCell(14), evaluator).Trim(),  // O — วันที่มีผลบังคับใช้
@@ -179,35 +208,18 @@ namespace CMS.Services
             return row;
         }
 
-        private static KBImportRow ReadOrderRow(IRow excelRow, int rowIdx, IFormulaEvaluator evaluator)
+        private static KBImportRow ReadNonLawRow(IRow excelRow, int rowIdx, IFormulaEvaluator evaluator)
         {
             var row = new KBImportRow
             {
                 RowNumber = rowIdx + 1,
-                RowKind   = KBImportLayoutTypeCatalog.Order,
+                RowKind   = KBImportLayoutTypeCatalog.NonLaw,
 
-                ParentCodes      = SplitLines(GetCellText(excelRow.GetCell(1), evaluator)),   // B — Code กฎหมายแม่
-                OrderTypeDigit   = GetCellText(excelRow.GetCell(2), evaluator).Trim(),         // C — ประเภทลูก
-                OrderDocNumber   = GetCellText(excelRow.GetCell(3), evaluator).Trim(),         // D — เอกสารลูก
-                RawTitle         = GetCellText(excelRow.GetCell(4), evaluator).Trim(),         // E — ชื่อ
-                RawTitleCategory = GetCellText(excelRow.GetCell(5), evaluator).Trim(),         // F — คำสั่งที่
-                RawPublishedDate = GetCellText(excelRow.GetCell(6), evaluator).Trim(),         // G — วันที่ประกาศ
-                RawEffectiveDate = GetCellText(excelRow.GetCell(7), evaluator).Trim(),         // H — วันที่มีผลบังคับใช้
-                RawContent       = GetCellText(excelRow.GetCell(8), evaluator),                // I — บัญญัติไว้ว่า
-                RawSummary       = GetCellText(excelRow.GetCell(9), evaluator),                // J — ประเด็นสำคัญ
-                SectionsRaw      = GetCellText(excelRow.GetCell(11), evaluator).Trim(),        // L — กฎหมายอ้างอิง
             };
 
-            row.FinalCodeChoices = BuildFinalCodeChoices(row.ParentCodes, row.OrderTypeDigit, row.OrderDocNumber);
-
-            // column K — ข้อความคือชื่อไฟล์ ส่วน URL จริงอยู่ใน hyperlink ของเซลล์
-            ICell fileCell = excelRow.GetCell(10);
-            row.AttachmentFileName = GetCellText(fileCell, evaluator).Trim();
-            row.AttachmentUrl      = GetHyperlinkAddress(fileCell);
-
-            string ignoredError;
-            row.PublishedDateParsed = TryParseDateCell(excelRow.GetCell(6), evaluator, out ignoredError);
-            row.EffectiveDateParsed = TryParseDateCell(excelRow.GetCell(7), evaluator, out ignoredError);
+            // ทุกฟิลด์ของ NonLaw มาจาก Template mapping (ApplyFieldOverrides): ArticleCode (กฎหมายแม่ = 22 ตัวแรก),
+            // Title/TitleCategory/PublishedDate/EffectiveDate/ContentHTML/Summary และ Attachment — ไม่อ่านตามตำแหน่งตายตัว
+            // คอลัมน์ L (กฎหมายอ้างอิง) ไม่ถูกใช้งาน จึงไม่อ่าน
 
             return row;
         }
@@ -216,7 +228,7 @@ namespace CMS.Services
 
         /// <summary>
         /// สร้าง lookup ของ target column → ExcelColumnRef expression จาก mapping ที่ config ไว้ใน
-        /// Template (เฉพาะ <see cref="OverridableTargetColumns"/>, ข้าม ArticleCode/CategoryID/ArticleType
+        /// Template (เฉพาะ <see cref="OverridableTargetColumns"/>, ข้าม CategoryID/ArticleType
         /// และแถวที่ยังไม่ได้ map) — ว่างเปล่าถ้า <paramref name="templateColumns"/> เป็น null
         /// </summary>
         private static Dictionary<string, string> BuildFieldOverrides(IList<KBImportTemplateColumnRow> templateColumns)
@@ -241,7 +253,7 @@ namespace CMS.Services
         }
 
         /// <summary>
-        /// Overwrite ค่า Raw*/parsed-date ของ <paramref name="row"/> (ที่ ReadLawRow/ReadOrderRow ตั้งไว้
+        /// Overwrite ค่า Raw*/parsed-date ของ <paramref name="row"/> (ที่ ReadLawRow/ReadNonLawRow ตั้งไว้
         /// แบบตำแหน่งตายตัวเป็น baseline) ด้วยค่าที่ resolve จาก Template — เฉพาะ target ที่มี mapping ใน
         /// <paramref name="overrides"/> เท่านั้น target ที่ไม่ได้ map ยังคงค่าตำแหน่งตายตัวเดิมไว้
         /// </summary>
@@ -250,6 +262,15 @@ namespace CMS.Services
             Dictionary<string, string> overrides)
         {
             string expr;
+
+            // ArticleCode: คอลัมน์ที่ Template map ไว้คือ "Code รวม" 27 หลัก — Law ใช้แทน column A ตายตัว,
+            // Order ใช้เทียบประเภท/หมวดกับ Template เท่านั้น (ArticleCode ของ Order ยังคำนวณจาก B+C+D)
+            if (overrides.TryGetValue("ArticleCode", out expr))
+                row.ColA = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator).Trim();
+
+            // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ข้อความในเซลล์คือชื่อไฟล์ ส่วน URL จริงอยู่ใน hyperlink ของเซลล์
+            if (row.RowKind == KBImportLayoutTypeCatalog.NonLaw && overrides.TryGetValue("Attachment", out expr))
+                ApplyAttachmentOverride(expr, headerRow, excelRow, evaluator, row);
 
             if (overrides.TryGetValue("Title", out expr))
                 row.RawTitle = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
@@ -280,6 +301,29 @@ namespace CMS.Services
                 row.RawEffectiveDate    = rawText;
                 row.EffectiveDateParsed = parsed;
             }
+        }
+
+        /// <summary>
+        /// Resolve ค่า mapping "Attachment": column ref ตรง ๆ (ไม่มี {}) อ่านทั้งชื่อไฟล์และ hyperlink จากเซลล์นั้น;
+        /// formula หรือ column ref ที่หาไม่เจอ ได้เฉพาะข้อความชื่อไฟล์ (ไม่มี URL)
+        /// </summary>
+        private static void ApplyAttachmentOverride(
+            string expression, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator, KBImportRow row)
+        {
+            if (expression.IndexOf('{') < 0)
+            {
+                int colIndex = ResolveColumnIndex(expression.Trim(), headerRow, evaluator);
+                if (colIndex >= 0)
+                {
+                    ICell cell = dataRow.GetCell(colIndex);
+                    row.AttachmentFileName = GetCellText(cell, evaluator).Trim();
+                    row.AttachmentUrl      = GetHyperlinkAddress(cell);
+                    return;
+                }
+            }
+
+            row.AttachmentFileName = ResolveTemplateExpression(expression, headerRow, dataRow, evaluator).Trim();
+            row.AttachmentUrl      = null;
         }
 
         /// <summary>
@@ -388,26 +432,6 @@ namespace CMS.Services
         }
 
         // ── Private helpers ──────────────────────────────────────────────────
-
-        /// <summary>
-        /// สร้าง final combined code ต่อ parent code หนึ่งบรรทัด = parentCode + typeDigit + docNumber
-        /// (mirror ของสูตร Excel เดิมใน column A ของไฟล์ "Order": <c>IF(OR(B="",C="",D="",C="NA",D="NA"),"",...)</c>)
-        /// คืนรายการว่างถ้า typeDigit/docNumber ว่างหรือเป็น "NA" หรือไม่มี parent code เลย
-        /// </summary>
-        private static IList<string> BuildFinalCodeChoices(IList<string> parentCodes, string typeDigit, string docNumber)
-        {
-            var result = new List<string>();
-
-            bool typeValid = !string.IsNullOrEmpty(typeDigit) && !string.Equals(typeDigit, "NA", StringComparison.OrdinalIgnoreCase);
-            bool docValid  = !string.IsNullOrEmpty(docNumber) && !string.Equals(docNumber, "NA", StringComparison.OrdinalIgnoreCase);
-            if (!typeValid || !docValid || parentCodes == null)
-                return result;
-
-            foreach (var parent in parentCodes)
-                result.Add(parent + typeDigit + docNumber);
-
-            return result;
-        }
 
         /// <summary>แตกเซลล์ที่มีหลายบรรทัด (Alt+Enter ใน Excel) เป็นรายการ ตัดช่องว่างแต่ละบรรทัด</summary>
         private static IList<string> SplitLines(string raw)

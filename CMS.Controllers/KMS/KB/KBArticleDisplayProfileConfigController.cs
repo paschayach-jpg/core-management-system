@@ -50,7 +50,8 @@ namespace CMS.Controllers.KMS.KB
                 _view.EditingProfileId   = profile.ProfileID;
                 _view.ProfileName        = profile.ProfileName;
                 _view.ProfileDescription = profile.Description;
-                _view.DeleteEnabled      = profile.IsActive;
+                _view.DeleteEnabled      = true;
+                _view.RecordIsActive     = profile.IsActive;
                 _view.BindColumnGrid(_service.GetProfileColumnGrid(profile.ProfileID));
 
                 var assignedIds = _service.GetCategoriesUsingProfile(profile.ProfileID).Select(c => c.CategoryID);
@@ -123,6 +124,22 @@ namespace CMS.Controllers.KMS.KB
             catch (Exception ex)
             {
                 _view.ShowError("ปิดใช้งานล้มเหลว: " + ex.Message);
+            }
+        }
+
+        public void Activate()
+        {
+            if (!_view.EditingProfileId.HasValue) return;
+            try
+            {
+                _service.ActivateProfile(_view.EditingProfileId.Value, _user);
+                _view.ShowSuccess("เปิดใช้งาน Profile สำเร็จ");
+                _view.ClearForm();
+                LoadProfiles();
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("เปิดใช้งานล้มเหลว: " + ex.Message);
             }
         }
     }

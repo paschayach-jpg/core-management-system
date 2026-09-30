@@ -173,6 +173,24 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public void Activate(int templateId, string updatedBy)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    UPDATE KMS.m_KBImportTemplate
+                    SET    IsActive = 1, UpdatedBy = @UpdatedBy, UpdatedDate = GETDATE()
+                    WHERE  TemplateID = @TemplateID";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@TemplateID", templateId);
+                    cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy ?? string.Empty);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
 
         private static int InsertTemplate(SqlConnection conn, SqlTransaction tx, KBImportTemplate template)

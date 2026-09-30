@@ -166,6 +166,20 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public void Activate(int profileId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = "UPDATE KMS.m_KBArticleDisplayProfile SET IsActive = 1 WHERE ProfileID = @ProfileID";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ProfileID", profileId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         // ── Helpers ───────────────────────────────────────────────────────────
 
         private static int InsertProfile(SqlConnection conn, SqlTransaction tx, KBArticleDisplayProfile profile)

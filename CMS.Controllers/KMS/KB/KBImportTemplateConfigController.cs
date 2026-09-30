@@ -64,7 +64,8 @@ namespace CMS.Controllers.KMS.KB
                 _view.EditingTemplateId    = template.TemplateID;
                 _view.TemplateName         = template.TemplateName;
                 _view.TemplateDescription  = template.Description;
-                _view.DeleteEnabled        = template.IsActive;
+                _view.DeleteEnabled        = true;
+                _view.RecordIsActive       = template.IsActive;
                 _view.BindColumnGrid(_service.GetTemplateColumnGrid(template.TemplateID));
             }
             catch (Exception ex)
@@ -137,6 +138,22 @@ namespace CMS.Controllers.KMS.KB
             catch (Exception ex)
             {
                 _view.ShowError("ปิดใช้งานล้มเหลว: " + ex.Message);
+            }
+        }
+
+        public void Activate()
+        {
+            if (!_view.EditingTemplateId.HasValue) return;
+            try
+            {
+                _service.ActivateTemplate(_view.EditingTemplateId.Value, _user);
+                _view.ShowSuccess("เปิดใช้งาน Template สำเร็จ");
+                _view.ClearForm();
+                LoadTemplates();
+            }
+            catch (Exception ex)
+            {
+                _view.ShowError("เปิดใช้งานล้มเหลว: " + ex.Message);
             }
         }
     }

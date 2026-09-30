@@ -26,15 +26,21 @@ namespace CMS.Services.Interfaces
         IList<KBArticleTypeOption> GetArticleTypeOptions();
 
         /// <summary>
-        /// Derive LayoutType ("Law"/"Order") จาก categoryId — ไล่ ParentCategoryID ขึ้นไปจนเจอหมวด
+        /// Derive LayoutType ("Law"/"NonLaw") จาก categoryId — ไล่ ParentCategoryID ขึ้นไปจนเจอหมวด
         /// "กฎหมาย" (CategoryCode = "LW") หรือไม่ ใช้แทนการเก็บ LayoutType แยกใน Template
         /// </summary>
         string GetEffectiveLayoutType(int categoryId);
+
+        /// <summary>CategoryCode ของ category (ใช้เป็น prefix 3 ตัวแรกของ Code รวมในไฟล์กฎหมาย เช่น "PVI") — null ถ้าไม่พบ</summary>
+        string GetTemplateCategoryCode(int categoryId);
 
         /// <summary>เพิ่ม/แก้ไข Template พร้อม mapping ทั้งหมด คืน TemplateID</summary>
         int SaveTemplate(KBImportTemplate template, IList<KBImportTemplateColumnRow> rows, UserContext user);
 
         /// <summary>Soft delete — ตั้ง IsActive = 0</summary>
         void DeleteTemplate(int templateId, UserContext user);
+
+        /// <summary>เปิดใช้งานกลับ — ตั้ง IsActive = 1</summary>
+        void ActivateTemplate(int templateId, UserContext user);
     }
 }

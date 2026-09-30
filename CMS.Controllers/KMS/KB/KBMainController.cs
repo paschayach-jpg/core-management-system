@@ -25,14 +25,24 @@ namespace CMS.Controllers.KMS.KB
         /// </summary>
         private IList<int> _linkedArticleIds;
 
-        // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้หมวด "กฎหมาย"/LW) ↔ คำสั่ง (OR) / หมวดภายใน (AN) ──
+        // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้หมวด "กฎหมาย"/LW) ↔ เอกสารที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR) ──
         // Resolved จาก CategoryCode สด ๆ ทุกครั้งที่โหลด (ดู ResolveCrossReferenceCategoryIds/IsLawCategory
         // ด้านล่าง) แทนที่จะ hardcode ตัวเลข CategoryID ตรง ๆ — ตัวเลข CategoryID เปลี่ยนได้ถ้าตาราง
         // m_KBCategory ถูกสร้างใหม่ (เคยเกิดมาแล้วครั้งหนึ่ง ทำให้ค่า hardcode เดิม 46/54/55 หลุด) แต่
         // CategoryCode เป็น business key ที่ตั้งใจให้คงที่
-        private const string OrderFolderLabel    = "คำสั่ง (นายทะเบียน/กระทรวง)";
-        private const string InternalFolderLabel = "หมวดภายใน";
         private const string LawFolderLabel      = "กฎหมาย";
+
+        /// <summary>ชื่อโฟลเดอร์อ้างอิงข้ามของแต่ละประเภทเอกสารที่ไม่ใช่กฎหมาย (key = CategoryCode) — ถ้าไม่มีใน map ใช้ CategoryCode เอง</summary>
+        private static readonly Dictionary<string, string> NonLawFolderLabels =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "AN", "หมวดภายใน" },
+            { "OR", "คำสั่ง (นายทะเบียน/กระทรวง)" },
+            { "SO", "คำสั่งพิเศษ" },
+            { "RG", "ระเบียบ" },
+            { "CI", "หนังสือเวียน" },
+            { "MR", "กฎกระทรวง" },
+        };
 
         public KBMainController(
             IKBMainController              view,
@@ -103,14 +113,24 @@ namespace CMS.Controllers.KMS.KB
                         idMap[t].Add(a.ArticleID);
                     }
 
-                    // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้ LW) ↔ คำสั่ง(OR)/หมวดภายใน(AN) ──
-                    // (ถือลิงก์เป็นสองทิศทางเสมอ) — resolve CategoryID ของ OR/AN จาก CategoryCode สด ๆ
+                    // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้ LW) ↔ เอกสารที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR) ──
+                    // (ถือลิงก์เป็นสองทิศทางเสมอ) — resolve CategoryID ของแต่ละประเภทจาก CategoryCode สด ๆ
                     // และเช็คฝั่งกฎหมายด้วยการไล่ ParentCategoryID แทนเทียบ CategoryID คงที่ตัวเดียว
                     // เพื่อให้ใช้ได้กับกฎหมายทุกฉบับ (PVI, PLI, OIC, ...) ไม่ใช่แค่ฉบับที่ hardcode ไว้
                     var linkGraph    = BuildLawLinkGraph();
                     var categoryById = categories.ToDictionary(c => c.CategoryID);
-                    int? orderCategoryId    = FindCategoryIdByCode(categories, "OR");
-                    int? internalCategoryId = FindCategoryIdByCode(categories, "AN");
+
+                    // ประเภทเอกสารที่ไม่ใช่กฎหมายที่มีอยู่จริงในตารางหมวด: (CategoryID, ชื่อโฟลเดอร์) เรียงตาม AN, OR, SO, RG, CI, MR
+                    var nonLawTypes = new List<KeyValuePair<int, string>>();
+                    foreach (var code in KBImportLayoutTypeCatalog.GetNonLawCategoryCodes())
+                    {
+                        int? typeCategoryId = FindCategoryIdByCode(categories, code);
+                        if (!typeCategoryId.HasValue) continue;
+
+                        string folderLabel;
+                        if (!NonLawFolderLabels.TryGetValue(code, out folderLabel)) folderLabel = code;
+                        nonLawTypes.Add(new KeyValuePair<int, string>(typeCategoryId.Value, folderLabel));
+                    }
 
                     foreach (var catEntry in groupArticleIds)
                     {
@@ -119,15 +139,14 @@ namespace CMS.Controllers.KMS.KB
                         if (IsLawCategory(catEntry.Key, categoryById))
                         {
                             rules = new List<Tuple<Func<KBArticle, bool>, string>>();
-                            if (orderCategoryId.HasValue)
+                            foreach (var type in nonLawTypes)
+                            {
+                                int typeCategoryId = type.Key;
                                 rules.Add(Tuple.Create<Func<KBArticle, bool>, string>(
-                                    art => art.CategoryID == orderCategoryId.Value, OrderFolderLabel));
-                            if (internalCategoryId.HasValue)
-                                rules.Add(Tuple.Create<Func<KBArticle, bool>, string>(
-                                    art => art.CategoryID == internalCategoryId.Value, InternalFolderLabel));
+                                    art => art.CategoryID == typeCategoryId, type.Value));
+                            }
                         }
-                        else if ((orderCategoryId.HasValue && catEntry.Key == orderCategoryId.Value) ||
-                                 (internalCategoryId.HasValue && catEntry.Key == internalCategoryId.Value))
+                        else if (nonLawTypes.Any(t => t.Key == catEntry.Key))
                         {
                             rules = new List<Tuple<Func<KBArticle, bool>, string>>
                             {
@@ -237,7 +256,7 @@ namespace CMS.Controllers.KMS.KB
             KBCategory cat;
             while (categoryById.TryGetValue(current, out cat))
             {
-                if (string.Equals(cat.CategoryCode, "LW", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(cat.CategoryCode, KBImportLayoutTypeCatalog.LawRootCategoryCode, StringComparison.OrdinalIgnoreCase))
                     return true;
                 if (!cat.ParentCategoryID.HasValue || !visited.Add(current))
                     return false;
@@ -258,8 +277,23 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedArticleTitle = null;
             _view.ArticleTitleText     = string.Format("  {0}", folderLabel);
             _linkedArticleIds          = articleIds;
-            ApplyColumnDisplayForCategory(null); // มุมมองข้ามหมวด ไม่มี CategoryID เดียวให้ resolve profile
+            // โฟลเดอร์อ้างอิงข้าม (เช่น "คำสั่ง" ใต้มาตรา) มีบทความของหมวดเดียวกันทั้งกลุ่ม — ใช้ header/การซ่อนคอลัมน์
+            // ของหมวดนั้น (ไม่ใช่ของหมวดกฎหมายที่ผู้ใช้เพิ่งคลิกผ่านมา และไม่ใช่ default ตายตัว) โฟลเดอร์ "กฎหมาย"
+            // ที่รวมหลายฉบับ ใช้หมวดของบทความแรก (ทุกฉบับ inherit Display Profile จากหมวด LW เดียวกัน)
+            ApplyColumnDisplayForCategory(ResolveLinkedGroupCategoryId(articleIds));
             LoadArticles();
+        }
+
+        /// <summary>CategoryID ของบทความแรกในกลุ่มอ้างอิงข้าม — null ถ้ากลุ่มว่างหรืออ่านบทความไม่ได้ (ใช้ default)</summary>
+        private int? ResolveLinkedGroupCategoryId(IList<int> articleIds)
+        {
+            try
+            {
+                if (articleIds == null || articleIds.Count == 0) return null;
+                var first = _articleService.GetById(articleIds[0]);
+                return first != null ? (int?)first.CategoryID : null;
+            }
+            catch { return null; }
         }
 
         public void OnArchivedSelected()

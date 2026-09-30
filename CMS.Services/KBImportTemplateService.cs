@@ -56,7 +56,9 @@ namespace CMS.Services
 
         public IList<KBImportTemplateColumnRow> GetTemplateColumnGrid(int? templateId)
         {
-            var targetColumns = _articleRepo.GetImportableTargetColumns();
+            // Attachment เป็นแถวเสมือน (ไม่ใช่คอลัมน์ของ t_KBArticle) ต่อท้ายรายการคอลัมน์จริง
+            var targetColumns = new List<string>(_articleRepo.GetImportableTargetColumns());
+            targetColumns.Add(KBArticleColumnCatalog.AttachmentTargetColumn);
 
             var savedMappings = templateId.HasValue
                 ? _repo.GetMappingsByTemplateId(templateId.Value)
@@ -84,7 +86,7 @@ namespace CMS.Services
         /// <summary>รายการหมวดหมู่สำหรับ dropdown เลือก CategoryID (ไม่รวม CategoryCode = "LW")</summary>
         public IEnumerable<KBCategory> GetCategoryOptions()
         {
-            return _categoryRepo.GetAll().Where(c => !string.Equals(c.CategoryCode, "LW", StringComparison.OrdinalIgnoreCase));
+            return _categoryRepo.GetAll().Where(c => !string.Equals(c.CategoryCode, KBImportLayoutTypeCatalog.LawRootCategoryCode, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>รายการค่า ArticleType คงที่ (1-5) สำหรับ dropdown</summary>
@@ -115,8 +117,34 @@ namespace CMS.Services
             if (!mappedRows.Any(r => string.Equals(r.TargetColumnName, "ArticleType", StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("กรุณาเลือกประเภทบทความ (ArticleType) ก่อนบันทึก — ยังเป็น \"ทั้งหมด\" อยู่");
 
+            // Template ที่ไม่ใช่กฎหมาย (ประกาศ/คำสั่ง/ระเบียบ ฯลฯ — แต่ละประเภทคือคนละหมวด/คนละ Template) ไม่มีตำแหน่งคอลัมน์ตายตัวสำหรับ Title/ContentHTML แล้ว ต้อง map เอง
+            var categoryMapping = mappedRows.First(r => string.Equals(r.TargetColumnName, "CategoryID", StringComparison.OrdinalIgnoreCase));
+            int templateCategoryId;
+            if (int.TryParse(categoryMapping.ExcelColumnRef, out templateCategoryId)
+                && string.Equals(GetEffectiveLayoutType(templateCategoryId), KBImportLayoutTypeCatalog.NonLaw, StringComparison.Ordinal))
+            {
+                foreach (var required in new[] { "Title", "ContentHTML", KBArticleColumnCatalog.AttachmentTargetColumn })
+                {
+                    if (!mappedRows.Any(r => string.Equals(r.TargetColumnName, required, StringComparison.OrdinalIgnoreCase)))
+                        throw new InvalidOperationException(string.Format("Template ที่ไม่ใช่กฎหมายต้อง Map คอลัมน์ {0} ก่อนบันทึก", required));
+                }
+            }
+
+            // ArticleCode (Code รวม 27 หลัก) ใช้ตัดสินประเภทไฟล์ กฎหมาย/ประกาศ-คำสั่ง และหมวดของ Template ตอน import
+            // จึงต้อง map เสมอ ห้ามว่าง
+            if (!mappedRows.Any(r => string.Equals(r.TargetColumnName, "ArticleCode", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("กรุณา Map คอลัมน์ ArticleCode (Code รวม) ก่อนบันทึก — ห้ามว่าง");
+
             if (mappedRows.Count == 0)
                 throw new InvalidOperationException("ต้องมีการ Map อย่างน้อย 1 คอลัมน์");
+
+            // Template ของกฎหมายต้อง map ArticleCode (คอลัมน์ Code รวม 27 ตัว) เสมอ
+            var categoryRow = mappedRows.First(r => string.Equals(r.TargetColumnName, "CategoryID", StringComparison.OrdinalIgnoreCase));
+            int mappedCategoryId;
+            if (int.TryParse(categoryRow.ExcelColumnRef, out mappedCategoryId)
+                && GetEffectiveLayoutType(mappedCategoryId) == KBImportLayoutTypeCatalog.Law
+                && !mappedRows.Any(r => string.Equals(r.TargetColumnName, "ArticleCode", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("Template ของกฎหมายต้อง Map คอลัมน์ ArticleCode (คอลัมน์ Code รวม) ก่อนบันทึก");
 
             foreach (var row in mappedRows)
             {
@@ -190,6 +218,25 @@ namespace CMS.Services
             });
         }
 
+        public void ActivateTemplate(int templateId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            _repo.Activate(templateId, user.AdIdentity);
+
+            _auditService.Log(new AuditEntry
+            {
+                Module    = "KnowledgeBase",
+                Action    = "ACTIVATE_KB_IMPORT_TEMPLATE",
+                UserID    = user.UserID,
+                UserName  = user.AdIdentity,
+                TableName = "KMS.m_KBImportTemplate",
+                RecordID  = templateId,
+                AuditDate = DateTime.Now,
+                Result    = 1
+            });
+        }
+
         // ── Private helpers — formula mapping (เช่น Title ของกฎหมาย = "มาตรา {C}") ──────
 
         /// <summary>true ถ้าค่า mapping เป็น formula ที่ผสมข้อความคงที่กับ placeholder {ชื่อคอลัมน์} แทนที่จะ map ตรงจากคอลัมน์เดียว</summary>
@@ -217,12 +264,18 @@ namespace CMS.Services
         // ── LayoutType — derived from CategoryID, not stored ───────────────────
 
         /// <summary>
-        /// Derive ค่า LayoutType ("Law"/"Order") จาก <paramref name="categoryId"/> โดยไล่
+        /// Derive ค่า LayoutType ("Law"/"NonLaw") จาก <paramref name="categoryId"/> โดยไล่
         /// <see cref="KBCategory.ParentCategoryID"/> ขึ้นไปจนกว่าจะเจอ category ที่ CategoryCode = "LW"
-        /// (หมวด "กฎหมาย" ราก) — เจอแปลว่า Law, ไม่เจอ (root, CategoryCode &lt;&gt; "LW") แปลว่า Order
+        /// (หมวด "กฎหมาย" ราก) — เจอแปลว่า Law, ไม่เจอ (root, CategoryCode &lt;&gt; "LW") แปลว่า NonLaw
         /// ใช้แทนการเก็บ LayoutType เป็น field แยกใน Template เพราะ CategoryID ที่ config ไว้อยู่แล้ว
         /// บอกได้อยู่แล้วว่าเป็นกฎหมายหรือไม่ ไม่มีทางตั้งขัดแย้งกันเองได้อีกต่อไป
         /// </summary>
+        public string GetTemplateCategoryCode(int categoryId)
+        {
+            var cat = _categoryRepo.GetAll().FirstOrDefault(c => c.CategoryID == categoryId);
+            return cat != null ? cat.CategoryCode : null;
+        }
+
         public string GetEffectiveLayoutType(int categoryId)
         {
             var byId = _categoryRepo.GetAll().ToDictionary(c => c.CategoryID);
@@ -232,10 +285,10 @@ namespace CMS.Services
             KBCategory cat;
             while (byId.TryGetValue(current, out cat))
             {
-                if (string.Equals(cat.CategoryCode, "LW", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(cat.CategoryCode, KBImportLayoutTypeCatalog.LawRootCategoryCode, StringComparison.OrdinalIgnoreCase))
                     return KBImportLayoutTypeCatalog.Law;
                 if (!cat.ParentCategoryID.HasValue || !visited.Add(current))
-                    return KBImportLayoutTypeCatalog.Order;
+                    return KBImportLayoutTypeCatalog.NonLaw;
                 current = cat.ParentCategoryID.Value;
             }
             throw new InvalidOperationException(string.Format("ไม่พบ CategoryID {0} ในระบบ", categoryId));

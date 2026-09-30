@@ -23,5 +23,8 @@ namespace CMS.Data.Interfaces
 
         /// <summary>Soft delete — ตั้ง IsActive = 0</summary>
         void Deactivate(int profileId);
+
+        /// <summary>เปิดใช้งานกลับ — ตั้ง IsActive = 1</summary>
+        void Activate(int profileId);
     }
 }

@@ -109,16 +109,16 @@ namespace CMS.Presentation.Modules.KMS
             this.btnImportTemplateConfig.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnImportTemplateConfig.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnImportTemplateConfig.ForeColor = System.Drawing.Color.White;
-            this.btnImportTemplateConfig.Location = new System.Drawing.Point(1070, 0);
+            this.btnImportTemplateConfig.Location = new System.Drawing.Point(850, 0);
             this.btnImportTemplateConfig.Name = "btnImportTemplateConfig";
             this.btnImportTemplateConfig.Size = new System.Drawing.Size(220, 32);
             this.btnImportTemplateConfig.TabIndex = 2;
             this.btnImportTemplateConfig.Text = "🔧 Import Template";
             this.btnImportTemplateConfig.UseVisualStyleBackColor = false;
             this.btnImportTemplateConfig.Click += new System.EventHandler(this.BtnImportTemplateConfig_Click);
-            //
+            // 
             // btnDisplayProfileConfig
-            //
+            // 
             this.btnDisplayProfileConfig.BackColor = System.Drawing.Color.Transparent;
             this.btnDisplayProfileConfig.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnDisplayProfileConfig.Dock = System.Windows.Forms.DockStyle.Right;
@@ -127,14 +127,14 @@ namespace CMS.Presentation.Modules.KMS
             this.btnDisplayProfileConfig.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnDisplayProfileConfig.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDisplayProfileConfig.ForeColor = System.Drawing.Color.White;
-            this.btnDisplayProfileConfig.Location = new System.Drawing.Point(850, 0);
+            this.btnDisplayProfileConfig.Location = new System.Drawing.Point(1070, 0);
             this.btnDisplayProfileConfig.Name = "btnDisplayProfileConfig";
             this.btnDisplayProfileConfig.Size = new System.Drawing.Size(220, 32);
             this.btnDisplayProfileConfig.TabIndex = 3;
             this.btnDisplayProfileConfig.Text = "🏷️ Display Profile";
             this.btnDisplayProfileConfig.UseVisualStyleBackColor = false;
             this.btnDisplayProfileConfig.Click += new System.EventHandler(this.BtnDisplayProfileConfig_Click);
-            //
+            // 
             // btnDashboard
             // 
             this.btnDashboard.BackColor = System.Drawing.Color.Transparent;
@@ -317,10 +317,10 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.tabPage1.BackColor = System.Drawing.Color.White;
             this.tabPage1.Controls.Add(this.dgvArticles);
-            this.tabPage1.Location = new System.Drawing.Point(4, 30);
+            this.tabPage1.Location = new System.Drawing.Point(4, 37);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(1281, 746);
+            this.tabPage1.Size = new System.Drawing.Size(1281, 739);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "📋 ตารางบทความ";
             // 
@@ -343,17 +343,17 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvArticles.RowHeadersVisible = false;
             this.dgvArticles.RowHeadersWidth = 51;
             this.dgvArticles.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.CellSelect;
-            this.dgvArticles.Size = new System.Drawing.Size(1275, 740);
+            this.dgvArticles.Size = new System.Drawing.Size(1275, 733);
             this.dgvArticles.TabIndex = 0;
             // 
             // tabPage2
             // 
             this.tabPage2.BackColor = System.Drawing.Color.White;
             this.tabPage2.Controls.Add(this.pnlArticleList);
-            this.tabPage2.Location = new System.Drawing.Point(4, 30);
+            this.tabPage2.Location = new System.Drawing.Point(4, 37);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(1281, 746);
+            this.tabPage2.Size = new System.Drawing.Size(1281, 739);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "🃏 การ์ดบทความ";
             // 
@@ -366,7 +366,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlArticleList.Location = new System.Drawing.Point(3, 3);
             this.pnlArticleList.Name = "pnlArticleList";
             this.pnlArticleList.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.pnlArticleList.Size = new System.Drawing.Size(1275, 740);
+            this.pnlArticleList.Size = new System.Drawing.Size(1275, 733);
             this.pnlArticleList.TabIndex = 0;
             // 
             // flpArticles
@@ -377,7 +377,7 @@ namespace CMS.Presentation.Modules.KMS
             this.flpArticles.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpArticles.Location = new System.Drawing.Point(10, 8);
             this.flpArticles.Name = "flpArticles";
-            this.flpArticles.Size = new System.Drawing.Size(1255, 724);
+            this.flpArticles.Size = new System.Drawing.Size(1255, 717);
             this.flpArticles.TabIndex = 0;
             this.flpArticles.WrapContents = false;
             // 
@@ -417,7 +417,7 @@ namespace CMS.Presentation.Modules.KMS
             "IT"});
             this.cboDepartment.Location = new System.Drawing.Point(854, 5);
             this.cboDepartment.Name = "cboDepartment";
-            this.cboDepartment.Size = new System.Drawing.Size(150, 21);
+            this.cboDepartment.Size = new System.Drawing.Size(150, 27);
             this.cboDepartment.TabIndex = 2;
             this.cboDepartment.Visible = false;
             // 
@@ -447,7 +447,7 @@ namespace CMS.Presentation.Modules.KMS
             this.label1.Location = new System.Drawing.Point(775, 5);
             this.label1.Name = "label1";
             this.label1.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
-            this.label1.Size = new System.Drawing.Size(5, 13);
+            this.label1.Size = new System.Drawing.Size(5, 19);
             this.label1.TabIndex = 6;
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
@@ -459,7 +459,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboSearchField.FormattingEnabled = true;
             this.cboSearchField.Location = new System.Drawing.Point(646, 5);
             this.cboSearchField.Name = "cboSearchField";
-            this.cboSearchField.Size = new System.Drawing.Size(129, 29);
+            this.cboSearchField.Size = new System.Drawing.Size(129, 36);
             this.cboSearchField.TabIndex = 2;
             // 
             // label2
@@ -471,7 +471,7 @@ namespace CMS.Presentation.Modules.KMS
             this.label2.Location = new System.Drawing.Point(641, 5);
             this.label2.Name = "label2";
             this.label2.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
-            this.label2.Size = new System.Drawing.Size(5, 13);
+            this.label2.Size = new System.Drawing.Size(5, 19);
             this.label2.TabIndex = 7;
             this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
@@ -483,7 +483,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboStatus.FormattingEnabled = true;
             this.cboStatus.Location = new System.Drawing.Point(521, 5);
             this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(120, 29);
+            this.cboStatus.Size = new System.Drawing.Size(120, 36);
             this.cboStatus.TabIndex = 3;
             this.cboStatus.SelectedIndexChanged += new System.EventHandler(this.CboFilter_SelectedIndexChanged);
             // 
@@ -496,7 +496,7 @@ namespace CMS.Presentation.Modules.KMS
             this.label3.Location = new System.Drawing.Point(516, 5);
             this.label3.Name = "label3";
             this.label3.Padding = new System.Windows.Forms.Padding(0, 0, 5, 0);
-            this.label3.Size = new System.Drawing.Size(5, 13);
+            this.label3.Size = new System.Drawing.Size(5, 19);
             this.label3.TabIndex = 8;
             this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
@@ -506,7 +506,7 @@ namespace CMS.Presentation.Modules.KMS
             this.cboType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboType.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cboType.FormattingEnabled = true;
-            this.cboType.ItemHeight = 21;
+            this.cboType.ItemHeight = 28;
             this.cboType.Items.AddRange(new object[] {
             "ประเภท ▼",
             "SOP",
@@ -515,7 +515,7 @@ namespace CMS.Presentation.Modules.KMS
             "แนวทาง"});
             this.cboType.Location = new System.Drawing.Point(396, 5);
             this.cboType.Name = "cboType";
-            this.cboType.Size = new System.Drawing.Size(120, 29);
+            this.cboType.Size = new System.Drawing.Size(120, 36);
             this.cboType.TabIndex = 4;
             this.cboType.SelectedIndexChanged += new System.EventHandler(this.cboType_SelectedIndexChanged);
             // 
@@ -556,7 +556,7 @@ namespace CMS.Presentation.Modules.KMS
             "คะแนน"});
             this.cboSortBy.Location = new System.Drawing.Point(70, 0);
             this.cboSortBy.Name = "cboSortBy";
-            this.cboSortBy.Size = new System.Drawing.Size(140, 21);
+            this.cboSortBy.Size = new System.Drawing.Size(140, 25);
             this.cboSortBy.TabIndex = 2;
             // 
             // lblSortByLabel
@@ -578,7 +578,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtToolbarSearch.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtToolbarSearch.Location = new System.Drawing.Point(76, 5);
             this.txtToolbarSearch.Name = "txtToolbarSearch";
-            this.txtToolbarSearch.Size = new System.Drawing.Size(320, 29);
+            this.txtToolbarSearch.Size = new System.Drawing.Size(320, 34);
             this.txtToolbarSearch.TabIndex = 0;
             this.txtToolbarSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtSearch_KeyDown);
             // 
@@ -820,7 +820,7 @@ namespace CMS.Presentation.Modules.KMS
             "100 รายการ"});
             this.cboPageSize.Location = new System.Drawing.Point(0, 0);
             this.cboPageSize.Name = "cboPageSize";
-            this.cboPageSize.Size = new System.Drawing.Size(150, 29);
+            this.cboPageSize.Size = new System.Drawing.Size(150, 36);
             this.cboPageSize.TabIndex = 0;
             // 
             // lblPageInfo
@@ -837,7 +837,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // KBMainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1596, 987);

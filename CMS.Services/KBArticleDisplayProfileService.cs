@@ -172,6 +172,25 @@ namespace CMS.Services
             });
         }
 
+        public void ActivateProfile(int profileId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            _repo.Activate(profileId);
+
+            _auditService.Log(new AuditEntry
+            {
+                Module    = "KnowledgeBase",
+                Action    = "ACTIVATE_KB_ARTICLE_DISPLAY_PROFILE",
+                UserID    = user.UserID,
+                UserName  = user.AdIdentity,
+                TableName = "KMS.m_KBArticleDisplayProfile",
+                RecordID  = profileId,
+                AuditDate = DateTime.Now,
+                Result    = 1
+            });
+        }
+
         public void AssignProfileToCategory(int categoryId, int? profileId, UserContext user)
         {
             if (user == null) throw new ArgumentNullException("user");

@@ -13,6 +13,9 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string ProfileDescription  { get; set; }
         bool   DeleteEnabled       { set; }
 
+        /// <summary>สถานะของรายการที่เลือก — ใช้สลับปุ่มระหว่าง "ปิดใช้งาน" / "เปิดใช้งาน"</summary>
+        bool   RecordIsActive      { set; }
+
         void BindProfileList(IEnumerable<KBArticleDisplayProfile> profiles);
         void BindColumnGrid(IEnumerable<KBArticleDisplayProfileColumnRow> rows);
 

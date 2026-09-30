@@ -1263,22 +1263,26 @@ namespace CMS.Presentation.Modules.KMS
                 Name = "colTitle", 
                 HeaderText = "อ้างอิง",
                 ReadOnly = true,
-                Width = 400,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
-                    Padding = new Padding(4, 0, 0, 0),
-                    WrapMode = DataGridViewTriState.True
-                }
+                    Padding = new Padding(4, 0, 0, 0)
+                },
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colCode",
                 HeaderText = "",
-                Width = 105,
                 ReadOnly = true,
-                DefaultCellStyle = lft,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                Width = 250,
+                DefaultCellStyle = new DataGridViewCellStyle
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleLeft,
+                    Padding = new Padding(4, 0, 0, 0),
+                    WrapMode = DataGridViewTriState.True
+                },
+
             });
             dgvArticles.Columns.Add(new DataGridViewLinkColumn
             {

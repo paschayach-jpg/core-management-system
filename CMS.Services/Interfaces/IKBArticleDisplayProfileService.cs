@@ -26,6 +26,9 @@ namespace CMS.Services.Interfaces
         /// <summary>Soft delete — ตั้ง IsActive = 0 (ไม่ยกเลิกการผูกกับ category ที่ใช้อยู่ — เจ้าของหน้า config ต้องจัดการเอง)</summary>
         void DeleteProfile(int profileId, UserContext user);
 
+        /// <summary>เปิดใช้งานกลับ — ตั้ง IsActive = 1</summary>
+        void ActivateProfile(int profileId, UserContext user);
+
         /// <summary>รายชื่อ Category ที่ผูก DisplayProfileID ตรงกับ profileId นี้โดยตรง (ไม่รวมที่ inherit มาจาก ancestor)</summary>
         IList<KBCategory> GetCategoriesUsingProfile(int profileId);
 

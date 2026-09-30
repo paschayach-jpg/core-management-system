@@ -13,6 +13,9 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string TemplateDescription { get; set; }
         bool DeleteEnabled { set; }
 
+        /// <summary>สถานะของรายการที่เลือก — ใช้สลับปุ่มระหว่าง "ปิดใช้งาน" / "เปิดใช้งาน"</summary>
+        bool RecordIsActive { set; }
+
         void BindTemplateList(IEnumerable<KBImportTemplate> templates);
         void BindColumnGrid(IEnumerable<KBImportTemplateColumnRow> rows);
 

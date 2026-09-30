@@ -381,7 +381,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblSummaryInfo.Name = "lblSummaryInfo";
             this.lblSummaryInfo.Size = new System.Drawing.Size(378, 35);
             this.lblSummaryInfo.TabIndex = 0;
-            this.lblSummaryInfo.Text = "📝 สรุปย่อ: -";
+            this.lblSummaryInfo.Text = "📝 สรุปย่อ: ";
             // 
             // pnlInfoWrapper
             // 

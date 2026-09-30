@@ -170,7 +170,17 @@ namespace CMS.Controllers.KMS.KB
                     return;
                 }
 
-                _processor.ValidateRows(rows, resolvedCategoryId);
+                // ไฟล์ผิด Template ทั้งไฟล์ (เช่น ไฟล์กฎหมาย RVA แต่เลือก Template ของ PVI) — หยุดอยู่ที่ Step 1 ให้เลือกใหม่
+                // แทนที่จะพาไป Step 2 ที่ทุกแถวเป็น Error
+                string templateCategoryCode = _templateService.GetTemplateCategoryCode(resolvedCategoryId);
+                string mismatch = _processor.GetTemplateMismatchMessage(rows, templateCategoryCode);
+                if (mismatch != null)
+                {
+                    _view.ShowError(mismatch + "\n\nกรุณาเลือก Template ให้ตรงกับไฟล์ (Template ที่เลือก: \"" + template.TemplateName + "\")");
+                    return;
+                }
+
+                _processor.ValidateRows(rows, resolvedCategoryId, templateCategoryCode);
 
                 _lastValidation          = BuildValidationResult(rows);
                 _lastResolvedArticleType = resolvedArticleType;
@@ -291,6 +301,14 @@ namespace CMS.Controllers.KMS.KB
             categoryId  = 0;
             articleType = 0;
             error       = null;
+
+            // Template เก่าที่บันทึกไว้ก่อนบังคับ map ArticleCode — ต้องกลับไปแก้ที่หน้า config ก่อนใช้งาน
+            var articleCodeRow = columns.FirstOrDefault(c => string.Equals(c.TargetColumnName, "ArticleCode", StringComparison.OrdinalIgnoreCase));
+            if (articleCodeRow == null || string.IsNullOrWhiteSpace(articleCodeRow.ExcelColumnRef))
+            {
+                error = "Template ที่เลือกยังไม่ได้ Map คอลัมน์ ArticleCode (Code รวม) กรุณาตั้งค่าที่หน้า config template ก่อน";
+                return false;
+            }
 
             var categoryRow = columns.FirstOrDefault(c => string.Equals(c.TargetColumnName, "CategoryID", StringComparison.OrdinalIgnoreCase));
             if (categoryRow == null || !int.TryParse(categoryRow.ExcelColumnRef, out categoryId) || categoryId <= 0)

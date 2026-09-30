@@ -169,11 +169,22 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             if (!EditingTemplateId.HasValue) return;
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการปิดใช้งาน Template \"{0}\" ใช่หรือไม่?", TemplateName),
-                "ยืนยันการปิดใช้งาน", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (confirm == DialogResult.Yes)
-                _presenter.Delete();
+            if (_recordIsActive)
+            {
+                var confirm = MessageBox.Show(
+                    string.Format("ต้องการปิดใช้งาน Template \"{0}\" ใช่หรือไม่?", TemplateName),
+                    "ยืนยันการปิดใช้งาน", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (confirm == DialogResult.Yes)
+                    _presenter.Delete();
+            }
+            else
+            {
+                var confirm = MessageBox.Show(
+                    string.Format("ต้องการเปิดใช้งาน Template \"{0}\" อีกครั้งใช่หรือไม่?", TemplateName),
+                    "ยืนยันการเปิดใช้งาน", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (confirm == DialogResult.Yes)
+                    _presenter.Activate();
+            }
         }
 
         private void BtnClose_Click(object sender, EventArgs e)
@@ -200,6 +211,20 @@ namespace CMS.Presentation.Modules.KMS
         public bool DeleteEnabled
         {
             set { btnDelete.Enabled = value; }
+        }
+
+        private bool _recordIsActive = true;
+
+        public bool RecordIsActive
+        {
+            set
+            {
+                _recordIsActive = value;
+                btnDelete.Text = value ? "🗑️ ปิดใช้งาน" : "♻️ เปิดใช้งาน";
+                btnDelete.BackColor = value
+                    ? System.Drawing.Color.FromArgb(200, 50, 50)
+                    : System.Drawing.Color.FromArgb(40, 150, 80);
+            }
         }
 
         public void BindTemplateList(IEnumerable<KBImportTemplate> templates)
@@ -381,6 +406,7 @@ namespace CMS.Presentation.Modules.KMS
             txtTemplateName.Text = string.Empty;
             txtTemplateDescription.Text = string.Empty;
             btnDelete.Enabled = false;
+            RecordIsActive = true;
             dgvTemplates.ClearSelection();
             dgvColumnMapping.Rows.Clear();
             if (cboCategoryConfig.Items.Count > 0) cboCategoryConfig.SelectedIndex = 0;

@@ -95,11 +95,22 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (_presenter == null) return;
             if (!EditingProfileId.HasValue) return;
-            var confirm = MessageBox.Show(
-                string.Format("ต้องการปิดใช้งาน Profile \"{0}\" ใช่หรือไม่?", ProfileName),
-                "ยืนยันการปิดใช้งาน", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (confirm == DialogResult.Yes)
-                _presenter.Delete();
+            if (_recordIsActive)
+            {
+                var confirm = MessageBox.Show(
+                    string.Format("ต้องการปิดใช้งาน Profile \"{0}\" ใช่หรือไม่?", ProfileName),
+                    "ยืนยันการปิดใช้งาน", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (confirm == DialogResult.Yes)
+                    _presenter.Delete();
+            }
+            else
+            {
+                var confirm = MessageBox.Show(
+                    string.Format("ต้องการเปิดใช้งาน Profile \"{0}\" อีกครั้งใช่หรือไม่?", ProfileName),
+                    "ยืนยันการเปิดใช้งาน", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (confirm == DialogResult.Yes)
+                    _presenter.Activate();
+            }
         }
 
         private void BtnClose_Click(object sender, EventArgs e)
@@ -126,6 +137,20 @@ namespace CMS.Presentation.Modules.KMS
         public bool DeleteEnabled
         {
             set { btnDelete.Enabled = value; }
+        }
+
+        private bool _recordIsActive = true;
+
+        public bool RecordIsActive
+        {
+            set
+            {
+                _recordIsActive = value;
+                btnDelete.Text = value ? "🗑️ ปิดใช้งาน" : "♻️ เปิดใช้งาน";
+                btnDelete.BackColor = value
+                    ? System.Drawing.Color.FromArgb(200, 50, 50)
+                    : System.Drawing.Color.FromArgb(40, 150, 80);
+            }
         }
 
         public void BindProfileList(IEnumerable<KBArticleDisplayProfile> profiles)
@@ -199,6 +224,7 @@ namespace CMS.Presentation.Modules.KMS
             txtProfileName.Text = string.Empty;
             txtProfileDescription.Text = string.Empty;
             btnDelete.Enabled = false;
+            RecordIsActive = true;
             dgvProfiles.ClearSelection();
             dgvColumnMapping.Rows.Clear();
             clbCategories.Items.Clear();
