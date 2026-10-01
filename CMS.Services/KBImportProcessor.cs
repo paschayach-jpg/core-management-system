@@ -530,7 +530,8 @@ namespace CMS.Services
             }
 
             // ── Code รวม ต้องยาว 27 ตัว: [prefix 3][...][suffix 5 = "00000"] ───
-            // prefix = CategoryCode ของกฎหมายฉบับนั้น (เช่น RVA — 1 Template ใช้ได้ทุกกฎหมาย หมวดหาเองตามรหัสนี้),
+            // prefix = CategoryCode ของกฎหมายฉบับนั้น (เช่น RVA — 1 Template ใช้ได้ทุกกฎหมาย หมวดหาเองตามรหัสนี้);
+            // กฎหมายที่แยกหมวดตามปี (เช่น PLI2535/PLI2540 ใต้ PLI) เลือกหมวดปีจากตัวที่ 8-10 + "2" นำหน้าด้วย (ดู TryResolveLawArticle),
             // suffix "00000" = ตัวมาตราเอง; ArticleCode คือ 22 ตัวแรก. ผิดกติกาข้อใดก็เป็น Error
             if (raw.Length != 27)
             {
@@ -545,10 +546,12 @@ namespace CMS.Services
                 row.StatusNote = string.Format("Code รวม: 5 ตัวสุดท้ายต้องเป็น 00000 — '{0}'", raw);
                 return;
             }
-            KBCategory lawCategory;
-            string     categoryError;
-            if (!resolver.TryResolveLaw(raw.Substring(0, 3), out lawCategory, out categoryError))
+            KBCategory        lawCategory;
+            string            categoryError;
+            KBMissingCategory missingCategory;
+            if (!resolver.TryResolveLawArticle(raw, out lawCategory, out categoryError, out missingCategory))
             {
+                row.MissingCategory = missingCategory;
                 row.Status     = "Error";
                 row.StatusNote = string.Format("Code รวม: {0} — '{1}'", categoryError, raw);
                 return;
@@ -611,6 +614,7 @@ namespace CMS.Services
             row.Summary            = string.IsNullOrWhiteSpace(row.RawSummary) ? null : row.RawSummary.Trim();
             row.TitleCategory      = string.IsNullOrWhiteSpace(row.RawTitleCategory) ? null : row.RawTitleCategory.Trim();
             row.ResolvedCategoryID = lawCategory.CategoryID;
+            row.ResolvedCategoryName = lawCategory.CategoryName;
             row.DocumentTypeCode   = lawCategory.CategoryCode;
             row.DocumentTypeLabel  = "มาตรา";
         }
@@ -641,6 +645,43 @@ namespace CMS.Services
 
             var errors = new List<string>();
 
+            // ── หมวดของแถวนี้ — ตรวจก่อนอย่างอื่น (ไม่ผูกกับ Template; ดูจาก ArticleCode + ตาราง m_KBCategory เท่านั้น):
+            //    ตัวที่ 23 (ประเภทเอกสาร) → หมวดประเภท เช่น OR, แล้วต่อรหัสปี (ตัวที่ 8-10 + "2" นำหน้า) → หมวดปี เช่น OR2535
+            //    หมวดไม่พบ = Error + row.MissingCategory บอกว่าต้องสร้างหมวดอะไร (controller สรุปแจ้งผู้ใช้ที่หน้าจอ) ──────────
+            if (!string.IsNullOrWhiteSpace(mappedCode))
+            {
+                string expectedCode = KBImportLayoutTypeCatalog.GetNonLawCategoryCode(mappedCode);
+
+                if (expectedCode == null)
+                {
+                    errors.Add(string.Format(
+                        "Code รวม: ต้องยาว 27 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 23 ต้องเป็น 1-6 — '{0}'", mappedCode));
+                }
+                else
+                {
+                    KBCategory        resolvedCategory;
+                    string            categoryError;
+                    KBMissingCategory missingCategory;
+                    if (resolver.TryResolveNonLawArticle(mappedCode, out resolvedCategory, out categoryError, out missingCategory))
+                    {
+                        row.ResolvedCategoryID   = resolvedCategory.CategoryID;
+                        row.ResolvedCategoryName = resolvedCategory.CategoryName;
+                        row.DocumentTypeCode     = resolvedCategory.CategoryCode;
+                    }
+                    else
+                    {
+                        row.MissingCategory = missingCategory;
+                        errors.Add(string.Format("Code รวม: ตัวที่ 23 = {0} ({1}) — {2} — '{3}'",
+                            mappedCode[22], expectedCode, categoryError, mappedCode));
+                    }
+
+                    row.DocumentTypeLabel = KBImportLayoutTypeCatalog.GetNonLawTypeLabel(mappedCode[22]);
+
+                    // กฎหมายแม่ = 22 ตัวแรกของ Code รวม (ใช้ resolve + สร้าง KBArticleLink ไป-กลับ) ไม่อ่านคอลัมน์ B
+                    row.ParentCodes = new List<string> { mappedCode.Substring(0, 22) };
+                }
+            }
+
             if (row.ColA == null)
             {
                 errors.Add("Template ไม่ได้ Map ArticleCode (Code รวม)");
@@ -670,39 +711,6 @@ namespace CMS.Services
 
             // บทความเดิม: ไม่เขียนทับ Title/เนื้อหา/วันที่ จึงไม่บังคับกรอก — ตรวจเฉพาะไฟล์แนบ/กฎหมายแม่ที่ใช้เติมของที่ขาด
             bool isExisting = row.ExistingArticleId > 0;
-
-            // ── รูปแบบ Code รวม + ตัวที่ 23 (ประเภท) → หมวดของแถวนี้ (หาเอง ไม่ผูกกับ Template) ──────────────
-            if (!string.IsNullOrWhiteSpace(mappedCode))
-            {
-                string expectedCode = KBImportLayoutTypeCatalog.GetNonLawCategoryCode(mappedCode);
-
-                if (expectedCode == null)
-                {
-                    errors.Add(string.Format(
-                        "Code รวม: ต้องยาว 27 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 23 ต้องเป็น 1-6 — '{0}'", mappedCode));
-                }
-                else
-                {
-                    KBCategory typeCategory;
-                    string     categoryError;
-                    if (resolver.TryResolveNonLaw(expectedCode, out typeCategory, out categoryError))
-                    {
-                        row.ResolvedCategoryID = typeCategory.CategoryID;
-                        row.DocumentTypeCode   = typeCategory.CategoryCode;
-                    }
-                    else
-                    {
-                        errors.Add(string.Format("Code รวม: ตัวที่ 23 = {0} ({1}) — {2} — '{3}'",
-                            mappedCode[22], expectedCode, categoryError, mappedCode));
-                    }
-
-                    row.DocumentTypeLabel  = KBImportLayoutTypeCatalog.GetNonLawTypeLabel(mappedCode[22]);
-
-                    // กฎหมายแม่ = 22 ตัวแรกของ Code รวม (ใช้ resolve + สร้าง KBArticleLink ไป-กลับ) ไม่อ่านคอลัมน์ B
-                    string parentPart = mappedCode.Substring(0, 22);
-                    row.ParentCodes = new List<string> { parentPart };
-                }
-            }
 
             if (!isExisting)
             {

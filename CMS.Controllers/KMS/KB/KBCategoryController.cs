@@ -55,20 +55,11 @@ namespace CMS.Controllers.KMS.KB
 
             try
             {
-                // Collect IDs to query: the selected category + all its direct children
-                bool isParent = !cat.ParentCategoryID.HasValue;
-                var articles  = _articleService.GetByCategory(cat.CategoryID).ToList();
+                // The selected category + every subcategory under it, at any depth (กฎหมาย › PLI › PLI2535)
+                var articles = _articleService.GetByCategory(cat.CategoryID).ToList();
 
-                if (isParent)
-                {
-                    // Also pull articles from every subcategory
-                    var childIds = _service.GetAll()
-                        .Where(c => c.ParentCategoryID.HasValue && c.ParentCategoryID.Value == cat.CategoryID)
-                        .Select(c => c.CategoryID);
-
-                    foreach (var childId in childIds)
-                        articles.AddRange(_articleService.GetByCategory(childId));
-                }
+                foreach (int childId in KBCategoryTree.GetDescendantIds(_service.GetAll(), cat.CategoryID))
+                    articles.AddRange(_articleService.GetByCategory(childId));
 
                 int total     = articles.Count;
                 int published = articles.Count(a => a.Status == 3);                   // 3 = Published

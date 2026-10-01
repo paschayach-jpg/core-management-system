@@ -124,24 +124,70 @@ namespace CMS.Data.Repositories
 
         // ── Write ─────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// เพิ่มหมวดใหม่ คืน CategoryID ที่ได้. CategoryID เป็น IDENTITY ในตารางที่สร้างจาก 03_KMS_WFE_TMS_Schema.sql แต่ในบาง DB
+        /// (เช่น CMS_DB) ไม่ใช่ IDENTITY — กรณีนั้นใช้ MAX(CategoryID)+1 ใน transaction เดียวกับ INSERT (ล็อกช่วงด้วย UPDLOCK/HOLDLOCK
+        /// ผู้เพิ่มพร้อมกันจึงรอกันและไม่ได้เลขซ้ำ)
+        /// </summary>
         public int Insert(KBCategory category)
         {
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                const string sql = @"
-                    INSERT INTO KMS.m_KBCategory
-                        (ParentCategoryID, CategoryCode, CategoryName, Icon,
-                         Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID)
-                    VALUES
-                        (@ParentCategoryID, @CategoryCode, @CategoryName, @Icon,
-                         @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID);
-                    SELECT SCOPE_IDENTITY();";
-                using (var cmd = new SqlCommand(sql, conn))
+                using (var tx = conn.BeginTransaction(IsolationLevel.Serializable))
                 {
-                    AddParams(cmd, category);
-                    return Convert.ToInt32(cmd.ExecuteScalar());
+                    int newId;
+
+                    if (IsCategoryIdIdentity(conn, tx))
+                    {
+                        const string identitySql = @"
+                            INSERT INTO KMS.m_KBCategory
+                                (ParentCategoryID, CategoryCode, CategoryName, Icon,
+                                 Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID)
+                            VALUES
+                                (@ParentCategoryID, @CategoryCode, @CategoryName, @Icon,
+                                 @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID);
+                            SELECT CONVERT(INT, SCOPE_IDENTITY());";
+                        using (var cmd = new SqlCommand(identitySql, conn, tx))
+                        {
+                            AddParams(cmd, category);
+                            newId = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+                    }
+                    else
+                    {
+                        const string manualIdSql = @"
+                            DECLARE @NewID INT;
+                            SELECT @NewID = ISNULL(MAX(CategoryID), 0) + 1
+                            FROM   KMS.m_KBCategory WITH (UPDLOCK, HOLDLOCK);
+
+                            INSERT INTO KMS.m_KBCategory
+                                (CategoryID, ParentCategoryID, CategoryCode, CategoryName, Icon,
+                                 Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID)
+                            VALUES
+                                (@NewID, @ParentCategoryID, @CategoryCode, @CategoryName, @Icon,
+                                 @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID);
+                            SELECT @NewID;";
+                        using (var cmd = new SqlCommand(manualIdSql, conn, tx))
+                        {
+                            AddParams(cmd, category);
+                            newId = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+                    }
+
+                    tx.Commit();
+                    return newId;
                 }
+            }
+        }
+
+        /// <summary>true ถ้าคอลัมน์ KMS.m_KBCategory.CategoryID เป็น IDENTITY (DB ออกเลขให้เอง)</summary>
+        private static bool IsCategoryIdIdentity(SqlConnection conn, SqlTransaction tx)
+        {
+            const string sql = "SELECT ISNULL(COLUMNPROPERTY(OBJECT_ID('KMS.m_KBCategory'), 'CategoryID', 'IsIdentity'), 0)";
+            using (var cmd = new SqlCommand(sql, conn, tx))
+            {
+                return Convert.ToInt32(cmd.ExecuteScalar()) == 1;
             }
         }
 

@@ -212,6 +212,12 @@ namespace CMS.Controllers.KMS.KB
                 _lastResolvedArticleType = resolvedArticleType;
 
                 _view.ShowValidationResult(_lastValidation);
+
+                // หมวดที่แถวในไฟล์ต้องใช้แต่ยังไม่มีใน m_KBCategory — แจ้งผู้ใช้ให้สร้างก่อน (แถวเหล่านั้นเป็น Error ไม่ถูกนำเข้า)
+                string missingCategoryNotice = BuildMissingCategoryNotice(rows);
+                if (missingCategoryNotice != null)
+                    _view.ShowInfo(missingCategoryNotice);
+
                 _view.SetStatus("ตรวจสอบข้อมูลเรียบร้อย");
             }
             catch (KBExcelReadException ex)
@@ -355,6 +361,39 @@ namespace CMS.Controllers.KMS.KB
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// สรุปหมวดที่ยังไม่มีใน m_KBCategory ที่แถวในไฟล์ต้องใช้ (<see cref="KBImportRow.MissingCategory"/> ที่ตั้งตอน validate) เป็นข้อความ
+        /// ให้ผู้ใช้สร้างหมวดก่อน — รวมแถวที่ใช้หมวดเดียวกันเป็นบรรทัดเดียว; null ถ้าหมวดครบ
+        /// </summary>
+        private static string BuildMissingCategoryNotice(IList<KBImportRow> rows)
+        {
+            var missing = rows
+                .Where(r => r.MissingCategory != null && !string.IsNullOrEmpty(r.MissingCategory.CategoryCode))
+                .GroupBy(r => r.MissingCategory.CategoryCode, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (missing.Count == 0) return null;
+
+            const int maxListed = 20;
+            var lines = new List<string>();
+            foreach (var group in missing.Take(maxListed))
+            {
+                KBMissingCategory category = group.First().MissingCategory;
+                string where = string.IsNullOrEmpty(category.ParentCategoryCode)
+                    ? "หมวดหลัก (ไม่มี parent)"
+                    : string.Format("หมวดย่อยของ \"{0}\" ({1})", category.ParentCategoryName, category.ParentCategoryCode);
+
+                lines.Add(string.Format("• {0} — {1}  [{2} รายการ]", category.CategoryCode, where, group.Count()));
+            }
+            if (missing.Count > maxListed)
+                lines.Add(string.Format("… และอีก {0} หมวด", missing.Count - maxListed));
+
+            return string.Format(
+                "ไม่พบหมวดต่อไปนี้ในระบบ — กรุณาสร้างที่หน้า \"ตั้งค่า Category\" ก่อน แล้วอัปโหลดไฟล์ใหม่\n(แถวที่ต้องใช้หมวดเหล่านี้จะไม่ถูกนำเข้า)\n\n{0}",
+                string.Join("\n", lines));
         }
 
         /// <summary>

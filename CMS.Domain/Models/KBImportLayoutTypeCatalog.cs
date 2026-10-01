@@ -19,6 +19,12 @@ namespace CMS.Domain.Models
         /// <summary>5 ตัวสุดท้ายของ Code รวมที่บอกว่าเป็นตัวมาตราเอง (แถวประกาศ/คำสั่งใช้ 1 หลักประเภท + 4 หลักเลขเอกสาร จึงไม่มีทางเป็นค่านี้)</summary>
         public const string LawCodeSuffix = "00000";
 
+        /// <summary>ตำแหน่ง (0-based) ที่ปีของกฎหมายเริ่มใน Code รวม = ตัวที่ 8 (ยาว 3 หลัก ต่อด้วย "2" นำหน้าเป็น พ.ศ. 4 หลัก)</summary>
+        public const int LawYearStartIndex = 7;
+
+        /// <summary>จำนวนหลักของปีใน Code รวม (ตัวที่ 8-10) — เช่น "535" คือ พ.ศ. 2535</summary>
+        public const int LawYearDigits = 3;
+
         /// <summary>CategoryCode ของหมวดรากของกฎหมาย — หมวดใดที่ไล่ ParentCategoryID ขึ้นไปเจอรหัสนี้ถือเป็นกฎหมาย</summary>
         public const string LawRootCategoryCode = "LW";
 
@@ -32,6 +38,23 @@ namespace CMS.Domain.Models
             return !string.IsNullOrEmpty(code)
                 && code.Length == LawCodeLength
                 && string.Equals(code.Substring(LawCodeLength - 5), LawCodeSuffix, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// ปี พ.ศ. 4 หลักของกฎหมายจาก Code รวม: ตัวที่ 8-10 (เช่น "535") นำหน้าด้วย "2" → "2535". คืน <c>null</c> ถ้า Code สั้นเกินไป
+        /// หรือตัวที่ 8-10 ไม่ใช่ตัวเลข — ใช้แยกหมวดตามปีทั้งฝั่งกฎหมาย (PLI ปี 2535 กับ 2540 ใช้รหัสกฎหมายเดียวกัน →
+        /// PLI2535/PLI2540) และฝั่งที่ไม่ใช่กฎหมาย (ประเภทเอกสาร OR + ปี → OR2535); ดู <c>KBImportCategoryResolver</c>
+        /// </summary>
+        public static string GetLawYear(string code)
+        {
+            if (string.IsNullOrEmpty(code) || code.Length < LawYearStartIndex + LawYearDigits) return null;
+
+            string digits = code.Substring(LawYearStartIndex, LawYearDigits);
+            foreach (char ch in digits)
+            {
+                if (ch < '0' || ch > '9') return null;
+            }
+            return "2" + digits;
         }
 
         /// <summary>ตัวที่ 23 ของ Code รวมในไฟล์ที่ไม่ใช่กฎหมาย (ประเภทเอกสาร) → CategoryCode ของหมวดนั้น</summary>

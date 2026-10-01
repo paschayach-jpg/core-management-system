@@ -108,11 +108,20 @@ namespace CMS.Domain.Models
         public string TitleCategory      { get; set; }
         /// <summary>CategoryID ที่หาได้จาก ArticleCode ของแถวนี้ตอน validate (Template ไม่ผูกหมวดแล้ว) — 0 = ยังหาไม่ได้</summary>
         public int    ResolvedCategoryID { get; set; }
+        /// <summary>ชื่อหมวด (CategoryName) ของ <see cref="ResolvedCategoryID"/> — ใช้แสดงผลใน preview เท่านั้น</summary>
+        public string ResolvedCategoryName { get; set; }
+
+        /// <summary>
+        /// หมวดที่ยังไม่มีใน m_KBCategory และต้องสร้างก่อนแถวนี้จะ import ได้ (ตั้งโดย KBImportCategoryResolver ตอน validate) —
+        /// null = หมวดครบ. ใช้สรุปให้ผู้ใช้ที่หน้าจอว่าต้องสร้างหมวดอะไร
+        /// </summary>
+        public KBMissingCategory MissingCategory { get; set; }
         /// <summary>Display label for the resolved CategoryID: "มาตรา" (Law), "ประกาศ" or "คำสั่ง" (NonLaw).</summary>
         public string DocumentTypeLabel  { get; set; }
         /// <summary>
         /// CategoryCode ของหมวดที่หาได้จาก ArticleCode ของแถวนี้ (ตั้งค่าโดย KBImportProcessor ผ่าน KBImportCategoryResolver):
-        /// Law = รหัสกฎหมาย 3 ตัวแรกของ Code รวม (เช่น PVI, RVA), NonLaw = ประเภทเอกสารจากตัวที่ 23 (AN/OR/SO/RG/CI/MR)
+        /// Law = รหัสกฎหมาย 3 ตัวแรกของ Code รวม (เช่น PVI, RVA) หรือรหัสหมวดปี (เช่น PLI2535) เมื่อกฎหมายนั้นแยกหมวดตามปี,
+        /// NonLaw = รหัสหมวดปีของประเภทเอกสาร เช่น OR2535 (ประเภทจากตัวที่ 23: AN/OR/SO/RG/CI/MR + พ.ศ. จากตัวที่ 8-10)
         /// </summary>
         public string DocumentTypeCode   { get; set; }
 
@@ -143,5 +152,20 @@ namespace CMS.Domain.Models
             copy.ResolvedParentArticleIds = new List<int>(ResolvedParentArticleIds);
             return copy;
         }
+    }
+
+    /// <summary>
+    /// หมวดที่ต้องสร้างใน KMS.m_KBCategory ก่อนแถวใน Excel จะ import ได้ — เช่น รหัส <c>OR2535</c> เป็นหมวดย่อยของ <c>OR</c>
+    /// (หรือรหัส <c>OR</c> เองถ้ายังไม่มีหมวดประเภทเอกสารนี้เลย; กรณีนั้นไม่มี parent)
+    /// </summary>
+    public class KBMissingCategory
+    {
+        /// <summary>CategoryCode ที่ต้องสร้าง เช่น "OR2535"</summary>
+        public string CategoryCode       { get; set; }
+
+        /// <summary>CategoryCode ของหมวดแม่ที่ต้องสร้างไว้ใต้ เช่น "OR" — null/ว่าง = เป็นหมวดหลัก (ไม่มี parent)</summary>
+        public string ParentCategoryCode { get; set; }
+
+        public string ParentCategoryName { get; set; }
     }
 }

@@ -39,6 +39,8 @@ namespace CMS.Presentation.Modules.KMS
 
         // Preview grid paging
         private const int          GridPageSize = 50;
+        /// <summary>ความสูงสูงสุดของแถวใน dgvPreview หลังปรับตามข้อความที่ wrap (ราว 4 บรรทัด) — กันเนื้อหายาว ๆ ดันแถวสูงทั้งหน้า ลากขอบแถวขยายเองได้</summary>
+        private const int          PreviewMaxRowHeight = 100;
         private IList<KBImportRow> _allRows     = new List<KBImportRow>();
         private int                _gridPage    = 0;
 
@@ -631,21 +633,27 @@ namespace CMS.Presentation.Modules.KMS
         {
             var colNo             = new DataGridViewTextBoxColumn { Name = "colNo",             HeaderText = "#",              MinimumWidth = 30,  Width = 90,  ReadOnly = true };   // กว้างพอสำหรับ "5 (2/3)" (ArticleCode ที่แตกจาก Excel row เดียวกัน)
             var colStatus         = new DataGridViewTextBoxColumn { Name = "colStatus",         HeaderText = "สถานะ",          MinimumWidth = 40,  Width = 90,  ReadOnly = true };
-            var colKind           = new DataGridViewTextBoxColumn { Name = "colKind",           HeaderText = "ประเภท",         MinimumWidth = 60,  Width = 130, ReadOnly = true };
-            var colNote           = new DataGridViewTextBoxColumn { Name = "colNote",           HeaderText = "หมายเหตุ",       MinimumWidth = 60,  Width = 100, ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, Resizable = DataGridViewTriState.True };
+            var colKind           = new DataGridViewTextBoxColumn { Name = "colKind",           HeaderText = "ประเภท",         MinimumWidth = 60,  Width = 130, ReadOnly = true, Visible = false };   // ซ่อนไว้ก่อน (แสดงผลอย่างเดียว) — ยังต้องอยู่ในลำดับคอลัมน์เพราะ Rows.Add ส่งค่าตามตำแหน่ง
+            var colNote           = new DataGridViewTextBoxColumn { Name = "colNote",           HeaderText = "หมายเหตุ",       MinimumWidth = 60,  Width = 100, ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, Resizable = DataGridViewTriState.True, Visible = false };   // ซ่อนไว้ก่อน — ดูเหตุผล/หมายเหตุได้จาก tooltip ของคอลัมน์สถานะ
             var colArticleCode    = new DataGridViewTextBoxColumn { Name = "colArticleCode",    HeaderText = "ArticleCode",    MinimumWidth = 60,  Width = 190, ReadOnly = true };
             var colTitle          = new DataGridViewTextBoxColumn { Name = "colTitle",          HeaderText = "ชื่อ / Tags",     MinimumWidth = 40,  Width = 160, ReadOnly = true };
             var colSummary        = new DataGridViewTextBoxColumn { Name = "colSummary",        HeaderText = "Summary",        MinimumWidth = 80,  Width = 160, ReadOnly = true };
             var colPublished      = new DataGridViewTextBoxColumn { Name = "colPublished",      HeaderText = "วันที่ประกาศ",   MinimumWidth = 60,  Width = 100, ReadOnly = true };
             var colEffective      = new DataGridViewTextBoxColumn { Name = "colEffective",      HeaderText = "วันที่บังคับใช้", MinimumWidth = 60, Width = 110, ReadOnly = true };
             var colTitleCategory  = new DataGridViewTextBoxColumn { Name = "colTitleCategory",  HeaderText = "TitleCategory",  MinimumWidth = 60,  Width = 140, ReadOnly = true };
-            var colCategoryId     = new DataGridViewTextBoxColumn { Name = "colCategoryId",     HeaderText = "CategoryID",     MinimumWidth = 40,  Width = 80,  ReadOnly = true };
-            var colContentHtml    = new DataGridViewTextBoxColumn { Name = "colContentHtml",    HeaderText = "เนื้อหา", MinimumWidth = 60, Width = 60, ReadOnly = true };
+            var colCategoryId     = new DataGridViewTextBoxColumn { Name = "colCategoryId",     HeaderText = "CategoryID",     MinimumWidth = 40,  Width = 80,  ReadOnly = true, Visible = false };   // ซ่อนไว้ก่อน (แสดงผลอย่างเดียว) — แสดงชื่อหมวดที่ colCategoryName แทน
+            var colCategoryName   = new DataGridViewTextBoxColumn { Name = "colCategoryName",   HeaderText = "CategoryName",   MinimumWidth = 60,  Width = 150, ReadOnly = true, DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.True } };
+            var colContentHtml    = new DataGridViewTextBoxColumn { Name = "colContentHtml",    HeaderText = "เนื้อหา", MinimumWidth = 60, Width = 300, ReadOnly = true, DefaultCellStyle = new DataGridViewCellStyle { WrapMode = DataGridViewTriState.True } };
 
+            // ลำดับคอลัมน์ต้องตรงกับลำดับค่าที่ส่งเข้า dgvPreview.Rows.Add(...) ใน RefreshGridPage (ส่งค่าตามตำแหน่ง)
             dgvPreview.Columns.AddRange(new DataGridViewColumn[] {
                 colNo, colStatus, colKind, colNote, colArticleCode,
-                colTitle, colSummary, colPublished, colEffective, colTitleCategory, colCategoryId, colContentHtml
+                colTitle, colTitleCategory, colContentHtml, colSummary,
+                colPublished, colEffective, colCategoryId, colCategoryName
             });
+
+            // หน้า Step 2 เติมแถวตอนยังซ่อนอยู่ — ปรับความสูงแถวอีกครั้งเมื่อ grid ถูกแสดง
+            dgvPreview.VisibleChanged += (s, e) => ResizePreviewRows();
         }
 
         // Template combo item — wraps a KBImportTemplate for display in cboTemplate (see BindTemplateOptions)
@@ -933,6 +941,7 @@ namespace CMS.Presentation.Modules.KMS
                         if (kindDisplay.Length > 0 && !string.IsNullOrEmpty(r.DocumentTypeCode))
                             kindDisplay += " (" + r.DocumentTypeCode + ")";
 
+                        // ค่าต้องเรียงตามลำดับคอลัมน์ใน InitPreviewGridColumns (Rows.Add ส่งค่าตามตำแหน่ง)
                         int idx = dgvPreview.Rows.Add(
                             FormatRowLabel(r),
                             StatusLabel(r.Status),
@@ -940,18 +949,19 @@ namespace CMS.Presentation.Modules.KMS
                             FormatPreviewNote(r),
                             S(r.ArticleCode ?? r.ColA),
                             S(r.Title ?? r.Tags),
+                            S(r.TitleCategory),
+                            S(r.RawContent, 300),
                             S(r.Summary),
                             // Preview mirrors the Excel cell exactly (RawPublishedDate/RawEffectiveDate,
                             // e.g. พ.ศ. as typed) — PublishedDateParsed/EffectiveDateParsed (already
                             // converted to ค.ศ.) still drive the actual insert into t_KBArticle unchanged.
                             S(r.RawPublishedDate),
                             S(r.RawEffectiveDate),
-                            S(r.TitleCategory),
                             r.ResolvedCategoryID > 0 ? r.ResolvedCategoryID.ToString() : string.Empty,
-                            S(r.RawContent, 300));
+                            S(r.ResolvedCategoryName));
 
                         var dgvRow = dgvPreview.Rows[idx];
-                        dgvRow.Cells["colNote"].ToolTipText = FormatPreviewNote(r);   // note ยาวกว่าความกว้างคอลัมน์ (เช่น สิ่งที่จะเติมให้บทความที่มีอยู่แล้ว)
+                        dgvRow.Cells["colStatus"].ToolTipText = FormatPreviewNote(r);   // เหตุผล/หมายเหตุของแถว (คอลัมน์หมายเหตุซ่อนอยู่) — เช่น สิ่งที่จะเติมให้บทความที่มีอยู่แล้ว
                         if (r.Status == "Error")
                             dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(253, 237, 236);
                         else if (r.Status == "Skip")
@@ -973,7 +983,25 @@ namespace CMS.Presentation.Modules.KMS
                 dgvPreview.ResumeLayout();
             }
 
+            ResizePreviewRows();
             UpdatePagerLabels();
+        }
+
+        /// <summary>
+        /// ปรับความสูงแถวของ dgvPreview ตามข้อความที่ wrap (คอลัมน์ CategoryName, เนื้อหา) ไม่งั้นเห็นแค่บรรทัดแรก (RowTemplate.Height = 26)
+        /// แต่จำกัดไม่เกิน <see cref="PreviewMaxRowHeight"/> กันเนื้อหายาว ๆ ดันแถวสูงทั้งหน้า. ทำได้เฉพาะตอน grid มองเห็นอยู่
+        /// (ตอนซ่อนอยู่ WinForms ไม่คำนวณความสูงให้) จึงเรียกจาก VisibleChanged ด้วย — ดู InitPreviewGridColumns
+        /// </summary>
+        private void ResizePreviewRows()
+        {
+            if (!dgvPreview.Visible || dgvPreview.Rows.Count == 0) return;
+
+            dgvPreview.AutoResizeRows(DataGridViewAutoSizeRowsMode.AllCells);
+            foreach (DataGridViewRow gridRow in dgvPreview.Rows)
+            {
+                if (gridRow.Height > PreviewMaxRowHeight)
+                    gridRow.Height = PreviewMaxRowHeight;
+            }
         }
 
         private void UpdatePagerLabels()
@@ -1299,6 +1327,14 @@ namespace CMS.Presentation.Modules.KMS
             {
                 reason      = "❌ Foreign key — ค่าอ้างอิงไม่มีในตาราง";
                 relatedData = "ตรวจสอบ CategoryID หรือ ArticleType";
+                return;
+            }
+
+            // The category the row needs (e.g. year category OR2535 / PLI2535) does not exist yet — the user must create it first
+            if (note.IndexOf("กรุณาสร้าง", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                reason      = "❌ ยังไม่มีหมวดในระบบ — ต้องสร้างหมวดก่อน";
+                relatedData = note;
                 return;
             }
 

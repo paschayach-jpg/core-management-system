@@ -87,6 +87,11 @@ namespace CMS.Services
             if (category.ParentCategoryID.HasValue && category.ParentCategoryID.Value == category.CategoryID)
                 throw new InvalidOperationException("ไม่สามารถตั้ง Parent ให้ตัวเองได้");
 
+            // ป้องกันตั้ง Parent เป็นหมวดย่อยของตัวเอง (ต้นไม้หมวดลึกกี่ชั้นก็ได้ จึงวนลูปได้)
+            if (category.ParentCategoryID.HasValue &&
+                KBCategoryTree.GetDescendantIds(_repo.GetAll(), category.CategoryID).Contains(category.ParentCategoryID.Value))
+                throw new InvalidOperationException("ไม่สามารถตั้ง Parent เป็นหมวดย่อยของตัวเองได้");
+
             _repo.Update(category);
 
             _auditService.Log(new AuditEntry
