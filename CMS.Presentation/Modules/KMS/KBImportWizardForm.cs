@@ -155,7 +155,6 @@ namespace CMS.Presentation.Modules.KMS
                 return selected != null ? (int?)selected.Value : null;
             }
         }
-        public bool OptSkipRowOnDownloadFailure { get { return chkLinkDMS.Checked; } }
 
         // Methods
 
@@ -255,9 +254,10 @@ namespace CMS.Presentation.Modules.KMS
 
             // Derive success rows for stat filter (task 2)
             _errSkipRows = allProblemRows;
-            var problemNums = new HashSet<int>(allProblemRows.Select(r => r.RowNumber));
+            // อ้างด้วย instance ไม่ใช่ RowNumber — Excel row เดียวที่แตกเป็นหลาย ArticleCode ใช้ RowNumber เดียวกันแต่ผ่าน/ล้มเหลวแยกกัน
+            var problemRows = new HashSet<KBImportRow>(allProblemRows);
             _errSuccessRows = (_allRows ?? new List<KBImportRow>())
-                .Where(r => !problemNums.Contains(r.RowNumber))
+                .Where(r => !problemRows.Contains(r))
                 .ToList();
 
             bool hasProblemRows = allProblemRows.Count > 0;
@@ -629,7 +629,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitPreviewGridColumns()
         {
-            var colNo             = new DataGridViewTextBoxColumn { Name = "colNo",             HeaderText = "#",              MinimumWidth = 30,  Width = 46,  ReadOnly = true };
+            var colNo             = new DataGridViewTextBoxColumn { Name = "colNo",             HeaderText = "#",              MinimumWidth = 30,  Width = 90,  ReadOnly = true };   // กว้างพอสำหรับ "5 (2/3)" (ArticleCode ที่แตกจาก Excel row เดียวกัน)
             var colStatus         = new DataGridViewTextBoxColumn { Name = "colStatus",         HeaderText = "สถานะ",          MinimumWidth = 40,  Width = 90,  ReadOnly = true };
             var colKind           = new DataGridViewTextBoxColumn { Name = "colKind",           HeaderText = "ประเภท",         MinimumWidth = 60,  Width = 130, ReadOnly = true };
             var colNote           = new DataGridViewTextBoxColumn { Name = "colNote",           HeaderText = "หมายเหตุ",       MinimumWidth = 60,  Width = 100, ReadOnly = true, AutoSizeMode = DataGridViewAutoSizeColumnMode.None, Resizable = DataGridViewTriState.True };
@@ -898,6 +898,7 @@ namespace CMS.Presentation.Modules.KMS
             _allRows = (rows ?? new List<KBImportRow>())
                 .OrderBy(r => StatusSortOrder(r.Status))
                 .ThenBy(r => r.RowNumber)
+                .ThenBy(r => r.CodeIndex)
                 .ToList();
             _filteredRows = _allRows;
             _gridPage = 0;
@@ -933,7 +934,7 @@ namespace CMS.Presentation.Modules.KMS
                             kindDisplay += " (" + r.DocumentTypeCode + ")";
 
                         int idx = dgvPreview.Rows.Add(
-                            r.RowNumber.ToString(),
+                            FormatRowLabel(r),
                             StatusLabel(r.Status),
                             S(kindDisplay),
                             FormatPreviewNote(r),
@@ -950,6 +951,7 @@ namespace CMS.Presentation.Modules.KMS
                             S(r.RawContent, 300));
 
                         var dgvRow = dgvPreview.Rows[idx];
+                        dgvRow.Cells["colNote"].ToolTipText = FormatPreviewNote(r);   // note ยาวกว่าความกว้างคอลัมน์ (เช่น สิ่งที่จะเติมให้บทความที่มีอยู่แล้ว)
                         if (r.Status == "Error")
                             dgvRow.DefaultCellStyle.BackColor = Color.FromArgb(253, 237, 236);
                         else if (r.Status == "Skip")
@@ -1018,9 +1020,18 @@ namespace CMS.Presentation.Modules.KMS
             return value.Length <= maxLen ? value : value.Substring(0, maxLen) + "…";
         }
 
+        /// <summary>เลขแถว Excel — Excel row ที่แตกเป็นหลาย ArticleCode แสดงเป็น "5 (2/3)"</summary>
+        private static string FormatRowLabel(KBImportRow r)
+        {
+            return r.CodeCount > 1
+                ? string.Format("{0} ({1}/{2})", r.RowNumber, r.CodeIndex, r.CodeCount)
+                : r.RowNumber.ToString();
+        }
+
         private static string FormatPreviewNote(KBImportRow r)
         {
-            if (r.Status == "Valid") return string.Empty;
+            // Valid ปกติไม่มี note; Valid ของบทความที่มีอยู่แล้ว (จะเติมของที่ขาด) แสดง note ว่าจะเติมอะไร
+            if (r.Status == "Valid" && r.ExistingArticleId <= 0) return string.Empty;
 
             string note = r.StatusNote ?? string.Empty;
             if (string.IsNullOrEmpty(note))
@@ -1132,7 +1143,7 @@ namespace CMS.Presentation.Modules.KMS
                 default: // Total
                     var all = new List<KBImportRow>(_errSuccessRows ?? new List<KBImportRow>());
                     all.AddRange(_errSkipRows ?? new List<KBImportRow>());
-                    _errAllRows = all.OrderBy(r => r.RowNumber).ToList();
+                    _errAllRows = all.OrderBy(r => r.RowNumber).ThenBy(r => r.CodeIndex).ToList();
                     break;
             }
             ShowErrorPage(0);
@@ -1169,8 +1180,9 @@ namespace CMS.Presentation.Modules.KMS
 
                 if (row.Status == "Valid")
                 {
-                    reason      = "✅ นำเข้าสำเร็จ";
-                    relatedData = string.Empty;
+                    bool filledExisting = row.ExistingArticleId > 0;
+                    reason      = filledExisting ? "✅ เติมข้อมูลที่ขาด" : "✅ นำเข้าสำเร็จ";
+                    relatedData = filledExisting ? S(row.StatusNote ?? string.Empty, 300) : string.Empty;
                 }
                 else if (row.Status == "Skip")
                 {
@@ -1207,7 +1219,7 @@ namespace CMS.Presentation.Modules.KMS
                 }
 
                 int idx = dgvFailedRows.Rows.Add(
-                    row.RowNumber,
+                    FormatRowLabel(row),
                     row.ArticleCode ?? row.ColA ?? string.Empty,
                     row.DocumentTypeLabel ?? row.RowKind ?? string.Empty,
                     row.Title ?? row.Tags ?? string.Empty,

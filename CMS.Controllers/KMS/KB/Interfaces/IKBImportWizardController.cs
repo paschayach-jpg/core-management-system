@@ -17,13 +17,6 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         /// <summary>TemplateID of the selected KB Import Template (from the combo box), or null if none selected.</summary>
         int? SelectedTemplateId { get; }
 
-        /// <summary>
-        /// Step 2 option (ประกาศ/คำสั่ง rows only): when an attachment download/DMS upload
-        /// fails, <c>true</c> fails the whole row; <c>false</c> inserts it anyway with a
-        /// warning note. Ignored for มาตรา (Law) rows, which have no attachment.
-        /// </summary>
-        bool OptSkipRowOnDownloadFailure { get; }
-
         // ── Presenter → View: push results ──────────────────────────────────────
 
         /// <summary>Binds the list of configured KB Import Templates to the template combo box.</summary>

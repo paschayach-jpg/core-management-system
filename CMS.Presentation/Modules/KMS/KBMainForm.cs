@@ -257,7 +257,7 @@ namespace CMS.Presentation.Modules.KMS
         }
         private void KBMainForm_Resize(object sender, EventArgs e) { ResizeArticleCards(); }
 
-        // ── IKBMainView ───────────────────────────────────────────────────
+        // ── IKBMainController ───────────────────────────────────────────────────
 
         public string SearchKeyword      { get { return txtToolbarSearch.Text.Trim(); } }
         public byte?  TypeFilter         { get { return cboType.SelectedValue as byte?; } }

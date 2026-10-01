@@ -81,9 +81,6 @@
             this.lblGridPage = new System.Windows.Forms.Label();
             this.btnGridPrev = new System.Windows.Forms.Button();
             this.btnGridNext = new System.Windows.Forms.Button();
-            this.pnlImportOptions = new System.Windows.Forms.Panel();
-            this.chkLinkDMS = new System.Windows.Forms.CheckBox();
-            this.lblOptionsHeader = new System.Windows.Forms.Label();
             this.pnlSummaryPills = new System.Windows.Forms.Panel();
             this.pnlPillError = new System.Windows.Forms.Panel();
             this.lblErrorCount = new System.Windows.Forms.Label();
@@ -171,7 +168,6 @@
             this.pnlPreviewGrid.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvPreview)).BeginInit();
             this.pnlGridPager.SuspendLayout();
-            this.pnlImportOptions.SuspendLayout();
             this.pnlSummaryPills.SuspendLayout();
             this.pnlPillError.SuspendLayout();
             this.pnlPillSkip.SuspendLayout();
@@ -842,7 +838,6 @@
             // 
             this.pnlStep2Inner.BackColor = System.Drawing.Color.Transparent;
             this.pnlStep2Inner.Controls.Add(this.pnlPreviewGrid);
-            this.pnlStep2Inner.Controls.Add(this.pnlImportOptions);
             this.pnlStep2Inner.Controls.Add(this.pnlSummaryPills);
             this.pnlStep2Inner.Controls.Add(this.pnlPreviewHdr);
             this.pnlStep2Inner.Dock = System.Windows.Forms.DockStyle.Top;
@@ -955,44 +950,6 @@
             this.btnGridNext.Text = "ถัดไป  ▶";
             this.btnGridNext.UseVisualStyleBackColor = false;
             this.btnGridNext.Click += new System.EventHandler(this.BtnGridNext_Click);
-            // 
-            // pnlImportOptions
-            // 
-            this.pnlImportOptions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(250)))), ((int)(((byte)(253)))));
-            this.pnlImportOptions.Controls.Add(this.chkLinkDMS);
-            this.pnlImportOptions.Controls.Add(this.lblOptionsHeader);
-            this.pnlImportOptions.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlImportOptions.Location = new System.Drawing.Point(0, 139);
-            this.pnlImportOptions.Name = "pnlImportOptions";
-            this.pnlImportOptions.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
-            this.pnlImportOptions.Size = new System.Drawing.Size(1522, 60);
-            this.pnlImportOptions.TabIndex = 1;
-            this.pnlImportOptions.Visible = false;
-            // 
-            // chkLinkDMS
-            // 
-            this.chkLinkDMS.Checked = true;
-            this.chkLinkDMS.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkLinkDMS.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.chkLinkDMS.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.chkLinkDMS.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(26)))), ((int)(((byte)(35)))), ((int)(((byte)(50)))));
-            this.chkLinkDMS.Location = new System.Drawing.Point(16, 28);
-            this.chkLinkDMS.Name = "chkLinkDMS";
-            this.chkLinkDMS.Size = new System.Drawing.Size(700, 22);
-            this.chkLinkDMS.TabIndex = 3;
-            this.chkLinkDMS.Text = "ข้ามแถวถ้าอัปโหลดไฟล์แนบ (DMS) ไม่สำเร็จ (เฉพาะ ประกาศ/คำสั่ง)";
-            this.chkLinkDMS.UseVisualStyleBackColor = true;
-            // 
-            // lblOptionsHeader
-            // 
-            this.lblOptionsHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblOptionsHeader.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.lblOptionsHeader.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
-            this.lblOptionsHeader.Location = new System.Drawing.Point(8, 4);
-            this.lblOptionsHeader.Name = "lblOptionsHeader";
-            this.lblOptionsHeader.Size = new System.Drawing.Size(1506, 20);
-            this.lblOptionsHeader.TabIndex = 6;
-            this.lblOptionsHeader.Text = "⚙️  ตัวเลือกการนำเข้า";
             // 
             // pnlSummaryPills
             // 
@@ -1807,7 +1764,6 @@
             this.pnlPreviewGrid.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dgvPreview)).EndInit();
             this.pnlGridPager.ResumeLayout(false);
-            this.pnlImportOptions.ResumeLayout(false);
             this.pnlSummaryPills.ResumeLayout(false);
             this.pnlPillError.ResumeLayout(false);
             this.pnlPillSkip.ResumeLayout(false);
@@ -1879,9 +1835,6 @@
         private System.Windows.Forms.Label             lblGridPage;
         private System.Windows.Forms.Button            btnGridPrev;
         private System.Windows.Forms.Button            btnGridNext;
-        private System.Windows.Forms.Panel    pnlImportOptions;
-        private System.Windows.Forms.Label    lblOptionsHeader;
-        private System.Windows.Forms.CheckBox chkLinkDMS;
         // Step 3
         private System.Windows.Forms.Panel    pnlStep3;
         private System.Windows.Forms.Panel    pnlStep3Inner;

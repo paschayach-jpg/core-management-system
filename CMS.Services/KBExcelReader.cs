@@ -139,12 +139,39 @@ namespace CMS.Services
                     };
                 }
 
-                rows.Add(row);
+                // NonLaw: เซลล์ ArticleCode ที่มีหลาย Code แตกเป็น 1 row ต่อ Code (Law = 1 row ต่อบรรทัด Excel เสมอ)
+                if (rowKind == KBImportLayoutTypeCatalog.NonLaw)
+                    rows.AddRange(ExpandArticleCodes(row));
+                else
+                    rows.Add(row);
             }
 
             // mapping ของ Template ที่ชี้ไปคอลัมน์/หัวตารางที่ไม่มีในไฟล์ (เดิมได้ค่าว่างเงียบ ๆ ทำให้เนื้อหาหายโดยไม่มี error)
             result.MappingProblems = FindMappingProblems(overrides, headerRow, evaluator, columnCount, rowKind);
             return result;
+        }
+
+        /// <summary>
+        /// NonLaw: เซลล์ ArticleCode ที่มีหลาย Code (หลายบรรทัด เช่นสูตรที่ต่อ Code ให้ทุกกฎหมายแม่) แตกเป็น 1 <see cref="KBImportRow"/> ต่อ Code
+        /// — ฟิลด์อื่น (Title/เนื้อหา/ไฟล์แนบ ฯลฯ) เหมือนกันทุก row; กฎหมายแม่ของแต่ละ Code = 22 ตัวแรกของ Code นั้นเอง และแต่ละ Code
+        /// ผ่าน/ข้าม/ล้มเหลวแยกกัน (ไม่ข้ามทั้ง Excel row). เซลล์ว่างหรือมี Code เดียว = คืน row เดิม
+        /// </summary>
+        private static IEnumerable<KBImportRow> ExpandArticleCodes(KBImportRow row)
+        {
+            IList<string> codes = SplitLines(row.ColA);
+            if (codes.Count <= 1)
+                return new[] { row };
+
+            var expanded = new List<KBImportRow>(codes.Count);
+            for (int i = 0; i < codes.Count; i++)
+            {
+                KBImportRow copy = row.Clone();
+                copy.ColA      = codes[i];
+                copy.CodeIndex = i + 1;
+                copy.CodeCount = codes.Count;
+                expanded.Add(copy);
+            }
+            return expanded;
         }
 
         // ── Layout detection ─────────────────────────────────────────────────

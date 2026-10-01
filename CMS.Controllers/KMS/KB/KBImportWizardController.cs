@@ -30,6 +30,13 @@ namespace CMS.Controllers.KMS.KB
         /// <summary>ArticleType resolved from the selected Template — retained between ValidateFile() and ExecuteImport().</summary>
         private byte _lastResolvedArticleType;
 
+        /// <summary>
+        /// NonLaw rows: when an attachment cannot be downloaded/uploaded, fail the whole row
+        /// (nothing is inserted) instead of inserting the article without its file.
+        /// Fixed — the wizard no longer offers this as a user option.
+        /// </summary>
+        private const bool SkipRowOnDownloadFailure = true;
+
         // ── Constructor ──────────────────────────────────────────────────────────
 
         public KBImportWizardController(
@@ -219,8 +226,9 @@ namespace CMS.Controllers.KMS.KB
 
         /// <summary>
         /// Imports validated rows by inserting <see cref="KBArticle"/> + <see cref="KBVersion"/>
-        /// records via <see cref="KBImportProcessor"/>. Rows marked <c>Skip</c> (blank/duplicate/
-        /// already-exists ArticleCode) or <c>Error</c> are excluded before the import attempt.
+        /// records via <see cref="KBImportProcessor"/>. Rows marked <c>Skip</c> (blank/duplicate ArticleCode, or an existing
+        /// article with nothing missing) or <c>Error</c> are excluded before the import attempt. Existing NonLaw articles with a
+        /// missing attachment/link are <c>Valid</c> and only get the missing parts filled in (no second insert).
         /// On completion calls <see cref="IKBImportWizardController.ShowImportComplete"/>.
         /// </summary>
         public void ExecuteImport()
@@ -233,13 +241,11 @@ namespace CMS.Controllers.KMS.KB
                     return;
                 }
 
-                // Consume this validation snapshot now — a validated batch may only be
-                // imported once. Without this, clicking "นำเข้า" a second time on the same
-                // (already-inserted) rows re-attempts InsertArticles with stale Status="Valid"
-                // rows, hitting the real DB unique-key constraint on every row instead of the
-                // friendly ExistsByCode pre-check, and the summary shows everything as failed
-                // duplicate key. Forcing a fresh ValidateFile() before re-import re-runs
-                // ExistsByCode and correctly marks already-imported rows as "Skip" instead.
+                // Consume this validation snapshot now — a validated batch may only be imported once. Importing the same
+                // snapshot twice would re-process stale Status="Valid" rows (articles inserted the first time would hit the real
+                // DB unique-key constraint). Forcing a fresh ValidateFile() before re-import re-checks every ArticleCode:
+                // codes already in the DB become "Skip" (nothing missing) or "Valid" rows that only fill in the missing
+                // attachment/links — never a second insert.
                 var lastValidation = _lastValidation;
                 _lastValidation = null;
 
@@ -262,7 +268,7 @@ namespace CMS.Controllers.KMS.KB
                 _processor.InsertArticles(
                     rowsToImport,
                     _user,
-                    _view.OptSkipRowOnDownloadFailure,
+                    SkipRowOnDownloadFailure,
                     _lastResolvedArticleType,
                     out successCount,
                     out errorCount,
@@ -277,21 +283,34 @@ namespace CMS.Controllers.KMS.KB
 
                 _view.SetProgress(100, "นำเข้าเสร็จสิ้น");
 
+                // Code ที่ Phase 2 ตัดสินว่า "ข้าม" (เช่น บทความมีอยู่แล้วแต่ไม่พบไฟล์ต้นทาง / ไม่มีอะไรให้เติม) — InsertArticles ไม่ throw
+                // จึงนับเป็น success; ย้ายไปรายการที่ถูกข้ามเพื่อแสดงเหตุผล และไม่นับเป็นนำเข้าสำเร็จ
+                var skippedDuringImport = rowsToImport.Where(r => r.Status == "Skip").ToList();
+                successCount -= skippedDuringImport.Count;
+                skippedRows.AddRange(skippedDuringImport);
+
+                // บทความที่มีอยู่แล้วและเติมของที่ขาดสำเร็จ (แยกจากบทความที่ insert ใหม่)
+                int filledCount = rowsToImport.Count(r => r.ExistingArticleId > 0 && (r.Status == "Valid" || r.Status == "Warn"));
+
                 // Collect rows that failed DURING import (ExistsByCode race or DB insert failure).
                 var importFailedRows = rowsToImport.Where(r => r.Status == "Error").ToList();
 
-                int totalErrors = skippedRows.Count(r => r.Status == "Error") + errorCount;
+                int totalErrors  = skippedRows.Count(r => r.Status == "Error") + errorCount;
+                int problemCount = totalErrors + skippedDuringImport.Count;
+                string successText = filledCount > 0
+                    ? string.Format("นำเข้าสำเร็จ {0} รายการ (บทความใหม่ {1}, เติมของที่ขาด {2})", successCount, successCount - filledCount, filledCount)
+                    : string.Format("นำเข้าสำเร็จ {0} รายการ", successCount);
                 var summary = new KBImportValidationResult
                 {
                     TotalRecords     = lastValidation.TotalRecords,
                     ValidRecords     = successCount,
                     WarningRecords   = 0,
-                    SkippedRecords   = lastValidation.SkippedRecords,
+                    SkippedRecords   = lastValidation.SkippedRecords + skippedDuringImport.Count,
                     ErrorRecords     = totalErrors,
                     IsSuccess        = true,
-                    Message          = totalErrors == 0
-                        ? string.Format("นำเข้าสำเร็จ {0} รายการ", successCount)
-                        : string.Format("นำเข้าสำเร็จ {0} รายการ, ถูกข้าม/ล้มเหลว {1} รายการ", successCount, totalErrors),
+                    Message          = problemCount == 0
+                        ? successText
+                        : string.Format("{0}, ถูกข้าม/ล้มเหลว {1} รายการ", successText, problemCount),
                     Rows             = lastValidation.Rows,
                     SkippedRows      = skippedRows,
                     ImportFailedRows = importFailedRows,

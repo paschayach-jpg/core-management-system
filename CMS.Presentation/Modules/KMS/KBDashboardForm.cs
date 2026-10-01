@@ -1035,7 +1035,7 @@ namespace CMS.Presentation.Modules.KMS
             return card;
         }
 
-        // ── IKBDashboardView Implementation ─────────────────────────────────────
+        // ── IKBDashboardController Implementation ─────────────────────────────────────
 
         public void DisplayStats(KBDashboardStats stats)
         {

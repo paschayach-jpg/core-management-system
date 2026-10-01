@@ -363,7 +363,7 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        // ── IKBEditorView Implementation ─────────────────────────────────────
+        // ── IKBEditorController Implementation ─────────────────────────────────────
 
         public string ArticleCode
         {
