@@ -19,6 +19,7 @@ namespace CMS.Presentation
             this.btnAdd = new System.Windows.Forms.Button();
             this.btnEdit = new System.Windows.Forms.Button();
             this.btnDelete = new System.Windows.Forms.Button();
+            this.btnImport = new System.Windows.Forms.Button();
             this.btnClose = new System.Windows.Forms.Button();
             this.split = new System.Windows.Forms.SplitContainer();
             this.tvOrg = new System.Windows.Forms.TreeView();
@@ -99,6 +100,7 @@ namespace CMS.Presentation
             this.pnlToolbar.Controls.Add(this.btnAdd);
             this.pnlToolbar.Controls.Add(this.btnEdit);
             this.pnlToolbar.Controls.Add(this.btnDelete);
+            this.pnlToolbar.Controls.Add(this.btnImport);
             this.pnlToolbar.Controls.Add(this.btnClose);
             this.pnlToolbar.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlToolbar.Location = new System.Drawing.Point(0, 46);
@@ -150,18 +152,33 @@ namespace CMS.Presentation
             this.btnDelete.Text = "🗑 ลบ";
             this.btnDelete.UseVisualStyleBackColor = false;
             this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
-            // 
+            //
+            // btnImport
+            //
+            this.btnImport.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(105)))), ((int)(((byte)(148)))));
+            this.btnImport.FlatAppearance.BorderSize = 0;
+            this.btnImport.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnImport.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.btnImport.ForeColor = System.Drawing.Color.White;
+            this.btnImport.Location = new System.Drawing.Point(378, 6);
+            this.btnImport.Name = "btnImport";
+            this.btnImport.Size = new System.Drawing.Size(118, 32);
+            this.btnImport.TabIndex = 3;
+            this.btnImport.Text = "📥 นำเข้าจาก Excel";
+            this.btnImport.UseVisualStyleBackColor = false;
+            this.btnImport.Click += new System.EventHandler(this.btnImport_Click);
+            //
             // btnClose
-            // 
+            //
             this.btnClose.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(90)))), ((int)(((byte)(90)))), ((int)(((byte)(90)))));
             this.btnClose.FlatAppearance.BorderSize = 0;
             this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClose.Font = new System.Drawing.Font("Segoe UI", 8.5F);
             this.btnClose.ForeColor = System.Drawing.Color.White;
-            this.btnClose.Location = new System.Drawing.Point(378, 6);
+            this.btnClose.Location = new System.Drawing.Point(502, 6);
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(118, 32);
-            this.btnClose.TabIndex = 3;
+            this.btnClose.TabIndex = 4;
             this.btnClose.Text = "✕ ปิด";
             this.btnClose.UseVisualStyleBackColor = false;
             this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
@@ -602,6 +619,7 @@ namespace CMS.Presentation
         private System.Windows.Forms.Button        btnAdd;
         private System.Windows.Forms.Button        btnEdit;
         private System.Windows.Forms.Button        btnDelete;
+        private System.Windows.Forms.Button        btnImport;
         private System.Windows.Forms.Button        btnClose;
         private System.Windows.Forms.SplitContainer split;
         private System.Windows.Forms.TreeView      tvOrg;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
@@ -57,7 +57,8 @@ namespace CMS.Services
             "QuotaApproval",
             "FolderUsageReport",
             "ProjectMain",
-            "Frm_Project_List"
+            "Frm_Project_List",
+            "OrgMasterManagement"
         };
 
         public static string[] GetAvailableActionKeys()
@@ -105,6 +106,8 @@ namespace CMS.Services
                 return "QuotaApproval";
             if (string.Equals(normalized, "folderusagereportform", StringComparison.OrdinalIgnoreCase))
                 return "FolderUsageReport";
+            if (string.Equals(normalized, "orgmastermanagementform", StringComparison.OrdinalIgnoreCase))
+                return "OrgMasterManagement";
 
             foreach (var builtIn in BuiltInActionKeys)
             {

@@ -1,33 +1,379 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
+using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 
 namespace CMS.Presentation.Modules.ImportFile
 {
     public partial class AuthorityConfigEditDialog : Form
     {
+        private static readonly string[] DefaultLevels = new[]
+        {
+            "", "1A", "1B", "2A", "2B", "3A", "3B", "4A", "4B", "5A", "5B", "6A", "6B", "7A", "7B", "8A", "8B", "9A", "9B"
+        };
+
+        private readonly IAuthorityOrgLookupController _orgLookupController;
+        private readonly bool _isEdit;
+
+        private List<HrDivision> _allDivisions = new List<HrDivision>();
+        private List<HrDepartment> _allDepartments = new List<HrDepartment>();
+        private List<HrPosition> _allPositions = new List<HrPosition>();
+        private List<HrPositionMapping> _allMappings = new List<HrPositionMapping>();
+        private List<HrPositionLevel> _allLevels = new List<HrPositionLevel>();
+
+        private bool _isInitializing = true;
+
         public FolderAuthorityConfig Config { get; private set; }
 
-        public AuthorityConfigEditDialog(FolderAuthorityConfig config, bool isEdit)
+        public AuthorityConfigEditDialog(
+            FolderAuthorityConfig config,
+            bool isEdit,
+            IAuthorityOrgLookupController orgLookupController = null,
+            IEnumerable<string> availableLevels = null)
         {
-            InitializeComponent();
+            _isEdit = isEdit;
+            _orgLookupController = orgLookupController;
             Config = config ?? new FolderAuthorityConfig();
+
+            InitializeComponent();
+
             this.Text = isEdit ? "แก้ไขสิทธิ์การเข้าถึง" : "เพิ่มสิทธิ์การเข้าถึงใหม่";
-            
+            this.lblTitle.Text = this.Text;
+
+            LoadMasterData(availableLevels);
+            SetupEventHandlers();
+
             if (isEdit)
             {
                 LoadData();
+            }
+            else
+            {
+                _isInitializing = false;
+                PopulateDivisions();
+                PopulateDepartments(null);
+                PopulatePositions(null, null);
+                cboLevelCode.SelectedIndex = 0;
+            }
+        }
+
+        private void LoadMasterData(IEnumerable<string> fallbackLevels)
+        {
+            if (_orgLookupController != null)
+            {
+                try { _allDivisions = _orgLookupController.GetDivisions().ToList(); } catch { }
+                try { _allDepartments = _orgLookupController.GetDepartments().ToList(); } catch { }
+                try { _allPositions = _orgLookupController.GetPositions().ToList(); } catch { }
+                try { _allMappings = _orgLookupController.GetPositionMappings().ToList(); } catch { }
+                try { _allLevels = _orgLookupController.GetPositionLevels().ToList(); } catch { }
+            }
+
+            // Populate Level ComboBox (preserving SortOrder from master)
+            var levelList = new List<string>();
+            if (_allLevels != null && _allLevels.Count > 0)
+            {
+                foreach (var pl in _allLevels)
+                {
+                    if (!string.IsNullOrWhiteSpace(pl.LevelCode) && !levelList.Contains(pl.LevelCode.Trim().ToUpper(), StringComparer.OrdinalIgnoreCase))
+                        levelList.Add(pl.LevelCode.Trim().ToUpper());
+                }
+            }
+            else if (fallbackLevels != null && fallbackLevels.Any())
+            {
+                foreach (var lv in fallbackLevels)
+                {
+                    if (!string.IsNullOrWhiteSpace(lv) && !levelList.Contains(lv.Trim().ToUpper(), StringComparer.OrdinalIgnoreCase))
+                        levelList.Add(lv.Trim().ToUpper());
+                }
+            }
+            else
+            {
+                foreach (var lv in DefaultLevels)
+                {
+                    if (!string.IsNullOrWhiteSpace(lv) && !levelList.Contains(lv.Trim().ToUpper(), StringComparer.OrdinalIgnoreCase))
+                        levelList.Add(lv.Trim().ToUpper());
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(Config.LevelCode))
+            {
+                string cur = Config.LevelCode.Trim().ToUpper();
+                if (!levelList.Contains(cur, StringComparer.OrdinalIgnoreCase))
+                    levelList.Add(cur);
+            }
+
+            cboLevelCode.Items.Clear();
+            cboLevelCode.Items.Add(""); // ตัวเลือกว่าง (ไม่ระบุ)
+            foreach (var lv in levelList)
+            {
+                cboLevelCode.Items.Add(lv);
+            }
+        }
+
+        private void SetupEventHandlers()
+        {
+            cboDiv.SelectedIndexChanged += cboDiv_SelectedIndexChanged;
+            cboDept.SelectedIndexChanged += cboDept_SelectedIndexChanged;
+            cboPosition.SelectedIndexChanged += cboPosition_SelectedIndexChanged;
+        }
+
+        private void PopulateDivisions()
+        {
+            cboDiv.BeginUpdate();
+            cboDiv.Items.Clear();
+            cboDiv.Items.Add(new DivComboItem { DivisionID = 0, DivisionCode = "", DivisionName = "(ไม่ระบุ)" });
+
+            foreach (var d in _allDivisions.OrderBy(x => x.DivisionCode))
+            {
+                cboDiv.Items.Add(new DivComboItem
+                {
+                    DivisionID = d.DivisionID,
+                    DivisionCode = d.DivisionCode ?? "",
+                    DivisionName = d.DivisionName ?? ""
+                });
+            }
+            cboDiv.SelectedIndex = 0;
+            cboDiv.EndUpdate();
+        }
+
+        private void PopulateDepartments(int? divisionId)
+        {
+            cboDept.BeginUpdate();
+            cboDept.Items.Clear();
+            cboDept.Items.Add(new DeptComboItem { DepartmentID = 0, DepartmentCode = "", DepartmentName = "(ไม่ระบุ)" });
+
+            var query = _allDepartments.AsEnumerable();
+            if (divisionId.HasValue && divisionId.Value > 0)
+            {
+                query = query.Where(d => d.DivisionID == divisionId.Value);
+            }
+
+            foreach (var d in query.OrderBy(x => x.DepartmentCode))
+            {
+                cboDept.Items.Add(new DeptComboItem
+                {
+                    DepartmentID = d.DepartmentID,
+                    DivisionID = d.DivisionID,
+                    DepartmentCode = d.DepartmentCode ?? "",
+                    DepartmentName = !string.IsNullOrEmpty(d.DepartmentNameTh) ? d.DepartmentNameTh : d.DepartmentName ?? ""
+                });
+            }
+            cboDept.SelectedIndex = 0;
+            cboDept.EndUpdate();
+        }
+
+        private void PopulatePositions(int? divisionId, int? departmentId)
+        {
+            cboPosition.BeginUpdate();
+            cboPosition.Items.Clear();
+            cboPosition.Items.Add(new PosComboItem { PositionID = 0, PositionCode = "", PositionName = "(ไม่ระบุ)", DefaultLevel = "" });
+
+            // Positions mapped to selected division/dept
+            var posNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var posItems = new List<PosComboItem>();
+
+            if (_allMappings != null && _allMappings.Count > 0)
+            {
+                var mapQuery = _allMappings.AsEnumerable();
+                if (departmentId.HasValue && departmentId.Value > 0)
+                    mapQuery = mapQuery.Where(m => m.DepartmentID == departmentId.Value);
+                else if (divisionId.HasValue && divisionId.Value > 0)
+                    mapQuery = mapQuery.Where(m => m.DivisionID == divisionId.Value);
+
+                foreach (var m in mapQuery.OrderBy(x => x.PositionName))
+                {
+                    if (!string.IsNullOrWhiteSpace(m.PositionName) && !posNames.Contains(m.PositionName))
+                    {
+                        posNames.Add(m.PositionName);
+                        posItems.Add(new PosComboItem
+                        {
+                            PositionID = m.PositionID,
+                            PositionCode = m.PositionCode ?? "",
+                            PositionName = m.PositionName,
+                            DefaultLevel = m.Level ?? ""
+                        });
+                    }
+                }
+            }
+
+            // Fallback to all positions if no mapped items found or no filter applied
+            if (posItems.Count == 0 && _allPositions != null)
+            {
+                foreach (var p in _allPositions.OrderBy(x => x.PositionName))
+                {
+                    if (!string.IsNullOrWhiteSpace(p.PositionName) && !posNames.Contains(p.PositionName))
+                    {
+                        posNames.Add(p.PositionName);
+                        posItems.Add(new PosComboItem
+                        {
+                            PositionID = p.PositionID,
+                            PositionCode = p.PositionCode ?? "",
+                            PositionName = p.PositionName,
+                            DefaultLevel = !string.IsNullOrEmpty(p.LevelCode) ? p.LevelCode : p.PositionLevel ?? ""
+                        });
+                    }
+                }
+            }
+
+            foreach (var item in posItems)
+            {
+                cboPosition.Items.Add(item);
+            }
+            cboPosition.SelectedIndex = 0;
+            cboPosition.EndUpdate();
+        }
+
+        private void cboDiv_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var selDiv = cboDiv.SelectedItem as DivComboItem;
+            int? divId = (selDiv != null && selDiv.DivisionID > 0) ? (int?)selDiv.DivisionID : null;
+
+            _isInitializing = true;
+            PopulateDepartments(divId);
+            PopulatePositions(divId, null);
+            _isInitializing = false;
+
+            UpdateDefaultLabel();
+        }
+
+        private void cboDept_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var selDiv = cboDiv.SelectedItem as DivComboItem;
+            var selDept = cboDept.SelectedItem as DeptComboItem;
+
+            int? divId = (selDiv != null && selDiv.DivisionID > 0) ? (int?)selDiv.DivisionID : null;
+            int? deptId = (selDept != null && selDept.DepartmentID > 0) ? (int?)selDept.DepartmentID : null;
+
+            _isInitializing = true;
+            PopulatePositions(divId, deptId);
+            _isInitializing = false;
+
+            UpdateDefaultLabel();
+        }
+
+        private void cboPosition_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_isInitializing) return;
+
+            var selPos = cboPosition.SelectedItem as PosComboItem;
+            if (selPos != null && !string.IsNullOrEmpty(selPos.DefaultLevel))
+            {
+                string lvl = selPos.DefaultLevel.Trim().ToUpper();
+                if (!cboLevelCode.Items.Contains(lvl))
+                {
+                    cboLevelCode.Items.Add(lvl);
+                }
+                cboLevelCode.SelectedItem = lvl;
+            }
+
+            UpdateDefaultLabel();
+        }
+
+        private void UpdateDefaultLabel()
+        {
+            if (_isEdit) return; // อย่าเขียนทับถ้าเป็นโหมดแก้ไข
+
+            var selPos = cboPosition.SelectedItem as PosComboItem;
+            var selDept = cboDept.SelectedItem as DeptComboItem;
+            var selDiv = cboDiv.SelectedItem as DivComboItem;
+
+            if (selPos != null && !string.IsNullOrEmpty(selPos.PositionName) && selPos.PositionID > 0)
+            {
+                txtLabel.Text = selPos.PositionName;
+            }
+            else if (selDept != null && !string.IsNullOrEmpty(selDept.DepartmentName) && selDept.DepartmentID > 0)
+            {
+                txtLabel.Text = selDept.DepartmentName;
+            }
+            else if (selDiv != null && !string.IsNullOrEmpty(selDiv.DivisionName) && selDiv.DivisionID > 0)
+            {
+                txtLabel.Text = selDiv.DivisionName;
             }
         }
 
         private void LoadData()
         {
+            _isInitializing = true;
+
+            PopulateDivisions();
+
+            // Match Division
+            if (!string.IsNullOrEmpty(Config.DivisionCode))
+            {
+                for (int i = 0; i < cboDiv.Items.Count; i++)
+                {
+                    var item = cboDiv.Items[i] as DivComboItem;
+                    if (item != null && string.Equals(item.DivisionCode, Config.DivisionCode, StringComparison.OrdinalIgnoreCase))
+                    {
+                        cboDiv.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            var currentDiv = cboDiv.SelectedItem as DivComboItem;
+            int? divId = (currentDiv != null && currentDiv.DivisionID > 0) ? (int?)currentDiv.DivisionID : null;
+
+            PopulateDepartments(divId);
+
+            // Match Department
+            if (!string.IsNullOrEmpty(Config.DepartmentCode))
+            {
+                for (int i = 0; i < cboDept.Items.Count; i++)
+                {
+                    var item = cboDept.Items[i] as DeptComboItem;
+                    if (item != null && string.Equals(item.DepartmentCode, Config.DepartmentCode, StringComparison.OrdinalIgnoreCase))
+                    {
+                        cboDept.SelectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            var currentDept = cboDept.SelectedItem as DeptComboItem;
+            int? deptId = (currentDept != null && currentDept.DepartmentID > 0) ? (int?)currentDept.DepartmentID : null;
+
+            PopulatePositions(divId, deptId);
+
+            // Match Position
+            if (!string.IsNullOrEmpty(Config.PositionName))
+            {
+                bool matched = false;
+                for (int i = 0; i < cboPosition.Items.Count; i++)
+                {
+                    var item = cboPosition.Items[i] as PosComboItem;
+                    if (item != null && string.Equals(item.PositionName, Config.PositionName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        cboPosition.SelectedIndex = i;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched)
+                {
+                    var customPos = new PosComboItem { PositionID = -1, PositionName = Config.PositionName };
+                    cboPosition.Items.Add(customPos);
+                    cboPosition.SelectedItem = customPos;
+                }
+            }
+
+            // Match Level
+            string lvl = (Config.LevelCode ?? "").Trim().ToUpper();
+            if (!string.IsNullOrEmpty(lvl) && !cboLevelCode.Items.Contains(lvl))
+            {
+                cboLevelCode.Items.Add(lvl);
+            }
+            int idx = cboLevelCode.FindStringExact(lvl);
+            cboLevelCode.SelectedIndex = idx >= 0 ? idx : 0;
+
             txtLabel.Text = Config.ConfigLabel ?? "";
-            txtPosition.Text = Config.PositionName ?? "";
-            txtLevelCode.Text = Config.LevelCode ?? "";
-            txtDept.Text = Config.DepartmentCode ?? "";
-            txtDiv.Text = Config.DivisionCode ?? "";
 
             chkHC_V.Checked = Config.HC_View;
             chkHC_A.Checked = Config.HC_Add;
@@ -48,22 +394,38 @@ namespace CMS.Presentation.Modules.ImportFile
             chkPC_A.Checked = Config.PC_Add;
             chkPC_E.Checked = Config.PC_Edit;
             chkPC_Ap.Checked = Config.PC_Approve;
+
+            _isInitializing = false;
         }
 
         private void btnSave_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtLabel.Text))
             {
-                MessageBox.Show("กรุณากรอก Label", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("กรุณากรอก ชื่อสิทธิ์ (Label)", "แจ้งเตือน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtLabel.Focus();
                 return;
             }
 
             Config.ConfigLabel = txtLabel.Text.Trim();
-            Config.PositionName = string.IsNullOrWhiteSpace(txtPosition.Text) ? null : txtPosition.Text.Trim();
-            Config.LevelCode = string.IsNullOrWhiteSpace(txtLevelCode.Text) ? null : txtLevelCode.Text.Trim().ToUpper();
-            Config.DepartmentCode = string.IsNullOrWhiteSpace(txtDept.Text) ? null : txtDept.Text.Trim();
-            Config.DivisionCode = string.IsNullOrWhiteSpace(txtDiv.Text) ? null : txtDiv.Text.Trim();
+
+            var selPos = cboPosition.SelectedItem as PosComboItem;
+            Config.PositionName = (selPos != null && selPos.PositionID != 0 && !string.IsNullOrWhiteSpace(selPos.PositionName))
+                ? selPos.PositionName.Trim()
+                : null;
+
+            string selectedLevel = cboLevelCode.SelectedItem != null ? cboLevelCode.SelectedItem.ToString().Trim() : "";
+            Config.LevelCode = string.IsNullOrWhiteSpace(selectedLevel) ? null : selectedLevel.ToUpper();
+
+            var selDept = cboDept.SelectedItem as DeptComboItem;
+            Config.DepartmentCode = (selDept != null && selDept.DepartmentID != 0 && !string.IsNullOrWhiteSpace(selDept.DepartmentCode))
+                ? selDept.DepartmentCode.Trim()
+                : null;
+
+            var selDiv = cboDiv.SelectedItem as DivComboItem;
+            Config.DivisionCode = (selDiv != null && selDiv.DivisionID != 0 && !string.IsNullOrWhiteSpace(selDiv.DivisionCode))
+                ? selDiv.DivisionCode.Trim()
+                : null;
 
             Config.HC_View = chkHC_V.Checked;
             Config.HC_Add = chkHC_A.Checked;
@@ -95,207 +457,52 @@ namespace CMS.Presentation.Modules.ImportFile
             this.Close();
         }
 
-        private void InitializeComponent()
+        #region Helper Item Classes
+
+        private class DivComboItem
         {
-            this.SuspendLayout();
+            public int DivisionID { get; set; }
+            public string DivisionCode { get; set; }
+            public string DivisionName { get; set; }
 
-            // Form settings
-            this.ClientSize = new Size(780, 520);
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-            this.BackColor = Color.White;
-            this.Font = new Font("Segoe UI", 9f);
-
-            // Header panel
-            var pnlHeader = new Panel
+            public override string ToString()
             {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.FromArgb(31, 56, 100)
-            };
-            var lblTitle = new Label
-            {
-                Text = "📝 แก้ไขสิทธิ์การเข้าถึง",
-                Font = new Font("Segoe UI", 14f, FontStyle.Bold),
-                ForeColor = Color.White,
-                AutoSize = false,
-                Size = new Size(760, 60),
-                Location = new Point(10, 0),
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            pnlHeader.Controls.Add(lblTitle);
-            this.Controls.Add(pnlHeader);
-
-            // Main content panel
-            var pnlContent = new Panel
-            {
-                Location = new Point(20, 80),
-                Size = new Size(740, 380),
-                AutoScroll = true
-            };
-
-            int y = 10;
-
-            // Label
-            AddLabel(pnlContent, "Label:", 10, y);
-            txtLabel = new TextBox { Location = new Point(95, y), Size = new Size(300, 23) };
-            pnlContent.Controls.Add(txtLabel);
-
-            // Position
-            AddLabel(pnlContent, "ตำแหน่ง:", 410, y);
-            txtPosition = new TextBox { Location = new Point(485, y), Size = new Size(255, 23) };
-            pnlContent.Controls.Add(txtPosition);
-            y += 35;
-
-            // LevelCode
-            AddLabel(pnlContent, "LevelCode:", 10, y);
-            txtLevelCode = new TextBox { Location = new Point(95, y), Size = new Size(100, 23) };
-            pnlContent.Controls.Add(txtLevelCode);
-            y += 35;
-
-            // Department
-            AddLabel(pnlContent, "แผนก:", 10, y);
-            txtDept = new TextBox { Location = new Point(95, y), Size = new Size(300, 23) };
-            pnlContent.Controls.Add(txtDept);
-
-            // Division
-            AddLabel(pnlContent, "ฝ่าย:", 410, y);
-            txtDiv = new TextBox { Location = new Point(485, y), Size = new Size(255, 23) };
-            pnlContent.Controls.Add(txtDiv);
-            y += 45;
-
-            // Permissions section
-            var lblPermissions = new Label
-            {
-                Text = "สิทธิ์การเข้าถึงตามระดับความลับ",
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                Location = new Point(10, y),
-                Size = new Size(720, 25),
-                ForeColor = Color.FromArgb(31, 56, 100)
-            };
-            pnlContent.Controls.Add(lblPermissions);
-            y += 30;
-
-            // HC - High Confidential
-            y = AddPermissionGroup(pnlContent, y, "HC - สูงสุด (Highly Confidential)", 
-                Color.FromArgb(180, 30, 30), out chkHC_V, out chkHC_A, out chkHC_E, out chkHC_Ap);
-
-            // SC - Strictly Confidential
-            y = AddPermissionGroup(pnlContent, y, "SC - ลับมาก (Strictly Confidential)", 
-                Color.FromArgb(200, 100, 0), out chkSC_V, out chkSC_A, out chkSC_E, out chkSC_Ap);
-
-            // NC - Normal Confidential
-            y = AddPermissionGroup(pnlContent, y, "NC - ปกติ (Normal Confidential)", 
-                Color.FromArgb(0, 90, 160), out chkNC_V, out chkNC_A, out chkNC_E, out chkNC_Ap);
-
-            // PC - Public
-            y = AddPermissionGroup(pnlContent, y, "PC - ทั่วไป (Public)", 
-                Color.FromArgb(0, 130, 60), out chkPC_V, out chkPC_A, out chkPC_E, out chkPC_Ap);
-
-            this.Controls.Add(pnlContent);
-
-            // Button panel
-            var pnlButtons = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 60,
-                BackColor = Color.FromArgb(240, 240, 240)
-            };
-
-            var btnSave = new Button
-            {
-                Text = "💾 บันทึก",
-                Size = new Size(120, 35),
-                Location = new Point(530, 12),
-                BackColor = Color.FromArgb(56, 142, 60),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
-            btnSave.FlatAppearance.BorderSize = 0;
-            btnSave.Click += btnSave_Click;
-
-            var btnCancel = new Button
-            {
-                Text = "✖ ยกเลิก",
-                Size = new Size(120, 35),
-                Location = new Point(660, 12),
-                BackColor = Color.FromArgb(120, 120, 120),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9.5f),
-                Cursor = Cursors.Hand
-            };
-            btnCancel.FlatAppearance.BorderSize = 0;
-            btnCancel.Click += btnCancel_Click;
-
-            pnlButtons.Controls.Add(btnSave);
-            pnlButtons.Controls.Add(btnCancel);
-            this.Controls.Add(pnlButtons);
-
-            this.ResumeLayout(false);
+                if (DivisionID == 0 || string.IsNullOrEmpty(DivisionCode))
+                    return "(ไม่ระบุ)";
+                return string.Format("[{0}] {1}", DivisionCode, DivisionName);
+            }
         }
 
-        private void AddLabel(Panel parent, string text, int x, int y)
+        private class DeptComboItem
         {
-            var lbl = new Label
+            public int DepartmentID { get; set; }
+            public int DivisionID { get; set; }
+            public string DepartmentCode { get; set; }
+            public string DepartmentName { get; set; }
+
+            public override string ToString()
             {
-                Text = text,
-                Location = new Point(x, y + 3),
-                Size = new Size(100, 20),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold)
-            };
-            parent.Controls.Add(lbl);
+                if (DepartmentID == 0 || string.IsNullOrEmpty(DepartmentCode))
+                    return "(ไม่ระบุ)";
+                return string.Format("[{0}] {1}", DepartmentCode, DepartmentName);
+            }
         }
 
-        private int AddPermissionGroup(Panel parent, int y, string title, Color color,
-            out CheckBox chkView, out CheckBox chkAdd, out CheckBox chkEdit, out CheckBox chkApprove)
+        private class PosComboItem
         {
-            var pnlGroup = new Panel
+            public int PositionID { get; set; }
+            public string PositionCode { get; set; }
+            public string PositionName { get; set; }
+            public string DefaultLevel { get; set; }
+
+            public override string ToString()
             {
-                Location = new Point(10, y),
-                Size = new Size(720, 50),
-                BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(250, 250, 250)
-            };
-
-            var lblTitle = new Label
-            {
-                Text = title,
-                Location = new Point(10, 5),
-                Size = new Size(350, 20),
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = color
-            };
-            pnlGroup.Controls.Add(lblTitle);
-
-            chkView = new CheckBox { Text = "ดู", Location = new Point(10, 28), Size = new Size(80, 20) };
-            chkAdd = new CheckBox { Text = "เพิ่ม", Location = new Point(100, 28), Size = new Size(80, 20) };
-            chkEdit = new CheckBox { Text = "แก้ไข", Location = new Point(190, 28), Size = new Size(80, 20) };
-            chkApprove = new CheckBox { Text = "อนุมัติ", Location = new Point(280, 28), Size = new Size(80, 20) };
-
-            pnlGroup.Controls.Add(chkView);
-            pnlGroup.Controls.Add(chkAdd);
-            pnlGroup.Controls.Add(chkEdit);
-            pnlGroup.Controls.Add(chkApprove);
-
-            parent.Controls.Add(pnlGroup);
-
-            return y + 55;
+                if (PositionID == 0 || string.IsNullOrEmpty(PositionName))
+                    return "(ไม่ระบุ)";
+                return PositionName;
+            }
         }
 
-        private TextBox txtLabel;
-        private TextBox txtPosition;
-        private TextBox txtLevelCode;
-        private TextBox txtDept;
-        private TextBox txtDiv;
-
-        private CheckBox chkHC_V, chkHC_A, chkHC_E, chkHC_Ap;
-        private CheckBox chkSC_V, chkSC_A, chkSC_E, chkSC_Ap;
-        private CheckBox chkNC_V, chkNC_A, chkNC_E, chkNC_Ap;
-        private CheckBox chkPC_V, chkPC_A, chkPC_E, chkPC_Ap;
+        #endregion
     }
 }

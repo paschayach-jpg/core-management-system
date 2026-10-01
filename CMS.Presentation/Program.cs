@@ -494,12 +494,25 @@ namespace CMS.Presentation
                     folderPermissionLookupController,
                     auditService);
                 var authorityConfigController = new AuthorityConfigController(folderAuthorityService);
+                var authorityImportService = new AuthorityImportService(
+                    folderAuthorityService, userAccountRepo, hrDepartmentRepository, hrDivisionRepository, auditService);
+                var authorityImportController = new AuthorityImportController(authorityImportService);
                 var authorityOrgLookupController = new AuthorityOrgLookupController(
                     hrDivisionRepository,
                     hrDepartmentRepository,
                     hrPositionRepository,
+                    hrPositionLevelRepository,
                     hrPositionMappingRepository,
                     userAccountRepo);
+                var orgMasterService = new CMS.Services.OrgMasterService(
+                    hrDivisionRepository,
+                    hrDepartmentRepository,
+                    hrPositionRepository,
+                    hrPositionLevelRepository,
+                    hrPositionMappingRepository,
+                    auditService);
+                var orgMasterController = new CMS.Controllers.DMS.Document.OrgMasterController(orgMasterService);
+
                 var employeeDirectoryController = new EmployeeDirectoryController(employeeApiService);
                 var userOrgVisibilityController = new UserOrgVisibilityController(userOrgVisibilityService);
                 var permissionAclLookupController = new PermissionAclLookupController(permissionRepository);
@@ -637,7 +650,9 @@ namespace CMS.Presentation
                     filePermissionAclController: filePermissionAclController,
                     filePermissionCommandController: filePermissionCommandController,
                     authorityOrgLookupController: authorityOrgLookupController,
+                    orgMasterController: orgMasterController,
                     authorityConfigController: authorityConfigController,
+                    authorityImportController: authorityImportController,
                     employeeDirectoryController: employeeDirectoryController,
                     userOrgVisibilityController: userOrgVisibilityController,
                     permissionAclLookupController: permissionAclLookupController,

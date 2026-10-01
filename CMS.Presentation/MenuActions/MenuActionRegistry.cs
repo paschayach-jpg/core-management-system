@@ -206,6 +206,12 @@ namespace CMS.Presentation
                         }
                         return ShowTargetForm(context, new RecycleBinForm(context.RecycleBinController, context.User));
 
+                    case "OrgMasterManagement":
+                    case "OrgMasterManagementForm":
+                        if (!TryRequestMdiAction(context, "OrgMasterManagement"))
+                            MessageBox.Show("กรุณาเปิดจัดการ Master องค์กรผ่าน MDI Container เพื่อใช้ service ให้ครบ", "ข้อมูล", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return true;
+
                     case "KnowledgeBase":
                     case "KnowledgeBaseForm":
                     case "KBMainForm":
