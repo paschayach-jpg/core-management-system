@@ -75,6 +75,8 @@ namespace CMS.Presentation.Modules.KMS
             this.cboStatus = new System.Windows.Forms.ComboBox();
             this.lblParent = new System.Windows.Forms.Label();
             this.cboParent = new System.Windows.Forms.ComboBox();
+            this.lblImportTypeDigit = new System.Windows.Forms.Label();
+            this.cboImportTypeDigit = new System.Windows.Forms.ComboBox();
             this.lblDescription = new System.Windows.Forms.Label();
             this.txtDescription = new System.Windows.Forms.TextBox();
             this.pnlEditCardHeader = new System.Windows.Forms.Panel();
@@ -143,7 +145,7 @@ namespace CMS.Presentation.Modules.KMS
             this.btnBack.Dock = System.Windows.Forms.DockStyle.Left;
             this.btnBack.FlatAppearance.BorderSize = 0;
             this.btnBack.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnBack.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnBack.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.btnBack.ForeColor = System.Drawing.Color.White;
             this.btnBack.Location = new System.Drawing.Point(0, 0);
             this.btnBack.Name = "btnBack";
@@ -187,10 +189,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlWarnBox.Controls.Add(this.lblWarnText);
             this.pnlWarnBox.Controls.Add(this.lblWarnIcon);
             this.pnlWarnBox.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlWarnBox.Location = new System.Drawing.Point(12, 786);
+            this.pnlWarnBox.Location = new System.Drawing.Point(12, 808);
             this.pnlWarnBox.Name = "pnlWarnBox";
             this.pnlWarnBox.Padding = new System.Windows.Forms.Padding(8);
-            this.pnlWarnBox.Size = new System.Drawing.Size(1132, 70);
+            this.pnlWarnBox.Size = new System.Drawing.Size(1128, 70);
             this.pnlWarnBox.TabIndex = 0;
             // 
             // lblWarnText
@@ -200,7 +202,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblWarnText.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(60)))), ((int)(((byte)(0)))));
             this.lblWarnText.Location = new System.Drawing.Point(44, 8);
             this.lblWarnText.Name = "lblWarnText";
-            this.lblWarnText.Size = new System.Drawing.Size(1078, 52);
+            this.lblWarnText.Size = new System.Drawing.Size(1074, 52);
             this.lblWarnText.TabIndex = 0;
             this.lblWarnText.Text = "ข้อกำหนดการลบหมวดหมู่: ลบได้เฉพาะหมวดหมู่ที่ไม่มีบทความ และไม่มีหมวดหมู่ย่อยอยู่ภ" +
     "ายใน\r\nหากต้องการลบหมวดหมู่ที่มีบทความ ต้องย้ายบทความทั้งหมดออกก่อน";
@@ -220,9 +222,9 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.pnlSpacer3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(245)))), ((int)(((byte)(247)))), ((int)(((byte)(250)))));
             this.pnlSpacer3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlSpacer3.Location = new System.Drawing.Point(12, 774);
+            this.pnlSpacer3.Location = new System.Drawing.Point(12, 796);
             this.pnlSpacer3.Name = "pnlSpacer3";
-            this.pnlSpacer3.Size = new System.Drawing.Size(1132, 12);
+            this.pnlSpacer3.Size = new System.Drawing.Size(1128, 12);
             this.pnlSpacer3.TabIndex = 1;
             // 
             // pnlArticleCard
@@ -232,9 +234,9 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlArticleCard.Controls.Add(this.lstArticleUsage);
             this.pnlArticleCard.Controls.Add(this.pnlArticleCardHeader);
             this.pnlArticleCard.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlArticleCard.Location = new System.Drawing.Point(12, 556);
+            this.pnlArticleCard.Location = new System.Drawing.Point(12, 578);
             this.pnlArticleCard.Name = "pnlArticleCard";
-            this.pnlArticleCard.Size = new System.Drawing.Size(1132, 218);
+            this.pnlArticleCard.Size = new System.Drawing.Size(1128, 218);
             this.pnlArticleCard.TabIndex = 2;
             // 
             // lstArticleUsage
@@ -247,7 +249,7 @@ namespace CMS.Presentation.Modules.KMS
             this.colArtStatus,
             this.colArtAuthor});
             this.lstArticleUsage.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lstArticleUsage.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this.lstArticleUsage.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lstArticleUsage.FullRowSelect = true;
             this.lstArticleUsage.GridLines = true;
             this.lstArticleUsage.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
@@ -255,7 +257,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lstArticleUsage.Location = new System.Drawing.Point(0, 36);
             this.lstArticleUsage.MultiSelect = false;
             this.lstArticleUsage.Name = "lstArticleUsage";
-            this.lstArticleUsage.Size = new System.Drawing.Size(1130, 180);
+            this.lstArticleUsage.Size = new System.Drawing.Size(1126, 180);
             this.lstArticleUsage.TabIndex = 0;
             this.lstArticleUsage.UseCompatibleStateImageBehavior = false;
             this.lstArticleUsage.View = System.Windows.Forms.View.Details;
@@ -292,7 +294,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlArticleCardHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlArticleCardHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlArticleCardHeader.Name = "pnlArticleCardHeader";
-            this.pnlArticleCardHeader.Size = new System.Drawing.Size(1130, 36);
+            this.pnlArticleCardHeader.Size = new System.Drawing.Size(1126, 36);
             this.pnlArticleCardHeader.TabIndex = 1;
             // 
             // lblArticleCardHeader
@@ -303,7 +305,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblArticleCardHeader.Location = new System.Drawing.Point(0, 0);
             this.lblArticleCardHeader.Name = "lblArticleCardHeader";
             this.lblArticleCardHeader.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.lblArticleCardHeader.Size = new System.Drawing.Size(1130, 36);
+            this.lblArticleCardHeader.Size = new System.Drawing.Size(1126, 36);
             this.lblArticleCardHeader.TabIndex = 0;
             this.lblArticleCardHeader.Text = "  📚 บทความในหมวดหมู่นี้ (แสดง 5 รายการล่าสุด)";
             this.lblArticleCardHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -315,9 +317,9 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlDetailsCard.Controls.Add(this.pnlDetailsCardBody);
             this.pnlDetailsCard.Controls.Add(this.pnlDetailsCardHeader);
             this.pnlDetailsCard.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlDetailsCard.Location = new System.Drawing.Point(12, 308);
+            this.pnlDetailsCard.Location = new System.Drawing.Point(12, 320);
             this.pnlDetailsCard.Name = "pnlDetailsCard";
-            this.pnlDetailsCard.Size = new System.Drawing.Size(1132, 248);
+            this.pnlDetailsCard.Size = new System.Drawing.Size(1128, 258);
             this.pnlDetailsCard.TabIndex = 4;
             // 
             // pnlDetailsCardBody
@@ -338,7 +340,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlDetailsCardBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlDetailsCardBody.Location = new System.Drawing.Point(0, 36);
             this.pnlDetailsCardBody.Name = "pnlDetailsCardBody";
-            this.pnlDetailsCardBody.Size = new System.Drawing.Size(1130, 210);
+            this.pnlDetailsCardBody.Size = new System.Drawing.Size(1126, 220);
             this.pnlDetailsCardBody.TabIndex = 0;
             // 
             // tblStats
@@ -357,7 +359,7 @@ namespace CMS.Presentation.Modules.KMS
             this.tblStats.Name = "tblStats";
             this.tblStats.RowCount = 1;
             this.tblStats.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tblStats.Size = new System.Drawing.Size(1096, 68);
+            this.tblStats.Size = new System.Drawing.Size(1092, 68);
             this.tblStats.TabIndex = 0;
             // 
             // pnlStatTotal
@@ -369,7 +371,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStatTotal.Location = new System.Drawing.Point(0, 0);
             this.pnlStatTotal.Margin = new System.Windows.Forms.Padding(0, 0, 6, 0);
             this.pnlStatTotal.Name = "pnlStatTotal";
-            this.pnlStatTotal.Size = new System.Drawing.Size(359, 68);
+            this.pnlStatTotal.Size = new System.Drawing.Size(357, 68);
             this.pnlStatTotal.TabIndex = 0;
             // 
             // lblStatTotalNum
@@ -377,9 +379,9 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatTotalNum.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblStatTotalNum.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Bold);
             this.lblStatTotalNum.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(80)))), ((int)(((byte)(180)))));
-            this.lblStatTotalNum.Location = new System.Drawing.Point(0, 22);
+            this.lblStatTotalNum.Location = new System.Drawing.Point(0, 32);
             this.lblStatTotalNum.Name = "lblStatTotalNum";
-            this.lblStatTotalNum.Size = new System.Drawing.Size(359, 32);
+            this.lblStatTotalNum.Size = new System.Drawing.Size(357, 36);
             this.lblStatTotalNum.TabIndex = 0;
             this.lblStatTotalNum.Text = "—";
             this.lblStatTotalNum.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
@@ -387,11 +389,11 @@ namespace CMS.Presentation.Modules.KMS
             // lblStatTotalLabel
             // 
             this.lblStatTotalLabel.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblStatTotalLabel.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblStatTotalLabel.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblStatTotalLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.lblStatTotalLabel.Location = new System.Drawing.Point(0, 0);
             this.lblStatTotalLabel.Name = "lblStatTotalLabel";
-            this.lblStatTotalLabel.Size = new System.Drawing.Size(359, 22);
+            this.lblStatTotalLabel.Size = new System.Drawing.Size(357, 32);
             this.lblStatTotalLabel.TabIndex = 1;
             this.lblStatTotalLabel.Text = "บทความทั้งหมด";
             this.lblStatTotalLabel.TextAlign = System.Drawing.ContentAlignment.TopCenter;
@@ -402,10 +404,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStatPublished.Controls.Add(this.lblStatPublishedNum);
             this.pnlStatPublished.Controls.Add(this.lblStatPublishedLabel);
             this.pnlStatPublished.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlStatPublished.Location = new System.Drawing.Point(368, 0);
+            this.pnlStatPublished.Location = new System.Drawing.Point(366, 0);
             this.pnlStatPublished.Margin = new System.Windows.Forms.Padding(3, 0, 3, 0);
             this.pnlStatPublished.Name = "pnlStatPublished";
-            this.pnlStatPublished.Size = new System.Drawing.Size(359, 68);
+            this.pnlStatPublished.Size = new System.Drawing.Size(357, 68);
             this.pnlStatPublished.TabIndex = 1;
             // 
             // lblStatPublishedNum
@@ -413,9 +415,9 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatPublishedNum.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblStatPublishedNum.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Bold);
             this.lblStatPublishedNum.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(132)))), ((int)(((byte)(73)))));
-            this.lblStatPublishedNum.Location = new System.Drawing.Point(0, 22);
+            this.lblStatPublishedNum.Location = new System.Drawing.Point(0, 32);
             this.lblStatPublishedNum.Name = "lblStatPublishedNum";
-            this.lblStatPublishedNum.Size = new System.Drawing.Size(359, 32);
+            this.lblStatPublishedNum.Size = new System.Drawing.Size(357, 36);
             this.lblStatPublishedNum.TabIndex = 0;
             this.lblStatPublishedNum.Text = "—";
             this.lblStatPublishedNum.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
@@ -423,11 +425,11 @@ namespace CMS.Presentation.Modules.KMS
             // lblStatPublishedLabel
             // 
             this.lblStatPublishedLabel.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblStatPublishedLabel.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblStatPublishedLabel.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblStatPublishedLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.lblStatPublishedLabel.Location = new System.Drawing.Point(0, 0);
             this.lblStatPublishedLabel.Name = "lblStatPublishedLabel";
-            this.lblStatPublishedLabel.Size = new System.Drawing.Size(359, 22);
+            this.lblStatPublishedLabel.Size = new System.Drawing.Size(357, 32);
             this.lblStatPublishedLabel.TabIndex = 1;
             this.lblStatPublishedLabel.Text = "✅ Published";
             this.lblStatPublishedLabel.TextAlign = System.Drawing.ContentAlignment.TopCenter;
@@ -438,7 +440,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlStatDraft.Controls.Add(this.lblStatDraftNum);
             this.pnlStatDraft.Controls.Add(this.lblStatDraftLabel);
             this.pnlStatDraft.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlStatDraft.Location = new System.Drawing.Point(736, 0);
+            this.pnlStatDraft.Location = new System.Drawing.Point(732, 0);
             this.pnlStatDraft.Margin = new System.Windows.Forms.Padding(6, 0, 0, 0);
             this.pnlStatDraft.Name = "pnlStatDraft";
             this.pnlStatDraft.Size = new System.Drawing.Size(360, 68);
@@ -449,9 +451,9 @@ namespace CMS.Presentation.Modules.KMS
             this.lblStatDraftNum.Dock = System.Windows.Forms.DockStyle.Top;
             this.lblStatDraftNum.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Bold);
             this.lblStatDraftNum.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(190)))), ((int)(((byte)(130)))), ((int)(((byte)(0)))));
-            this.lblStatDraftNum.Location = new System.Drawing.Point(0, 22);
+            this.lblStatDraftNum.Location = new System.Drawing.Point(0, 32);
             this.lblStatDraftNum.Name = "lblStatDraftNum";
-            this.lblStatDraftNum.Size = new System.Drawing.Size(360, 32);
+            this.lblStatDraftNum.Size = new System.Drawing.Size(360, 36);
             this.lblStatDraftNum.TabIndex = 0;
             this.lblStatDraftNum.Text = "—";
             this.lblStatDraftNum.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
@@ -459,11 +461,11 @@ namespace CMS.Presentation.Modules.KMS
             // lblStatDraftLabel
             // 
             this.lblStatDraftLabel.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblStatDraftLabel.Font = new System.Drawing.Font("Segoe UI", 8F);
+            this.lblStatDraftLabel.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblStatDraftLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(80)))), ((int)(((byte)(80)))), ((int)(((byte)(80)))));
             this.lblStatDraftLabel.Location = new System.Drawing.Point(0, 0);
             this.lblStatDraftLabel.Name = "lblStatDraftLabel";
-            this.lblStatDraftLabel.Size = new System.Drawing.Size(360, 22);
+            this.lblStatDraftLabel.Size = new System.Drawing.Size(360, 32);
             this.lblStatDraftLabel.TabIndex = 1;
             this.lblStatDraftLabel.Text = "🔴 Draft / Review";
             this.lblStatDraftLabel.TextAlign = System.Drawing.ContentAlignment.TopCenter;
@@ -475,7 +477,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlInfoSep.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
             this.pnlInfoSep.Location = new System.Drawing.Point(12, 84);
             this.pnlInfoSep.Name = "pnlInfoSep";
-            this.pnlInfoSep.Size = new System.Drawing.Size(1380, 1);
+            this.pnlInfoSep.Size = new System.Drawing.Size(1376, 1);
             this.pnlInfoSep.TabIndex = 1;
             // 
             // lblInfoCreatedByKey
@@ -497,7 +499,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblInfoCreatedByVal.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.lblInfoCreatedByVal.Location = new System.Drawing.Point(130, 92);
             this.lblInfoCreatedByVal.Name = "lblInfoCreatedByVal";
-            this.lblInfoCreatedByVal.Size = new System.Drawing.Size(1270, 22);
+            this.lblInfoCreatedByVal.Size = new System.Drawing.Size(1266, 22);
             this.lblInfoCreatedByVal.TabIndex = 3;
             this.lblInfoCreatedByVal.Text = "—";
             this.lblInfoCreatedByVal.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -521,7 +523,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblInfoCreatedDateVal.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.lblInfoCreatedDateVal.Location = new System.Drawing.Point(130, 114);
             this.lblInfoCreatedDateVal.Name = "lblInfoCreatedDateVal";
-            this.lblInfoCreatedDateVal.Size = new System.Drawing.Size(1270, 22);
+            this.lblInfoCreatedDateVal.Size = new System.Drawing.Size(1266, 22);
             this.lblInfoCreatedDateVal.TabIndex = 5;
             this.lblInfoCreatedDateVal.Text = "—";
             this.lblInfoCreatedDateVal.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -545,7 +547,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblInfoUpdatedVal.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.lblInfoUpdatedVal.Location = new System.Drawing.Point(130, 136);
             this.lblInfoUpdatedVal.Name = "lblInfoUpdatedVal";
-            this.lblInfoUpdatedVal.Size = new System.Drawing.Size(1270, 22);
+            this.lblInfoUpdatedVal.Size = new System.Drawing.Size(1266, 22);
             this.lblInfoUpdatedVal.TabIndex = 7;
             this.lblInfoUpdatedVal.Text = "—";
             this.lblInfoUpdatedVal.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -569,7 +571,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblInfoStatusVal.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.lblInfoStatusVal.Location = new System.Drawing.Point(130, 158);
             this.lblInfoStatusVal.Name = "lblInfoStatusVal";
-            this.lblInfoStatusVal.Size = new System.Drawing.Size(1270, 22);
+            this.lblInfoStatusVal.Size = new System.Drawing.Size(1266, 22);
             this.lblInfoStatusVal.TabIndex = 9;
             this.lblInfoStatusVal.Text = "—";
             this.lblInfoStatusVal.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -593,7 +595,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblInfoPathVal.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.lblInfoPathVal.Location = new System.Drawing.Point(130, 180);
             this.lblInfoPathVal.Name = "lblInfoPathVal";
-            this.lblInfoPathVal.Size = new System.Drawing.Size(1270, 22);
+            this.lblInfoPathVal.Size = new System.Drawing.Size(1266, 22);
             this.lblInfoPathVal.TabIndex = 11;
             this.lblInfoPathVal.Text = "—";
             this.lblInfoPathVal.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -605,7 +607,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlDetailsCardHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlDetailsCardHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlDetailsCardHeader.Name = "pnlDetailsCardHeader";
-            this.pnlDetailsCardHeader.Size = new System.Drawing.Size(1130, 36);
+            this.pnlDetailsCardHeader.Size = new System.Drawing.Size(1126, 36);
             this.pnlDetailsCardHeader.TabIndex = 1;
             // 
             // lblDetailsCardHeader
@@ -616,7 +618,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblDetailsCardHeader.Location = new System.Drawing.Point(0, 0);
             this.lblDetailsCardHeader.Name = "lblDetailsCardHeader";
             this.lblDetailsCardHeader.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.lblDetailsCardHeader.Size = new System.Drawing.Size(1130, 36);
+            this.lblDetailsCardHeader.Size = new System.Drawing.Size(1126, 36);
             this.lblDetailsCardHeader.TabIndex = 0;
             this.lblDetailsCardHeader.Text = "  📊 รายละเอียดหมวดหมู่";
             this.lblDetailsCardHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -630,7 +632,7 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlEditCard.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlEditCard.Location = new System.Drawing.Point(12, 12);
             this.pnlEditCard.Name = "pnlEditCard";
-            this.pnlEditCard.Size = new System.Drawing.Size(1132, 296);
+            this.pnlEditCard.Size = new System.Drawing.Size(1128, 308);
             this.pnlEditCard.TabIndex = 6;
             // 
             // pnlEditCardBody
@@ -649,12 +651,14 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlEditCardBody.Controls.Add(this.cboStatus);
             this.pnlEditCardBody.Controls.Add(this.lblParent);
             this.pnlEditCardBody.Controls.Add(this.cboParent);
+            this.pnlEditCardBody.Controls.Add(this.lblImportTypeDigit);
+            this.pnlEditCardBody.Controls.Add(this.cboImportTypeDigit);
             this.pnlEditCardBody.Controls.Add(this.lblDescription);
             this.pnlEditCardBody.Controls.Add(this.txtDescription);
-            this.pnlEditCardBody.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlEditCardBody.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlEditCardBody.Location = new System.Drawing.Point(0, 36);
             this.pnlEditCardBody.Name = "pnlEditCardBody";
-            this.pnlEditCardBody.Size = new System.Drawing.Size(1130, 257);
+            this.pnlEditCardBody.Size = new System.Drawing.Size(1126, 270);
             this.pnlEditCardBody.TabIndex = 0;
             // 
             // pnlButtons
@@ -665,10 +669,10 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlButtons.Controls.Add(this.btnDelete);
             this.pnlButtons.Controls.Add(this.btnSave);
             this.pnlButtons.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlButtons.Location = new System.Drawing.Point(0, 204);
+            this.pnlButtons.Location = new System.Drawing.Point(0, 219);
             this.pnlButtons.Name = "pnlButtons";
             this.pnlButtons.Padding = new System.Windows.Forms.Padding(16, 8, 16, 8);
-            this.pnlButtons.Size = new System.Drawing.Size(1130, 53);
+            this.pnlButtons.Size = new System.Drawing.Size(1126, 51);
             this.pnlButtons.TabIndex = 0;
             // 
             // lblDirtyHint
@@ -733,55 +737,55 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // lblName
             // 
-            this.lblName.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblName.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblName.Location = new System.Drawing.Point(16, 18);
             this.lblName.Name = "lblName";
-            this.lblName.Size = new System.Drawing.Size(130, 22);
+            this.lblName.Size = new System.Drawing.Size(130, 31);
             this.lblName.TabIndex = 1;
             this.lblName.Text = "ชื่อหมวดหมู่ *";
             // 
             // txtName
             // 
-            this.txtName.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtName.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.txtName.Location = new System.Drawing.Point(150, 14);
             this.txtName.MaxLength = 100;
             this.txtName.Name = "txtName";
-            this.txtName.Size = new System.Drawing.Size(300, 23);
+            this.txtName.Size = new System.Drawing.Size(300, 34);
             this.txtName.TabIndex = 2;
             this.txtName.TextChanged += new System.EventHandler(this.TxtName_TextChanged);
             // 
             // lblCategoryCode
             // 
-            this.lblCategoryCode.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblCategoryCode.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblCategoryCode.Location = new System.Drawing.Point(495, 19);
             this.lblCategoryCode.Name = "lblCategoryCode";
-            this.lblCategoryCode.Size = new System.Drawing.Size(130, 22);
+            this.lblCategoryCode.Size = new System.Drawing.Size(149, 30);
             this.lblCategoryCode.TabIndex = 3;
             this.lblCategoryCode.Text = "รหัสหมวดหมู่";
             // 
             // txtCategoryCode
             // 
-            this.txtCategoryCode.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.txtCategoryCode.Location = new System.Drawing.Point(629, 15);
+            this.txtCategoryCode.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.txtCategoryCode.Location = new System.Drawing.Point(650, 15);
             this.txtCategoryCode.MaxLength = 50;
             this.txtCategoryCode.Name = "txtCategoryCode";
-            this.txtCategoryCode.Size = new System.Drawing.Size(200, 23);
+            this.txtCategoryCode.Size = new System.Drawing.Size(200, 34);
             this.txtCategoryCode.TabIndex = 4;
             this.txtCategoryCode.TextChanged += new System.EventHandler(this.TxtCategoryCode_TextChanged);
             // 
             // lblIcon
             // 
-            this.lblIcon.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblIcon.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblIcon.Location = new System.Drawing.Point(15, 59);
             this.lblIcon.Name = "lblIcon";
-            this.lblIcon.Size = new System.Drawing.Size(130, 22);
+            this.lblIcon.Size = new System.Drawing.Size(130, 32);
             this.lblIcon.TabIndex = 5;
             this.lblIcon.Text = "ไอคอน *";
             // 
             // cboIcon
             // 
             this.cboIcon.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboIcon.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboIcon.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.cboIcon.Items.AddRange(new object[] {
             "❓ คำถาม",
             "📋 รายการ (SOP)",
@@ -794,23 +798,23 @@ namespace CMS.Presentation.Modules.KMS
             "💡 ความรู้"});
             this.cboIcon.Location = new System.Drawing.Point(149, 55);
             this.cboIcon.Name = "cboIcon";
-            this.cboIcon.Size = new System.Drawing.Size(130, 23);
+            this.cboIcon.Size = new System.Drawing.Size(130, 36);
             this.cboIcon.TabIndex = 6;
             this.cboIcon.SelectedIndexChanged += new System.EventHandler(this.CboIcon_SelectedIndexChanged);
             // 
             // lblSortOrder
             // 
-            this.lblSortOrder.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblSortOrder.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblSortOrder.Location = new System.Drawing.Point(495, 58);
             this.lblSortOrder.Name = "lblSortOrder";
-            this.lblSortOrder.Size = new System.Drawing.Size(130, 22);
+            this.lblSortOrder.Size = new System.Drawing.Size(149, 33);
             this.lblSortOrder.TabIndex = 9;
             this.lblSortOrder.Text = "ลำดับแสดงผล *";
             // 
             // numSortOrder
             // 
-            this.numSortOrder.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.numSortOrder.Location = new System.Drawing.Point(629, 54);
+            this.numSortOrder.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.numSortOrder.Location = new System.Drawing.Point(650, 54);
             this.numSortOrder.Maximum = new decimal(new int[] {
             99,
             0,
@@ -822,7 +826,7 @@ namespace CMS.Presentation.Modules.KMS
             0,
             0});
             this.numSortOrder.Name = "numSortOrder";
-            this.numSortOrder.Size = new System.Drawing.Size(80, 23);
+            this.numSortOrder.Size = new System.Drawing.Size(80, 34);
             this.numSortOrder.TabIndex = 10;
             this.numSortOrder.Value = new decimal(new int[] {
             1,
@@ -833,10 +837,10 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // lblStatusLabel
             // 
-            this.lblStatusLabel.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblStatusLabel.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblStatusLabel.Location = new System.Drawing.Point(15, 104);
             this.lblStatusLabel.Name = "lblStatusLabel";
-            this.lblStatusLabel.Size = new System.Drawing.Size(130, 22);
+            this.lblStatusLabel.Size = new System.Drawing.Size(130, 32);
             this.lblStatusLabel.TabIndex = 11;
             this.lblStatusLabel.Text = "สถานะ *";
             // 
@@ -844,52 +848,72 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.cboStatus.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboStatus.Enabled = false;
-            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboStatus.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.cboStatus.Items.AddRange(new object[] {
             "● Active (ใช้งาน)",
             "○ Inactive (ปิดการใช้งาน)"});
             this.cboStatus.Location = new System.Drawing.Point(149, 100);
             this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(180, 23);
+            this.cboStatus.Size = new System.Drawing.Size(180, 36);
             this.cboStatus.TabIndex = 12;
             // 
             // lblParent
             // 
-            this.lblParent.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblParent.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblParent.Location = new System.Drawing.Point(493, 104);
             this.lblParent.Name = "lblParent";
-            this.lblParent.Size = new System.Drawing.Size(130, 22);
+            this.lblParent.Size = new System.Drawing.Size(130, 32);
             this.lblParent.TabIndex = 13;
             this.lblParent.Text = "หมวดหมู่แม่";
             // 
             // cboParent
             // 
             this.cboParent.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboParent.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.cboParent.Location = new System.Drawing.Point(627, 100);
+            this.cboParent.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.cboParent.Location = new System.Drawing.Point(648, 100);
             this.cboParent.Name = "cboParent";
-            this.cboParent.Size = new System.Drawing.Size(280, 23);
+            this.cboParent.Size = new System.Drawing.Size(280, 36);
             this.cboParent.TabIndex = 14;
             this.cboParent.SelectedIndexChanged += new System.EventHandler(this.CboParent_SelectedIndexChanged);
             // 
+            // lblImportTypeDigit
+            // 
+            this.lblImportTypeDigit.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.lblImportTypeDigit.Location = new System.Drawing.Point(700, 139);
+            this.lblImportTypeDigit.Name = "lblImportTypeDigit";
+            this.lblImportTypeDigit.Size = new System.Drawing.Size(256, 31);
+            this.lblImportTypeDigit.TabIndex = 17;
+            this.lblImportTypeDigit.Text = "รหัสประเภทเอกสาร (ตัวที่ 23)";
+            // 
+            // cboImportTypeDigit
+            // 
+            this.cboImportTypeDigit.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboImportTypeDigit.DropDownWidth = 260;
+            this.cboImportTypeDigit.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.cboImportTypeDigit.Location = new System.Drawing.Point(700, 170);
+            this.cboImportTypeDigit.Name = "cboImportTypeDigit";
+            this.cboImportTypeDigit.Size = new System.Drawing.Size(207, 36);
+            this.cboImportTypeDigit.TabIndex = 18;
+            this.cboImportTypeDigit.SelectedIndexChanged += new System.EventHandler(this.CboImportTypeDigit_SelectedIndexChanged);
+            // 
             // lblDescription
             // 
-            this.lblDescription.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblDescription.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.lblDescription.Location = new System.Drawing.Point(15, 148);
             this.lblDescription.Name = "lblDescription";
-            this.lblDescription.Size = new System.Drawing.Size(130, 22);
+            this.lblDescription.Size = new System.Drawing.Size(130, 35);
             this.lblDescription.TabIndex = 15;
             this.lblDescription.Text = "คำอธิบาย";
             // 
             // txtDescription
             // 
-            this.txtDescription.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtDescription.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.txtDescription.Location = new System.Drawing.Point(149, 144);
             this.txtDescription.MaxLength = 300;
             this.txtDescription.Multiline = true;
             this.txtDescription.Name = "txtDescription";
             this.txtDescription.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtDescription.Size = new System.Drawing.Size(758, 56);
+            this.txtDescription.Size = new System.Drawing.Size(530, 56);
             this.txtDescription.TabIndex = 16;
             this.txtDescription.TextChanged += new System.EventHandler(this.TxtDescription_TextChanged);
             // 
@@ -900,18 +924,18 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlEditCardHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlEditCardHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlEditCardHeader.Name = "pnlEditCardHeader";
-            this.pnlEditCardHeader.Size = new System.Drawing.Size(1130, 36);
+            this.pnlEditCardHeader.Size = new System.Drawing.Size(1126, 36);
             this.pnlEditCardHeader.TabIndex = 1;
             // 
             // lblEditCardHeader
             // 
             this.lblEditCardHeader.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblEditCardHeader.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Bold);
+            this.lblEditCardHeader.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.lblEditCardHeader.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(51)))), ((int)(((byte)(102)))));
             this.lblEditCardHeader.Location = new System.Drawing.Point(0, 0);
             this.lblEditCardHeader.Name = "lblEditCardHeader";
             this.lblEditCardHeader.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
-            this.lblEditCardHeader.Size = new System.Drawing.Size(1130, 36);
+            this.lblEditCardHeader.Size = new System.Drawing.Size(1126, 36);
             this.lblEditCardHeader.TabIndex = 0;
             this.lblEditCardHeader.Text = "  ✏️ เพิ่ม Category ใหม่";
             this.lblEditCardHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -943,7 +967,7 @@ namespace CMS.Presentation.Modules.KMS
             this.treeCategories.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
             this.treeCategories.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.treeCategories.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.treeCategories.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.treeCategories.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.treeCategories.FullRowSelect = true;
             this.treeCategories.HotTracking = true;
             this.treeCategories.Indent = 16;
@@ -954,6 +978,7 @@ namespace CMS.Presentation.Modules.KMS
             this.treeCategories.Size = new System.Drawing.Size(370, 720);
             this.treeCategories.TabIndex = 0;
             this.treeCategories.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeCategories_AfterSelect);
+            this.treeCategories.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.TreeCategories_NodeMouseClick);
             // 
             // pnlLeftFooter
             // 
@@ -1018,11 +1043,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.txtSearch.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtSearch.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.txtSearch.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(160)))), ((int)(((byte)(160)))), ((int)(((byte)(160)))));
             this.txtSearch.Location = new System.Drawing.Point(8, 6);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(354, 23);
+            this.txtSearch.Size = new System.Drawing.Size(354, 34);
             this.txtSearch.TabIndex = 0;
             this.txtSearch.Text = "🔍 ค้นหาหมวดหมู่...";
             this.txtSearch.TextChanged += new System.EventHandler(this.TxtSearch_TextChanged);
@@ -1042,7 +1067,7 @@ namespace CMS.Presentation.Modules.KMS
             // lblListTitle
             // 
             this.lblListTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblListTitle.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Bold);
+            this.lblListTitle.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
             this.lblListTitle.ForeColor = System.Drawing.Color.White;
             this.lblListTitle.Location = new System.Drawing.Point(0, 0);
             this.lblListTitle.Name = "lblListTitle";
@@ -1053,7 +1078,7 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // KBCategoryForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(1552, 894);
@@ -1125,6 +1150,8 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.ComboBox cboStatus;
         private System.Windows.Forms.Label lblParent;
         private System.Windows.Forms.ComboBox cboParent;
+        private System.Windows.Forms.Label lblImportTypeDigit;
+        private System.Windows.Forms.ComboBox cboImportTypeDigit;
         private System.Windows.Forms.Label lblDescription;
         private System.Windows.Forms.TextBox txtDescription;
         private System.Windows.Forms.Panel pnlButtons;

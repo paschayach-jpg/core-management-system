@@ -176,18 +176,71 @@ namespace CMS.Data.Repositories
                 conn.Open();
                 const string sql = @"
                     INSERT INTO KMS.t_KBArticle
-                        (ArticleCode, Title, ContentHTML, Summary, CategoryID, ArticleType,
-                         Status, CurrentVersion, PublishedDate, ExpiryDate, ReviewDueDate, IsOfficialPolicy,
+                        (ArticleCode, Title, ContentHTML, Summary, TitleCategory, CategoryID, ArticleType,
+                         Status, CurrentVersion, PublishedDate, EffectiveDate, ExpiryDate, ReviewDueDate, IsOfficialPolicy,
                          Tags, ConfidentialityLevel, CreatedBy, CreatedDate, ViewCount, LikeCount)
                     VALUES
-                        (@ArticleCode, @Title, @ContentHTML, @Summary, @CategoryID, @ArticleType,
-                         @Status, 1, @EffectiveDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
+                        (@ArticleCode, @Title, @ContentHTML, @Summary, @TitleCategory, @CategoryID, @ArticleType,
+                         @Status, 1, @PublishedDate, @EffectiveDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
                          @Tags, @ConfidentialityLevel, @CreatedBy, GETDATE(), 0, 0);
                     SELECT SCOPE_IDENTITY();";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
                     AddParams(cmd, article);
                     return Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+        }
+
+        public int InsertWithVersion(KBArticle article, KBVersion version)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        int articleId;
+                        const string articleSql = @"
+                            INSERT INTO KMS.t_KBArticle
+                                (ArticleCode, Title, ContentHTML, Summary, TitleCategory, CategoryID, ArticleType,
+                                 Status, CurrentVersion, PublishedDate, EffectiveDate, ExpiryDate, ReviewDueDate, IsOfficialPolicy,
+                                 Tags, ConfidentialityLevel, CreatedBy, CreatedDate, ViewCount, LikeCount)
+                            VALUES
+                                (@ArticleCode, @Title, @ContentHTML, @Summary, @TitleCategory, @CategoryID, @ArticleType,
+                                 @Status, 1, @PublishedDate, @EffectiveDate, @ExpiryDate, @ReviewDueDate, @IsOfficialPolicy,
+                                 @Tags, @ConfidentialityLevel, @CreatedBy, GETDATE(), 0, 0);
+                            SELECT SCOPE_IDENTITY();";
+                        using (var cmd = new SqlCommand(articleSql, conn, tx))
+                        {
+                            AddParams(cmd, article);
+                            articleId = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        const string versionSql = @"
+                            INSERT INTO KMS.t_KBVersion
+                                (ArticleID, VersionNumber, ContentSnapshot, ChangeDescription, CreatedBy, CreatedDate)
+                            VALUES
+                                (@ArticleID, @VersionNumber, @ContentSnapshot, @ChangeDescription, @CreatedBy, GETDATE());";
+                        using (var cmd = new SqlCommand(versionSql, conn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@ArticleID",         articleId);
+                            cmd.Parameters.AddWithValue("@VersionNumber",     version.VersionNumber);
+                            cmd.Parameters.AddWithValue("@ContentSnapshot",   (object)version.ContentSnapshot   ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@ChangeDescription", (object)version.ChangeDescription ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@CreatedBy",         version.CreatedBy ?? string.Empty);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        tx.Commit();
+                        return articleId;
+                    }
+                    catch
+                    {
+                        tx.Rollback();
+                        throw;
+                    }
                 }
             }
         }
@@ -202,10 +255,12 @@ namespace CMS.Data.Repositories
                         Title                = @Title,
                         ContentHTML          = @ContentHTML,
                         Summary              = @Summary,
+                        TitleCategory        = @TitleCategory,
                         CategoryID           = @CategoryID,
                         ArticleType          = @ArticleType,
                         Status               = @Status,
-                        PublishedDate        = @EffectiveDate,
+                        PublishedDate        = @PublishedDate,
+                        EffectiveDate        = @EffectiveDate,
                         ExpiryDate           = @ExpiryDate,
                         ReviewDueDate        = @ReviewDueDate,
                         IsOfficialPolicy     = @IsOfficialPolicy,
@@ -217,6 +272,100 @@ namespace CMS.Data.Repositories
                     cmd.Parameters.AddWithValue("@ArticleID", article.ArticleID);
                     AddParams(cmd, article);
                     cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        /// <summary>
+        /// คอลัมน์ที่ Excel import เขียนทับได้ตอน update บทความเดิม → ค่าจาก <see cref="KBArticle"/> (whitelist กัน SQL injection ผ่านชื่อคอลัมน์).
+        /// ArticleCode (คีย์ที่ใช้หาบทความ) และ CategoryID (หมวดที่ผู้ใช้อาจย้ายเอง) ตั้งใจไม่อยู่ในรายการ — import ห้ามแก้
+        /// </summary>
+        private static readonly Dictionary<string, Func<KBArticle, object>> ImportUpdatableColumns =
+            new Dictionary<string, Func<KBArticle, object>>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Title",         a => (object)a.Title         ?? DBNull.Value },
+            { "TitleCategory", a => (object)a.TitleCategory ?? DBNull.Value },
+            { "ContentHTML",   a => (object)a.ContentHTML   ?? DBNull.Value },
+            { "Summary",       a => (object)a.Summary       ?? DBNull.Value },
+            { "PublishedDate", a => (object)a.PublishedDate ?? DBNull.Value },
+            { "EffectiveDate", a => (object)a.EffectiveDate ?? DBNull.Value },
+            { "ArticleType",   a => a.ArticleType },
+            { "Tags",          a => (object)a.Tags          ?? DBNull.Value },
+        };
+
+        public void UpdateFromImport(int articleId, KBArticle values, IEnumerable<string> columns, string updatedBy, KBVersion newVersion)
+        {
+            if (values  == null) throw new ArgumentNullException("values");
+            if (columns == null) throw new ArgumentNullException("columns");
+
+            var sets   = new List<string>();
+            var seen   = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var bound  = new List<KeyValuePair<string, object>>();
+            foreach (string column in columns)
+            {
+                Func<KBArticle, object> getValue;
+                if (column == null || !ImportUpdatableColumns.TryGetValue(column, out getValue))
+                    throw new ArgumentException("คอลัมน์ '" + column + "' ไม่อยู่ในรายการที่ import เขียนทับได้", "columns");
+                if (!seen.Add(column)) continue;
+
+                sets.Add(column + " = @" + column);
+                bound.Add(new KeyValuePair<string, object>("@" + column, getValue(values)));
+            }
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    int? nextVersion = null;
+
+                    if (newVersion != null)
+                    {
+                        const string nextVersionSql = @"
+                            SELECT ISNULL(MAX(VersionNumber), 0) + 1
+                            FROM   KMS.t_KBVersion WITH (UPDLOCK, HOLDLOCK)
+                            WHERE  ArticleID = @ArticleID";
+                        using (var cmd = new SqlCommand(nextVersionSql, conn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@ArticleID", articleId);
+                            nextVersion = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        const string versionSql = @"
+                            INSERT INTO KMS.t_KBVersion
+                                (ArticleID, VersionNumber, ContentSnapshot, ChangeDescription, CreatedBy, CreatedDate)
+                            VALUES
+                                (@ArticleID, @VersionNumber, @ContentSnapshot, @ChangeDescription, @CreatedBy, GETDATE());";
+                        using (var cmd = new SqlCommand(versionSql, conn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@ArticleID",         articleId);
+                            cmd.Parameters.AddWithValue("@VersionNumber",     nextVersion.Value);
+                            cmd.Parameters.AddWithValue("@ContentSnapshot",   (object)newVersion.ContentSnapshot   ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@ChangeDescription", (object)newVersion.ChangeDescription ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@CreatedBy",         newVersion.CreatedBy ?? string.Empty);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    if (nextVersion.HasValue) sets.Add("CurrentVersion = @CurrentVersion");
+                    sets.Add("UpdatedBy = @UpdatedBy");
+                    sets.Add("UpdatedDate = GETDATE()");
+
+                    string sql = "UPDATE KMS.t_KBArticle SET " + string.Join(", ", sets) + " WHERE ArticleID = @ArticleID";
+                    using (var cmd = new SqlCommand(sql, conn, tx))
+                    {
+                        cmd.Parameters.AddWithValue("@ArticleID", articleId);
+                        foreach (var p in bound)
+                            cmd.Parameters.AddWithValue(p.Key, p.Value);
+                        if (nextVersion.HasValue)
+                            cmd.Parameters.AddWithValue("@CurrentVersion", nextVersion.Value);
+                        cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy ?? string.Empty);
+
+                        if (cmd.ExecuteNonQuery() == 0)
+                            throw new InvalidOperationException("ไม่พบบทความ ArticleID " + articleId + " ที่จะอัปเดต");
+                    }
+
+                    tx.Commit();
                 }
             }
         }
@@ -290,6 +439,133 @@ namespace CMS.Data.Repositories
             }
         }
 
+        // ── Excel Import Template Config support ────────────────────────────────
+
+        private static readonly HashSet<string> NonImportableColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "ArticleID", "CreatedBy", "CreatedDate", "ReviewedBy", "ReviewedDate",
+            "UpdatedBy", "UpdatedDate", "ViewCount", "LikeCount", "IsDelete", "CurrentVersion",
+            // Excel import (KBImportWizardForm/KBImportProcessor) sets these itself — as a fixed
+            // constant (Status, ConfidentialityLevel) or computed internally (Tags, IsOfficialPolicy)
+            // — and never reads a Template ExcelColumnRef mapping for them. ReviewDueDate isn't set
+            // by the import flow at all. None of the 5 should be offered as a mappable target column.
+            "Status", "ConfidentialityLevel", "ReviewDueDate", "IsOfficialPolicy", "Tags",
+        };
+
+        public IList<string> GetImportableTargetColumns()
+        {
+            var results = new List<string>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT COLUMN_NAME
+                    FROM   INFORMATION_SCHEMA.COLUMNS
+                    WHERE  TABLE_SCHEMA = 'KMS' AND TABLE_NAME = 't_KBArticle'
+                    ORDER BY ORDINAL_POSITION";
+                using (var cmd = new SqlCommand(sql, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        string columnName = reader.GetString(0);
+                        if (!NonImportableColumns.Contains(columnName))
+                            results.Add(columnName);
+                    }
+                }
+            }
+            return results;
+        }
+
+        public bool ExistsByCode(string articleCode)
+        {
+            if (string.IsNullOrWhiteSpace(articleCode)) return false;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT TOP 1 1
+                    FROM   KMS.t_KBArticle
+                    WHERE  ArticleCode = @ArticleCode";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ArticleCode", articleCode);
+                    return cmd.ExecuteScalar() != null;
+                }
+            }
+        }
+
+        public KBArticle GetByCode(string articleCode)
+        {
+            if (string.IsNullOrWhiteSpace(articleCode)) return null;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                const string sql = @"
+                    SELECT TOP 1 ArticleID, ArticleCode, TitleCategory
+                    FROM   KMS.t_KBArticle
+                    WHERE  ArticleCode = @ArticleCode
+                      AND  (IsDelete = 0 OR IsDelete IS NULL)";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@ArticleCode", articleCode);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        if (r.Read())
+                        {
+                            return new KBArticle
+                            {
+                                ArticleID     = r.GetInt32(r.GetOrdinal("ArticleID")),
+                                ArticleCode   = r["ArticleCode"]   as string,
+                                TitleCategory = r["TitleCategory"] as string,
+                            };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        public IEnumerable<KBArticle> FindByNormalizedTitleCategory(string normalizedKey)
+        {
+            var results = new List<KBArticle>();
+            if (string.IsNullOrWhiteSpace(normalizedKey)) return results;
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                // ตัด space / tab / CR / LF / non-breaking space ออกจาก TitleCategory ก่อนเทียบ
+                const string sql = @"
+                    SELECT ArticleID, ArticleCode, TitleCategory
+                    FROM   KMS.t_KBArticle
+                    WHERE  (IsDelete = 0 OR IsDelete IS NULL)
+                      AND  REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+                               ISNULL(TitleCategory, N''),
+                               N' ', N''), NCHAR(9), N''), NCHAR(10), N''), NCHAR(13), N''), NCHAR(160), N'')
+                           = @Key
+                    ORDER BY ArticleCode ASC";
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Key", normalizedKey);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        while (r.Read())
+                        {
+                            results.Add(new KBArticle
+                            {
+                                ArticleID     = r.GetInt32(r.GetOrdinal("ArticleID")),
+                                ArticleCode   = r["ArticleCode"]   as string,
+                                TitleCategory = r["TitleCategory"] as string,
+                            });
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+
         // ── Helpers ──────────────────────────────────────────────────────────
 
         private static bool HasColumn(IDataReader r, string name)
@@ -305,9 +581,11 @@ namespace CMS.Data.Repositories
             cmd.Parameters.AddWithValue("@Title",            a.Title            ?? string.Empty);
             cmd.Parameters.AddWithValue("@ContentHTML",      (object)a.ContentHTML      ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Summary",          (object)a.Summary          ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@TitleCategory",    (object)a.TitleCategory    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@CategoryID",       a.CategoryID);
             cmd.Parameters.AddWithValue("@ArticleType",      a.ArticleType);
             cmd.Parameters.AddWithValue("@Status",           a.Status);
+            cmd.Parameters.AddWithValue("@PublishedDate",    (object)a.PublishedDate    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@EffectiveDate",    (object)a.EffectiveDate    ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ExpiryDate",       (object)a.ExpiryDate       ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@ReviewDueDate",    (object)a.ReviewDueDate    ?? DBNull.Value);
@@ -326,12 +604,13 @@ namespace CMS.Data.Repositories
                 Title            = r["Title"]         as string,
                 ContentHTML      = r["ContentHTML"]   as string,
                 Summary          = r["Summary"]       as string,
+                TitleCategory    = r["TitleCategory"] as string,
                 CategoryID       = r.GetInt32(r.GetOrdinal("CategoryID")),
                 ArticleType      = r.IsDBNull(r.GetOrdinal("ArticleType"))  ? (byte)0 : r.GetByte(r.GetOrdinal("ArticleType")),
                 Status           = r.IsDBNull(r.GetOrdinal("Status"))       ? (byte)1 : r.GetByte(r.GetOrdinal("Status")),
                 CurrentVersion   = r.IsDBNull(r.GetOrdinal("CurrentVersion")) ? 1 : r.GetInt32(r.GetOrdinal("CurrentVersion")),
                 PublishedDate    = r.IsDBNull(r.GetOrdinal("PublishedDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("PublishedDate")),
-                EffectiveDate    = r.IsDBNull(r.GetOrdinal("PublishedDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("PublishedDate")),
+                EffectiveDate    = r.IsDBNull(r.GetOrdinal("EffectiveDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("EffectiveDate")),
                 ExpiryDate       = r.IsDBNull(r.GetOrdinal("ExpiryDate"))     ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("ExpiryDate")),
                 ReviewDueDate    = r.IsDBNull(r.GetOrdinal("ReviewDueDate"))  ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("ReviewDueDate")),
                 ViewCount        = r.IsDBNull(r.GetOrdinal("ViewCount"))   ? 0 : r.GetInt32(r.GetOrdinal("ViewCount")),

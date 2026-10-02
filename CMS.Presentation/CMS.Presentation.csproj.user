@@ -2,6 +2,14 @@
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ProjectView>ShowAllFiles</ProjectView>
+    <PublishUrlHistory>\\150.1.8.23\AppForUser\cms\|\\150.1.8.23\AppForUser\cmspopp\</PublishUrlHistory>
+    <InstallUrlHistory>\\150.1.8.23\AppForUser\cms\|\\150.1.8.23\AppForUser\cmspopp\</InstallUrlHistory>
+    <SupportUrlHistory />
+    <UpdateUrlHistory>\\150.1.8.23\AppForUser\cms\</UpdateUrlHistory>
+    <BootstrapperUrlHistory />
+    <ErrorReportUrlHistory />
+    <FallbackCulture>en-US</FallbackCulture>
+    <VerifyUploadedFiles>false</VerifyUploadedFiles>
   </PropertyGroup>
   <PropertyGroup>
     <EnableSecurityDebugging>false</EnableSecurityDebugging>

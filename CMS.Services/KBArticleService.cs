@@ -66,42 +66,78 @@ namespace CMS.Services
                 (a.Title != null && a.Title.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.Summary != null && a.Summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.TitleCategory != null && a.TitleCategory.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0)
             ).ToList();
         }
         public IEnumerable<KBArticle> SearchByType(string keyword, int? categoryId, byte? status, byte? articleType, int searchFieldId)
         {
             var results = _articleRepo.Search(categoryId, status, articleType);
-            if (string.IsNullOrWhiteSpace(keyword)) return results;
+            return FilterByKeyword(results, keyword, searchFieldId);
+        }
+
+        /// <summary>
+        /// ใช้ criteria การค้นหาแบบเดียวกับ <see cref="SearchByType"/> กับรายการบทความที่มีอยู่แล้วในหน่วยความจำ
+        /// (เช่น กลุ่มบทความที่ resolve จาก link graph ของโหนด cross-reference ในต้นไม้หมวดหมู่ ซึ่งไม่ได้มาจาก
+        /// query ตาม CategoryID ตรง ๆ จึงใช้ <see cref="SearchByType"/> ค้นหาซ้ำไม่ได้)
+        /// </summary>
+        public IEnumerable<KBArticle> FilterByKeyword(IEnumerable<KBArticle> articles, string keyword, int searchFieldId)
+        {
+            if (string.IsNullOrWhiteSpace(keyword)) return articles;
 
             var _keyword = new string(keyword.Where(c => !char.IsWhiteSpace(c)).ToArray());
             switch (searchFieldId)
             {
-                case 1:
-                    return results.Where(a =>
-                        a.Title != null &&
-                        string.Equals(new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray()), _keyword, StringComparison.OrdinalIgnoreCase));
+                case 1: // ทั้งหมด — ค้นทุก field
+                    return articles.Where(a =>
+                        MatchesTitle(a, _keyword) || MatchesContent(a, _keyword) || MatchesTags(a, _keyword) ||
+                        MatchesSummary(a, _keyword) || MatchesTitleCategory(a, _keyword));
                 case 2:
-                    return results.Where(a =>
-                        (a.ContentHTML != null && new string(StripHtmlTags(a.ContentHTML).Where(c => !char.IsWhiteSpace(c)).ToArray()).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
+                    return articles.Where(a => MatchesTitle(a, _keyword));
                 case 3:
-                    return results.Where(a =>
-                        (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
+                    return articles.Where(a => MatchesContent(a, _keyword));
                 case 4:
-                    return results.Where(a =>
-                    {
-                        if (string.IsNullOrEmpty(a.Summary))
-                            return false;
-
-                        var summary = new string(
-                            a.Summary.Where(c => !char.IsWhiteSpace(c))
-                                     .ToArray());
-
-                        return summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0;
-                    });
+                    return articles.Where(a => MatchesTags(a, _keyword));
+                case 5:
+                    return articles.Where(a => MatchesSummary(a, _keyword));
+                case 6:
+                    return articles.Where(a => MatchesTitleCategory(a, _keyword));
                 default:
-                    return results;
+                    return articles;
             }
+        }
+
+        /// <summary>ค้นหาแบบ substring (ไม่สนช่องว่าง) ให้ behavior เหมือนกับ field อื่น ๆ ทั้งหมด (Content/Tags/Summary/TitleCategory)</summary>
+        private static bool MatchesTitle(KBArticle a, string keyword)
+        {
+            if (string.IsNullOrEmpty(a.Title)) return false;
+            var title = new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            return title.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool MatchesContent(KBArticle a, string keyword)
+        {
+            return a.ContentHTML != null &&
+                new string(StripHtmlTags(a.ContentHTML).Where(c => !char.IsWhiteSpace(c)).ToArray()).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool MatchesTags(KBArticle a, string keyword)
+        {
+            return a.Tags != null && a.Tags.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool MatchesSummary(KBArticle a, string keyword)
+        {
+            if (string.IsNullOrEmpty(a.Summary)) return false;
+            var summary = new string(a.Summary.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            return summary.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool MatchesTitleCategory(KBArticle a, string keyword)
+        {
+            if (string.IsNullOrEmpty(a.TitleCategory)) return false;
+            var titleCategory = new string(a.TitleCategory.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            return titleCategory.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public KBArticle GetById(int articleId)
@@ -122,6 +158,7 @@ namespace CMS.Services
                 (a.Title != null && a.Title.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.Summary != null && a.Summary.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.Tags != null && a.Tags.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                (a.TitleCategory != null && a.TitleCategory.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0) ||
                 (a.ContentHTML != null && StripHtmlTags(a.ContentHTML).IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
             ).ToList();
         }
@@ -379,6 +416,11 @@ namespace CMS.Services
         public IEnumerable<KBArticleLink> GetArticleLinks(int articleId, byte? entityType = null)
         {
             return _linkRepo.GetLinksForArticle(articleId, entityType);
+        }
+
+        public IEnumerable<KBArticleLink> GetAllLinksByType(byte entityType)
+        {
+            return _linkRepo.GetAllByEntityType(entityType);
         }
 
         public void SaveArticleLinks(int articleId, IEnumerable<KBArticleLink> links)

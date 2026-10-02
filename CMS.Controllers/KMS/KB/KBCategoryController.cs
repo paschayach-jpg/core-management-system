@@ -49,26 +49,18 @@ namespace CMS.Controllers.KMS.KB
             _view.Description       = cat.Description;
             _view.SortOrder         = cat.SortOrder;
             _view.ParentCategoryId  = cat.ParentCategoryID;
+            _view.ImportTypeDigit   = cat.ImportTypeDigit;
             _view.DeleteEnabled     = cat.IsActive;
             _view.DeleteButtonText  = cat.IsActive ? "🗑️ ปิดใช้งาน" : "⛔ ปิดแล้ว";
             _view.BindCategoryDetails(cat);
 
             try
             {
-                // Collect IDs to query: the selected category + all its direct children
-                bool isParent = !cat.ParentCategoryID.HasValue;
-                var articles  = _articleService.GetByCategory(cat.CategoryID).ToList();
+                // The selected category + every subcategory under it, at any depth (กฎหมาย › PLI › PLI2535)
+                var articles = _articleService.GetByCategory(cat.CategoryID).ToList();
 
-                if (isParent)
-                {
-                    // Also pull articles from every subcategory
-                    var childIds = _service.GetAll()
-                        .Where(c => c.ParentCategoryID.HasValue && c.ParentCategoryID.Value == cat.CategoryID)
-                        .Select(c => c.CategoryID);
-
-                    foreach (var childId in childIds)
-                        articles.AddRange(_articleService.GetByCategory(childId));
-                }
+                foreach (int childId in KBCategoryTree.GetDescendantIds(_service.GetAll(), cat.CategoryID))
+                    articles.AddRange(_articleService.GetByCategory(childId));
 
                 int total     = articles.Count;
                 int published = articles.Count(a => a.Status == 3);                   // 3 = Published
@@ -99,6 +91,7 @@ namespace CMS.Controllers.KMS.KB
                         Icon             = _view.Icon,
                         Description      = _view.Description,
                         SortOrder        = _view.SortOrder,
+                        ImportTypeDigit  = _view.ImportTypeDigit,
                         IsActive         = true,
                         CreatedBy        = _user.AdIdentity,
                     };
@@ -116,6 +109,7 @@ namespace CMS.Controllers.KMS.KB
                         Icon             = _view.Icon,
                         Description      = _view.Description,
                         SortOrder        = _view.SortOrder,
+                        ImportTypeDigit  = _view.ImportTypeDigit,
                     };
                     _service.Update(cat);
                     _view.ShowSuccess("แก้ไข Category สำเร็จ");

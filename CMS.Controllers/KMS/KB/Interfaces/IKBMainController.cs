@@ -20,13 +20,9 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string ArticleTitleText { set; }
         string ArticleCountText { set; }
         /// <summary>
-        /// titlesByCategory maps CategoryID → (Title → article count).
-        /// Used to render "📄 Title (N)" leaf nodes under each category.
+        /// Bind ต้นไม้หมวดหมู่ทั้งชุด รวมถึง folder อ้างอิงข้ามหมวด (มาตรา ↔ คำสั่ง/หมวดภายใน)
         /// </summary>
-        void BindCategoryTree(
-            IEnumerable<KBCategory>                  categories,
-            IDictionary<int, int>                    articleCounts,
-            IDictionary<int, IDictionary<string,int>> titlesByCategory);
+        void BindCategoryTree(KBCategoryTreeData data);
         int PageSize { get; }
         void RenderArticles(IEnumerable<KBArticle> articles);
         void RenderPagination(int totalCount, int currentPage, int pageSize);
@@ -34,5 +30,12 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         void HideLoading();
         void ShowError(string message);
         void ShowReport(string reportText);
+
+        /// <summary>
+        /// Header label + การซ่อนแสดงคอลัมน์ของ dgvArticles/ArticleCardControl ที่ resolve แล้วสำหรับหมวด
+        /// ที่กำลังดูอยู่ (ดู KBArticleDisplayProfileService.GetEffectiveDisplaySettings) — null/ว่าง แปลว่า
+        /// ให้กลับไปใช้ค่า default ตายตัวเดิม (ใช้ตอนดูมุมมองที่ไม่ผูกกับ category เดียว เช่น cross-reference)
+        /// </summary>
+        void ApplyColumnDisplay(IDictionary<string, KBColumnDisplaySetting> settings);
     }
 }

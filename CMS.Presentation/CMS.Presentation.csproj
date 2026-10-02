@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CMS.Presentation</RootNamespace>
     <AssemblyName>CMS.Presentation</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
@@ -18,7 +18,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>\\150.1.8.23\AppForUser\cmspopp\</PublishUrl>
+    <PublishUrl>\\150.1.8.23\AppForUser\cms\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Unc</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
@@ -28,8 +28,9 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <InstallUrl>\\150.1.8.23\AppForUser\cmspopp\</InstallUrl>
-    <ApplicationRevision>1</ApplicationRevision>
+    <InstallUrl>\\150.1.8.23\AppForUser\cms\</InstallUrl>
+    <UpdateUrl>\\150.1.8.23\AppForUser\cms\</UpdateUrl>
+    <ApplicationRevision>4</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -64,14 +65,6 @@
       <HintPath>..\packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.Web.WebView2.Core">
-      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.4078.44\lib\net462\Microsoft.Web.WebView2.Core.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.Web.WebView2.WinForms">
-      <HintPath>..\packages\Microsoft.Web.WebView2.1.0.4078.44\lib\net462\Microsoft.Web.WebView2.WinForms.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -91,6 +84,7 @@
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
@@ -102,7 +96,6 @@
     <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Resources\BRD2.md" />
-    <EmbeddedResource Include="template.xlsx" />
   </ItemGroup>
   <ItemGroup>
     <!-- Root: Shell -->
@@ -374,6 +367,18 @@
     </Compile>
     <Compile Include="Modules\KMS\KBCategoryForm.Designer.cs">
       <DependentUpon>KBCategoryForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\KMS\KBImportTemplateConfigForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBImportTemplateConfigForm.Designer.cs">
+      <DependentUpon>KBImportTemplateConfigForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\KMS\KBArticleDisplayProfileConfigForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBArticleDisplayProfileConfigForm.Designer.cs">
+      <DependentUpon>KBArticleDisplayProfileConfigForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\KMS\KBMainForm.cs">
       <SubType>Form</SubType>
@@ -696,6 +701,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\KMS\KBEditorDialog.resx">
       <DependentUpon>KBEditorDialog.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Modules\DMS\AuthorityConfigForm.resx">
       <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
@@ -1053,24 +1059,6 @@
       <DependentUpon>Frm_Template_Doc_Edit.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
-  <!-- WebView2Loader.dll for AnyCPU ClickOnce deployment.
-       The NuGet .targets injects these as Content items via an imported file, which ClickOnce
-       does not pick up. Declaring them directly here forces both MSBuild (copy to output) and
-       the ClickOnce manifest generator (PublishState=Included) to include them. -->
-  <ItemGroup>
-    <Content Include="..\packages\Microsoft.Web.WebView2.1.0.4078.44\runtimes\win-x86\native\WebView2Loader.dll">
-      <Link>runtimes\win-x86\native\WebView2Loader.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <PublishState>Included</PublishState>
-      <Visible>False</Visible>
-    </Content>
-    <Content Include="..\packages\Microsoft.Web.WebView2.1.0.4078.44\runtimes\win-x64\native\WebView2Loader.dll">
-      <Link>runtimes\win-x64\native\WebView2Loader.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <PublishState>Included</PublishState>
-      <Visible>False</Visible>
-    </Content>
-  </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.6.2">
       <Visible>False</Visible>
@@ -1084,11 +1072,4 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\packages\Microsoft.Web.WebView2.1.0.4078.44\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.4078.44\build\Microsoft.Web.WebView2.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Microsoft.Web.WebView2.1.0.4078.44\build\Microsoft.Web.WebView2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Web.WebView2.1.0.4078.44\build\Microsoft.Web.WebView2.targets'))" />
-  </Target>
 </Project>

@@ -13,14 +13,24 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string ArticleCode { get; set; }
         string Title { get; set; }
         string Summary { get; set; }
+        string TitleCategory { get; set; }
         string ContentHTML { get; set; }
         string Tags { get; set; }
         int SelectedCrafLevelCode { get; set; }
+        System.DateTime? PublishedDate { get; set; }
         System.DateTime? EffectiveDate { get; set; }
         System.DateTime? ExpiryDate { get; set; }
         int SelectedCategoryId { get; set; }
         byte SelectedArticleType { get; set; }
         byte SelectedStatus { get; set; }
+        bool StatusEnabled { set; }
+
+        /// <summary>
+        /// Restrict the status dropdown to only the given status codes (1=Draft,
+        /// 2=Review, 3=Published, 4=Archived), preserving the current selection if
+        /// it remains allowed.
+        /// </summary>
+        void SetAllowedStatuses(IEnumerable<byte> allowedStatuses);
 
         // ── UI Display Properties ────────────────────────────────────────────
         string HeaderText { set; }
@@ -28,6 +38,7 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string LikeCountText { set; }
         bool PublishButtonVisible { set; }
         bool ArchiveButtonVisible { set; }
+        bool PublishNowButtonVisible { set; }
         bool SaveEnabled { set; }
         string PublishButtonText { set; }
         System.Drawing.Color PublishButtonColor { set; }

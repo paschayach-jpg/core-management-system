@@ -3,7 +3,7 @@ using System;
 namespace CMS.Domain.Models
 {
     /// <summary>
-    /// บทความ Knowledge Base รองรับหลายประเภท (SOP/FAQ/Guideline/Template/Policy)
+    /// บทความ Knowledge Base รองรับหลายประเภท (ขั้นตอนงาน/คำถามที่พบบ่อย/แนวทางปฏิบัติ/แม่แบบ/กฎ-นโยบาย)
     /// พร้อม Lifecycle Management (Draft → Review → Published → Archived)
     /// Maps to KMS.t_KBArticle
     /// </summary>
@@ -14,8 +14,9 @@ namespace CMS.Domain.Models
         public string   Title            { get; set; }
         public string   ContentHTML      { get; set; }
         public string   Summary          { get; set; }
+        public string   TitleCategory    { get; set; }   // nvarchar(500), migrated from Summary
         public int      CategoryID       { get; set; }
-        public byte     ArticleType      { get; set; }   // 1=SOP 2=FAQ 3=Guideline 4=Template 5=Policy
+        public byte     ArticleType      { get; set; }   // 1=ขั้นตอนงาน 2=คำถามที่พบบ่อย 3=แนวทางปฏิบัติ 4=แม่แบบ 5=กฎ/นโยบาย
         public byte     Status           { get; set; }   // 1=Draft 2=Review 3=Published 4=Archived
         public int      CurrentVersion   { get; set; }
         public DateTime? PublishedDate   { get; set; }
@@ -41,11 +42,11 @@ namespace CMS.Domain.Models
             {
                 switch (ArticleType)
                 {
-                    case 1: return "SOP";
-                    case 2: return "FAQ";
-                    case 3: return "Guideline";
-                    case 4: return "Template";
-                    case 5: return "Policy";
+                    case 1: return "ขั้นตอนงาน";
+                    case 2: return "คำถามที่พบบ่อย";
+                    case 3: return "แนวทางปฏิบัติ";
+                    case 4: return "แม่แบบ";
+                    case 5: return "กฎ/นโยบาย";
                     default: return "Unknown";
                 }
             }

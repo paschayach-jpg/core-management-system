@@ -14,16 +14,25 @@ namespace CMS.Presentation.Modules.KMS
         private void InitializeComponent()
         {
             this.pnlHeader = new System.Windows.Forms.Panel();
+            this.btnImportTemplateConfig = new System.Windows.Forms.Button();
+            this.btnDisplayProfileConfig = new System.Windows.Forms.Button();
             this.btnDashboard = new System.Windows.Forms.Button();
             this.btnSettings = new System.Windows.Forms.Button();
             this.lblTitle = new System.Windows.Forms.Label();
             this.pnlViewerHost = new System.Windows.Forms.Panel();
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.treeCategories = new System.Windows.Forms.TreeView();
+            this.treeCategoryResults = new System.Windows.Forms.TreeView();
             this.pnlLeftFooter = new System.Windows.Forms.Panel();
             this.btnNewCategory = new System.Windows.Forms.Button();
+            this.pnlCategorySearch = new System.Windows.Forms.Panel();
+            this.txtCategorySearch = new System.Windows.Forms.TextBox();
+            this.btnClearCategorySearch = new System.Windows.Forms.Button();
+            this.btnRefreshCategoryTree = new System.Windows.Forms.Button();
             this.pnlLeftHeader = new System.Windows.Forms.Panel();
             this.lblCategoryHeader = new System.Windows.Forms.Label();
+            this.btnExpandAll = new System.Windows.Forms.Button();
+            this.btnCollapseAll = new System.Windows.Forms.Button();
             this.panelMainRight = new System.Windows.Forms.Panel();
             this.tabArticles = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
@@ -68,6 +77,7 @@ namespace CMS.Presentation.Modules.KMS
             this.splitMain.Panel2.SuspendLayout();
             this.splitMain.SuspendLayout();
             this.pnlLeftFooter.SuspendLayout();
+            this.pnlCategorySearch.SuspendLayout();
             this.pnlLeftHeader.SuspendLayout();
             this.panelMainRight.SuspendLayout();
             this.tabArticles.SuspendLayout();
@@ -86,6 +96,8 @@ namespace CMS.Presentation.Modules.KMS
             // pnlHeader
             // 
             this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(58)))), ((int)(((byte)(95)))));
+            this.pnlHeader.Controls.Add(this.btnImportTemplateConfig);
+            this.pnlHeader.Controls.Add(this.btnDisplayProfileConfig);
             this.pnlHeader.Controls.Add(this.btnDashboard);
             this.pnlHeader.Controls.Add(this.btnSettings);
             this.pnlHeader.Controls.Add(this.lblTitle);
@@ -94,6 +106,42 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlHeader.Name = "pnlHeader";
             this.pnlHeader.Size = new System.Drawing.Size(1596, 32);
             this.pnlHeader.TabIndex = 1;
+            // 
+            // btnImportTemplateConfig
+            // 
+            this.btnImportTemplateConfig.BackColor = System.Drawing.Color.Transparent;
+            this.btnImportTemplateConfig.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnImportTemplateConfig.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnImportTemplateConfig.FlatAppearance.BorderSize = 0;
+            this.btnImportTemplateConfig.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(74)))), ((int)(((byte)(111)))));
+            this.btnImportTemplateConfig.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnImportTemplateConfig.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnImportTemplateConfig.ForeColor = System.Drawing.Color.White;
+            this.btnImportTemplateConfig.Location = new System.Drawing.Point(850, 0);
+            this.btnImportTemplateConfig.Name = "btnImportTemplateConfig";
+            this.btnImportTemplateConfig.Size = new System.Drawing.Size(220, 32);
+            this.btnImportTemplateConfig.TabIndex = 2;
+            this.btnImportTemplateConfig.Text = "🔧 Import Template";
+            this.btnImportTemplateConfig.UseVisualStyleBackColor = false;
+            this.btnImportTemplateConfig.Click += new System.EventHandler(this.BtnImportTemplateConfig_Click);
+            // 
+            // btnDisplayProfileConfig
+            // 
+            this.btnDisplayProfileConfig.BackColor = System.Drawing.Color.Transparent;
+            this.btnDisplayProfileConfig.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnDisplayProfileConfig.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnDisplayProfileConfig.FlatAppearance.BorderSize = 0;
+            this.btnDisplayProfileConfig.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(74)))), ((int)(((byte)(111)))));
+            this.btnDisplayProfileConfig.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnDisplayProfileConfig.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDisplayProfileConfig.ForeColor = System.Drawing.Color.White;
+            this.btnDisplayProfileConfig.Location = new System.Drawing.Point(1070, 0);
+            this.btnDisplayProfileConfig.Name = "btnDisplayProfileConfig";
+            this.btnDisplayProfileConfig.Size = new System.Drawing.Size(220, 32);
+            this.btnDisplayProfileConfig.TabIndex = 3;
+            this.btnDisplayProfileConfig.Text = "🏷️ Display Profile";
+            this.btnDisplayProfileConfig.UseVisualStyleBackColor = false;
+            this.btnDisplayProfileConfig.Click += new System.EventHandler(this.BtnDisplayProfileConfig_Click);
             // 
             // btnDashboard
             // 
@@ -162,7 +210,9 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.splitMain.Panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
             this.splitMain.Panel1.Controls.Add(this.treeCategories);
+            this.splitMain.Panel1.Controls.Add(this.treeCategoryResults);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftFooter);
+            this.splitMain.Panel1.Controls.Add(this.pnlCategorySearch);
             this.splitMain.Panel1.Controls.Add(this.pnlLeftHeader);
             this.splitMain.Panel1.Controls.Add(this.pnlViewerHost);
             this.splitMain.Panel1MinSize = 160;
@@ -185,11 +235,29 @@ namespace CMS.Presentation.Modules.KMS
             this.treeCategories.FullRowSelect = true;
             this.treeCategories.HotTracking = true;
             this.treeCategories.Indent = 16;
-            this.treeCategories.Location = new System.Drawing.Point(0, 32);
+            this.treeCategories.Location = new System.Drawing.Point(0, 68);
             this.treeCategories.Name = "treeCategories";
-            this.treeCategories.Size = new System.Drawing.Size(303, 873);
+            this.treeCategories.Size = new System.Drawing.Size(303, 837);
             this.treeCategories.TabIndex = 0;
             this.treeCategories.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeCategories_AfterSelect);
+            this.treeCategories.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.TreeCategories_NodeMouseClick);
+            // 
+            // treeCategoryResults
+            // 
+            this.treeCategoryResults.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.treeCategoryResults.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.treeCategoryResults.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeCategoryResults.Font = new System.Drawing.Font("Segoe UI", 12F);
+            this.treeCategoryResults.FullRowSelect = true;
+            this.treeCategoryResults.HotTracking = true;
+            this.treeCategoryResults.Indent = 16;
+            this.treeCategoryResults.Location = new System.Drawing.Point(0, 68);
+            this.treeCategoryResults.Name = "treeCategoryResults";
+            this.treeCategoryResults.Size = new System.Drawing.Size(303, 837);
+            this.treeCategoryResults.TabIndex = 4;
+            this.treeCategoryResults.Visible = false;
+            this.treeCategoryResults.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeCategories_AfterSelect);
+            this.treeCategoryResults.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.TreeCategories_NodeMouseClick);
             // 
             // pnlLeftFooter
             // 
@@ -221,11 +289,72 @@ namespace CMS.Presentation.Modules.KMS
             this.btnNewCategory.UseVisualStyleBackColor = false;
             this.btnNewCategory.Click += new System.EventHandler(this.BtnNewCategory_Click);
             // 
+            // pnlCategorySearch
+            // 
+            this.pnlCategorySearch.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
+            this.pnlCategorySearch.Controls.Add(this.txtCategorySearch);
+            this.pnlCategorySearch.Controls.Add(this.btnClearCategorySearch);
+            this.pnlCategorySearch.Controls.Add(this.btnRefreshCategoryTree);
+            this.pnlCategorySearch.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlCategorySearch.Location = new System.Drawing.Point(0, 32);
+            this.pnlCategorySearch.Name = "pnlCategorySearch";
+            this.pnlCategorySearch.Padding = new System.Windows.Forms.Padding(6, 4, 6, 4);
+            this.pnlCategorySearch.Size = new System.Drawing.Size(303, 36);
+            this.pnlCategorySearch.TabIndex = 3;
+            // 
+            // txtCategorySearch
+            // 
+            this.txtCategorySearch.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtCategorySearch.Font = new System.Drawing.Font("Segoe UI", 10.5F);
+            this.txtCategorySearch.Location = new System.Drawing.Point(6, 4);
+            this.txtCategorySearch.Name = "txtCategorySearch";
+            this.txtCategorySearch.Size = new System.Drawing.Size(199, 31);
+            this.txtCategorySearch.TabIndex = 0;
+            this.txtCategorySearch.TextChanged += new System.EventHandler(this.TxtCategorySearch_TextChanged);
+            this.txtCategorySearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.TxtCategorySearch_KeyDown);
+            // 
+            // btnClearCategorySearch
+            // 
+            this.btnClearCategorySearch.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnClearCategorySearch.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnClearCategorySearch.FlatAppearance.BorderSize = 0;
+            this.btnClearCategorySearch.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
+            this.btnClearCategorySearch.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClearCategorySearch.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.btnClearCategorySearch.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(100)))), ((int)(((byte)(100)))));
+            this.btnClearCategorySearch.Location = new System.Drawing.Point(205, 4);
+            this.btnClearCategorySearch.Name = "btnClearCategorySearch";
+            this.btnClearCategorySearch.Size = new System.Drawing.Size(28, 28);
+            this.btnClearCategorySearch.TabIndex = 1;
+            this.btnClearCategorySearch.Text = "✕";
+            this.btnClearCategorySearch.UseVisualStyleBackColor = true;
+            this.btnClearCategorySearch.Visible = false;
+            this.btnClearCategorySearch.Click += new System.EventHandler(this.BtnClearCategorySearch_Click);
+            // 
+            // btnRefreshCategoryTree
+            // 
+            this.btnRefreshCategoryTree.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRefreshCategoryTree.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnRefreshCategoryTree.FlatAppearance.BorderSize = 0;
+            this.btnRefreshCategoryTree.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
+            this.btnRefreshCategoryTree.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRefreshCategoryTree.Font = new System.Drawing.Font("Segoe UI", 9.5F);
+            this.btnRefreshCategoryTree.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnRefreshCategoryTree.Location = new System.Drawing.Point(233, 4);
+            this.btnRefreshCategoryTree.Name = "btnRefreshCategoryTree";
+            this.btnRefreshCategoryTree.Size = new System.Drawing.Size(64, 28);
+            this.btnRefreshCategoryTree.TabIndex = 2;
+            this.btnRefreshCategoryTree.Text = "↻ รีเฟรช";
+            this.btnRefreshCategoryTree.UseVisualStyleBackColor = true;
+            this.btnRefreshCategoryTree.Click += new System.EventHandler(this.BtnRefreshCategoryTree_Click);
+            // 
             // pnlLeftHeader
             // 
             this.pnlLeftHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(244)))), ((int)(((byte)(249)))));
             this.pnlLeftHeader.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pnlLeftHeader.Controls.Add(this.lblCategoryHeader);
+            this.pnlLeftHeader.Controls.Add(this.btnExpandAll);
+            this.pnlLeftHeader.Controls.Add(this.btnCollapseAll);
             this.pnlLeftHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlLeftHeader.Location = new System.Drawing.Point(0, 0);
             this.pnlLeftHeader.Name = "pnlLeftHeader";
@@ -240,10 +369,44 @@ namespace CMS.Presentation.Modules.KMS
             this.lblCategoryHeader.Location = new System.Drawing.Point(0, 0);
             this.lblCategoryHeader.Name = "lblCategoryHeader";
             this.lblCategoryHeader.Padding = new System.Windows.Forms.Padding(8, 0, 0, 0);
-            this.lblCategoryHeader.Size = new System.Drawing.Size(301, 30);
+            this.lblCategoryHeader.Size = new System.Drawing.Size(183, 30);
             this.lblCategoryHeader.TabIndex = 0;
             this.lblCategoryHeader.Text = "📚 ห้องความรู้";
             this.lblCategoryHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // btnExpandAll
+            // 
+            this.btnExpandAll.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnExpandAll.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnExpandAll.FlatAppearance.BorderSize = 0;
+            this.btnExpandAll.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
+            this.btnExpandAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnExpandAll.Font = new System.Drawing.Font("Segoe UI", 9.5F);
+            this.btnExpandAll.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnExpandAll.Location = new System.Drawing.Point(183, 0);
+            this.btnExpandAll.Name = "btnExpandAll";
+            this.btnExpandAll.Size = new System.Drawing.Size(62, 30);
+            this.btnExpandAll.TabIndex = 1;
+            this.btnExpandAll.Text = "⊞ ขยาย";
+            this.btnExpandAll.UseVisualStyleBackColor = true;
+            this.btnExpandAll.Click += new System.EventHandler(this.BtnExpandAll_Click);
+            // 
+            // btnCollapseAll
+            // 
+            this.btnCollapseAll.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnCollapseAll.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnCollapseAll.FlatAppearance.BorderSize = 0;
+            this.btnCollapseAll.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(214)))), ((int)(((byte)(228)))), ((int)(((byte)(240)))));
+            this.btnCollapseAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCollapseAll.Font = new System.Drawing.Font("Segoe UI", 9.5F);
+            this.btnCollapseAll.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnCollapseAll.Location = new System.Drawing.Point(245, 0);
+            this.btnCollapseAll.Name = "btnCollapseAll";
+            this.btnCollapseAll.Size = new System.Drawing.Size(56, 30);
+            this.btnCollapseAll.TabIndex = 2;
+            this.btnCollapseAll.Text = "⊟ ยุบ";
+            this.btnCollapseAll.UseVisualStyleBackColor = true;
+            this.btnCollapseAll.Click += new System.EventHandler(this.BtnCollapseAll_Click);
             // 
             // panelMainRight
             // 
@@ -806,6 +969,7 @@ namespace CMS.Presentation.Modules.KMS
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.Name = "KBMainForm";
             this.Text = "ห้องสมุดความรู้ (KMS) — MOD-006 | KBMain";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.KBMainForm_FormClosing);
             this.Load += new System.EventHandler(this.KBMainForm_Load);
             this.Resize += new System.EventHandler(this.KBMainForm_Resize);
             this.pnlHeader.ResumeLayout(false);
@@ -814,6 +978,8 @@ namespace CMS.Presentation.Modules.KMS
             ((System.ComponentModel.ISupportInitialize)(this.splitMain)).EndInit();
             this.splitMain.ResumeLayout(false);
             this.pnlLeftFooter.ResumeLayout(false);
+            this.pnlCategorySearch.ResumeLayout(false);
+            this.pnlCategorySearch.PerformLayout();
             this.pnlLeftHeader.ResumeLayout(false);
             this.panelMainRight.ResumeLayout(false);
             this.tabArticles.ResumeLayout(false);
@@ -834,6 +1000,8 @@ namespace CMS.Presentation.Modules.KMS
 
         private System.Windows.Forms.Panel           pnlHeader;
         private System.Windows.Forms.Label           lblTitle;
+        private System.Windows.Forms.Button          btnImportTemplateConfig;
+        private System.Windows.Forms.Button          btnDisplayProfileConfig;
         private System.Windows.Forms.Button          btnDashboard;
         private System.Windows.Forms.Button          btnSettings;
         private System.Windows.Forms.SplitContainer  splitMain;
@@ -844,7 +1012,14 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel           panelMainRight;
         private System.Windows.Forms.Panel           pnlLeftHeader;
         private System.Windows.Forms.Label           lblCategoryHeader;
+        private System.Windows.Forms.Button          btnExpandAll;
+        private System.Windows.Forms.Button          btnCollapseAll;
+        private System.Windows.Forms.Panel           pnlCategorySearch;
+        private System.Windows.Forms.TextBox         txtCategorySearch;
+        private System.Windows.Forms.Button          btnClearCategorySearch;
+        private System.Windows.Forms.Button          btnRefreshCategoryTree;
         private System.Windows.Forms.TreeView        treeCategories;
+        private System.Windows.Forms.TreeView        treeCategoryResults;
         private System.Windows.Forms.Panel           pnlLeftFooter;
         private System.Windows.Forms.Button          btnNewCategory;
         private System.Windows.Forms.Panel           pnlRightTop;

@@ -54,6 +54,8 @@ namespace CMS.Presentation
                 var kbDashboardRepository    = new KBDashboardRepository(configManager);
                 var kbCategoryRepository    = new KBCategoryRepository(configManager);
                 var kbArticleRepository     = new KBArticleRepository(configManager);
+                var kbImportTemplateRepository = new KBImportTemplateRepository(configManager);
+                var kbArticleDisplayProfileRepository = new KBArticleDisplayProfileRepository(configManager);
                 var kbVersionRepository     = new KBVersionRepository(configManager);
                 var kbArticleLinkRepository = new KBArticleLinkRepository(configManager);
                 var kbArticleAttachmentRepository = new KBArticleAttachmentRepository(configManager);
@@ -169,6 +171,9 @@ namespace CMS.Presentation
                 // ── KB Services (MOD-006) ─────────────────────────────────────
                 var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);
                 var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, kbArticleLinkRepository, kbArticleAttachmentRepository, fileDocumentRepository, auditService);
+                var kbImportTemplateService = new KBImportTemplateService(kbImportTemplateRepository, kbArticleRepository, kbCategoryRepository, auditService);
+                var kbArticleDisplayProfileService = new KBArticleDisplayProfileService(kbArticleDisplayProfileRepository, kbCategoryRepository, auditService);
+                var excelTemplatePreviewService = new ExcelTemplatePreviewService();
                 var kbDashboardService = new KBDashboardService(kbDashboardRepository, loggingService);
 
                 // ── Workflow Engine Services (MOD-008) ────────────────────────
@@ -660,6 +665,9 @@ namespace CMS.Presentation
                     folderRepository: folderRepository,
                     kbCategoryService: kbCategoryService,
                     kbArticleService: kbArticleService,
+                    kbImportTemplateService: kbImportTemplateService,
+                    kbArticleDisplayProfileService: kbArticleDisplayProfileService,
+                    excelTemplatePreviewService: excelTemplatePreviewService,
                     workflowService: workflowService,
                     slaCalculator: slaCalculator,
                     workflowTemplateService: workflowTemplateService,
@@ -679,7 +687,8 @@ namespace CMS.Presentation
                     rgpTaskController: rgpTaskController,
                     rgpProgressController: rgpProgressController,
                     rgpDocController: rgpDocController,
-                    networkDriveHelper: networkDriveHelper);
+                    networkDriveHelper: networkDriveHelper,
+                    fileService: fileService);
 
                 Application.Run(mainForm);
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using NPOI.SS.UserModel;
@@ -10,26 +11,50 @@ using NPOI.XSSF.UserModel;
 namespace CMS.Services
 {
     /// <summary>
-    /// Reads <c>import_article.xlsx</c> and maps each data row (row 4 onward on the
-    /// first worksheet) to a <see cref="KBImportRow"/>.
-    /// Uses NPOI 2.5.6. No validation logic is performed here — that is the
-    /// responsibility of <see cref="KBImportProcessor"/>.
+    /// Reads a KB import Excel file — header row 1, data from row 2, first worksheet only —
+    /// and maps each data row to a <see cref="KBImportRow"/>. Auto-detects which of the two
+    /// supported layouts the file uses from its header row (column C text) and reads
+    /// accordingly:
+    ///
+    /// <b>Law</b> (20-column "law-matrix", header C = "มาตรา"): A=Code รวม  C=มาตรา  M=ชื่อ
+    /// N=วันที่ประกาศ  O=วันที่มีผลบังคับใช้  P=บัญญัติไว้ว่า คำสั่งที่เกี่ยวข้อง  S=กฎหมายอ้างอิง
+    /// (other columns, including B "Code กฎหมายแม่", are ignored for now).
+    ///
+    /// <b>NonLaw</b> (12-column, header C = "ประเภทลูก" — OR/AN/SO/RG/CI/MR): A=Code รวม (สูตร —
+    /// อ่านผ่าน mapping ArticleCode ของ Template)  B=Code กฎหมายแม่(หลายบรรทัด)  C=ประเภทลูก (1=ประกาศ, 2=คำสั่ง)
+    /// D=เอกสารลูก (ไม่อ่านแล้ว)  E=ชื่อ  F=คำสั่งที่  G=วันที่ประกาศ  H=วันที่มีผลบังคับใช้  I=บัญญัติไว้ว่า
+    /// J=ประเด็นสำคัญ  K=ชื่อไฟล์(+hyperlink)  L=กฎหมายอ้างอิง (ไม่อ่าน).
+    ///
+    /// Uses NPOI 2.5.6, evaluating formula cells live (a saved-but-not-recalculated workbook
+    /// otherwise leaves formula cells' cached value blank). No business-rule validation is
+    /// performed here — that is the responsibility of <see cref="KBImportProcessor"/>.
+    ///
+    /// ArticleCode (Code รวม) บังคับ map ในทุก Template — Law อ่านฟิลด์ที่เหลือจากตำแหน่งตายตัวข้างบนเป็นค่าเริ่มต้น
+    /// (Title/TitleCategory/Summary/ContentHTML/PublishedDate/EffectiveDate ทับได้ด้วย mapping) ส่วน NonLaw อ่านทุกฟิลด์
+    /// (รวม Attachment) จาก Template mapping เท่านั้น ไม่มีตำแหน่งตายตัว (see <see cref="ApplyFieldOverrides"/>).
+    /// CategoryID/ArticleType มาจากค่าคงที่ใน Template
     /// </summary>
     public class KBExcelReader : IKBExcelReaderService
     {
-        // ── Supported text-date formats (InvariantCulture) ───────────────────
+        private const int DataStartRowIndex = 1;   // แถว 2 ใน Excel
+
+        /// <summary>Target column ที่ยอม override ตำแหน่งตายตัวด้วย Template mapping ได้ (ไม่รวม ArticleCode/CategoryID/ArticleType)</summary>
+        private static readonly string[] OverridableTargetColumns =
+            { "ArticleCode", "Title", "TitleCategory", "Summary", "ContentHTML", "PublishedDate", "EffectiveDate", "Attachment" };
+
+        /// <summary>จับ token รูปแบบ {ชื่อคอลัมน์} ในค่า mapping ของ Template เช่น "{C}" ใน "มาตรา {C}"</summary>
+        private static readonly Regex TemplateExpressionPlaceholderPattern = new Regex(@"\{([^{}]+)\}", RegexOptions.Compiled);
+
         private static readonly string[] DateFormats =
         {
-            "dd/MM/yyyy",
             "d/M/yyyy",
+            "dd/MM/yyyy",
             "yyyy-MM-dd",
             "yyyy/MM/dd"
         };
 
-        // ── Thai month name → month number map ───────────────────────────────
-        // Covers both full names and common abbreviations used in Thai Excel files.
-        private static readonly System.Collections.Generic.Dictionary<string, int> ThaiMonths =
-            new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, int> ThaiMonths =
+            new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
             { "มกราคม",   1 }, { "ม.ค.",  1 },
             { "กุมภาพันธ์", 2 }, { "ก.พ.", 2 },
@@ -49,108 +74,58 @@ namespace CMS.Services
 
         /// <summary>
         /// Opens the file at <paramref name="filePath"/> and returns one
-        /// <see cref="KBImportRow"/> per data row (rows 4 onward on the first
-        /// worksheet).  Returns an empty list when the file has no data rows.
+        /// <see cref="KBImportRow"/> per data row (row 2 onward on the first worksheet) in
+        /// <see cref="KBExcelReadResult.Rows"/> (empty when the file has no data rows), plus the layout detected
+        /// from the file and the Template mappings that point at a column/header the file does not have
+        /// (<see cref="KBExcelReadResult.MappingProblems"/>).
         /// </summary>
         /// <exception cref="KBExcelReadException">
-        /// Thrown when the file does not exist, is not a valid <c>.xlsx</c>, or is
-        /// locked by another process.
+        /// Thrown when the file does not exist, is not a valid <c>.xlsx</c>, is locked by
+        /// another process, or its header row doesn't match either supported layout.
         /// </exception>
-        public virtual IList<KBImportRow> ReadRows(string filePath)
+        public virtual KBExcelReadResult ReadRows(string filePath, IList<KBImportTemplateColumnRow> templateColumns)
         {
-            if (!File.Exists(filePath))
-                throw new KBExcelReadException(filePath, "ไม่พบไฟล์ดังกล่าวในระบบ");
+            IWorkbook workbook = OpenWorkbook(filePath);
 
-            IWorkbook workbook;
-            try
-            {
-                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    workbook = new XSSFWorkbook(fs);
-                }
-            }
-            catch (IOException ex)
-            {
-                throw new KBExcelReadException(filePath, ex.Message, ex);
-            }
-            catch (Exception ex)
-            {
-                // Catches InvalidDataException, ZipException, etc. from NPOI when the
-                // file is not a valid .xlsx archive.
-                throw new KBExcelReadException(filePath, "ไฟล์ไม่ใช่รูปแบบ .xlsx ที่ถูกต้อง: " + ex.Message, ex);
-            }
-
-            var rows = new List<KBImportRow>();
+            var rows   = new List<KBImportRow>();
+            var result = new KBExcelReadResult { Rows = rows };
 
             ISheet sheet = workbook.GetSheetAt(0);
             if (sheet == null)
-                return rows;
+                return result;
 
-            // Rows 0–2 are header rows; data starts at row index 3 (Excel row 4).
+            IFormulaEvaluator evaluator = workbook.GetCreationHelper().CreateFormulaEvaluator();
+            IRow headerRow = sheet.GetRow(0);
+
+            var overrides = BuildFieldOverrides(templateColumns);
+
+            string rowKind = DetectRowKind(sheet, headerRow, evaluator, overrides);
+            if (rowKind == null)
+                throw new KBExcelReadException(filePath,
+                    "ไม่รู้จักรูปแบบไฟล์ Excel นี้ — ตรวจสอบว่าเป็น template กฎหมาย (มาตรา) หรือ เอกสารที่ไม่ใช่กฎหมาย (ประกาศ/คำสั่ง/ระเบียบ ฯลฯ) ที่ถูกต้อง");
+
+            result.DetectedLayout = rowKind;
+            int columnCount = ComputeColumnCount(sheet);
+
             int lastRowIndex = sheet.LastRowNum;
-            for (int rowIdx = 3; rowIdx <= lastRowIndex; rowIdx++)
+            for (int rowIdx = DataStartRowIndex; rowIdx <= lastRowIndex; rowIdx++)
             {
                 IRow excelRow = sheet.GetRow(rowIdx);
                 if (excelRow == null)
                     continue;
 
                 // Skip entirely blank rows (all cells null or empty).
-                if (IsRowBlank(excelRow))
+                if (IsRowBlank(excelRow, evaluator))
                     continue;
 
                 KBImportRow row;
                 try
                 {
-                    row = new KBImportRow
-                    {
-                        RowNumber = rowIdx + 1,   // 1-based: row index 3 → RowNumber 4
+                    row = rowKind == KBImportLayoutTypeCatalog.NonLaw
+                        ? ReadNonLawRow(excelRow, rowIdx, evaluator)
+                        : ReadLawRow(excelRow, rowIdx, evaluator);
 
-                        ColA = GetCellText(excelRow.GetCell(0)),
-                        ColB = GetCellText(excelRow.GetCell(1)),
-                        ColC = GetCellText(excelRow.GetCell(2)),
-                        ColD = GetCellText(excelRow.GetCell(3)),
-                        ColE = GetCellText(excelRow.GetCell(4)),
-                        ColF = GetCellText(excelRow.GetCell(5)),
-                        ColG = GetCellText(excelRow.GetCell(6)),
-                        ColH = GetCellText(excelRow.GetCell(7)),
-                        ColI = GetCellText(excelRow.GetCell(8)),
-                        ColJ = GetCellText(excelRow.GetCell(9)),
-                        ColK = GetCellText(excelRow.GetCell(10)),
-                        ColL = GetCellText(excelRow.GetCell(11)),
-                        ColM = GetCellText(excelRow.GetCell(12)),
-                        ColN = GetCellText(excelRow.GetCell(13)),
-                        ColO = GetCellText(excelRow.GetCell(14)),
-                        ColP = GetCellText(excelRow.GetCell(15)),
-                        ColQ = GetCellText(excelRow.GetCell(16)),
-                        ColT = GetCellText(excelRow.GetCell(19)),
-                        ColU = GetCellText(excelRow.GetCell(20)),
-                        ColV = GetCellText(excelRow.GetCell(21)),
-                        ColAA = GetCellText(excelRow.GetCell(26)),
-
-                    };
-
-                    row.Title    = row.ColE;
-                    row.Tags     = string.Format("{0}, {1}", row.ColC, row.ColE);
-                    row.Category = string.Format("{0} > {1}", row.ColA, row.ColB);
-
-                    // ── Column R — PublishedDate ─────────────────────────────
-                    ICell cellR = excelRow.GetCell(17);
-                    string rError;
-                    DateTime? publishedDate = TryParseDateCell(cellR, out rError);
-                    row.PublishedDateParsed = publishedDate;
-                    row.ColR = publishedDate.HasValue
-                        ? publishedDate.Value.ToString("dd/MM/yyyy")
-                        : GetCellText(cellR);
-
-                    // ── Column S — ExpiryDate ────────────────────────────────
-                    ICell cellS = excelRow.GetCell(18);
-                    string sError;
-                    DateTime? expiryDate = TryParseDateCell(cellS, out sError);
-                    row.ExpiryDateParsed = expiryDate;
-                    row.ColS = expiryDate.HasValue
-                        ? expiryDate.Value.ToString("dd/MM/yyyy")
-                        : GetCellText(cellS);
-                    row.ExpiryDate = row.ColS;
+                    ApplyFieldOverrides(row, excelRow, headerRow, evaluator, overrides);
                 }
                 catch (Exception ex)
                 {
@@ -158,34 +133,498 @@ namespace CMS.Services
                     row = new KBImportRow
                     {
                         RowNumber  = rowIdx + 1,
+                        RowKind    = rowKind,
                         Status     = "Error",
                         StatusNote = SafeTruncate("อ่านข้อมูล Excel ไม่สำเร็จ: " + ex.Message, 200),
                     };
                 }
 
-                rows.Add(row);
+                // NonLaw: เซลล์ ArticleCode ที่มีหลาย Code แตกเป็น 1 row ต่อ Code (Law = 1 row ต่อบรรทัด Excel เสมอ)
+                if (rowKind == KBImportLayoutTypeCatalog.NonLaw)
+                    rows.AddRange(ExpandArticleCodes(row));
+                else
+                    rows.Add(row);
             }
 
-            return rows;
+            // mapping ของ Template ที่ชี้ไปคอลัมน์/หัวตารางที่ไม่มีในไฟล์ (เดิมได้ค่าว่างเงียบ ๆ ทำให้เนื้อหาหายโดยไม่มี error)
+            result.MappingProblems = FindMappingProblems(overrides, headerRow, evaluator, columnCount, rowKind);
+            return result;
+        }
+
+        /// <summary>
+        /// NonLaw: เซลล์ ArticleCode ที่มีหลาย Code (หลายบรรทัด เช่นสูตรที่ต่อ Code ให้ทุกกฎหมายแม่) แตกเป็น 1 <see cref="KBImportRow"/> ต่อ Code
+        /// — ฟิลด์อื่น (Title/เนื้อหา/ไฟล์แนบ ฯลฯ) เหมือนกันทุก row; กฎหมายแม่ของแต่ละ Code = 22 ตัวแรกของ Code นั้นเอง และแต่ละ Code
+        /// ผ่าน/ข้าม/ล้มเหลวแยกกัน (ไม่ข้ามทั้ง Excel row). เซลล์ว่างหรือมี Code เดียว = คืน row เดิม
+        /// </summary>
+        private static IEnumerable<KBImportRow> ExpandArticleCodes(KBImportRow row)
+        {
+            IList<string> codes = SplitLines(row.ColA);
+            if (codes.Count <= 1)
+                return new[] { row };
+
+            var expanded = new List<KBImportRow>(codes.Count);
+            for (int i = 0; i < codes.Count; i++)
+            {
+                KBImportRow copy = row.Clone();
+                copy.ColA      = codes[i];
+                copy.CodeIndex = i + 1;
+                copy.CodeCount = codes.Count;
+                expanded.Add(copy);
+            }
+            return expanded;
+        }
+
+        // ── Layout detection ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// Detects which layout a file uses จากค่า Code รวม (mapping ArticleCode) ของแถวข้อมูลแรกที่ไม่ว่าง:
+        /// <see cref="KBImportLayoutTypeCatalog.IsLawCode"/> → Law, <see cref="KBImportLayoutTypeCatalog.IsNonLawCodeFormat"/> → NonLaw
+        /// ถ้ารหัสผิดรูปแบบทั้งสองแบบ (หรือไฟล์ไม่มีแถวข้อมูล) ใช้ข้อความหัวตารางคอลัมน์ C ตัดสินแทน เพื่อให้ validate
+        /// รายแถวรายงาน error ได้ Returns "Law", "NonLaw", or <c>null</c> when neither matches.
+        /// </summary>
+        private static string DetectRowKind(ISheet sheet, IRow headerRow, IFormulaEvaluator evaluator, Dictionary<string, string> overrides)
+        {
+            string articleCodeExpr;
+            if (overrides.TryGetValue("ArticleCode", out articleCodeExpr))
+            {
+                for (int rowIdx = DataStartRowIndex; rowIdx <= sheet.LastRowNum; rowIdx++)
+                {
+                    IRow excelRow = sheet.GetRow(rowIdx);
+                    if (excelRow == null || IsRowBlank(excelRow, evaluator)) continue;
+
+                    string code = FirstLine(ResolveTemplateExpression(articleCodeExpr, headerRow, excelRow, evaluator));
+                    if (string.IsNullOrEmpty(code)) continue;
+
+                    if (KBImportLayoutTypeCatalog.IsLawCode(code))  return KBImportLayoutTypeCatalog.Law;
+                    if (KBImportLayoutTypeCatalog.IsNonLawCodeFormat(code)) return KBImportLayoutTypeCatalog.NonLaw;
+                    break; // รูปแบบ Code ไม่เข้าเงื่อนไขใดเลย — ให้หัวตารางตัดสินต่อ แล้วให้ validate รายแถวรายงาน error
+                }
+            }
+
+            return DetectRowKindFromHeader(headerRow, evaluator);
+        }
+
+        /// <summary>บรรทัดแรกที่ไม่ว่างของข้อความหลายบรรทัด (เซลล์ที่ใส่หลายค่าด้วย Alt+Enter) — ว่างถ้าไม่มี</summary>
+        private static string FirstLine(string raw)
+        {
+            var lines = SplitLines(raw);
+            return lines.Count > 0 ? lines[0] : string.Empty;
+        }
+
+        private static string DetectRowKindFromHeader(IRow headerRow, IFormulaEvaluator evaluator)
+        {
+            string colC = GetCellText(headerRow == null ? null : headerRow.GetCell(2), evaluator).Trim();
+            if (colC == "มาตรา") return KBImportLayoutTypeCatalog.Law;
+            if (colC == "ประเภทลูก") return KBImportLayoutTypeCatalog.NonLaw;
+            return null;
+        }
+
+        // ── Row readers ──────────────────────────────────────────────────────
+
+        private static KBImportRow ReadLawRow(IRow excelRow, int rowIdx, IFormulaEvaluator evaluator)
+        {
+            var row = new KBImportRow
+            {
+                RowNumber = rowIdx + 1,   // 1-based: row index 1 → RowNumber 2
+                RowKind   = KBImportLayoutTypeCatalog.Law,
+
+                // Code รวม (ArticleCode) มาจาก Template mapping (ApplyFieldOverrides) ไม่อ่านคอลัมน์ A ตามตำแหน่ง
+                RawSummary      = GetCellText(excelRow.GetCell(12), evaluator),          // M — ชื่อ (ข้อความล้วน: ไม่ Trim — เก็บเว้นวรรค/ขึ้นบรรทัดใหม่ตามต้นฉบับ)
+                RawPublishedDate = GetCellText(excelRow.GetCell(13), evaluator).Trim(),  // N — วันที่ประกาศ
+                RawEffectiveDate = GetCellText(excelRow.GetCell(14), evaluator).Trim(),  // O — วันที่มีผลบังคับใช้
+                RawContent      = GetCellText(excelRow.GetCell(15), evaluator),          // P — บัญญัติไว้ว่า
+                RawTitleCategory = GetCellText(excelRow.GetCell(18), evaluator),         // S — กฎหมายอ้างอิง (ข้อความล้วน: ไม่ Trim)
+            };
+
+            string ignoredError;
+            row.PublishedDateParsed = TryParseDateCell(excelRow.GetCell(13), evaluator, out ignoredError);
+            row.EffectiveDateParsed = TryParseDateCell(excelRow.GetCell(14), evaluator, out ignoredError);
+
+            return row;
+        }
+
+        private static KBImportRow ReadNonLawRow(IRow excelRow, int rowIdx, IFormulaEvaluator evaluator)
+        {
+            var row = new KBImportRow
+            {
+                RowNumber = rowIdx + 1,
+                RowKind   = KBImportLayoutTypeCatalog.NonLaw,
+
+            };
+
+            // ทุกฟิลด์ของ NonLaw มาจาก Template mapping (ApplyFieldOverrides): ArticleCode (กฎหมายแม่ = 22 ตัวแรก),
+            // Title/TitleCategory/PublishedDate/EffectiveDate/ContentHTML/Summary และ Attachment — ไม่อ่านตามตำแหน่งตายตัว
+            // คอลัมน์ L (กฎหมายอ้างอิง) ไม่ถูกใช้งาน จึงไม่อ่าน
+
+            return row;
+        }
+
+        // ── Template mapping overrides ───────────────────────────────────────
+
+        /// <summary>
+        /// สร้าง lookup ของ target column → ExcelColumnRef expression จาก mapping ที่ config ไว้ใน
+        /// Template (เฉพาะ <see cref="OverridableTargetColumns"/>, ข้าม CategoryID/ArticleType
+        /// และแถวที่ยังไม่ได้ map) — ว่างเปล่าถ้า <paramref name="templateColumns"/> เป็น null
+        /// </summary>
+        private static Dictionary<string, string> BuildFieldOverrides(IList<KBImportTemplateColumnRow> templateColumns)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (templateColumns == null) return result;
+
+            foreach (var col in templateColumns)
+            {
+                if (col == null || string.IsNullOrWhiteSpace(col.ExcelColumnRef)) continue;
+
+                foreach (var name in OverridableTargetColumns)
+                {
+                    if (string.Equals(col.TargetColumnName, name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        result[name] = col.ExcelColumnRef.Trim();
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Overwrite ค่า Raw*/parsed-date ของ <paramref name="row"/> (ที่ ReadLawRow/ReadNonLawRow ตั้งไว้
+        /// แบบตำแหน่งตายตัวเป็น baseline) ด้วยค่าที่ resolve จาก Template — เฉพาะ target ที่มี mapping ใน
+        /// <paramref name="overrides"/> เท่านั้น target ที่ไม่ได้ map ยังคงค่าตำแหน่งตายตัวเดิมไว้
+        /// </summary>
+        private static void ApplyFieldOverrides(
+            KBImportRow row, IRow excelRow, IRow headerRow, IFormulaEvaluator evaluator,
+            Dictionary<string, string> overrides)
+        {
+            string expr;
+
+            // ArticleCode: คอลัมน์ที่ Template map ไว้คือ "Code รวม" 27 หลัก — Law ใช้แทน column A ตายตัว,
+            // Order ใช้เทียบประเภท/หมวดกับ Template เท่านั้น (ArticleCode ของ Order ยังคำนวณจาก B+C+D)
+            if (overrides.TryGetValue("ArticleCode", out expr))
+                row.ColA = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator).Trim();
+
+            // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ข้อความในเซลล์คือชื่อไฟล์ ส่วน URL จริงอยู่ใน hyperlink ของเซลล์
+            if (row.RowKind == KBImportLayoutTypeCatalog.NonLaw && overrides.TryGetValue("Attachment", out expr))
+                ApplyAttachmentOverride(expr, headerRow, excelRow, evaluator, row);
+
+            // Title/TitleCategory/Summary/ContentHTML เป็นข้อความที่ต้องเหมือนต้นฉบับ — ไม่ Trim เว้นวรรคหัว-ท้าย/ขึ้นบรรทัดใหม่
+            // (การแปลงเป็นรูปแบบที่เก็บลง DB ทำที่ KBImportProcessor: ContentHTML → HTML, ที่เหลือ → ข้อความล้วน)
+            if (overrides.TryGetValue("Title", out expr))
+                row.RawTitle = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
+
+            if (overrides.TryGetValue("TitleCategory", out expr))
+                row.RawTitleCategory = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
+
+            if (overrides.TryGetValue("Summary", out expr))
+                row.RawSummary = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
+
+            if (overrides.TryGetValue("ContentHTML", out expr))
+                row.RawContent = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
+
+            if (overrides.TryGetValue("PublishedDate", out expr))
+            {
+                string rawText;
+                DateTime? parsed;
+                ApplyDateOverride(expr, headerRow, excelRow, evaluator, out rawText, out parsed);
+                row.RawPublishedDate    = rawText;
+                row.PublishedDateParsed = parsed;
+            }
+
+            if (overrides.TryGetValue("EffectiveDate", out expr))
+            {
+                string rawText;
+                DateTime? parsed;
+                ApplyDateOverride(expr, headerRow, excelRow, evaluator, out rawText, out parsed);
+                row.RawEffectiveDate    = rawText;
+                row.EffectiveDateParsed = parsed;
+            }
+        }
+
+        /// <summary>
+        /// Resolve ค่า mapping "Attachment": column ref ตรง ๆ (ไม่มี {}) อ่านทั้งชื่อไฟล์และ hyperlink จากเซลล์นั้น;
+        /// formula หรือ column ref ที่หาไม่เจอ ได้เฉพาะข้อความชื่อไฟล์ (ไม่มี URL)
+        /// </summary>
+        private static void ApplyAttachmentOverride(
+            string expression, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator, KBImportRow row)
+        {
+            if (expression.IndexOf('{') < 0)
+            {
+                int colIndex = ResolveColumnIndex(expression.Trim(), headerRow, evaluator);
+                if (colIndex >= 0)
+                {
+                    ICell cell = dataRow.GetCell(colIndex);
+                    row.AttachmentFileName = GetCellText(cell, evaluator).Trim();
+                    row.AttachmentUrl      = GetHyperlinkAddress(cell);
+                    return;
+                }
+            }
+
+            row.AttachmentFileName = ResolveTemplateExpression(expression, headerRow, dataRow, evaluator).Trim();
+            row.AttachmentUrl      = null;
+        }
+
+        /// <summary>
+        /// Resolve ค่า mapping ของ Template สำหรับ PublishedDate/EffectiveDate — ถ้าเป็น column ref ตรง ๆ
+        /// (ไม่มี {}) resolve ไปที่ ICell จริงแล้วใช้ TryParseDateCell (รองรับ native Excel date-serial
+        /// cell) ถ้าเป็น formula (หรือ column ref ที่หาไม่เจอ) ให้ resolve เป็น text ก่อนแล้ว parse ด้วย
+        /// TryParseDateText แทน (คงไว้เป็นค่าว่าง/null ถ้า resolve/parse ไม่ได้ ไม่ throw)
+        /// </summary>
+        private static void ApplyDateOverride(
+            string expression, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator,
+            out string rawText, out DateTime? parsed)
+        {
+            parsed = null;
+
+            if (expression.IndexOf('{') < 0)
+            {
+                int colIndex = ResolveColumnIndex(expression.Trim(), headerRow, evaluator);
+                if (colIndex >= 0)
+                {
+                    ICell cell = dataRow.GetCell(colIndex);
+                    rawText = GetCellText(cell, evaluator).Trim();
+                    string ignoredError;
+                    parsed = TryParseDateCell(cell, evaluator, out ignoredError);
+                    return;
+                }
+            }
+
+            // formula composition (หรือ column ref ที่หาไม่เจอ) — เหลือแค่ text ให้ parse แบบ text ล้วน
+            rawText = ResolveTemplateExpression(expression, headerRow, dataRow, evaluator);
+            string ignoredTextError;
+            parsed = TryParseDateText(rawText, out ignoredTextError);
+        }
+
+        /// <summary>
+        /// Resolve ค่า ExcelColumnRef ของ Template หนึ่งช่อง — ถ้ามี {ชื่อคอลัมน์} ผสมอยู่ จะแทนที่แต่ละ
+        /// token ด้วยค่าของคอลัมน์นั้นในแถวเดียวกัน (เช่น "มาตรา {C}") โดย normalize ค่าตัวเลขล้วน (ตัด
+        /// เลขศูนย์นำหน้า เช่น "0001"→"1") ก่อนแทรก เพื่อให้ได้ผลแบบเดียวกับตอน hardcode เดิมที่ใช้
+        /// int.Parse ตรง ๆ — ถ้าไม่มี {} เลยถือว่าทั้งสตริงคือ column ref เดียว resolve ตรง ๆ แบบ raw text
+        /// (ไม่ normalize เพราะอาจตั้งใจ map ค่าที่มีเลขศูนย์นำหน้าแบบมีความหมาย เช่น รหัสเอกสาร)
+        /// <paramref name="preserveWhitespace"/> = true (ข้อความ Title/TitleCategory/Summary/ContentHTML) ไม่ Trim ค่าที่อ่านจากเซลล์
+        /// เพื่อคงเว้นวรรค/indent/ขึ้นบรรทัดใหม่ตามต้นฉบับ; false (รหัส วันที่ ชื่อไฟล์) Trim เหมือนเดิม
+        /// </summary>
+        private static string ResolveTemplateExpression(
+            string expression, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator, bool preserveWhitespace = false)
+        {
+            if (string.IsNullOrWhiteSpace(expression)) return string.Empty;
+
+            if (expression.IndexOf('{') < 0)
+                return ResolveColumnRef(expression.Trim(), headerRow, dataRow, evaluator, preserveWhitespace);
+
+            return TemplateExpressionPlaceholderPattern.Replace(expression,
+                m => NormalizeNumericToken(ResolveColumnRef(m.Groups[1].Value.Trim(), headerRow, dataRow, evaluator, preserveWhitespace)));
+        }
+
+        /// <summary>ถ้า raw (ไม่นับเว้นวรรคหัว-ท้าย) เป็นตัวเลขล้วน แปลงผ่าน int แล้ว ToString กลับ (ตัดเลขศูนย์นำหน้า) ไม่งั้นคืนค่าเดิมตามที่ส่งมา</summary>
+        private static string NormalizeNumericToken(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return raw;
+            string probe = raw.Trim();
+            int number;
+            if (Regex.IsMatch(probe, @"^\d+$") && int.TryParse(probe, out number))
+                return number.ToString(CultureInfo.InvariantCulture);
+            return raw;
+        }
+
+        /// <summary>คืนค่า text ของเซลล์ที่ colRef ชี้ถึง (ลองตีความเป็นตัวอักษรคอลัมน์ก่อน ไม่ได้ลองจับคู่หัวตาราง) คืนค่าว่างถ้า resolve ไม่ได้เลย</summary>
+        private static string ResolveColumnRef(
+            string colRef, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator, bool preserveWhitespace = false)
+        {
+            int colIndex = ResolveColumnIndex(colRef, headerRow, evaluator);
+            if (colIndex < 0) return string.Empty;
+
+            string text = GetCellText(dataRow.GetCell(colIndex), evaluator);
+            return preserveWhitespace ? text : text.Trim();
+        }
+
+        private static int ResolveColumnIndex(string colRef, IRow headerRow, IFormulaEvaluator evaluator)
+        {
+            int letterIndex = ColumnLetterToIndex(colRef);
+            int headerWidth = headerRow == null ? 0 : Math.Max((int)headerRow.LastCellNum, 0);
+
+            // ตัวอักษรคอลัมน์ที่อยู่ในความกว้างของแถวหัวตาราง → ใช้ตามนั้น
+            if (letterIndex >= 0 && letterIndex < headerWidth)
+                return letterIndex;
+
+            // ข้อความล้วนตัวอักษรอาจเป็นหัวตารางภาษาอังกฤษ (เช่น "Summary") ไม่ใช่ตัวอักษรคอลัมน์ — ลองจับคู่หัวตารางก่อน
+            int headerIndex = FindColumnIndexByHeaderText(headerRow, colRef, evaluator);
+            if (headerIndex >= 0)
+                return headerIndex;
+
+            // ไม่เจอหัวตาราง: คงพฤติกรรมเดิม (ตัวอักษรที่เกินความกว้างหัวตารางอาจยังมีข้อมูลอยู่ใต้หัวตารางที่ว่าง)
+            return letterIndex;
+        }
+
+        /// <summary>แปลงตัวอักษรคอลัมน์ Excel ("A".."Z","AA"...) เป็น index เริ่มที่ 0 คืน -1 ถ้าไม่ใช่รูปแบบตัวอักษรล้วน</summary>
+        private static int ColumnLetterToIndex(string letters)
+        {
+            if (string.IsNullOrEmpty(letters)) return -1;
+
+            int result = 0;
+            foreach (char c in letters)
+            {
+                char up = char.ToUpperInvariant(c);
+                if (up < 'A' || up > 'Z') return -1;
+                result = result * 26 + (up - 'A' + 1);
+            }
+            return result - 1;
+        }
+
+        /// <summary>หา column index โดยจับคู่ข้อความหัวตาราง (case-insensitive) — สำหรับกรณี admin พิมพ์ชื่อหัวข้อแทนตัวอักษรคอลัมน์</summary>
+        private static int FindColumnIndexByHeaderText(IRow headerRow, string headerText, IFormulaEvaluator evaluator)
+        {
+            if (headerRow == null || string.IsNullOrWhiteSpace(headerText)) return -1;
+
+            for (int c = headerRow.FirstCellNum; c < headerRow.LastCellNum; c++)
+            {
+                if (c < 0) continue;
+                string text = GetCellText(headerRow.GetCell(c), evaluator).Trim();
+                if (string.Equals(text, headerText, StringComparison.OrdinalIgnoreCase))
+                    return c;
+            }
+            return -1;
+        }
+
+        // ── Template mapping ↔ โครงสร้างไฟล์ ──────────────────────────────────
+
+        /// <summary>จำนวนคอลัมน์สูงสุดที่พบในไฟล์ (นับจากทุกแถวของ sheet แรก รวมแถวหัวตาราง)</summary>
+        private static int ComputeColumnCount(ISheet sheet)
+        {
+            int count = 0;
+            for (int i = sheet.FirstRowNum; i <= sheet.LastRowNum; i++)
+            {
+                IRow row = sheet.GetRow(i);
+                if (row != null && row.LastCellNum > count)
+                    count = row.LastCellNum;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// ตรวจว่าทุก mapping ของ Template (column ref ตรง ๆ และ {X} ในสูตร) ชี้ไปคอลัมน์/หัวตารางที่มีอยู่จริงในไฟล์ —
+        /// ref ที่หาไม่เจอจะอ่านได้ค่าว่างเงียบ ๆ ทำให้เนื้อหาหายหรือผิดคอลัมน์โดยไม่มี error จึงรายงานล่วงหน้า
+        /// </summary>
+        private static IList<string> FindMappingProblems(
+            Dictionary<string, string> overrides, IRow headerRow, IFormulaEvaluator evaluator, int columnCount, string rowKind)
+        {
+            var problems = new List<string>();
+
+            foreach (var kvp in overrides)
+            {
+                // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ไฟล์กฎหมายไม่อ่านแถว Attachment จึงไม่ต้องตรวจ
+                if (rowKind == KBImportLayoutTypeCatalog.Law
+                    && string.Equals(kvp.Key, KBArticleColumnCatalog.AttachmentTargetColumn, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                foreach (string colRef in ExtractColumnRefs(kvp.Value))
+                {
+                    int letterIndex = ColumnLetterToIndex(colRef);
+                    if (letterIndex >= 0 && letterIndex < columnCount) continue;                    // ตัวอักษรคอลัมน์ที่มีในไฟล์
+                    if (FindColumnIndexByHeaderText(headerRow, colRef, evaluator) >= 0) continue;   // หัวตารางที่มีในไฟล์
+
+                    problems.Add(letterIndex >= 0
+                        ? string.Format("{0} → \"{1}\": ไม่พบคอลัมน์นี้ในไฟล์ (ไฟล์มี {2} คอลัมน์: A–{3})",
+                            kvp.Key, colRef, columnCount, columnCount > 0 ? ColumnIndexToLetters(columnCount - 1) : "-")
+                        : string.Format("{0} → \"{1}\": ไม่พบหัวตารางนี้ในไฟล์", kvp.Key, colRef));
+                }
+            }
+
+            return problems;
+        }
+
+        /// <summary>คืน column ref ทุกตัวที่ mapping นี้อ่านค่า: ทั้งสตริงถ้าเป็น ref ตรง ๆ, หรือแต่ละ {X} ถ้าเป็นสูตร</summary>
+        private static IEnumerable<string> ExtractColumnRefs(string expression)
+        {
+            if (string.IsNullOrWhiteSpace(expression)) yield break;
+
+            if (expression.IndexOf('{') < 0)
+            {
+                yield return expression.Trim();
+                yield break;
+            }
+
+            foreach (Match m in TemplateExpressionPlaceholderPattern.Matches(expression))
+            {
+                string colRef = m.Groups[1].Value.Trim();
+                if (colRef.Length > 0) yield return colRef;
+            }
+        }
+
+        /// <summary>แปลง index เริ่มที่ 0 เป็นตัวอักษรคอลัมน์ Excel (0→"A", 25→"Z", 26→"AA")</summary>
+        private static string ColumnIndexToLetters(int index)
+        {
+            int dividend = index + 1;
+            string name  = string.Empty;
+            while (dividend > 0)
+            {
+                int modulo = (dividend - 1) % 26;
+                name = (char)('A' + modulo) + name;
+                dividend = (dividend - modulo) / 26;
+            }
+            return name;
         }
 
         // ── Private helpers ──────────────────────────────────────────────────
 
-        /// <summary>
-        /// Returns the string representation of <paramref name="cell"/>'s value,
-        /// handling all common cell types.  Returns <see cref="string.Empty"/> for
-        /// a null cell.
-        /// </summary>
-        private static string GetCellText(ICell cell)
+        /// <summary>แตกเซลล์ที่มีหลายบรรทัด (Alt+Enter ใน Excel) เป็นรายการ ตัดช่องว่างแต่ละบรรทัด</summary>
+        private static IList<string> SplitLines(string raw)
         {
-            if (cell == null)
-                return string.Empty;
+            var result = new List<string>();
+            if (string.IsNullOrWhiteSpace(raw)) return result;
+
+            var parts = raw.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            foreach (var part in parts)
+            {
+                string trimmed = part.Trim();
+                if (trimmed.Length > 0) result.Add(trimmed);
+            }
+            return result;
+        }
+
+        private static IWorkbook OpenWorkbook(string filePath)
+        {
+            if (!File.Exists(filePath))
+                throw new KBExcelReadException(filePath, "ไม่พบไฟล์ดังกล่าวในระบบ");
+
+            try
+            {
+                using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    return new XSSFWorkbook(fs);
+            }
+            catch (IOException ex)
+            {
+                throw new KBExcelReadException(filePath, ex.Message, ex);
+            }
+            catch (Exception ex)
+            {
+                throw new KBExcelReadException(filePath,
+                    "ไฟล์ไม่ใช่รูปแบบ .xlsx ที่ถูกต้อง: " + ex.Message, ex);
+            }
+        }
+
+        private static string GetHyperlinkAddress(ICell cell)
+        {
+            if (cell == null) return null;
+            try
+            {
+                IHyperlink link = cell.Hyperlink;
+                return link == null ? null : link.Address;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string GetCellText(ICell cell, IFormulaEvaluator evaluator)
+        {
+            if (cell == null) return string.Empty;
 
             switch (cell.CellType)
             {
                 case CellType.Numeric:
                     if (DateUtil.IsCellDateFormatted(cell))
-                        return cell.DateCellValue.ToString("dd/MM/yyyy");
+                        return cell.DateCellValue.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
                     return cell.NumericCellValue.ToString(CultureInfo.InvariantCulture);
 
                 case CellType.String:
@@ -195,18 +634,18 @@ namespace CMS.Services
                     return cell.BooleanCellValue.ToString();
 
                 case CellType.Formula:
-                    // Use the cached result rather than re-evaluating (avoids needing
-                    // a formula evaluator and works even when the workbook is read-only).
-                    switch (cell.CachedFormulaResultType)
+                    // ประเมินสูตรสด แทนการอ่านค่า cache ของไฟล์ (อาจว่างถ้า Excel ยังไม่ได้ recalculate ก่อน save)
+                    CellValue result = evaluator.Evaluate(cell);
+                    switch (result.CellType)
                     {
                         case CellType.Numeric:
                             if (DateUtil.IsCellDateFormatted(cell))
-                                return cell.DateCellValue.ToString("dd/MM/yyyy");
-                            return cell.NumericCellValue.ToString(CultureInfo.InvariantCulture);
+                                return DateUtil.GetJavaDate(result.NumberValue).ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+                            return result.NumberValue.ToString(CultureInfo.InvariantCulture);
                         case CellType.String:
-                            return cell.StringCellValue ?? string.Empty;
+                            return result.StringValue ?? string.Empty;
                         case CellType.Boolean:
-                            return cell.BooleanCellValue.ToString();
+                            return result.BooleanValue.ToString();
                         default:
                             return string.Empty;
                     }
@@ -219,126 +658,88 @@ namespace CMS.Services
         }
 
         /// <summary>
-        /// Attempts to parse <paramref name="cell"/> as a <see cref="DateTime"/>.
-        /// Handles both native Excel date serial numbers and text strings.
-        /// Always applies <see cref="ApplyAdYearCorrection"/> so the result is A.D.
+        /// แปลงเซลล์เป็นวันที่ รองรับทั้ง Excel serial, สูตร, และข้อความ (รวมวันที่แบบไทย)
+        /// ผลลัพธ์เป็น ค.ศ. เสมอ (ปี พ.ศ. จะถูกลบ 543) คืน <c>null</c> (ไม่มี error) ถ้าเซลล์ว่าง
         /// </summary>
-        /// <param name="cell">The cell to parse (may be null).</param>
-        /// <param name="errorMessage">
-        /// Set to a non-null Thai error string when the cell contains a non-empty
-        /// value that cannot be parsed; otherwise <c>null</c>.
-        /// </param>
-        /// <returns>
-        /// The parsed <see cref="DateTime"/> in A.D., or <c>null</c> when the cell
-        /// is empty/null (no error) or unparseable (error set).
-        /// </returns>
-        private static DateTime? TryParseDateCell(ICell cell, out string errorMessage)
+        private static DateTime? TryParseDateCell(ICell cell, IFormulaEvaluator evaluator, out string errorMessage)
         {
             errorMessage = null;
 
             if (cell == null || cell.CellType == CellType.Blank)
                 return null;
 
-            // ── Case 1: native Excel date serial (Numeric cell with date format) ──
             if (cell.CellType == CellType.Numeric && DateUtil.IsCellDateFormatted(cell))
             {
-                try
-                {
-                    DateTime dt = cell.DateCellValue;
-                    return ApplyAdYearCorrection(dt);
-                }
+                try { return ApplyAdYearCorrection(cell.DateCellValue); }
                 catch (Exception ex)
                 {
-                    errorMessage = string.Format("ไม่สามารถแปลงค่า serial เป็นวันที่ได้: {0}", ex.Message);
+                    errorMessage = "ไม่สามารถแปลงค่า serial เป็นวันที่ได้: " + ex.Message;
                     return null;
                 }
             }
 
-            // ── Case 2: formula that resolves to a date ──────────────────────
-            if (cell.CellType == CellType.Formula
-                && cell.CachedFormulaResultType == CellType.Numeric
-                && DateUtil.IsCellDateFormatted(cell))
+            if (cell.CellType == CellType.Formula && DateUtil.IsCellDateFormatted(cell))
             {
-                try
+                CellValue result = evaluator.Evaluate(cell);
+                if (result.CellType == CellType.Numeric)
                 {
-                    DateTime dt = cell.DateCellValue;
-                    return ApplyAdYearCorrection(dt);
-                }
-                catch (Exception ex)
-                {
-                    errorMessage = string.Format("ไม่สามารถแปลงค่า serial เป็นวันที่ได้: {0}", ex.Message);
-                    return null;
+                    try { return ApplyAdYearCorrection(DateUtil.GetJavaDate(result.NumberValue)); }
+                    catch (Exception ex)
+                    {
+                        errorMessage = "ไม่สามารถแปลงค่า serial เป็นวันที่ได้: " + ex.Message;
+                        return null;
+                    }
                 }
             }
 
-            // ── Case 3: text string ──────────────────────────────────────────
-            string raw = GetCellText(cell).Trim();
+            string raw = GetCellText(cell, evaluator).Trim();
+            return TryParseDateText(raw, out errorMessage);
+        }
 
+        /// <summary>
+        /// แปลงข้อความล้วน (ไม่ผูกกับ ICell ใด ๆ) เป็นวันที่ — ใช้เมื่อค่าที่จะ parse มาจาก Template
+        /// expression ที่ compose เป็น string แล้ว (เช่น formula) จึงไม่มี native Excel date-serial cell
+        /// ให้ตรวจสอบแบบ TryParseDateCell ได้อีกต่อไป รองรับรูปแบบเดียวกับ TryParseDateCell
+        /// (DateFormats + วันที่แบบไทย) ผลลัพธ์เป็น ค.ศ. เสมอ
+        /// </summary>
+        private static DateTime? TryParseDateText(string raw, out string errorMessage)
+        {
+            errorMessage = null;
             if (string.IsNullOrEmpty(raw))
                 return null;
 
-            // Try standard numeric formats first (dd/MM/yyyy, yyyy-MM-dd, etc.)
             DateTime parsed;
-            if (DateTime.TryParseExact(
-                    raw,
-                    DateFormats,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out parsed))
-            {
+            if (DateTime.TryParseExact(raw, DateFormats, CultureInfo.InvariantCulture,
+                                       DateTimeStyles.None, out parsed))
                 return ApplyAdYearCorrection(parsed);
-            }
 
-            // Try Thai long-form: "9 เมษายน 2535" or "09 เม.ย. 2535"
-            DateTime? thaiParsed = TryParseThaiLongDate(raw);
-            if (thaiParsed.HasValue)
-                return thaiParsed.Value;   // ApplyAdYearCorrection already applied inside
+            DateTime? thai = TryParseThaiLongDate(raw);
+            if (thai.HasValue) return thai.Value;
 
-            // Could not parse with any supported format.
             errorMessage = string.Format("รูปแบบวันที่ไม่ถูกต้อง: '{0}'", raw);
             return null;
         }
 
-        /// <summary>
-        /// Parses Thai long-form date strings such as <c>"9 เมษายน 2535"</c> or
-        /// <c>"09 เม.ย. 2535"</c>.  The year is treated as Thai Buddhist Era (B.E.)
-        /// when it is greater than 2400, and <see cref="ApplyAdYearCorrection"/> is
-        /// applied so the returned value is always A.D.
-        /// Returns <c>null</c> when the string does not match the expected pattern.
-        /// </summary>
+        /// <summary>แปลงวันที่แบบไทย เช่น "9 เมษายน 2535" / "09 เม.ย. 2535"</summary>
         private static DateTime? TryParseThaiLongDate(string raw)
         {
-            if (string.IsNullOrEmpty(raw))
-                return null;
+            if (string.IsNullOrEmpty(raw)) return null;
 
-            // Expected pattern: {day} {thaiMonthName} {year}
-            // e.g. "9 เมษายน 2535"  or  "09 เม.ย. 2535"
             var parts = raw.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length < 3)
-                return null;
+            if (parts.Length < 3) return null;
 
             int day, year;
-            if (!int.TryParse(parts[0], out day))
-                return null;
+            if (!int.TryParse(parts[0], out day)) return null;
+            if (!int.TryParse(parts[parts.Length - 1], out year)) return null;
 
-            // Year is always the last token
-            if (!int.TryParse(parts[parts.Length - 1], out year))
-                return null;
-
-            // Month name is everything between day and year (handles multi-word names)
             string monthToken = string.Join(" ", parts, 1, parts.Length - 2).Trim();
 
             int month;
-            if (!ThaiMonths.TryGetValue(monthToken, out month))
-                return null;
-
-            if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1)
-                return null;
+            if (!ThaiMonths.TryGetValue(monthToken, out month)) return null;
+            if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1) return null;
 
             try
             {
-                // Construct using Gregorian calendar explicitly to avoid any
-                // ThaiBuddhistCalendar influence from the current thread culture.
                 var dt = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Unspecified);
                 return ApplyAdYearCorrection(dt);
             }
@@ -348,15 +749,9 @@ namespace CMS.Services
             }
         }
 
-        /// <summary>
-        /// Converts a Thai Buddhist Era year to A.D. when necessary.
-        /// If <paramref name="dt"/>.Year is greater than 2400 (indicating B.E.),
-        /// subtracts 543 years.  Otherwise returns <paramref name="dt"/> unchanged.
-        /// </summary>
+        /// <summary>ปีมากกว่า 2400 ถือว่าเป็น พ.ศ. จึงลบ 543 ให้เป็น ค.ศ.</summary>
         private static DateTime ApplyAdYearCorrection(DateTime dt)
         {
-            // Thai B.E. years are ~543 years ahead of A.D.
-            // e.g. B.E. 2567 → A.D. 2024
             return dt.Year > 2400 ? dt.AddYears(-543) : dt;
         }
 
@@ -370,15 +765,14 @@ namespace CMS.Services
         /// Returns <c>true</c> when every cell in <paramref name="row"/> is null or
         /// produces an empty string — used to skip padding rows at the end of the sheet.
         /// </summary>
-        private static bool IsRowBlank(IRow row)
+        private static bool IsRowBlank(IRow row, IFormulaEvaluator evaluator)
         {
             if (row == null) return true;
             for (int c = row.FirstCellNum; c < row.LastCellNum; c++)
             {
                 ICell cell = row.GetCell(c);
-                if (cell != null && cell.CellType != CellType.Blank
-                    && !string.IsNullOrEmpty(GetCellText(cell)))
-                    return false;
+                if (cell == null || cell.CellType == CellType.Blank) continue;
+                if (!string.IsNullOrWhiteSpace(GetCellText(cell, evaluator))) return false;
             }
             return true;
         }

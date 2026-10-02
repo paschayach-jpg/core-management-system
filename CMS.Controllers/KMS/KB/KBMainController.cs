@@ -1,4 +1,5 @@
 using CMS.Controllers.KMS.KB.Interfaces;
+using CMS.Domain.Enums;
 using CMS.Domain.Models;
 using CMS.Services.Interfaces;
 using System;
@@ -9,27 +10,54 @@ namespace CMS.Controllers.KMS.KB
 {
     public class KBMainController
     {
-        private readonly IKBMainController  _view;
-        private readonly IKBCategoryService _categoryService;
-        private readonly IKBArticleService  _articleService;
-        private readonly UserContext        _user;
+        private readonly IKBMainController               _view;
+        private readonly IKBCategoryService               _categoryService;
+        private readonly IKBArticleService                _articleService;
+        private readonly IKBArticleDisplayProfileService  _displayProfileService;
+        private readonly UserContext                      _user;
 
         private int _currentPage = 1;
 
+        /// <summary>
+        /// เมื่อไม่ใช่ null แปลว่ากำลังดูกลุ่ม cross-reference (มาตรา ↔ คำสั่ง/หมวดภายใน) ที่คลิกจากโหนด
+        /// 🔗 ใน treeCategories — LoadArticlesAtPage จะดึงเฉพาะ ArticleID เหล่านี้แทนการ query ตาม
+        /// CategoryID (ซึ่งกลุ่มนี้ไม่มี CategoryID เดียวที่ใช้ query ได้) ถูกเคลียร์เมื่อสลับไปโหมดอื่น
+        /// </summary>
+        private IList<int> _linkedArticleIds;
+
+        /// <summary>
+        /// true เมื่อกำลังดูทั้งหมวด (คลิกโหนดหมวด) — รายการรวมบทความของหมวดย่อยทุกชั้นด้วย; false เมื่อดูโหนดชื่อบทความ/โฟลเดอร์อ้างอิง/Archived
+        /// (โหนดชื่อบทความเป็นของหมวดนั้นหมวดเดียว เช่น "มาตรา 29" ของปี 2535 ต้องไม่ปนกับของปี 2540)
+        /// </summary>
+        private bool _includeSubCategories;
+
+        /// <summary>หมวดทั้งหมดที่โหลดล่าสุดตอนสร้าง tree — ใช้หาหมวดย่อยของหมวดที่เลือกโดยไม่ query ซ้ำทุกครั้งที่เปลี่ยนหน้า</summary>
+        private IList<KBCategory> _categories;
+
+        // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้หมวด "กฎหมาย"/LW) ↔ เอกสารที่ไม่ใช่กฎหมาย (ประเภทเอกสารที่ตั้ง ImportTypeDigit ที่หมวด) ──
+        // Resolved จาก CategoryCode สด ๆ ทุกครั้งที่โหลด (ดู ResolveCrossReferenceCategoryIds/IsLawCategory
+        // ด้านล่าง) แทนที่จะ hardcode ตัวเลข CategoryID ตรง ๆ — ตัวเลข CategoryID เปลี่ยนได้ถ้าตาราง
+        // m_KBCategory ถูกสร้างใหม่ (เคยเกิดมาแล้วครั้งหนึ่ง ทำให้ค่า hardcode เดิม 46/54/55 หลุด) แต่
+        // CategoryCode เป็น business key ที่ตั้งใจให้คงที่
+        private const string LawFolderLabel      = "กฎหมาย";
+
         public KBMainController(
-            IKBMainController  view,
-            IKBCategoryService categoryService,
-            IKBArticleService  articleService,
-            UserContext        user)
+            IKBMainController              view,
+            IKBCategoryService              categoryService,
+            IKBArticleService               articleService,
+            IKBArticleDisplayProfileService displayProfileService,
+            UserContext                     user)
         {
-            if (view            == null) throw new ArgumentNullException("view");
-            if (categoryService == null) throw new ArgumentNullException("categoryService");
-            if (articleService  == null) throw new ArgumentNullException("articleService");
-            if (user            == null) throw new ArgumentNullException("user");
-            _view            = view;
-            _categoryService = categoryService;
-            _articleService  = articleService;
-            _user            = user;
+            if (view                  == null) throw new ArgumentNullException("view");
+            if (categoryService       == null) throw new ArgumentNullException("categoryService");
+            if (articleService        == null) throw new ArgumentNullException("articleService");
+            if (displayProfileService == null) throw new ArgumentNullException("displayProfileService");
+            if (user                  == null) throw new ArgumentNullException("user");
+            _view                  = view;
+            _categoryService       = categoryService;
+            _articleService        = articleService;
+            _displayProfileService = displayProfileService;
+            _user                  = user;
         }
 
         public void Initialize() { LoadCategoryTree(); }
@@ -39,15 +67,24 @@ namespace CMS.Controllers.KMS.KB
             try
             {
                 var categories       = _categoryService.GetAll().ToList();
+                _categories          = categories;
                 var counts           = new Dictionary<int, int>();
                 // CategoryID → (Title → article count with that exact title)
                 var titlesByCategory = new Dictionary<int, IDictionary<string, int>>();
+                // CategoryID → (Title → link folder อ้างอิงข้ามหมวดที่ต้องแสดงใต้ title-leaf นั้น)
+                var linkedFoldersByCategoryTitle = new Dictionary<int, IDictionary<string, List<KBLinkedFolder>>>();
 
                 try
                 {
                     // Archived (Status = 4) articles only ever appear under the "Archived"
                     // folder — exclude them from per-category counts/titles here.
-                    foreach (var a in _articleService.GetAll().Where(a => a.Status != 4))
+                    var activeArticles = _articleService.GetAll().Where(a => a.Status != 4).ToList();
+                    var articlesById   = activeArticles.ToDictionary(a => a.ArticleID);
+
+                    // CategoryID → (Title → ArticleIDs ในกลุ่มนั้น) ใช้ resolve cross-reference links
+                    var groupArticleIds = new Dictionary<int, Dictionary<string, List<int>>>();
+
+                    foreach (var a in activeArticles)
                     {
                         // per-category article count
                         if (!counts.ContainsKey(a.CategoryID)) counts[a.CategoryID] = 0;
@@ -64,13 +101,198 @@ namespace CMS.Controllers.KMS.KB
                         var titleMap = titlesByCategory[a.CategoryID];
                         if (!titleMap.ContainsKey(t)) titleMap[t] = 0;
                         titleMap[t]++;
+
+                        if (!groupArticleIds.ContainsKey(a.CategoryID))
+                            groupArticleIds[a.CategoryID] =
+                                new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+
+                        var idMap = groupArticleIds[a.CategoryID];
+                        if (!idMap.ContainsKey(t)) idMap[t] = new List<int>();
+                        idMap[t].Add(a.ArticleID);
+                    }
+
+                    // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้ LW) ↔ เอกสารที่ไม่ใช่กฎหมาย (ประเภทเอกสารที่ตั้ง ImportTypeDigit ที่หมวด) ──
+                    // (ถือลิงก์เป็นสองทิศทางเสมอ) — resolve CategoryID ของแต่ละประเภทจาก CategoryCode สด ๆ
+                    // และเช็คฝั่งกฎหมายด้วยการไล่ ParentCategoryID แทนเทียบ CategoryID คงที่ตัวเดียว
+                    // เพื่อให้ใช้ได้กับกฎหมายทุกฉบับ (PVI, PLI, OIC, ...) ไม่ใช่แค่ฉบับที่ hardcode ไว้
+                    var linkGraph    = BuildLawLinkGraph();
+                    var categoryById = categories.ToDictionary(c => c.CategoryID);
+
+                    // ประเภทเอกสารที่ไม่ใช่กฎหมายที่มีอยู่จริงในตารางหมวด (หมวดที่ตั้งรหัสประเภท ImportTypeDigit): (CategoryID, ชื่อโฟลเดอร์ = ชื่อหมวด)
+                    // เรียงตามรหัสประเภท
+                    var nonLawTypes = new List<KeyValuePair<int, string>>();
+                    foreach (var typeCategory in new KBNonLawTypeMap(categories).Types)
+                    {
+                        string folderLabel = string.IsNullOrWhiteSpace(typeCategory.CategoryName)
+                            ? (typeCategory.CategoryCode ?? string.Empty).Trim()
+                            : typeCategory.CategoryName.Trim();
+                        nonLawTypes.Add(new KeyValuePair<int, string>(typeCategory.CategoryID, folderLabel));
+                    }
+
+                    // บทความของประเภทเอกสารอยู่ในหมวดปีใต้หมวดประเภท (เช่น OR2535 ใต้ OR) — นับหมวดย่อยทุกชั้นเป็นประเภทเดียวกับหมวดประเภท
+                    var nonLawTypeScopes = nonLawTypes.ToDictionary(t => t.Key, t =>
+                    {
+                        ISet<int> scope = KBCategoryTree.GetDescendantIds(categories, t.Key);
+                        scope.Add(t.Key);
+                        return scope;
+                    });
+
+                    foreach (var catEntry in groupArticleIds)
+                    {
+                        List<Tuple<Func<KBArticle, bool>, string>> rules = null;
+
+                        if (IsLawCategory(catEntry.Key, categoryById))
+                        {
+                            rules = new List<Tuple<Func<KBArticle, bool>, string>>();
+                            foreach (var type in nonLawTypes)
+                            {
+                                ISet<int> typeScope = nonLawTypeScopes[type.Key];
+                                rules.Add(Tuple.Create<Func<KBArticle, bool>, string>(
+                                    art => typeScope.Contains(art.CategoryID), type.Value));
+                            }
+                        }
+                        else if (nonLawTypes.Any(t => nonLawTypeScopes[t.Key].Contains(catEntry.Key)))
+                        {
+                            rules = new List<Tuple<Func<KBArticle, bool>, string>>
+                            {
+                                Tuple.Create<Func<KBArticle, bool>, string>(
+                                    art => IsLawCategory(art.CategoryID, categoryById), LawFolderLabel),
+                            };
+                        }
+
+                        if (rules == null || rules.Count == 0) continue;
+
+                        foreach (var titleEntry in catEntry.Value)
+                        {
+                            var relatedIds = new HashSet<int>();
+                            foreach (var articleId in titleEntry.Value)
+                            {
+                                HashSet<int> linked;
+                                if (linkGraph.TryGetValue(articleId, out linked))
+                                    relatedIds.UnionWith(linked);
+                            }
+                            if (relatedIds.Count == 0) continue;
+
+                            var folders = new List<KBLinkedFolder>();
+                            foreach (var rule in rules)
+                            {
+                                var    matches = rule.Item1;
+                                string label   = rule.Item2;
+
+                                var matched = relatedIds
+                                    .Select(id => { KBArticle art; articlesById.TryGetValue(id, out art); return art; })
+                                    .Where(art => art != null && matches(art))
+                                    .ToList();
+
+                                if (matched.Count > 0)
+                                    folders.Add(new KBLinkedFolder { Label = label, Articles = matched });
+                            }
+
+                            if (folders.Count == 0) continue;
+
+                            if (!linkedFoldersByCategoryTitle.ContainsKey(catEntry.Key))
+                                linkedFoldersByCategoryTitle[catEntry.Key] =
+                                    new Dictionary<string, List<KBLinkedFolder>>(StringComparer.OrdinalIgnoreCase);
+
+                            linkedFoldersByCategoryTitle[catEntry.Key][titleEntry.Key] = folders;
+                        }
                     }
                 }
-                catch { /* article counts / titles are non-critical */ }
+                catch { /* article counts / titles / linked folders are non-critical */ }
 
-                _view.BindCategoryTree(categories, counts, titlesByCategory);
+                _view.BindCategoryTree(new KBCategoryTreeData
+                {
+                    Categories                   = categories,
+                    ArticleCounts                = counts,
+                    TitlesByCategory             = titlesByCategory,
+                    LinkedFoldersByCategoryTitle = linkedFoldersByCategoryTitle,
+                });
             }
             catch (Exception ex) { _view.ShowError("Load category failed: " + ex.Message); }
+        }
+
+        /// <summary>
+        /// สร้าง undirected graph ของลิงก์ KMS.t_KBArticleLink (EntityType=Law) — เพิ่ม edge ทั้ง 2 ทิศทางเสมอ
+        /// ไม่ว่า DB จะเก็บทิศทางไหนจริง (รองรับทั้งลิงก์ที่ import สร้างแบบ 2 ทิศทาง และลิงก์จากหน้า editor ที่สร้างทิศทางเดียว)
+        /// </summary>
+        private Dictionary<int, HashSet<int>> BuildLawLinkGraph()
+        {
+            var graph = new Dictionary<int, HashSet<int>>();
+            var links = _articleService.GetAllLinksByType((byte)KBEntityType.Law);
+
+            foreach (var link in links)
+            {
+                int entityId;
+                if (!int.TryParse(link.EntityID, out entityId)) continue;
+
+                AddEdge(graph, link.ArticleID, entityId);
+                AddEdge(graph, entityId, link.ArticleID);
+            }
+
+            return graph;
+        }
+
+        private static void AddEdge(Dictionary<int, HashSet<int>> graph, int from, int to)
+        {
+            HashSet<int> set;
+            if (!graph.TryGetValue(from, out set))
+            {
+                set = new HashSet<int>();
+                graph[from] = set;
+            }
+            set.Add(to);
+        }
+
+        /// <summary>
+        /// true ถ้า <paramref name="categoryId"/> ไล่ ParentCategoryID ขึ้นไปเจอ category ที่ CategoryCode = "LW"
+        /// (หมวด "กฎหมาย" ราก) — ใช้ระบุว่าเป็นกฎหมายฉบับใดก็ได้ (PVI, PLI, OIC, ...) ไม่ใช่แค่ฉบับเดียว
+        /// </summary>
+        private static bool IsLawCategory(int categoryId, Dictionary<int, KBCategory> categoryById)
+        {
+            var visited = new HashSet<int>();
+            int current = categoryId;
+            KBCategory cat;
+            while (categoryById.TryGetValue(current, out cat))
+            {
+                if (string.Equals(cat.CategoryCode, KBImportLayoutTypeCatalog.LawRootCategoryCode, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!cat.ParentCategoryID.HasValue || !visited.Add(current))
+                    return false;
+                current = cat.ParentCategoryID.Value;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Called when the user clicks a cross-reference folder (or one of its child leaves)
+        /// in treeCategories. Renders exactly the given articles, bypassing the normal
+        /// category/title search since the IDs are already known from the link graph.
+        /// </summary>
+        public void OnLinkedArticlesSelected(IList<int> articleIds, string folderLabel)
+        {
+            _view.IsArchivedMode       = false;
+            _view.SelectedCategoryId   = null;
+            _view.SelectedArticleTitle = null;
+            _view.ArticleTitleText     = string.Format("  {0}", folderLabel);
+            _linkedArticleIds          = articleIds;
+            _includeSubCategories      = false;
+            // โฟลเดอร์อ้างอิงข้าม (เช่น "คำสั่ง" ใต้มาตรา) มีบทความของหมวดเดียวกันทั้งกลุ่ม — ใช้ header/การซ่อนคอลัมน์
+            // ของหมวดนั้น (ไม่ใช่ของหมวดกฎหมายที่ผู้ใช้เพิ่งคลิกผ่านมา และไม่ใช่ default ตายตัว) โฟลเดอร์ "กฎหมาย"
+            // ที่รวมหลายฉบับ ใช้หมวดของบทความแรก (ทุกฉบับ inherit Display Profile จากหมวด LW เดียวกัน)
+            ApplyColumnDisplayForCategory(ResolveLinkedGroupCategoryId(articleIds));
+            LoadArticles();
+        }
+
+        /// <summary>CategoryID ของบทความแรกในกลุ่มอ้างอิงข้าม — null ถ้ากลุ่มว่างหรืออ่านบทความไม่ได้ (ใช้ default)</summary>
+        private int? ResolveLinkedGroupCategoryId(IList<int> articleIds)
+        {
+            try
+            {
+                if (articleIds == null || articleIds.Count == 0) return null;
+                var first = _articleService.GetById(articleIds[0]);
+                return first != null ? (int?)first.CategoryID : null;
+            }
+            catch { return null; }
         }
 
         public void OnArchivedSelected()
@@ -79,6 +301,9 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedCategoryId   = null;
             _view.SelectedArticleTitle = null;
             _view.ArticleTitleText     = "  \U0001F4E6 Archived";
+            _linkedArticleIds          = null;
+            _includeSubCategories      = false;
+            ApplyColumnDisplayForCategory(null); // Archived รวมทุกหมวด ไม่มี CategoryID เดียวให้ resolve profile
             LoadArticles();
         }
 
@@ -90,6 +315,9 @@ namespace CMS.Controllers.KMS.KB
             _view.ArticleTitleText     = categoryId.HasValue
                 ? string.Format("  {0}", categoryName)
                 : "  ทุกหมวดหมู่";
+            _linkedArticleIds          = null;
+            _includeSubCategories      = categoryId.HasValue;
+            ApplyColumnDisplayForCategory(categoryId);
             LoadArticles();
         }
 
@@ -103,7 +331,25 @@ namespace CMS.Controllers.KMS.KB
             _view.SelectedCategoryId   = categoryId;
             _view.SelectedArticleTitle = title;
             _view.ArticleTitleText     = string.Format("  {0}  ›  {1}", categoryName, title);
+            _linkedArticleIds          = null;
+            _includeSubCategories      = false;
+            ApplyColumnDisplayForCategory(categoryId);
             LoadArticles();
+        }
+
+        /// <summary>
+        /// Resolve และส่ง header label/การซ่อนแสดงคอลัมน์ของ dgvArticles/ArticleCardControl ให้ view —
+        /// categoryId เป็น null (มุมมองข้ามหมวด เช่น Archived/cross-reference) จะสั่งกลับไปใช้ default ตายตัว
+        /// </summary>
+        private void ApplyColumnDisplayForCategory(int? categoryId)
+        {
+            try
+            {
+                _view.ApplyColumnDisplay(categoryId.HasValue
+                    ? _displayProfileService.GetEffectiveDisplaySettings(categoryId.Value)
+                    : null);
+            }
+            catch { /* การแสดงผล header เป็นเรื่องรอง — ไม่ให้ล้มทั้งหน้าถ้า resolve ไม่ได้ */ }
         }
 
         public void LoadArticles()
@@ -133,17 +379,29 @@ namespace CMS.Controllers.KMS.KB
                 string titleFilter   = _view.SelectedArticleTitle;
                 int    pageSize      = _view.PageSize;
 
-                if (!isArchived && !catId.HasValue) return;
+                List<KBArticle> list;
+                if (_linkedArticleIds != null)
+                {
+                    // Cross-reference group (มาตรา ↔ คำสั่ง/หมวดภายใน) — ไม่มี CategoryID เดียวให้ query
+                    // ตาม ดึงเฉพาะ ArticleID ที่ resolve ไว้แล้วจาก link graph แล้วค้นหา/กรองคำค้นบน
+                    // รายการนี้โดยตรง ด้วย criteria เดียวกับ SearchByType (เดิมจุดนี้ไม่รองรับการค้นหาเลย)
+                    list = _linkedArticleIds
+                        .Select(id => _articleService.GetById(id))
+                        .Where(a => a != null && a.Status != 4)
+                        .ToList();
+                    list = _articleService.FilterByKeyword(list, keyword, searchFieldId).ToList();
+                }
+                else
+                {
+                    if (!isArchived && !catId.HasValue) return;
 
-                IEnumerable<KBArticle> articles;
-                articles = _articleService.SearchByType(keyword, catId, statusFilter, typeFilter, searchFieldId);
+                    list = SearchCategoryArticles(keyword, catId, statusFilter, typeFilter, searchFieldId);
 
-                var list = articles.ToList();
-
-                // Archived (Status = 4) articles must only show up under the "Archived"
-                // folder, never mixed into a category's regular listing.
-                if (!isArchived)
-                    list = list.Where(a => a.Status != 4).ToList();
+                    // Archived (Status = 4) articles must only show up under the "Archived"
+                    // folder, never mixed into a category's regular listing.
+                    if (!isArchived)
+                        list = list.Where(a => a.Status != 4).ToList();
+                }
 
                 if (!string.IsNullOrEmpty(titleFilter))
                     list = list.Where(a => string.Equals(
@@ -151,15 +409,13 @@ namespace CMS.Controllers.KMS.KB
                         titleFilter.Trim(),
                         StringComparison.OrdinalIgnoreCase)).ToList();
 
-                foreach (var article in list)
-                    ResolveLatestVersion(article);
-
                 int totalCount = list.Count;
                 int totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling((double)totalCount / pageSize);
                 if (_currentPage > totalPages) _currentPage = totalPages;
                 if (_currentPage < 1)          _currentPage = 1;
 
                 var pageItems = list.Skip((_currentPage - 1) * pageSize).Take(pageSize).ToList();
+                pageItems.ForEach(ResolveLatestVersion);   // แสดงผลเท่านั้น — ทำเฉพาะหน้าที่แสดง ไม่ query ทุกบทความของทั้งหมวด
                 pageItems.ForEach(x => x.ContentHTML = StripHtmlTags(x.ContentHTML));
                 _view.RenderArticles(pageItems);
                 _view.ArticleCountText = string.Format("{0} บทความ", totalCount);
@@ -172,30 +428,26 @@ namespace CMS.Controllers.KMS.KB
             }
         }
 
-        private static IEnumerable<KBArticle> ApplyKeywordFilter(
-            IEnumerable<KBArticle> articles, string keyword, int searchFieldId)
+        /// <summary>
+        /// ค้นบทความของหมวดที่เลือก — ถ้าเป็นการดูทั้งหมวด (<see cref="_includeSubCategories"/>) รวมบทความของหมวดย่อยที่เปิดใช้งานทุกชั้นด้วย
+        /// (หมวดแม่ เช่น "พระราชบัญญัติประกันชีวิต" เห็นบทความของ PLI2535/PLI2540) เรียงตาม ArticleCode เหมือนผล query รายหมวด
+        /// </summary>
+        private List<KBArticle> SearchCategoryArticles(string keyword, int? catId, byte? status, byte? type, int searchFieldId)
         {
-            var _keyword = new string(keyword.Where(c => !char.IsWhiteSpace(c)).ToArray());
-            switch (searchFieldId)
-            {
-                case 1:
-                    
-                    return articles.Where(a =>
-                        a.Title != null &&
-                        string.Equals(new string(a.Title.Where(c => !char.IsWhiteSpace(c)).ToArray()), _keyword, StringComparison.OrdinalIgnoreCase));
-                case 2:
-                    return articles.Where(a =>
-                        (a.ContentHTML != null && new string(StripHtmlTags(a.ContentHTML).Where(c => !char.IsWhiteSpace(c)).ToArray()).IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
-                case 3:
-                    return articles.Where(a =>
-                        (a.Tags != null && a.Tags.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0));
-                case 4:
-                    return articles.Where(a =>
-                        a.Summary != null &&
-                        a.Summary.IndexOf(_keyword, StringComparison.OrdinalIgnoreCase) >= 0);
-                default:
-                    return articles;
-            }
+            if (!_includeSubCategories || !catId.HasValue)
+                return _articleService.SearchByType(keyword, catId, status, type, searchFieldId).ToList();
+
+            IList<KBCategory> all = _categories ?? _categoryService.GetAll().ToList();
+            var subIds = KBCategoryTree.GetDescendantIds(all, catId.Value);
+
+            var ids = new List<int> { catId.Value };
+            ids.AddRange(KBCategoryTree.Flatten(all, true).Select(i => i.Category.CategoryID).Where(subIds.Contains));
+
+            var merged = new List<KBArticle>();
+            foreach (int id in ids)
+                merged.AddRange(_articleService.SearchByType(keyword, id, status, type, searchFieldId));
+
+            return merged.OrderBy(a => a.ArticleCode, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
         private static string StripHtmlTags(string html)
