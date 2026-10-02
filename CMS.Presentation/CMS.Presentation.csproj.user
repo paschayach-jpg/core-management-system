@@ -5,7 +5,7 @@
     <PublishUrlHistory>\\150.1.8.23\AppForUser\cms\|\\150.1.8.23\AppForUser\cmspopp\</PublishUrlHistory>
     <InstallUrlHistory>\\150.1.8.23\AppForUser\cms\|\\150.1.8.23\AppForUser\cmspopp\</InstallUrlHistory>
     <SupportUrlHistory />
-    <UpdateUrlHistory />
+    <UpdateUrlHistory>\\150.1.8.23\AppForUser\cms\</UpdateUrlHistory>
     <BootstrapperUrlHistory />
     <ErrorReportUrlHistory />
     <FallbackCulture>en-US</FallbackCulture>

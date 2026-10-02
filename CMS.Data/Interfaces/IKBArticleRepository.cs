@@ -19,6 +19,16 @@ namespace CMS.Data.Interfaces
         /// </summary>
         int InsertWithVersion(KBArticle article, KBVersion version);
         void Update(KBArticle article);
+
+        /// <summary>
+        /// อัปเดตบทความที่มีอยู่แล้วจาก Excel import: เขียนเฉพาะคอลัมน์ที่ระบุใน <paramref name="columns"/> ด้วยค่าจาก
+        /// <paramref name="values"/> (ชื่อคอลัมน์ที่อนุญาต: Title, TitleCategory, ContentHTML, Summary, PublishedDate, EffectiveDate,
+        /// ArticleType, Tags; ไม่รวม ArticleCode และ CategoryID) แล้วตั้ง <c>UpdatedBy</c> = <paramref name="updatedBy"/>, <c>UpdatedDate</c> = เวลาปัจจุบัน —
+        /// ไม่แตะคอลัมน์อื่น (Status, ConfidentialityLevel, IsOfficialPolicy, ExpiryDate, ReviewDueDate, ViewCount, Created* ฯลฯ).
+        /// ถ้า <paramref name="newVersion"/> ไม่ใช่ null: เพิ่ม KBVersion ถัดไปของบทความ (MAX+1) และตั้ง CurrentVersion เป็นเลขนั้น
+        /// ในธุรกรรมเดียวกัน (<c>VersionNumber</c> ใน <paramref name="newVersion"/> ไม่ใช้)
+        /// </summary>
+        void UpdateFromImport(int articleId, KBArticle values, IEnumerable<string> columns, string updatedBy, KBVersion newVersion);
         void UpdateStatus(int articleId, byte status, string reviewedBy);
         void IncrementViewCount(int articleId);
         void IncrementLikeCount(int articleId);

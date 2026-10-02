@@ -17,27 +17,11 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         /// <summary>TemplateID of the selected KB Import Template (from the combo box), or null if none selected.</summary>
         int? SelectedTemplateId { get; }
 
-        /// <summary>Step 2 option: skip rows with warnings.</summary>
-        bool OptSkipWarning  { get; }
-
-        /// <summary>Step 2 option: auto-create missing categories.</summary>
-        bool OptAutoCategory { get; }
-
-        /// <summary>Step 2 option: send e-mail notification after import.</summary>
-        bool OptSendEmail    { get; }
-
         /// <summary>
-        /// Step 2 option (ประกาศ/คำสั่ง rows only): when an attachment download/DMS upload
-        /// fails, <c>true</c> fails the whole row; <c>false</c> inserts it anyway with a
-        /// warning note. Ignored for มาตรา (Law) rows, which have no attachment.
+        /// โฟลเดอร์ในเครื่องที่ผู้ใช้เลือกไว้เก็บไฟล์แนบ (PDF) ของแถวที่ import — null/ว่าง = ยังไม่ได้เลือก.
+        /// ต้องเลือกเมื่อ Template ที่เลือก map คอลัมน์ Attachment (ดู <see cref="SetAttachmentFolderRequired"/>)
         /// </summary>
-        bool OptSkipRowOnDownloadFailure { get; }
-
-        /// <summary>Step 2 option: create articles as Draft instead of Published.</summary>
-        bool OptCreateDraft  { get; }
-
-        /// <summary>Step 2 option: write audit-log entries for every imported article.</summary>
-        bool OptAuditLog     { get; }
+        string AttachmentFolderPath { get; }
 
         // ── Presenter → View: push results ──────────────────────────────────────
 
@@ -63,6 +47,12 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         /// The view should fill the completion-summary panel and advance to Step 3.
         /// </summary>
         void ShowImportComplete(KBImportValidationResult summary);
+
+        /// <summary>
+        /// Template ที่เลือก map คอลัมน์ Attachment หรือไม่ — true: แสดงช่องเลือกโฟลเดอร์ไฟล์แนบ และปุ่มนำเข้าต้องกดไม่ได้จนกว่าจะเลือก;
+        /// false: ซ่อนช่องนั้นและปุ่มนำเข้าไม่ขึ้นกับโฟลเดอร์
+        /// </summary>
+        void SetAttachmentFolderRequired(bool required);
 
         void ShowError(string message);
         void ShowInfo(string message);

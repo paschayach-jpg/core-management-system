@@ -85,7 +85,7 @@ namespace CMS.Data.Repositories
             {
                 conn.Open();
                 const string sql = @"
-                    SELECT ProfileColumnID, ProfileID, SlotKey, DisplayLabel, IsVisible
+                    SELECT ProfileColumnID, ProfileID, SlotKey, SlotDescription, DisplayLabel, IsVisible
                     FROM   KMS.m_KBArticleDisplayProfileColumn
                     WHERE  ProfileID = @ProfileID";
                 using (var cmd = new SqlCommand(sql, conn))
@@ -125,15 +125,16 @@ namespace CMS.Data.Repositories
 
                         const string insertSql = @"
                             INSERT INTO KMS.m_KBArticleDisplayProfileColumn
-                                (ProfileID, SlotKey, DisplayLabel, IsVisible)
+                                (ProfileID, SlotKey, SlotDescription, DisplayLabel, IsVisible)
                             VALUES
-                                (@ProfileID, @SlotKey, @DisplayLabel, @IsVisible)";
+                                (@ProfileID, @SlotKey, @SlotDescription, @DisplayLabel, @IsVisible)";
                         foreach (var col in columns)
                         {
                             using (var cmd = new SqlCommand(insertSql, conn, tx))
                             {
                                 cmd.Parameters.AddWithValue("@ProfileID", profileId);
                                 cmd.Parameters.AddWithValue("@SlotKey", col.SlotKey ?? string.Empty);
+                                cmd.Parameters.AddWithValue("@SlotDescription", (object)col.SlotDescription ?? DBNull.Value);
                                 cmd.Parameters.AddWithValue("@DisplayLabel", col.DisplayLabel ?? string.Empty);
                                 cmd.Parameters.AddWithValue("@IsVisible", col.IsVisible);
                                 cmd.ExecuteNonQuery();
@@ -236,6 +237,7 @@ namespace CMS.Data.Repositories
                 ProfileColumnID = r.GetInt32(r.GetOrdinal("ProfileColumnID")),
                 ProfileID       = r.GetInt32(r.GetOrdinal("ProfileID")),
                 SlotKey         = r["SlotKey"] as string,
+                SlotDescription = r["SlotDescription"] as string,
                 DisplayLabel    = r["DisplayLabel"] as string,
                 IsVisible       = !r.IsDBNull(r.GetOrdinal("IsVisible")) && r.GetBoolean(r.GetOrdinal("IsVisible")),
             };

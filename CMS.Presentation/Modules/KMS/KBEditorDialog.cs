@@ -363,7 +363,7 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
-        // ── IKBEditorView Implementation ─────────────────────────────────────
+        // ── IKBEditorController Implementation ─────────────────────────────────────
 
         public string ArticleCode
         {
@@ -685,13 +685,14 @@ namespace CMS.Presentation.Modules.KMS
             cboCategory.Items.Clear();
             cboCategory.Items.Add(new ComboItem("— เลือกหมวดหมู่ —", 0));
 
-            foreach (var c in categories.OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName))
+            // เรียงตามลำดับ tree (หมวดย่อยอยู่ใต้หมวดแม่ เยื้องตามชั้น) — เดิมเรียงแบนทั้งก้อนจนดูไม่ออกว่าหมวดย่อยเป็นของหมวดไหน
+            foreach (var item in KBCategoryTree.Flatten(categories, false))
             {
                 cboCategory.Items.Add(new ComboItem(
-                    c.ParentCategoryID.HasValue
-                        ? string.Format("  └ {0}", c.CategoryName)
-                        : c.CategoryName,
-                    c.CategoryID));
+                    item.Depth > 0
+                        ? string.Format("{0}└ {1}", new string(' ', 2 * item.Depth), item.Category.CategoryName)
+                        : item.Category.CategoryName,
+                    item.Category.CategoryID));
             }
 
             cboCategory.SelectedIndex = 0;

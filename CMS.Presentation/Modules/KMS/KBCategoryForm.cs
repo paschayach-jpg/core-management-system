@@ -192,6 +192,8 @@ namespace CMS.Presentation.Modules.KMS
 
         private void CboParent_SelectedIndexChanged(object sender, EventArgs e) { MarkDirty(); }
 
+        private void CboImportTypeDigit_SelectedIndexChanged(object sender, EventArgs e) { MarkDirty(); }
+
         private void CboIcon_SelectedIndexChanged(object sender, EventArgs e)
         {
             MarkDirty();
@@ -268,7 +270,36 @@ namespace CMS.Presentation.Modules.KMS
             set { SelectParentInCombo(value); }
         }
 
-        public int? EditingId { get; set; }
+        /// <summary>
+        /// รหัสประเภทเอกสารที่ไม่ใช่กฎหมาย (1-9 = ตัวที่ 23 ของ Code รวมตอน import) — null = ไม่ใช่หมวดประเภทเอกสาร
+        /// </summary>
+        public string ImportTypeDigit
+        {
+            get
+            {
+                var item = cboImportTypeDigit.SelectedItem as DigitItem;
+                return item != null ? item.Digit : null;
+            }
+            set { SelectImportTypeDigit(value); }
+        }
+
+        private int? _editingId;
+
+        /// <summary>
+        /// หมวดที่กำลังแก้ไข (null = เพิ่มใหม่) — เปลี่ยนแล้วรีเฟรชรายการ Parent เพื่อตัดตัวเองและหมวดย่อยของตัวเองออก
+        /// (ตั้งเป็น parent แล้วต้นไม้หมวดจะวนลูป)
+        /// </summary>
+        public int? EditingId
+        {
+            get { return _editingId; }
+            set
+            {
+                if (_editingId == value) return;
+                _editingId = value;
+                RefreshParentCombo();
+                RefreshImportTypeCombo();
+            }
+        }
 
         public string FormTitleText
         {
@@ -300,6 +331,7 @@ namespace CMS.Presentation.Modules.KMS
             _categories = new List<KBCategory>(categories);
             RefreshTree();
             RefreshParentCombo();
+            RefreshImportTypeCombo();
         }
 
         public void ClearForm()
@@ -327,11 +359,9 @@ namespace CMS.Presentation.Modules.KMS
                 : category.CreatedDate.ToString("dd/MM/yyyy HH:mm");
             lblInfoUpdatedVal.Text     = "—";   // KBCategory has no UpdatedDate field
 
-            // Build full path: Parent > Category
-            if (!string.IsNullOrEmpty(category.ParentCategoryName))
-                lblInfoPathVal.Text = category.ParentCategoryName + " > " + category.CategoryName;
-            else
-                lblInfoPathVal.Text = category.CategoryName;
+            // Build full path: Root > ... > Category (กี่ชั้นก็ได้)
+            string path = KBCategoryTree.GetPath(_categories, category.CategoryID, " > ");
+            lblInfoPathVal.Text = string.IsNullOrEmpty(path) ? category.CategoryName : path;
         }
 
         public void BindCategoryStats(int total, int published, int draft)
@@ -381,6 +411,8 @@ namespace CMS.Presentation.Modules.KMS
             // This will be overridden by BtnNewSub_Click if creating a subcategory
             if (cboParent.Items.Count > 0)
                 cboParent.SelectedIndex = 0;
+
+            SelectImportTypeDigit(null);
             
             txtName.Focus();
         }
@@ -406,34 +438,61 @@ namespace CMS.Presentation.Modules.KMS
             treeCategories.BeginUpdate();
             treeCategories.Nodes.Clear();
 
+            // หมวดกี่ชั้นก็ได้ (เช่น กฎหมาย › พระราชบัญญัติประกันชีวิต › พระราชบัญญัติประกันชีวิต2535)
+            var childrenOf = _categories
+                .Where(c => c.ParentCategoryID.HasValue)
+                .GroupBy(c => c.ParentCategoryID.Value)
+                .ToDictionary(g => g.Key, g => g.OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName).ToList());
+
             var roots = _categories
                 .Where(c => !c.ParentCategoryID.HasValue)
                 .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
 
             foreach (var root in roots)
             {
-                var children = _categories
-                    .Where(c => c.ParentCategoryID.HasValue && c.ParentCategoryID.Value == root.CategoryID)
-                    .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName)
-                    .ToList();
+                var rootNode = BuildBranch(root, search, false, childrenOf, new HashSet<int>());
+                if (rootNode == null) continue;
 
-                bool rootMatches = string.IsNullOrEmpty(search) || root.CategoryName.ToLower().Contains(search);
-                bool anyChildMatches = children.Any(c => string.IsNullOrEmpty(search) || c.CategoryName.ToLower().Contains(search));
-
-                if (!rootMatches && !anyChildMatches) continue;
-
-                var rootNode = BuildTreeNode(root);
-                foreach (var child in children)
-                {
-                    bool childMatches = string.IsNullOrEmpty(search) || child.CategoryName.ToLower().Contains(search);
-                    if (!childMatches && !rootMatches) continue;
-                    rootNode.Nodes.Add(BuildTreeNode(child));
-                }
                 treeCategories.Nodes.Add(rootNode);
                 rootNode.Expand();
             }
 
+            if (search.Length > 0)
+                treeCategories.ExpandAll();   // ค้นหา: เปิดทุกชั้นให้เห็นหมวดที่ตรง
+
             treeCategories.EndUpdate();
+        }
+
+        /// <summary>
+        /// สร้างโหนดของหมวดพร้อมหมวดย่อยทุกชั้น — หมวดที่ชื่อตรงคำค้น (หรือ ancestor ตรง) แสดงทั้งกิ่ง, หมวดที่ไม่ตรงแสดงเฉพาะเมื่อมี
+        /// หมวดย่อยตรง; คืน null เมื่อไม่ต้องแสดง. <paramref name="path"/> กันวนลูปเมื่อ ParentCategoryID ชี้กลับ
+        /// </summary>
+        private TreeNode BuildBranch(
+            KBCategory cat, string search, bool ancestorMatches,
+            Dictionary<int, List<KBCategory>> childrenOf, HashSet<int> path)
+        {
+            if (!path.Add(cat.CategoryID)) return null;
+
+            bool showAll = ancestorMatches || search.Length == 0
+                || (cat.CategoryName ?? string.Empty).ToLower().Contains(search);
+
+            var childNodes = new List<TreeNode>();
+            List<KBCategory> children;
+            if (childrenOf.TryGetValue(cat.CategoryID, out children))
+            {
+                foreach (var child in children)
+                {
+                    var childNode = BuildBranch(child, search, showAll, childrenOf, path);
+                    if (childNode != null) childNodes.Add(childNode);
+                }
+            }
+            path.Remove(cat.CategoryID);
+
+            if (!showAll && childNodes.Count == 0) return null;
+
+            var node = BuildTreeNode(cat);
+            foreach (var childNode in childNodes) node.Nodes.Add(childNode);
+            return node;
         }
 
         private TreeNode BuildTreeNode(KBCategory cat)
@@ -463,35 +522,23 @@ namespace CMS.Presentation.Modules.KMS
             cboParent.Items.Clear();
             cboParent.Items.Add(new ComboItem("— ไม่มี (หมวดหมู่หลัก / Root) —", null));
 
-            // Mirror treeCategories: roots first, then their children — same sort order
-            var roots = _categories
-                .Where(c => !c.ParentCategoryID.HasValue && c.IsActive)
-                .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
-
-            foreach (var root in roots)
+            // Mirror treeCategories: tree order at any depth, indented by level — same sort order.
+            // ตอนแก้ไขหมวด ตัดตัวเองและหมวดย่อยของตัวเองออก (ตั้งเป็น parent แล้วต้นไม้จะวนลูป)
+            ISet<int> excluded = new HashSet<int>();
+            if (EditingId.HasValue)
             {
-                if (EditingId.HasValue && root.CategoryID == EditingId.Value) continue;
+                excluded = KBCategoryTree.GetDescendantIds(_categories, EditingId.Value);
+                excluded.Add(EditingId.Value);
+            }
 
-                string rootIcon = root.IconSymbol;
+            foreach (var item in KBCategoryTree.Flatten(_categories, true))
+            {
+                if (excluded.Contains(item.Category.CategoryID)) continue;
+
+                string indent = item.Depth == 0 ? string.Empty : new string(' ', 4 * item.Depth) + "└─ ";
                 cboParent.Items.Add(new ComboItem(
-                    string.Format("{0} {1}", rootIcon, root.CategoryName),
-                    root.CategoryID));
-
-                var children = _categories
-                    .Where(c => c.ParentCategoryID.HasValue
-                             && c.ParentCategoryID.Value == root.CategoryID
-                             && c.IsActive)
-                    .OrderBy(c => c.SortOrder).ThenBy(c => c.CategoryName);
-
-                foreach (var child in children)
-                {
-                    if (EditingId.HasValue && child.CategoryID == EditingId.Value) continue;
-
-                    string childIcon = child.IconSymbol;
-                    cboParent.Items.Add(new ComboItem(
-                        string.Format("    └─ {0} {1}", childIcon, child.CategoryName),
-                        child.CategoryID));
-                }
+                    string.Format("{0}{1} {2}", indent, item.Category.IconSymbol, item.Category.CategoryName),
+                    item.Category.CategoryID));
             }
 
             // Restore previous selection if it still exists
@@ -499,6 +546,46 @@ namespace CMS.Presentation.Modules.KMS
                 SelectParentInCombo(currentSelection);
             else
                 cboParent.SelectedIndex = 0;
+        }
+
+        /// <summary>
+        /// รายการรหัสประเภทเอกสาร: "ไม่ใช่ประเภทเอกสาร" + 1-9 — รหัสที่หมวดอื่นใช้อยู่แล้วมีชื่อหมวดนั้นกำกับ (1 รหัสใช้ได้ 1 หมวด
+        /// เลือกซ้ำแล้วบันทึกไม่ผ่าน) ส่วนรหัสของหมวดที่กำลังแก้ไขอยู่ไม่กำกับ; เก็บค่าที่เลือกอยู่ไว้ตอนสร้างรายการใหม่
+        /// </summary>
+        private void RefreshImportTypeCombo()
+        {
+            string current = ImportTypeDigit;
+
+            cboImportTypeDigit.Items.Clear();
+            cboImportTypeDigit.Items.Add(new DigitItem(null, "— ไม่ใช่ประเภทเอกสาร —"));
+            for (char ch = KBImportLayoutTypeCatalog.MinTypeDigit; ch <= KBImportLayoutTypeCatalog.MaxTypeDigit; ch++)
+            {
+                string digit = ch.ToString();
+                var owner = _categories.FirstOrDefault(c => c.ImportTypeDigit == digit
+                                                            && (!_editingId.HasValue || c.CategoryID != _editingId.Value));
+                cboImportTypeDigit.Items.Add(new DigitItem(digit, owner == null
+                    ? digit
+                    : string.Format("{0} — ใช้แล้ว: {1}", digit, owner.CategoryName)));
+            }
+
+            SelectImportTypeDigit(current);
+        }
+
+        private void SelectImportTypeDigit(string digit)
+        {
+            if (cboImportTypeDigit.Items.Count == 0) return;
+
+            string wanted = string.IsNullOrWhiteSpace(digit) ? null : digit.Trim();
+            for (int i = 0; i < cboImportTypeDigit.Items.Count; i++)
+            {
+                var item = cboImportTypeDigit.Items[i] as DigitItem;
+                if (item != null && item.Digit == wanted)
+                {
+                    cboImportTypeDigit.SelectedIndex = i;
+                    return;
+                }
+            }
+            cboImportTypeDigit.SelectedIndex = 0;
         }
 
         private void SelectParentInCombo(int? parentId)
@@ -532,6 +619,14 @@ namespace CMS.Presentation.Modules.KMS
                 return false;
             }
             return true;
+        }
+
+        private class DigitItem
+        {
+            public string Digit   { get; private set; }
+            public string Display { get; private set; }
+            public DigitItem(string digit, string display) { Digit = digit; Display = display; }
+            public override string ToString() { return Display; }
         }
 
         private class ComboItem

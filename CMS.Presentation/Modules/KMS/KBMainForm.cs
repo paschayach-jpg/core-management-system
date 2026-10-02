@@ -50,6 +50,24 @@ namespace CMS.Presentation.Modules.KMS
         // ── Suppress AfterSelect during programmatic tree population ─────────────
         private bool _suppressCategorySelect = false;
 
+        // ── Category tree search (txtCategorySearch) ──────────────────────────────
+        // ค้นหาเฉพาะตอนกด Enter: เจอ → แสดงเฉพาะหมวดที่เจอ (+สายแม่) เป็นสำเนาโหนดใน treeCategoryResults แล้วซ่อน treeCategories ไว้
+        // (ต้นไม้เต็มไม่ถูกถอด/สร้างใหม่ จึงสลับกลับได้ทันทีแม้มีโหนดหลายหมื่นตัว และคงสถานะขยาย/ยุบ/การเลือกเดิมไว้)
+        private readonly List<TreeNode> _categorySearchMatches = new List<TreeNode>();   // โหนดที่ตรงใน treeCategoryResults ตามลำดับที่เห็นบนจอ
+        private int    _categorySearchCurrent     = -1;                                  // ตัวที่ชี้อยู่ (Enter / Shift+Enter เลื่อน)
+        private string _categorySearchAppliedTerm = string.Empty;                        // คำค้นที่กด Enter ไปแล้ว
+        private bool   _categorySearchActive;                                            // true = กำลังแสดง treeCategoryResults แทน treeCategories
+
+        /// <summary>ต้นไม้ที่กำลังแสดงอยู่ (ต้นไม้เต็ม หรือผลค้นหา) — ปุ่มขยาย/ยุบทำงานกับอันนี้</summary>
+        private TreeView ActiveCategoryTree { get { return _categorySearchActive ? treeCategoryResults : treeCategories; } }
+        private static readonly Color CategoryMatchColor   = Color.FromArgb(255, 241, 160);
+        private static readonly Color CategoryCurrentColor = Color.FromArgb(255, 196, 90);
+        private static readonly Color CategoryNotFoundColor = Color.FromArgb(255, 225, 225);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, string lParam);
+        private const int EM_SETCUEBANNER = 0x1501;
+
         // ── Archived mode state ───────────────────────────────────────────────────
         private bool _isArchivedMode         = false;
         private int  _pendingToggleArticleId = 0;
@@ -87,6 +105,7 @@ namespace CMS.Presentation.Modules.KMS
         {
             InitializeComponent();
             InitializeArticleGrid();
+            treeCategoryResults.BeforeExpand += TreeCategoryResults_BeforeExpand;
 
             // pnlViewerHost is created here so the designer stays free of a Dock=Fill panel
             // that would block adding other controls. Runtime behaviour is identical.
@@ -218,6 +237,8 @@ namespace CMS.Presentation.Modules.KMS
 
         private void KBMainForm_Load(object sender, EventArgs e)
         {
+            SendMessage(txtCategorySearch.Handle, EM_SETCUEBANNER, (IntPtr)1, "พิมพ์รหัส/ชื่อหมวด แล้วกด Enter...");
+
             if (_presenter == null)
             {
                 MessageBox.Show(
@@ -257,7 +278,7 @@ namespace CMS.Presentation.Modules.KMS
         }
         private void KBMainForm_Resize(object sender, EventArgs e) { ResizeArticleCards(); }
 
-        // ── IKBMainView ───────────────────────────────────────────────────
+        // ── IKBMainController ───────────────────────────────────────────────────
 
         public string SearchKeyword      { get { return txtToolbarSearch.Text.Trim(); } }
         public byte?  TypeFilter         { get { return cboType.SelectedValue as byte?; } }
@@ -325,6 +346,12 @@ namespace CMS.Presentation.Modules.KMS
 
         /// <summary>Tag object placed on the fixed "Archived" tree node.</summary>
         private sealed class ArchivedNode { }
+
+        /// <summary>Tag object placed on the "ไม่พบหมวด" placeholder node shown when a category search finds nothing.</summary>
+        private sealed class NoResultNode { }
+
+        /// <summary>Tag object on the placeholder child of a category in the search result: its 📄/🔗 items are copied from <see cref="Source"/> when the category is first expanded.</summary>
+        private sealed class LazyItemsNode { public TreeNode Source { get; set; } }
 
         /// <summary>
         /// Tag object placed on a cross-reference "folder" node (e.g. "คำสั่ง (นายทะเบียน/กระทรวง)"
@@ -421,7 +448,35 @@ namespace CMS.Presentation.Modules.KMS
                     "🗑 ลบ"             // 16 colBtnDelete
                 );
             }
+            FitTextColumnWidth("colTitle", articles, a => a.Title);
+            FitTextColumnWidth("colCode", articles, a => a.TitleCategory);
             dgvArticles.ResumeLayout();
+        }
+
+        // colTitle / colCode (TitleCategory): กฎหมายข้อความสั้น ("มาตรา N") ส่วนที่ไม่ใช่กฎหมายยาว — ความกว้างตามข้อความที่ยาวที่สุดของหน้านั้น
+        // (ไม่ต่ำกว่า Min / ไม่เกิน Max) ถ้ายาวกว่านั้น wrap ในช่อง (WrapMode ของคอลัมน์ + AutoSizeRowsMode.AllCells ปรับความสูงแถวให้เอง)
+        private const int TextColumnMinWidth = 100;
+        private const int TextColumnMaxWidth = 300;
+
+        private void FitTextColumnWidth(string columnName, List<KBArticle> articles, Func<KBArticle, string> getText)
+        {
+            var col = dgvArticles.Columns[columnName];
+            if (col == null) return;
+
+            Font font = col.InheritedStyle.Font ?? dgvArticles.Font;
+            const TextFormatFlags flags = TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
+            var unbounded = new Size(int.MaxValue, int.MaxValue);
+
+            int widest = 0;
+            foreach (var a in articles)
+            {
+                string text = getText(a);
+                if (string.IsNullOrEmpty(text)) continue;
+                widest = Math.Max(widest, TextRenderer.MeasureText(text, font, unbounded, flags).Width);   // หลายบรรทัด = กว้างสุดของบรรทัด
+            }
+
+            int padding = col.DefaultCellStyle.Padding.Horizontal + 16;   // padding ของ cell + ระยะเผื่อขอบ
+            col.Width = Math.Min(TextColumnMaxWidth, Math.Max(TextColumnMinWidth, widest + padding));
         }
 
         private void PopulateCards(List<KBArticle> articles)
@@ -527,6 +582,7 @@ namespace CMS.Presentation.Modules.KMS
         private void TreeCategories_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (_presenter == null || e.Node == null || _suppressCategorySelect) return;
+            if (e.Node.Tag is NoResultNode) return;   // โหนด "ไม่พบหมวด" ไม่ใช่หมวด
 
             // เลือก node/root node ใด ๆ ในต้นไม้หมวดหมู่ ต้องเคลียร์คำค้นเดิมทิ้งเสมอ — ไม่งั้นคำค้นที่ค้าง
             // จากหมวดก่อนหน้าจะไปกรองซ้ำกับรายการของหมวดใหม่ที่เพิ่งเลือกโดยผู้ใช้ไม่ได้ตั้งใจ
@@ -577,8 +633,366 @@ namespace CMS.Presentation.Modules.KMS
         /// </summary>
         private void TreeCategories_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
-            if (e.Node != null && treeCategories.SelectedNode == e.Node)
+            var tree = (TreeView)sender;   // treeCategories หรือ treeCategoryResults
+            if (e.Node != null && tree.SelectedNode == e.Node)
                 TreeCategories_AfterSelect(sender, new TreeViewEventArgs(e.Node));
+        }
+
+        // ── Category tree: expand / collapse / refresh + search ──────────────────
+
+        private void BtnExpandAll_Click(object sender, EventArgs e)
+        {
+            var tree = ActiveCategoryTree;
+            if (tree.Nodes.Count == 0) return;
+
+            tree.BeginUpdate();
+            try { ExpandCategoryNodes(tree.Nodes[0]); }
+            finally { tree.EndUpdate(); }
+        }
+
+        /// <summary>
+        /// ขยายโหนดรากและหมวดหมู่ทุกชั้น — ไม่ขยายโหนดหัวเรื่อง (📄) / โฟลเดอร์อ้างอิง (🔗) / Archived ที่อยู่ใต้หมวด
+        /// (ไม่ใช่โครงสร้างหมวด และมีจำนวนมาก ขยายแล้วต้นไม้ยาวจนหาหมวดไม่เจอ) ผู้ใช้กดขยายเองรายโหนดได้
+        /// </summary>
+        private void ExpandCategoryNodes(TreeNode node)
+        {
+            if (node.Tag != null && !(node.Tag is KBCategory)) return;
+
+            EnsureItemsLoaded(node);   // หมวดในผลค้นหา: สร้างรายการข้างในก่อนขยาย
+            node.Expand();
+            foreach (TreeNode child in node.Nodes)
+                ExpandCategoryNodes(child);
+        }
+
+        private void BtnCollapseAll_Click(object sender, EventArgs e)
+        {
+            var tree = ActiveCategoryTree;
+            if (tree.Nodes.Count == 0) return;
+            var root = tree.Nodes[0];
+
+            // ยุบแล้ว TreeView ย้าย selection ไปโหนดแม่เอง — ไม่ให้ไปโหลดบทความของโหนดนั้นใหม่
+            _suppressCategorySelect = true;
+            tree.BeginUpdate();
+            try
+            {
+                foreach (TreeNode child in root.Nodes)
+                    child.Collapse(false);
+                root.Expand();   // ยังเห็นหมวดระดับบนสุดอยู่
+            }
+            finally
+            {
+                tree.EndUpdate();
+                _suppressCategorySelect = false;
+            }
+        }
+
+        /// <summary>
+        /// รีเฟรชต้นไม้หมวดทั้งหมดให้กลับเป็นสถานะเริ่มต้น: ล้างคำค้น/ผลที่กรอง แล้วโหลดหมวด/จำนวน/หัวเรื่องจาก DB ใหม่
+        /// (ยุบทั้งหมด เห็นระดับบนสุด และรับการเปลี่ยนแปลงที่ผู้อื่นเพิ่งบันทึก)
+        /// </summary>
+        private void BtnRefreshCategoryTree_Click(object sender, EventArgs e)
+        {
+            txtCategorySearch.Clear();
+            ApplyCategorySearch(string.Empty);   // คืนต้นไม้เต็มทันที แม้ยังไม่มี presenter
+            if (_presenter != null) _presenter.LoadCategoryTree();
+        }
+
+        private void TxtCategorySearch_TextChanged(object sender, EventArgs e)
+        {
+            btnClearCategorySearch.Visible = txtCategorySearch.Text.Length > 0;
+
+            // ไม่ค้นทุกตัวอักษร (ต้นไม้ใหญ่ ช้า) — ค้นเมื่อกด Enter เท่านั้น ยกเว้นลบจนว่าง = เลิกค้นหา คืนต้นไม้เต็ม (ไม่ใช่การค้น ทำเร็ว)
+            string term = txtCategorySearch.Text.Trim();
+            if (term.Length == 0)
+                ApplyCategorySearch(string.Empty);
+            else if (!string.Equals(term, _categorySearchAppliedTerm, StringComparison.Ordinal))
+                txtCategorySearch.BackColor = SystemColors.Window;   // คำใหม่ที่ยังไม่ได้กด Enter — เอาสีแดง "ไม่พบ" ของคำก่อนหน้าออก
+        }
+
+        private void TxtCategorySearch_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                string term = txtCategorySearch.Text.Trim();
+                if (!string.Equals(term, _categorySearchAppliedTerm, StringComparison.Ordinal))
+                    ApplyCategorySearch(term);                   // คำใหม่ → ค้นหา (เฉพาะตอนกด Enter)
+                else
+                    MoveToCategoryMatch(e.Shift ? -1 : 1);       // คำเดิม → Enter = ตัวถัดไป, Shift+Enter = ตัวก่อนหน้า
+                e.SuppressKeyPress = true;
+            }
+            else if (e.KeyCode == Keys.Escape)
+            {
+                txtCategorySearch.Clear();
+                e.SuppressKeyPress = true;
+            }
+        }
+
+        private void BtnClearCategorySearch_Click(object sender, EventArgs e)
+        {
+            txtCategorySearch.Clear();
+            txtCategorySearch.Focus();
+        }
+
+        /// <summary>
+        /// ค้นหาหมวดจากต้นไม้ที่โหลดไว้แล้ว (หมวดทั้งหมดอยู่ในหน่วยความจำ จึงไม่ query DB) — เรียกเมื่อกด Enter ด้วยคำใหม่:
+        /// ตรงกับ CategoryCode หรือ CategoryName บางส่วน ไม่สนตัวพิมพ์เล็ก-ใหญ่ →
+        /// แสดงเฉพาะหมวดที่เจอ + สายแม่ของมัน (ให้เห็นลำดับชั้น) และ "ทุกอย่างข้างในหมวดที่เจอ" (หมวดย่อยทุกชั้น + รายการ 📄/🔗 — ยุบไว้ กดขยายดู)
+        /// ไฮไลต์ตัวที่เจอ — สร้างเป็นสำเนาใน treeCategoryResults แล้วซ่อน treeCategories (หมวด/รายการอื่นจึงถูกซ่อน โดยไม่แตะต้นไม้เต็ม).
+        /// ไม่เจอ → แสดงโหนด "ไม่พบหมวด" + ซ่อนปุ่มขยาย/ยุบ. <paramref name="term"/> ว่าง = เลิกค้นหา คืนต้นไม้เต็ม
+        /// </summary>
+        private void ApplyCategorySearch(string term)
+        {
+            ShowFullCategoryTree();
+            _categorySearchAppliedTerm = term ?? string.Empty;
+            txtCategorySearch.BackColor = SystemColors.Window;
+            SetExpandCollapseVisible(true);
+
+            if (_categorySearchAppliedTerm.Length == 0 || treeCategories.Nodes.Count == 0) return;
+
+            var hits = new HashSet<TreeNode>();
+            MarkCategoryHits(treeCategories.Nodes[0], _categorySearchAppliedTerm, hits);
+
+            _suppressCategorySelect = true;   // ล้าง/ใส่โหนดแล้ว TreeView ย้าย selection เอง — ไม่ให้ไปโหลดบทความใหม่
+            treeCategoryResults.BeginUpdate();
+            try
+            {
+                treeCategoryResults.Nodes.Clear();
+                if (hits.Count == 0)
+                {
+                    treeCategoryResults.Nodes.Add(new TreeNode(string.Format("ไม่พบหมวดที่ตรงกับ '{0}'", _categorySearchAppliedTerm))
+                    {
+                        Tag       = new NoResultNode(),
+                        ForeColor = Color.Gray,
+                    });
+                }
+                else
+                {
+                    treeCategoryResults.Nodes.Add(CloneHitBranch(treeCategories.Nodes[0], hits, _categorySearchAppliedTerm, false));
+                    ExpandToMatches();   // ขยายสายแม่ให้เห็นทุกตัวที่เจอ (ตัวที่เจอเองยังยุบ กดขยายดูของข้างในได้)
+                }
+            }
+            finally
+            {
+                treeCategoryResults.EndUpdate();
+                treeCategories.Visible       = false;   // ซ่อนเฉย ๆ ไม่ถอดโหนด
+                treeCategoryResults.Visible  = true;
+                _categorySearchActive        = true;
+                _suppressCategorySelect      = false;
+            }
+
+            if (hits.Count == 0)
+            {
+                txtCategorySearch.BackColor = CategoryNotFoundColor;
+                SetExpandCollapseVisible(false);
+                return;
+            }
+
+            MoveToCategoryMatch(1);
+        }
+
+        private static bool CategoryMatches(KBCategory cat, string term)
+        {
+            return (cat.CategoryCode != null && cat.CategoryCode.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
+                || (cat.CategoryName != null && cat.CategoryName.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        /// <summary>ใส่ใน <paramref name="hits"/> ทุกโหนดที่ตรงคำค้น หรือมีลูกหลานที่ตรง (= สายที่ต้องแสดง) — ไม่ลงไปในโหนดหัวเรื่อง/โฟลเดอร์อ้างอิง</summary>
+        private bool MarkCategoryHits(TreeNode node, string term, HashSet<TreeNode> hits)
+        {
+            var cat = node.Tag as KBCategory;
+            if (node.Tag != null && cat == null) return false;
+
+            bool hit = cat != null && CategoryMatches(cat, term);
+            foreach (TreeNode child in node.Nodes)
+            {
+                if (MarkCategoryHits(child, term, hits)) hit = true;
+            }
+
+            if (hit) hits.Add(node);
+            return hit;
+        }
+
+        /// <summary>
+        /// สร้างสำเนาของสายที่เจอ (Tag เดิม → คลิกแล้วโหลดบทความได้เหมือนเดิม): หมวดที่เจอเก็บ "ทุกอย่างข้างใน" ไว้ — หมวดย่อยทุกชั้น
+        /// (ทำเป็นสำเนาทันที มีจำนวนไม่มาก) และรายการ 📄/🔗 (มีหลักหมื่น จึงใส่ placeholder แล้วสร้างสำเนาตอนขยายหมวดนั้น — EnsureItemsLoaded).
+        /// หมวดที่เป็นแค่สายแม่เก็บเฉพาะสายที่นำไปสู่ตัวที่เจอ. โหนดที่ตรงคำค้นจริงไฮไลต์และเก็บใน _categorySearchMatches ตามลำดับ pre-order
+        /// (= ตามที่เห็นบนจอ). <paramref name="insideMatch"/> = มีหมวดที่เจอเป็นแม่ของโหนดนี้อยู่แล้ว
+        /// </summary>
+        private TreeNode CloneHitBranch(TreeNode source, HashSet<TreeNode> hits, string term, bool insideMatch)
+        {
+            var copy = new TreeNode(source.Text)
+            {
+                Tag       = source.Tag,
+                ForeColor = source.ForeColor,
+                NodeFont  = source.NodeFont,
+            };
+
+            var cat = source.Tag as KBCategory;
+            bool isMatch = cat != null && CategoryMatches(cat, term);
+            if (isMatch)
+            {
+                copy.BackColor = CategoryMatchColor;
+                _categorySearchMatches.Add(copy);
+            }
+
+            bool keepAll   = insideMatch || isMatch;
+            bool hasItems  = false;
+            foreach (TreeNode child in source.Nodes)
+            {
+                if (child.Tag is KBCategory)
+                {
+                    if (keepAll || hits.Contains(child))
+                        copy.Nodes.Add(CloneHitBranch(child, hits, term, keepAll));
+                }
+                else
+                {
+                    hasItems = true;
+                }
+            }
+
+            if (keepAll && hasItems && cat != null)
+                copy.Nodes.Add(new TreeNode("...") { Tag = new LazyItemsNode { Source = source } });
+
+            return copy;
+        }
+
+        /// <summary>
+        /// หมวดในผลค้นหาที่ยังมี placeholder ท้ายรายการลูก → สร้างสำเนารายการ 📄/🔗 จากโหนดต้นฉบับมาแทน (ทำซ้ำได้ ไม่เกิดผลซ้ำ).
+        /// เรียกจาก BeforeExpand และก่อนสั่ง Expand ในโค้ด (การ Expand ในโค้ดตอน TreeView ยังไม่มี handle ไม่ยิง BeforeExpand)
+        /// </summary>
+        private void EnsureItemsLoaded(TreeNode node)
+        {
+            if (node.Nodes.Count == 0) return;
+
+            var placeholder = node.Nodes[node.Nodes.Count - 1];
+            var lazy = placeholder.Tag as LazyItemsNode;
+            if (lazy == null) return;
+
+            node.Nodes.Remove(placeholder);
+            foreach (TreeNode item in lazy.Source.Nodes)
+            {
+                if (!(item.Tag is KBCategory))
+                    node.Nodes.Add((TreeNode)item.Clone());   // Clone = ลึกทั้งสาย (หัวเรื่อง → โฟลเดอร์อ้างอิง → รายการ) และคง Tag เดิม
+            }
+        }
+
+        private void TreeCategoryResults_BeforeExpand(object sender, TreeViewCancelEventArgs e)
+        {
+            EnsureItemsLoaded(e.Node);
+        }
+
+        /// <summary>ขยายสายแม่ของทุกโหนดที่เจอ ให้เห็นทุกตัวในผลค้นหา</summary>
+        private void ExpandToMatches()
+        {
+            foreach (var match in _categorySearchMatches)
+            {
+                for (var parent = match.Parent; parent != null; parent = parent.Parent)
+                {
+                    EnsureItemsLoaded(parent);
+                    parent.Expand();
+                }
+            }
+        }
+
+        /// <summary>
+        /// กลับไปแสดงต้นไม้เต็ม (ถ้ากำลังแสดงผลค้นหาอยู่) — ซ่อน treeCategoryResults แล้วโชว์ treeCategories ที่ยังอยู่ครบ ไม่ได้ถูกแตะ.
+        /// ถ้าผู้ใช้คลิกหมวดในผลค้นหาไว้ ให้เลือกหมวดเดียวกันในต้นไม้เต็ม (ไม่ให้โหลดบทความซ้ำ) ไม่งั้นการเลือกเดิมยังอยู่
+        /// </summary>
+        private void ShowFullCategoryTree()
+        {
+            _categorySearchMatches.Clear();
+            _categorySearchCurrent = -1;
+            if (!_categorySearchActive) return;
+
+            var picked         = treeCategoryResults.SelectedNode;
+            var pickedCategory = picked == null ? null : picked.Tag as KBCategory;
+
+            TreeNode target = null;
+            if (treeCategories.Nodes.Count > 0 && picked != null)
+            {
+                var fullRoot = treeCategories.Nodes[0];
+                if (pickedCategory != null)
+                {
+                    target = FindCategoryNode(fullRoot, pickedCategory.CategoryID);
+                }
+                else if (picked.Tag == null)
+                {
+                    target = fullRoot;   // รากของผลค้นหา = รากของต้นไม้เต็ม
+                }
+                else if (!(picked.Tag is NoResultNode))
+                {
+                    // รายการ 📄/🔗 ที่คลิกในผลค้นหา → โหนดเดียวกันในต้นไม้เต็ม (Tag เป็น object เดียวกัน) หาจากหมวดที่เป็นเจ้าของ
+                    var owner = picked.Parent;
+                    while (owner != null && !(owner.Tag is KBCategory)) owner = owner.Parent;
+                    var fullOwner = owner == null ? null : FindCategoryNode(fullRoot, ((KBCategory)owner.Tag).CategoryID);
+                    if (fullOwner != null) target = FindNodeByTag(fullOwner, picked.Tag);
+                }
+            }
+
+            _categorySearchActive   = false;
+            _suppressCategorySelect = true;
+            try
+            {
+                treeCategoryResults.Visible = false;
+                treeCategoryResults.Nodes.Clear();
+                treeCategories.Visible = true;
+                if (target != null)
+                    treeCategories.SelectedNode = target;
+            }
+            finally
+            {
+                _suppressCategorySelect = false;
+            }
+        }
+
+        private static TreeNode FindCategoryNode(TreeNode node, int categoryId)
+        {
+            var cat = node.Tag as KBCategory;
+            if (node.Tag != null && cat == null) return null;
+            if (cat != null && cat.CategoryID == categoryId) return node;
+
+            foreach (TreeNode child in node.Nodes)
+            {
+                var found = FindCategoryNode(child, categoryId);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        private static TreeNode FindNodeByTag(TreeNode node, object tag)
+        {
+            if (ReferenceEquals(node.Tag, tag)) return node;
+
+            foreach (TreeNode child in node.Nodes)
+            {
+                var found = FindNodeByTag(child, tag);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+        /// <summary>ชี้ไปตัวที่ตรงคำค้นถัดไป (1) / ก่อนหน้า (-1) วนรอบได้ และเลื่อนต้นไม้ให้เห็นโหนดนั้น</summary>
+        private void MoveToCategoryMatch(int direction)
+        {
+            int count = _categorySearchMatches.Count;
+            if (count == 0) return;
+
+            if (_categorySearchCurrent >= 0)
+                _categorySearchMatches[_categorySearchCurrent].BackColor = CategoryMatchColor;
+
+            _categorySearchCurrent = _categorySearchCurrent < 0
+                ? (direction > 0 ? 0 : count - 1)
+                : (_categorySearchCurrent + direction + count) % count;
+
+            var current = _categorySearchMatches[_categorySearchCurrent];
+            current.BackColor = CategoryCurrentColor;
+            current.EnsureVisible();
+        }
+
+        private void SetExpandCollapseVisible(bool visible)
+        {
+            btnExpandAll.Visible   = visible;
+            btnCollapseAll.Visible = visible;
         }
 
         // ── Article card click ───────────────────────────────────────────────────
@@ -995,6 +1409,16 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BuildCategoryTree(KBCategoryTreeData data)
         {
+            // ผลค้นหาที่แสดงอยู่เป็นสำเนาของต้นไม้เดิมที่กำลังจะถูกสร้างใหม่ — ทิ้ง แล้วกลับไปแสดงต้นไม้เต็ม
+            _categorySearchActive  = false;
+            _categorySearchMatches.Clear();
+            _categorySearchCurrent = -1;
+            _suppressCategorySelect = true;
+            treeCategoryResults.Visible = false;
+            treeCategoryResults.Nodes.Clear();
+            treeCategories.Visible = true;
+            _suppressCategorySelect = false;
+
             treeCategories.BeginUpdate();
             treeCategories.Nodes.Clear();
 
@@ -1031,6 +1455,12 @@ namespace CMS.Presentation.Modules.KMS
             _suppressCategorySelect  = true;
             treeCategories.SelectedNode = rootNode;
             _suppressCategorySelect  = false;
+
+            // คำค้นที่กด Enter ไว้แล้วต้อง apply กับต้นไม้ใหม่ (โหนดเดิมถูกทิ้งไปแล้ว)
+            if (_categorySearchAppliedTerm.Length > 0)
+                ApplyCategorySearch(_categorySearchAppliedTerm);
+            else
+                SetExpandCollapseVisible(true);
         }
 
         private TreeNode BuildCategoryNode(
@@ -1263,11 +1693,11 @@ namespace CMS.Presentation.Modules.KMS
                 Name = "colTitle", 
                 HeaderText = "อ้างอิง",
                 ReadOnly = true,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     Alignment = DataGridViewContentAlignment.MiddleLeft,
-                    Padding = new Padding(4, 0, 0, 0)
+                    Padding = new Padding(4, 0, 0, 0),
+                    WrapMode = DataGridViewTriState.True
                 },
             });
             dgvArticles.Columns.Add(new DataGridViewTextBoxColumn

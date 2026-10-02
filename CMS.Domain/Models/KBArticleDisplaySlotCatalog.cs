@@ -56,6 +56,7 @@ namespace CMS.Domain.Models
             return !Slots.TryGetValue(slotKey, out info) || info.DefaultVisible;
         }
 
+        /// <summary>คำอธิบายเริ่มต้นของ slot — ใช้เป็นค่าตั้งต้นของ Profile ใหม่/แถวที่ยังไม่เคยบันทึก; Profile ที่บันทึกแล้วใช้ค่าจาก DB (SlotDescription) ที่ผู้ใช้แก้ได้</summary>
         public static string GetDescription(string slotKey)
         {
             SlotInfo info;

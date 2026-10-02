@@ -31,8 +31,8 @@ namespace CMS.Presentation.Modules.KMS
             this.txtTemplateDescription = new System.Windows.Forms.TextBox();
             this.lblTemplateName = new System.Windows.Forms.Label();
             this.txtTemplateName = new System.Windows.Forms.TextBox();
-            this.lblCategoryConfig = new System.Windows.Forms.Label();
-            this.cboCategoryConfig = new System.Windows.Forms.ComboBox();
+            this.lblLayoutConfig = new System.Windows.Forms.Label();
+            this.cboLayoutConfig = new System.Windows.Forms.ComboBox();
             this.lblArticleTypeConfig = new System.Windows.Forms.Label();
             this.cboArticleTypeConfig = new System.Windows.Forms.ComboBox();
             this.pnlExcelPreview = new System.Windows.Forms.Panel();
@@ -231,8 +231,8 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlEditCard.Controls.Add(this.txtTemplateDescription);
             this.pnlEditCard.Controls.Add(this.lblTemplateName);
             this.pnlEditCard.Controls.Add(this.txtTemplateName);
-            this.pnlEditCard.Controls.Add(this.lblCategoryConfig);
-            this.pnlEditCard.Controls.Add(this.cboCategoryConfig);
+            this.pnlEditCard.Controls.Add(this.lblLayoutConfig);
+            this.pnlEditCard.Controls.Add(this.cboLayoutConfig);
             this.pnlEditCard.Controls.Add(this.lblArticleTypeConfig);
             this.pnlEditCard.Controls.Add(this.cboArticleTypeConfig);
             this.pnlEditCard.Dock = System.Windows.Forms.DockStyle.Top;
@@ -277,23 +277,23 @@ namespace CMS.Presentation.Modules.KMS
             this.txtTemplateName.Size = new System.Drawing.Size(350, 23);
             this.txtTemplateName.TabIndex = 1;
             //
-            // lblCategoryConfig
+            // lblLayoutConfig
             //
-            this.lblCategoryConfig.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.lblCategoryConfig.Location = new System.Drawing.Point(3, 89);
-            this.lblCategoryConfig.Name = "lblCategoryConfig";
-            this.lblCategoryConfig.Size = new System.Drawing.Size(120, 22);
-            this.lblCategoryConfig.TabIndex = 4;
-            this.lblCategoryConfig.Text = "หมวดหมู่ (CategoryID) *";
+            this.lblLayoutConfig.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.lblLayoutConfig.Location = new System.Drawing.Point(3, 89);
+            this.lblLayoutConfig.Name = "lblLayoutConfig";
+            this.lblLayoutConfig.Size = new System.Drawing.Size(120, 22);
+            this.lblLayoutConfig.TabIndex = 4;
+            this.lblLayoutConfig.Text = "ประเภทไฟล์ *";
             //
-            // cboCategoryConfig
+            // cboLayoutConfig
             //
-            this.cboCategoryConfig.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboCategoryConfig.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.cboCategoryConfig.Location = new System.Drawing.Point(130, 86);
-            this.cboCategoryConfig.Name = "cboCategoryConfig";
-            this.cboCategoryConfig.Size = new System.Drawing.Size(250, 23);
-            this.cboCategoryConfig.TabIndex = 5;
+            this.cboLayoutConfig.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboLayoutConfig.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.cboLayoutConfig.Location = new System.Drawing.Point(130, 86);
+            this.cboLayoutConfig.Name = "cboLayoutConfig";
+            this.cboLayoutConfig.Size = new System.Drawing.Size(250, 23);
+            this.cboLayoutConfig.TabIndex = 5;
             //
             // lblArticleTypeConfig
             //
@@ -507,8 +507,8 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.TextBox txtTemplateDescription;
         private System.Windows.Forms.Label lblTemplateName;
         private System.Windows.Forms.TextBox txtTemplateName;
-        private System.Windows.Forms.Label lblCategoryConfig;
-        private System.Windows.Forms.ComboBox cboCategoryConfig;
+        private System.Windows.Forms.Label lblLayoutConfig;
+        private System.Windows.Forms.ComboBox cboLayoutConfig;
         private System.Windows.Forms.Label lblArticleTypeConfig;
         private System.Windows.Forms.ComboBox cboArticleTypeConfig;
         private System.Windows.Forms.Panel pnlExcelPreview;

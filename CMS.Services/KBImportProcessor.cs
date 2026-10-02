@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CMS.Services
@@ -18,21 +19,28 @@ namespace CMS.Services
     ///
     /// <b>Law</b> ("มาตรา" rows) — Phase 1: row validation, including <c>ArticleCode</c>
     /// existence check (read-only DB access). Phase 2: article + version insert
-    /// (<c>KMS.t_KBArticle</c>, <c>KMS.t_KBVersion</c>). CategoryID/ArticleType are resolved
-    /// externally from the KB Import Template selected in the Wizard (see
-    /// <see cref="ValidateRows"/>/<see cref="InsertArticles"/>) — not hardcoded here.
+    /// (<c>KMS.t_KBArticle</c>, <c>KMS.t_KBVersion</c>). CategoryID is resolved per row from the
+    /// row's <c>ArticleCode</c> (3-letter law prefix, see <see cref="KBImportCategoryResolver"/>) so one
+    /// Template serves every law; ArticleType comes from the KB Import Template selected in the Wizard
+    /// (see <see cref="InsertArticles"/>) — not hardcoded here.
     ///
-    /// <b>NonLaw</b> (ไฟล์ที่ไม่ใช่กฎหมาย: OR/AN/SO/RG/CI/MR rows) — Phase 1: row validation, including resolving each
-    /// referenced parent law via <c>ArticleCode</c> exact match. Phase 2: attachment
+    /// <b>NonLaw</b> (ไฟล์ที่ไม่ใช่กฎหมาย: OR/AN/SO/RG/CI/MR rows; 1 row = 1 ArticleCode) — Phase 1: row validation, including resolving
+    /// the parent law via <c>ArticleCode</c> exact match. Phase 2: attachment
     /// download + DMS upload, article insert, attachment link, and bidirectional
-    /// <c>KMS.t_KBArticleLink</c> records to every resolved parent law. CategoryID/ArticleType
-    /// are resolved externally from the selected Template, same as Law; the ประเภทลูก digit
-    /// ("1"=ประกาศ, "2"=คำสั่ง) is still required and used for the display label / ArticleCode.
+    /// <c>KMS.t_KBArticleLink</c> records to the parent law (first 22 chars of the ArticleCode).
+    /// ArticleCode ที่มีในระบบแล้ว (ทั้งกฎหมายและไม่ใช่กฎหมาย) ไม่ insert ซ้ำ แต่ UPDATE บทความเดิมทุก field ที่ Template/Excel ให้ค่ามา
+    /// (เซลล์ว่าง/ field ที่ไม่ได้ map = คงค่าเดิม; ค่าคงที่ตอน insert เช่น Status ไม่ถูกเขียนทับ) และตั้ง UpdatedBy = 'system',
+    /// UpdatedDate = เวลาที่ update — ดู <see cref="UpdateExistingLawArticle"/> / <see cref="UpdateExistingNonLawArticle"/>.
+    /// ไฟล์แนบที่มีอยู่แล้วไม่ดาวน์โหลด/อัปโหลดซ้ำ.
+    /// CategoryID is resolved per row from digit 23 of the ArticleCode (the document type category whose
+    /// <c>KBCategory.ImportTypeDigit</c> equals it, e.g. 2 → OR — a master in m_KBCategory, not hard-coded),
+    /// same as Law — one Template serves every document type; ArticleType comes from the Template.
     /// </summary>
     public class KBImportProcessor : IKBImportProcessorService
     {
         private readonly IKBArticleRepository     _articleRepo;
         private readonly IKBArticleLinkRepository _linkRepo;
+        private readonly IKBCategoryRepository    _categoryRepo;
         private readonly IKBArticleService        _articleService;
         private readonly IFileService             _fileService;
         private readonly LawFileDownloader        _downloader;
@@ -41,24 +49,31 @@ namespace CMS.Services
         private const byte FixedStatus               = 2;   // Review
         private const int  FixedConfidentialityLevel = 0;
 
+        /// <summary>UpdatedBy ที่ตั้งตอน import อัปเดตบทความที่มีอยู่แล้ว (UpdatedDate = เวลาที่ update)</summary>
+        private const string ImportUpdatedBy = "system";
+
         /// <summary>Folder ปลายทางของไฟล์แนบ (NonLaw) — ตรงกับที่ KBEditorDialog ใช้ ("KMS Attachments")</summary>
+        /// <remarks>TODO: ยังตั้งตายตัว — แผนให้ผู้ใช้เลือกโฟลเดอร์ปลายทางใน DMS เองที่หน้า import (ดูแนวทางที่ <see cref="EnsureUploaded"/>)</remarks>
         private const int AttachmentFolderId = 437;
 
         public KBImportProcessor(
             IKBArticleRepository     articleRepo,
             IKBArticleLinkRepository linkRepo,
+            IKBCategoryRepository    categoryRepo,
             IKBArticleService        articleService,
             IFileService             fileService,
             LawFileDownloader        downloader)
         {
             if (articleRepo    == null) throw new ArgumentNullException("articleRepo");
             if (linkRepo       == null) throw new ArgumentNullException("linkRepo");
+            if (categoryRepo   == null) throw new ArgumentNullException("categoryRepo");
             if (articleService == null) throw new ArgumentNullException("articleService");
             if (fileService    == null) throw new ArgumentNullException("fileService");
             if (downloader     == null) throw new ArgumentNullException("downloader");
 
             _articleRepo    = articleRepo;
             _linkRepo       = linkRepo;
+            _categoryRepo   = categoryRepo;
             _articleService = articleService;
             _fileService    = fileService;
             _downloader     = downloader;
@@ -69,22 +84,19 @@ namespace CMS.Services
         /// <summary>
         /// Validates each row and sets <see cref="KBImportRow.Status"/> /
         /// <see cref="KBImportRow.StatusNote"/>. Read-only DB access only
-        /// (<see cref="IKBArticleRepository.ExistsByCode"/>, <see cref="IKBArticleRepository.GetByCode"/>)
+        /// (<see cref="IKBArticleRepository.ExistsByCode"/>, <see cref="IKBArticleRepository.GetByCode"/>, attachment/link lookups)
         /// — no writes.
         /// </summary>
-        /// <param name="resolvedCategoryId">
-        /// CategoryID configured on the KB Import Template selected in the Wizard — applied to
-        /// every row in this batch (both Law and NonLaw layouts). Must be greater than 0.
-        /// </param>
-        /// <param name="templateCategoryCode">
-        /// CategoryCode ของ category ที่ Template ตั้งไว้ (เช่น "PVI") — แถวกฎหมายต้องมี Code รวมขึ้นต้นด้วยค่านี้
-        /// </param>
-        public void ValidateRows(IList<KBImportRow> rows, int resolvedCategoryId, string templateCategoryCode)
+        /// <remarks>
+        /// CategoryID ของแต่ละแถวหาจาก ArticleCode ของแถวนั้น (<see cref="KBImportCategoryResolver"/>) — Template ไม่ผูกหมวด
+        /// จึงรับได้หลายกฎหมาย/หลายประเภทในไฟล์เดียว; แถวที่หาหมวดไม่ได้เป็น Error รายแถว
+        /// </remarks>
+        public void ValidateRows(IList<KBImportRow> rows)
         {
             if (rows == null) throw new ArgumentNullException("rows");
-            if (resolvedCategoryId <= 0)
-                throw new ArgumentException("resolvedCategoryId ต้องมากกว่า 0 — Template ที่เลือกยังไม่ได้ตั้งค่า CategoryID", "resolvedCategoryId");
 
+            // โหลดรายการหมวดครั้งเดียวต่อการ validate หนึ่งไฟล์
+            var resolver    = new KBImportCategoryResolver(_categoryRepo.GetAll());
             var seenCodes   = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var parentCache = new Dictionary<string, KBArticle>(StringComparer.OrdinalIgnoreCase);
 
@@ -97,10 +109,10 @@ namespace CMS.Services
                 switch (row.RowKind)
                 {
                     case KBImportLayoutTypeCatalog.NonLaw:
-                        ValidateNonLawRow(row, seenCodes, parentCache, _articleRepo, resolvedCategoryId, templateCategoryCode);
+                        ValidateNonLawRow(row, seenCodes, parentCache, resolver);
                         break;
                     case KBImportLayoutTypeCatalog.Law:
-                        ValidateLawRow(row, seenCodes, _articleRepo, resolvedCategoryId, templateCategoryCode);
+                        ValidateLawRow(row, seenCodes, _articleRepo, resolver);
                         break;
                     default:
                         // Unknown RowKind must not be silently treated as Law — fail just this row.
@@ -111,52 +123,25 @@ namespace CMS.Services
             }
         }
 
-        public string GetTemplateMismatchMessage(IList<KBImportRow> rows, string templateCategoryCode)
-        {
-            if (rows == null || string.IsNullOrEmpty(templateCategoryCode)) return null;
-
-            string firstFileCode = null;
-            foreach (var row in rows)
-            {
-                if (string.IsNullOrWhiteSpace(row.ColA)) continue;
-
-                string fileCode;
-                if (row.RowKind == KBImportLayoutTypeCatalog.Law)
-                {
-                    // กฎหมาย: prefix 3 ตัวแรกของ Code รวมคือรหัสกฎหมาย (เช่น RVA)
-                    string raw = row.ColA.Trim();
-                    fileCode = raw.Length >= 3 ? raw.Substring(0, 3) : null;
-                }
-                else
-                {
-                    // ไม่ใช่กฎหมาย: ตัวที่ 23 ของ Code รวม → CategoryCode ของประเภทเอกสาร (บรรทัดแรกถ้าเซลล์มีหลายบรรทัด)
-                    string firstLine = row.ColA.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                                               .Select(l => l.Trim()).FirstOrDefault(l => l.Length > 0);
-                    fileCode = KBImportLayoutTypeCatalog.GetNonLawCategoryCode(firstLine);
-                }
-                if (string.IsNullOrEmpty(fileCode)) continue;
-
-                // มีแถวที่ตรงกับ Template อย่างน้อยหนึ่งแถว = ไฟล์ตรง Template (แถวที่เหลือที่ไม่ตรงถูกรายงานรายแถวเอง)
-                if (string.Equals(fileCode, templateCategoryCode, StringComparison.OrdinalIgnoreCase)) return null;
-                if (firstFileCode == null) firstFileCode = fileCode;
-            }
-
-            if (firstFileCode == null) return null;
-            return string.Format("Code รวมในไฟล์เป็นของ \"{0}\" แต่ Template ที่เลือกเป็นของ \"{1}\"", firstFileCode, templateCategoryCode);
-        }
-
         // ── Phase 2: Article insert ──────────────────────────────────────────
 
         /// <summary>
         /// Inserts a <c>KBArticle</c> for each row in <paramref name="rows"/> (expected to be
         /// pre-filtered to <c>Status == "Valid"</c> rows by the caller). Law rows also insert
         /// an initial <c>KBVersion</c>; NonLaw rows also download/upload the attachment and
-        /// link every resolved parent law. Each row is wrapped in its own <c>try/catch</c>;
+        /// link the parent law. Rows whose article already exists
+        /// (<see cref="KBImportRow.ExistingArticleId"/> &gt; 0) are not inserted again — the existing article is UPDATED
+        /// (see <see cref="UpdateExistingLawArticle"/>/<see cref="UpdateExistingNonLawArticle"/>); a NonLaw row becomes <c>Skip</c> only
+        /// when the article has no attachment yet and its source file is unavailable.
+        /// Each row is wrapped in its own <c>try/catch</c>;
         /// a failure on one row increments <paramref name="errorCount"/> and processing continues.
         /// </summary>
         /// <param name="resolvedArticleType">
         /// ArticleType configured on the KB Import Template selected in the Wizard — applied to
         /// every row in this batch (both Law and NonLaw layouts). Must be greater than 0.
+        /// </param>
+        /// <param name="attachmentFolder">
+        /// NonLaw rows only: โฟลเดอร์ในเครื่องที่ผู้ใช้เลือกไว้เก็บไฟล์แนบ (หาไฟล์ตามชื่อที่ Template map เป็น Attachment — ดู <see cref="LawFileDownloader"/>)
         /// </param>
         /// <param name="onProgress">
         /// Optional callback invoked after each row with (rowsProcessed, totalRows).
@@ -167,6 +152,7 @@ namespace CMS.Services
             UserContext user,
             bool skipRowOnDownloadFailure,
             byte resolvedArticleType,
+            string attachmentFolder,
             out int successCount,
             out int errorCount,
             Action<int, int> onProgress)
@@ -181,6 +167,9 @@ namespace CMS.Services
 
             string createdBy = user != null ? (user.AdIdentity ?? string.Empty) : string.Empty;
 
+            // ไฟล์แนบของ Excel row ปัจจุบัน — ArticleCode จาก row เดียวกันใช้ไฟล์ที่โหลด/อัปโหลดครั้งเดียวร่วมกัน
+            var files = new RowFileCache(_downloader, attachmentFolder);
+
             for (int i = 0; i < total; i++)
             {
                 var row = rows[i];
@@ -189,7 +178,7 @@ namespace CMS.Services
                     switch (row.RowKind)
                     {
                         case KBImportLayoutTypeCatalog.NonLaw:
-                            InsertNonLawArticle(row, user, createdBy, skipRowOnDownloadFailure, resolvedArticleType);
+                            InsertNonLawArticle(row, user, createdBy, skipRowOnDownloadFailure, resolvedArticleType, files);
                             break;
                         case KBImportLayoutTypeCatalog.Law:
                             InsertLawArticle(row, createdBy, resolvedArticleType);
@@ -218,9 +207,19 @@ namespace CMS.Services
             // Defensive re-check — the DB may have changed since ValidateRows ran.
             if (string.IsNullOrEmpty(row.ArticleCode))
                 throw new InvalidOperationException("คอลัมน์ A (ArticleCode) ว่าง");
+
+            // บทความมีอยู่แล้ว (ตรวจพบตอน validate) → UPDATE บทความเดิม ไม่ insert ซ้ำ
+            if (row.ExistingArticleId > 0)
+            {
+                UpdateExistingLawArticle(row, createdBy, resolvedArticleType);
+                return;
+            }
+
             if (_articleRepo.ExistsByCode(row.ArticleCode))
                 throw new InvalidOperationException(string.Format(
                     "ArticleCode '{0}' มีอยู่ในระบบแล้ว", row.ArticleCode));
+            if (row.ResolvedCategoryID <= 0)
+                throw new InvalidOperationException("ไม่พบหมวด (CategoryID) ของแถวนี้ — ต้องผ่านการ validate ก่อน insert");
 
             var article = new KBArticle
             {
@@ -259,31 +258,42 @@ namespace CMS.Services
             row.StatusNote = string.Empty;
         }
 
-        private void InsertNonLawArticle(KBImportRow row, UserContext user, string createdBy, bool skipRowOnDownloadFailure, byte resolvedArticleType)
+        private void InsertNonLawArticle(KBImportRow row, UserContext user, string createdBy, bool skipRowOnDownloadFailure, byte resolvedArticleType, RowFileCache files)
         {
             var notes = new List<string>();
 
             // ── ArticleCode ──────────────────────────────────────────────────
             if (string.IsNullOrWhiteSpace(row.ArticleCode))
                 throw new InvalidOperationException("Code รวม (ArticleCode ที่ Template map ไว้) ว่าง");
+
+            // บทความมีอยู่แล้ว (ตรวจพบตอน validate) — ไม่ insert ซ้ำ แต่ UPDATE บทความเดิม
+            if (row.ExistingArticleId > 0)
+            {
+                UpdateExistingNonLawArticle(row, user, createdBy, resolvedArticleType, files);
+                return;
+            }
+
+            // Defensive re-check — เพิ่งมีคนสร้าง Code นี้หลัง validate (ไม่เจอตอน validate จึงยังไม่มี ExistingArticleId)
             if (_articleRepo.ExistsByCode(row.ArticleCode))
                 throw new InvalidOperationException(string.Format(
                     "ArticleCode '{0}' มีอยู่ในระบบแล้ว", row.ArticleCode));
 
             // Defensive re-check — รูปแบบ Code รวมถูกตรวจแล้วตอน ValidateRows; ตรวจซ้ำเพราะ InsertArticles
             // อาจถูกเรียกเมื่อไรก็ได้หลังจากนั้น
-            if (!KBImportLayoutTypeCatalog.IsNonLawCode(row.ArticleCode))
+            if (!KBImportLayoutTypeCatalog.IsNonLawCodeFormat(row.ArticleCode))
                 throw new InvalidOperationException(string.Format(
-                    "Code รวม: ต้องยาว 27 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 23 ต้องเป็น 1-6 — '{0}'", row.ArticleCode));
+                    "{0} — '{1}'", KBImportLayoutTypeCatalog.NonLawCodeFormatMessage, row.ArticleCode));
+            if (row.ResolvedCategoryID <= 0)
+                throw new InvalidOperationException("ไม่พบหมวด (CategoryID) ของแถวนี้ — ต้องผ่านการ validate ก่อน insert");
 
             // ── ไฟล์แนบ ──────────────────────────────────────────────────────
             int? fileId = null;
-            var download = _downloader.Download(row.AttachmentUrl, row.AttachmentFileName);
+            var rowFile = files.For(row);
 
-            if (download.Success)
+            if (rowFile.Download.Success)
             {
                 string uploadError;
-                fileId = UploadToDms(download, user, out uploadError);
+                fileId = EnsureUploaded(rowFile, user, out uploadError);
                 if (fileId == null)
                 {
                     if (skipRowOnDownloadFailure)
@@ -294,8 +304,8 @@ namespace CMS.Services
             else
             {
                 if (skipRowOnDownloadFailure)
-                    throw new InvalidOperationException(download.ErrorMessage);
-                notes.Add(download.ErrorMessage);
+                    throw new InvalidOperationException(rowFile.Download.ErrorMessage);
+                notes.Add(rowFile.Download.ErrorMessage);
             }
 
             // ── บทความ ───────────────────────────────────────────────────────
@@ -333,7 +343,202 @@ namespace CMS.Services
                 }
             }
 
-            // ── link กฎหมายแม่ทุกตัวใน ParentCodes (ถ้าตัวไหน error ให้ข้ามและแจ้ง) ─
+            // ── link กฎหมายแม่ (22 ตัวแรกของ ArticleCode) ไป-กลับ — ตัวไหน error ให้ข้ามและแจ้ง ─
+            LinkToParents(articleId, row, createdBy, notes);
+
+            if (notes.Count > 0)
+            {
+                row.Status     = "Warn";
+                row.StatusNote = TruncateTo200(string.Join("; ", notes));
+            }
+            else
+            {
+                row.Status     = "Valid";
+                row.StatusNote = string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// กฎหมาย — บทความมีอยู่แล้ว (<see cref="KBImportRow.ExistingArticleId"/>): UPDATE ทุก field ที่ Excel/Template ให้ค่ามา
+        /// (<see cref="GetUpdateColumns"/>) + UpdatedBy = 'system', UpdatedDate = ตอนนี้. ถ้า ContentHTML ต่างจากที่อยู่ในระบบ เพิ่ม KBVersion ใหม่
+        /// (เหมือนหน้าแก้ไขบทความ); เหมือนกัน = ไม่เพิ่ม version. กฎหมายไม่มีไฟล์แนบ จึงไม่มีขั้นดาวน์โหลด/อัปโหลด
+        /// </summary>
+        private void UpdateExistingLawArticle(KBImportRow row, string createdBy, byte resolvedArticleType)
+        {
+            int articleId = row.ExistingArticleId;
+
+            var columns = GetUpdateColumns(row, true);
+            var patch   = BuildImportPatch(row, resolvedArticleType);
+
+            KBVersion newVersion = null;
+            if (columns.Contains("ContentHTML"))
+            {
+                KBArticle current = _articleRepo.GetById(articleId);
+                if (current != null && !string.Equals(current.ContentHTML, patch.ContentHTML, StringComparison.Ordinal))
+                {
+                    newVersion = new KBVersion
+                    {
+                        ContentSnapshot   = patch.ContentHTML,
+                        ChangeDescription = "แก้ไขจาก Excel import",
+                        CreatedBy         = createdBy,
+                        CreatedDate       = DateTime.Now,
+                    };
+                }
+            }
+
+            _articleRepo.UpdateFromImport(articleId, patch, columns, ImportUpdatedBy, newVersion);
+
+            row.ImportedArticleId = articleId;
+            row.Status            = "Valid";
+            row.StatusNote        = TruncateTo200("อัปเดตแล้ว: " + string.Join(", ", columns) + (newVersion != null ? " (เพิ่ม version ใหม่)" : string.Empty));
+        }
+
+        /// <summary>
+        /// ไม่ใช่กฎหมาย — บทความมีอยู่แล้ว (<see cref="KBImportRow.ExistingArticleId"/>), ตามลำดับ:
+        /// 1) ไฟล์แนบ: มี record ใน t_KBArticleAttachment แล้ว → ไม่ต้องทำอะไรกับไฟล์ (ไม่ดาวน์โหลด/อัปโหลด) เติมเฉพาะ link ไฟล์
+        ///    (t_KBArticleLink EntityType=1, EntityID=FileID) ที่ยังไม่มี; ยังไม่มี → ต้องโหลดไฟล์ต้นทางได้ (ไม่ได้ = "Skip" เฉพาะ ArticleCode นี้
+        ///    ยังไม่ update อะไร) แล้วอัปโหลด (ครั้งเดียวต่อ Excel row) + attach + link
+        /// 2) UPDATE ทุก field ที่ Excel/Template ให้ค่ามา (<see cref="GetUpdateColumns"/>) + UpdatedBy = 'system', UpdatedDate = ตอนนี้
+        /// 3) link กฎหมายแม่ไป-กลับที่ยังไม่มี
+        /// ไม่มี KBVersion (ตอน insert บทความที่ไม่ใช่กฎหมายก็ไม่สร้าง version)
+        /// </summary>
+        private void UpdateExistingNonLawArticle(KBImportRow row, UserContext user, string createdBy, byte resolvedArticleType, RowFileCache files)
+        {
+            int articleId = row.ExistingArticleId;
+            row.ImportedArticleId = articleId;
+
+            var added = new List<string>();   // ไฟล์แนบ/link ที่เติมให้
+            var notes = new List<string>();   // ปัญหาย่อยที่ไม่ทำให้ทั้ง Code ล้มเหลว (เช่น link กฎหมายแม่)
+
+            // ── ไฟล์แนบ ─────────────────────────────────────────────────────────────────
+            var attachments = _articleService.GetArticleAttachments(articleId).ToList();
+            if (attachments.Count == 0)
+            {
+                // ยังไม่เคยมีไฟล์ → ต้องโหลดไฟล์ต้นทาง; ไม่มีไฟล์/โหลดไม่ได้ → ข้ามเฉพาะ ArticleCode นี้
+                var rowFile = files.For(row);
+                if (!rowFile.Download.Success)
+                {
+                    row.Status     = "Skip";
+                    row.StatusNote = TruncateTo200(string.Format(
+                        "ArticleCode '{0}' (ArticleID {1}) มีในระบบแล้วแต่ยังไม่มีไฟล์แนบ — ข้าม: {2}",
+                        row.ArticleCode, articleId, rowFile.Download.ErrorMessage));
+                    return;
+                }
+
+                string uploadError;
+                int? fileId = EnsureUploaded(rowFile, user, out uploadError);
+                if (fileId == null)
+                    throw new InvalidOperationException("อัปโหลดไฟล์แนบไม่สำเร็จ: " + uploadError);
+
+                // ยังไม่มี record เลย → SaveArticleAttachments ปลอดภัย (DeleteAll ไม่มีอะไรให้ลบ) และทำ attachment + audit + link ให้ครบ.
+                // ห้ามใช้เมื่อมี attachment อยู่แล้ว เพราะมันลบของเดิมทั้งหมดก่อน
+                _articleService.SaveArticleAttachments(articleId, new List<int> { fileId.Value }, createdBy);
+                row.UploadedFileId = fileId.Value;
+                added.Add("ไฟล์แนบ");
+            }
+            else
+            {
+                int linked = 0;
+                foreach (var attachment in attachments)
+                {
+                    string entityId = attachment.FileID.ToString();
+                    if (_linkRepo.Exists(articleId, (byte)KBEntityType.Folder, entityId))
+                        continue;   // มี link แล้ว → ไป attachment ถัดไป
+
+                    _linkRepo.Insert(new KBArticleLink
+                    {
+                        ArticleID   = articleId,
+                        EntityType  = (byte)KBEntityType.Folder,   // 1 = Folder/File — ตรงกับ KBArticleService.SaveArticleAttachments
+                        EntityID    = entityId,
+                        CreatedBy   = createdBy,
+                        CreatedDate = DateTime.Now,
+                    });
+                    linked++;
+                }
+
+                if (linked > 0)
+                    added.Add(string.Format("link ไฟล์ {0} รายการ", linked));
+            }
+
+            // ── UPDATE field ──────────────────────────────────────────────────────────
+            var columns = GetUpdateColumns(row, false);
+            _articleRepo.UpdateFromImport(articleId, BuildImportPatch(row, resolvedArticleType), columns, ImportUpdatedBy, null);
+
+            // ── link กฎหมายแม่ ──────────────────────────────────────────────────────────
+            int parentLinks = LinkToParents(articleId, row, createdBy, notes);
+            if (parentLinks > 0)
+                added.Add(string.Format("link กฎหมายแม่ {0} รายการ", parentLinks));
+
+            string summary = "อัปเดตแล้ว: " + string.Join(", ", columns);
+            if (added.Count > 0)
+                summary += "; เติม: " + string.Join(", ", added);
+
+            if (notes.Count > 0)
+            {
+                row.Status     = "Warn";
+                row.StatusNote = TruncateTo200(summary + "; " + string.Join("; ", notes));
+            }
+            else
+            {
+                row.Status     = "Valid";
+                row.StatusNote = TruncateTo200(summary);
+            }
+        }
+
+        /// <summary>
+        /// คอลัมน์ของ t_KBArticle ที่จะเขียนทับบทความเดิมจาก row: เฉพาะ field ที่ Excel/Template ให้ค่าไม่ว่างมา (เซลล์ว่าง หรือ field ที่ Template
+        /// ไม่ได้ map = คงค่าเดิม) + ArticleType เสมอ. ไม่แก้ ArticleCode และ CategoryID (ไม่ย้ายหมวดของบทความเดิม) และไม่รวมค่าคงที่
+        /// ตอน insert (Status, ConfidentialityLevel, IsOfficialPolicy, CurrentVersion, Created*) — กันบทความที่ Publish ไปแล้วถูกดึงกลับเป็น Review
+        /// ทุกครั้งที่ upload ซ้ำ
+        /// </summary>
+        private static List<string> GetUpdateColumns(KBImportRow row, bool isLaw)
+        {
+            var columns = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(row.Title))         columns.Add("Title");
+            if (isLaw && !string.IsNullOrWhiteSpace(row.Tags)) columns.Add("Tags");
+            if (!string.IsNullOrWhiteSpace(row.TitleCategory)) columns.Add("TitleCategory");
+            if (!string.IsNullOrWhiteSpace(row.RawContent))    columns.Add("ContentHTML");
+            if (!string.IsNullOrWhiteSpace(row.Summary))       columns.Add("Summary");
+            if (row.PublishedDateParsed.HasValue)              columns.Add("PublishedDate");
+            if (row.EffectiveDateParsed.HasValue)              columns.Add("EffectiveDate");
+            columns.Add("ArticleType");
+
+            return columns;
+        }
+
+        /// <summary>ค่าที่จะเขียนทับบทความเดิม — แปลงด้วยกฎเดียวกับตอน insert (เช่น ContentHTML ผ่าน <see cref="ConvertPlainTextToHtml"/>); ใช้คู่กับ <see cref="GetUpdateColumns"/></summary>
+        private static KBArticle BuildImportPatch(KBImportRow row, byte resolvedArticleType)
+        {
+            return new KBArticle
+            {
+                Title         = row.Title,
+                Tags          = row.Tags,
+                TitleCategory = row.TitleCategory,
+                ContentHTML   = ConvertPlainTextToHtml(row.RawContent),
+                Summary       = row.Summary,
+                PublishedDate = row.PublishedDateParsed,
+                EffectiveDate = row.EffectiveDateParsed,
+                ArticleType   = resolvedArticleType,
+            };
+        }
+
+        /// <summary>ข้อความ preview ของแถวที่บทความมีอยู่แล้ว: จะ update field ไหน</summary>
+        private static string BuildUpdateNote(KBImportRow row, bool isLaw)
+        {
+            return string.Format("ArticleCode '{0}' มีในระบบแล้ว (ArticleID {1}) — จะอัปเดต: {2}",
+                row.ArticleCode, row.ExistingArticleId, string.Join(", ", GetUpdateColumns(row, isLaw)));
+        }
+
+        /// <summary>
+        /// link กฎหมายแม่ของแถว (22 ตัวแรกของ ArticleCode) ไป-กลับ: บทความ → มาตรา และ มาตรา → บทความ (<see cref="KBEntityType.Law"/>).
+        /// ตรวจ Exists ก่อน insert ทุกทิศ จึงเรียกซ้ำได้โดยไม่เกิด link ซ้ำ; ตัวไหนล้มเหลวให้ข้ามและบันทึกใน <paramref name="notes"/>
+        /// </summary>
+        /// <returns>จำนวน link ที่ insert จริงในครั้งนี้</returns>
+        private int LinkToParents(int articleId, KBImportRow row, string createdBy, List<string> notes)
+        {
+            int inserted = 0;
+
             for (int i = 0; i < row.ParentCodes.Count; i++)
             {
                 string code = row.ParentCodes[i];
@@ -350,7 +555,7 @@ namespace CMS.Services
                     string entityId      = sectionArticleId.ToString();
                     string articleIdStr  = articleId.ToString();
 
-                    // ── ไป: ประกาศ/คำสั่งใหม่ → มาตรา ───────────────────────
+                    // ── ไป: ประกาศ/คำสั่ง → มาตรา ───────────────────────────
                     if (!_linkRepo.Exists(articleId, (byte)KBEntityType.Law, entityId))
                     {
                         _linkRepo.Insert(new KBArticleLink
@@ -361,9 +566,10 @@ namespace CMS.Services
                             CreatedBy   = createdBy,
                             CreatedDate = DateTime.Now,
                         });
+                        inserted++;
                     }
 
-                    // ── กลับ: มาตรา → ประกาศ/คำสั่งใหม่ (reference ไป-กลับ) ──
+                    // ── กลับ: มาตรา → ประกาศ/คำสั่ง (reference ไป-กลับ) ──────
                     if (!_linkRepo.Exists(sectionArticleId, (byte)KBEntityType.Law, articleIdStr))
                     {
                         _linkRepo.Insert(new KBArticleLink
@@ -374,6 +580,7 @@ namespace CMS.Services
                             CreatedBy   = createdBy,
                             CreatedDate = DateTime.Now,
                         });
+                        inserted++;
                     }
                 }
                 catch (Exception ex)
@@ -382,16 +589,7 @@ namespace CMS.Services
                 }
             }
 
-            if (notes.Count > 0)
-            {
-                row.Status     = "Warn";
-                row.StatusNote = TruncateTo200(string.Join("; ", notes));
-            }
-            else
-            {
-                row.Status     = "Valid";
-                row.StatusNote = string.Empty;
-            }
+            return inserted;
         }
 
         // ── Static helpers (internal — directly testable) ────────────────────
@@ -400,18 +598,52 @@ namespace CMS.Services
         /// Converts plain text (Law column P / NonLaw ContentHTML) into HTML before it is stored in
         /// <c>t_KBArticle.ContentHTML</c>. Both <c>ArticleViewerForm</c> and <c>KBEditorDialog</c>
         /// set this value straight into an HTML DOM without further conversion — storing raw
-        /// <c>\n</c>/<c>\t</c> would collapse per the HTML whitespace spec, so the text is
-        /// HTML-encoded first and then <c>\n</c> → <c>&lt;br&gt;</c> / <c>\t</c> → 4x <c>&amp;nbsp;</c>.
+        /// whitespace would collapse per the HTML whitespace spec, so each line is HTML-encoded and
+        /// the whitespace is made visible: line break → <c>&lt;br&gt;</c>, <c>\t</c> → 4x <c>&amp;nbsp;</c>,
+        /// leading/trailing spaces (indent) → <c>&amp;nbsp;</c>, a run of spaces → alternating space/<c>&amp;nbsp;</c>
+        /// (single spaces between words stay plain so the text still wraps).
         /// </summary>
         internal static string ConvertPlainTextToHtml(string raw)
         {
             if (string.IsNullOrEmpty(raw)) return string.Empty;
 
-            string normalized = raw.Replace("\r\n", "\n").Replace("\r", "\n");
-            string encoded    = WebUtility.HtmlEncode(normalized);
-            encoded = encoded.Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
-            encoded = encoded.Replace("\n", "<br>");
-            return encoded;
+            string[] lines = raw.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
+            var html = new StringBuilder(raw.Length + 16);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (i > 0) html.Append("<br>");
+                html.Append(EncodeLineForHtml(lines[i]));
+            }
+            return html.ToString();
+        }
+
+        private static string EncodeLineForHtml(string line)
+        {
+            string encoded = WebUtility.HtmlEncode(line).Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+
+            int start = 0;
+            while (start < encoded.Length && encoded[start] == ' ') start++;
+            int end = encoded.Length;
+            while (end > start && encoded[end - 1] == ' ') end--;
+
+            string core = encoded.Substring(start, end - start).Replace("  ", " &nbsp;");   // "a    b" → "a &nbsp; &nbsp;b" (4 spaces kept)
+
+            var sb = new StringBuilder(encoded.Length + 8);
+            for (int i = 0; i < start; i++) sb.Append("&nbsp;");
+            sb.Append(core);
+            for (int i = end; i < encoded.Length; i++) sb.Append("&nbsp;");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// ข้อความที่เก็บเป็นข้อความล้วน (Title / TitleCategory / Summary — แสดงใน Label/TextBox/Grid ไม่ใช่ HTML): คงทุกอย่างตามต้นฉบับ
+        /// (เว้นวรรค, indent, tab, ช่องว่างหัว-ท้าย) ปรับเฉพาะตัวขึ้นบรรทัดใหม่เป็น CRLF เหมือนที่ TextBox ของหน้าแก้ไขบทความบันทึก —
+        /// Excel ใช้ LF เดี่ยว ซึ่ง TextBox แบบหลายบรรทัดจะไม่แสดงเป็นการขึ้นบรรทัด
+        /// </summary>
+        internal static string ToPlainText(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return raw;
+            return raw.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n");
         }
 
         // ── Private helpers — validation ──────────────────────────────────────
@@ -421,7 +653,7 @@ namespace CMS.Services
         /// <see cref="KBImportRow.StatusNote"/>. On success, also sets the computed
         /// <c>ArticleCode</c>/<c>Title</c>/<c>Tags</c>/<c>Summary</c>/<c>TitleCategory</c>/<c>ResolvedCategoryID</c>.
         /// </summary>
-        private static void ValidateLawRow(KBImportRow row, HashSet<string> seenCodes, IKBArticleRepository articleRepo, int resolvedCategoryId, string templateCategoryCode)
+        private static void ValidateLawRow(KBImportRow row, HashSet<string> seenCodes, IKBArticleRepository articleRepo, KBImportCategoryResolver resolver)
         {
             string raw = row.ColA;
 
@@ -434,8 +666,9 @@ namespace CMS.Services
             }
 
             // ── Code รวม ต้องยาว 27 ตัว: [prefix 3][...][suffix 5 = "00000"] ───
-            // prefix = CategoryCode ของกฎหมายที่ Template ตั้งไว้ (1 Template = 1 กฎหมาย), suffix "00000"
-            // = ตัวมาตราเอง; ArticleCode คือ 22 ตัวแรก. ผิดกติกาข้อใดก็เป็น Error
+            // prefix = CategoryCode ของกฎหมายฉบับนั้น (เช่น RVA — 1 Template ใช้ได้ทุกกฎหมาย หมวดหาเองตามรหัสนี้);
+            // กฎหมายที่แยกหมวดตามปี (เช่น PLI2535/PLI2540 ใต้ PLI) เลือกหมวดปีจากตัวที่ 8-10 + "2" นำหน้าด้วย (ดู TryResolveLawArticle),
+            // suffix "00000" = ตัวมาตราเอง; ArticleCode คือ 22 ตัวแรก. ผิดกติกาข้อใดก็เป็น Error
             if (raw.Length != 27)
             {
                 row.Status     = "Error";
@@ -449,16 +682,14 @@ namespace CMS.Services
                 row.StatusNote = string.Format("Code รวม: 5 ตัวสุดท้ายต้องเป็น 00000 — '{0}'", raw);
                 return;
             }
-            if (string.IsNullOrEmpty(templateCategoryCode))
+            KBCategory        lawCategory;
+            string            categoryError;
+            KBMissingCategory missingCategory;
+            if (!resolver.TryResolveLawArticle(raw, out lawCategory, out categoryError, out missingCategory))
             {
+                row.MissingCategory = missingCategory;
                 row.Status     = "Error";
-                row.StatusNote = "Template ที่เลือกยังไม่มีรหัสกฎหมาย (CategoryCode) — ตรวจสอบ category ของ Template";
-                return;
-            }
-            if (!raw.StartsWith(templateCategoryCode, StringComparison.OrdinalIgnoreCase))
-            {
-                row.Status     = "Error";
-                row.StatusNote = string.Format("Code รวม: ต้องขึ้นต้นด้วย {0} ตาม Template — '{1}'", templateCategoryCode, raw);
+                row.StatusNote = string.Format("Code รวม: {0} — '{1}'", categoryError, raw);
                 return;
             }
             string code = raw.Substring(0, 22);
@@ -471,15 +702,24 @@ namespace CMS.Services
                 return;
             }
 
+            // มีในระบบแล้ว → ไม่ใช่ Skip/Error: UPDATE บทความเดิมตอน import (ดึง ArticleID ไว้ใช้ต่อ)
             if (articleRepo.ExistsByCode(code))
             {
-                row.Status     = "Skip";
-                row.StatusNote = string.Format("ArticleCode '{0}' มีอยู่แล้วในระบบ — ข้ามแถวนี้", code);
-                seenCodes.Add(code);
-                return;
+                KBArticle existing = articleRepo.GetByCode(code);   // null = ถูก soft-delete (ExistsByCode ไม่กรอง IsDelete)
+                if (existing == null)
+                {
+                    row.Status     = "Error";
+                    row.StatusNote = string.Format("ArticleCode '{0}' มีอยู่ในระบบแต่ถูกลบ (IsDelete) — อัปเดตข้อมูลไม่ได้", code);
+                    seenCodes.Add(code);
+                    return;
+                }
+                row.ExistingArticleId = existing.ArticleID;
             }
 
             seenCodes.Add(code);
+
+            // บทความเดิม: เซลล์เนื้อหาว่าง = คงเนื้อหาเดิม จึงไม่บังคับกรอก
+            bool isExisting = row.ExistingArticleId > 0;
 
             var errors = new List<string>();
 
@@ -492,7 +732,7 @@ namespace CMS.Services
                 errors.Add(string.Format("เลขมาตราไม่ถูกต้อง: ตัวที่ 4-7 ของ '{0}' ต้องเป็นตัวเลข 4 หลักและมากกว่า 0", titleSource));
 
             // ── Column P — required (source of ContentHTML) ───────────────────
-            if (string.IsNullOrWhiteSpace(row.RawContent))
+            if (!isExisting && string.IsNullOrWhiteSpace(row.RawContent))
                 errors.Add("คอลัมน์ P (บัญญัติไว้ว่า): จำเป็นต้องระบุ");
 
             // ── Column N (วันที่ประกาศ) / O (วันที่มีผลบังคับใช้) — optional, but if
@@ -516,10 +756,15 @@ namespace CMS.Services
             row.ArticleCode        = code;
             row.Title              = "มาตรา " + sectionNumber;
             row.Tags               = row.Title;
-            row.Summary            = string.IsNullOrWhiteSpace(row.RawSummary) ? null : row.RawSummary.Trim();
-            row.TitleCategory      = string.IsNullOrWhiteSpace(row.RawTitleCategory) ? null : row.RawTitleCategory.Trim();
-            row.ResolvedCategoryID = resolvedCategoryId;
+            row.Summary            = string.IsNullOrWhiteSpace(row.RawSummary) ? null : ToPlainText(row.RawSummary);
+            row.TitleCategory      = string.IsNullOrWhiteSpace(row.RawTitleCategory) ? null : ToPlainText(row.RawTitleCategory);
+            row.ResolvedCategoryID = lawCategory.CategoryID;
+            row.ResolvedCategoryName = lawCategory.CategoryName;
+            row.DocumentTypeCode   = lawCategory.CategoryCode;
             row.DocumentTypeLabel  = "มาตรา";
+
+            if (isExisting)
+                row.StatusNote = BuildUpdateNote(row, true);
         }
 
         /// <summary>
@@ -527,11 +772,12 @@ namespace CMS.Services
         /// <see cref="KBImportRow.StatusNote"/>. On success, also sets the computed
         /// <c>ArticleCode</c>/<c>Title</c>/<c>Summary</c>/<c>TitleCategory</c>/<c>ResolvedCategoryID</c>/
         /// <c>ResolvedParentArticleIds</c>.
+        /// ArticleCode ที่มีในระบบแล้ว (<see cref="KBImportRow.ExistingArticleId"/>) ไม่ใช่ Error/Skip — จะ UPDATE บทความเดิม (ดู
+        /// <see cref="UpdateExistingNonLawArticle"/>): Title/เนื้อหา/ไฟล์แนบไม่บังคับกรอก (ว่าง = คงค่าเดิม) แต่วันที่ที่กรอกมาต้องแปลงได้.
         /// </summary>
-        private static void ValidateNonLawRow(
+        private void ValidateNonLawRow(
             KBImportRow row, HashSet<string> seenCodes,
-            Dictionary<string, KBArticle> parentCache, IKBArticleRepository articleRepo, int resolvedCategoryId,
-            string templateCategoryCode)
+            Dictionary<string, KBArticle> parentCache, KBImportCategoryResolver resolver)
         {
             // ── ArticleCode = Code รวมที่ Template map ไว้ (บังคับ map เสมอ → row.ColA != null) ──
             // ถ้าเซลล์มีหลายบรรทัด เลือกบรรทัดแรกที่เป็นรูปแบบ Code ประกาศ/คำสั่งที่ถูกต้อง (ไม่มี = บรรทัดแรก เพื่อรายงาน error)
@@ -541,11 +787,49 @@ namespace CMS.Services
             {
                 var mappedLines = row.ColA.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                                           .Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
-                mappedCode = mappedLines.FirstOrDefault(KBImportLayoutTypeCatalog.IsNonLawCode) ?? mappedLines.FirstOrDefault();
+                mappedCode = mappedLines.FirstOrDefault(KBImportLayoutTypeCatalog.IsNonLawCodeFormat) ?? mappedLines.FirstOrDefault();
             }
             row.ArticleCode = mappedCode;
 
             var errors = new List<string>();
+
+            // ── หมวดของแถวนี้ — ตรวจก่อนอย่างอื่น (ไม่ผูกกับ Template; ดูจาก ArticleCode + ตาราง m_KBCategory เท่านั้น):
+            //    ตัวที่ 23 (ประเภทเอกสาร) → หมวดประเภท เช่น OR, แล้วต่อรหัสปี (ตัวที่ 8-10 + "2" นำหน้า) → หมวดปี เช่น OR2535
+            //    หมวดไม่พบ = Error + row.MissingCategory บอกว่าต้องสร้างหมวดอะไร (controller สรุปแจ้งผู้ใช้ที่หน้าจอ) ──────────
+            if (!string.IsNullOrWhiteSpace(mappedCode))
+            {
+                if (!KBImportLayoutTypeCatalog.IsNonLawCodeFormat(mappedCode))
+                {
+                    errors.Add(string.Format("{0} — '{1}'", KBImportLayoutTypeCatalog.NonLawCodeFormatMessage, mappedCode));
+                }
+                else
+                {
+                    KBCategory        resolvedCategory;
+                    string            categoryError;
+                    KBMissingCategory missingCategory;
+                    if (resolver.TryResolveNonLawArticle(mappedCode, out resolvedCategory, out categoryError, out missingCategory))
+                    {
+                        row.ResolvedCategoryID   = resolvedCategory.CategoryID;
+                        row.ResolvedCategoryName = resolvedCategory.CategoryName;
+                        row.DocumentTypeCode     = resolvedCategory.CategoryCode;
+                    }
+                    else
+                    {
+                        row.MissingCategory = missingCategory;
+
+                        // รหัสประเภทที่ตั้งไว้แล้วแต่หมวดมีปัญหา (ปิดใช้งาน ฯลฯ) ใส่รหัสหมวดกำกับ เช่น "ตัวที่ 23 = 2 (OR)"; รหัสที่ยังไม่มีหมวดใช้ไม่มีวงเล็บ
+                        KBCategory typeCategory = resolver.NonLawTypes.FindByArticleCode(mappedCode);
+                        string typeCodeNote = typeCategory == null ? string.Empty : " (" + (typeCategory.CategoryCode ?? string.Empty).Trim() + ")";
+                        errors.Add(string.Format("Code รวม: ตัวที่ 23 = {0}{1} — {2} — '{3}'",
+                            mappedCode[KBImportLayoutTypeCatalog.NonLawTypeDigitIndex], typeCodeNote, categoryError, mappedCode));
+                    }
+
+                    row.DocumentTypeLabel = resolver.NonLawTypes.GetTypeLabel(mappedCode[KBImportLayoutTypeCatalog.NonLawTypeDigitIndex]);
+
+                    // กฎหมายแม่ = 22 ตัวแรกของ Code รวม (ใช้ resolve + สร้าง KBArticleLink ไป-กลับ) ไม่อ่านคอลัมน์ B
+                    row.ParentCodes = new List<string> { mappedCode.Substring(0, 22) };
+                }
+            }
 
             if (row.ColA == null)
             {
@@ -559,50 +843,35 @@ namespace CMS.Services
             {
                 errors.Add(string.Format("ArticleCode '{0}' ซ้ำกับแถวอื่นในไฟล์", mappedCode));
             }
-            else if (articleRepo.ExistsByCode(mappedCode))
-            {
-                errors.Add(string.Format("ArticleCode '{0}' มีอยู่ในระบบแล้ว", mappedCode));
-            }
             else
             {
                 seenCodes.Add(mappedCode);
+
+                // มีในระบบแล้ว → ดึง ArticleID ไว้ใช้ต่อ (เติมไฟล์แนบ/link ที่ตกหล่นตอน import) ไม่ใช่ Error
+                if (_articleRepo.ExistsByCode(mappedCode))
+                {
+                    KBArticle existing = _articleRepo.GetByCode(mappedCode);   // null = ถูก soft-delete (ExistsByCode ไม่กรอง IsDelete)
+                    if (existing == null)
+                        errors.Add(string.Format("ArticleCode '{0}' มีอยู่ในระบบแต่ถูกลบ (IsDelete) — เติมข้อมูลไม่ได้", mappedCode));
+                    else
+                        row.ExistingArticleId = existing.ArticleID;
+                }
             }
 
-            // ── รูปแบบ Code รวม + ตัวที่ 23 (ประเภท) ต้องตรงกับหมวดของ Template ──────────────
-            if (!string.IsNullOrWhiteSpace(mappedCode))
+            // บทความเดิม: ไม่เขียนทับ Title/เนื้อหา/วันที่ จึงไม่บังคับกรอก — ตรวจเฉพาะไฟล์แนบ/กฎหมายแม่ที่ใช้เติมของที่ขาด
+            bool isExisting = row.ExistingArticleId > 0;
+
+            if (!isExisting)
             {
-                string expectedCode = KBImportLayoutTypeCatalog.GetNonLawCategoryCode(mappedCode);
+                if (string.IsNullOrWhiteSpace(row.RawTitle))
+                    errors.Add("Title (ชื่อ) ห้ามว่าง — ตรวจสอบว่า Template Map Title แล้ว");
 
-                if (expectedCode == null)
-                {
-                    errors.Add(string.Format(
-                        "Code รวม: ต้องยาว 27 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 23 ต้องเป็น 1-6 — '{0}'", mappedCode));
-                }
-                else
-                {
-                    if (!string.Equals(expectedCode, templateCategoryCode, StringComparison.OrdinalIgnoreCase))
-                        errors.Add(string.Format(
-                            "Code รวม: ตัวที่ 23 = {0} ({1}) แต่ Template นี้เป็นหมวด {2} — '{3}'",
-                            mappedCode[22], expectedCode, templateCategoryCode ?? "-", mappedCode));
+                if (string.IsNullOrWhiteSpace(row.RawContent))
+                    errors.Add("ContentHTML (บัญญัติไว้ว่า) ห้ามว่าง — ตรวจสอบว่า Template Map ContentHTML แล้ว");
 
-                    row.ResolvedCategoryID = resolvedCategoryId;
-                    row.DocumentTypeCode   = expectedCode;
-                    row.DocumentTypeLabel  = KBImportLayoutTypeCatalog.GetNonLawTypeLabel(mappedCode[22]);
-
-                    // กฎหมายแม่ = 22 ตัวแรกของ Code รวม (ใช้ resolve + สร้าง KBArticleLink ไป-กลับ) ไม่อ่านคอลัมน์ B
-                    string parentPart = mappedCode.Substring(0, 22);
-                    row.ParentCodes = new List<string> { parentPart };
-                }
+                if (string.IsNullOrWhiteSpace(row.AttachmentFileName))
+                    errors.Add("Attachment (ชื่อไฟล์แนบ) ห้ามว่าง — ตรวจสอบว่า Template Map Attachment แล้ว");
             }
-
-            if (string.IsNullOrWhiteSpace(row.RawTitle))
-                errors.Add("Title (ชื่อ) ห้ามว่าง — ตรวจสอบว่า Template Map Title แล้ว");
-
-            if (string.IsNullOrWhiteSpace(row.RawContent))
-                errors.Add("ContentHTML (บัญญัติไว้ว่า) ห้ามว่าง — ตรวจสอบว่า Template Map ContentHTML แล้ว");
-
-            if (string.IsNullOrWhiteSpace(row.AttachmentFileName))
-                errors.Add("Attachment (ชื่อไฟล์แนบ) ห้ามว่าง — ตรวจสอบว่า Template Map Attachment แล้ว");
 
             // ParentCodes ว่าง = Code รวมผิดรูปแบบ ซึ่งรายงาน error ไปแล้วด้านบน
             if (row.ParentCodes.Count > 0)
@@ -615,7 +884,7 @@ namespace CMS.Services
                     KBArticle match;
                     if (!parentCache.TryGetValue(code, out match))
                     {
-                        match = articleRepo.GetByCode(code);
+                        match = _articleRepo.GetByCode(code);
                         parentCache[code] = match;
                     }
 
@@ -624,7 +893,8 @@ namespace CMS.Services
                 }
 
                 row.ResolvedParentArticleIds = resolvedIds;
-                if (notFound.Count > 0)
+                // บทความเดิมที่หากฎหมายแม่ไม่พบ: ไม่ใช่ Error — แค่ไม่มี link กฎหมายแม่ให้เติม (ไฟล์แนบยังเติมได้)
+                if (notFound.Count > 0 && !isExisting)
                     errors.Add("ไม่พบกฎหมายแม่ในระบบ: " + string.Join(", ", notFound));
             }
 
@@ -641,17 +911,95 @@ namespace CMS.Services
                 return;
             }
 
-            row.Status        = "Valid";
-            row.StatusNote    = null;
-            row.Title          = row.RawTitle;
-            row.Summary        = row.RawSummary;
-            row.TitleCategory  = row.RawTitleCategory;
+            row.Title          = ToPlainText(row.RawTitle);
+            row.Summary        = ToPlainText(row.RawSummary);
+            row.TitleCategory  = ToPlainText(row.RawTitleCategory);
+
+            row.Status     = "Valid";
+            row.StatusNote = isExisting ? BuildUpdateNote(row, false) : null;
         }
 
         // ── Private helpers — misc ────────────────────────────────────────────
 
+        /// <summary>ไฟล์แนบของ Excel row หนึ่ง: ผลโหลด + ผลอัปโหลดเข้า DMS (ทำครั้งเดียว ใช้ร่วมกันทุก ArticleCode ของ row นั้น)</summary>
+        private sealed class RowFile
+        {
+            public int                   RowNumber;
+            public LawFileDownloadResult Download;
+            public bool                  UploadAttempted;
+            public int?                  FileId;
+            public string                UploadError;
+        }
+
+        /// <summary>
+        /// เก็บ <see cref="RowFile"/> ของ Excel row ล่าสุด. ArticleCode ที่แตกจาก row เดียวกันอยู่ติดกัน จึงใช้ไฟล์เดียวกัน —
+        /// ถ้าอัปโหลดแยกต่อ Code DMS จะตั้งชื่อซ้ำเป็น "ชื่อ (1)" ได้ไฟล์ซ้ำ; เก็บเฉพาะ row ล่าสุดเพื่อไม่ถือ byte[] ของไฟล์เก่าค้างหน่วยความจำ
+        /// </summary>
+        private sealed class RowFileCache
+        {
+            private readonly LawFileDownloader _downloader;
+            private readonly string            _folder;
+            private RowFile                    _current;
+
+            public RowFileCache(LawFileDownloader downloader, string folder)
+            {
+                _downloader = downloader;
+                _folder     = folder;
+            }
+
+            public RowFile For(KBImportRow row)
+            {
+                if (_current == null || _current.RowNumber != row.RowNumber)
+                {
+                    _current = new RowFile
+                    {
+                        RowNumber = row.RowNumber,
+                        Download  = _downloader.Download(_folder, row.AttachmentUrl, row.AttachmentFileName),
+                    };
+                }
+                return _current;
+            }
+        }
+
+        /// <summary>อัปโหลดเข้า DMS ครั้งเดียวต่อ Excel row — ครั้งถัดไปคืน FileID เดิม; คืน null พร้อม <paramref name="errorMessage"/> เมื่ออัปโหลดไม่สำเร็จ</summary>
+        /// <remarks>
+        /// TODO (แนวทาง — ยังไม่ทำ): ให้ผู้ใช้เลือก "โฟลเดอร์ปลายทางใน DMS" เองแทน <see cref="AttachmentFolderId"/> ที่ตั้งตายตัว (437)
+        /// เมื่อทำ ให้ revise signature เป็น EnsureUploaded(RowFile file, UserContext user, int dmsFolderId, out string errorMessage)
+        /// และให้ UploadToDms รับ dmsFolderId ต่อ — พฤติกรรมเดิมที่ต้องคงไว้: อัปโหลดครั้งเดียวต่อ Excel row (RowFile.UploadAttempted),
+        /// OverwriteExisting = false (ชื่อซ้ำ → "ชื่อ copy(N).pdf"), ล้มเหลว → คืน null + errorMessage
+        ///
+        /// 1) เลือก path — หน้า KBImportWizardForm Step 2 ต่อจากช่องโฟลเดอร์ไฟล์ต้นทาง (ช่องที่สอง "โฟลเดอร์ปลายทางใน DMS"):
+        ///    - ใช้ FolderPickerDialog ที่มีอยู่แล้ว (CMS.Presentation: LoadFolders(accessibleFolders, excludedIds, orgUnits) → SelectedFolderId)
+        ///    - รายการโฟลเดอร์ต้องมาจาก Service ผ่าน wizard controller (IFolderService.GetAccessibleFolders(null, user)) — Form ของ KMS
+        ///      ห้ามเรียก DMS controller/repository เอง; view contract เพิ่ม int? DmsFolderId { get; } (และทางให้ controller ส่งรายการโฟลเดอร์ให้ view)
+        ///    - ค่าเริ่มต้น = 437 เดิม (ควรย้ายไปเป็น config ผ่าน IConfigManager) ผู้ใช้เปลี่ยนได้
+        /// 2) validate เหมือนช่องโฟลเดอร์ไฟล์ต้นทางที่ทำไว้แล้ว:
+        ///    - Template ที่ map Attachment → ต้องเลือก; ยังไม่เลือก → btnImport disabled (KBImportWizardForm.UpdateImportButtonState)
+        ///      และ KBImportWizardController.ExecuteImport ปฏิเสธก่อนใช้ snapshot ผลตรวจ
+        ///    - หลังเลือกต้องตรวจโฟลเดอร์ "ครั้งเดียวก่อนเริ่ม batch" (ไม่ปล่อยให้ล้มทีละแถวด้วยข้อความเดิมซ้ำ ๆ): มีอยู่จริง, ไม่ถูกลบ/archive,
+        ///      ผู้ใช้เพิ่มไฟล์ได้ (เงื่อนไขเดียวกับ FileService.UploadFiles: AppRole ≥ 3 หรือ CanAddToFolder/สิทธิ์ Write), quota พอ
+        ///      → เพิ่ม method ตรวจใน Service (เช่น IFileService.CheckUploadFolder(folderId, user) คืนข้อความไทย หรือ null ถ้าผ่าน)
+        ///      แล้ว controller เรียกตอนเลือกและก่อนนำเข้า; ไม่ผ่าน → แสดงข้อความ และปุ่มนำเข้ายังกดไม่ได้
+        /// 3) ส่งต่อ: view.DmsFolderId → controller → IKBImportProcessorService.InsertArticles(..., dmsFolderId, ...) → RowFileCache/EnsureUploaded
+        ///    → UploadToDms; audit "UPLOAD" ของ FileService จะบันทึกโฟลเดอร์ที่ผู้ใช้เลือกเอง
+        /// </remarks>
+        private int? EnsureUploaded(RowFile file, UserContext user, out string errorMessage)
+        {
+            if (!file.UploadAttempted)
+            {
+                file.UploadAttempted = true;
+                string error;
+                file.FileId      = UploadToDms(file.Download, user, out error);
+                file.UploadError = error;
+            }
+
+            errorMessage = file.UploadError;
+            return file.FileId;
+        }
+
         private int? UploadToDms(LawFileDownloadResult download, UserContext user, out string errorMessage)
         {
+            // TODO: รับ dmsFolderId ที่ผู้ใช้เลือกแทน AttachmentFolderId (ดูแนวทางที่ EnsureUploaded)
             errorMessage = null;
 
             using (var stream = new MemoryStream(download.Content))

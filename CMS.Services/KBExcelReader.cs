@@ -74,22 +74,25 @@ namespace CMS.Services
 
         /// <summary>
         /// Opens the file at <paramref name="filePath"/> and returns one
-        /// <see cref="KBImportRow"/> per data row (row 2 onward on the first worksheet).
-        /// Returns an empty list when the file has no data rows.
+        /// <see cref="KBImportRow"/> per data row (row 2 onward on the first worksheet) in
+        /// <see cref="KBExcelReadResult.Rows"/> (empty when the file has no data rows), plus the layout detected
+        /// from the file and the Template mappings that point at a column/header the file does not have
+        /// (<see cref="KBExcelReadResult.MappingProblems"/>).
         /// </summary>
         /// <exception cref="KBExcelReadException">
         /// Thrown when the file does not exist, is not a valid <c>.xlsx</c>, is locked by
         /// another process, or its header row doesn't match either supported layout.
         /// </exception>
-        public virtual IList<KBImportRow> ReadRows(string filePath, IList<KBImportTemplateColumnRow> templateColumns)
+        public virtual KBExcelReadResult ReadRows(string filePath, IList<KBImportTemplateColumnRow> templateColumns)
         {
             IWorkbook workbook = OpenWorkbook(filePath);
 
-            var rows = new List<KBImportRow>();
+            var rows   = new List<KBImportRow>();
+            var result = new KBExcelReadResult { Rows = rows };
 
             ISheet sheet = workbook.GetSheetAt(0);
             if (sheet == null)
-                return rows;
+                return result;
 
             IFormulaEvaluator evaluator = workbook.GetCreationHelper().CreateFormulaEvaluator();
             IRow headerRow = sheet.GetRow(0);
@@ -100,6 +103,9 @@ namespace CMS.Services
             if (rowKind == null)
                 throw new KBExcelReadException(filePath,
                     "ไม่รู้จักรูปแบบไฟล์ Excel นี้ — ตรวจสอบว่าเป็น template กฎหมาย (มาตรา) หรือ เอกสารที่ไม่ใช่กฎหมาย (ประกาศ/คำสั่ง/ระเบียบ ฯลฯ) ที่ถูกต้อง");
+
+            result.DetectedLayout = rowKind;
+            int columnCount = ComputeColumnCount(sheet);
 
             int lastRowIndex = sheet.LastRowNum;
             for (int rowIdx = DataStartRowIndex; rowIdx <= lastRowIndex; rowIdx++)
@@ -133,17 +139,46 @@ namespace CMS.Services
                     };
                 }
 
-                rows.Add(row);
+                // NonLaw: เซลล์ ArticleCode ที่มีหลาย Code แตกเป็น 1 row ต่อ Code (Law = 1 row ต่อบรรทัด Excel เสมอ)
+                if (rowKind == KBImportLayoutTypeCatalog.NonLaw)
+                    rows.AddRange(ExpandArticleCodes(row));
+                else
+                    rows.Add(row);
             }
 
-            return rows;
+            // mapping ของ Template ที่ชี้ไปคอลัมน์/หัวตารางที่ไม่มีในไฟล์ (เดิมได้ค่าว่างเงียบ ๆ ทำให้เนื้อหาหายโดยไม่มี error)
+            result.MappingProblems = FindMappingProblems(overrides, headerRow, evaluator, columnCount, rowKind);
+            return result;
+        }
+
+        /// <summary>
+        /// NonLaw: เซลล์ ArticleCode ที่มีหลาย Code (หลายบรรทัด เช่นสูตรที่ต่อ Code ให้ทุกกฎหมายแม่) แตกเป็น 1 <see cref="KBImportRow"/> ต่อ Code
+        /// — ฟิลด์อื่น (Title/เนื้อหา/ไฟล์แนบ ฯลฯ) เหมือนกันทุก row; กฎหมายแม่ของแต่ละ Code = 22 ตัวแรกของ Code นั้นเอง และแต่ละ Code
+        /// ผ่าน/ข้าม/ล้มเหลวแยกกัน (ไม่ข้ามทั้ง Excel row). เซลล์ว่างหรือมี Code เดียว = คืน row เดิม
+        /// </summary>
+        private static IEnumerable<KBImportRow> ExpandArticleCodes(KBImportRow row)
+        {
+            IList<string> codes = SplitLines(row.ColA);
+            if (codes.Count <= 1)
+                return new[] { row };
+
+            var expanded = new List<KBImportRow>(codes.Count);
+            for (int i = 0; i < codes.Count; i++)
+            {
+                KBImportRow copy = row.Clone();
+                copy.ColA      = codes[i];
+                copy.CodeIndex = i + 1;
+                copy.CodeCount = codes.Count;
+                expanded.Add(copy);
+            }
+            return expanded;
         }
 
         // ── Layout detection ─────────────────────────────────────────────────
 
         /// <summary>
         /// Detects which layout a file uses จากค่า Code รวม (mapping ArticleCode) ของแถวข้อมูลแรกที่ไม่ว่าง:
-        /// <see cref="KBImportLayoutTypeCatalog.IsLawCode"/> → Law, <see cref="KBImportLayoutTypeCatalog.IsNonLawCode"/> → Order
+        /// <see cref="KBImportLayoutTypeCatalog.IsLawCode"/> → Law, <see cref="KBImportLayoutTypeCatalog.IsNonLawCodeFormat"/> → NonLaw
         /// ถ้ารหัสผิดรูปแบบทั้งสองแบบ (หรือไฟล์ไม่มีแถวข้อมูล) ใช้ข้อความหัวตารางคอลัมน์ C ตัดสินแทน เพื่อให้ validate
         /// รายแถวรายงาน error ได้ Returns "Law", "NonLaw", or <c>null</c> when neither matches.
         /// </summary>
@@ -161,7 +196,7 @@ namespace CMS.Services
                     if (string.IsNullOrEmpty(code)) continue;
 
                     if (KBImportLayoutTypeCatalog.IsLawCode(code))  return KBImportLayoutTypeCatalog.Law;
-                    if (KBImportLayoutTypeCatalog.IsNonLawCode(code)) return KBImportLayoutTypeCatalog.NonLaw;
+                    if (KBImportLayoutTypeCatalog.IsNonLawCodeFormat(code)) return KBImportLayoutTypeCatalog.NonLaw;
                     break; // รูปแบบ Code ไม่เข้าเงื่อนไขใดเลย — ให้หัวตารางตัดสินต่อ แล้วให้ validate รายแถวรายงาน error
                 }
             }
@@ -194,11 +229,11 @@ namespace CMS.Services
                 RowKind   = KBImportLayoutTypeCatalog.Law,
 
                 // Code รวม (ArticleCode) มาจาก Template mapping (ApplyFieldOverrides) ไม่อ่านคอลัมน์ A ตามตำแหน่ง
-                RawSummary      = GetCellText(excelRow.GetCell(12), evaluator).Trim(),   // M — ชื่อ
+                RawSummary      = GetCellText(excelRow.GetCell(12), evaluator),          // M — ชื่อ (ข้อความล้วน: ไม่ Trim — เก็บเว้นวรรค/ขึ้นบรรทัดใหม่ตามต้นฉบับ)
                 RawPublishedDate = GetCellText(excelRow.GetCell(13), evaluator).Trim(),  // N — วันที่ประกาศ
                 RawEffectiveDate = GetCellText(excelRow.GetCell(14), evaluator).Trim(),  // O — วันที่มีผลบังคับใช้
                 RawContent      = GetCellText(excelRow.GetCell(15), evaluator),          // P — บัญญัติไว้ว่า
-                RawTitleCategory = GetCellText(excelRow.GetCell(18), evaluator).Trim(),  // S — กฎหมายอ้างอิง
+                RawTitleCategory = GetCellText(excelRow.GetCell(18), evaluator),         // S — กฎหมายอ้างอิง (ข้อความล้วน: ไม่ Trim)
             };
 
             string ignoredError;
@@ -272,17 +307,19 @@ namespace CMS.Services
             if (row.RowKind == KBImportLayoutTypeCatalog.NonLaw && overrides.TryGetValue("Attachment", out expr))
                 ApplyAttachmentOverride(expr, headerRow, excelRow, evaluator, row);
 
+            // Title/TitleCategory/Summary/ContentHTML เป็นข้อความที่ต้องเหมือนต้นฉบับ — ไม่ Trim เว้นวรรคหัว-ท้าย/ขึ้นบรรทัดใหม่
+            // (การแปลงเป็นรูปแบบที่เก็บลง DB ทำที่ KBImportProcessor: ContentHTML → HTML, ที่เหลือ → ข้อความล้วน)
             if (overrides.TryGetValue("Title", out expr))
-                row.RawTitle = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
+                row.RawTitle = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
 
             if (overrides.TryGetValue("TitleCategory", out expr))
-                row.RawTitleCategory = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
+                row.RawTitleCategory = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
 
             if (overrides.TryGetValue("Summary", out expr))
-                row.RawSummary = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
+                row.RawSummary = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
 
             if (overrides.TryGetValue("ContentHTML", out expr))
-                row.RawContent = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
+                row.RawContent = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
 
             if (overrides.TryGetValue("PublishedDate", out expr))
             {
@@ -363,42 +400,59 @@ namespace CMS.Services
         /// เลขศูนย์นำหน้า เช่น "0001"→"1") ก่อนแทรก เพื่อให้ได้ผลแบบเดียวกับตอน hardcode เดิมที่ใช้
         /// int.Parse ตรง ๆ — ถ้าไม่มี {} เลยถือว่าทั้งสตริงคือ column ref เดียว resolve ตรง ๆ แบบ raw text
         /// (ไม่ normalize เพราะอาจตั้งใจ map ค่าที่มีเลขศูนย์นำหน้าแบบมีความหมาย เช่น รหัสเอกสาร)
+        /// <paramref name="preserveWhitespace"/> = true (ข้อความ Title/TitleCategory/Summary/ContentHTML) ไม่ Trim ค่าที่อ่านจากเซลล์
+        /// เพื่อคงเว้นวรรค/indent/ขึ้นบรรทัดใหม่ตามต้นฉบับ; false (รหัส วันที่ ชื่อไฟล์) Trim เหมือนเดิม
         /// </summary>
-        private static string ResolveTemplateExpression(string expression, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator)
+        private static string ResolveTemplateExpression(
+            string expression, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator, bool preserveWhitespace = false)
         {
             if (string.IsNullOrWhiteSpace(expression)) return string.Empty;
 
             if (expression.IndexOf('{') < 0)
-                return ResolveColumnRef(expression.Trim(), headerRow, dataRow, evaluator);
+                return ResolveColumnRef(expression.Trim(), headerRow, dataRow, evaluator, preserveWhitespace);
 
             return TemplateExpressionPlaceholderPattern.Replace(expression,
-                m => NormalizeNumericToken(ResolveColumnRef(m.Groups[1].Value.Trim(), headerRow, dataRow, evaluator)));
+                m => NormalizeNumericToken(ResolveColumnRef(m.Groups[1].Value.Trim(), headerRow, dataRow, evaluator, preserveWhitespace)));
         }
 
-        /// <summary>ถ้า raw เป็นตัวเลขล้วน แปลงผ่าน int แล้ว ToString กลับ (ตัดเลขศูนย์นำหน้า) ไม่งั้นคืนค่าเดิม</summary>
+        /// <summary>ถ้า raw (ไม่นับเว้นวรรคหัว-ท้าย) เป็นตัวเลขล้วน แปลงผ่าน int แล้ว ToString กลับ (ตัดเลขศูนย์นำหน้า) ไม่งั้นคืนค่าเดิมตามที่ส่งมา</summary>
         private static string NormalizeNumericToken(string raw)
         {
             if (string.IsNullOrEmpty(raw)) return raw;
+            string probe = raw.Trim();
             int number;
-            if (Regex.IsMatch(raw, @"^\d+$") && int.TryParse(raw, out number))
+            if (Regex.IsMatch(probe, @"^\d+$") && int.TryParse(probe, out number))
                 return number.ToString(CultureInfo.InvariantCulture);
             return raw;
         }
 
         /// <summary>คืนค่า text ของเซลล์ที่ colRef ชี้ถึง (ลองตีความเป็นตัวอักษรคอลัมน์ก่อน ไม่ได้ลองจับคู่หัวตาราง) คืนค่าว่างถ้า resolve ไม่ได้เลย</summary>
-        private static string ResolveColumnRef(string colRef, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator)
+        private static string ResolveColumnRef(
+            string colRef, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator, bool preserveWhitespace = false)
         {
             int colIndex = ResolveColumnIndex(colRef, headerRow, evaluator);
             if (colIndex < 0) return string.Empty;
-            return GetCellText(dataRow.GetCell(colIndex), evaluator).Trim();
+
+            string text = GetCellText(dataRow.GetCell(colIndex), evaluator);
+            return preserveWhitespace ? text : text.Trim();
         }
 
         private static int ResolveColumnIndex(string colRef, IRow headerRow, IFormulaEvaluator evaluator)
         {
-            int colIndex = ColumnLetterToIndex(colRef);
-            if (colIndex < 0)
-                colIndex = FindColumnIndexByHeaderText(headerRow, colRef, evaluator);
-            return colIndex;
+            int letterIndex = ColumnLetterToIndex(colRef);
+            int headerWidth = headerRow == null ? 0 : Math.Max((int)headerRow.LastCellNum, 0);
+
+            // ตัวอักษรคอลัมน์ที่อยู่ในความกว้างของแถวหัวตาราง → ใช้ตามนั้น
+            if (letterIndex >= 0 && letterIndex < headerWidth)
+                return letterIndex;
+
+            // ข้อความล้วนตัวอักษรอาจเป็นหัวตารางภาษาอังกฤษ (เช่น "Summary") ไม่ใช่ตัวอักษรคอลัมน์ — ลองจับคู่หัวตารางก่อน
+            int headerIndex = FindColumnIndexByHeaderText(headerRow, colRef, evaluator);
+            if (headerIndex >= 0)
+                return headerIndex;
+
+            // ไม่เจอหัวตาราง: คงพฤติกรรมเดิม (ตัวอักษรที่เกินความกว้างหัวตารางอาจยังมีข้อมูลอยู่ใต้หัวตารางที่ว่าง)
+            return letterIndex;
         }
 
         /// <summary>แปลงตัวอักษรคอลัมน์ Excel ("A".."Z","AA"...) เป็น index เริ่มที่ 0 คืน -1 ถ้าไม่ใช่รูปแบบตัวอักษรล้วน</summary>
@@ -429,6 +483,85 @@ namespace CMS.Services
                     return c;
             }
             return -1;
+        }
+
+        // ── Template mapping ↔ โครงสร้างไฟล์ ──────────────────────────────────
+
+        /// <summary>จำนวนคอลัมน์สูงสุดที่พบในไฟล์ (นับจากทุกแถวของ sheet แรก รวมแถวหัวตาราง)</summary>
+        private static int ComputeColumnCount(ISheet sheet)
+        {
+            int count = 0;
+            for (int i = sheet.FirstRowNum; i <= sheet.LastRowNum; i++)
+            {
+                IRow row = sheet.GetRow(i);
+                if (row != null && row.LastCellNum > count)
+                    count = row.LastCellNum;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// ตรวจว่าทุก mapping ของ Template (column ref ตรง ๆ และ {X} ในสูตร) ชี้ไปคอลัมน์/หัวตารางที่มีอยู่จริงในไฟล์ —
+        /// ref ที่หาไม่เจอจะอ่านได้ค่าว่างเงียบ ๆ ทำให้เนื้อหาหายหรือผิดคอลัมน์โดยไม่มี error จึงรายงานล่วงหน้า
+        /// </summary>
+        private static IList<string> FindMappingProblems(
+            Dictionary<string, string> overrides, IRow headerRow, IFormulaEvaluator evaluator, int columnCount, string rowKind)
+        {
+            var problems = new List<string>();
+
+            foreach (var kvp in overrides)
+            {
+                // ไฟล์แนบใช้เฉพาะไฟล์ที่ไม่ใช่กฎหมาย — ไฟล์กฎหมายไม่อ่านแถว Attachment จึงไม่ต้องตรวจ
+                if (rowKind == KBImportLayoutTypeCatalog.Law
+                    && string.Equals(kvp.Key, KBArticleColumnCatalog.AttachmentTargetColumn, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                foreach (string colRef in ExtractColumnRefs(kvp.Value))
+                {
+                    int letterIndex = ColumnLetterToIndex(colRef);
+                    if (letterIndex >= 0 && letterIndex < columnCount) continue;                    // ตัวอักษรคอลัมน์ที่มีในไฟล์
+                    if (FindColumnIndexByHeaderText(headerRow, colRef, evaluator) >= 0) continue;   // หัวตารางที่มีในไฟล์
+
+                    problems.Add(letterIndex >= 0
+                        ? string.Format("{0} → \"{1}\": ไม่พบคอลัมน์นี้ในไฟล์ (ไฟล์มี {2} คอลัมน์: A–{3})",
+                            kvp.Key, colRef, columnCount, columnCount > 0 ? ColumnIndexToLetters(columnCount - 1) : "-")
+                        : string.Format("{0} → \"{1}\": ไม่พบหัวตารางนี้ในไฟล์", kvp.Key, colRef));
+                }
+            }
+
+            return problems;
+        }
+
+        /// <summary>คืน column ref ทุกตัวที่ mapping นี้อ่านค่า: ทั้งสตริงถ้าเป็น ref ตรง ๆ, หรือแต่ละ {X} ถ้าเป็นสูตร</summary>
+        private static IEnumerable<string> ExtractColumnRefs(string expression)
+        {
+            if (string.IsNullOrWhiteSpace(expression)) yield break;
+
+            if (expression.IndexOf('{') < 0)
+            {
+                yield return expression.Trim();
+                yield break;
+            }
+
+            foreach (Match m in TemplateExpressionPlaceholderPattern.Matches(expression))
+            {
+                string colRef = m.Groups[1].Value.Trim();
+                if (colRef.Length > 0) yield return colRef;
+            }
+        }
+
+        /// <summary>แปลง index เริ่มที่ 0 เป็นตัวอักษรคอลัมน์ Excel (0→"A", 25→"Z", 26→"AA")</summary>
+        private static string ColumnIndexToLetters(int index)
+        {
+            int dividend = index + 1;
+            string name  = string.Empty;
+            while (dividend > 0)
+            {
+                int modulo = (dividend - 1) % 26;
+                name = (char)('A' + modulo) + name;
+                dividend = (dividend - modulo) / 26;
+            }
+            return name;
         }
 
         // ── Private helpers ──────────────────────────────────────────────────

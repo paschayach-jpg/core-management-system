@@ -30,6 +30,16 @@ namespace CMS.Controllers.KMS.KB
         /// <summary>ArticleType resolved from the selected Template — retained between ValidateFile() and ExecuteImport().</summary>
         private byte _lastResolvedArticleType;
 
+        /// <summary>Template ของการตรวจครั้งล่าสุด map คอลัมน์ Attachment หรือไม่ (= ต้องมีโฟลเดอร์ไฟล์แนบตอนนำเข้า) — retained between ValidateFile() and ExecuteImport().</summary>
+        private bool _lastRequiresAttachmentFolder;
+
+        /// <summary>
+        /// NonLaw rows: when an attachment cannot be downloaded/uploaded, fail the whole row
+        /// (nothing is inserted) instead of inserting the article without its file.
+        /// Fixed — the wizard no longer offers this as a user option.
+        /// </summary>
+        private const bool SkipRowOnDownloadFailure = true;
+
         // ── Constructor ──────────────────────────────────────────────────────────
 
         public KBImportWizardController(
@@ -89,12 +99,14 @@ namespace CMS.Controllers.KMS.KB
                 if (!templateId.HasValue)
                 {
                     _view.BindTemplateColumnReference(new List<KBImportTemplateColumnRow>(), string.Empty);
+                    _view.SetAttachmentFolderRequired(false);
                     return;
                 }
 
                 var template = _templateService.GetTemplateById(templateId.Value);
                 var columns  = _templateService.GetTemplateColumnGrid(templateId.Value);
                 _view.BindTemplateColumnReference(columns, template != null ? template.TemplateName : string.Empty);
+                _view.SetAttachmentFolderRequired(HasAttachmentMapping(columns));
             }
             catch (Exception ex)
             {
@@ -145,47 +157,74 @@ namespace CMS.Controllers.KMS.KB
                     return;
                 }
 
-                int  resolvedCategoryId;
-                byte resolvedArticleType;
+                // ชั้น 0 — Template ต้องตั้งค่าครบ (ประเภทไฟล์, ArticleType, ArticleCode, และ Title/ContentHTML/Attachment ถ้าไม่ใช่กฎหมาย)
+                // Template เก่าที่บันทึกไว้ก่อนกฎชุดนี้อาจไม่ครบ — บอกว่าขาดอะไรแล้วให้กลับไปแก้ที่หน้า config
+                var templateProblems = _templateService.GetTemplateProblems(templateColumns);
+                if (templateProblems.Count > 0)
+                {
+                    _view.ShowError(string.Format(
+                        "Template \"{0}\" ตั้งค่ายังไม่ครบ กรุณาแก้ที่หน้า config template ก่อน:\n• {1}",
+                        template.TemplateName, string.Join("\n• ", templateProblems)));
+                    return;
+                }
+
+                string templateLayoutType;
+                byte   resolvedArticleType;
                 string resolveError;
-                if (!TryResolveTemplateFixedValues(templateColumns, out resolvedCategoryId, out resolvedArticleType, out resolveError))
+                if (!TryResolveTemplateFixedValues(templateColumns, out templateLayoutType, out resolvedArticleType, out resolveError))
                 {
                     _view.ShowError(resolveError);
                     return;
                 }
 
-                IList<KBImportRow> rows = _excelReader.ReadRows(filePath, templateColumns);
+                KBExcelReadResult readResult = _excelReader.ReadRows(filePath, templateColumns);
+                IList<KBImportRow> rows      = readResult.Rows;
 
-                // Effective LayoutType is derived from the Template's configured CategoryID (see
-                // KBImportTemplateService.GetEffectiveLayoutType) and must match the layout
-                // KBExcelReader actually detected from the file's header row — otherwise
-                // CategoryID/ArticleType resolved above would be silently applied to the wrong
-                // kind of document.
-                string templateLayoutType = _templateService.GetEffectiveLayoutType(resolvedCategoryId);
-                if (rows.Count > 0 && !string.Equals(rows[0].RowKind, templateLayoutType, StringComparison.OrdinalIgnoreCase))
+                // ประเภทไฟล์ (Law/NonLaw) ที่ตรวจพบจากไฟล์ (ArticleCode) ต้องตรงกับประเภทไฟล์ที่ Template ตั้งไว้ — ไม่งั้น mapping
+                // ของอีกประเภทหนึ่งจะถูกใช้อ่านไฟล์ผิดคอลัมน์ (นำเข้าเนื้อหาผิดโดยไม่มี error) ตรวจก่อนตรวจ mapping เพราะถ้าเลือก Template
+                // ผิดประเภท คอลัมน์ที่ map ไว้ย่อมไม่ตรงกับไฟล์อยู่แล้ว รายการคอลัมน์ที่ขาดจะบดบังสาเหตุจริง
+                // ข้อความแจ้งเป็นประเภทของ "ไฟล์" ที่ upload เพื่อให้ผู้ใช้เลือก Template ให้ตรงกับไฟล์
+                if (rows.Count > 0 && !string.Equals(readResult.DetectedLayout, templateLayoutType, StringComparison.OrdinalIgnoreCase))
                 {
+                    string fileKind = string.Equals(readResult.DetectedLayout, KBImportLayoutTypeCatalog.Law, StringComparison.OrdinalIgnoreCase)
+                        ? "กฎหมาย"
+                        : "ที่ไม่ใช่กฎหมาย";
+
+                    _view.ShowError(string.Format("ไฟล์ที่ upload เป็นรูปแบบ {0} กรุณาเลือก Template ให้ถูกต้อง", fileKind));
+                    return;
+                }
+
+                // mapping ของ Template ต้องชี้ไปคอลัมน์/หัวตารางที่มีอยู่จริงในไฟล์ (เดิมหาไม่เจอแล้วได้ค่าว่างเงียบ ๆ
+                // ทำให้เนื้อหาหาย/ผิดคอลัมน์โดยไม่มี error) — หยุดที่ Step 1 พร้อมรายการที่หาไม่เจอ
+                if (readResult.MappingProblems.Count > 0)
+                {
+                    const int maxListed = 15;
+                    var listed = readResult.MappingProblems.Take(maxListed).ToList();
+                    string more = readResult.MappingProblems.Count > maxListed
+                        ? string.Format("\n… และอีก {0} รายการ", readResult.MappingProblems.Count - maxListed)
+                        : string.Empty;
+
                     _view.ShowError(string.Format(
-                        "ไฟล์ที่อัปโหลดเป็นรูปแบบ \"{0}\" แต่ Template \"{1}\" ใช้ CategoryID ของ \"{2}\"\n\nกรุณาเลือก Template ให้ตรงกับไฟล์",
-                        KBImportLayoutTypeCatalog.Describe(rows[0].RowKind), template.TemplateName, KBImportLayoutTypeCatalog.Describe(templateLayoutType)));
+                        "ไฟล์ที่อัปโหลดไม่ตรงกับ Template \"{0}\" — Template map คอลัมน์ที่ไม่มีในไฟล์:\n• {1}{2}\n\nกรุณาเลือก Template ให้ตรงกับไฟล์ หรือแก้ Template ที่หน้า config",
+                        template.TemplateName, string.Join("\n• ", listed), more));
                     return;
                 }
 
-                // ไฟล์ผิด Template ทั้งไฟล์ (เช่น ไฟล์กฎหมาย RVA แต่เลือก Template ของ PVI) — หยุดอยู่ที่ Step 1 ให้เลือกใหม่
-                // แทนที่จะพาไป Step 2 ที่ทุกแถวเป็น Error
-                string templateCategoryCode = _templateService.GetTemplateCategoryCode(resolvedCategoryId);
-                string mismatch = _processor.GetTemplateMismatchMessage(rows, templateCategoryCode);
-                if (mismatch != null)
-                {
-                    _view.ShowError(mismatch + "\n\nกรุณาเลือก Template ให้ตรงกับไฟล์ (Template ที่เลือก: \"" + template.TemplateName + "\")");
-                    return;
-                }
+                // ชั้น 3-4 — หา CategoryID ของแต่ละแถวจาก ArticleCode (ไม่ผูกกับ Template) แล้วตรวจกฎรายแถว
+                _processor.ValidateRows(rows);
 
-                _processor.ValidateRows(rows, resolvedCategoryId, templateCategoryCode);
-
-                _lastValidation          = BuildValidationResult(rows);
-                _lastResolvedArticleType = resolvedArticleType;
+                _lastValidation               = BuildValidationResult(rows);
+                _lastResolvedArticleType      = resolvedArticleType;
+                _lastRequiresAttachmentFolder = HasAttachmentMapping(templateColumns);
+                _view.SetAttachmentFolderRequired(_lastRequiresAttachmentFolder);
 
                 _view.ShowValidationResult(_lastValidation);
+
+                // หมวดที่แถวในไฟล์ต้องใช้แต่ยังไม่มีใน m_KBCategory — แจ้งผู้ใช้ให้สร้างก่อน (แถวเหล่านั้นเป็น Error ไม่ถูกนำเข้า)
+                string missingCategoryNotice = BuildMissingCategoryNotice(rows);
+                if (missingCategoryNotice != null)
+                    _view.ShowInfo(missingCategoryNotice);
+
                 _view.SetStatus("ตรวจสอบข้อมูลเรียบร้อย");
             }
             catch (KBExcelReadException ex)
@@ -200,8 +239,8 @@ namespace CMS.Controllers.KMS.KB
 
         /// <summary>
         /// Imports validated rows by inserting <see cref="KBArticle"/> + <see cref="KBVersion"/>
-        /// records via <see cref="KBImportProcessor"/>. Rows marked <c>Skip</c> (blank/duplicate/
-        /// already-exists ArticleCode) or <c>Error</c> are excluded before the import attempt.
+        /// records via <see cref="KBImportProcessor"/>. Rows marked <c>Skip</c> (blank/duplicate ArticleCode) or <c>Error</c> are
+        /// excluded before the import attempt. Rows whose article already exists are <c>Valid</c> and UPDATE that article (no second insert).
         /// On completion calls <see cref="IKBImportWizardController.ShowImportComplete"/>.
         /// </summary>
         public void ExecuteImport()
@@ -214,13 +253,19 @@ namespace CMS.Controllers.KMS.KB
                     return;
                 }
 
-                // Consume this validation snapshot now — a validated batch may only be
-                // imported once. Without this, clicking "นำเข้า" a second time on the same
-                // (already-inserted) rows re-attempts InsertArticles with stale Status="Valid"
-                // rows, hitting the real DB unique-key constraint on every row instead of the
-                // friendly ExistsByCode pre-check, and the summary shows everything as failed
-                // duplicate key. Forcing a fresh ValidateFile() before re-import re-runs
-                // ExistsByCode and correctly marks already-imported rows as "Skip" instead.
+                // Template ที่ map Attachment ต้องเลือกโฟลเดอร์ไฟล์แนบก่อน (ปุ่มนำเข้าถูก disable ไว้อยู่แล้ว — ตรวจซ้ำที่นี่ก่อนใช้ snapshot ผลตรวจ
+                // เพื่อให้เลือกโฟลเดอร์แล้วนำเข้าต่อได้โดยไม่ต้องตรวจไฟล์ใหม่)
+                string attachmentFolder = _view.AttachmentFolderPath;
+                if (_lastRequiresAttachmentFolder && string.IsNullOrWhiteSpace(attachmentFolder))
+                {
+                    _view.ShowError("กรุณาเลือกโฟลเดอร์ไฟล์แนบ (PDF) ก่อนนำเข้า — Template นี้ต้องใช้ไฟล์แนบ");
+                    return;
+                }
+
+                // Consume this validation snapshot now — a validated batch may only be imported once. Importing the same
+                // snapshot twice would re-process stale Status="Valid" rows (articles inserted the first time would hit the real
+                // DB unique-key constraint). Forcing a fresh ValidateFile() before re-import re-checks every ArticleCode:
+                // codes already in the DB become "Valid" rows that UPDATE the existing article — never a second insert.
                 var lastValidation = _lastValidation;
                 _lastValidation = null;
 
@@ -243,8 +288,9 @@ namespace CMS.Controllers.KMS.KB
                 _processor.InsertArticles(
                     rowsToImport,
                     _user,
-                    _view.OptSkipRowOnDownloadFailure,
+                    SkipRowOnDownloadFailure,
                     _lastResolvedArticleType,
+                    _lastRequiresAttachmentFolder ? attachmentFolder : null,
                     out successCount,
                     out errorCount,
                     onProgress: (done, total) =>
@@ -258,21 +304,34 @@ namespace CMS.Controllers.KMS.KB
 
                 _view.SetProgress(100, "นำเข้าเสร็จสิ้น");
 
+                // Code ที่ Phase 2 ตัดสินว่า "ข้าม" (เช่น บทความมีอยู่แล้วแต่ไม่พบไฟล์ต้นทาง / ไม่มีอะไรให้เติม) — InsertArticles ไม่ throw
+                // จึงนับเป็น success; ย้ายไปรายการที่ถูกข้ามเพื่อแสดงเหตุผล และไม่นับเป็นนำเข้าสำเร็จ
+                var skippedDuringImport = rowsToImport.Where(r => r.Status == "Skip").ToList();
+                successCount -= skippedDuringImport.Count;
+                skippedRows.AddRange(skippedDuringImport);
+
+                // บทความที่มีอยู่แล้วและอัปเดตสำเร็จ (แยกจากบทความที่ insert ใหม่)
+                int updatedCount = rowsToImport.Count(r => r.ExistingArticleId > 0 && (r.Status == "Valid" || r.Status == "Warn"));
+
                 // Collect rows that failed DURING import (ExistsByCode race or DB insert failure).
                 var importFailedRows = rowsToImport.Where(r => r.Status == "Error").ToList();
 
-                int totalErrors = skippedRows.Count(r => r.Status == "Error") + errorCount;
+                int totalErrors  = skippedRows.Count(r => r.Status == "Error") + errorCount;
+                int problemCount = totalErrors + skippedDuringImport.Count;
+                string successText = updatedCount > 0
+                    ? string.Format("นำเข้าสำเร็จ {0} รายการ (บทความใหม่ {1}, อัปเดตบทความเดิม {2})", successCount, successCount - updatedCount, updatedCount)
+                    : string.Format("นำเข้าสำเร็จ {0} รายการ", successCount);
                 var summary = new KBImportValidationResult
                 {
                     TotalRecords     = lastValidation.TotalRecords,
                     ValidRecords     = successCount,
                     WarningRecords   = 0,
-                    SkippedRecords   = lastValidation.SkippedRecords,
+                    SkippedRecords   = lastValidation.SkippedRecords + skippedDuringImport.Count,
                     ErrorRecords     = totalErrors,
                     IsSuccess        = true,
-                    Message          = totalErrors == 0
-                        ? string.Format("นำเข้าสำเร็จ {0} รายการ", successCount)
-                        : string.Format("นำเข้าสำเร็จ {0} รายการ, ถูกข้าม/ล้มเหลว {1} รายการ", successCount, totalErrors),
+                    Message          = problemCount == 0
+                        ? successText
+                        : string.Format("{0}, ถูกข้าม/ล้มเหลว {1} รายการ", successText, problemCount),
                     Rows             = lastValidation.Rows,
                     SkippedRows      = skippedRows,
                     ImportFailedRows = importFailedRows,
@@ -289,31 +348,31 @@ namespace CMS.Controllers.KMS.KB
 
         // ── Private helpers ──────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Resolves the CategoryID/ArticleType fixed values configured on the given Template's
-        /// column mapping (<see cref="KBImportTemplateColumnRow.ExcelColumnRef"/> for the
-        /// "CategoryID"/"ArticleType" rows — set via the dropdown in KBImportTemplateConfigForm).
-        /// Returns <c>false</c> with a user-facing Thai error message when either is missing or
-        /// not configured.
-        /// </summary>
-        private bool TryResolveTemplateFixedValues(IList<KBImportTemplateColumnRow> columns, out int categoryId, out byte articleType, out string error)
+        /// <summary>true ถ้า Template map คอลัมน์ Attachment (มี ExcelColumnRef) — ใช้กับ Template ไม่ใช่กฎหมาย ซึ่งต้องมีไฟล์แนบต่อบทความ</summary>
+        private static bool HasAttachmentMapping(IEnumerable<KBImportTemplateColumnRow> columns)
         {
-            categoryId  = 0;
+            return columns != null && columns.Any(c =>
+                string.Equals(c.TargetColumnName, KBArticleColumnCatalog.AttachmentTargetColumn, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(c.ExcelColumnRef));
+        }
+
+        /// <summary>
+        /// Resolves the fixed values configured on the given Template's mapping (dropdowns in KBImportTemplateConfigForm):
+        /// the file layout ("Law"/"NonLaw" — the virtual "LayoutType" row) and the "ArticleType" row. CategoryID is not part
+        /// of a Template anymore — it is resolved per row from the ArticleCode (see <see cref="KBImportProcessor.ValidateRows"/>).
+        /// Returns <c>false</c> with a user-facing Thai error message when either is missing or not configured.
+        /// </summary>
+        private bool TryResolveTemplateFixedValues(IList<KBImportTemplateColumnRow> columns, out string layoutType, out byte articleType, out string error)
+        {
+            layoutType  = null;
             articleType = 0;
             error       = null;
 
-            // Template เก่าที่บันทึกไว้ก่อนบังคับ map ArticleCode — ต้องกลับไปแก้ที่หน้า config ก่อนใช้งาน
-            var articleCodeRow = columns.FirstOrDefault(c => string.Equals(c.TargetColumnName, "ArticleCode", StringComparison.OrdinalIgnoreCase));
-            if (articleCodeRow == null || string.IsNullOrWhiteSpace(articleCodeRow.ExcelColumnRef))
+            var layoutRow = columns.FirstOrDefault(c => string.Equals(c.TargetColumnName, KBArticleColumnCatalog.LayoutTypeTargetColumn, StringComparison.OrdinalIgnoreCase));
+            layoutType = layoutRow != null ? KBImportLayoutTypeCatalog.Normalize(layoutRow.ExcelColumnRef) : null;
+            if (layoutType == null)
             {
-                error = "Template ที่เลือกยังไม่ได้ Map คอลัมน์ ArticleCode (Code รวม) กรุณาตั้งค่าที่หน้า config template ก่อน";
-                return false;
-            }
-
-            var categoryRow = columns.FirstOrDefault(c => string.Equals(c.TargetColumnName, "CategoryID", StringComparison.OrdinalIgnoreCase));
-            if (categoryRow == null || !int.TryParse(categoryRow.ExcelColumnRef, out categoryId) || categoryId <= 0)
-            {
-                error = "Template ที่เลือกยังไม่ได้ตั้งค่า CategoryID กรุณาตั้งค่าที่หน้า config template ก่อน";
+                error = "Template ที่เลือกยังไม่ได้เลือกประเภทไฟล์ (กฎหมาย / ไม่ใช่กฎหมาย) กรุณาตั้งค่าที่หน้า config template ก่อน";
                 return false;
             }
 
@@ -325,6 +384,39 @@ namespace CMS.Controllers.KMS.KB
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// สรุปหมวดที่ยังไม่มีใน m_KBCategory ที่แถวในไฟล์ต้องใช้ (<see cref="KBImportRow.MissingCategory"/> ที่ตั้งตอน validate) เป็นข้อความ
+        /// ให้ผู้ใช้สร้างหมวดก่อน — รวมแถวที่ใช้หมวดเดียวกันเป็นบรรทัดเดียว; null ถ้าหมวดครบ
+        /// </summary>
+        private static string BuildMissingCategoryNotice(IList<KBImportRow> rows)
+        {
+            var missing = rows
+                .Where(r => r.MissingCategory != null && !string.IsNullOrEmpty(r.MissingCategory.CategoryCode))
+                .GroupBy(r => r.MissingCategory.CategoryCode, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (missing.Count == 0) return null;
+
+            const int maxListed = 20;
+            var lines = new List<string>();
+            foreach (var group in missing.Take(maxListed))
+            {
+                KBMissingCategory category = group.First().MissingCategory;
+                string where = string.IsNullOrEmpty(category.ParentCategoryCode)
+                    ? "หมวดหลัก (ไม่มี parent)"
+                    : string.Format("หมวดย่อยของ \"{0}\" ({1})", category.ParentCategoryName, category.ParentCategoryCode);
+
+                lines.Add(string.Format("• {0} — {1}  [{2} รายการ]", category.CategoryCode, where, group.Count()));
+            }
+            if (missing.Count > maxListed)
+                lines.Add(string.Format("… และอีก {0} หมวด", missing.Count - maxListed));
+
+            return string.Format(
+                "ไม่พบหมวดต่อไปนี้ในระบบ — กรุณาสร้างที่หน้า \"ตั้งค่า Category\" ก่อน แล้วอัปโหลดไฟล์ใหม่\n(แถวที่ต้องใช้หมวดเหล่านี้จะไม่ถูกนำเข้า)\n\n{0}",
+                string.Join("\n", lines));
         }
 
         /// <summary>

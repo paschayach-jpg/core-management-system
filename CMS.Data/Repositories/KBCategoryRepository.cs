@@ -29,7 +29,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
-                           c.DisplayProfileID,
+                           c.DisplayProfileID, c.ImportTypeDigit,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -54,7 +54,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
-                           c.DisplayProfileID,
+                           c.DisplayProfileID, c.ImportTypeDigit,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -79,7 +79,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
-                           c.DisplayProfileID,
+                           c.DisplayProfileID, c.ImportTypeDigit,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -105,7 +105,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
-                           c.DisplayProfileID,
+                           c.DisplayProfileID, c.ImportTypeDigit,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -124,24 +124,70 @@ namespace CMS.Data.Repositories
 
         // ── Write ─────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// เพิ่มหมวดใหม่ คืน CategoryID ที่ได้. CategoryID เป็น IDENTITY ในตารางที่สร้างจาก 03_KMS_WFE_TMS_Schema.sql แต่ในบาง DB
+        /// (เช่น CMS_DB) ไม่ใช่ IDENTITY — กรณีนั้นใช้ MAX(CategoryID)+1 ใน transaction เดียวกับ INSERT (ล็อกช่วงด้วย UPDLOCK/HOLDLOCK
+        /// ผู้เพิ่มพร้อมกันจึงรอกันและไม่ได้เลขซ้ำ)
+        /// </summary>
         public int Insert(KBCategory category)
         {
             using (var conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                const string sql = @"
-                    INSERT INTO KMS.m_KBCategory
-                        (ParentCategoryID, CategoryCode, CategoryName, Icon,
-                         Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID)
-                    VALUES
-                        (@ParentCategoryID, @CategoryCode, @CategoryName, @Icon,
-                         @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID);
-                    SELECT SCOPE_IDENTITY();";
-                using (var cmd = new SqlCommand(sql, conn))
+                using (var tx = conn.BeginTransaction(IsolationLevel.Serializable))
                 {
-                    AddParams(cmd, category);
-                    return Convert.ToInt32(cmd.ExecuteScalar());
+                    int newId;
+
+                    if (IsCategoryIdIdentity(conn, tx))
+                    {
+                        const string identitySql = @"
+                            INSERT INTO KMS.m_KBCategory
+                                (ParentCategoryID, CategoryCode, CategoryName, Icon,
+                                 Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID, ImportTypeDigit)
+                            VALUES
+                                (@ParentCategoryID, @CategoryCode, @CategoryName, @Icon,
+                                 @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID, @ImportTypeDigit);
+                            SELECT CONVERT(INT, SCOPE_IDENTITY());";
+                        using (var cmd = new SqlCommand(identitySql, conn, tx))
+                        {
+                            AddParams(cmd, category);
+                            newId = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+                    }
+                    else
+                    {
+                        const string manualIdSql = @"
+                            DECLARE @NewID INT;
+                            SELECT @NewID = ISNULL(MAX(CategoryID), 0) + 1
+                            FROM   KMS.m_KBCategory WITH (UPDLOCK, HOLDLOCK);
+
+                            INSERT INTO KMS.m_KBCategory
+                                (CategoryID, ParentCategoryID, CategoryCode, CategoryName, Icon,
+                                 Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID, ImportTypeDigit)
+                            VALUES
+                                (@NewID, @ParentCategoryID, @CategoryCode, @CategoryName, @Icon,
+                                 @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID, @ImportTypeDigit);
+                            SELECT @NewID;";
+                        using (var cmd = new SqlCommand(manualIdSql, conn, tx))
+                        {
+                            AddParams(cmd, category);
+                            newId = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+                    }
+
+                    tx.Commit();
+                    return newId;
                 }
+            }
+        }
+
+        /// <summary>true ถ้าคอลัมน์ KMS.m_KBCategory.CategoryID เป็น IDENTITY (DB ออกเลขให้เอง)</summary>
+        private static bool IsCategoryIdIdentity(SqlConnection conn, SqlTransaction tx)
+        {
+            const string sql = "SELECT ISNULL(COLUMNPROPERTY(OBJECT_ID('KMS.m_KBCategory'), 'CategoryID', 'IsIdentity'), 0)";
+            using (var cmd = new SqlCommand(sql, conn, tx))
+            {
+                return Convert.ToInt32(cmd.ExecuteScalar()) == 1;
             }
         }
 
@@ -158,7 +204,8 @@ namespace CMS.Data.Repositories
                         Icon             = @Icon,
                         Description      = @Description,
                         SortOrder        = @SortOrder,
-                        DisplayProfileID = @DisplayProfileID
+                        DisplayProfileID = @DisplayProfileID,
+                        ImportTypeDigit  = @ImportTypeDigit
                     WHERE CategoryID = @CategoryID";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -195,6 +242,7 @@ namespace CMS.Data.Repositories
             cmd.Parameters.AddWithValue("@SortOrder",        c.SortOrder);
             cmd.Parameters.AddWithValue("@CreatedBy",        c.CreatedBy ?? string.Empty);
             cmd.Parameters.AddWithValue("@DisplayProfileID",  (object)c.DisplayProfileID ?? DBNull.Value);
+            cmd.Parameters.Add("@ImportTypeDigit", SqlDbType.Char, 1).Value = (object)c.ImportTypeDigit ?? DBNull.Value;
         }
 
         private static KBCategory Map(IDataReader r)
@@ -212,6 +260,7 @@ namespace CMS.Data.Repositories
                 CreatedBy          = r["CreatedBy"]        as string,
                 CreatedDate        = r.IsDBNull(r.GetOrdinal("CreatedDate")) ? DateTime.MinValue : r.GetDateTime(r.GetOrdinal("CreatedDate")),
                 DisplayProfileID   = r.IsDBNull(r.GetOrdinal("DisplayProfileID")) ? (int?)null : r.GetInt32(r.GetOrdinal("DisplayProfileID")),
+                ImportTypeDigit    = r.IsDBNull(r.GetOrdinal("ImportTypeDigit")) ? null : Convert.ToString(r["ImportTypeDigit"]).Trim(),
                 ParentCategoryName = r["ParentCategoryName"] as string,
             };
         }

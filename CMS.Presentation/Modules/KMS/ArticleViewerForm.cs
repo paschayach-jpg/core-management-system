@@ -82,7 +82,7 @@ namespace CMS.Presentation.Modules.KMS
             PopulateAttachTab();
         }
 
-        // ── IArticleViewerView ───────────────────────────────────────────────
+        // ── IArticleViewerController ───────────────────────────────────────────────
 
         public void PopulateArticle(KBArticle article)
         {

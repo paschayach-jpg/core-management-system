@@ -91,6 +91,10 @@ namespace CMS.Controllers.KMS.KB
 
                 int profileId = _service.SaveProfile(profile, rows, _user);
 
+                // Profile ใหม่เพิ่งได้ ID — ฟอร์มกลายเป็นการแก้ไข Profile นี้ต่อ (Save ซ้ำต้อง update ไม่ใช่สร้างซ้ำ) และรายการจะเลือกแถวนี้ไว้ให้
+                _view.EditingProfileId = profileId;
+                _view.DeleteEnabled    = true;
+
                 // ── Reconcile category assignment: เทียบชุดที่ติ๊กไว้ใน UI กับที่ผูกอยู่จริงใน DB ──
                 var currentlyAssigned = new HashSet<int>(
                     _service.GetCategoriesUsingProfile(profileId).Select(c => c.CategoryID));

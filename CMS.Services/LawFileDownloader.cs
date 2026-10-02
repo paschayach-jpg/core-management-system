@@ -16,41 +16,50 @@ namespace CMS.Services
     }
 
     /// <summary>
-    /// [Fix ชั่วคราว] แทนที่จะดาวน์โหลดไฟล์จาก URL ใน hyperlink ของ column K (ลิงก์ปลายทางใช้งานไม่ได้ในตอนนี้)
-    /// ให้ mapping ด้วยชื่อไฟล์กับไฟล์ที่มีอยู่แล้วใน LocalFolder แทน
-    /// TODO: กลับไปดาวน์โหลดจาก URL จริง (ผ่าน HttpClient/WebClient) เมื่อระบบต้นทางพร้อมใช้งาน
+    /// อ่านไฟล์แนบของแถว import จาก "โฟลเดอร์ในเครื่องที่ผู้ใช้เลือกในหน้า import" (ไม่ตั้งตายตัวในโค้ดแล้ว) โดยจับคู่ด้วยชื่อไฟล์ที่ Template map เป็น
+    /// Attachment: ชื่อต้องตรงกับไฟล์ในโฟลเดอร์นั้นครบนามสกุล (ตรงเป๊ะก่อน ไม่เจอลองไม่สนตัวพิมพ์เล็ก-ใหญ่) และไม่ค้นโฟลเดอร์ย่อย
+    /// TODO: ดาวน์โหลดจาก URL ใน hyperlink ของเซลล์ (ผ่าน HttpClient/WebClient) เมื่อระบบต้นทางพร้อมใช้งาน — ตอนนี้ URL ถูกอ่านเก็บไว้แต่ไม่ถูกใช้
     /// </summary>
     public class LawFileDownloader
     {
-        private const string LocalFolder = @"C:\Users\paschaya\Downloads\pdf\คำสั่ง\";
-
         public LawFileDownloader(int timeoutSeconds = 60)
         {
             // timeoutSeconds ไม่ได้ใช้แล้ว (อ่านไฟล์ในเครื่องแทนการดาวน์โหลด) — คง parameter ไว้เพื่อไม่ต้องแก้จุดที่ประกอบ DI
         }
 
-        public LawFileDownloadResult Download(string url, string preferredFileName)
+        /// <param name="sourceFolder">โฟลเดอร์ที่เก็บไฟล์แนบ (ผู้ใช้เลือก) — ว่าง = ล้มเหลวพร้อมข้อความ</param>
+        /// <param name="url">URL ใน hyperlink ของเซลล์ (ยังไม่ใช้)</param>
+        /// <param name="preferredFileName">ชื่อไฟล์ในเซลล์ที่ Template map เป็น Attachment</param>
+        public LawFileDownloadResult Download(string sourceFolder, string url, string preferredFileName)
         {
+            if (string.IsNullOrWhiteSpace(sourceFolder))
+                return Fail("ยังไม่ได้เลือกโฟลเดอร์ไฟล์แนบ");
+
             if (string.IsNullOrWhiteSpace(preferredFileName))
                 return Fail("ไม่พบชื่อไฟล์ในเซลล์ที่ Template map เป็น Attachment");
 
             string name = preferredFileName.Trim();
 
+            // ต้องเป็นชื่อไฟล์ล้วน ๆ — กันชื่อในเซลล์ชี้ออกนอกโฟลเดอร์ที่เลือก (path เต็ม, ..\ ฯลฯ)
+            if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+                || !string.Equals(Path.GetFileName(name), name, StringComparison.Ordinal))
+                return Fail(string.Format("ชื่อไฟล์ '{0}' ไม่ถูกต้อง (ต้องเป็นชื่อไฟล์ล้วน ไม่มี path)", name));
+
             try
             {
-                if (!Directory.Exists(LocalFolder))
-                    return Fail(string.Format("ไม่พบโฟลเดอร์ '{0}'", LocalFolder));
+                if (!Directory.Exists(sourceFolder))
+                    return Fail(string.Format("ไม่พบโฟลเดอร์ '{0}'", sourceFolder));
 
-                string path = Path.Combine(LocalFolder, name);
+                string path = Path.Combine(sourceFolder, name);
 
                 if (!File.Exists(path))
                 {
                     // ไม่เจอชื่อตรงเป๊ะ — ลอง match แบบไม่สนตัวพิมพ์เล็ก-ใหญ่ เผื่อชื่อไฟล์จริงเขียนต่างจากในเซลล์เล็กน้อย
-                    path = Directory.GetFiles(LocalFolder)
+                    path = Directory.GetFiles(sourceFolder)
                         .FirstOrDefault(f => string.Equals(Path.GetFileName(f), name, StringComparison.OrdinalIgnoreCase));
 
                     if (path == null)
-                        return Fail(string.Format("ไม่พบไฟล์ '{0}' ในโฟลเดอร์ '{1}'", name, LocalFolder));
+                        return Fail(string.Format("ไม่พบไฟล์ '{0}' ในโฟลเดอร์ '{1}'", name, sourceFolder));
                 }
 
                 byte[] bytes = File.ReadAllBytes(path);
