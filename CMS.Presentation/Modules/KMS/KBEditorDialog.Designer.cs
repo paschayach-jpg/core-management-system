@@ -15,18 +15,14 @@ namespace CMS.Presentation.Modules.KMS
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle13 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle14 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle15 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle16 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle17 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle19 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle18 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle20 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle21 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle22 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle23 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle24 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlHeader = new System.Windows.Forms.Panel();
             this.lblHeader = new System.Windows.Forms.Label();
             this.pnlToolbar = new System.Windows.Forms.Panel();
@@ -139,6 +135,12 @@ namespace CMS.Presentation.Modules.KMS
             this.lblAttachLinked = new System.Windows.Forms.Label();
             this.tabRelated = new System.Windows.Forms.TabPage();
             this.dgvRelatedSearch = new System.Windows.Forms.DataGridView();
+            this.colRelatedSearchCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedSearchTitle = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedSummary = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedSearchTitleCategory = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedSearchType = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colRelatedSearchViews = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.lblRelatedSearch = new System.Windows.Forms.Label();
             this.pnlRelatedSearch = new System.Windows.Forms.Panel();
             this.btnSearchRelated = new System.Windows.Forms.Button();
@@ -227,12 +229,6 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMappingHeader = new System.Windows.Forms.Panel();
             this.btnCollapseMappingPanel = new System.Windows.Forms.Button();
             this.lblMappingHeader = new System.Windows.Forms.Label();
-            this.colRelatedSearchCode = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRelatedSearchTitle = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRelatedSummary = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRelatedSearchTitleCategory = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRelatedSearchType = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colRelatedSearchViews = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.pnlHeader.SuspendLayout();
             this.pnlToolbar.SuspendLayout();
             this.flpToolbarLeft.SuspendLayout();
@@ -1650,11 +1646,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colView
             // 
-            dataGridViewCellStyle13.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle13.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle13.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle13.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
-            this.colView.DefaultCellStyle = dataGridViewCellStyle13;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
+            this.colView.DefaultCellStyle = dataGridViewCellStyle1;
             this.colView.HeaderText = "ดูไฟล์";
             this.colView.MinimumWidth = 6;
             this.colView.Name = "colView";
@@ -1664,11 +1660,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDelete
             // 
-            dataGridViewCellStyle14.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle14.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle14.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle14.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDelete.DefaultCellStyle = dataGridViewCellStyle14;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDelete.DefaultCellStyle = dataGridViewCellStyle2;
             this.colDelete.HeaderText = "ลบไฟล์";
             this.colDelete.MinimumWidth = 6;
             this.colDelete.Name = "colDelete";
@@ -1711,14 +1707,6 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvRelatedSearch.AllowUserToDeleteRows = false;
             this.dgvRelatedSearch.AllowUserToResizeRows = false;
             this.dgvRelatedSearch.BackgroundColor = System.Drawing.Color.White;
-            dataGridViewCellStyle15.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle15.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle15.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle15.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle15.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle15.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle15.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvRelatedSearch.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle15;
             this.dgvRelatedSearch.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvRelatedSearch.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colRelatedSearchCode,
@@ -1727,14 +1715,6 @@ namespace CMS.Presentation.Modules.KMS
             this.colRelatedSearchTitleCategory,
             this.colRelatedSearchType,
             this.colRelatedSearchViews});
-            dataGridViewCellStyle16.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle16.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle16.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle16.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle16.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle16.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle16.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvRelatedSearch.DefaultCellStyle = dataGridViewCellStyle16;
             this.dgvRelatedSearch.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvRelatedSearch.Location = new System.Drawing.Point(4, 274);
             this.dgvRelatedSearch.Name = "dgvRelatedSearch";
@@ -1746,6 +1726,56 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvRelatedSearch.Size = new System.Drawing.Size(511, 582);
             this.dgvRelatedSearch.TabIndex = 5;
             this.dgvRelatedSearch.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvRelatedSearch_CellDoubleClick);
+            // 
+            // colRelatedSearchCode
+            // 
+            this.colRelatedSearchCode.HeaderText = "รหัสบทความ";
+            this.colRelatedSearchCode.MinimumWidth = 6;
+            this.colRelatedSearchCode.Name = "colRelatedSearchCode";
+            this.colRelatedSearchCode.ReadOnly = true;
+            this.colRelatedSearchCode.Visible = false;
+            this.colRelatedSearchCode.Width = 120;
+            // 
+            // colRelatedSearchTitle
+            // 
+            this.colRelatedSearchTitle.HeaderText = "ชื่อบทความ";
+            this.colRelatedSearchTitle.MinimumWidth = 6;
+            this.colRelatedSearchTitle.Name = "colRelatedSearchTitle";
+            this.colRelatedSearchTitle.ReadOnly = true;
+            this.colRelatedSearchTitle.Width = 125;
+            // 
+            // colRelatedSummary
+            // 
+            this.colRelatedSummary.HeaderText = "Summary";
+            this.colRelatedSummary.MinimumWidth = 6;
+            this.colRelatedSummary.Name = "colRelatedSummary";
+            this.colRelatedSummary.ReadOnly = true;
+            this.colRelatedSummary.Width = 125;
+            // 
+            // colRelatedSearchTitleCategory
+            // 
+            this.colRelatedSearchTitleCategory.HeaderText = "หมวดหมู่ชื่อเรื่อง";
+            this.colRelatedSearchTitleCategory.MinimumWidth = 6;
+            this.colRelatedSearchTitleCategory.Name = "colRelatedSearchTitleCategory";
+            this.colRelatedSearchTitleCategory.ReadOnly = true;
+            this.colRelatedSearchTitleCategory.Width = 125;
+            // 
+            // colRelatedSearchType
+            // 
+            this.colRelatedSearchType.HeaderText = "ประเภท";
+            this.colRelatedSearchType.MinimumWidth = 6;
+            this.colRelatedSearchType.Name = "colRelatedSearchType";
+            this.colRelatedSearchType.ReadOnly = true;
+            this.colRelatedSearchType.Width = 125;
+            // 
+            // colRelatedSearchViews
+            // 
+            this.colRelatedSearchViews.HeaderText = "ดู";
+            this.colRelatedSearchViews.MinimumWidth = 6;
+            this.colRelatedSearchViews.Name = "colRelatedSearchViews";
+            this.colRelatedSearchViews.ReadOnly = true;
+            this.colRelatedSearchViews.Visible = false;
+            this.colRelatedSearchViews.Width = 60;
             // 
             // lblRelatedSearch
             // 
@@ -1840,14 +1870,6 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvRelatedLinked.AllowUserToDeleteRows = false;
             this.dgvRelatedLinked.AllowUserToResizeRows = false;
             this.dgvRelatedLinked.BackgroundColor = System.Drawing.Color.White;
-            dataGridViewCellStyle17.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle17.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle17.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle17.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle17.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle17.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle17.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvRelatedLinked.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle17;
             this.dgvRelatedLinked.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvRelatedLinked.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colRelatedLinkedNum,
@@ -1857,14 +1879,6 @@ namespace CMS.Presentation.Modules.KMS
             this.colRelatedLinkedSummary,
             this.colType,
             this.colRelatedLinkedDelete});
-            dataGridViewCellStyle19.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle19.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle19.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle19.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle19.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle19.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle19.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvRelatedLinked.DefaultCellStyle = dataGridViewCellStyle19;
             this.dgvRelatedLinked.Dock = System.Windows.Forms.DockStyle.Top;
             this.dgvRelatedLinked.Location = new System.Drawing.Point(4, 28);
             this.dgvRelatedLinked.Name = "dgvRelatedLinked";
@@ -1929,11 +1943,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colRelatedLinkedDelete
             // 
-            dataGridViewCellStyle18.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle18.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle18.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle18.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colRelatedLinkedDelete.DefaultCellStyle = dataGridViewCellStyle18;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colRelatedLinkedDelete.DefaultCellStyle = dataGridViewCellStyle3;
             this.colRelatedLinkedDelete.HeaderText = "ลบ";
             this.colRelatedLinkedDelete.MinimumWidth = 6;
             this.colRelatedLinkedDelete.Name = "colRelatedLinkedDelete";
@@ -2173,11 +2187,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colWorkflowLinkedDelete
             // 
-            dataGridViewCellStyle20.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle20.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle20.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle20.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colWorkflowLinkedDelete.DefaultCellStyle = dataGridViewCellStyle20;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle4.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colWorkflowLinkedDelete.DefaultCellStyle = dataGridViewCellStyle4;
             this.colWorkflowLinkedDelete.HeaderText = "ลบ";
             this.colWorkflowLinkedDelete.MinimumWidth = 6;
             this.colWorkflowLinkedDelete.Name = "colWorkflowLinkedDelete";
@@ -2415,11 +2429,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colProgramsLinkedDelete
             // 
-            dataGridViewCellStyle21.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle21.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle21.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle21.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colProgramsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle21;
+            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colProgramsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle5;
             this.colProgramsLinkedDelete.HeaderText = "ลบ";
             this.colProgramsLinkedDelete.MinimumWidth = 6;
             this.colProgramsLinkedDelete.Name = "colProgramsLinkedDelete";
@@ -2657,11 +2671,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDocsLinkedView
             // 
-            dataGridViewCellStyle22.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle22.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle22.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle22.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
-            this.colDocsLinkedView.DefaultCellStyle = dataGridViewCellStyle22;
+            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle6.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(95)))), ((int)(((byte)(154)))));
+            this.colDocsLinkedView.DefaultCellStyle = dataGridViewCellStyle6;
             this.colDocsLinkedView.HeaderText = "ดู";
             this.colDocsLinkedView.MinimumWidth = 6;
             this.colDocsLinkedView.Name = "colDocsLinkedView";
@@ -2671,11 +2685,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDocsLinkedDelete
             // 
-            dataGridViewCellStyle23.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle23.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle23.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle23.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDocsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle23;
+            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle7.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle7.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDocsLinkedDelete.DefaultCellStyle = dataGridViewCellStyle7;
             this.colDocsLinkedDelete.HeaderText = "ลบ";
             this.colDocsLinkedDelete.MinimumWidth = 6;
             this.colDocsLinkedDelete.Name = "colDocsLinkedDelete";
@@ -2767,11 +2781,11 @@ namespace CMS.Presentation.Modules.KMS
             // 
             // colDeptDelete
             // 
-            dataGridViewCellStyle24.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle24.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            dataGridViewCellStyle24.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle24.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            this.colDeptDelete.DefaultCellStyle = dataGridViewCellStyle24;
+            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            dataGridViewCellStyle8.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.colDeptDelete.DefaultCellStyle = dataGridViewCellStyle8;
             this.colDeptDelete.HeaderText = "ลบ";
             this.colDeptDelete.MinimumWidth = 6;
             this.colDeptDelete.Name = "colDeptDelete";
@@ -2832,56 +2846,6 @@ namespace CMS.Presentation.Modules.KMS
             this.lblMappingHeader.TabIndex = 0;
             this.lblMappingHeader.Text = "Mapping รายการที่เกี่ยวข้อง";
             this.lblMappingHeader.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // colRelatedSearchCode
-            // 
-            this.colRelatedSearchCode.HeaderText = "รหัสบทความ";
-            this.colRelatedSearchCode.MinimumWidth = 6;
-            this.colRelatedSearchCode.Name = "colRelatedSearchCode";
-            this.colRelatedSearchCode.ReadOnly = true;
-            this.colRelatedSearchCode.Visible = false;
-            this.colRelatedSearchCode.Width = 120;
-            // 
-            // colRelatedSearchTitle
-            // 
-            this.colRelatedSearchTitle.HeaderText = "ชื่อบทความ";
-            this.colRelatedSearchTitle.MinimumWidth = 6;
-            this.colRelatedSearchTitle.Name = "colRelatedSearchTitle";
-            this.colRelatedSearchTitle.ReadOnly = true;
-            this.colRelatedSearchTitle.Width = 125;
-            // 
-            // colRelatedSummary
-            // 
-            this.colRelatedSummary.HeaderText = "Summary";
-            this.colRelatedSummary.MinimumWidth = 6;
-            this.colRelatedSummary.Name = "colRelatedSummary";
-            this.colRelatedSummary.ReadOnly = true;
-            this.colRelatedSummary.Width = 125;
-            // 
-            // colRelatedSearchTitleCategory
-            // 
-            this.colRelatedSearchTitleCategory.HeaderText = "หมวดหมู่ชื่อเรื่อง";
-            this.colRelatedSearchTitleCategory.MinimumWidth = 6;
-            this.colRelatedSearchTitleCategory.Name = "colRelatedSearchTitleCategory";
-            this.colRelatedSearchTitleCategory.ReadOnly = true;
-            this.colRelatedSearchTitleCategory.Width = 125;
-            // 
-            // colRelatedSearchType
-            // 
-            this.colRelatedSearchType.HeaderText = "ประเภท";
-            this.colRelatedSearchType.MinimumWidth = 6;
-            this.colRelatedSearchType.Name = "colRelatedSearchType";
-            this.colRelatedSearchType.ReadOnly = true;
-            this.colRelatedSearchType.Width = 125;
-            // 
-            // colRelatedSearchViews
-            // 
-            this.colRelatedSearchViews.HeaderText = "ดู";
-            this.colRelatedSearchViews.MinimumWidth = 6;
-            this.colRelatedSearchViews.Name = "colRelatedSearchViews";
-            this.colRelatedSearchViews.ReadOnly = true;
-            this.colRelatedSearchViews.Visible = false;
-            this.colRelatedSearchViews.Width = 60;
             // 
             // KBEditorDialog
             // 

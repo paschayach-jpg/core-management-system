@@ -276,6 +276,100 @@ namespace CMS.Data.Repositories
             }
         }
 
+        /// <summary>
+        /// คอลัมน์ที่ Excel import เขียนทับได้ตอน update บทความเดิม → ค่าจาก <see cref="KBArticle"/> (whitelist กัน SQL injection ผ่านชื่อคอลัมน์).
+        /// ArticleCode (คีย์ที่ใช้หาบทความ) และ CategoryID (หมวดที่ผู้ใช้อาจย้ายเอง) ตั้งใจไม่อยู่ในรายการ — import ห้ามแก้
+        /// </summary>
+        private static readonly Dictionary<string, Func<KBArticle, object>> ImportUpdatableColumns =
+            new Dictionary<string, Func<KBArticle, object>>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Title",         a => (object)a.Title         ?? DBNull.Value },
+            { "TitleCategory", a => (object)a.TitleCategory ?? DBNull.Value },
+            { "ContentHTML",   a => (object)a.ContentHTML   ?? DBNull.Value },
+            { "Summary",       a => (object)a.Summary       ?? DBNull.Value },
+            { "PublishedDate", a => (object)a.PublishedDate ?? DBNull.Value },
+            { "EffectiveDate", a => (object)a.EffectiveDate ?? DBNull.Value },
+            { "ArticleType",   a => a.ArticleType },
+            { "Tags",          a => (object)a.Tags          ?? DBNull.Value },
+        };
+
+        public void UpdateFromImport(int articleId, KBArticle values, IEnumerable<string> columns, string updatedBy, KBVersion newVersion)
+        {
+            if (values  == null) throw new ArgumentNullException("values");
+            if (columns == null) throw new ArgumentNullException("columns");
+
+            var sets   = new List<string>();
+            var seen   = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var bound  = new List<KeyValuePair<string, object>>();
+            foreach (string column in columns)
+            {
+                Func<KBArticle, object> getValue;
+                if (column == null || !ImportUpdatableColumns.TryGetValue(column, out getValue))
+                    throw new ArgumentException("คอลัมน์ '" + column + "' ไม่อยู่ในรายการที่ import เขียนทับได้", "columns");
+                if (!seen.Add(column)) continue;
+
+                sets.Add(column + " = @" + column);
+                bound.Add(new KeyValuePair<string, object>("@" + column, getValue(values)));
+            }
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    int? nextVersion = null;
+
+                    if (newVersion != null)
+                    {
+                        const string nextVersionSql = @"
+                            SELECT ISNULL(MAX(VersionNumber), 0) + 1
+                            FROM   KMS.t_KBVersion WITH (UPDLOCK, HOLDLOCK)
+                            WHERE  ArticleID = @ArticleID";
+                        using (var cmd = new SqlCommand(nextVersionSql, conn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@ArticleID", articleId);
+                            nextVersion = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        const string versionSql = @"
+                            INSERT INTO KMS.t_KBVersion
+                                (ArticleID, VersionNumber, ContentSnapshot, ChangeDescription, CreatedBy, CreatedDate)
+                            VALUES
+                                (@ArticleID, @VersionNumber, @ContentSnapshot, @ChangeDescription, @CreatedBy, GETDATE());";
+                        using (var cmd = new SqlCommand(versionSql, conn, tx))
+                        {
+                            cmd.Parameters.AddWithValue("@ArticleID",         articleId);
+                            cmd.Parameters.AddWithValue("@VersionNumber",     nextVersion.Value);
+                            cmd.Parameters.AddWithValue("@ContentSnapshot",   (object)newVersion.ContentSnapshot   ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@ChangeDescription", (object)newVersion.ChangeDescription ?? DBNull.Value);
+                            cmd.Parameters.AddWithValue("@CreatedBy",         newVersion.CreatedBy ?? string.Empty);
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+
+                    if (nextVersion.HasValue) sets.Add("CurrentVersion = @CurrentVersion");
+                    sets.Add("UpdatedBy = @UpdatedBy");
+                    sets.Add("UpdatedDate = GETDATE()");
+
+                    string sql = "UPDATE KMS.t_KBArticle SET " + string.Join(", ", sets) + " WHERE ArticleID = @ArticleID";
+                    using (var cmd = new SqlCommand(sql, conn, tx))
+                    {
+                        cmd.Parameters.AddWithValue("@ArticleID", articleId);
+                        foreach (var p in bound)
+                            cmd.Parameters.AddWithValue(p.Key, p.Value);
+                        if (nextVersion.HasValue)
+                            cmd.Parameters.AddWithValue("@CurrentVersion", nextVersion.Value);
+                        cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy ?? string.Empty);
+
+                        if (cmd.ExecuteNonQuery() == 0)
+                            throw new InvalidOperationException("ไม่พบบทความ ArticleID " + articleId + " ที่จะอัปเดต");
+                    }
+
+                    tx.Commit();
+                }
+            }
+        }
+
         public void UpdateStatus(int articleId, byte status, string reviewedBy)
         {
             using (var conn = new SqlConnection(_connectionString))

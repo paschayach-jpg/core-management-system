@@ -232,9 +232,8 @@ namespace CMS.Controllers.KMS.KB
 
         /// <summary>
         /// Imports validated rows by inserting <see cref="KBArticle"/> + <see cref="KBVersion"/>
-        /// records via <see cref="KBImportProcessor"/>. Rows marked <c>Skip</c> (blank/duplicate ArticleCode, or an existing
-        /// article with nothing missing) or <c>Error</c> are excluded before the import attempt. Existing NonLaw articles with a
-        /// missing attachment/link are <c>Valid</c> and only get the missing parts filled in (no second insert).
+        /// records via <see cref="KBImportProcessor"/>. Rows marked <c>Skip</c> (blank/duplicate ArticleCode) or <c>Error</c> are
+        /// excluded before the import attempt. Rows whose article already exists are <c>Valid</c> and UPDATE that article (no second insert).
         /// On completion calls <see cref="IKBImportWizardController.ShowImportComplete"/>.
         /// </summary>
         public void ExecuteImport()
@@ -250,8 +249,7 @@ namespace CMS.Controllers.KMS.KB
                 // Consume this validation snapshot now — a validated batch may only be imported once. Importing the same
                 // snapshot twice would re-process stale Status="Valid" rows (articles inserted the first time would hit the real
                 // DB unique-key constraint). Forcing a fresh ValidateFile() before re-import re-checks every ArticleCode:
-                // codes already in the DB become "Skip" (nothing missing) or "Valid" rows that only fill in the missing
-                // attachment/links — never a second insert.
+                // codes already in the DB become "Valid" rows that UPDATE the existing article — never a second insert.
                 var lastValidation = _lastValidation;
                 _lastValidation = null;
 
@@ -295,16 +293,16 @@ namespace CMS.Controllers.KMS.KB
                 successCount -= skippedDuringImport.Count;
                 skippedRows.AddRange(skippedDuringImport);
 
-                // บทความที่มีอยู่แล้วและเติมของที่ขาดสำเร็จ (แยกจากบทความที่ insert ใหม่)
-                int filledCount = rowsToImport.Count(r => r.ExistingArticleId > 0 && (r.Status == "Valid" || r.Status == "Warn"));
+                // บทความที่มีอยู่แล้วและอัปเดตสำเร็จ (แยกจากบทความที่ insert ใหม่)
+                int updatedCount = rowsToImport.Count(r => r.ExistingArticleId > 0 && (r.Status == "Valid" || r.Status == "Warn"));
 
                 // Collect rows that failed DURING import (ExistsByCode race or DB insert failure).
                 var importFailedRows = rowsToImport.Where(r => r.Status == "Error").ToList();
 
                 int totalErrors  = skippedRows.Count(r => r.Status == "Error") + errorCount;
                 int problemCount = totalErrors + skippedDuringImport.Count;
-                string successText = filledCount > 0
-                    ? string.Format("นำเข้าสำเร็จ {0} รายการ (บทความใหม่ {1}, เติมของที่ขาด {2})", successCount, successCount - filledCount, filledCount)
+                string successText = updatedCount > 0
+                    ? string.Format("นำเข้าสำเร็จ {0} รายการ (บทความใหม่ {1}, อัปเดตบทความเดิม {2})", successCount, successCount - updatedCount, updatedCount)
                     : string.Format("นำเข้าสำเร็จ {0} รายการ", successCount);
                 var summary = new KBImportValidationResult
                 {

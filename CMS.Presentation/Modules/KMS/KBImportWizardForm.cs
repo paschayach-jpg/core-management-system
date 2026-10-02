@@ -1058,7 +1058,7 @@ namespace CMS.Presentation.Modules.KMS
 
         private static string FormatPreviewNote(KBImportRow r)
         {
-            // Valid ปกติไม่มี note; Valid ของบทความที่มีอยู่แล้ว (จะเติมของที่ขาด) แสดง note ว่าจะเติมอะไร
+            // Valid ปกติไม่มี note; Valid ของบทความที่มีอยู่แล้ว (จะอัปเดต) แสดง note ว่าจะอัปเดต field ไหน
             if (r.Status == "Valid" && r.ExistingArticleId <= 0) return string.Empty;
 
             string note = r.StatusNote ?? string.Empty;
@@ -1209,7 +1209,7 @@ namespace CMS.Presentation.Modules.KMS
                 if (row.Status == "Valid")
                 {
                     bool filledExisting = row.ExistingArticleId > 0;
-                    reason      = filledExisting ? "✅ เติมข้อมูลที่ขาด" : "✅ นำเข้าสำเร็จ";
+                    reason      = filledExisting ? "✅ อัปเดตแล้ว" : "✅ นำเข้าสำเร็จ";
                     relatedData = filledExisting ? S(row.StatusNote ?? string.Empty, 300) : string.Empty;
                 }
                 else if (row.Status == "Skip")
