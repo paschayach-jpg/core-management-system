@@ -32,6 +32,14 @@ namespace CMS.Domain.Models
         /// </summary>
         public int?     DisplayProfileID { get; set; }
 
+        /// <summary>
+        /// รหัสประเภทเอกสารที่ไม่ใช่กฎหมาย — ตัวเลข 1-9 ตัวเดียว (null = ไม่ใช่หมวดประเภทเอกสาร ซึ่งเป็นกรณีของหมวดส่วนใหญ่)
+        /// ตรงกับตัวที่ 23 ของ Code รวม (ArticleCode) ตอน import ไฟล์ที่ไม่ใช่กฎหมาย: ระบบหาหมวดประเภท (เช่น OR) จากหมวดที่ตั้งรหัสนี้ไว้
+        /// แทนตารางตัวเลข→รหัสที่เคย hardcode — เพิ่มประเภทใหม่ = สร้างหมวด + ตั้งรหัสที่หน้าหมวดหมู่ ไม่ต้องแก้โค้ด
+        /// ห้ามซ้ำกันทั้งตาราง และห้ามตั้งให้หมวดในกฎหมาย (ตรวจใน KBCategoryService) — ดู <see cref="KBNonLawTypeMap"/>
+        /// </summary>
+        public string   ImportTypeDigit  { get; set; }
+
         // Display helper — set by repository when joining parent name
         public string ParentCategoryName { get; set; }
 

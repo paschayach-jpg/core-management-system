@@ -34,24 +34,12 @@ namespace CMS.Controllers.KMS.KB
         /// <summary>หมวดทั้งหมดที่โหลดล่าสุดตอนสร้าง tree — ใช้หาหมวดย่อยของหมวดที่เลือกโดยไม่ query ซ้ำทุกครั้งที่เปลี่ยนหน้า</summary>
         private IList<KBCategory> _categories;
 
-        // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้หมวด "กฎหมาย"/LW) ↔ เอกสารที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR) ──
+        // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้หมวด "กฎหมาย"/LW) ↔ เอกสารที่ไม่ใช่กฎหมาย (ประเภทเอกสารที่ตั้ง ImportTypeDigit ที่หมวด) ──
         // Resolved จาก CategoryCode สด ๆ ทุกครั้งที่โหลด (ดู ResolveCrossReferenceCategoryIds/IsLawCategory
         // ด้านล่าง) แทนที่จะ hardcode ตัวเลข CategoryID ตรง ๆ — ตัวเลข CategoryID เปลี่ยนได้ถ้าตาราง
         // m_KBCategory ถูกสร้างใหม่ (เคยเกิดมาแล้วครั้งหนึ่ง ทำให้ค่า hardcode เดิม 46/54/55 หลุด) แต่
         // CategoryCode เป็น business key ที่ตั้งใจให้คงที่
         private const string LawFolderLabel      = "กฎหมาย";
-
-        /// <summary>ชื่อโฟลเดอร์อ้างอิงข้ามของแต่ละประเภทเอกสารที่ไม่ใช่กฎหมาย (key = CategoryCode) — ถ้าไม่มีใน map ใช้ CategoryCode เอง</summary>
-        private static readonly Dictionary<string, string> NonLawFolderLabels =
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "AN", "หมวดภายใน" },
-            { "OR", "คำสั่ง (นายทะเบียน/กระทรวง)" },
-            { "SO", "คำสั่งพิเศษ" },
-            { "RG", "ระเบียบ" },
-            { "CI", "หนังสือเวียน" },
-            { "MR", "กฎกระทรวง" },
-        };
 
         public KBMainController(
             IKBMainController              view,
@@ -123,23 +111,22 @@ namespace CMS.Controllers.KMS.KB
                         idMap[t].Add(a.ArticleID);
                     }
 
-                    // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้ LW) ↔ เอกสารที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR) ──
+                    // ── Cross-reference folders: กฎหมาย (Act ใด ๆ ใต้ LW) ↔ เอกสารที่ไม่ใช่กฎหมาย (ประเภทเอกสารที่ตั้ง ImportTypeDigit ที่หมวด) ──
                     // (ถือลิงก์เป็นสองทิศทางเสมอ) — resolve CategoryID ของแต่ละประเภทจาก CategoryCode สด ๆ
                     // และเช็คฝั่งกฎหมายด้วยการไล่ ParentCategoryID แทนเทียบ CategoryID คงที่ตัวเดียว
                     // เพื่อให้ใช้ได้กับกฎหมายทุกฉบับ (PVI, PLI, OIC, ...) ไม่ใช่แค่ฉบับที่ hardcode ไว้
                     var linkGraph    = BuildLawLinkGraph();
                     var categoryById = categories.ToDictionary(c => c.CategoryID);
 
-                    // ประเภทเอกสารที่ไม่ใช่กฎหมายที่มีอยู่จริงในตารางหมวด: (CategoryID, ชื่อโฟลเดอร์) เรียงตาม AN, OR, SO, RG, CI, MR
+                    // ประเภทเอกสารที่ไม่ใช่กฎหมายที่มีอยู่จริงในตารางหมวด (หมวดที่ตั้งรหัสประเภท ImportTypeDigit): (CategoryID, ชื่อโฟลเดอร์ = ชื่อหมวด)
+                    // เรียงตามรหัสประเภท
                     var nonLawTypes = new List<KeyValuePair<int, string>>();
-                    foreach (var code in KBImportLayoutTypeCatalog.GetNonLawCategoryCodes())
+                    foreach (var typeCategory in new KBNonLawTypeMap(categories).Types)
                     {
-                        int? typeCategoryId = FindCategoryIdByCode(categories, code);
-                        if (!typeCategoryId.HasValue) continue;
-
-                        string folderLabel;
-                        if (!NonLawFolderLabels.TryGetValue(code, out folderLabel)) folderLabel = code;
-                        nonLawTypes.Add(new KeyValuePair<int, string>(typeCategoryId.Value, folderLabel));
+                        string folderLabel = string.IsNullOrWhiteSpace(typeCategory.CategoryName)
+                            ? (typeCategory.CategoryCode ?? string.Empty).Trim()
+                            : typeCategory.CategoryName.Trim();
+                        nonLawTypes.Add(new KeyValuePair<int, string>(typeCategory.CategoryID, folderLabel));
                     }
 
                     // บทความของประเภทเอกสารอยู่ในหมวดปีใต้หมวดประเภท (เช่น OR2535 ใต้ OR) — นับหมวดย่อยทุกชั้นเป็นประเภทเดียวกับหมวดประเภท
@@ -254,13 +241,6 @@ namespace CMS.Controllers.KMS.KB
                 graph[from] = set;
             }
             set.Add(to);
-        }
-
-        /// <summary>คืน CategoryID ของ category ที่มี CategoryCode ตรงกับที่ระบุ (case-insensitive) หรือ null ถ้าไม่เจอ</summary>
-        private static int? FindCategoryIdByCode(IList<KBCategory> categories, string categoryCode)
-        {
-            var match = categories.FirstOrDefault(c => string.Equals(c.CategoryCode, categoryCode, StringComparison.OrdinalIgnoreCase));
-            return match != null ? (int?)match.CategoryID : null;
         }
 
         /// <summary>

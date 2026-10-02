@@ -11,6 +11,9 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         string Description { get; set; }
         int SortOrder { get; set; }
         int? ParentCategoryId { get; set; }
+
+        /// <summary>รหัสประเภทเอกสารที่ไม่ใช่กฎหมาย (ตัวเลข 1-9 = ตัวที่ 23 ของ Code รวมตอน import) — null = ไม่ใช่หมวดประเภทเอกสาร</summary>
+        string ImportTypeDigit { get; set; }
         int? EditingId { get; set; }
         string FormTitleText { set; }
         bool DeleteEnabled { set; }

@@ -8,7 +8,7 @@ namespace CMS.Domain.Models
     public class KBArticleDisplayProfileColumnRow
     {
         public string SlotKey         { get; set; }
-        public string SlotDescription { get; set; }
+        public string SlotDescription { get; set; }   // แก้ไขได้ในหน้า config และเก็บต่อ Profile (m_KBArticleDisplayProfileColumn.SlotDescription)
         public string DisplayLabel    { get; set; }
         public bool   IsVisible       { get; set; }
     }

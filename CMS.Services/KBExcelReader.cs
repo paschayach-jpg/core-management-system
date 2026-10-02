@@ -178,7 +178,7 @@ namespace CMS.Services
 
         /// <summary>
         /// Detects which layout a file uses จากค่า Code รวม (mapping ArticleCode) ของแถวข้อมูลแรกที่ไม่ว่าง:
-        /// <see cref="KBImportLayoutTypeCatalog.IsLawCode"/> → Law, <see cref="KBImportLayoutTypeCatalog.IsNonLawCode"/> → Order
+        /// <see cref="KBImportLayoutTypeCatalog.IsLawCode"/> → Law, <see cref="KBImportLayoutTypeCatalog.IsNonLawCodeFormat"/> → NonLaw
         /// ถ้ารหัสผิดรูปแบบทั้งสองแบบ (หรือไฟล์ไม่มีแถวข้อมูล) ใช้ข้อความหัวตารางคอลัมน์ C ตัดสินแทน เพื่อให้ validate
         /// รายแถวรายงาน error ได้ Returns "Law", "NonLaw", or <c>null</c> when neither matches.
         /// </summary>
@@ -196,7 +196,7 @@ namespace CMS.Services
                     if (string.IsNullOrEmpty(code)) continue;
 
                     if (KBImportLayoutTypeCatalog.IsLawCode(code))  return KBImportLayoutTypeCatalog.Law;
-                    if (KBImportLayoutTypeCatalog.IsNonLawCode(code)) return KBImportLayoutTypeCatalog.NonLaw;
+                    if (KBImportLayoutTypeCatalog.IsNonLawCodeFormat(code)) return KBImportLayoutTypeCatalog.NonLaw;
                     break; // รูปแบบ Code ไม่เข้าเงื่อนไขใดเลย — ให้หัวตารางตัดสินต่อ แล้วให้ validate รายแถวรายงาน error
                 }
             }
@@ -229,11 +229,11 @@ namespace CMS.Services
                 RowKind   = KBImportLayoutTypeCatalog.Law,
 
                 // Code รวม (ArticleCode) มาจาก Template mapping (ApplyFieldOverrides) ไม่อ่านคอลัมน์ A ตามตำแหน่ง
-                RawSummary      = GetCellText(excelRow.GetCell(12), evaluator).Trim(),   // M — ชื่อ
+                RawSummary      = GetCellText(excelRow.GetCell(12), evaluator),          // M — ชื่อ (ข้อความล้วน: ไม่ Trim — เก็บเว้นวรรค/ขึ้นบรรทัดใหม่ตามต้นฉบับ)
                 RawPublishedDate = GetCellText(excelRow.GetCell(13), evaluator).Trim(),  // N — วันที่ประกาศ
                 RawEffectiveDate = GetCellText(excelRow.GetCell(14), evaluator).Trim(),  // O — วันที่มีผลบังคับใช้
                 RawContent      = GetCellText(excelRow.GetCell(15), evaluator),          // P — บัญญัติไว้ว่า
-                RawTitleCategory = GetCellText(excelRow.GetCell(18), evaluator).Trim(),  // S — กฎหมายอ้างอิง
+                RawTitleCategory = GetCellText(excelRow.GetCell(18), evaluator),         // S — กฎหมายอ้างอิง (ข้อความล้วน: ไม่ Trim)
             };
 
             string ignoredError;
@@ -307,17 +307,19 @@ namespace CMS.Services
             if (row.RowKind == KBImportLayoutTypeCatalog.NonLaw && overrides.TryGetValue("Attachment", out expr))
                 ApplyAttachmentOverride(expr, headerRow, excelRow, evaluator, row);
 
+            // Title/TitleCategory/Summary/ContentHTML เป็นข้อความที่ต้องเหมือนต้นฉบับ — ไม่ Trim เว้นวรรคหัว-ท้าย/ขึ้นบรรทัดใหม่
+            // (การแปลงเป็นรูปแบบที่เก็บลง DB ทำที่ KBImportProcessor: ContentHTML → HTML, ที่เหลือ → ข้อความล้วน)
             if (overrides.TryGetValue("Title", out expr))
-                row.RawTitle = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
+                row.RawTitle = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
 
             if (overrides.TryGetValue("TitleCategory", out expr))
-                row.RawTitleCategory = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
+                row.RawTitleCategory = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
 
             if (overrides.TryGetValue("Summary", out expr))
-                row.RawSummary = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
+                row.RawSummary = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
 
             if (overrides.TryGetValue("ContentHTML", out expr))
-                row.RawContent = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator);
+                row.RawContent = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator, true);
 
             if (overrides.TryGetValue("PublishedDate", out expr))
             {
@@ -398,34 +400,41 @@ namespace CMS.Services
         /// เลขศูนย์นำหน้า เช่น "0001"→"1") ก่อนแทรก เพื่อให้ได้ผลแบบเดียวกับตอน hardcode เดิมที่ใช้
         /// int.Parse ตรง ๆ — ถ้าไม่มี {} เลยถือว่าทั้งสตริงคือ column ref เดียว resolve ตรง ๆ แบบ raw text
         /// (ไม่ normalize เพราะอาจตั้งใจ map ค่าที่มีเลขศูนย์นำหน้าแบบมีความหมาย เช่น รหัสเอกสาร)
+        /// <paramref name="preserveWhitespace"/> = true (ข้อความ Title/TitleCategory/Summary/ContentHTML) ไม่ Trim ค่าที่อ่านจากเซลล์
+        /// เพื่อคงเว้นวรรค/indent/ขึ้นบรรทัดใหม่ตามต้นฉบับ; false (รหัส วันที่ ชื่อไฟล์) Trim เหมือนเดิม
         /// </summary>
-        private static string ResolveTemplateExpression(string expression, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator)
+        private static string ResolveTemplateExpression(
+            string expression, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator, bool preserveWhitespace = false)
         {
             if (string.IsNullOrWhiteSpace(expression)) return string.Empty;
 
             if (expression.IndexOf('{') < 0)
-                return ResolveColumnRef(expression.Trim(), headerRow, dataRow, evaluator);
+                return ResolveColumnRef(expression.Trim(), headerRow, dataRow, evaluator, preserveWhitespace);
 
             return TemplateExpressionPlaceholderPattern.Replace(expression,
-                m => NormalizeNumericToken(ResolveColumnRef(m.Groups[1].Value.Trim(), headerRow, dataRow, evaluator)));
+                m => NormalizeNumericToken(ResolveColumnRef(m.Groups[1].Value.Trim(), headerRow, dataRow, evaluator, preserveWhitespace)));
         }
 
-        /// <summary>ถ้า raw เป็นตัวเลขล้วน แปลงผ่าน int แล้ว ToString กลับ (ตัดเลขศูนย์นำหน้า) ไม่งั้นคืนค่าเดิม</summary>
+        /// <summary>ถ้า raw (ไม่นับเว้นวรรคหัว-ท้าย) เป็นตัวเลขล้วน แปลงผ่าน int แล้ว ToString กลับ (ตัดเลขศูนย์นำหน้า) ไม่งั้นคืนค่าเดิมตามที่ส่งมา</summary>
         private static string NormalizeNumericToken(string raw)
         {
             if (string.IsNullOrEmpty(raw)) return raw;
+            string probe = raw.Trim();
             int number;
-            if (Regex.IsMatch(raw, @"^\d+$") && int.TryParse(raw, out number))
+            if (Regex.IsMatch(probe, @"^\d+$") && int.TryParse(probe, out number))
                 return number.ToString(CultureInfo.InvariantCulture);
             return raw;
         }
 
         /// <summary>คืนค่า text ของเซลล์ที่ colRef ชี้ถึง (ลองตีความเป็นตัวอักษรคอลัมน์ก่อน ไม่ได้ลองจับคู่หัวตาราง) คืนค่าว่างถ้า resolve ไม่ได้เลย</summary>
-        private static string ResolveColumnRef(string colRef, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator)
+        private static string ResolveColumnRef(
+            string colRef, IRow headerRow, IRow dataRow, IFormulaEvaluator evaluator, bool preserveWhitespace = false)
         {
             int colIndex = ResolveColumnIndex(colRef, headerRow, evaluator);
             if (colIndex < 0) return string.Empty;
-            return GetCellText(dataRow.GetCell(colIndex), evaluator).Trim();
+
+            string text = GetCellText(dataRow.GetCell(colIndex), evaluator);
+            return preserveWhitespace ? text : text.Trim();
         }
 
         private static int ResolveColumnIndex(string colRef, IRow headerRow, IFormulaEvaluator evaluator)

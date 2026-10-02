@@ -11,8 +11,8 @@ namespace CMS.Services
     /// <item><b>กฎหมาย</b> — 3 ตัวแรกของ Code รวม (เช่น "RVA") ต้องตรงกับ CategoryCode ของหมวดที่อยู่ใต้หมวด "กฎหมาย" (LW);
     /// กฎหมายที่มีหลายปีและแยกหมวดตามปี (เช่น กฎหมาย › พระราชบัญญัติประกันชีวิต (PLI) › PLI2535, PLI2540) ใช้ปีจากตัวที่ 8-10 + "2" นำหน้า
     /// เลือกหมวดปี (ดู <see cref="TryResolveLawArticle"/>) — ลำดับชั้นหมวดอ่านจาก m_KBCategory ที่เดียว เพราะไฟล์ Excel ไม่มีข้อมูลนี้</item>
-    /// <item><b>ไม่ใช่กฎหมาย</b> — ตัวที่ 23 ของ Code รวม (1-6 → AN/OR/SO/RG/CI/MR) ต้องตรงกับ CategoryCode ของหมวดที่อยู่นอกหมวด "กฎหมาย"
-    /// แล้วต่อรหัสนั้นกับปี (ตัวที่ 8-10 + "2" นำหน้า) เป็นรหัสหมวดปี เช่น OR2535 ที่ต้องมีเป็นหมวดย่อยของหมวดประเภท (ดู
+    /// <item><b>ไม่ใช่กฎหมาย</b> — ตัวที่ 23 ของ Code รวม (รหัสประเภทเอกสาร 1-9) ต้องตรงกับ ImportTypeDigit ของหมวดประเภทที่อยู่นอกหมวด "กฎหมาย"
+    /// (master อยู่ที่ m_KBCategory — ดู <see cref="KBNonLawTypeMap"/>) แล้วต่อ CategoryCode ของหมวดประเภทนั้นกับปี (ตัวที่ 8-10 + "2" นำหน้า) เป็นรหัสหมวดปี เช่น OR2535 ที่ต้องมีเป็นหมวดย่อยของหมวดประเภท (ดู
     /// <see cref="TryResolveNonLawArticle"/>); หมวดที่ไม่มีในระบบคืนค่า <see cref="KBMissingCategory"/> ให้แจ้งผู้ใช้ว่าต้องสร้างหมวดอะไร</item>
     /// </list>
     /// สร้างจากรายการหมวดทั้งหมดครั้งเดียวต่อการ validate หนึ่งไฟล์ (ไม่เรียกฐานข้อมูลเอง) — CategoryCode เป็น UNIQUE
@@ -23,12 +23,16 @@ namespace CMS.Services
         private readonly Dictionary<string, KBCategory> _byCode = new Dictionary<string, KBCategory>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<int, KBCategory>    _byId   = new Dictionary<int, KBCategory>();
         private readonly Dictionary<int, List<KBCategory>> _children = new Dictionary<int, List<KBCategory>>();
+        private readonly KBNonLawTypeMap _typeMap;
 
         public KBImportCategoryResolver(IEnumerable<KBCategory> categories)
         {
             if (categories == null) throw new ArgumentNullException("categories");
 
-            foreach (var category in categories)
+            var all = categories.ToList();
+            _typeMap = new KBNonLawTypeMap(all);
+
+            foreach (var category in all)
             {
                 if (category == null) continue;
 
@@ -47,6 +51,9 @@ namespace CMS.Services
                     _byCode[code] = category;
             }
         }
+
+        /// <summary>หมวดประเภทเอกสารที่ไม่ใช่กฎหมายตามรหัสที่ตั้งไว้ (ตัวที่ 23 ของ Code รวม) — ใช้ทำป้ายประเภท/ข้อความ error</summary>
+        public KBNonLawTypeMap NonLawTypes { get { return _typeMap; } }
 
         /// <summary>
         /// หาหมวดกฎหมายจากรหัส 3 ตัวแรกของ Code รวม — ต้องมีในระบบ, ใช้งานอยู่, และอยู่ใต้หมวด "กฎหมาย" (ไม่ใช่หมวด "กฎหมาย" เอง)
@@ -193,27 +200,25 @@ namespace CMS.Services
         }
 
         /// <summary>
-        /// หาหมวดประเภทเอกสารที่ไม่ใช่กฎหมายจากรหัสประเภท (AN/OR/SO/RG/CI/MR ที่ได้จากตัวที่ 23 ของ Code รวม) —
-        /// ต้องมีในระบบ, ใช้งานอยู่, และไม่อยู่ใต้หมวด "กฎหมาย"
+        /// หาหมวดประเภทเอกสารที่ไม่ใช่กฎหมายจากรหัสประเภท (ตัวที่ 23 ของ Code รวม) — หมวดที่ตั้ง <see cref="KBCategory.ImportTypeDigit"/>
+        /// เป็นรหัสนั้น (master อยู่ในตาราง m_KBCategory ไม่ hardcode ในโค้ด) ต้องใช้งานอยู่ และไม่อยู่ใต้หมวด "กฎหมาย"
         /// คืน <c>false</c> พร้อมข้อความภาษาไทยใน <paramref name="error"/> เมื่อไม่ผ่าน
         /// </summary>
-        public bool TryResolveNonLaw(string typeCode, out KBCategory category, out string error)
+        public bool TryResolveNonLawType(char typeDigit, out KBCategory category, out string error)
         {
             category = null;
 
-            string code = (typeCode ?? string.Empty).Trim();
-            if (code.Length == 0)
+            KBCategory found = _typeMap.FindByDigit(typeDigit);
+            if (found == null)
             {
-                error = "ไม่พบรหัสประเภทเอกสาร (ตัวที่ 23 ของ Code รวม)";
+                error = _typeMap.IsEmpty
+                    ? "ยังไม่ได้ตั้งรหัสประเภทเอกสารให้หมวดใดเลย (ตั้งที่หน้าหมวดหมู่ ช่อง \"รหัสประเภทเอกสาร\")"
+                    : string.Format("ไม่มีหมวดประเภทเอกสารที่ใช้รหัส \"{0}\" (รหัสที่ตั้งไว้แล้ว: {1}) — ประเภทใหม่ให้สร้างหมวดแล้วตั้งรหัสที่หน้าหมวดหมู่ ช่อง \"รหัสประเภทเอกสาร\"",
+                        typeDigit, _typeMap.DescribeDigits());
                 return false;
             }
 
-            KBCategory found;
-            if (!_byCode.TryGetValue(code, out found))
-            {
-                error = string.Format("ไม่พบหมวดประเภทเอกสารรหัส \"{0}\" ในระบบ", code);
-                return false;
-            }
+            string code = (found.CategoryCode ?? string.Empty).Trim();
 
             if (IsLawRootOrUnder(found))
             {
@@ -234,35 +239,29 @@ namespace CMS.Services
 
         /// <summary>
         /// หาหมวดของแถวที่ไม่ใช่กฎหมายจาก Code รวมเต็ม ตามลำดับ:
-        /// 1) ตัวที่ 23 (1-6 → AN/OR/SO/RG/CI/MR) → หมวดประเภทเอกสารที่ตรง CategoryCode ใน m_KBCategory (<see cref="TryResolveNonLaw"/>)
+        /// 1) ตัวที่ 23 (รหัสประเภทเอกสาร) → หมวดประเภทเอกสารที่ตั้ง ImportTypeDigit เป็นรหัสนั้นใน m_KBCategory (<see cref="TryResolveNonLawType"/>)
         /// 2) ต่อรหัสนั้นกับปี = "2" + ตัวที่ 8-10 (เช่น OR + 2535 → "OR2535") แล้วหาใน m_KBCategory อีกครั้ง —
         ///    ต้องเป็นหมวดย่อยโดยตรงของหมวดประเภท และเปิดใช้งานอยู่; หมวดนี้คือหมวดที่บทความจะลง
-        /// หมวดไม่พบ (ข้อ 1 หรือ 2) = ไม่ผ่านพร้อม <paramref name="missing"/> บอกว่าต้องสร้างหมวดรหัสอะไรใต้หมวดไหน
+        /// หมวดปีไม่พบ = ไม่ผ่านพร้อม <paramref name="missing"/> บอกว่าต้องสร้างหมวดรหัสอะไรใต้หมวดไหน
+        /// (หมวดประเภทไม่พบ = ไม่มี <paramref name="missing"/> เพราะไม่มีรหัสหมวดให้แนะนำ ต้องตั้งรหัสประเภทที่หน้าหมวดหมู่)
         /// </summary>
         public bool TryResolveNonLawArticle(string articleCode, out KBCategory category, out string error, out KBMissingCategory missing)
         {
             category = null;
             missing  = null;
 
-            string code     = (articleCode ?? string.Empty).Trim();
-            string typeCode = KBImportLayoutTypeCatalog.GetNonLawCategoryCode(code);
-            if (typeCode == null)
+            string code = (articleCode ?? string.Empty).Trim();
+            char typeDigit;
+            if (!KBImportLayoutTypeCatalog.TryGetNonLawTypeDigit(code, out typeDigit))
             {
-                error = "Code รวม: ต้องยาว 27 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 23 ต้องเป็น 1-6";
+                error = KBImportLayoutTypeCatalog.NonLawCodeFormatMessage;
                 return false;
             }
 
             // 1) ประเภทเอกสาร
             KBCategory type;
-            if (!TryResolveNonLaw(typeCode, out type, out error))
-            {
-                if (!_byCode.ContainsKey(typeCode))
-                {
-                    missing = new KBMissingCategory { CategoryCode = typeCode };
-                    error  += string.Format(" — กรุณาสร้างหมวดรหัส {0} (หมวดหลัก) ก่อน", typeCode);
-                }
+            if (!TryResolveNonLawType(typeDigit, out type, out error))
                 return false;
-            }
 
             // 2) หมวดปี
             string year = KBImportLayoutTypeCatalog.GetLawYear(code);

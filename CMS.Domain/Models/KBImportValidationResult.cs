@@ -116,12 +116,12 @@ namespace CMS.Domain.Models
         /// null = หมวดครบ. ใช้สรุปให้ผู้ใช้ที่หน้าจอว่าต้องสร้างหมวดอะไร
         /// </summary>
         public KBMissingCategory MissingCategory { get; set; }
-        /// <summary>Display label for the resolved CategoryID: "มาตรา" (Law), "ประกาศ" or "คำสั่ง" (NonLaw).</summary>
+        /// <summary>Display label for the resolved CategoryID: "มาตรา" (Law) or the document type category name, e.g. "คำสั่ง" (NonLaw).</summary>
         public string DocumentTypeLabel  { get; set; }
         /// <summary>
         /// CategoryCode ของหมวดที่หาได้จาก ArticleCode ของแถวนี้ (ตั้งค่าโดย KBImportProcessor ผ่าน KBImportCategoryResolver):
         /// Law = รหัสกฎหมาย 3 ตัวแรกของ Code รวม (เช่น PVI, RVA) หรือรหัสหมวดปี (เช่น PLI2535) เมื่อกฎหมายนั้นแยกหมวดตามปี,
-        /// NonLaw = รหัสหมวดปีของประเภทเอกสาร เช่น OR2535 (ประเภทจากตัวที่ 23: AN/OR/SO/RG/CI/MR + พ.ศ. จากตัวที่ 8-10)
+        /// NonLaw = รหัสหมวดปีของประเภทเอกสาร เช่น OR2535 (ประเภทจากตัวที่ 23 ตามรหัสประเภทเอกสารที่ตั้งไว้ที่หมวด เช่น OR + พ.ศ. จากตัวที่ 8-10)
         /// </summary>
         public string DocumentTypeCode   { get; set; }
 

@@ -10,7 +10,7 @@ namespace CMS.Domain.Models
     public static class KBImportLayoutTypeCatalog
     {
         public const string Law = "Law";
-        /// <summary>ไฟล์ที่ไม่ใช่กฎหมายทุกประเภท (OR, AN, SO, RG, CI, MR) — โครงสร้างเดียวกัน แยกประเภทด้วยตัวที่ 23 ของ Code รวม</summary>
+        /// <summary>ไฟล์ที่ไม่ใช่กฎหมายทุกประเภท — โครงสร้างเดียวกัน แยกประเภทด้วยตัวที่ 23 ของ Code รวม (รหัสประเภทตั้งที่หมวด ดู <see cref="KBCategory.ImportTypeDigit"/>)</summary>
         public const string NonLaw = "NonLaw";
 
         /// <summary>ความยาวของ Code รวมในไฟล์กฎหมาย: [prefix 3][...][suffix 5]</summary>
@@ -57,59 +57,62 @@ namespace CMS.Domain.Models
             return "2" + digits;
         }
 
-        /// <summary>ตัวที่ 23 ของ Code รวมในไฟล์ที่ไม่ใช่กฎหมาย (ประเภทเอกสาร) → CategoryCode ของหมวดนั้น</summary>
-        private static readonly System.Collections.Generic.Dictionary<char, string> NonLawTypeCategoryCodes =
-            new System.Collections.Generic.Dictionary<char, string>
-        {
-            { '1', "AN" },   // หมวดภายใน/ประกาศ
-            { '2', "OR" },   // คำสั่ง (นายทะเบียน/กระทรวง)
-            { '3', "SO" },   // คำสั่งพิเศษ
-            { '4', "RG" },   // ระเบียบ
-            { '5', "CI" },   // หนังสือเวียน
-            { '6', "MR" },   // กฎกระทรวง
-        };
+        /// <summary>ตำแหน่ง (0-based) ของรหัสประเภทเอกสารใน Code รวมของไฟล์ที่ไม่ใช่กฎหมาย = ตัวที่ 23</summary>
+        public const int NonLawTypeDigitIndex = 22;
 
-        /// <summary>CategoryCode ของประเภทเอกสารที่ไม่ใช่กฎหมายทั้งหมด เรียงตามตัวเลขตัวที่ 23 (AN, OR, SO, RG, CI, MR)</summary>
-        public static System.Collections.Generic.IList<string> GetNonLawCategoryCodes()
+        /// <summary>รหัสประเภทเอกสารเป็นตัวเลข 1 หลัก — ต่ำสุดที่ตั้งได้ที่หมวด (<see cref="KBCategory.ImportTypeDigit"/>)</summary>
+        public const char MinTypeDigit = '1';
+
+        /// <summary>รหัสประเภทเอกสารเป็นตัวเลข 1 หลัก — สูงสุดที่ตั้งได้ที่หมวด (<see cref="KBCategory.ImportTypeDigit"/>)</summary>
+        public const char MaxTypeDigit = '9';
+
+        /// <summary>
+        /// ข้อความอธิบายรูปแบบ Code รวมของไฟล์ที่ไม่ใช่กฎหมายสำหรับ error ตอน validate — ตรวจเฉพาะ "รูปแบบ"
+        /// ส่วนรหัสประเภทที่มีจริงในระบบตรวจแยกที่ <c>KBImportCategoryResolver</c> (master อยู่ที่ m_KBCategory)
+        /// </summary>
+        public const string NonLawCodeFormatMessage =
+            "Code รวม: ต้องยาว 27 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 23 ต้องเป็นรหัสประเภทเอกสาร (ตัวเลข 1-9)";
+
+        /// <summary>true ถ้า <paramref name="ch"/> เป็นรหัสประเภทเอกสารที่ใช้ได้ (1-9)</summary>
+        public static bool IsTypeDigit(char ch)
         {
-            var result = new System.Collections.Generic.List<string>();
-            foreach (char digit in "123456")
-                result.Add(NonLawTypeCategoryCodes[digit]);
-            return result;
+            return ch >= MinTypeDigit && ch <= MaxTypeDigit;
         }
 
-        /// <summary>CategoryCode ที่ตัวที่ 23 ของ Code รวมชี้ถึง — null ถ้า <paramref name="code"/> ไม่ใช่ Code รวมของไฟล์ที่ไม่ใช่กฎหมาย</summary>
-        public static string GetNonLawCategoryCode(string code)
+        /// <summary>แปลงข้อความ (ตัดช่องว่างหัวท้าย) เป็นรหัสประเภทเอกสาร — false ถ้าว่างหรือไม่ใช่ตัวเลข 1-9 ตัวเดียว</summary>
+        public static bool TryParseTypeDigit(string value, out char digit)
         {
-            if (string.IsNullOrEmpty(code) || code.Length != LawCodeLength) return null;
-            if (string.Equals(code.Substring(LawCodeLength - 5), LawCodeSuffix, StringComparison.Ordinal)) return null;
+            digit = '\0';
 
-            string categoryCode;
-            return NonLawTypeCategoryCodes.TryGetValue(code[22], out categoryCode) ? categoryCode : null;
+            string trimmed = value == null ? string.Empty : value.Trim();
+            if (trimmed.Length != 1 || !IsTypeDigit(trimmed[0])) return false;
+
+            digit = trimmed[0];
+            return true;
         }
 
         /// <summary>
-        /// true ถ้า <paramref name="code"/> เป็น Code รวมของไฟล์ที่ไม่ใช่กฎหมาย: ยาว 27 ตัว, 5 ตัวสุดท้ายไม่ใช่ "00000",
-        /// และตัวที่ 23 เป็น 1-6
+        /// รหัสประเภทเอกสารจากตัวที่ 23 ของ Code รวมที่เป็นรูปแบบไฟล์ที่ไม่ใช่กฎหมาย: ยาว 27 ตัว, 5 ตัวสุดท้ายไม่ใช่ "00000",
+        /// ตัวที่ 23 เป็น 1-9 — ตรวจเฉพาะรูปแบบ ไม่ตรวจว่ามีประเภทเอกสารรหัสนั้นจริง (master อยู่ที่ m_KBCategory ดู <see cref="KBNonLawTypeMap"/>)
         /// </summary>
-        public static bool IsNonLawCode(string code)
+        public static bool TryGetNonLawTypeDigit(string code, out char digit)
         {
-            return GetNonLawCategoryCode(code) != null;
+            digit = '\0';
+            if (string.IsNullOrEmpty(code) || code.Length != LawCodeLength) return false;
+            if (string.Equals(code.Substring(LawCodeLength - 5), LawCodeSuffix, StringComparison.Ordinal)) return false;
+
+            char ch = code[NonLawTypeDigitIndex];
+            if (!IsTypeDigit(ch)) return false;
+
+            digit = ch;
+            return true;
         }
 
-        /// <summary>ป้ายแสดงผลของประเภทเอกสาร จากตัวที่ 23 ของ Code รวม (1-6) — ค่าว่างถ้าไม่ใช่ 1-6</summary>
-        public static string GetNonLawTypeLabel(char typeDigit)
+        /// <summary>true ถ้า <paramref name="code"/> มีรูปแบบ Code รวมของไฟล์ที่ไม่ใช่กฎหมาย (ดู <see cref="TryGetNonLawTypeDigit"/>)</summary>
+        public static bool IsNonLawCodeFormat(string code)
         {
-            switch (typeDigit)
-            {
-                case '1': return "ประกาศ";        // AN
-                case '2': return "คำสั่ง";         // OR
-                case '3': return "คำสั่งพิเศษ";    // SO
-                case '4': return "ระเบียบ";        // RG
-                case '5': return "หนังสือเวียน";   // CI
-                case '6': return "กฎกระทรวง";     // MR
-                default:  return string.Empty;
-            }
+            char digit;
+            return TryGetNonLawTypeDigit(code, out digit);
         }
 
         /// <summary>
@@ -139,7 +142,7 @@ namespace CMS.Domain.Models
             return new System.Collections.Generic.List<KBImportLayoutOption>
             {
                 new KBImportLayoutOption { LayoutType = Law,    Description = Describe(Law) },
-                new KBImportLayoutOption { LayoutType = NonLaw, Description = "ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR)" },
+                new KBImportLayoutOption { LayoutType = NonLaw, Description = "ไม่ใช่กฎหมาย (ประเภทเอกสารตามที่ตั้งในหมวดหมู่)" },
             };
         }
 
@@ -149,7 +152,7 @@ namespace CMS.Domain.Models
             if (string.Equals(layoutType, Law, StringComparison.OrdinalIgnoreCase))
                 return "กฎหมาย (มาตรา)";
             if (string.Equals(layoutType, NonLaw, StringComparison.OrdinalIgnoreCase))
-                return "เอกสารที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR)";
+                return "เอกสารที่ไม่ใช่กฎหมาย (ประเภทเอกสารตามที่ตั้งในหมวดหมู่)";
             return layoutType ?? string.Empty;
         }
     }

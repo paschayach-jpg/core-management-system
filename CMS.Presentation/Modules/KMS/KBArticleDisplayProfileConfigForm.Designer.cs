@@ -19,12 +19,13 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlMain = new System.Windows.Forms.Panel();
             this.pnlRight = new System.Windows.Forms.Panel();
             this.dgvColumnMapping = new System.Windows.Forms.DataGridView();
+            this.colSlotKey = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colSlotDescription = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colDisplayLabel = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colIsVisible = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.pnlBottomSection = new System.Windows.Forms.Panel();
             this.pnlCategoryAssignment = new System.Windows.Forms.Panel();
-            this.clbCategories = new System.Windows.Forms.CheckedListBox();
+            this.treeCategories = new System.Windows.Forms.TreeView();
             this.lblCategoryAssignmentTitle = new System.Windows.Forms.Label();
             this.pnlButtons = new System.Windows.Forms.Panel();
             this.btnClose = new System.Windows.Forms.Button();
@@ -126,6 +127,7 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvColumnMapping.AutoGenerateColumns = false;
             this.dgvColumnMapping.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvColumnMapping.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.colSlotKey,
             this.colSlotDescription,
             this.colDisplayLabel,
             this.colIsVisible});
@@ -137,12 +139,18 @@ namespace CMS.Presentation.Modules.KMS
             this.dgvColumnMapping.Size = new System.Drawing.Size(895, 456);
             this.dgvColumnMapping.TabIndex = 1;
             //
+            // colSlotKey
+            //
+            this.colSlotKey.HeaderText = "จุดที่แสดงผล";
+            this.colSlotKey.Name = "colSlotKey";
+            this.colSlotKey.ReadOnly = true;
+            this.colSlotKey.Width = 130;
+            //
             // colSlotDescription
             //
             this.colSlotDescription.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.colSlotDescription.HeaderText = "จุดที่แสดงผล (dgvArticles / Card)";
+            this.colSlotDescription.HeaderText = "คำอธิบาย (แก้ไขได้)";
             this.colSlotDescription.Name = "colSlotDescription";
-            this.colSlotDescription.ReadOnly = true;
             //
             // colDisplayLabel
             //
@@ -168,7 +176,7 @@ namespace CMS.Presentation.Modules.KMS
             //
             // pnlCategoryAssignment
             //
-            this.pnlCategoryAssignment.Controls.Add(this.clbCategories);
+            this.pnlCategoryAssignment.Controls.Add(this.treeCategories);
             this.pnlCategoryAssignment.Controls.Add(this.lblCategoryAssignmentTitle);
             this.pnlCategoryAssignment.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlCategoryAssignment.Location = new System.Drawing.Point(0, 0);
@@ -177,16 +185,16 @@ namespace CMS.Presentation.Modules.KMS
             this.pnlCategoryAssignment.Size = new System.Drawing.Size(895, 227);
             this.pnlCategoryAssignment.TabIndex = 0;
             //
-            // clbCategories
+            // treeCategories
             //
-            this.clbCategories.CheckOnClick = true;
-            this.clbCategories.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.clbCategories.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.clbCategories.FormattingEnabled = true;
-            this.clbCategories.Location = new System.Drawing.Point(0, 26);
-            this.clbCategories.Name = "clbCategories";
-            this.clbCategories.Size = new System.Drawing.Size(895, 201);
-            this.clbCategories.TabIndex = 1;
+            this.treeCategories.CheckBoxes = true;
+            this.treeCategories.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeCategories.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.treeCategories.HideSelection = false;
+            this.treeCategories.Location = new System.Drawing.Point(0, 26);
+            this.treeCategories.Name = "treeCategories";
+            this.treeCategories.Size = new System.Drawing.Size(895, 201);
+            this.treeCategories.TabIndex = 1;
             //
             // lblCategoryAssignmentTitle
             //
@@ -426,12 +434,13 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.Panel pnlMain;
         private System.Windows.Forms.Panel pnlRight;
         private System.Windows.Forms.DataGridView dgvColumnMapping;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colSlotKey;
         private System.Windows.Forms.DataGridViewTextBoxColumn colSlotDescription;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDisplayLabel;
         private System.Windows.Forms.DataGridViewCheckBoxColumn colIsVisible;
         private System.Windows.Forms.Panel pnlBottomSection;
         private System.Windows.Forms.Panel pnlCategoryAssignment;
-        private System.Windows.Forms.CheckedListBox clbCategories;
+        private System.Windows.Forms.TreeView treeCategories;
         private System.Windows.Forms.Label lblCategoryAssignmentTitle;
         private System.Windows.Forms.Panel pnlButtons;
         private System.Windows.Forms.Button btnClose;

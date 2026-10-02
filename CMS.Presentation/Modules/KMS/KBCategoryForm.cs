@@ -192,6 +192,8 @@ namespace CMS.Presentation.Modules.KMS
 
         private void CboParent_SelectedIndexChanged(object sender, EventArgs e) { MarkDirty(); }
 
+        private void CboImportTypeDigit_SelectedIndexChanged(object sender, EventArgs e) { MarkDirty(); }
+
         private void CboIcon_SelectedIndexChanged(object sender, EventArgs e)
         {
             MarkDirty();
@@ -268,6 +270,19 @@ namespace CMS.Presentation.Modules.KMS
             set { SelectParentInCombo(value); }
         }
 
+        /// <summary>
+        /// รหัสประเภทเอกสารที่ไม่ใช่กฎหมาย (1-9 = ตัวที่ 23 ของ Code รวมตอน import) — null = ไม่ใช่หมวดประเภทเอกสาร
+        /// </summary>
+        public string ImportTypeDigit
+        {
+            get
+            {
+                var item = cboImportTypeDigit.SelectedItem as DigitItem;
+                return item != null ? item.Digit : null;
+            }
+            set { SelectImportTypeDigit(value); }
+        }
+
         private int? _editingId;
 
         /// <summary>
@@ -282,6 +297,7 @@ namespace CMS.Presentation.Modules.KMS
                 if (_editingId == value) return;
                 _editingId = value;
                 RefreshParentCombo();
+                RefreshImportTypeCombo();
             }
         }
 
@@ -315,6 +331,7 @@ namespace CMS.Presentation.Modules.KMS
             _categories = new List<KBCategory>(categories);
             RefreshTree();
             RefreshParentCombo();
+            RefreshImportTypeCombo();
         }
 
         public void ClearForm()
@@ -394,6 +411,8 @@ namespace CMS.Presentation.Modules.KMS
             // This will be overridden by BtnNewSub_Click if creating a subcategory
             if (cboParent.Items.Count > 0)
                 cboParent.SelectedIndex = 0;
+
+            SelectImportTypeDigit(null);
             
             txtName.Focus();
         }
@@ -529,6 +548,46 @@ namespace CMS.Presentation.Modules.KMS
                 cboParent.SelectedIndex = 0;
         }
 
+        /// <summary>
+        /// รายการรหัสประเภทเอกสาร: "ไม่ใช่ประเภทเอกสาร" + 1-9 — รหัสที่หมวดอื่นใช้อยู่แล้วมีชื่อหมวดนั้นกำกับ (1 รหัสใช้ได้ 1 หมวด
+        /// เลือกซ้ำแล้วบันทึกไม่ผ่าน) ส่วนรหัสของหมวดที่กำลังแก้ไขอยู่ไม่กำกับ; เก็บค่าที่เลือกอยู่ไว้ตอนสร้างรายการใหม่
+        /// </summary>
+        private void RefreshImportTypeCombo()
+        {
+            string current = ImportTypeDigit;
+
+            cboImportTypeDigit.Items.Clear();
+            cboImportTypeDigit.Items.Add(new DigitItem(null, "— ไม่ใช่ประเภทเอกสาร —"));
+            for (char ch = KBImportLayoutTypeCatalog.MinTypeDigit; ch <= KBImportLayoutTypeCatalog.MaxTypeDigit; ch++)
+            {
+                string digit = ch.ToString();
+                var owner = _categories.FirstOrDefault(c => c.ImportTypeDigit == digit
+                                                            && (!_editingId.HasValue || c.CategoryID != _editingId.Value));
+                cboImportTypeDigit.Items.Add(new DigitItem(digit, owner == null
+                    ? digit
+                    : string.Format("{0} — ใช้แล้ว: {1}", digit, owner.CategoryName)));
+            }
+
+            SelectImportTypeDigit(current);
+        }
+
+        private void SelectImportTypeDigit(string digit)
+        {
+            if (cboImportTypeDigit.Items.Count == 0) return;
+
+            string wanted = string.IsNullOrWhiteSpace(digit) ? null : digit.Trim();
+            for (int i = 0; i < cboImportTypeDigit.Items.Count; i++)
+            {
+                var item = cboImportTypeDigit.Items[i] as DigitItem;
+                if (item != null && item.Digit == wanted)
+                {
+                    cboImportTypeDigit.SelectedIndex = i;
+                    return;
+                }
+            }
+            cboImportTypeDigit.SelectedIndex = 0;
+        }
+
         private void SelectParentInCombo(int? parentId)
         {
             if (!parentId.HasValue) { cboParent.SelectedIndex = 0; return; }
@@ -560,6 +619,14 @@ namespace CMS.Presentation.Modules.KMS
                 return false;
             }
             return true;
+        }
+
+        private class DigitItem
+        {
+            public string Digit   { get; private set; }
+            public string Display { get; private set; }
+            public DigitItem(string digit, string display) { Digit = digit; Display = display; }
+            public override string ToString() { return Display; }
         }
 
         private class ComboItem

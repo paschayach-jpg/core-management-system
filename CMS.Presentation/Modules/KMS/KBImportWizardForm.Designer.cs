@@ -852,9 +852,9 @@
             this.pnlPreviewGrid.Controls.Add(this.dgvPreview);
             this.pnlPreviewGrid.Controls.Add(this.pnlGridPager);
             this.pnlPreviewGrid.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlPreviewGrid.Location = new System.Drawing.Point(0, 199);
+            this.pnlPreviewGrid.Location = new System.Drawing.Point(0, 139);
             this.pnlPreviewGrid.Name = "pnlPreviewGrid";
-            this.pnlPreviewGrid.Size = new System.Drawing.Size(1522, 453);
+            this.pnlPreviewGrid.Size = new System.Drawing.Size(1522, 513);
             this.pnlPreviewGrid.TabIndex = 2;
             // 
             // dgvPreview
@@ -889,7 +889,7 @@
             this.dgvPreview.RowHeadersWidth = 51;
             this.dgvPreview.RowTemplate.Height = 26;
             this.dgvPreview.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvPreview.Size = new System.Drawing.Size(1522, 397);
+            this.dgvPreview.Size = new System.Drawing.Size(1522, 457);
             this.dgvPreview.TabIndex = 0;
             // 
             // pnlGridPager
@@ -899,7 +899,7 @@
             this.pnlGridPager.Controls.Add(this.btnGridPrev);
             this.pnlGridPager.Controls.Add(this.btnGridNext);
             this.pnlGridPager.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlGridPager.Location = new System.Drawing.Point(0, 397);
+            this.pnlGridPager.Location = new System.Drawing.Point(0, 457);
             this.pnlGridPager.Name = "pnlGridPager";
             this.pnlGridPager.Padding = new System.Windows.Forms.Padding(8, 4, 8, 4);
             this.pnlGridPager.Size = new System.Drawing.Size(1522, 56);

@@ -13,6 +13,9 @@ namespace CMS.Services
     /// </summary>
     public class KBArticleDisplayProfileService : IKBArticleDisplayProfileService
     {
+        /// <summary>ความยาวสูงสุดของคำอธิบาย slot — ตรงกับ KMS.m_KBArticleDisplayProfileColumn.SlotDescription NVARCHAR(500)</summary>
+        public const int SlotDescriptionMaxLength = 500;
+
         private readonly IKBArticleDisplayProfileRepository _repo;
         private readonly IKBCategoryRepository               _categoryRepo;
         private readonly IAuditService                       _auditService;
@@ -58,7 +61,10 @@ namespace CMS.Services
                 rows.Add(new KBArticleDisplayProfileColumnRow
                 {
                     SlotKey         = slotKey,
-                    SlotDescription = KBArticleDisplaySlotCatalog.GetDescription(slotKey),
+                    // ค่าที่ผู้ใช้ตั้งไว้ใน DB; NULL (Profile ใหม่ / แถวที่ยังไม่เคยบันทึก) ใช้ค่าเริ่มต้นจาก catalog
+                    SlotDescription = col != null && col.SlotDescription != null
+                        ? col.SlotDescription
+                        : KBArticleDisplaySlotCatalog.GetDescription(slotKey),
                     DisplayLabel    = col != null ? col.DisplayLabel : KBArticleDisplaySlotCatalog.GetDefaultLabel(slotKey),
                     IsVisible       = col != null ? col.IsVisible : KBArticleDisplaySlotCatalog.GetDefaultVisible(slotKey),
                 });
@@ -124,6 +130,14 @@ namespace CMS.Services
             if (_repo.ExistsByName(profile.ProfileName.Trim(), profile.ProfileID))
                 throw new InvalidOperationException(string.Format("มี Profile ชื่อ \"{0}\" อยู่แล้ว", profile.ProfileName.Trim()));
 
+            foreach (var row in rows)
+            {
+                string description = (row.SlotDescription ?? string.Empty).Trim();
+                if (description.Length > SlotDescriptionMaxLength)
+                    throw new ArgumentException(string.Format("คำอธิบายของ '{0}' ยาวเกิน {1} ตัวอักษร (พบ {2} ตัว)",
+                        row.SlotKey, SlotDescriptionMaxLength, description.Length));
+            }
+
             bool isNew = profile.ProfileID <= 0;
             profile.ProfileName = profile.ProfileName.Trim();
             if (isNew) profile.CreatedBy = user.AdIdentity;
@@ -131,8 +145,9 @@ namespace CMS.Services
             var columns = rows.Select(r => new KBArticleDisplayProfileColumn
             {
                 ProfileID    = profile.ProfileID,
-                SlotKey      = r.SlotKey,
-                DisplayLabel = r.DisplayLabel ?? string.Empty,
+                SlotKey         = r.SlotKey,
+                SlotDescription = (r.SlotDescription ?? string.Empty).Trim(),
+                DisplayLabel    = r.DisplayLabel ?? string.Empty,
                 IsVisible    = r.IsVisible,
             }).ToList();
 

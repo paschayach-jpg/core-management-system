@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CMS.Services
@@ -31,7 +32,8 @@ namespace CMS.Services
     /// (เซลล์ว่าง/ field ที่ไม่ได้ map = คงค่าเดิม; ค่าคงที่ตอน insert เช่น Status ไม่ถูกเขียนทับ) และตั้ง UpdatedBy = 'system',
     /// UpdatedDate = เวลาที่ update — ดู <see cref="UpdateExistingLawArticle"/> / <see cref="UpdateExistingNonLawArticle"/>.
     /// ไฟล์แนบที่มีอยู่แล้วไม่ดาวน์โหลด/อัปโหลดซ้ำ.
-    /// CategoryID is resolved per row from digit 23 of the ArticleCode (1-6 → AN/OR/SO/RG/CI/MR),
+    /// CategoryID is resolved per row from digit 23 of the ArticleCode (the document type category whose
+    /// <c>KBCategory.ImportTypeDigit</c> equals it, e.g. 2 → OR — a master in m_KBCategory, not hard-coded),
     /// same as Law — one Template serves every document type; ArticleType comes from the Template.
     /// </summary>
     public class KBImportProcessor : IKBImportProcessorService
@@ -273,9 +275,9 @@ namespace CMS.Services
 
             // Defensive re-check — รูปแบบ Code รวมถูกตรวจแล้วตอน ValidateRows; ตรวจซ้ำเพราะ InsertArticles
             // อาจถูกเรียกเมื่อไรก็ได้หลังจากนั้น
-            if (!KBImportLayoutTypeCatalog.IsNonLawCode(row.ArticleCode))
+            if (!KBImportLayoutTypeCatalog.IsNonLawCodeFormat(row.ArticleCode))
                 throw new InvalidOperationException(string.Format(
-                    "Code รวม: ต้องยาว 27 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 23 ต้องเป็น 1-6 — '{0}'", row.ArticleCode));
+                    "{0} — '{1}'", KBImportLayoutTypeCatalog.NonLawCodeFormatMessage, row.ArticleCode));
             if (row.ResolvedCategoryID <= 0)
                 throw new InvalidOperationException("ไม่พบหมวด (CategoryID) ของแถวนี้ — ต้องผ่านการ validate ก่อน insert");
 
@@ -591,18 +593,52 @@ namespace CMS.Services
         /// Converts plain text (Law column P / NonLaw ContentHTML) into HTML before it is stored in
         /// <c>t_KBArticle.ContentHTML</c>. Both <c>ArticleViewerForm</c> and <c>KBEditorDialog</c>
         /// set this value straight into an HTML DOM without further conversion — storing raw
-        /// <c>\n</c>/<c>\t</c> would collapse per the HTML whitespace spec, so the text is
-        /// HTML-encoded first and then <c>\n</c> → <c>&lt;br&gt;</c> / <c>\t</c> → 4x <c>&amp;nbsp;</c>.
+        /// whitespace would collapse per the HTML whitespace spec, so each line is HTML-encoded and
+        /// the whitespace is made visible: line break → <c>&lt;br&gt;</c>, <c>\t</c> → 4x <c>&amp;nbsp;</c>,
+        /// leading/trailing spaces (indent) → <c>&amp;nbsp;</c>, a run of spaces → alternating space/<c>&amp;nbsp;</c>
+        /// (single spaces between words stay plain so the text still wraps).
         /// </summary>
         internal static string ConvertPlainTextToHtml(string raw)
         {
             if (string.IsNullOrEmpty(raw)) return string.Empty;
 
-            string normalized = raw.Replace("\r\n", "\n").Replace("\r", "\n");
-            string encoded    = WebUtility.HtmlEncode(normalized);
-            encoded = encoded.Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
-            encoded = encoded.Replace("\n", "<br>");
-            return encoded;
+            string[] lines = raw.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n');
+            var html = new StringBuilder(raw.Length + 16);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (i > 0) html.Append("<br>");
+                html.Append(EncodeLineForHtml(lines[i]));
+            }
+            return html.ToString();
+        }
+
+        private static string EncodeLineForHtml(string line)
+        {
+            string encoded = WebUtility.HtmlEncode(line).Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;");
+
+            int start = 0;
+            while (start < encoded.Length && encoded[start] == ' ') start++;
+            int end = encoded.Length;
+            while (end > start && encoded[end - 1] == ' ') end--;
+
+            string core = encoded.Substring(start, end - start).Replace("  ", " &nbsp;");   // "a    b" → "a &nbsp; &nbsp;b" (4 spaces kept)
+
+            var sb = new StringBuilder(encoded.Length + 8);
+            for (int i = 0; i < start; i++) sb.Append("&nbsp;");
+            sb.Append(core);
+            for (int i = end; i < encoded.Length; i++) sb.Append("&nbsp;");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// ข้อความที่เก็บเป็นข้อความล้วน (Title / TitleCategory / Summary — แสดงใน Label/TextBox/Grid ไม่ใช่ HTML): คงทุกอย่างตามต้นฉบับ
+        /// (เว้นวรรค, indent, tab, ช่องว่างหัว-ท้าย) ปรับเฉพาะตัวขึ้นบรรทัดใหม่เป็น CRLF เหมือนที่ TextBox ของหน้าแก้ไขบทความบันทึก —
+        /// Excel ใช้ LF เดี่ยว ซึ่ง TextBox แบบหลายบรรทัดจะไม่แสดงเป็นการขึ้นบรรทัด
+        /// </summary>
+        internal static string ToPlainText(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return raw;
+            return raw.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n");
         }
 
         // ── Private helpers — validation ──────────────────────────────────────
@@ -715,8 +751,8 @@ namespace CMS.Services
             row.ArticleCode        = code;
             row.Title              = "มาตรา " + sectionNumber;
             row.Tags               = row.Title;
-            row.Summary            = string.IsNullOrWhiteSpace(row.RawSummary) ? null : row.RawSummary.Trim();
-            row.TitleCategory      = string.IsNullOrWhiteSpace(row.RawTitleCategory) ? null : row.RawTitleCategory.Trim();
+            row.Summary            = string.IsNullOrWhiteSpace(row.RawSummary) ? null : ToPlainText(row.RawSummary);
+            row.TitleCategory      = string.IsNullOrWhiteSpace(row.RawTitleCategory) ? null : ToPlainText(row.RawTitleCategory);
             row.ResolvedCategoryID = lawCategory.CategoryID;
             row.ResolvedCategoryName = lawCategory.CategoryName;
             row.DocumentTypeCode   = lawCategory.CategoryCode;
@@ -746,7 +782,7 @@ namespace CMS.Services
             {
                 var mappedLines = row.ColA.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                                           .Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
-                mappedCode = mappedLines.FirstOrDefault(KBImportLayoutTypeCatalog.IsNonLawCode) ?? mappedLines.FirstOrDefault();
+                mappedCode = mappedLines.FirstOrDefault(KBImportLayoutTypeCatalog.IsNonLawCodeFormat) ?? mappedLines.FirstOrDefault();
             }
             row.ArticleCode = mappedCode;
 
@@ -757,12 +793,9 @@ namespace CMS.Services
             //    หมวดไม่พบ = Error + row.MissingCategory บอกว่าต้องสร้างหมวดอะไร (controller สรุปแจ้งผู้ใช้ที่หน้าจอ) ──────────
             if (!string.IsNullOrWhiteSpace(mappedCode))
             {
-                string expectedCode = KBImportLayoutTypeCatalog.GetNonLawCategoryCode(mappedCode);
-
-                if (expectedCode == null)
+                if (!KBImportLayoutTypeCatalog.IsNonLawCodeFormat(mappedCode))
                 {
-                    errors.Add(string.Format(
-                        "Code รวม: ต้องยาว 27 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 23 ต้องเป็น 1-6 — '{0}'", mappedCode));
+                    errors.Add(string.Format("{0} — '{1}'", KBImportLayoutTypeCatalog.NonLawCodeFormatMessage, mappedCode));
                 }
                 else
                 {
@@ -778,11 +811,15 @@ namespace CMS.Services
                     else
                     {
                         row.MissingCategory = missingCategory;
-                        errors.Add(string.Format("Code รวม: ตัวที่ 23 = {0} ({1}) — {2} — '{3}'",
-                            mappedCode[22], expectedCode, categoryError, mappedCode));
+
+                        // รหัสประเภทที่ตั้งไว้แล้วแต่หมวดมีปัญหา (ปิดใช้งาน ฯลฯ) ใส่รหัสหมวดกำกับ เช่น "ตัวที่ 23 = 2 (OR)"; รหัสที่ยังไม่มีหมวดใช้ไม่มีวงเล็บ
+                        KBCategory typeCategory = resolver.NonLawTypes.FindByArticleCode(mappedCode);
+                        string typeCodeNote = typeCategory == null ? string.Empty : " (" + (typeCategory.CategoryCode ?? string.Empty).Trim() + ")";
+                        errors.Add(string.Format("Code รวม: ตัวที่ 23 = {0}{1} — {2} — '{3}'",
+                            mappedCode[KBImportLayoutTypeCatalog.NonLawTypeDigitIndex], typeCodeNote, categoryError, mappedCode));
                     }
 
-                    row.DocumentTypeLabel = KBImportLayoutTypeCatalog.GetNonLawTypeLabel(mappedCode[22]);
+                    row.DocumentTypeLabel = resolver.NonLawTypes.GetTypeLabel(mappedCode[KBImportLayoutTypeCatalog.NonLawTypeDigitIndex]);
 
                     // กฎหมายแม่ = 22 ตัวแรกของ Code รวม (ใช้ resolve + สร้าง KBArticleLink ไป-กลับ) ไม่อ่านคอลัมน์ B
                     row.ParentCodes = new List<string> { mappedCode.Substring(0, 22) };
@@ -869,9 +906,9 @@ namespace CMS.Services
                 return;
             }
 
-            row.Title          = row.RawTitle;
-            row.Summary        = row.RawSummary;
-            row.TitleCategory  = row.RawTitleCategory;
+            row.Title          = ToPlainText(row.RawTitle);
+            row.Summary        = ToPlainText(row.RawSummary);
+            row.TitleCategory  = ToPlainText(row.RawTitleCategory);
 
             row.Status     = "Valid";
             row.StatusNote = isExisting ? BuildUpdateNote(row, false) : null;

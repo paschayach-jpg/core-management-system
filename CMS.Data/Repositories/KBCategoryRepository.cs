@@ -29,7 +29,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
-                           c.DisplayProfileID,
+                           c.DisplayProfileID, c.ImportTypeDigit,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -54,7 +54,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
-                           c.DisplayProfileID,
+                           c.DisplayProfileID, c.ImportTypeDigit,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -79,7 +79,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
-                           c.DisplayProfileID,
+                           c.DisplayProfileID, c.ImportTypeDigit,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -105,7 +105,7 @@ namespace CMS.Data.Repositories
                     SELECT c.CategoryID, c.ParentCategoryID, c.CategoryCode,
                            c.CategoryName, c.Icon, c.Description,
                            c.SortOrder, c.IsActive, c.CreatedBy, c.CreatedDate,
-                           c.DisplayProfileID,
+                           c.DisplayProfileID, c.ImportTypeDigit,
                            p.CategoryName AS ParentCategoryName
                     FROM   KMS.m_KBCategory c
                     LEFT JOIN KMS.m_KBCategory p ON p.CategoryID = c.ParentCategoryID
@@ -143,10 +143,10 @@ namespace CMS.Data.Repositories
                         const string identitySql = @"
                             INSERT INTO KMS.m_KBCategory
                                 (ParentCategoryID, CategoryCode, CategoryName, Icon,
-                                 Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID)
+                                 Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID, ImportTypeDigit)
                             VALUES
                                 (@ParentCategoryID, @CategoryCode, @CategoryName, @Icon,
-                                 @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID);
+                                 @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID, @ImportTypeDigit);
                             SELECT CONVERT(INT, SCOPE_IDENTITY());";
                         using (var cmd = new SqlCommand(identitySql, conn, tx))
                         {
@@ -163,10 +163,10 @@ namespace CMS.Data.Repositories
 
                             INSERT INTO KMS.m_KBCategory
                                 (CategoryID, ParentCategoryID, CategoryCode, CategoryName, Icon,
-                                 Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID)
+                                 Description, SortOrder, IsActive, CreatedBy, CreatedDate, DisplayProfileID, ImportTypeDigit)
                             VALUES
                                 (@NewID, @ParentCategoryID, @CategoryCode, @CategoryName, @Icon,
-                                 @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID);
+                                 @Description, @SortOrder, 1, @CreatedBy, GETDATE(), @DisplayProfileID, @ImportTypeDigit);
                             SELECT @NewID;";
                         using (var cmd = new SqlCommand(manualIdSql, conn, tx))
                         {
@@ -204,7 +204,8 @@ namespace CMS.Data.Repositories
                         Icon             = @Icon,
                         Description      = @Description,
                         SortOrder        = @SortOrder,
-                        DisplayProfileID = @DisplayProfileID
+                        DisplayProfileID = @DisplayProfileID,
+                        ImportTypeDigit  = @ImportTypeDigit
                     WHERE CategoryID = @CategoryID";
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -241,6 +242,7 @@ namespace CMS.Data.Repositories
             cmd.Parameters.AddWithValue("@SortOrder",        c.SortOrder);
             cmd.Parameters.AddWithValue("@CreatedBy",        c.CreatedBy ?? string.Empty);
             cmd.Parameters.AddWithValue("@DisplayProfileID",  (object)c.DisplayProfileID ?? DBNull.Value);
+            cmd.Parameters.Add("@ImportTypeDigit", SqlDbType.Char, 1).Value = (object)c.ImportTypeDigit ?? DBNull.Value;
         }
 
         private static KBCategory Map(IDataReader r)
@@ -258,6 +260,7 @@ namespace CMS.Data.Repositories
                 CreatedBy          = r["CreatedBy"]        as string,
                 CreatedDate        = r.IsDBNull(r.GetOrdinal("CreatedDate")) ? DateTime.MinValue : r.GetDateTime(r.GetOrdinal("CreatedDate")),
                 DisplayProfileID   = r.IsDBNull(r.GetOrdinal("DisplayProfileID")) ? (int?)null : r.GetInt32(r.GetOrdinal("DisplayProfileID")),
+                ImportTypeDigit    = r.IsDBNull(r.GetOrdinal("ImportTypeDigit")) ? null : Convert.ToString(r["ImportTypeDigit"]).Trim(),
                 ParentCategoryName = r["ParentCategoryName"] as string,
             };
         }

@@ -49,6 +49,7 @@ namespace CMS.Controllers.KMS.KB
             _view.Description       = cat.Description;
             _view.SortOrder         = cat.SortOrder;
             _view.ParentCategoryId  = cat.ParentCategoryID;
+            _view.ImportTypeDigit   = cat.ImportTypeDigit;
             _view.DeleteEnabled     = cat.IsActive;
             _view.DeleteButtonText  = cat.IsActive ? "🗑️ ปิดใช้งาน" : "⛔ ปิดแล้ว";
             _view.BindCategoryDetails(cat);
@@ -90,6 +91,7 @@ namespace CMS.Controllers.KMS.KB
                         Icon             = _view.Icon,
                         Description      = _view.Description,
                         SortOrder        = _view.SortOrder,
+                        ImportTypeDigit  = _view.ImportTypeDigit,
                         IsActive         = true,
                         CreatedBy        = _user.AdIdentity,
                     };
@@ -107,6 +109,7 @@ namespace CMS.Controllers.KMS.KB
                         Icon             = _view.Icon,
                         Description      = _view.Description,
                         SortOrder        = _view.SortOrder,
+                        ImportTypeDigit  = _view.ImportTypeDigit,
                     };
                     _service.Update(cat);
                     _view.ShowSuccess("แก้ไข Category สำเร็จ");
