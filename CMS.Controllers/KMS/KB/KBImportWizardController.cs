@@ -30,6 +30,9 @@ namespace CMS.Controllers.KMS.KB
         /// <summary>ArticleType resolved from the selected Template — retained between ValidateFile() and ExecuteImport().</summary>
         private byte _lastResolvedArticleType;
 
+        /// <summary>Template ของการตรวจครั้งล่าสุด map คอลัมน์ Attachment หรือไม่ (= ต้องมีโฟลเดอร์ไฟล์แนบตอนนำเข้า) — retained between ValidateFile() and ExecuteImport().</summary>
+        private bool _lastRequiresAttachmentFolder;
+
         /// <summary>
         /// NonLaw rows: when an attachment cannot be downloaded/uploaded, fail the whole row
         /// (nothing is inserted) instead of inserting the article without its file.
@@ -96,12 +99,14 @@ namespace CMS.Controllers.KMS.KB
                 if (!templateId.HasValue)
                 {
                     _view.BindTemplateColumnReference(new List<KBImportTemplateColumnRow>(), string.Empty);
+                    _view.SetAttachmentFolderRequired(false);
                     return;
                 }
 
                 var template = _templateService.GetTemplateById(templateId.Value);
                 var columns  = _templateService.GetTemplateColumnGrid(templateId.Value);
                 _view.BindTemplateColumnReference(columns, template != null ? template.TemplateName : string.Empty);
+                _view.SetAttachmentFolderRequired(HasAttachmentMapping(columns));
             }
             catch (Exception ex)
             {
@@ -208,8 +213,10 @@ namespace CMS.Controllers.KMS.KB
                 // ชั้น 3-4 — หา CategoryID ของแต่ละแถวจาก ArticleCode (ไม่ผูกกับ Template) แล้วตรวจกฎรายแถว
                 _processor.ValidateRows(rows);
 
-                _lastValidation          = BuildValidationResult(rows);
-                _lastResolvedArticleType = resolvedArticleType;
+                _lastValidation               = BuildValidationResult(rows);
+                _lastResolvedArticleType      = resolvedArticleType;
+                _lastRequiresAttachmentFolder = HasAttachmentMapping(templateColumns);
+                _view.SetAttachmentFolderRequired(_lastRequiresAttachmentFolder);
 
                 _view.ShowValidationResult(_lastValidation);
 
@@ -246,6 +253,15 @@ namespace CMS.Controllers.KMS.KB
                     return;
                 }
 
+                // Template ที่ map Attachment ต้องเลือกโฟลเดอร์ไฟล์แนบก่อน (ปุ่มนำเข้าถูก disable ไว้อยู่แล้ว — ตรวจซ้ำที่นี่ก่อนใช้ snapshot ผลตรวจ
+                // เพื่อให้เลือกโฟลเดอร์แล้วนำเข้าต่อได้โดยไม่ต้องตรวจไฟล์ใหม่)
+                string attachmentFolder = _view.AttachmentFolderPath;
+                if (_lastRequiresAttachmentFolder && string.IsNullOrWhiteSpace(attachmentFolder))
+                {
+                    _view.ShowError("กรุณาเลือกโฟลเดอร์ไฟล์แนบ (PDF) ก่อนนำเข้า — Template นี้ต้องใช้ไฟล์แนบ");
+                    return;
+                }
+
                 // Consume this validation snapshot now — a validated batch may only be imported once. Importing the same
                 // snapshot twice would re-process stale Status="Valid" rows (articles inserted the first time would hit the real
                 // DB unique-key constraint). Forcing a fresh ValidateFile() before re-import re-checks every ArticleCode:
@@ -274,6 +290,7 @@ namespace CMS.Controllers.KMS.KB
                     _user,
                     SkipRowOnDownloadFailure,
                     _lastResolvedArticleType,
+                    _lastRequiresAttachmentFolder ? attachmentFolder : null,
                     out successCount,
                     out errorCount,
                     onProgress: (done, total) =>
@@ -330,6 +347,14 @@ namespace CMS.Controllers.KMS.KB
         }
 
         // ── Private helpers ──────────────────────────────────────────────────────
+
+        /// <summary>true ถ้า Template map คอลัมน์ Attachment (มี ExcelColumnRef) — ใช้กับ Template ไม่ใช่กฎหมาย ซึ่งต้องมีไฟล์แนบต่อบทความ</summary>
+        private static bool HasAttachmentMapping(IEnumerable<KBImportTemplateColumnRow> columns)
+        {
+            return columns != null && columns.Any(c =>
+                string.Equals(c.TargetColumnName, KBArticleColumnCatalog.AttachmentTargetColumn, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(c.ExcelColumnRef));
+        }
 
         /// <summary>
         /// Resolves the fixed values configured on the given Template's mapping (dropdowns in KBImportTemplateConfigForm):

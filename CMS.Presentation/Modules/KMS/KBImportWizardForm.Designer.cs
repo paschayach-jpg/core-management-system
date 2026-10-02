@@ -18,10 +18,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle7 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle8 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
             this.pnlErrorDetail = new System.Windows.Forms.Panel();
             this.dgvFailedRows = new System.Windows.Forms.DataGridView();
             this.colFRow = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -97,6 +97,10 @@
             this.pnlPreviewHdr = new System.Windows.Forms.Panel();
             this.lblPreviewHdr = new System.Windows.Forms.Label();
             this.pnlActStep2 = new System.Windows.Forms.Panel();
+            this.pnlAttachmentFolder = new System.Windows.Forms.Panel();
+            this.btnBrowseAttachmentFolder = new System.Windows.Forms.Button();
+            this.txtAttachmentFolder = new System.Windows.Forms.TextBox();
+            this.lblAttachmentFolder = new System.Windows.Forms.Label();
             this.btnImport = new System.Windows.Forms.Button();
             this.pnlProgress = new System.Windows.Forms.Panel();
             this.lblProgressText = new System.Windows.Forms.Label();
@@ -175,6 +179,7 @@
             this.pnlPillTotal.SuspendLayout();
             this.pnlPreviewHdr.SuspendLayout();
             this.pnlActStep2.SuspendLayout();
+            this.pnlAttachmentFolder.SuspendLayout();
             this.pnlProgress.SuspendLayout();
             this.pnlStep1.SuspendLayout();
             this.pnlStep1Inner.SuspendLayout();
@@ -214,12 +219,12 @@
             this.dgvFailedRows.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.AllCells;
             this.dgvFailedRows.BackgroundColor = System.Drawing.Color.White;
             this.dgvFailedRows.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
-            dataGridViewCellStyle5.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle5.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvFailedRows.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 12F);
+            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvFailedRows.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvFailedRows.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvFailedRows.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colFRow,
@@ -235,14 +240,14 @@
             this.dgvFailedRows.Location = new System.Drawing.Point(0, 42);
             this.dgvFailedRows.Name = "dgvFailedRows";
             this.dgvFailedRows.ReadOnly = true;
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle6.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle6.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle6.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvFailedRows.RowHeadersDefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvFailedRows.RowHeadersDefaultCellStyle = dataGridViewCellStyle2;
             this.dgvFailedRows.RowHeadersVisible = false;
             this.dgvFailedRows.RowHeadersWidth = 51;
             this.dgvFailedRows.RowTemplate.Height = 26;
@@ -863,12 +868,12 @@
             this.dgvPreview.AllowUserToDeleteRows = false;
             this.dgvPreview.BackgroundColor = System.Drawing.Color.White;
             this.dgvPreview.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            dataGridViewCellStyle7.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
-            dataGridViewCellStyle7.Font = new System.Drawing.Font("Segoe UI", 12F);
-            dataGridViewCellStyle7.ForeColor = System.Drawing.Color.White;
-            dataGridViewCellStyle7.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvPreview.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 12F);
+            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.White;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dgvPreview.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle3;
             this.dgvPreview.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvPreview.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvPreview.EnableHeadersVisualStyles = false;
@@ -877,14 +882,14 @@
             this.dgvPreview.Location = new System.Drawing.Point(0, 0);
             this.dgvPreview.Name = "dgvPreview";
             this.dgvPreview.ReadOnly = true;
-            dataGridViewCellStyle8.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle8.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle8.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            dataGridViewCellStyle8.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle8.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle8.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle8.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dgvPreview.RowHeadersDefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle4.Font = new System.Drawing.Font("Angsana New", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dgvPreview.RowHeadersDefaultCellStyle = dataGridViewCellStyle4;
             this.dgvPreview.RowHeadersVisible = false;
             this.dgvPreview.RowHeadersWidth = 51;
             this.dgvPreview.RowTemplate.Height = 26;
@@ -1134,6 +1139,7 @@
             // pnlActStep2
             // 
             this.pnlActStep2.BackColor = System.Drawing.Color.Transparent;
+            this.pnlActStep2.Controls.Add(this.pnlAttachmentFolder);
             this.pnlActStep2.Controls.Add(this.btnImport);
             this.pnlActStep2.Controls.Add(this.pnlProgress);
             this.pnlActStep2.Controls.Add(this.btnCancel2);
@@ -1144,6 +1150,59 @@
             this.pnlActStep2.Size = new System.Drawing.Size(1522, 61);
             this.pnlActStep2.TabIndex = 1;
             this.pnlActStep2.Visible = false;
+            // 
+            // pnlAttachmentFolder
+            // 
+            this.pnlAttachmentFolder.BackColor = System.Drawing.Color.Transparent;
+            this.pnlAttachmentFolder.Controls.Add(this.btnBrowseAttachmentFolder);
+            this.pnlAttachmentFolder.Controls.Add(this.txtAttachmentFolder);
+            this.pnlAttachmentFolder.Controls.Add(this.lblAttachmentFolder);
+            this.pnlAttachmentFolder.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pnlAttachmentFolder.Location = new System.Drawing.Point(472, 0);
+            this.pnlAttachmentFolder.Name = "pnlAttachmentFolder";
+            this.pnlAttachmentFolder.Size = new System.Drawing.Size(675, 61);
+            this.pnlAttachmentFolder.TabIndex = 4;
+            this.pnlAttachmentFolder.Visible = false;
+            // 
+            // btnBrowseAttachmentFolder
+            // 
+            this.btnBrowseAttachmentFolder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnBrowseAttachmentFolder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(46)))), ((int)(((byte)(116)))), ((int)(((byte)(181)))));
+            this.btnBrowseAttachmentFolder.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnBrowseAttachmentFolder.FlatAppearance.BorderSize = 0;
+            this.btnBrowseAttachmentFolder.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnBrowseAttachmentFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.btnBrowseAttachmentFolder.ForeColor = System.Drawing.Color.White;
+            this.btnBrowseAttachmentFolder.Location = new System.Drawing.Point(517, 28);
+            this.btnBrowseAttachmentFolder.Name = "btnBrowseAttachmentFolder";
+            this.btnBrowseAttachmentFolder.Size = new System.Drawing.Size(150, 31);
+            this.btnBrowseAttachmentFolder.TabIndex = 2;
+            this.btnBrowseAttachmentFolder.Text = "📂  เลือกโฟลเดอร์...";
+            this.btnBrowseAttachmentFolder.UseVisualStyleBackColor = false;
+            this.btnBrowseAttachmentFolder.Click += new System.EventHandler(this.BtnBrowseAttachmentFolder_Click);
+            // 
+            // txtAttachmentFolder
+            // 
+            this.txtAttachmentFolder.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtAttachmentFolder.BackColor = System.Drawing.Color.White;
+            this.txtAttachmentFolder.Font = new System.Drawing.Font("Segoe UI", 11F);
+            this.txtAttachmentFolder.Location = new System.Drawing.Point(16, 30);
+            this.txtAttachmentFolder.Name = "txtAttachmentFolder";
+            this.txtAttachmentFolder.ReadOnly = true;
+            this.txtAttachmentFolder.Size = new System.Drawing.Size(485, 32);
+            this.txtAttachmentFolder.TabIndex = 1;
+            // 
+            // lblAttachmentFolder
+            // 
+            this.lblAttachmentFolder.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Bold);
+            this.lblAttachmentFolder.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(57)))), ((int)(((byte)(43)))));
+            this.lblAttachmentFolder.Location = new System.Drawing.Point(16, 3);
+            this.lblAttachmentFolder.Name = "lblAttachmentFolder";
+            this.lblAttachmentFolder.Size = new System.Drawing.Size(700, 24);
+            this.lblAttachmentFolder.TabIndex = 0;
+            this.lblAttachmentFolder.Text = "📁  โฟลเดอร์ไฟล์แนบ (PDF) — ต้องเลือกก่อนจึงจะนำเข้าได้";
+            this.lblAttachmentFolder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // btnImport
             // 
@@ -1771,6 +1830,8 @@
             this.pnlPillTotal.ResumeLayout(false);
             this.pnlPreviewHdr.ResumeLayout(false);
             this.pnlActStep2.ResumeLayout(false);
+            this.pnlAttachmentFolder.ResumeLayout(false);
+            this.pnlAttachmentFolder.PerformLayout();
             this.pnlProgress.ResumeLayout(false);
             this.pnlStep1.ResumeLayout(false);
             this.pnlStep1Inner.ResumeLayout(false);
@@ -1864,6 +1925,10 @@
         private System.Windows.Forms.Button   btnImport;
         private System.Windows.Forms.Button   btnBack;
         private System.Windows.Forms.Button   btnCancel2;
+        private System.Windows.Forms.Panel    pnlAttachmentFolder;
+        private System.Windows.Forms.Label    lblAttachmentFolder;
+        private System.Windows.Forms.TextBox  txtAttachmentFolder;
+        private System.Windows.Forms.Button   btnBrowseAttachmentFolder;
         private System.Windows.Forms.Panel    pnlActStep3;
         private System.Windows.Forms.Button   btnClose;
         private System.Windows.Forms.Button   btnImportNew;

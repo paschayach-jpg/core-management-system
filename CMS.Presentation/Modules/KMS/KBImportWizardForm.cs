@@ -37,6 +37,13 @@ namespace CMS.Presentation.Modules.KMS
         private long     _uploadedFileSize;
         private DateTime _uploadedTime;
 
+        // โฟลเดอร์ไฟล์แนบ (PDF) ที่ผู้ใช้เลือกในเครื่อง — จำเป็นเมื่อ Template ที่เลือก map คอลัมน์ Attachment (ปุ่มนำเข้ากดไม่ได้จนกว่าจะเลือก)
+        private string   _attachmentFolderPath;
+        private bool     _attachmentFolderRequired;
+
+        private static readonly Color ImportButtonEnabledColor  = Color.FromArgb(39, 174, 96);    // เขียวเดิมของ btnImport
+        private static readonly Color ImportButtonDisabledColor = Color.FromArgb(189, 195, 199);  // เทา — เห็นชัดว่ากดไม่ได้ (FlatStyle.Flat ไม่เปลี่ยนสีพื้นเอง)
+
         // Preview grid paging
         private const int          GridPageSize = 50;
         /// <summary>ความสูงสูงสุดของแถวใน dgvPreview หลังปรับตามข้อความที่ wrap (ราว 4 บรรทัด) — กันเนื้อหายาว ๆ ดันแถวสูงทั้งหน้า ลากขอบแถวขยายเองได้</summary>
@@ -158,7 +165,19 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        public string AttachmentFolderPath
+        {
+            get { return string.IsNullOrWhiteSpace(_attachmentFolderPath) ? null : _attachmentFolderPath; }
+        }
+
         // Methods
+
+        public void SetAttachmentFolderRequired(bool required)
+        {
+            _attachmentFolderRequired  = required;
+            pnlAttachmentFolder.Visible = required;
+            UpdateImportButtonState();
+        }
 
         /// <summary>
         /// Binds the KB Import Templates configured in KBImportTemplateConfigForm to
@@ -230,6 +249,7 @@ namespace CMS.Presentation.Modules.KMS
             PopulatePreviewGrid(result.Rows);
             ShowStep(2);
             SetStatus("ตรวจสอบข้อมูลเรียบร้อย");
+            UpdateImportButtonState();
         }
 
         /// <summary>
@@ -432,6 +452,23 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private void BtnBrowseAttachmentFolder_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new FolderBrowserDialog())
+            {
+                dlg.Description         = "เลือกโฟลเดอร์ที่เก็บไฟล์แนบ (PDF) — ชื่อไฟล์ในโฟลเดอร์ต้องตรงกับชื่อไฟล์ในคอลัมน์ Attachment ของ Excel (รวมนามสกุล)";
+                dlg.ShowNewFolderButton = false;
+                if (!string.IsNullOrWhiteSpace(_attachmentFolderPath) && Directory.Exists(_attachmentFolderPath))
+                    dlg.SelectedPath = _attachmentFolderPath;
+
+                if (dlg.ShowDialog() != DialogResult.OK) return;
+
+                _attachmentFolderPath = dlg.SelectedPath;
+                UpdateImportButtonState();
+                SetStatus(string.Format("📂  เลือกโฟลเดอร์ไฟล์แนบ \"{0}\" แล้ว", _attachmentFolderPath));
+            }
+        }
+
         private void BtnDemo_Click(object sender, EventArgs e)
         {
             _uploadedFilePath = @"C:\Demo\KnowledgeBase_Import_Demo.xlsx";
@@ -477,6 +514,14 @@ namespace CMS.Presentation.Modules.KMS
         private void BtnImport_Click(object sender, EventArgs e)
         {
             if (_presenter == null) return;
+
+            // ปุ่มถูก disable อยู่แล้วเมื่อยังไม่ได้เลือกโฟลเดอร์ — กันซ้ำเผื่อถูกเรียกทางอื่น
+            if (_attachmentFolderRequired && string.IsNullOrWhiteSpace(_attachmentFolderPath))
+            {
+                MessageBox.Show("กรุณาเลือกโฟลเดอร์ไฟล์แนบ (PDF) ก่อนนำเข้า",
+                    "ยังไม่ได้เลือกโฟลเดอร์ไฟล์แนบ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             var confirm = MessageBox.Show(
                 string.Format(
@@ -895,8 +940,30 @@ namespace CMS.Presentation.Modules.KMS
             // ExecuteImport calls ShowImportComplete → ShowStep(3) which hides pnlStep2.
             // Reset buttons in case an error occurred and we stayed on Step 2.
             pnlProgress.Visible = false;
-            btnImport.Enabled   = true;
+            UpdateImportButtonState();
             btnBack.Enabled     = true;
+        }
+
+        /// <summary>
+        /// ปุ่มนำเข้ากดได้เมื่อไม่ต้องใช้ไฟล์แนบ หรือเลือกโฟลเดอร์ไฟล์แนบแล้ว; ช่องโฟลเดอร์แสดง path ที่เลือก (หัวข้อสีแดงเมื่อยังไม่ได้เลือก)
+        /// </summary>
+        private void UpdateImportButtonState()
+        {
+            // TODO: เมื่อเพิ่มการเลือกโฟลเดอร์ปลายทางใน DMS (ดูแนวทางที่ KBImportProcessor.EnsureUploaded) ปุ่มนำเข้าต้องกดได้ก็ต่อเมื่อ
+            //       เลือกครบทั้ง "โฟลเดอร์ไฟล์ต้นทาง" และ "โฟลเดอร์ปลายทางใน DMS" และโฟลเดอร์ DMS ผ่านการตรวจแล้ว (controller ตรวจแล้วแจ้ง view)
+            bool folderChosen = !string.IsNullOrWhiteSpace(_attachmentFolderPath);
+
+            txtAttachmentFolder.Text = _attachmentFolderPath ?? string.Empty;
+            lblAttachmentFolder.Text = folderChosen
+                ? "📁  โฟลเดอร์ไฟล์แนบ (PDF)"
+                : "📁  โฟลเดอร์ไฟล์แนบ (PDF) — ต้องเลือกก่อนจึงจะนำเข้าได้";
+            lblAttachmentFolder.ForeColor = folderChosen
+                ? Color.FromArgb(30, 58, 95)
+                : Color.FromArgb(192, 57, 43);
+
+            bool canImport = !_attachmentFolderRequired || folderChosen;
+            btnImport.Enabled   = canImport;
+            btnImport.BackColor = canImport ? ImportButtonEnabledColor : ImportButtonDisabledColor;
         }
 
         // Preview Grid Population
