@@ -290,22 +290,10 @@ namespace CMS.Services
             if (row.ResolvedCategoryID <= 0)
                 throw new InvalidOperationException("ไม่พบหมวด (CategoryID) ของแถวนี้ — ต้องผ่านการ validate ก่อน insert");
 
-            // ── ไฟล์แนบ ──────────────────────────────────────────────────────
-            int? fileId = null;
+            // ── ไฟล์ต้นทาง: อ่านจากโฟลเดอร์ในเครื่องเท่านั้น (ยังไม่แตะ DMS) ──────────────
+            // ไม่เจอไฟล์ + skipRowOnDownloadFailure = ไม่สร้างบทความ; อัปโหลดเข้า DMS ทำหลัง insert บทความสำเร็จแล้วเท่านั้น
             var rowFile = files.For(row);
-
-            if (rowFile.Download.Success)
-            {
-                string uploadError;
-                fileId = EnsureUploaded(rowFile, user, out uploadError);
-                if (fileId == null)
-                {
-                    if (skipRowOnDownloadFailure)
-                        throw new InvalidOperationException("อัปโหลดไฟล์แนบไม่สำเร็จ: " + uploadError);
-                    notes.Add("อัปโหลดไฟล์แนบไม่สำเร็จ: " + uploadError);
-                }
-            }
-            else
+            if (!rowFile.Download.Success)
             {
                 if (skipRowOnDownloadFailure)
                     throw new InvalidOperationException(rowFile.Download.ErrorMessage);
@@ -332,23 +320,40 @@ namespace CMS.Services
             int articleId = _articleRepo.Insert(article);
             row.ImportedArticleId = articleId;
 
-            // ── ผูกไฟล์แนบเข้ากับบทความ ───────────────────────────────────────
-            if (fileId.HasValue)
-            {
-                row.UploadedFileId = fileId.Value;
-                try
-                {
-                    _articleService.SaveArticleAttachments(
-                        articleId, new List<int> { fileId.Value }, createdBy);
-                }
-                catch (Exception ex)
-                {
-                    notes.Add("ผูกไฟล์แนบไม่สำเร็จ: " + ex.Message);
-                }
-            }
-
             // ── link กฎหมายแม่ (24 ตัวแรกของ ArticleCode) ไป-กลับ — ตัวไหน error ให้ข้ามและแจ้ง ─
             LinkToParents(articleId, row, createdBy, notes);
+
+            // ── อัปโหลดไฟล์เข้า DMS แล้วผูกกับบทความ (หลัง insert บทความสำเร็จเท่านั้น) ────────
+            // อัปโหลดไม่สำเร็จ = บทความอยู่แล้วแต่ยังไม่มีไฟล์ → import ซ้ำจะเข้าเส้นทาง "บทความมีอยู่แล้วแต่ยังไม่มีไฟล์แนบ"
+            // (UpdateExistingNonLawArticle) ซึ่งอัปโหลดและผูกไฟล์ให้ โดยไม่มีไฟล์ค้างใน DMS จากการ insert ที่ล้มเหลว
+            if (rowFile.Download.Success)
+            {
+                string uploadError;
+                int? fileId = EnsureUploaded(rowFile, user, out uploadError);
+                if (fileId == null)
+                {
+                    string uploadMessage = "อัปโหลดไฟล์แนบไม่สำเร็จ: " + uploadError;
+                    if (skipRowOnDownloadFailure)
+                        throw new InvalidOperationException(string.Format(
+                            "สร้างบทความแล้ว (ArticleID {0}) แต่{1} — นำเข้าซ้ำเพื่อเติมไฟล์แนบ", articleId, uploadMessage));
+                    notes.Add(uploadMessage);
+                }
+                else
+                {
+                    string bindError;
+                    if (AttachUploadedFile(articleId, fileId.Value, rowFile, user, createdBy, out bindError))
+                    {
+                        row.UploadedFileId = fileId.Value;
+                    }
+                    else
+                    {
+                        if (skipRowOnDownloadFailure)
+                            throw new InvalidOperationException(string.Format(
+                                "สร้างบทความแล้ว (ArticleID {0}) แต่{1} — นำเข้าซ้ำเพื่อเติมไฟล์แนบ", articleId, bindError));
+                        notes.Add(bindError);
+                    }
+                }
+            }
 
             if (notes.Count > 0)
             {
@@ -436,7 +441,10 @@ namespace CMS.Services
 
                 // ยังไม่มี record เลย → SaveArticleAttachments ปลอดภัย (DeleteAll ไม่มีอะไรให้ลบ) และทำ attachment + audit + link ให้ครบ.
                 // ห้ามใช้เมื่อมี attachment อยู่แล้ว เพราะมันลบของเดิมทั้งหมดก่อน
-                _articleService.SaveArticleAttachments(articleId, new List<int> { fileId.Value }, createdBy);
+                string bindError;
+                if (!AttachUploadedFile(articleId, fileId.Value, rowFile, user, createdBy, out bindError))
+                    throw new InvalidOperationException(bindError);
+
                 row.UploadedFileId = fileId.Value;
                 added.Add("ไฟล์แนบ");
             }
@@ -971,6 +979,82 @@ namespace CMS.Services
             }
         }
 
+        /// <summary>
+        /// ผูกไฟล์ที่อัปโหลดแล้วเข้ากับบทความ (<see cref="IKBArticleService.SaveArticleAttachments"/> = t_KBArticleAttachment + t_KBArticleLink type 1).
+        /// ล้มเหลวแล้วไม่ทิ้งไฟล์ค้างใน DMS:
+        /// 1) ถ้าแถว attachment ถูกสร้างไปแล้ว (ล้มตอนเขียน link/audit) → ไฟล์ถูกใช้งานแล้ว ห้ามลบ; เติม link type 1 ที่ขาดให้ ถ้าเติมไม่ได้ก็ถือว่าสำเร็จ
+        ///    บางส่วน (import ซ้ำจะเติม link ให้ในเส้นทาง "บทความมีอยู่แล้วและมีไฟล์แนบ")
+        /// 2) ถ้ายังไม่มี attachment → ลบไฟล์ออกจาก DMS (DeleteFile = soft delete ชื่อไฟล์ว่างกลับมา) และล้าง cache ของ <paramref name="file"/> เพื่อให้
+        ///    ArticleCode ถัดไปของ Excel row เดียวกันอัปโหลดใหม่ ไม่ใช้ FileID ที่ถูกลบแล้ว; import ซ้ำจึงไม่ได้ไฟล์ชื่อ "copy(N)"
+        /// </summary>
+        /// <returns>true = ผูกสำเร็จ (รวมกรณีสำเร็จบางส่วนข้อ 1); false = ไม่ได้ผูก พร้อมข้อความใน <paramref name="errorMessage"/></returns>
+        private bool AttachUploadedFile(int articleId, int fileId, RowFile file, UserContext user, string createdBy, out string errorMessage)
+        {
+            errorMessage = null;
+
+            try
+            {
+                _articleService.SaveArticleAttachments(articleId, new List<int> { fileId }, createdBy);
+                return true;
+            }
+            catch (Exception bindEx)
+            {
+                bool attachmentExists;
+                try
+                {
+                    attachmentExists = _articleService.GetArticleAttachments(articleId).Any(a => a.FileID == fileId);
+                }
+                catch
+                {
+                    attachmentExists = false;   // เช็คไม่ได้ → ถือว่ายังไม่ผูก แล้วไปลองลบไฟล์ (ถ้าผูกไปแล้ว import ซ้ำจะเติมไฟล์ให้ตามปกติ)
+                }
+
+                if (attachmentExists)
+                {
+                    try
+                    {
+                        string entityId = fileId.ToString();
+                        if (!_linkRepo.Exists(articleId, (byte)KBEntityType.Folder, entityId))
+                            _linkRepo.Insert(new KBArticleLink
+                            {
+                                ArticleID   = articleId,
+                                EntityType  = (byte)KBEntityType.Folder,
+                                EntityID    = entityId,
+                                CreatedBy   = createdBy,
+                                CreatedDate = DateTime.Now,
+                            });
+                        return true;
+                    }
+                    catch (Exception linkEx)
+                    {
+                        errorMessage = string.Format(
+                            "ผูกไฟล์แนบแล้ว (FileID {0}) แต่สร้าง link ไม่สำเร็จ: {1} — นำเข้าซ้ำเพื่อเติม link", fileId, linkEx.Message);
+                        return false;
+                    }
+                }
+
+                try
+                {
+                    _fileService.DeleteFile(fileId, user);
+                    if (file != null)
+                    {
+                        file.UploadAttempted = false;
+                        file.FileId          = null;
+                        file.UploadError     = null;
+                    }
+                    errorMessage = string.Format("ผูกไฟล์แนบไม่สำเร็จ: {0} (ลบไฟล์ที่อัปโหลดออกจาก DMS แล้ว)", bindEx.Message);
+                }
+                catch (Exception deleteEx)
+                {
+                    errorMessage = string.Format(
+                        "ผูกไฟล์แนบไม่สำเร็จ: {0}; ลบไฟล์ที่อัปโหลดแล้วไม่สำเร็จ (FileID {1} ค้างใน DMS): {2}",
+                        bindEx.Message, fileId, deleteEx.Message);
+                }
+
+                return false;
+            }
+        }
+
         /// <summary>อัปโหลดเข้า DMS ครั้งเดียวต่อ Excel row — ครั้งถัดไปคืน FileID เดิม; คืน null พร้อม <paramref name="errorMessage"/> เมื่ออัปโหลดไม่สำเร็จ</summary>
         /// <remarks>โฟลเดอร์ปลายทางคือ <see cref="RowFile.DmsFolderId"/> ที่ผู้ใช้เลือกในหน้า import; OverwriteExisting = false (ชื่อซ้ำ → "ชื่อ copy(N).pdf")</remarks>
         private int? EnsureUploaded(RowFile file, UserContext user, out string errorMessage)
@@ -1002,8 +1086,18 @@ namespace CMS.Services
                     OverwriteExisting = false,
                 };
 
-                var results = _fileService.UploadFiles(
-                    new List<FileUploadRequest> { request }, dmsFolderId, user);
+                IEnumerable<UploadResult> results;
+                try
+                {
+                    results = _fileService.UploadFiles(
+                        new List<FileUploadRequest> { request }, dmsFolderId, user);
+                }
+                catch (Exception ex)
+                {
+                    // UploadFiles โยน exception เมื่อโฟลเดอร์ไม่พบ/ไม่มีสิทธิ์ — แปลงเป็นข้อความเพื่อให้แถวรายงานสาเหตุได้ครบ
+                    errorMessage = ex.Message;
+                    return null;
+                }
 
                 var result = results == null ? null : results.FirstOrDefault();
 
