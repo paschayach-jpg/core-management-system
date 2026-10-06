@@ -39,12 +39,16 @@ namespace CMS.Services.Interfaces
         /// (ชื่อต้องตรงกับไฟล์ในโฟลเดอร์นี้ครบนามสกุล). ว่าง = แถวที่ต้องมีไฟล์ล้มเหลว/ข้ามพร้อมข้อความ "ยังไม่ได้เลือกโฟลเดอร์ไฟล์แนบ".
         /// ไม่ใช้กับแถวกฎหมาย (ไม่มีไฟล์แนบ)
         /// </param>
+        /// <param name="dmsFolderId">
+        /// NonLaw rows only: โฟลเดอร์ปลายทางใน DMS ที่ผู้ใช้เลือกเก็บไฟล์แนบ (Controller ตรวจสิทธิ์ก่อนส่งมา); null = ใช้ค่าเริ่มต้นของระบบ
+        /// </param>
         void InsertArticles(
             IList<KBImportRow> rows,
             UserContext user,
             bool skipRowOnDownloadFailure,
             byte resolvedArticleType,
             string attachmentFolder,
+            int? dmsFolderId,
             out int successCount,
             out int errorCount,
             Action<int, int> onProgress);

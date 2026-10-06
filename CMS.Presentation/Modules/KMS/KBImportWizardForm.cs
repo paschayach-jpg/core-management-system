@@ -41,6 +41,11 @@ namespace CMS.Presentation.Modules.KMS
         private string   _attachmentFolderPath;
         private bool     _attachmentFolderRequired;
 
+        // โฟลเดอร์ปลายทางใน DMS ที่ผู้ใช้เลือก (ผ่านการตรวจสิทธิ์ใน KBDmsFolderPickerDialog แล้ว) — จำเป็นพร้อมโฟลเดอร์ไฟล์แนบ
+        private int?     _dmsFolderId;
+        private string   _dmsFolderPath;
+        private Func<Func<int, string>, int, KBDmsFolderPickerDialog> _dmsPickerFactory;
+
         private static readonly Color ImportButtonEnabledColor  = Color.FromArgb(39, 174, 96);    // เขียวเดิมของ btnImport
         private static readonly Color ImportButtonDisabledColor = Color.FromArgb(189, 195, 199);  // เทา — เห็นชัดว่ากดไม่ได้ (FlatStyle.Flat ไม่เปลี่ยนสีพื้นเอง)
 
@@ -85,6 +90,15 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             _presenter = presenter;
+        }
+
+        /// <summary>
+        /// Composition root ส่ง factory สร้างหน้าเลือกโฟลเดอร์ DMS (รับ delegate ตรวจสิทธิ์ และ Level เริ่มต้น).
+        /// ไม่เรียก = ปุ่มเลือกโฟลเดอร์ DMS แจ้งว่าใช้ไม่ได้
+        /// </summary>
+        public void AttachDmsFolderPicker(Func<Func<int, string>, int, KBDmsFolderPickerDialog> factory)
+        {
+            _dmsPickerFactory = factory;
         }
 
         #endregion
@@ -170,12 +184,15 @@ namespace CMS.Presentation.Modules.KMS
             get { return string.IsNullOrWhiteSpace(_attachmentFolderPath) ? null : _attachmentFolderPath; }
         }
 
+        public int? DmsFolderId { get { return _dmsFolderId; } }
+
         // Methods
 
         public void SetAttachmentFolderRequired(bool required)
         {
             _attachmentFolderRequired  = required;
             pnlAttachmentFolder.Visible = required;
+            pnlDmsFolder.Visible        = required;
             UpdateImportButtonState();
         }
 
@@ -469,6 +486,26 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private void BtnBrowseDmsFolder_Click(object sender, EventArgs e)
+        {
+            if (_dmsPickerFactory == null || _presenter == null)
+            {
+                MessageBox.Show("ไม่สามารถเลือกโฟลเดอร์ DMS ได้ — ระบบจัดการโฟลเดอร์ยังไม่พร้อมใช้งาน",
+                    "ไม่พร้อมใช้งาน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = _dmsPickerFactory(_presenter.CheckDmsFolder, 4))
+            {
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                _dmsFolderId   = dlg.SelectedFolderId;
+                _dmsFolderPath = dlg.SelectedFolderPath;
+                UpdateImportButtonState();
+                SetStatus(string.Format("🗄  เลือกโฟลเดอร์ปลายทางใน DMS \"{0}\" แล้ว", _dmsFolderPath));
+            }
+        }
+
         private void BtnDemo_Click(object sender, EventArgs e)
         {
             _uploadedFilePath = @"C:\Demo\KnowledgeBase_Import_Demo.xlsx";
@@ -520,6 +557,12 @@ namespace CMS.Presentation.Modules.KMS
             {
                 MessageBox.Show("กรุณาเลือกโฟลเดอร์ไฟล์แนบ (PDF) ก่อนนำเข้า",
                     "ยังไม่ได้เลือกโฟลเดอร์ไฟล์แนบ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (_attachmentFolderRequired && !_dmsFolderId.HasValue)
+            {
+                MessageBox.Show("กรุณาเลือกโฟลเดอร์ปลายทางใน DMS ก่อนนำเข้า",
+                    "ยังไม่ได้เลือกโฟลเดอร์ปลายทาง", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -945,12 +988,11 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         /// <summary>
-        /// ปุ่มนำเข้ากดได้เมื่อไม่ต้องใช้ไฟล์แนบ หรือเลือกโฟลเดอร์ไฟล์แนบแล้ว; ช่องโฟลเดอร์แสดง path ที่เลือก (หัวข้อสีแดงเมื่อยังไม่ได้เลือก)
+        /// ปุ่มนำเข้ากดได้เมื่อไม่ต้องใช้ไฟล์แนบ หรือเลือกครบทั้งโฟลเดอร์ไฟล์แนบ (ในเครื่อง) และโฟลเดอร์ปลายทางใน DMS
+        /// (โฟลเดอร์ DMS ผ่านการตรวจสิทธิ์ใน dialog แล้ว และ controller ตรวจซ้ำก่อนนำเข้า); ช่องโฟลเดอร์แสดงที่เลือก (หัวข้อสีแดงเมื่อยังไม่ได้เลือก)
         /// </summary>
         private void UpdateImportButtonState()
         {
-            // TODO: เมื่อเพิ่มการเลือกโฟลเดอร์ปลายทางใน DMS (ดูแนวทางที่ KBImportProcessor.EnsureUploaded) ปุ่มนำเข้าต้องกดได้ก็ต่อเมื่อ
-            //       เลือกครบทั้ง "โฟลเดอร์ไฟล์ต้นทาง" และ "โฟลเดอร์ปลายทางใน DMS" และโฟลเดอร์ DMS ผ่านการตรวจแล้ว (controller ตรวจแล้วแจ้ง view)
             bool folderChosen = !string.IsNullOrWhiteSpace(_attachmentFolderPath);
 
             txtAttachmentFolder.Text = _attachmentFolderPath ?? string.Empty;
@@ -961,7 +1003,17 @@ namespace CMS.Presentation.Modules.KMS
                 ? Color.FromArgb(30, 58, 95)
                 : Color.FromArgb(192, 57, 43);
 
-            bool canImport = !_attachmentFolderRequired || folderChosen;
+            bool dmsChosen = _dmsFolderId.HasValue;
+
+            txtDmsFolder.Text = _dmsFolderPath ?? string.Empty;
+            lblDmsFolder.Text = dmsChosen
+                ? "🗄  โฟลเดอร์ปลายทางใน DMS"
+                : "🗄  โฟลเดอร์ปลายทางใน DMS (Level 1-4) — ต้องเลือกก่อนจึงจะนำเข้าได้";
+            lblDmsFolder.ForeColor = dmsChosen
+                ? Color.FromArgb(30, 58, 95)
+                : Color.FromArgb(192, 57, 43);
+
+            bool canImport = !_attachmentFolderRequired || (folderChosen && dmsChosen);
             btnImport.Enabled   = canImport;
             btnImport.BackColor = canImport ? ImportButtonEnabledColor : ImportButtonDisabledColor;
         }

@@ -384,10 +384,19 @@ namespace CMS.Presentation
         {
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // วาดเส้นแบ่งระหว่างข้อมูลธุรกิจและฟอร์ม Login
-            using (var pen = new Pen(Color.FromArgb(235, 240, 250), 1.5f))
+            // วาดเส้นแบ่งส่วนต่างๆ ให้ชัดเจน (ข้อมูลธุรกิจ / ฟอร์ม Login / ทางเลือกอื่น / ท้ายฟอร์ม)
+            using (var pen = new Pen(Color.FromArgb(190, 198, 215), 1.5f))
             {
                 e.Graphics.DrawLine(pen, 30, 66, 290, 66);
+                e.Graphics.DrawLine(pen, 30, 294, 290, 294);
+                e.Graphics.DrawLine(pen, 30, 326, 290, 326);
+                e.Graphics.DrawLine(pen, 30, 360, 290, 360);
+            }
+
+            // กรอบรอบนอกของส่วนเนื้อหา (ซ้าย/ขวา/ล่าง ต่อจาก Header)
+            using (var pen = new Pen(Color.FromArgb(150, 160, 185), 2f))
+            {
+                e.Graphics.DrawRectangle(pen, 1, -2, pnlContent.Width - 2, pnlContent.Height + 0);
             }
 
             // วาดกรอบและเงาให้ TextBox Username
@@ -431,7 +440,7 @@ namespace CMS.Presentation
                 g.FillPath(Brushes.White, path);
 
                 // วาดเส้นขอบสีเทาอมฟ้าบางๆ
-                using (var pen = new Pen(Color.FromArgb(200, 205, 215), 1.5f))
+                using (var pen = new Pen(Color.FromArgb(120, 135, 165), 1.5f))
                 {
                     g.DrawPath(pen, path);
                 }

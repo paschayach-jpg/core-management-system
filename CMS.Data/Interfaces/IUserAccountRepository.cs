@@ -32,6 +32,9 @@ namespace CMS.Data.Interfaces
             int? divisionId,   string divisionCode,   string divisionNameEn,   string divisionNameTh,
             string positionName);
 
+        /// <summary>อัพเดท LevelCode ของ user (null = ล้างค่า)</summary>
+        void UpdateLevelCode(int userId, string levelCode);
+
         /// <summary>Update LastLoginDate + LastLoginIP</summary>
         void UpdateLastLoginWithIP(int userId, string ipAddress);
 

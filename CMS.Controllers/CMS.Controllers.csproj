@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -40,6 +40,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <!-- DMS.Document — View Interfaces -->
     <Compile Include="DMS\Document\Interfaces\IFolderView.cs" />
+    <Compile Include="DMS\Document\Interfaces\IOrgMasterController.cs" />
+    <Compile Include="DMS\Document\OrgMasterController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFileUploadView.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuditLogController.cs" />
     <Compile Include="DMS\Document\Interfaces\IPermissionView.cs" />
@@ -71,6 +73,7 @@
     <Compile Include="DMS\Document\Interfaces\IFolderPermissionLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IPermissionAclLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuthorityConfigController.cs" />
+    <Compile Include="DMS\Document\Interfaces\IAuthorityImportController.cs" />
     <Compile Include="DMS\Document\Interfaces\IAuthorityOrgLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IUserAccessOrgLookupController.cs" />
     <Compile Include="DMS\Document\Interfaces\IFolderTemplateController.cs" />
@@ -117,6 +120,7 @@
     <Compile Include="DMS\Document\FolderPermissionLookupController.cs" />
     <Compile Include="DMS\Document\PermissionAclLookupController.cs" />
     <Compile Include="DMS\Document\AuthorityConfigController.cs" />
+    <Compile Include="DMS\Document\AuthorityImportController.cs" />
     <Compile Include="DMS\Document\AuthorityOrgLookupController.cs" />
     <Compile Include="DMS\Document\UserAccessOrgLookupController.cs" />
     <Compile Include="DMS\Document\FolderTemplateController.cs" />

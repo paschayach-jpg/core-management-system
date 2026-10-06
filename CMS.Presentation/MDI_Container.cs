@@ -72,7 +72,9 @@ namespace CMS.Presentation
         private readonly IFilePermissionAclController _filePermissionAclController;
         private readonly IFilePermissionCommandController _filePermissionCommandController;
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
+        private readonly CMS.Controllers.DMS.Document.Interfaces.IOrgMasterController _orgMasterController;
         private readonly IAuthorityConfigController _authorityConfigController;
+        private readonly IAuthorityImportController _authorityImportController;
         private readonly IEmployeeDirectoryController _employeeDirectoryController;
         private readonly IUserOrgVisibilityController _userOrgVisibilityController;
         private readonly IPermissionAclLookupController _permissionAclLookupController;
@@ -215,7 +217,9 @@ namespace CMS.Presentation
             IFilePermissionAclController filePermissionAclController = null,
             IFilePermissionCommandController filePermissionCommandController = null,
             IAuthorityOrgLookupController authorityOrgLookupController = null,
+            CMS.Controllers.DMS.Document.Interfaces.IOrgMasterController orgMasterController = null,
             IAuthorityConfigController authorityConfigController = null,
+            IAuthorityImportController authorityImportController = null,
             IEmployeeDirectoryController employeeDirectoryController = null,
             IUserOrgVisibilityController userOrgVisibilityController = null,
             IPermissionAclLookupController permissionAclLookupController = null,
@@ -303,7 +307,9 @@ namespace CMS.Presentation
             _filePermissionAclController = filePermissionAclController;
             _filePermissionCommandController = filePermissionCommandController;
             _authorityOrgLookupController = authorityOrgLookupController;
+            _orgMasterController = orgMasterController;
             _authorityConfigController = authorityConfigController;
+            _authorityImportController = authorityImportController;
             _employeeDirectoryController = employeeDirectoryController;
             _userOrgVisibilityController = userOrgVisibilityController;
             _permissionAclLookupController = permissionAclLookupController;
@@ -702,6 +708,7 @@ namespace CMS.Presentation
 
             var admin = new TreeNode("⚙️ ผู้ดูแลระบบ");
             admin.Nodes.Add(new TreeNode("🏢 โครงสร้างองค์กร") { Tag = "OrgStructure" });
+            admin.Nodes.Add(new TreeNode("🗂 Master องค์กร & นำเข้า Excel") { Tag = "OrgMasterManagement" });
             admin.Nodes.Add(new TreeNode("👤 จัดการผู้ใช้") { Tag = "UserManagement" });
             admin.Nodes.Add(new TreeNode("🔒 สิทธิ์ Folder") { Tag = "PermissionAdmin" });
             admin.Nodes.Add(new TreeNode("📋 Folder Template") { Tag = "FolderTemplate" });
@@ -1171,6 +1178,7 @@ namespace CMS.Presentation
             _grpOrg.DropDownItems.AddRange(new ToolStripItem[]
             {
                 new ToolStripMenuItem("🏢 โครงสร้างองค์กร",  null, (s, e) => OpenOrgStructure()),
+                new ToolStripMenuItem("🗂 จัดการ Master องค์กร & นำเข้า Excel", null, (s, e) => OpenOrgMasterManagement()),
                 new ToolStripMenuItem("🔒 เปลี่ยนระดับความลับ", null, (s, e) => TriggerOnActiveFolderForm(ff => ff.TriggerChangeLevel())),
             });
 
@@ -1909,8 +1917,15 @@ namespace CMS.Presentation
                 _kbArticleRepository, _kbArticleLinkRepository, _kbCategoryRepository,
                 _kbArticleService, _fileService, downloader);
             var wizardPresenter = new KBImportWizardController(
-                wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _kbImportTemplateService, _currentUser);
+                wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _kbImportTemplateService, _fileService, _currentUser);
             wizard.AttachPresenter(wizardPresenter);
+
+            // หน้าเลือก/สร้างโฟลเดอร์ปลายทางใน DMS — ต้องมี DMS folder controller ครบ ไม่งั้นปุ่มเลือกโฟลเดอร์ DMS จะแจ้งว่าใช้ไม่ได้
+            if (_folderReadLookupController != null && _folderCommandController != null)
+            {
+                wizard.AttachDmsFolderPicker((checkFolder, defaultLevel) => new KBDmsFolderPickerDialog(
+                    _folderReadLookupController, _folderCommandController, _currentUser, checkFolder, defaultLevel));
+            }
             return wizard;
         }
 
@@ -2193,6 +2208,10 @@ namespace CMS.Presentation
                 case "OrgStructure":
                     OpenOrgStructure();
                     return true;
+                case "OrgMasterManagement":
+                case "OrgMasterManagementForm":
+                    OpenOrgMasterManagement();
+                    return true;
                 case "UserManagement":
                     OpenUserManagement();
                     return true;
@@ -2381,7 +2400,8 @@ namespace CMS.Presentation
                 var form = new AuthorityConfigForm(
                     authorityConfigController: _authorityConfigController,
                     user: _currentUser,
-                    authorityOrgLookupController: _authorityOrgLookupController);
+                    authorityOrgLookupController: _authorityOrgLookupController,
+                    authorityImportController: _authorityImportController);
 
                 SetTopMenuVisibilityForAuthorityConfig(true);
                 form.FormClosed += (s, e) =>
@@ -2395,6 +2415,19 @@ namespace CMS.Presentation
             else
                 MessageBox.Show("FolderAuthority service ไม่พร้อมใช้งาน", "แจ้งเตือน",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        public void OpenOrgMasterManagement()
+        {
+            if (_orgMasterController != null)
+            {
+                OpenChildForm(new Modules.DMS.OrgMasterManagementForm(_orgMasterController, _currentUser), true);
+            }
+            else
+            {
+                MessageBox.Show("Org Master Service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         public void OpenUserPermissionDiagnostic()

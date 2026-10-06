@@ -8,6 +8,7 @@ namespace CMS.Controllers.DMS.Document.Interfaces
         IList<HrDivision> GetDivisions();
         IList<HrDepartment> GetDepartments();
         IList<HrPosition> GetPositions();
+        IList<HrPositionLevel> GetPositionLevels();
         IList<HrPositionMapping> GetPositionMappings();
         IList<HrPositionMapping> GetPositionMappingsByDepartmentId(int departmentId);
         IList<string> GetPositionsByDepartmentCode(string departmentCode);
