@@ -123,6 +123,28 @@ namespace CMS.Services
             return results;
         }
 
+        public string CheckUploadFolder(int folderId, UserContext user)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            var folder = _folderRepository.GetById(folderId);
+            if (folder == null)
+                return "ไม่พบโฟลเดอร์ปลายทางที่เลือกในระบบ DMS";
+            if (folder.IsDeleted)
+                return "โฟลเดอร์ปลายทางที่เลือกถูกลบแล้ว";
+            if (folder.IsArchived)
+                return "โฟลเดอร์ปลายทางที่เลือกถูกเก็บถาวร (Archive) ไม่สามารถอัปโหลดไฟล์ได้";
+
+            if (user.AppRole >= 3)
+                return null;
+
+            if (user.CanAddToFolder(folder.ConfidentialityLevel)
+                || _permissionService.CheckPermission(user.UserID, folderId, "Write"))
+                return null;
+
+            return string.Format("คุณไม่มีสิทธิ์อัปโหลดไฟล์ลงโฟลเดอร์ \"{0}\"", folder.FolderName);
+        }
+
         private string ValidateBatchAgainstOrgQuota(IEnumerable<FileUploadRequest> files, Folder folder)
         {
             if (_folderQuotaService == null || files == null || folder == null)
