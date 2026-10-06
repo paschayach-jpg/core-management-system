@@ -1103,7 +1103,7 @@ namespace CMS.Services
                 try
                 {
                     results = _fileService.UploadFiles(
-                        new List<FileUploadRequest> { request }, dmsFolderId, user);
+                        new List<FileUploadRequest> { request }, AttachmentFolderId, user);
                 }
                 catch (Exception ex)
                 {
