@@ -11,6 +11,7 @@ namespace CMS.Controllers.DMS.Document
         private readonly IHrDivisionRepository _hrDivisionRepository;
         private readonly IHrDepartmentRepository _hrDepartmentRepository;
         private readonly IHrPositionRepository _hrPositionRepository;
+        private readonly IHrPositionLevelRepository _hrPositionLevelRepository;
         private readonly IHrPositionMappingRepository _hrPositionMappingRepository;
         private readonly IUserAccountRepository _userAccountRepository;
 
@@ -18,12 +19,14 @@ namespace CMS.Controllers.DMS.Document
             IHrDivisionRepository hrDivisionRepository = null,
             IHrDepartmentRepository hrDepartmentRepository = null,
             IHrPositionRepository hrPositionRepository = null,
+            IHrPositionLevelRepository hrPositionLevelRepository = null,
             IHrPositionMappingRepository hrPositionMappingRepository = null,
             IUserAccountRepository userAccountRepository = null)
         {
             _hrDivisionRepository = hrDivisionRepository;
             _hrDepartmentRepository = hrDepartmentRepository;
             _hrPositionRepository = hrPositionRepository;
+            _hrPositionLevelRepository = hrPositionLevelRepository;
             _hrPositionMappingRepository = hrPositionMappingRepository;
             _userAccountRepository = userAccountRepository;
         }
@@ -47,6 +50,13 @@ namespace CMS.Controllers.DMS.Document
             if (_hrPositionRepository == null)
                 return new List<HrPosition>();
             return _hrPositionRepository.GetAll().ToList();
+        }
+
+        public IList<HrPositionLevel> GetPositionLevels()
+        {
+            if (_hrPositionLevelRepository == null)
+                return new List<HrPositionLevel>();
+            return _hrPositionLevelRepository.GetAll().ToList();
         }
 
         public IList<HrPositionMapping> GetPositionMappings()

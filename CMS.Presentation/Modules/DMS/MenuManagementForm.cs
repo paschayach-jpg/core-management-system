@@ -1,8 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using System.Collections.Generic;
 using CMS.Controllers.DMS.Document.Interfaces;
 using CMS.Domain.Models;
 using CMS.Services;
@@ -14,27 +15,19 @@ namespace CMS.Presentation
     {
         private readonly IMenuManagementController _menuManagementController;
         private readonly UserContext _currentUser;
-        private System.Collections.Generic.List<MenuItem> _allMenus = new System.Collections.Generic.List<MenuItem>();
-        private ComboBox _cmbLevel;
-        private Label _lblLevel;
-        private ComboBox _cmbActionKey;
-        private TextBox _txtParentDisplay;
-        private Button _btnPickParent;
+        private List<MenuItem> _allMenus = new List<MenuItem>();
         private int? _selectedParentMenuID;
+        private bool _isSearchPlaceholder = true;
 
         public MenuManagementForm(IMenuManagementController menuManagementController, UserContext currentUser)
         {
-            if (menuManagementController == null) throw new ArgumentNullException(nameof(menuManagementController));
-            if (currentUser == null) throw new ArgumentNullException(nameof(currentUser));
-
-            InitializeComponent();
-
-            _menuManagementController = menuManagementController;
-            _currentUser = currentUser;
+            _menuManagementController = menuManagementController ?? throw new ArgumentNullException(nameof(menuManagementController));
+            _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
 
             if (currentUser.AppRole != 4)
                 throw new UnauthorizedAccessException("Only Admin users can access Menu Management.");
 
+            InitializeComponent();
             this.Icon = SystemIcons.Information;
         }
 
@@ -42,23 +35,56 @@ namespace CMS.Presentation
         {
             try
             {
-                ConfigureActionKeySelector();
-                ConfigureLevelSelector();
-                ConfigureParentPicker();
-                ApplyOffice2022NavyTheme();
-                txtKey.ReadOnly = true;
-                txtKey.TabStop = false;
-                treeMenu.ShowLines = true;
-                treeMenu.ShowRootLines = true;
-                treeMenu.ShowPlusMinus = true;
+                InitTreeIcons();
+                PopulateActionKeys();
+                cmbLevel.SelectedIndex = 0;
+                cmbRole.SelectedIndex = 0;
                 LoadMenus();
                 RefreshMenuStatistics();
+                ClearForm();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading menu management: " + ex.Message, "Error",
+                MessageBox.Show("เกิดข้อผิดพลาดในการโหลดระบบจัดการเมนู: " + ex.Message, "ข้อผิดพลาด",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.Close();
+            }
+        }
+
+        private void InitTreeIcons()
+        {
+            try
+            {
+                imgListTree.Images.Clear();
+                imgListTree.ImageSize = new Size(16, 16);
+
+                // Add standard & GDI+ generated icons
+                imgListTree.Images.Add("folder", Properties.Resources.folder);
+                imgListTree.Images.Add("open_folder", Properties.Resources.open_folder);
+                imgListTree.Images.Add("organization", Properties.Resources.organization);
+                imgListTree.Images.Add("file_docs", Properties.Resources.File_docs.ToBitmap());
+
+                imgListTree.Images.Add("cat_report", MenuCategoryIcons.CreateReportIcon());
+                imgListTree.Images.Add("cat_permission", MenuCategoryIcons.CreatePermissionIcon());
+                imgListTree.Images.Add("cat_approval", MenuCategoryIcons.CreateApprovalIcon());
+                imgListTree.Images.Add("cat_trash", MenuCategoryIcons.CreateTrashIcon());
+                imgListTree.Images.Add("cat_share", MenuCategoryIcons.CreateShareIcon());
+                imgListTree.Images.Add("cat_config", MenuCategoryIcons.CreateConfigIcon());
+                imgListTree.Images.Add("cat_sync", MenuCategoryIcons.CreateSyncIcon());
+                imgListTree.Images.Add("cat_workflow", MenuCategoryIcons.CreateWorkflowIcon());
+                imgListTree.Images.Add("cat_menu", MenuCategoryIcons.CreateMenuAdminIcon());
+                imgListTree.Images.Add("cat_knowledge", MenuCategoryIcons.CreateKnowledgeIcon());
+            }
+            catch { }
+        }
+
+        private void PopulateActionKeys()
+        {
+            cmbActionKey.Items.Clear();
+            var actionKeys = MenuActionKeyCatalog.GetAvailableActionKeys();
+            foreach (var key in actionKeys)
+            {
+                cmbActionKey.Items.Add(key);
             }
         }
 
@@ -69,12 +95,11 @@ namespace CMS.Presentation
                 var hierarchyMenus = (_menuManagementController.GetAllMenusForManagement(_currentUser) ?? new List<MenuItem>()).ToList();
                 _allMenus = FlattenMenus(hierarchyMenus);
                 RefreshMenuTree();
-                PopulateParentCombo();
                 ConfigureNameAutoComplete();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading menus: {ex.Message}", "Error",
+                MessageBox.Show($"เกิดข้อผิดพลาดในการดึงข้อมูลเมนู: {ex.Message}", "ข้อผิดพลาด",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -92,76 +117,6 @@ namespace CMS.Presentation
             txtName.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             txtName.AutoCompleteSource = AutoCompleteSource.CustomSource;
             txtName.AutoCompleteCustomSource = source;
-        }
-
-        private void ConfigureActionKeySelector()
-        {
-            if (_cmbActionKey != null || grpDetails == null || txtFormClass == null)
-                return;
-
-            _cmbActionKey = new ComboBox
-            {
-                Name = "cmbActionKey",
-                DropDownStyle = ComboBoxStyle.DropDown,
-                Location = txtFormClass.Location,
-                Size = txtFormClass.Size,
-                Anchor = txtFormClass.Anchor
-            };
-
-            _cmbActionKey.Items.AddRange(MenuActionKeyCatalog.GetAvailableActionKeys());
-            _cmbActionKey.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-            _cmbActionKey.AutoCompleteSource = AutoCompleteSource.ListItems;
-            _cmbActionKey.Text = txtFormClass.Text;
-
-            grpDetails.Controls.Add(_cmbActionKey);
-
-            lblFormClassLabel.Text = "Action Key:";
-            txtFormClass.Visible = false;
-            txtFormClass.TabStop = false;
-        }
-
-        private string GetConfiguredActionKey()
-        {
-            string configuredValue = _cmbActionKey != null
-                ? (_cmbActionKey.Text ?? string.Empty).Trim()
-                : (txtFormClass.Text ?? string.Empty).Trim();
-
-            string resolved = MenuActionKeyCatalog.ResolveConfiguredActionKey(configuredValue);
-            return string.IsNullOrWhiteSpace(resolved) ? configuredValue : resolved;
-        }
-
-        private bool ValidateConfiguredActionKey(string configuredValue)
-        {
-            if (string.IsNullOrWhiteSpace(configuredValue))
-                return true;
-
-            string resolved = MenuActionKeyCatalog.ResolveConfiguredActionKey(configuredValue);
-            if (!string.IsNullOrWhiteSpace(resolved))
-                return true;
-
-            var result = MessageBox.Show(
-                "Action Key นี้ยังไม่อยู่ในรายการ built-in หรือ config ปัจจุบัน\n\n" +
-                "หากเป็นเมนูจาก module ใหม่ คุณยังสามารถบันทึกได้ แล้วไปเพิ่ม handler/config ภายหลัง\n\n" +
-                "ต้องการบันทึกต่อหรือไม่?",
-                "Unknown Action Key",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-
-            return result == DialogResult.Yes;
-        }
-
-        private void PopulateParentCombo(int? excludeMenuItemID = null)
-        {
-            cmbParent.Items.Clear();
-            cmbParent.Items.Add(new ParentMenuItem(null, "(None - Root)"));
-            foreach (var m in _allMenus.OrderBy(m => m.DisplayOrder).ThenBy(m => m.MenuName))
-            {
-                int level = GetMenuLevel(m);
-                string indent = new string(' ', level * 2);
-                cmbParent.Items.Add(new ParentMenuItem(m.MenuItemID, $"{indent}[L{level}] [ID:{m.MenuItemID}] {m.MenuName}"));
-            }
-            cmbParent.SelectedIndex = 0;
-            UpdateParentStateByLevel();
         }
 
         private List<MenuItem> FlattenMenus(List<MenuItem> hierarchyMenus)
@@ -190,330 +145,111 @@ namespace CMS.Presentation
                 FlattenMenuRecursive(child, result, visited);
         }
 
-        private void ConfigureLevelSelector()
+        private void RefreshMenuTree(string filter = null)
         {
-            if (_cmbLevel != null || grpDetails == null)
-                return;
-
-            _lblLevel = new Label
-            {
-                Name = "lblLevel",
-                Text = "Menu Level:",
-                Location = new Point(10, 205),
-                Size = new Size(100, 23)
-            };
-
-            _cmbLevel = new ComboBox
-            {
-                Name = "cmbLevel",
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Location = new Point(120, 202),
-                Size = new Size(200, 23)
-            };
-            _cmbLevel.Items.AddRange(new object[] { "แม่ (Root)", "ลูก (Child)" });
-            _cmbLevel.SelectedIndex = 0;
-            _cmbLevel.SelectedIndexChanged += CmbLevel_SelectedIndexChanged;
-
-            grpDetails.Controls.Add(_lblLevel);
-            grpDetails.Controls.Add(_cmbLevel);
-
-            // Shift controls down to make room for level selection.
-            lblParentLabel.Top = 235;
-            cmbParent.Top = 232;
-            chkActive.Top = 265;
-        }
-
-        private void ConfigureParentPicker()
-        {
-            if (_txtParentDisplay != null || grpDetails == null) return;
-
-            cmbParent.Visible = false;
-            cmbParent.TabStop = false;
-
-            _txtParentDisplay = new TextBox
-            {
-                Name = "txtParentDisplay",
-                ReadOnly = true,
-                Cursor = Cursors.Hand,
-                Location = new Point(cmbParent.Left, cmbParent.Top),
-                Size = new Size(cmbParent.Width - 60, cmbParent.Height),
-                Text = "(ไม่มี — Root)",
-                BackColor = Color.White,
-                TabStop = false
-            };
-            _txtParentDisplay.Click += (s, e) => { if (_btnPickParent != null && _btnPickParent.Enabled) BtnPickParent_Click(s, e); };
-
-            _btnPickParent = new Button
-            {
-                Name = "btnPickParent",
-                Text = "📂 เลือก",
-                Location = new Point(cmbParent.Right - 58, cmbParent.Top - 1),
-                Size = new Size(58, cmbParent.Height + 2),
-                Cursor = Cursors.Hand
-            };
-            _btnPickParent.Click += BtnPickParent_Click;
-
-            grpDetails.Controls.Add(_txtParentDisplay);
-            grpDetails.Controls.Add(_btnPickParent);
-        }
-
-        private void BtnPickParent_Click(object sender, EventArgs e)
-        {
-            int? excludeID = null;
-            if (lblID.Text != "-" && lblID.Text != "(New)" && int.TryParse(lblID.Text, out int currentID))
-                excludeID = currentID;
-
-            using (var dlg = new ParentMenuPickerDialog(_allMenus, _selectedParentMenuID, excludeID))
-            {
-                if (dlg.ShowDialog(this) == DialogResult.OK)
-                {
-                    _selectedParentMenuID = dlg.SelectedMenuItemID;
-                    UpdateParentDisplay();
-                }
-            }
-        }
-
-        private void UpdateParentDisplay()
-        {
-            if (_txtParentDisplay == null) return;
-            if (!_selectedParentMenuID.HasValue)
-            {
-                _txtParentDisplay.Text = "(ไม่มี — Root)";
-                return;
-            }
-            _txtParentDisplay.Text = BuildParentPath(_selectedParentMenuID.Value);
-        }
-
-        private string BuildParentPath(int menuID)
-        {
-            var segments = new List<string>();
-            int? current = menuID;
-            int guard = 0;
-            while (current.HasValue && guard < 20)
-            {
-                var m = _allMenus.FirstOrDefault(x => x.MenuItemID == current.Value);
-                if (m == null) break;
-                segments.Insert(0, m.MenuName);
-                current = m.ParentMenuItemID;
-                guard++;
-            }
-            return segments.Count == 0 ? "(ไม่มี — Root)" : string.Join(" › ", segments);
-        }
-
-        private void ApplyOffice2022NavyTheme()
-        {
-            var formBack = Color.FromArgb(236, 242, 250);
-            var panelBack = Color.FromArgb(248, 251, 255);
-            var accent = Color.FromArgb(18, 67, 122);
-            var accentSoft = Color.FromArgb(225, 236, 248);
-            var textMain = Color.FromArgb(24, 37, 56);
-            var border = Color.FromArgb(189, 205, 226);
-
-            BackColor = formBack;
-            ForeColor = textMain;
-            Font = new Font("Segoe UI", 9F, FontStyle.Regular);
-
-            splitMain.BackColor = border;
-            splitRight.BackColor = border;
-
-            StyleGroupBox(grpDetails, panelBack, accent, textMain);
-            StyleGroupBox(grpActions, panelBack, accent, textMain);
-
-            lblMenuTree.BackColor = accentSoft;
-            lblMenuTree.ForeColor = accent;
-
-            pnlTreeToolbar.BackColor = accentSoft;
-            StyleTreeToolbarButton(btnExpandAll, accent, accentSoft);
-            StyleTreeToolbarButton(btnCollapseAll, accent, accentSoft);
-
-            treeMenu.BackColor = Color.White;
-            treeMenu.ForeColor = textMain;
-            treeMenu.BorderStyle = BorderStyle.FixedSingle;
-            treeMenu.LineColor = border;
-
-            StyleInput(txtName, border, textMain);
-            StyleInput(txtKey, border, textMain);
-            StyleInput(txtFormClass, border, textMain);
-            if (_cmbActionKey != null)
-                StyleInput(_cmbActionKey, border, textMain);
-            StyleInput(cmbRole, border, textMain);
-            StyleInput(cmbParent, border, textMain);
-            StyleInput(numOrder, border, textMain);
-
-            if (_cmbLevel != null)
-                StyleInput(_cmbLevel, border, textMain);
-            if (_lblLevel != null)
-                _lblLevel.ForeColor = textMain;
-
-            if (_txtParentDisplay != null)
-                StyleInput(_txtParentDisplay, border, textMain);
-            if (_btnPickParent != null)
-                StyleTreeToolbarButton(_btnPickParent, accent, accentSoft);
-
-            chkActive.ForeColor = accent;
-
-            StyleActionButton(btnAdd, Color.FromArgb(35, 92, 157), Color.White);
-            StyleActionButton(btnEdit, Color.FromArgb(63, 120, 184), Color.White);
-            StyleActionButton(btnDelete, Color.FromArgb(189, 64, 64), Color.White);
-            StyleActionButton(btnSave, Color.FromArgb(21, 112, 74), Color.White);
-            StyleActionButton(btnCancel, Color.FromArgb(118, 132, 154), Color.White);
-
-            lblStats.ForeColor = accent;
-        }
-
-        private static void StyleGroupBox(GroupBox groupBox, Color backColor, Color titleColor, Color textColor)
-        {
-            if (groupBox == null)
-                return;
-
-            groupBox.BackColor = backColor;
-            groupBox.ForeColor = titleColor;
-            foreach (Control control in groupBox.Controls)
-            {
-                if (control is Label)
-                    control.ForeColor = textColor;
-            }
-        }
-
-        private static void StyleInput(Control control, Color borderColor, Color textColor)
-        {
-            if (control == null)
-                return;
-
-            control.BackColor = Color.White;
-            control.ForeColor = textColor;
-
-            if (control is TextBox textBox)
-                textBox.BorderStyle = BorderStyle.FixedSingle;
-            if (control is NumericUpDown numeric)
-                numeric.BorderStyle = BorderStyle.FixedSingle;
-            if (control is ComboBox combo)
-                combo.FlatStyle = FlatStyle.Flat;
-        }
-
-        private static void StyleActionButton(Button button, Color backColor, Color foreColor)
-        {
-            if (button == null)
-                return;
-
-            button.FlatStyle = FlatStyle.Flat;
-            button.FlatAppearance.BorderSize = 0;
-            button.BackColor = backColor;
-            button.ForeColor = foreColor;
-            button.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Regular);
-        }
-
-        private static void StyleTreeToolbarButton(Button button, Color foreColor, Color backColor)
-        {
-            if (button == null)
-                return;
-
-            button.FlatStyle = FlatStyle.Flat;
-            button.FlatAppearance.BorderSize = 1;
-            button.FlatAppearance.BorderColor = foreColor;
-            button.BackColor = backColor;
-            button.ForeColor = foreColor;
-            button.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
-            button.Cursor = Cursors.Hand;
-        }
-
-        private void CmbLevel_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            UpdateParentStateByLevel();
-        }
-
-        private bool IsChildLevelSelected()
-        {
-            return _cmbLevel != null && _cmbLevel.SelectedIndex == 1;
-        }
-
-        private void UpdateParentStateByLevel()
-        {
-            bool isChild = IsChildLevelSelected();
-            lblParentLabel.Text = isChild ? "Parent Menu:*" : "Parent Menu:";
-
-            if (_btnPickParent != null) _btnPickParent.Enabled = isChild;
-            if (_txtParentDisplay != null)
-            {
-                _txtParentDisplay.BackColor = isChild ? Color.White : SystemColors.Control;
-                _txtParentDisplay.Cursor = isChild ? Cursors.Hand : Cursors.Default;
-            }
-
-            if (!isChild)
-            {
-                _selectedParentMenuID = null;
-                UpdateParentDisplay();
-            }
-        }
-
-        private int GetMenuLevel(MenuItem menu)
-        {
-            int level = 0;
-            int guard = 0;
-            int? currentParentId = menu.ParentMenuItemID;
-
-            while (currentParentId.HasValue && guard < 50)
-            {
-                var parent = _allMenus.FirstOrDefault(m => m.MenuItemID == currentParentId.Value);
-                if (parent == null)
-                    break;
-
-                level++;
-                currentParentId = parent.ParentMenuItemID;
-                guard++;
-            }
-
-            return level;
-        }
-
-        // Helper wrapper so ComboBox can display text while storing the ID
-        private class ParentMenuItem
-        {
-            public int? ID { get; }
-            private readonly string _display;
-            public ParentMenuItem(int? id, string display) { ID = id; _display = display; }
-            public override string ToString() => _display;
-        }
-
-        private void RefreshMenuTree()
-        {
+            treeMenu.BeginUpdate();
             treeMenu.Nodes.Clear();
 
-            // Debug: log all menus
-            System.Diagnostics.Debug.WriteLine($"=== RefreshMenuTree: Total menus = {_allMenus.Count} ===");
-            foreach (var m in _allMenus)
-                System.Diagnostics.Debug.WriteLine($"ID:{m.MenuItemID} Name:{m.MenuName} Parent:{m.ParentMenuItemID}");
-
-            var rootMenus = _allMenus.Where(m => m.ParentMenuItemID == null).OrderBy(m => m.DisplayOrder).ToList();
-            System.Diagnostics.Debug.WriteLine($"Root menus count: {rootMenus.Count()}");
+            var rootMenus = _allMenus
+                .Where(m => m.ParentMenuItemID == null)
+                .OrderBy(m => m.DisplayOrder)
+                .ThenBy(m => m.MenuName)
+                .ToList();
 
             foreach (var menu in rootMenus)
             {
-                var node = CreateTreeNode(menu, 0);
-                treeMenu.Nodes.Add(node);
-                LoadChildNodes(node, menu.MenuItemID, 1);
+                if (MatchesFilterRecursive(menu, filter))
+                {
+                    var node = CreateTreeNode(menu);
+                    treeMenu.Nodes.Add(node);
+                    LoadChildNodes(node, menu.MenuItemID, filter);
+                }
             }
 
             treeMenu.ExpandAll();
+            treeMenu.EndUpdate();
         }
 
-        private TreeNode CreateTreeNode(MenuItem menu, int depth)
+        private bool MatchesFilterRecursive(MenuItem menu, string filter)
         {
-            string status = menu.IsActive ? string.Empty : " (Inactive)";
-            string text = $"📁 {menu.MenuName}{status}";
-            return new TreeNode(text) { Tag = menu };
+            if (string.IsNullOrWhiteSpace(filter) || filter == "🔍 ค้นหาเมนู...")
+                return true;
+
+            if ((menu.MenuName ?? "").IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0
+                || (menu.MenuKey ?? "").IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0
+                || (menu.FormClassName ?? "").IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            var children = _allMenus.Where(m => m.ParentMenuItemID == menu.MenuItemID);
+            return children.Any(c => MatchesFilterRecursive(c, filter));
         }
 
-        private void LoadChildNodes(TreeNode parentNode, int parentMenuItemID, int depth)
+        private TreeNode CreateTreeNode(MenuItem menu)
         {
-            var children = _allMenus.Where(m => m.ParentMenuItemID == parentMenuItemID).OrderBy(m => m.DisplayOrder).ToList();
-            System.Diagnostics.Debug.WriteLine($"LoadChildNodes: parentID={parentMenuItemID}, children count={children.Count()}");
+            string iconKey = ResolveMenuIconKey(menu);
+            string status = menu.IsActive ? string.Empty : " (ปิดใช้งาน)";
+            string orderTag = $"[{menu.DisplayOrder}] ";
+            string text = $"{orderTag}{menu.MenuName}{status}";
+
+            var node = new TreeNode(text)
+            {
+                Tag = menu,
+                ImageKey = iconKey,
+                SelectedImageKey = iconKey,
+                ForeColor = menu.IsActive ? Color.FromArgb(24, 37, 56) : Color.Gray
+            };
+
+            return node;
+        }
+
+        private static string ResolveMenuIconKey(MenuItem menu)
+        {
+            string text = ((menu?.MenuName ?? string.Empty) + " " + (menu?.MenuKey ?? string.Empty) + " " + (menu?.FormClassName ?? string.Empty)).ToLowerInvariant();
+
+            if (text.Contains("ถังขยะ") || text.Contains("recycle") || text.Contains("trash") || text.Contains("bin"))
+                return "cat_trash";
+            if (text.Contains("อนุมัติ") || text.Contains("approval") || text.Contains("approve") || text.Contains("inbox"))
+                return "cat_approval";
+            if (text.Contains("sync") || text.Contains("ซิงค์") || text.Contains("พนักงาน") || text.Contains("employee"))
+                return "cat_sync";
+            if (text.Contains("share") || text.Contains("แชร์") || text.Contains("sharing"))
+                return "cat_share";
+            if (text.Contains("จัดการเมนู") || text.Contains("menu"))
+                return "cat_menu";
+            if (text.Contains("ตั้งค่า") || text.Contains("config") || text.Contains("setting") || text.Contains("ระบบ"))
+                return "cat_config";
+            if (text.Contains("workflow") || text.Contains("wfe") || text.Contains("wke") || text.Contains("กระบวนการ"))
+                return "cat_workflow";
+            if (text.Contains("audit") || text.Contains("pdpa") || text.Contains("excel") || text.Contains("รายงาน") || text.Contains("report"))
+                return "cat_report";
+            if (text.Contains("สิทธิ") || text.Contains("สิทธิ์") || text.Contains("permission") || text.Contains("auth") || text.Contains("access"))
+                return "cat_permission";
+            if (text.Contains("knowledge") || text.Contains("kms") || text.Contains("คลังความรู้") || text.Contains("kb"))
+                return "cat_knowledge";
+            if (text.Contains("เอกสาร") || text.Contains("document") || text.Contains("docs") || text.Contains("file"))
+                return "file_docs";
+            if (text.Contains("ผู้ใช้") || text.Contains("user") || text.Contains("องค์กร") || text.Contains("org"))
+                return "organization";
+
+            return "folder";
+        }
+
+        private void LoadChildNodes(TreeNode parentNode, int parentMenuItemID, string filter = null)
+        {
+            var children = _allMenus
+                .Where(m => m.ParentMenuItemID == parentMenuItemID)
+                .OrderBy(m => m.DisplayOrder)
+                .ThenBy(m => m.MenuName)
+                .ToList();
 
             foreach (var child in children)
             {
-                var node = CreateTreeNode(child, depth);
-                parentNode.Nodes.Add(node);
-                LoadChildNodes(node, child.MenuItemID, depth + 1);
+                if (MatchesFilterRecursive(child, filter))
+                {
+                    var node = CreateTreeNode(child);
+                    parentNode.Nodes.Add(node);
+                    LoadChildNodes(node, child.MenuItemID, filter);
+                }
             }
         }
 
@@ -527,26 +263,24 @@ namespace CMS.Presentation
 
         private void DisplayMenuDetails(MenuItem menu)
         {
+            lblID.Text = menu.MenuItemID.ToString();
             txtName.Text = menu.MenuName;
             txtKey.Text = menu.MenuKey;
+            cmbActionKey.Text = menu.FormClassName ?? string.Empty;
             txtFormClass.Text = menu.FormClassName ?? string.Empty;
-            if (_cmbActionKey != null)
-                _cmbActionKey.Text = txtFormClass.Text;
-            numOrder.Value = menu.DisplayOrder;
+            numOrder.Value = Math.Max(1, Math.Min(9999, menu.DisplayOrder));
 
             int roleIndex = menu.RequiredAppRole ?? 0;
             if (roleIndex < 0 || roleIndex >= cmbRole.Items.Count)
                 roleIndex = 0;
             cmbRole.SelectedIndex = roleIndex;
 
-            if (_cmbLevel != null)
-                _cmbLevel.SelectedIndex = menu.ParentMenuItemID.HasValue ? 1 : 0;
-
+            cmbLevel.SelectedIndex = menu.ParentMenuItemID.HasValue ? 1 : 0;
             _selectedParentMenuID = menu.ParentMenuItemID;
             UpdateParentDisplay();
 
             chkActive.Checked = menu.IsActive;
-            lblID.Text = menu.MenuItemID.ToString();
+            txtDescription.Text = menu.Description ?? string.Empty;
             UpdateParentStateByLevel();
         }
 
@@ -558,15 +292,19 @@ namespace CMS.Presentation
 
             if (treeMenu.SelectedNode?.Tag is MenuItem selectedMenu)
             {
-                if (_cmbLevel != null)
-                    _cmbLevel.SelectedIndex = 1;
-
+                cmbLevel.SelectedIndex = 1; // Default to child under selected node
                 _selectedParentMenuID = selectedMenu.MenuItemID;
                 UpdateParentDisplay();
+
+                // Set order to next available order among siblings
+                int maxOrder = _allMenus.Where(m => m.ParentMenuItemID == selectedMenu.MenuItemID).Select(m => m.DisplayOrder).DefaultIfEmpty(0).Max();
+                numOrder.Value = maxOrder + 1;
             }
-            else if (_cmbLevel != null)
+            else
             {
-                _cmbLevel.SelectedIndex = 0;
+                cmbLevel.SelectedIndex = 0;
+                int maxOrder = _allMenus.Where(m => m.ParentMenuItemID == null).Select(m => m.DisplayOrder).DefaultIfEmpty(0).Max();
+                numOrder.Value = maxOrder + 1;
             }
 
             UpdateParentStateByLevel();
@@ -582,35 +320,44 @@ namespace CMS.Presentation
         {
             if (!(treeMenu.SelectedNode?.Tag is MenuItem menu))
             {
-                MessageBox.Show("Please select a menu item to edit.");
+                MessageBox.Show("กรุณาเลือกเมนูที่ต้องการแก้ไขจากโครงสร้างด้านซ้าย", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             DisplayMenuDetails(menu);
+            txtName.Focus();
         }
 
         private void DeleteMenu()
         {
             if (!(treeMenu.SelectedNode?.Tag is MenuItem menu))
             {
-                MessageBox.Show("Please select a menu item to delete.");
+                MessageBox.Show("กรุณาเลือกเมนูที่ต้องการลบจากโครงสร้างด้านซ้าย", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            if (MessageBox.Show($"Delete menu '{menu.MenuName}' and all child menus?", "Confirm Delete",
+            int childCount = _allMenus.Count(m => m.ParentMenuItemID == menu.MenuItemID);
+            string warningMessage = childCount > 0
+                ? $"คุณต้องการลบเมนู '{menu.MenuName}' และเมนูย่อยทั้งหมด ({childCount} รายการ) หรือไม่?"
+                : $"คุณต้องการลบเมนู '{menu.MenuName}' หรือไม่?";
+
+            if (MessageBox.Show(warningMessage, "ยืนยันการลบเมนู",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
                 return;
 
             try
             {
                 _menuManagementController.DeleteMenu(menu.MenuItemID, _currentUser);
-                MessageBox.Show("Menu deleted successfully.");
+                MessageBox.Show("ลบเมนูเรียบร้อยแล้ว", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 LoadMenus();
                 ClearForm();
+                RefreshMenuStatistics();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error deleting menu: {ex.Message}", "Error",
+                MessageBox.Show($"เกิดข้อผิดพลาดในการลบเมนู: {ex.Message}", "ข้อผิดพลาด",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -620,95 +367,81 @@ namespace CMS.Presentation
             try
             {
                 string idText = lblID.Text;
-                string name = txtName.Text != null ? txtName.Text.Trim() : string.Empty;
-                string key = txtKey.Text != null ? txtKey.Text.Trim() : string.Empty;
-                string rawActionKey = _cmbActionKey != null ? (_cmbActionKey.Text ?? string.Empty).Trim() : (txtFormClass.Text ?? string.Empty).Trim();
-                if (!ValidateConfiguredActionKey(rawActionKey))
-                    return;
-
-                string formClass = GetConfiguredActionKey();
+                string name = txtName.Text?.Trim() ?? string.Empty;
+                string key = txtKey.Text?.Trim() ?? string.Empty;
+                string actionKey = cmbActionKey.Text?.Trim() ?? string.Empty;
                 int order = (int)numOrder.Value;
                 int? role = cmbRole.SelectedIndex > 0 ? cmbRole.SelectedIndex : (int?)null;
                 bool isActive = chkActive.Checked;
                 int? parentID = IsChildLevelSelected() ? _selectedParentMenuID : (int?)null;
-                int? savedMenuID = null;
+                string description = txtDescription.Text?.Trim();
+
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    MessageBox.Show("กรุณากรอกชื่อเมนู (Menu Name)", "ข้อผิดพลาด",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    txtName.Focus();
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    key = GenerateUniqueKeyFromName(name);
+                    txtKey.Text = key;
+                }
 
                 if (IsChildLevelSelected() && !parentID.HasValue)
                 {
-                    MessageBox.Show("กรุณาเลือก Parent Menu เมื่อเป็น Level ลูก", "Validation Error",
+                    MessageBox.Show("กรุณาเลือก เมนูแม่ (Parent Menu) เมื่อเลือกระดับเป็น 'ลูก (Child)'", "ข้อผิดพลาด",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    BtnPickParent_Click(this, EventArgs.Empty);
+                    return;
+                }
+
+                // Self reference guard
+                if (idText != "(New)" && int.TryParse(idText, out int currentId) && parentID.HasValue && parentID.Value == currentId)
+                {
+                    MessageBox.Show("ไม่สามารถเลือกเมนูตัวเองเป็นเมนูแม่ (Parent) ได้", "ข้อผิดพลาด",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                // Guard: prevent self-reference
-                if (idText != "(New)" && parentID.HasValue && parentID.Value == int.Parse(idText))
-                {
-                    MessageBox.Show("ไม่สามารถเลือก menu ตัวเองเป็น Parent ได้", "Validation Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                int? savedMenuID = null;
 
-                if (idText != "(New)" && parentID.HasValue)
+                if (idText == "(New)" || idText == "-")
                 {
-                    int currentID = int.Parse(idText);
-                    if (IsDescendantMenu(parentID.Value, currentID))
-                    {
-                        MessageBox.Show("ไม่สามารถเลือกเมนูลูกหลานเป็น Parent ได้", "Validation Error",
-                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                }
-
-                // Validate parent exists in DB
-                if (parentID.HasValue && !_allMenus.Any(m => m.MenuItemID == parentID.Value))
-                {
-                    MessageBox.Show("Parent menu ที่เลือกไม่มีอยู่ในระบบ", "Validation Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                // Validation
-                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(key))
-                {
-                    MessageBox.Show("Name and Key are required.");
-                    return;
-                }
-
-                if (idText == "(New)")
-                {
-                    // Create new
                     var newMenu = new MenuItem
                     {
                         MenuName = name,
                         MenuKey = key,
-                        FormClassName = formClass,
+                        FormClassName = actionKey,
                         DisplayOrder = order,
                         RequiredAppRole = role,
                         IsActive = isActive,
                         ParentMenuItemID = parentID,
-                        CreatedByUserID = _currentUser.UserID
+                        Description = description
                     };
 
-                    int newID = _menuManagementController.CreateMenu(newMenu, _currentUser);
-                    savedMenuID = newID;
+                    savedMenuID = _menuManagementController.CreateMenu(newMenu, _currentUser);
+                    MessageBox.Show("เพิ่มเมนูใหม่สำเร็จ", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
-                else
+                else if (int.TryParse(idText, out int menuID))
                 {
-                    // Edit existing
-                    int id = int.Parse(idText);
-                    var existingMenu = _allMenus.FirstOrDefault(m => m.MenuItemID == id);
+                    var existingMenu = _allMenus.FirstOrDefault(m => m.MenuItemID == menuID);
                     if (existingMenu != null)
                     {
                         existingMenu.MenuName = name;
                         existingMenu.MenuKey = key;
-                        existingMenu.FormClassName = formClass;
+                        existingMenu.FormClassName = actionKey;
                         existingMenu.DisplayOrder = order;
                         existingMenu.RequiredAppRole = role;
                         existingMenu.IsActive = isActive;
                         existingMenu.ParentMenuItemID = parentID;
+                        existingMenu.Description = description;
 
                         _menuManagementController.UpdateMenu(existingMenu, _currentUser);
-                        savedMenuID = id;
+                        savedMenuID = menuID;
+                        MessageBox.Show("บันทึกการแก้ไขเมนูสำเร็จ", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
 
@@ -717,54 +450,34 @@ namespace CMS.Presentation
 
                 if (savedMenuID.HasValue)
                     SelectNodeByMenuID(savedMenuID.Value);
-
-                MessageBox.Show("บันทึกสำเร็จ และอัปเดต TreeView เรียบร้อย", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error saving menu: {ex.Message}", "Error",
+                MessageBox.Show($"เกิดข้อผิดพลาดในการบันทึก: {ex.Message}", "ข้อผิดพลาด",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private bool IsDescendantMenu(int menuID, int possibleAncestorID)
-        {
-            int? parentID = _allMenus.FirstOrDefault(m => m.MenuItemID == menuID)?.ParentMenuItemID;
-            int guard = 0;
-
-            while (parentID.HasValue && guard < 50)
-            {
-                if (parentID.Value == possibleAncestorID)
-                    return true;
-
-                parentID = _allMenus.FirstOrDefault(m => m.MenuItemID == parentID.Value)?.ParentMenuItemID;
-                guard++;
-            }
-
-            return false;
         }
 
         private void SelectNodeByMenuID(int menuID)
         {
             foreach (TreeNode root in treeMenu.Nodes)
             {
-                var found = FindNodeByMenuID(root, menuID);
-                if (found == null)
-                    continue;
-
-                treeMenu.SelectedNode = found;
-                found.EnsureVisible();
-                found.Expand();
-                return;
+                var target = FindNodeByMenuID(root, menuID);
+                if (target != null)
+                {
+                    treeMenu.SelectedNode = target;
+                    target.EnsureVisible();
+                    return;
+                }
             }
         }
 
-        private TreeNode FindNodeByMenuID(TreeNode node, int menuID)
+        private TreeNode FindNodeByMenuID(TreeNode current, int menuID)
         {
-            if (node?.Tag is MenuItem menu && menu.MenuItemID == menuID)
-                return node;
+            if (current.Tag is MenuItem item && item.MenuItemID == menuID)
+                return current;
 
-            foreach (TreeNode child in node.Nodes)
+            foreach (TreeNode child in current.Nodes)
             {
                 var found = FindNodeByMenuID(child, menuID);
                 if (found != null)
@@ -776,22 +489,109 @@ namespace CMS.Presentation
 
         private void ClearForm()
         {
-            lblID.Text = "-";
+            lblID.Text = "(New)";
             txtName.Text = string.Empty;
-            txtKey.Text = string.Empty;
-            txtFormClass.Text = string.Empty;
-            if (_cmbActionKey != null)
-                _cmbActionKey.Text = string.Empty;
-            numOrder.Value = 0;
+            txtKey.Text = GenerateInitialNewMenuKey();
+            cmbActionKey.Text = string.Empty;
+            numOrder.Value = 1;
             cmbRole.SelectedIndex = 0;
-            chkActive.Checked = true;
-
-            if (_cmbLevel != null)
-                _cmbLevel.SelectedIndex = 0;
-
+            cmbLevel.SelectedIndex = 0;
             _selectedParentMenuID = null;
             UpdateParentDisplay();
+            chkActive.Checked = true;
+            txtDescription.Text = string.Empty;
             UpdateParentStateByLevel();
+        }
+
+        private void CmbLevel_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            UpdateParentStateByLevel();
+        }
+
+        private bool IsChildLevelSelected()
+        {
+            return cmbLevel != null && cmbLevel.SelectedIndex == 1;
+        }
+
+        private void UpdateParentStateByLevel()
+        {
+            bool isChild = IsChildLevelSelected();
+            lblParentLabel.Text = isChild ? "เมนูแม่ (Parent):*" : "เมนูแม่ (Parent):";
+            btnPickParent.Enabled = isChild;
+            btnClearParent.Enabled = isChild;
+            txtParentDisplay.BackColor = isChild ? Color.White : Color.FromArgb(245, 245, 245);
+            txtParentDisplay.Cursor = isChild ? Cursors.Hand : Cursors.Default;
+
+            if (!isChild)
+            {
+                _selectedParentMenuID = null;
+                UpdateParentDisplay();
+            }
+        }
+
+        private void BtnPickParent_Click(object sender, EventArgs e)
+        {
+            int? excludeID = null;
+            if (int.TryParse(lblID.Text, out int id))
+                excludeID = id;
+
+            using (var dlg = new ParentMenuPickerDialog(_allMenus, _selectedParentMenuID, excludeID))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    _selectedParentMenuID = dlg.SelectedMenuItemID;
+                    if (_selectedParentMenuID.HasValue)
+                        cmbLevel.SelectedIndex = 1;
+                    else
+                        cmbLevel.SelectedIndex = 0;
+
+                    UpdateParentDisplay();
+                    UpdateParentStateByLevel();
+                }
+            }
+        }
+
+        private void BtnClearParent_Click(object sender, EventArgs e)
+        {
+            _selectedParentMenuID = null;
+            cmbLevel.SelectedIndex = 0;
+            UpdateParentDisplay();
+            UpdateParentStateByLevel();
+        }
+
+        private void TxtParentDisplay_Click(object sender, EventArgs e)
+        {
+            if (btnPickParent.Enabled)
+                BtnPickParent_Click(sender, e);
+        }
+
+        private void UpdateParentDisplay()
+        {
+            if (!_selectedParentMenuID.HasValue)
+            {
+                txtParentDisplay.Text = "(ไม่มี — Root)";
+                return;
+            }
+
+            txtParentDisplay.Text = BuildParentPathText(_selectedParentMenuID.Value);
+        }
+
+        private string BuildParentPathText(int parentMenuID)
+        {
+            var segments = new List<string>();
+            int? currentID = parentMenuID;
+            int guard = 0;
+
+            while (currentID.HasValue && guard < 50)
+            {
+                var menu = _allMenus.FirstOrDefault(m => m.MenuItemID == currentID.Value);
+                if (menu == null) break;
+                segments.Insert(0, menu.MenuName);
+                currentID = menu.ParentMenuItemID;
+                guard++;
+            }
+
+            return segments.Count == 0 ? "(ไม่มี — Root)" : string.Join(" › ", segments);
         }
 
         private void RefreshMenuStatistics()
@@ -799,34 +599,130 @@ namespace CMS.Presentation
             try
             {
                 var stats = _menuManagementController.GetMenuStatistics();
-                string statsText = $"📊 Total: {stats.TotalMenuItems} | Active: {stats.ActiveMenuItems} | Admin: {stats.AdminOnlyMenus}";
-                lblStats.Text = statsText;
+                lblStats.Text = $"📊 รวมทั้งหมด: {stats.TotalMenuItems} รายการ | 🟢 เปิดใช้งาน: {stats.ActiveMenuItems} | ⚪ ปิดใช้งาน: {stats.TotalMenuItems - stats.ActiveMenuItems} | 👑 สิทธิ์เฉพาะ Admin: {stats.AdminOnlyMenus}";
             }
-            catch { }
+            catch
+            {
+                lblStats.Text = $"📊 รวมทั้งหมด: {_allMenus.Count} รายการ | 🟢 เปิดใช้งาน: {_allMenus.Count(m => m.IsActive)} | ⚪ ปิดใช้งาน: {_allMenus.Count(m => !m.IsActive)}";
+            }
         }
 
-        private void btnAdd_Click(object sender, EventArgs e) { AddNewMenu(); }
-        private void btnEdit_Click(object sender, EventArgs e) { EditMenu(); }
-        private void btnDelete_Click(object sender, EventArgs e) { DeleteMenu(); }
-        private void btnSave_Click(object sender, EventArgs e) { SaveMenu(); }
-        private void btnCancel_Click(object sender, EventArgs e) { ClearForm(); }
-        private void BtnExpandAll_Click(object sender, EventArgs e) { treeMenu.ExpandAll(); }
-        private void BtnCollapseAll_Click(object sender, EventArgs e) { treeMenu.CollapseAll(); }
+        // ── Move Up / Move Down Reordering ──────────────────────────────────────
+        private void BtnMoveUp_Click(object sender, EventArgs e)
+        {
+            MoveSelectedMenuOrder(-1);
+        }
+
+        private void BtnMoveDown_Click(object sender, EventArgs e)
+        {
+            MoveSelectedMenuOrder(1);
+        }
+
+        private void MoveSelectedMenuOrder(int direction)
+        {
+            if (!(treeMenu.SelectedNode?.Tag is MenuItem currentMenu))
+            {
+                MessageBox.Show("กรุณาเลือกเมนูที่ต้องการปรับลำดับ", "แจ้งเตือน",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var siblings = _allMenus
+                .Where(m => m.ParentMenuItemID == currentMenu.ParentMenuItemID)
+                .OrderBy(m => m.DisplayOrder)
+                .ThenBy(m => m.MenuName)
+                .ToList();
+
+            int currentIndex = siblings.FindIndex(m => m.MenuItemID == currentMenu.MenuItemID);
+            if (currentIndex < 0) return;
+
+            int targetIndex = currentIndex + direction;
+            if (targetIndex < 0 || targetIndex >= siblings.Count)
+                return; // Already at top or bottom
+
+            var targetMenu = siblings[targetIndex];
+
+            // Swap DisplayOrder
+            int tempOrder = currentMenu.DisplayOrder;
+            currentMenu.DisplayOrder = targetMenu.DisplayOrder;
+            targetMenu.DisplayOrder = tempOrder;
+
+            if (currentMenu.DisplayOrder == targetMenu.DisplayOrder)
+            {
+                // Ensure distinct orders if they were equal
+                currentMenu.DisplayOrder = targetIndex + 1;
+                targetMenu.DisplayOrder = currentIndex + 1;
+            }
+
+            try
+            {
+                _menuManagementController.UpdateMenu(currentMenu, _currentUser);
+                _menuManagementController.UpdateMenu(targetMenu, _currentUser);
+
+                int savedID = currentMenu.MenuItemID;
+                LoadMenus();
+                SelectNodeByMenuID(savedID);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"เกิดข้อผิดพลาดในการสลับลำดับ: {ex.Message}", "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // ── Search & Filter ───────────────────────────────────────────────────
+        private void TxtSearchTree_TextChanged(object sender, EventArgs e)
+        {
+            if (_isSearchPlaceholder) return;
+            string text = txtSearchTree.Text?.Trim() ?? string.Empty;
+            RefreshMenuTree(text);
+        }
+
+        private void TxtSearchTree_Enter(object sender, EventArgs e)
+        {
+            if (_isSearchPlaceholder)
+            {
+                _isSearchPlaceholder = false;
+                txtSearchTree.Text = string.Empty;
+                txtSearchTree.ForeColor = Color.FromArgb(24, 37, 56);
+            }
+        }
+
+        private void TxtSearchTree_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtSearchTree.Text))
+            {
+                _isSearchPlaceholder = true;
+                txtSearchTree.Text = "🔍 ค้นหาเมนู...";
+                txtSearchTree.ForeColor = Color.Gray;
+                RefreshMenuTree(null);
+            }
+        }
+
+        // ── Toolbar Actions ───────────────────────────────────────────────────
+        private void BtnExpandAll_Click(object sender, EventArgs e) => treeMenu.ExpandAll();
+        private void BtnCollapseAll_Click(object sender, EventArgs e) => treeMenu.CollapseAll();
+        private void BtnRefreshTree_Click(object sender, EventArgs e)
+        {
+            LoadMenus();
+            RefreshMenuStatistics();
+        }
+
+        private void btnAdd_Click(object sender, EventArgs e) => AddNewMenu();
+        private void btnEdit_Click(object sender, EventArgs e) => EditMenu();
+        private void btnDelete_Click(object sender, EventArgs e) => DeleteMenu();
+        private void btnSave_Click(object sender, EventArgs e) => SaveMenu();
+        private void btnCancel_Click(object sender, EventArgs e) => ClearForm();
 
         private void TxtName_TextChanged(object sender, EventArgs e)
         {
-            // Key is always system-generated for new items.
-            if (lblID.Text == "(New)")
+            if (lblID.Text == "(New)" || lblID.Text == "-")
             {
                 string generatedKey = GenerateUniqueKeyFromName(txtName.Text);
                 if (!string.IsNullOrWhiteSpace(generatedKey))
-                {
                     txtKey.Text = generatedKey;
-                }
                 else if (string.IsNullOrWhiteSpace(txtKey.Text))
-                {
                     txtKey.Text = GenerateInitialNewMenuKey();
-                }
             }
         }
 
@@ -835,14 +731,9 @@ namespace CMS.Presentation
             if (string.IsNullOrWhiteSpace(name))
                 return string.Empty;
 
-            // Convert Thai/Unicode to ASCII-friendly slug
-            // Remove spaces, convert to lowercase, keep only alphanumeric and underscore
-            var slug = System.Text.RegularExpressions.Regex.Replace(name.Trim().ToLower(), @"[^a-z0-9_]", "_");
-            // Remove consecutive underscores
-            slug = System.Text.RegularExpressions.Regex.Replace(slug, @"_+", "_");
-            // Trim leading/trailing underscores
-            slug = slug.Trim('_');
-            return slug;
+            var slug = Regex.Replace(name.Trim().ToLower(), @"[^a-z0-9_]", "_");
+            slug = Regex.Replace(slug, @"_+", "_");
+            return slug.Trim('_');
         }
 
         private string GenerateUniqueKeyFromName(string name)
@@ -868,10 +759,7 @@ namespace CMS.Presentation
                     maxRunning = n;
             }
 
-            int next = maxRunning + 1;
-            if (next > 9999)
-                next = 9999;
-
+            int next = Math.Min(9999, maxRunning + 1);
             return $"{baseKey}_{next:D4}";
         }
     }

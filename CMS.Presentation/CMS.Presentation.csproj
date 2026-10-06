@@ -220,7 +220,31 @@
     <Compile Include="Modules\DMS\AuthorityConfigForm.Designer.cs">
       <DependentUpon>AuthorityConfigForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\DMS\AuthorityImportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\AuthorityImportForm.Designer.cs">
+      <DependentUpon>AuthorityImportForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\DMS\AuthorityConfigEditDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\AuthorityConfigEditDialog.Designer.cs">
+      <DependentUpon>AuthorityConfigEditDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\OrgMasterManagementForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\OrgMasterManagementForm.Designer.cs">
+      <DependentUpon>OrgMasterManagementForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\OrgMasterImportDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\DMS\OrgMasterImportDialog.Designer.cs">
+      <DependentUpon>OrgMasterImportDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\DMS\OrgMasterEditDialog.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Modules\DMS\ConfigAdminForm.cs">
@@ -367,6 +391,12 @@
     </Compile>
     <Compile Include="Modules\KMS\KBMainForm.Designer.cs">
       <DependentUpon>KBMainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\KMS\KBDmsFolderPickerDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBDmsFolderPickerDialog.Designer.cs">
+      <DependentUpon>KBDmsFolderPickerDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Modules\KMS\KBEditorDialog.cs">
       <SubType>Form</SubType>

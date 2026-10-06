@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using CMS.Data.Interfaces;
@@ -11,8 +11,6 @@ namespace CMS.Data.Repositories
     {
         private readonly string _connectionString;
 
-        // HR_Position (เดิม) ถูก rename เป็น HR_Role
-        // HR_Position_level (เดิม) ถูก rename เป็น HR_Position
         private const string _selectSql =
             @"SELECT
                 m.MappingID,
@@ -52,6 +50,89 @@ namespace CMS.Data.Repositories
                 cmd => cmd.Parameters.AddWithValue("@DivisionID", divisionId));
         }
 
+        public int Save(HrPositionMapping mapping)
+        {
+            if (mapping == null) throw new ArgumentNullException("mapping");
+
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                if (mapping.MappingID > 0)
+                {
+                    using (var cmd = new SqlCommand(
+                        "UPDATE EMS.m_PositionMapping " +
+                        "SET DivisionID = @DivisionID, DepartmentID = @DepartmentID, PositionID = @PositionID, " +
+                        "    HeadCount = @HeadCount, IsActive = @IsActive " +
+                        "WHERE MappingID = @MappingID", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@MappingID", mapping.MappingID);
+                        cmd.Parameters.AddWithValue("@DivisionID", mapping.DivisionID);
+                        cmd.Parameters.AddWithValue("@DepartmentID", (object)mapping.DepartmentID ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@PositionID", mapping.PositionID);
+                        cmd.Parameters.AddWithValue("@HeadCount", mapping.HeadCount);
+                        cmd.Parameters.AddWithValue("@IsActive", mapping.IsActive);
+                        cmd.ExecuteNonQuery();
+                        return mapping.MappingID;
+                    }
+                }
+                else
+                {
+                    // Check if already mapped
+                    using (var chkCmd = new SqlCommand(
+                        "SELECT MappingID FROM EMS.m_PositionMapping " +
+                        "WHERE DivisionID = @DivisionID AND DepartmentID = @DepartmentID AND PositionID = @PositionID", conn))
+                    {
+                        chkCmd.Parameters.AddWithValue("@DivisionID", mapping.DivisionID);
+                        chkCmd.Parameters.AddWithValue("@DepartmentID", (object)mapping.DepartmentID ?? DBNull.Value);
+                        chkCmd.Parameters.AddWithValue("@PositionID", mapping.PositionID);
+                        var existingId = chkCmd.ExecuteScalar();
+                        if (existingId != null && existingId != DBNull.Value)
+                        {
+                            int id = Convert.ToInt32(existingId);
+                            using (var updateCmd = new SqlCommand(
+                                "UPDATE EMS.m_PositionMapping " +
+                                "SET HeadCount = @HeadCount, IsActive = @IsActive " +
+                                "WHERE MappingID = @MappingID", conn))
+                            {
+                                updateCmd.Parameters.AddWithValue("@MappingID", id);
+                                updateCmd.Parameters.AddWithValue("@HeadCount", mapping.HeadCount);
+                                updateCmd.Parameters.AddWithValue("@IsActive", mapping.IsActive);
+                                updateCmd.ExecuteNonQuery();
+                                return id;
+                            }
+                        }
+                    }
+
+                    using (var cmd = new SqlCommand(
+                        "INSERT INTO EMS.m_PositionMapping (DivisionID, DepartmentID, PositionID, HeadCount, IsActive, CreatedDate) " +
+                        "VALUES (@DivisionID, @DepartmentID, @PositionID, @HeadCount, @IsActive, GETDATE()); " +
+                        "SELECT CAST(SCOPE_IDENTITY() AS INT);", conn))
+                    {
+                        cmd.Parameters.AddWithValue("@DivisionID", mapping.DivisionID);
+                        cmd.Parameters.AddWithValue("@DepartmentID", (object)mapping.DepartmentID ?? DBNull.Value);
+                        cmd.Parameters.AddWithValue("@PositionID", mapping.PositionID);
+                        cmd.Parameters.AddWithValue("@HeadCount", mapping.HeadCount);
+                        cmd.Parameters.AddWithValue("@IsActive", mapping.IsActive);
+                        var newId = cmd.ExecuteScalar();
+                        return newId != null && newId != DBNull.Value ? Convert.ToInt32(newId) : 0;
+                    }
+                }
+            }
+        }
+
+        public bool Delete(int mappingId)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand("DELETE FROM EMS.m_PositionMapping WHERE MappingID = @MappingID", conn))
+                {
+                    cmd.Parameters.AddWithValue("@MappingID", mappingId);
+                    return cmd.ExecuteNonQuery() > 0;
+                }
+            }
+        }
+
         private IEnumerable<HrPositionMapping> Query(string sql, Action<SqlCommand> addParams)
         {
             var results = new List<HrPositionMapping>();
@@ -72,13 +153,13 @@ namespace CMS.Data.Repositories
         {
             return new HrPositionMapping
             {
-                MappingID      = (int)r["MappingID"],
-                PositionID     = (int)r["PositionID"],
-                DepartmentID   = r["DepartmentID"] == DBNull.Value ? (int?)null : (int)r["DepartmentID"],
-                DivisionID     = (int)r["DivisionID"],
-                HeadCount      = r["HeadCount"]    == DBNull.Value ? 0 : (int)r["HeadCount"],
-                IsActive       = (bool)r["IsActive"],
-                CreatedDate    = (DateTime)r["CreatedDate"],
+                MappingID      = r["MappingID"] == DBNull.Value ? 0 : Convert.ToInt32(r["MappingID"]),
+                PositionID     = r["PositionID"] == DBNull.Value ? 0 : Convert.ToInt32(r["PositionID"]),
+                DepartmentID   = r["DepartmentID"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["DepartmentID"]),
+                DivisionID     = r["DivisionID"] == DBNull.Value ? 0 : Convert.ToInt32(r["DivisionID"]),
+                HeadCount      = r["HeadCount"] == DBNull.Value ? 0 : Convert.ToInt32(r["HeadCount"]),
+                IsActive       = r["IsActive"] != DBNull.Value && Convert.ToBoolean(r["IsActive"]),
+                CreatedDate    = r["CreatedDate"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(r["CreatedDate"]),
                 PositionCode   = r["PositionCode"]   == DBNull.Value ? "" : Convert.ToString(r["PositionCode"]),
                 PositionName   = r["PositionName"]   == DBNull.Value ? "" : Convert.ToString(r["PositionName"]),
                 Level          = r["LevelCode"]      == DBNull.Value ? "" : Convert.ToString(r["LevelCode"]),
@@ -90,4 +171,3 @@ namespace CMS.Data.Repositories
         }
     }
 }
-

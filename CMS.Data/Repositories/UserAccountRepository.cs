@@ -165,6 +165,21 @@ namespace CMS.Data.Repositories
             }
         }
 
+        public void UpdateLevelCode(int userId, string levelCode)
+        {
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var cmd = new SqlCommand(
+                    "UPDATE EMS.UserAccount SET LevelCode = @LevelCode, UpdatedAt = GETUTCDATE() WHERE UserID = @UserID", conn))
+                {
+                    cmd.Parameters.AddWithValue("@UserID",    userId);
+                    cmd.Parameters.AddWithValue("@LevelCode", (object)levelCode ?? DBNull.Value);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
         public void UpdateLastLogin(int userId)
         {
             using (var conn = new SqlConnection(_connectionString))

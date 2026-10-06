@@ -23,6 +23,12 @@ namespace CMS.Controllers.KMS.KB.Interfaces
         /// </summary>
         string AttachmentFolderPath { get; }
 
+        /// <summary>
+        /// โฟลเดอร์ปลายทางใน DMS ที่ผู้ใช้เลือกเก็บไฟล์แนบ — null = ยังไม่ได้เลือก.
+        /// ต้องเลือกเมื่อ Template map คอลัมน์ Attachment (เหมือน <see cref="AttachmentFolderPath"/>)
+        /// </summary>
+        int? DmsFolderId { get; }
+
         // ── Presenter → View: push results ──────────────────────────────────────
 
         /// <summary>Binds the list of configured KB Import Templates to the template combo box.</summary>

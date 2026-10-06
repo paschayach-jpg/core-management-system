@@ -13,6 +13,7 @@ namespace CMS.Presentation
     {
         private readonly IAuthorityConfigController _authorityConfigController;
         private readonly IAuthorityOrgLookupController _authorityOrgLookupController;
+        private readonly IAuthorityImportController _authorityImportController;
         private readonly UserContext                _user;
 
         private List<FolderAuthorityConfig> _allConfigs = new List<FolderAuthorityConfig>();
@@ -27,15 +28,18 @@ namespace CMS.Presentation
         }
 
         public AuthorityConfigForm(IAuthorityConfigController authorityConfigController, UserContext user,
-            IAuthorityOrgLookupController authorityOrgLookupController = null)
+            IAuthorityOrgLookupController authorityOrgLookupController = null,
+            IAuthorityImportController authorityImportController = null)
         {
             if (authorityConfigController == null) throw new ArgumentNullException("authorityConfigController");
             if (user    == null) throw new ArgumentNullException("user");
             _authorityConfigController = authorityConfigController;
             _user             = user;
             _authorityOrgLookupController = authorityOrgLookupController;
+            _authorityImportController = authorityImportController;
 
             InitializeComponent();
+            btnImport.Visible = _authorityImportController != null && _user.AppRole == 4;
             this.Load += (s, e) =>
             {
                 SetupGrid();
@@ -536,9 +540,68 @@ namespace CMS.Presentation
 
         // ── Toolbar ───────────────────────────────────────────────────────────
 
+        private List<string> GetAvailableLevelList()
+        {
+            var levels = new List<string>();
+            if (_authorityOrgLookupController != null)
+            {
+                try
+                {
+                    var posLevels = _authorityOrgLookupController.GetPositionLevels();
+                    if (posLevels != null && posLevels.Count > 0)
+                    {
+                        foreach (var pl in posLevels)
+                        {
+                            if (!string.IsNullOrWhiteSpace(pl.LevelCode))
+                            {
+                                string code = pl.LevelCode.Trim().ToUpper();
+                                if (!levels.Contains(code, StringComparer.OrdinalIgnoreCase))
+                                    levels.Add(code);
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                if (levels.Count == 0)
+                {
+                    try
+                    {
+                        foreach (var p in _authorityOrgLookupController.GetPositions())
+                        {
+                            string code = !string.IsNullOrWhiteSpace(p.LevelCode) ? p.LevelCode : p.PositionLevel;
+                            if (!string.IsNullOrWhiteSpace(code))
+                            {
+                                code = code.Trim().ToUpper();
+                                if (!levels.Contains(code, StringComparer.OrdinalIgnoreCase))
+                                    levels.Add(code);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            if (_allConfigs != null)
+            {
+                foreach (var c in _allConfigs)
+                {
+                    if (!string.IsNullOrWhiteSpace(c.LevelCode))
+                    {
+                        string code = c.LevelCode.Trim().ToUpper();
+                        if (!levels.Contains(code, StringComparer.OrdinalIgnoreCase))
+                            levels.Add(code);
+                    }
+                }
+            }
+
+            return levels;
+        }
+
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            using (var dialog = new AuthorityConfigEditDialog(new FolderAuthorityConfig(), false))
+            var levels = GetAvailableLevelList();
+            using (var dialog = new AuthorityConfigEditDialog(new FolderAuthorityConfig(), false, _authorityOrgLookupController, levels))
             {
                 if (dialog.ShowDialog(this) == DialogResult.OK)
                 {
@@ -557,7 +620,8 @@ namespace CMS.Presentation
             }
 
             var config = (FolderAuthorityConfig)dgv.SelectedRows[0].Tag;
-            using (var dialog = new AuthorityConfigEditDialog(config, true))
+            var levels = GetAvailableLevelList();
+            using (var dialog = new AuthorityConfigEditDialog(config, true, _authorityOrgLookupController, levels))
             {
                 if (dialog.ShowDialog(this) == DialogResult.OK)
                 {
@@ -603,6 +667,16 @@ namespace CMS.Presentation
         }
 
         private void btnClose_Click(object sender, EventArgs e)  { Close(); }
+
+        private void btnImport_Click(object sender, EventArgs e)
+        {
+            if (_authorityImportController == null) return;
+            using (var dlg = new AuthorityImportForm(_authorityImportController, _user))
+            {
+                dlg.ShowDialog(this);
+                if (dlg.ImportCompleted) LoadData();
+            }
+        }
 
         private void btnDelete_Click(object sender, EventArgs e)
         {

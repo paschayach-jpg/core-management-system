@@ -7,5 +7,7 @@ namespace CMS.Data.Interfaces
     {
         IEnumerable<HrDepartment> GetAll();
         IEnumerable<HrDepartment> GetByDivisionID(int divisionID);
+        int Save(HrDepartment department);
+        bool Delete(int departmentId);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Drawing;
@@ -2177,6 +2177,9 @@ namespace CMS.Presentation
                 case "orgstructure":
                 case "orgstructureform":
                     return "OrgStructure";
+                case "orgmastermanagement":
+                case "orgmastermanagementform":
+                    return "OrgMasterManagement";
                 case "usermanagement":
                 case "usermanagementform":
                     return "UserManagement";
@@ -2282,6 +2285,7 @@ namespace CMS.Presentation
             if (name.Contains("ลิงก์แชร์") || name.Contains("share management") || name.Contains("manage share")) return "ShareManagement";
             if (name == "share" || name.Contains("แชร์")) return "ShareDialog";
             if (name.Contains("โครงสร้าง") || name.Contains("org structure")) return "OrgStructure";
+            if (name.Contains("master องค์กร") || name.Contains("จัดการ master") || name.Contains("org master")) return "OrgMasterManagement";
             if (name.Contains("บัญชีผู้ใช้") || name.Contains("ผู้ใช้งาน") || name.Contains("user management")) return "UserManagement";
             if (name.Contains("จัดการสิทธิ์") || name.Contains("permission")) return "PermissionAdmin";
             if (name.Contains("สรุปสิทธิ์")) return "UserPermissionSummary";
@@ -2343,6 +2347,9 @@ namespace CMS.Presentation
                 case "org_structure":
                 case "orgstructure":
                     return "OrgStructure";
+                case "org_master_management":
+                case "orgmastermanagement":
+                    return "OrgMasterManagement";
                 case "user_management":
                 case "usermanagement":
                     return "UserManagement";

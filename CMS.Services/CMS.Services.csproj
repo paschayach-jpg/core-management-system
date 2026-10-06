@@ -118,6 +118,11 @@
     <Compile Include="Interfaces\IExcelTemplatePreviewService.cs" />
     <Compile Include="Interfaces\IKBArticleService.cs" />
     <Compile Include="Interfaces\IKBExcelReaderService.cs" />
+    <Compile Include="Interfaces\IAuthorityImportService.cs" />
+    <Compile Include="Interfaces\IOrgMasterService.cs" />
+    <Compile Include="DTOs\AuthorityImportDtos.cs" />
+    <Compile Include="DTOs\OrgMasterImportDtos.cs" />
+    <Compile Include="OrgMasterService.cs" />
     <Compile Include="Interfaces\IKBImportProcessorService.cs" />
     <Compile Include="Interfaces\IKBDashboardService.cs" />
     <Compile Include="DTOs\ShareAccessResult.cs" />
@@ -152,6 +157,8 @@
     <Compile Include="KBDashboardService.cs" />
     <Compile Include="KBExcelReadException.cs" />
     <Compile Include="KBExcelReader.cs" />
+    <Compile Include="AuthorityExcelParser.cs" />
+    <Compile Include="AuthorityImportService.cs" />
     <Compile Include="KBImportProcessor.cs" />
     <Compile Include="KBImportCategoryResolver.cs" />
     <Compile Include="LawFileDownloader.cs" />
