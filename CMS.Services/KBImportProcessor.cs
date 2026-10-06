@@ -53,8 +53,8 @@ namespace CMS.Services
         private const string ImportUpdatedBy = "system";
 
         /// <summary>Folder ปลายทางของไฟล์แนบ (NonLaw) — ตรงกับที่ KBEditorDialog ใช้ ("KMS Attachments")</summary>
-        /// <remarks>ใช้เมื่อผู้เรียกไม่ระบุโฟลเดอร์ปลายทางที่ผู้ใช้เลือกในหน้า import</remarks>
-        private const int DefaultAttachmentFolderId = 437;
+        /// <remarks>TODO: ยังตั้งตายตัว — แผนให้ผู้ใช้เลือกโฟลเดอร์ปลายทางใน DMS เองที่หน้า import (ดูแนวทางที่ <see cref="EnsureUploaded"/>)</remarks>
+        private const int AttachmentFolderId = 437;
 
         public KBImportProcessor(
             IKBArticleRepository     articleRepo,
@@ -143,9 +143,6 @@ namespace CMS.Services
         /// <param name="attachmentFolder">
         /// NonLaw rows only: โฟลเดอร์ในเครื่องที่ผู้ใช้เลือกไว้เก็บไฟล์แนบ (หาไฟล์ตามชื่อที่ Template map เป็น Attachment — ดู <see cref="LawFileDownloader"/>)
         /// </param>
-        /// <param name="dmsFolderId">
-        /// NonLaw rows only: โฟลเดอร์ปลายทางใน DMS ที่ผู้ใช้เลือกเก็บไฟล์แนบ (ผ่านการตรวจสิทธิ์แล้ว); null = ใช้ค่าเริ่มต้น (<see cref="DefaultAttachmentFolderId"/>)
-        /// </param>
         /// <param name="onProgress">
         /// Optional callback invoked after each row with (rowsProcessed, totalRows).
         /// Use to update a progress bar in the UI.
@@ -156,7 +153,6 @@ namespace CMS.Services
             bool skipRowOnDownloadFailure,
             byte resolvedArticleType,
             string attachmentFolder,
-            int? dmsFolderId,
             out int successCount,
             out int errorCount,
             Action<int, int> onProgress)
@@ -172,7 +168,7 @@ namespace CMS.Services
             string createdBy = user != null ? (user.AdIdentity ?? string.Empty) : string.Empty;
 
             // ไฟล์แนบของ Excel row ปัจจุบัน — ArticleCode จาก row เดียวกันใช้ไฟล์ที่โหลด/อัปโหลดครั้งเดียวร่วมกัน
-            var files = new RowFileCache(_downloader, attachmentFolder, dmsFolderId ?? DefaultAttachmentFolderId);
+            var files = new RowFileCache(_downloader, attachmentFolder);
 
             for (int i = 0; i < total; i++)
             {
@@ -931,7 +927,6 @@ namespace CMS.Services
             public int                   RowNumber;
             public LawFileDownloadResult Download;
             public bool                  UploadAttempted;
-            public int                   DmsFolderId;
             public int?                  FileId;
             public string                UploadError;
         }
@@ -944,14 +939,12 @@ namespace CMS.Services
         {
             private readonly LawFileDownloader _downloader;
             private readonly string            _folder;
-            private readonly int               _dmsFolderId;
             private RowFile                    _current;
 
-            public RowFileCache(LawFileDownloader downloader, string folder, int dmsFolderId)
+            public RowFileCache(LawFileDownloader downloader, string folder)
             {
-                _downloader  = downloader;
-                _folder      = folder;
-                _dmsFolderId = dmsFolderId;
+                _downloader = downloader;
+                _folder     = folder;
             }
 
             public RowFile For(KBImportRow row)
@@ -960,9 +953,8 @@ namespace CMS.Services
                 {
                     _current = new RowFile
                     {
-                        RowNumber   = row.RowNumber,
-                        DmsFolderId = _dmsFolderId,
-                        Download    = _downloader.Download(_folder, row.AttachmentUrl, row.AttachmentFileName),
+                        RowNumber = row.RowNumber,
+                        Download  = _downloader.Download(_folder, row.AttachmentUrl, row.AttachmentFileName),
                     };
                 }
                 return _current;
@@ -970,14 +962,34 @@ namespace CMS.Services
         }
 
         /// <summary>อัปโหลดเข้า DMS ครั้งเดียวต่อ Excel row — ครั้งถัดไปคืน FileID เดิม; คืน null พร้อม <paramref name="errorMessage"/> เมื่ออัปโหลดไม่สำเร็จ</summary>
-        /// <remarks>โฟลเดอร์ปลายทางคือ <see cref="RowFile.DmsFolderId"/> ที่ผู้ใช้เลือกในหน้า import; OverwriteExisting = false (ชื่อซ้ำ → "ชื่อ copy(N).pdf")</remarks>
+        /// <remarks>
+        /// TODO (แนวทาง — ยังไม่ทำ): ให้ผู้ใช้เลือก "โฟลเดอร์ปลายทางใน DMS" เองแทน <see cref="AttachmentFolderId"/> ที่ตั้งตายตัว (437)
+        /// เมื่อทำ ให้ revise signature เป็น EnsureUploaded(RowFile file, UserContext user, int dmsFolderId, out string errorMessage)
+        /// และให้ UploadToDms รับ dmsFolderId ต่อ — พฤติกรรมเดิมที่ต้องคงไว้: อัปโหลดครั้งเดียวต่อ Excel row (RowFile.UploadAttempted),
+        /// OverwriteExisting = false (ชื่อซ้ำ → "ชื่อ copy(N).pdf"), ล้มเหลว → คืน null + errorMessage
+        ///
+        /// 1) เลือก path — หน้า KBImportWizardForm Step 2 ต่อจากช่องโฟลเดอร์ไฟล์ต้นทาง (ช่องที่สอง "โฟลเดอร์ปลายทางใน DMS"):
+        ///    - ใช้ FolderPickerDialog ที่มีอยู่แล้ว (CMS.Presentation: LoadFolders(accessibleFolders, excludedIds, orgUnits) → SelectedFolderId)
+        ///    - รายการโฟลเดอร์ต้องมาจาก Service ผ่าน wizard controller (IFolderService.GetAccessibleFolders(null, user)) — Form ของ KMS
+        ///      ห้ามเรียก DMS controller/repository เอง; view contract เพิ่ม int? DmsFolderId { get; } (และทางให้ controller ส่งรายการโฟลเดอร์ให้ view)
+        ///    - ค่าเริ่มต้น = 437 เดิม (ควรย้ายไปเป็น config ผ่าน IConfigManager) ผู้ใช้เปลี่ยนได้
+        /// 2) validate เหมือนช่องโฟลเดอร์ไฟล์ต้นทางที่ทำไว้แล้ว:
+        ///    - Template ที่ map Attachment → ต้องเลือก; ยังไม่เลือก → btnImport disabled (KBImportWizardForm.UpdateImportButtonState)
+        ///      และ KBImportWizardController.ExecuteImport ปฏิเสธก่อนใช้ snapshot ผลตรวจ
+        ///    - หลังเลือกต้องตรวจโฟลเดอร์ "ครั้งเดียวก่อนเริ่ม batch" (ไม่ปล่อยให้ล้มทีละแถวด้วยข้อความเดิมซ้ำ ๆ): มีอยู่จริง, ไม่ถูกลบ/archive,
+        ///      ผู้ใช้เพิ่มไฟล์ได้ (เงื่อนไขเดียวกับ FileService.UploadFiles: AppRole ≥ 3 หรือ CanAddToFolder/สิทธิ์ Write), quota พอ
+        ///      → เพิ่ม method ตรวจใน Service (เช่น IFileService.CheckUploadFolder(folderId, user) คืนข้อความไทย หรือ null ถ้าผ่าน)
+        ///      แล้ว controller เรียกตอนเลือกและก่อนนำเข้า; ไม่ผ่าน → แสดงข้อความ และปุ่มนำเข้ายังกดไม่ได้
+        /// 3) ส่งต่อ: view.DmsFolderId → controller → IKBImportProcessorService.InsertArticles(..., dmsFolderId, ...) → RowFileCache/EnsureUploaded
+        ///    → UploadToDms; audit "UPLOAD" ของ FileService จะบันทึกโฟลเดอร์ที่ผู้ใช้เลือกเอง
+        /// </remarks>
         private int? EnsureUploaded(RowFile file, UserContext user, out string errorMessage)
         {
             if (!file.UploadAttempted)
             {
                 file.UploadAttempted = true;
                 string error;
-                file.FileId      = UploadToDms(file.Download, user, file.DmsFolderId, out error);
+                file.FileId      = UploadToDms(file.Download, user, out error);
                 file.UploadError = error;
             }
 
@@ -985,8 +997,9 @@ namespace CMS.Services
             return file.FileId;
         }
 
-        private int? UploadToDms(LawFileDownloadResult download, UserContext user, int dmsFolderId, out string errorMessage)
+        private int? UploadToDms(LawFileDownloadResult download, UserContext user, out string errorMessage)
         {
+            // TODO: รับ dmsFolderId ที่ผู้ใช้เลือกแทน AttachmentFolderId (ดูแนวทางที่ EnsureUploaded)
             errorMessage = null;
 
             using (var stream = new MemoryStream(download.Content))
@@ -1001,7 +1014,7 @@ namespace CMS.Services
                 };
 
                 var results = _fileService.UploadFiles(
-                    new List<FileUploadRequest> { request }, dmsFolderId, user);
+                    new List<FileUploadRequest> { request }, AttachmentFolderId, user);
 
                 var result = results == null ? null : results.FirstOrDefault();
 
@@ -1018,59 +1031,6 @@ namespace CMS.Services
                 }
 
                 return result.FileDocumentId.Value;
-            }
-        }
-
-        public void UploadFolderFiles(
-            string localFolder,
-            int dmsFolderId,
-            UserContext user,
-            out int successCount,
-            out IList<string> errors,
-            Action<int, int> onProgress)
-        {
-            if (user == null) throw new ArgumentNullException("user");
-
-            successCount = 0;
-            var errorList = new List<string>();
-            errors = errorList;
-
-            string[] paths;
-            try
-            {
-                paths = Directory.GetFiles(localFolder);
-            }
-            catch (Exception ex)
-            {
-                errorList.Add("อ่านโฟลเดอร์ไม่สำเร็จ: " + ex.Message);
-                return;
-            }
-
-            for (int i = 0; i < paths.Length; i++)
-            {
-                string name = Path.GetFileName(paths[i]);
-                try
-                {
-                    var download = _downloader.Download(localFolder, null, name);
-                    if (!download.Success)
-                    {
-                        errorList.Add(download.ErrorMessage);
-                    }
-                    else
-                    {
-                        string uploadError;
-                        if (UploadToDms(download, user, dmsFolderId, out uploadError).HasValue)
-                            successCount++;
-                        else
-                            errorList.Add(string.Format("{0}: {1}", name, uploadError));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    errorList.Add(string.Format("{0}: {1}", name, ex.Message));
-                }
-
-                if (onProgress != null) onProgress(i + 1, paths.Length);
             }
         }
 

@@ -22,7 +22,6 @@ namespace CMS.Controllers.KMS.KB
         private readonly IKBExcelReaderService            _excelReader;
         private readonly IKBImportProcessorService        _processor;
         private readonly IKBImportTemplateService         _templateService;
-        private readonly IFileService              _fileService;
         private readonly UserContext               _user;
 
         /// <summary>Retained between ValidateFile() and ExecuteImport().</summary>
@@ -50,10 +49,8 @@ namespace CMS.Controllers.KMS.KB
             IKBExcelReaderService            excelReader,
             IKBImportProcessorService        processor,
             IKBImportTemplateService         templateService,
-            IFileService              fileService,
             UserContext               user)
         {
-            if (fileService     == null) throw new ArgumentNullException("fileService");
             if (view            == null) throw new ArgumentNullException("view");
             if (articleService  == null) throw new ArgumentNullException("articleService");
             if (categoryService == null) throw new ArgumentNullException("categoryService");
@@ -68,57 +65,7 @@ namespace CMS.Controllers.KMS.KB
             _excelReader     = excelReader;
             _processor       = processor;
             _templateService = templateService;
-            _fileService     = fileService;
             _user            = user;
-        }
-
-        /// <summary>
-        /// ปุ่มทดสอบ: อัปโหลดทุกไฟล์ในโฟลเดอร์ local เข้าโฟลเดอร์ DMS ที่เลือกโดยตรง (ไม่ผ่าน Excel/บทความ).
-        /// ตรวจสิทธิ์ก่อน; คืนข้อความสรุปผลให้ view แสดง
-        /// </summary>
-        public string TestUploadFolderFiles(string localFolder, int dmsFolderId, Action<int, int> onProgress)
-        {
-            if (string.IsNullOrWhiteSpace(localFolder))
-                return "ยังไม่ได้เลือกโฟลเดอร์ไฟล์แนบ";
-
-            string folderError = CheckDmsFolder(dmsFolderId);
-            if (folderError != null)
-                return folderError;
-
-            int success;
-            IList<string> errors;
-            try
-            {
-                _processor.UploadFolderFiles(localFolder, dmsFolderId, _user, out success, out errors, onProgress);
-            }
-            catch (Exception ex)
-            {
-                return "อัปโหลดไฟล์ล้มเหลว: " + ex.Message;
-            }
-
-            var sb = new System.Text.StringBuilder();
-            sb.AppendFormat("อัปโหลดสำเร็จ {0:N0} ไฟล์, ไม่สำเร็จ {1:N0} ไฟล์", success, errors.Count);
-            foreach (var err in errors.Take(10))
-                sb.AppendLine().Append("• ").Append(err);
-            if (errors.Count > 10)
-                sb.AppendLine().AppendFormat("... และอีก {0:N0} รายการ", errors.Count - 10);
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// ตรวจว่าผู้ใช้อัปโหลดไฟล์ลงโฟลเดอร์ DMS ที่เลือกได้หรือไม่ (เรียกจากหน้าเลือกโฟลเดอร์ปลายทาง).
-        /// คืนข้อความไทยเมื่อไม่ผ่าน, null เมื่อผ่าน
-        /// </summary>
-        public string CheckDmsFolder(int folderId)
-        {
-            try
-            {
-                return _fileService.CheckUploadFolder(folderId, _user);
-            }
-            catch (Exception ex)
-            {
-                return "ตรวจสอบสิทธิ์โฟลเดอร์ล้มเหลว: " + ex.Message;
-            }
         }
 
         // ── Public API (called by the form) ──────────────────────────────────────
@@ -315,25 +262,6 @@ namespace CMS.Controllers.KMS.KB
                     return;
                 }
 
-                // โฟลเดอร์ปลายทางใน DMS: ต้องเลือกและผู้ใช้ต้องมีสิทธิ์อัปโหลด — ตรวจครั้งเดียวก่อนเริ่ม batch (ไม่ปล่อยให้ล้มทีละแถว)
-                int? dmsFolderId = null;
-                if (_lastRequiresAttachmentFolder)
-                {
-                    dmsFolderId = _view.DmsFolderId;
-                    if (!dmsFolderId.HasValue)
-                    {
-                        _view.ShowError("กรุณาเลือกโฟลเดอร์ปลายทางใน DMS สำหรับเก็บไฟล์แนบก่อนนำเข้า");
-                        return;
-                    }
-
-                    string folderError = _fileService.CheckUploadFolder(dmsFolderId.Value, _user);
-                    if (folderError != null)
-                    {
-                        _view.ShowError(folderError);
-                        return;
-                    }
-                }
-
                 // Consume this validation snapshot now — a validated batch may only be imported once. Importing the same
                 // snapshot twice would re-process stale Status="Valid" rows (articles inserted the first time would hit the real
                 // DB unique-key constraint). Forcing a fresh ValidateFile() before re-import re-checks every ArticleCode:
@@ -363,7 +291,6 @@ namespace CMS.Controllers.KMS.KB
                     SkipRowOnDownloadFailure,
                     _lastResolvedArticleType,
                     _lastRequiresAttachmentFolder ? attachmentFolder : null,
-                    dmsFolderId,
                     out successCount,
                     out errorCount,
                     onProgress: (done, total) =>

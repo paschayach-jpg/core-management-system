@@ -7,13 +7,6 @@ namespace CMS.Services.Interfaces
     public interface IFileService
     {
         IEnumerable<UploadResult> UploadFiles(IEnumerable<FileUploadRequest> files, int folderId, UserContext user);
-
-        /// <summary>
-        /// ตรวจว่าผู้ใช้อัปโหลดไฟล์ลง Folder นี้ได้หรือไม่ (กฎเดียวกับ <see cref="UploadFiles"/>)
-        /// คืนข้อความอธิบายเมื่อไม่ผ่าน และคืน null เมื่ออัปโหลดได้
-        /// </summary>
-        string CheckUploadFolder(int folderId, UserContext user);
-
         FileDownloadResult DownloadFile(int fileId, UserContext user, bool bypassPermissionCheck = false);
         void DeleteFile(int fileId, UserContext user);
         StorageUsageReport GetStorageReport(int orgUnitId, UserContext user);

@@ -1898,15 +1898,8 @@ namespace CMS.Presentation
                 _kbArticleRepository, _kbArticleLinkRepository, _kbCategoryRepository,
                 _kbArticleService, _fileService, downloader);
             var wizardPresenter = new KBImportWizardController(
-                wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _kbImportTemplateService, _fileService, _currentUser);
+                wizard, _kbArticleService, _kbCategoryService, excelReader, processor, _kbImportTemplateService, _currentUser);
             wizard.AttachPresenter(wizardPresenter);
-
-            // หน้าเลือก/สร้างโฟลเดอร์ปลายทางใน DMS — ต้องมี DMS folder controller ครบ ไม่งั้นปุ่มเลือกโฟลเดอร์ DMS จะแจ้งว่าใช้ไม่ได้
-            if (_folderReadLookupController != null && _folderCommandController != null)
-            {
-                wizard.AttachDmsFolderPicker((checkFolder, defaultLevel) => new KBDmsFolderPickerDialog(
-                    _folderReadLookupController, _folderCommandController, _currentUser, checkFolder, defaultLevel));
-            }
             return wizard;
         }
 
