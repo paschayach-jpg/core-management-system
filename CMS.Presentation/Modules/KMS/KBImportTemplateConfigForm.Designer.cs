@@ -24,6 +24,7 @@ namespace CMS.Presentation.Modules.KMS
             this.colExcelMapping = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.pnlButtons = new System.Windows.Forms.Panel();
             this.btnClose = new System.Windows.Forms.Button();
+            this.btnClear = new System.Windows.Forms.Button();
             this.btnDelete = new System.Windows.Forms.Button();
             this.btnSave = new System.Windows.Forms.Button();
             this.pnlEditCard = new System.Windows.Forms.Panel();
@@ -166,6 +167,7 @@ namespace CMS.Presentation.Modules.KMS
             //
             // pnlButtons
             //
+            this.pnlButtons.Controls.Add(this.btnClear);
             this.pnlButtons.Controls.Add(this.btnClose);
             this.pnlButtons.Controls.Add(this.btnDelete);
             this.pnlButtons.Controls.Add(this.btnSave);
@@ -191,6 +193,22 @@ namespace CMS.Presentation.Modules.KMS
             this.btnClose.Text = "❌ ปิด";
             this.btnClose.UseVisualStyleBackColor = false;
             this.btnClose.Click += new System.EventHandler(this.BtnClose_Click);
+            //
+            // btnClear
+            //
+            this.btnClear.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(220)))), ((int)(((byte)(220)))));
+            this.btnClear.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnClear.FlatAppearance.BorderSize = 0;
+            this.btnClear.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClear.Font = new System.Drawing.Font("Segoe UI", 9.5F);
+            this.btnClear.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.btnClear.Location = new System.Drawing.Point(410, 8);
+            this.btnClear.Name = "btnClear";
+            this.btnClear.Size = new System.Drawing.Size(120, 32);
+            this.btnClear.TabIndex = 3;
+            this.btnClear.Text = "🧹 ล้างข้อมูล";
+            this.btnClear.UseVisualStyleBackColor = false;
+            this.btnClear.Click += new System.EventHandler(this.BtnClear_Click);
             //
             // btnDelete
             //
@@ -500,6 +518,7 @@ namespace CMS.Presentation.Modules.KMS
         private System.Windows.Forms.DataGridViewTextBoxColumn colExcelMapping;
         private System.Windows.Forms.Panel pnlButtons;
         private System.Windows.Forms.Button btnClose;
+        private System.Windows.Forms.Button btnClear;
         private System.Windows.Forms.Button btnDelete;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Panel pnlEditCard;

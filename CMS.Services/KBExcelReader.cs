@@ -153,7 +153,7 @@ namespace CMS.Services
 
         /// <summary>
         /// NonLaw: เซลล์ ArticleCode ที่มีหลาย Code (หลายบรรทัด เช่นสูตรที่ต่อ Code ให้ทุกกฎหมายแม่) แตกเป็น 1 <see cref="KBImportRow"/> ต่อ Code
-        /// — ฟิลด์อื่น (Title/เนื้อหา/ไฟล์แนบ ฯลฯ) เหมือนกันทุก row; กฎหมายแม่ของแต่ละ Code = 22 ตัวแรกของ Code นั้นเอง และแต่ละ Code
+        /// — ฟิลด์อื่น (Title/เนื้อหา/ไฟล์แนบ ฯลฯ) เหมือนกันทุก row; กฎหมายแม่ของแต่ละ Code = 24 ตัวแรกของ Code นั้นเอง และแต่ละ Code
         /// ผ่าน/ข้าม/ล้มเหลวแยกกัน (ไม่ข้ามทั้ง Excel row). เซลล์ว่างหรือมี Code เดียว = คืน row เดิม
         /// </summary>
         private static IEnumerable<KBImportRow> ExpandArticleCodes(KBImportRow row)
@@ -252,7 +252,7 @@ namespace CMS.Services
 
             };
 
-            // ทุกฟิลด์ของ NonLaw มาจาก Template mapping (ApplyFieldOverrides): ArticleCode (กฎหมายแม่ = 22 ตัวแรก),
+            // ทุกฟิลด์ของ NonLaw มาจาก Template mapping (ApplyFieldOverrides): ArticleCode (กฎหมายแม่ = 24 ตัวแรก),
             // Title/TitleCategory/PublishedDate/EffectiveDate/ContentHTML/Summary และ Attachment — ไม่อ่านตามตำแหน่งตายตัว
             // คอลัมน์ L (กฎหมายอ้างอิง) ไม่ถูกใช้งาน จึงไม่อ่าน
 
@@ -298,7 +298,7 @@ namespace CMS.Services
         {
             string expr;
 
-            // ArticleCode: คอลัมน์ที่ Template map ไว้คือ "Code รวม" 27 หลัก — Law ใช้แทน column A ตายตัว,
+            // ArticleCode: คอลัมน์ที่ Template map ไว้คือ "Code รวม" 29 หลัก — Law ใช้แทน column A ตายตัว,
             // Order ใช้เทียบประเภท/หมวดกับ Template เท่านั้น (ArticleCode ของ Order ยังคำนวณจาก B+C+D)
             if (overrides.TryGetValue("ArticleCode", out expr))
                 row.ColA = ResolveTemplateExpression(expr, headerRow, excelRow, evaluator).Trim();

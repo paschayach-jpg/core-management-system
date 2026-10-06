@@ -20,19 +20,19 @@ namespace CMS.Services
     /// <b>Law</b> ("มาตรา" rows) — Phase 1: row validation, including <c>ArticleCode</c>
     /// existence check (read-only DB access). Phase 2: article + version insert
     /// (<c>KMS.t_KBArticle</c>, <c>KMS.t_KBVersion</c>). CategoryID is resolved per row from the
-    /// row's <c>ArticleCode</c> (3-letter law prefix, see <see cref="KBImportCategoryResolver"/>) so one
+    /// row's <c>ArticleCode</c> (5-char law prefix e.g. PVI00, see <see cref="KBImportCategoryResolver"/>) so one
     /// Template serves every law; ArticleType comes from the KB Import Template selected in the Wizard
     /// (see <see cref="InsertArticles"/>) — not hardcoded here.
     ///
     /// <b>NonLaw</b> (ไฟล์ที่ไม่ใช่กฎหมาย: OR/AN/SO/RG/CI/MR rows; 1 row = 1 ArticleCode) — Phase 1: row validation, including resolving
     /// the parent law via <c>ArticleCode</c> exact match. Phase 2: attachment
     /// download + DMS upload, article insert, attachment link, and bidirectional
-    /// <c>KMS.t_KBArticleLink</c> records to the parent law (first 22 chars of the ArticleCode).
+    /// <c>KMS.t_KBArticleLink</c> records to the parent law (first 24 chars of the ArticleCode).
     /// ArticleCode ที่มีในระบบแล้ว (ทั้งกฎหมายและไม่ใช่กฎหมาย) ไม่ insert ซ้ำ แต่ UPDATE บทความเดิมทุก field ที่ Template/Excel ให้ค่ามา
     /// (เซลล์ว่าง/ field ที่ไม่ได้ map = คงค่าเดิม; ค่าคงที่ตอน insert เช่น Status ไม่ถูกเขียนทับ) และตั้ง UpdatedBy = 'system',
     /// UpdatedDate = เวลาที่ update — ดู <see cref="UpdateExistingLawArticle"/> / <see cref="UpdateExistingNonLawArticle"/>.
     /// ไฟล์แนบที่มีอยู่แล้วไม่ดาวน์โหลด/อัปโหลดซ้ำ.
-    /// CategoryID is resolved per row from digit 23 of the ArticleCode (the document type category whose
+    /// CategoryID is resolved per row from digit 25 of the ArticleCode (the document type category whose
     /// <c>KBCategory.ImportTypeDigit</c> equals it, e.g. 2 → OR — a master in m_KBCategory, not hard-coded),
     /// same as Law — one Template serves every document type; ArticleType comes from the Template.
     /// </summary>
@@ -343,7 +343,7 @@ namespace CMS.Services
                 }
             }
 
-            // ── link กฎหมายแม่ (22 ตัวแรกของ ArticleCode) ไป-กลับ — ตัวไหน error ให้ข้ามและแจ้ง ─
+            // ── link กฎหมายแม่ (24 ตัวแรกของ ArticleCode) ไป-กลับ — ตัวไหน error ให้ข้ามและแจ้ง ─
             LinkToParents(articleId, row, createdBy, notes);
 
             if (notes.Count > 0)
@@ -531,7 +531,7 @@ namespace CMS.Services
         }
 
         /// <summary>
-        /// link กฎหมายแม่ของแถว (22 ตัวแรกของ ArticleCode) ไป-กลับ: บทความ → มาตรา และ มาตรา → บทความ (<see cref="KBEntityType.Law"/>).
+        /// link กฎหมายแม่ของแถว (24 ตัวแรกของ ArticleCode) ไป-กลับ: บทความ → มาตรา และ มาตรา → บทความ (<see cref="KBEntityType.Law"/>).
         /// ตรวจ Exists ก่อน insert ทุกทิศ จึงเรียกซ้ำได้โดยไม่เกิด link ซ้ำ; ตัวไหนล้มเหลวให้ข้ามและบันทึกใน <paramref name="notes"/>
         /// </summary>
         /// <returns>จำนวน link ที่ insert จริงในครั้งนี้</returns>
@@ -665,18 +665,18 @@ namespace CMS.Services
                 return;
             }
 
-            // ── Code รวม ต้องยาว 27 ตัว: [prefix 3][...][suffix 5 = "00000"] ───
-            // prefix = CategoryCode ของกฎหมายฉบับนั้น (เช่น RVA — 1 Template ใช้ได้ทุกกฎหมาย หมวดหาเองตามรหัสนี้);
-            // กฎหมายที่แยกหมวดตามปี (เช่น PLI2535/PLI2540 ใต้ PLI) เลือกหมวดปีจากตัวที่ 8-10 + "2" นำหน้าด้วย (ดู TryResolveLawArticle),
-            // suffix "00000" = ตัวมาตราเอง; ArticleCode คือ 22 ตัวแรก. ผิดกติกาข้อใดก็เป็น Error
-            if (raw.Length != 27)
+            // ── Code รวม ต้องยาว 29 ตัว: [prefix 5][...][suffix 5 = "00000"] ───
+            // prefix = CategoryCode ของกฎหมายฉบับนั้น (เช่น RVA00 — 1 Template ใช้ได้ทุกกฎหมาย หมวดหาเองตามรหัสนี้);
+            // กฎหมายที่แยกหมวดตามปี (เช่น PLI002535/PLI002540 ใต้ PLI00) เลือกหมวดปีจากตัวที่ 10-12 + "2" นำหน้าด้วย (ดู TryResolveLawArticle),
+            // suffix "00000" = ตัวมาตราเอง; ArticleCode คือ 24 ตัวแรก. ผิดกติกาข้อใดก็เป็น Error
+            if (raw.Length != KBImportLayoutTypeCatalog.LawCodeLength)
             {
                 row.Status     = "Error";
                 row.StatusNote = string.Format(
-                    "Code รวม: ความยาวไม่ถูกต้อง (ต้อง 27 ตัว แต่พบ {0}) — '{1}'", raw.Length, raw);
+                    "Code รวม: ความยาวไม่ถูกต้อง (ต้อง {2} ตัว แต่พบ {0}) — '{1}'", raw.Length, raw, KBImportLayoutTypeCatalog.LawCodeLength);
                 return;
             }
-            if (raw.Substring(22, 5) != "00000")
+            if (raw.Substring(KBImportLayoutTypeCatalog.ParentCodeLength) != KBImportLayoutTypeCatalog.LawCodeSuffix)
             {
                 row.Status     = "Error";
                 row.StatusNote = string.Format("Code รวม: 5 ตัวสุดท้ายต้องเป็น 00000 — '{0}'", raw);
@@ -692,7 +692,7 @@ namespace CMS.Services
                 row.StatusNote = string.Format("Code รวม: {0} — '{1}'", categoryError, raw);
                 return;
             }
-            string code = raw.Substring(0, 22);
+            string code = raw.Substring(0, KBImportLayoutTypeCatalog.ParentCodeLength);
 
             // ── ArticleCode already-known (exists / duplicate-in-file) ⇒ Skip ──
             if (seenCodes.Contains(code))
@@ -724,12 +724,14 @@ namespace CMS.Services
             var errors = new List<string>();
 
             // ── Title source: ค่า Title ที่ Template map ไว้ (เช่น {A}) ถ้ามี ไม่งั้นใช้ Code รวม;
-            // ตัวที่ 4-7 = เลขมาตรา 4 หลัก เช่น "0110" → มาตรา 110 ─────────────────
+            // ตัวที่ 6-9 = เลขมาตรา 4 หลัก เช่น "0110" → มาตรา 110 ─────────────────
             int sectionNumber = 0;
             string titleSource = !string.IsNullOrWhiteSpace(row.RawTitle) ? row.RawTitle.Trim() : raw;
-            string sectionDigits = titleSource.Length >= 7 ? titleSource.Substring(3, 4) : string.Empty;
+            string sectionDigits = titleSource.Length >= KBImportLayoutTypeCatalog.LawSectionStartIndex + KBImportLayoutTypeCatalog.LawSectionDigits
+                ? titleSource.Substring(KBImportLayoutTypeCatalog.LawSectionStartIndex, KBImportLayoutTypeCatalog.LawSectionDigits)
+                : string.Empty;
             if (!Regex.IsMatch(sectionDigits, @"^\d{4}$") || !int.TryParse(sectionDigits, out sectionNumber) || sectionNumber <= 0)
-                errors.Add(string.Format("เลขมาตราไม่ถูกต้อง: ตัวที่ 4-7 ของ '{0}' ต้องเป็นตัวเลข 4 หลักและมากกว่า 0", titleSource));
+                errors.Add(string.Format("เลขมาตราไม่ถูกต้อง: ตัวที่ 6-9 ของ '{0}' ต้องเป็นตัวเลข 4 หลักและมากกว่า 0", titleSource));
 
             // ── Column P — required (source of ContentHTML) ───────────────────
             if (!isExisting && string.IsNullOrWhiteSpace(row.RawContent))
@@ -781,7 +783,7 @@ namespace CMS.Services
         {
             // ── ArticleCode = Code รวมที่ Template map ไว้ (บังคับ map เสมอ → row.ColA != null) ──
             // ถ้าเซลล์มีหลายบรรทัด เลือกบรรทัดแรกที่เป็นรูปแบบ Code ประกาศ/คำสั่งที่ถูกต้อง (ไม่มี = บรรทัดแรก เพื่อรายงาน error)
-            // ประเภทเอกสาร (ป้ายแสดงผล + หมวด) อ่านจากตัวที่ 23 ของรหัสนี้ ไม่อ่านคอลัมน์ C/D
+            // ประเภทเอกสาร (ป้ายแสดงผล + หมวด) อ่านจากตัวที่ 25 ของรหัสนี้ ไม่อ่านคอลัมน์ C/D
             string mappedCode = null;
             if (row.ColA != null)
             {
@@ -794,7 +796,7 @@ namespace CMS.Services
             var errors = new List<string>();
 
             // ── หมวดของแถวนี้ — ตรวจก่อนอย่างอื่น (ไม่ผูกกับ Template; ดูจาก ArticleCode + ตาราง m_KBCategory เท่านั้น):
-            //    ตัวที่ 23 (ประเภทเอกสาร) → หมวดประเภท เช่น OR, แล้วต่อรหัสปี (ตัวที่ 8-10 + "2" นำหน้า) → หมวดปี เช่น OR2535
+            //    ตัวที่ 25 (ประเภทเอกสาร) → หมวดประเภท เช่น OR00, แล้วต่อรหัสปี (ตัวที่ 10-12 + "2" นำหน้า) → หมวดปี เช่น OR002535
             //    หมวดไม่พบ = Error + row.MissingCategory บอกว่าต้องสร้างหมวดอะไร (controller สรุปแจ้งผู้ใช้ที่หน้าจอ) ──────────
             if (!string.IsNullOrWhiteSpace(mappedCode))
             {
@@ -817,17 +819,17 @@ namespace CMS.Services
                     {
                         row.MissingCategory = missingCategory;
 
-                        // รหัสประเภทที่ตั้งไว้แล้วแต่หมวดมีปัญหา (ปิดใช้งาน ฯลฯ) ใส่รหัสหมวดกำกับ เช่น "ตัวที่ 23 = 2 (OR)"; รหัสที่ยังไม่มีหมวดใช้ไม่มีวงเล็บ
+                        // รหัสประเภทที่ตั้งไว้แล้วแต่หมวดมีปัญหา (ปิดใช้งาน ฯลฯ) ใส่รหัสหมวดกำกับ เช่น "ตัวที่ 25 = 2 (OR00)"; รหัสที่ยังไม่มีหมวดใช้ไม่มีวงเล็บ
                         KBCategory typeCategory = resolver.NonLawTypes.FindByArticleCode(mappedCode);
                         string typeCodeNote = typeCategory == null ? string.Empty : " (" + (typeCategory.CategoryCode ?? string.Empty).Trim() + ")";
-                        errors.Add(string.Format("Code รวม: ตัวที่ 23 = {0}{1} — {2} — '{3}'",
+                        errors.Add(string.Format("Code รวม: ตัวที่ 25 = {0}{1} — {2} — '{3}'",
                             mappedCode[KBImportLayoutTypeCatalog.NonLawTypeDigitIndex], typeCodeNote, categoryError, mappedCode));
                     }
 
                     row.DocumentTypeLabel = resolver.NonLawTypes.GetTypeLabel(mappedCode[KBImportLayoutTypeCatalog.NonLawTypeDigitIndex]);
 
-                    // กฎหมายแม่ = 22 ตัวแรกของ Code รวม (ใช้ resolve + สร้าง KBArticleLink ไป-กลับ) ไม่อ่านคอลัมน์ B
-                    row.ParentCodes = new List<string> { mappedCode.Substring(0, 22) };
+                    // กฎหมายแม่ = 24 ตัวแรกของ Code รวม (ใช้ resolve + สร้าง KBArticleLink ไป-กลับ) ไม่อ่านคอลัมน์ B
+                    row.ParentCodes = new List<string> { mappedCode.Substring(0, KBImportLayoutTypeCatalog.ParentCodeLength) };
                 }
             }
 

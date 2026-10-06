@@ -10,26 +10,38 @@ namespace CMS.Domain.Models
     public static class KBImportLayoutTypeCatalog
     {
         public const string Law = "Law";
-        /// <summary>ไฟล์ที่ไม่ใช่กฎหมายทุกประเภท — โครงสร้างเดียวกัน แยกประเภทด้วยตัวที่ 23 ของ Code รวม (รหัสประเภทตั้งที่หมวด ดู <see cref="KBCategory.ImportTypeDigit"/>)</summary>
+        /// <summary>ไฟล์ที่ไม่ใช่กฎหมายทุกประเภท — โครงสร้างเดียวกัน แยกประเภทด้วยตัวที่ 25 ของ Code รวม (รหัสประเภทตั้งที่หมวด ดู <see cref="KBCategory.ImportTypeDigit"/>)</summary>
         public const string NonLaw = "NonLaw";
 
-        /// <summary>ความยาวของ Code รวมในไฟล์กฎหมาย: [prefix 3][...][suffix 5]</summary>
-        public const int LawCodeLength = 27;
+        /// <summary>ความยาวของ Code รวม: [รหัสกฎหมาย 5][...][suffix 5] — รหัสกฎหมาย 5 ตัว = ตัวอักษร 3 + เลขลำดับ 2 (เช่น PVI00 กับ PVI01 เป็นคนละกฎหมาย)</summary>
+        public const int LawCodeLength = 29;
+
+        /// <summary>ความยาวรหัสกฎหมายที่ขึ้นต้น Code รวม (เช่น "PVI00") = CategoryCode ของหมวดกฎหมายนั้นพอดี</summary>
+        public const int LawCodePrefixLength = 5;
+
+        /// <summary>ความยาว Code ที่เก็บเป็น ArticleCode ของมาตรา = Code รวมตัด suffix <see cref="LawCodeSuffix"/> ออก (24 ตัว); ใช้เป็น Code กฎหมายแม่ของเอกสารที่ไม่ใช่กฎหมายด้วย</summary>
+        public const int ParentCodeLength = LawCodeLength - 5;
+
+        /// <summary>ตำแหน่ง (0-based) ที่เลขมาตราเริ่มใน Code รวมของกฎหมาย = ตัวที่ 6 (ยาว 4 หลัก)</summary>
+        public const int LawSectionStartIndex = LawCodePrefixLength;
+
+        /// <summary>จำนวนหลักของเลขมาตราใน Code รวม (ตัวที่ 6-9)</summary>
+        public const int LawSectionDigits = 4;
 
         /// <summary>5 ตัวสุดท้ายของ Code รวมที่บอกว่าเป็นตัวมาตราเอง (แถวประกาศ/คำสั่งใช้ 1 หลักประเภท + 4 หลักเลขเอกสาร จึงไม่มีทางเป็นค่านี้)</summary>
         public const string LawCodeSuffix = "00000";
 
-        /// <summary>ตำแหน่ง (0-based) ที่ปีของกฎหมายเริ่มใน Code รวม = ตัวที่ 8 (ยาว 3 หลัก ต่อด้วย "2" นำหน้าเป็น พ.ศ. 4 หลัก)</summary>
-        public const int LawYearStartIndex = 7;
+        /// <summary>ตำแหน่ง (0-based) ที่ปีของกฎหมายเริ่มใน Code รวม = ตัวที่ 10 (ยาว 3 หลัก ต่อด้วย "2" นำหน้าเป็น พ.ศ. 4 หลัก)</summary>
+        public const int LawYearStartIndex = 9;
 
-        /// <summary>จำนวนหลักของปีใน Code รวม (ตัวที่ 8-10) — เช่น "535" คือ พ.ศ. 2535</summary>
+        /// <summary>จำนวนหลักของปีใน Code รวม (ตัวที่ 10-12) — เช่น "535" คือ พ.ศ. 2535</summary>
         public const int LawYearDigits = 3;
 
         /// <summary>CategoryCode ของหมวดรากของกฎหมาย — หมวดใดที่ไล่ ParentCategoryID ขึ้นไปเจอรหัสนี้ถือเป็นกฎหมาย</summary>
         public const string LawRootCategoryCode = "LW";
 
         /// <summary>
-        /// true ถ้า <paramref name="code"/> เป็น Code รวมของกฎหมาย: ยาว 27 ตัว และ 5 ตัวสุดท้ายเป็น "00000"
+        /// true ถ้า <paramref name="code"/> เป็น Code รวมของกฎหมาย: ยาว 29 ตัว และ 5 ตัวสุดท้ายเป็น "00000"
         /// (ไม่เช็ค prefix รหัสกฎหมาย: รหัสของไฟล์ที่ไม่ใช่กฎหมายก็ขึ้นต้นด้วยรหัสกฎหมายแม่เหมือนกัน จึงไม่ช่วยแยกประเภท
         /// และ prefix ที่ต้องตรงกับ CategoryCode ของ Template ถูกตรวจรายแถวใน KBImportProcessor อยู่แล้ว)
         /// </summary>
@@ -41,9 +53,9 @@ namespace CMS.Domain.Models
         }
 
         /// <summary>
-        /// ปี พ.ศ. 4 หลักของกฎหมายจาก Code รวม: ตัวที่ 8-10 (เช่น "535") นำหน้าด้วย "2" → "2535". คืน <c>null</c> ถ้า Code สั้นเกินไป
-        /// หรือตัวที่ 8-10 ไม่ใช่ตัวเลข — ใช้แยกหมวดตามปีทั้งฝั่งกฎหมาย (PLI ปี 2535 กับ 2540 ใช้รหัสกฎหมายเดียวกัน →
-        /// PLI2535/PLI2540) และฝั่งที่ไม่ใช่กฎหมาย (ประเภทเอกสาร OR + ปี → OR2535); ดู <c>KBImportCategoryResolver</c>
+        /// ปี พ.ศ. 4 หลักของกฎหมายจาก Code รวม: ตัวที่ 10-12 (เช่น "535") นำหน้าด้วย "2" → "2535". คืน <c>null</c> ถ้า Code สั้นเกินไป
+        /// หรือตัวที่ 10-12 ไม่ใช่ตัวเลข — ใช้แยกหมวดตามปีทั้งฝั่งกฎหมาย (PLI00 ปี 2535 กับ 2540 ใช้รหัสกฎหมายเดียวกัน →
+        /// PLI002535/PLI002540) และฝั่งที่ไม่ใช่กฎหมาย (ประเภทเอกสาร OR00 + ปี → OR002535); ดู <c>KBImportCategoryResolver</c>
         /// </summary>
         public static string GetLawYear(string code)
         {
@@ -57,8 +69,8 @@ namespace CMS.Domain.Models
             return "2" + digits;
         }
 
-        /// <summary>ตำแหน่ง (0-based) ของรหัสประเภทเอกสารใน Code รวมของไฟล์ที่ไม่ใช่กฎหมาย = ตัวที่ 23</summary>
-        public const int NonLawTypeDigitIndex = 22;
+        /// <summary>ตำแหน่ง (0-based) ของรหัสประเภทเอกสารใน Code รวมของไฟล์ที่ไม่ใช่กฎหมาย = ตัวที่ 25 (ต่อจาก Code กฎหมายแม่ 24 ตัว)</summary>
+        public const int NonLawTypeDigitIndex = ParentCodeLength;
 
         /// <summary>รหัสประเภทเอกสารเป็นตัวเลข 1 หลัก — ต่ำสุดที่ตั้งได้ที่หมวด (<see cref="KBCategory.ImportTypeDigit"/>)</summary>
         public const char MinTypeDigit = '1';
@@ -71,7 +83,7 @@ namespace CMS.Domain.Models
         /// ส่วนรหัสประเภทที่มีจริงในระบบตรวจแยกที่ <c>KBImportCategoryResolver</c> (master อยู่ที่ m_KBCategory)
         /// </summary>
         public const string NonLawCodeFormatMessage =
-            "Code รวม: ต้องยาว 27 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 23 ต้องเป็นรหัสประเภทเอกสาร (ตัวเลข 1-9)";
+            "Code รวม: ต้องยาว 29 ตัว, 5 ตัวสุดท้ายห้ามเป็น 00000 และตัวที่ 25 ต้องเป็นรหัสประเภทเอกสาร (ตัวเลข 1-9)";
 
         /// <summary>true ถ้า <paramref name="ch"/> เป็นรหัสประเภทเอกสารที่ใช้ได้ (1-9)</summary>
         public static bool IsTypeDigit(char ch)
@@ -92,8 +104,8 @@ namespace CMS.Domain.Models
         }
 
         /// <summary>
-        /// รหัสประเภทเอกสารจากตัวที่ 23 ของ Code รวมที่เป็นรูปแบบไฟล์ที่ไม่ใช่กฎหมาย: ยาว 27 ตัว, 5 ตัวสุดท้ายไม่ใช่ "00000",
-        /// ตัวที่ 23 เป็น 1-9 — ตรวจเฉพาะรูปแบบ ไม่ตรวจว่ามีประเภทเอกสารรหัสนั้นจริง (master อยู่ที่ m_KBCategory ดู <see cref="KBNonLawTypeMap"/>)
+        /// รหัสประเภทเอกสารจากตัวที่ 25 ของ Code รวมที่เป็นรูปแบบไฟล์ที่ไม่ใช่กฎหมาย: ยาว 29 ตัว, 5 ตัวสุดท้ายไม่ใช่ "00000",
+        /// ตัวที่ 25 เป็น 1-9 — ตรวจเฉพาะรูปแบบ ไม่ตรวจว่ามีประเภทเอกสารรหัสนั้นจริง (master อยู่ที่ m_KBCategory ดู <see cref="KBNonLawTypeMap"/>)
         /// </summary>
         public static bool TryGetNonLawTypeDigit(string code, out char digit)
         {

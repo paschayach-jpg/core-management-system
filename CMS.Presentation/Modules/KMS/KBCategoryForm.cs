@@ -271,7 +271,7 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         /// <summary>
-        /// รหัสประเภทเอกสารที่ไม่ใช่กฎหมาย (1-9 = ตัวที่ 23 ของ Code รวมตอน import) — null = ไม่ใช่หมวดประเภทเอกสาร
+        /// รหัสประเภทเอกสารที่ไม่ใช่กฎหมาย (1-9 = ตัวที่ 25 ของ Code รวมตอน import) — null = ไม่ใช่หมวดประเภทเอกสาร
         /// </summary>
         public string ImportTypeDigit
         {

@@ -254,7 +254,7 @@ namespace CMS.Services
             if (!isMapped("ArticleType"))
                 problems.Add("ยังไม่ได้เลือกประเภทบทความ (ArticleType)");
 
-            // ArticleCode (Code รวม 27 หลัก) ใช้ตัดสินประเภทไฟล์ และหาหมวด/กฎหมายแม่ของแต่ละแถวตอน import — ต้อง map เสมอ
+            // ArticleCode (Code รวม 29 หลัก) ใช้ตัดสินประเภทไฟล์ และหาหมวด/กฎหมายแม่ของแต่ละแถวตอน import — ต้อง map เสมอ
             if (!isMapped("ArticleCode"))
                 problems.Add("ยังไม่ได้ Map คอลัมน์ ArticleCode (Code รวม)");
 

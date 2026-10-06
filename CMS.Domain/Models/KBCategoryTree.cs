@@ -13,7 +13,7 @@ namespace CMS.Domain.Models
 
     /// <summary>
     /// ช่วยอ่านต้นไม้หมวด (KMS.m_KBCategory ที่อ้าง ParentCategoryID) แบบกี่ชั้นก็ได้ — เช่น กฎหมาย › พระราชบัญญัติประกันชีวิต (PLI)
-    /// › พระราชบัญญัติประกันชีวิต2535 (PLI2535) ใช้ร่วมกันในหน้าที่ต้องแสดง/เลือก/นับตามลำดับชั้นของหมวด แทนที่จะเขียนไล่ 2 ชั้นเอง
+    /// › พระราชบัญญัติประกันชีวิต2535 (PLI002535) ใช้ร่วมกันในหน้าที่ต้องแสดง/เลือก/นับตามลำดับชั้นของหมวด แทนที่จะเขียนไล่ 2 ชั้นเอง
     /// ทุกเมธอดกันวนลูป (ParentCategoryID ชี้วนกลับ) และไม่เรียกฐานข้อมูล
     /// </summary>
     public static class KBCategoryTree
@@ -107,6 +107,52 @@ namespace CMS.Domain.Models
             }
 
             return string.Join(separator ?? " > ", names);
+        }
+
+        /// <summary>true ถ้า <paramref name="categoryId"/> เป็นหมวดกฎหมาย (LW) เอง หรืออยู่ใต้หมวดนั้น (ไล่ ParentCategoryID ขึ้นไป กันวนลูป)</summary>
+        public static bool IsLawRootOrUnder(IEnumerable<KBCategory> categories, int categoryId)
+        {
+            var byId = new Dictionary<int, KBCategory>();
+            foreach (var c in categories ?? Enumerable.Empty<KBCategory>())
+            {
+                if (c != null) byId[c.CategoryID] = c;
+            }
+
+            var visited = new HashSet<int>();
+            KBCategory current;
+            int id = categoryId;
+
+            while (byId.TryGetValue(id, out current) && visited.Add(id))
+            {
+                if (string.Equals((current.CategoryCode ?? string.Empty).Trim(),
+                                  KBImportLayoutTypeCatalog.LawRootCategoryCode, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (!current.ParentCategoryID.HasValue) break;
+                id = current.ParentCategoryID.Value;
+            }
+            return false;
+        }
+
+        /// <summary>DisplayProfileID ที่มีผลจริงของหมวด = ของหมวดเองหรือหมวดแม่ใกล้สุดที่ตั้งไว้ (null = ไม่มี profile)</summary>
+        public static int? GetEffectiveDisplayProfileId(IEnumerable<KBCategory> categories, int categoryId)
+        {
+            var byId = new Dictionary<int, KBCategory>();
+            foreach (var c in categories ?? Enumerable.Empty<KBCategory>())
+            {
+                if (c != null) byId[c.CategoryID] = c;
+            }
+
+            var visited = new HashSet<int>();
+            KBCategory current;
+            int id = categoryId;
+
+            while (byId.TryGetValue(id, out current) && visited.Add(id))
+            {
+                if (current.DisplayProfileID.HasValue) return current.DisplayProfileID;
+                if (!current.ParentCategoryID.HasValue) break;
+                id = current.ParentCategoryID.Value;
+            }
+            return null;
         }
 
         private static void Walk(

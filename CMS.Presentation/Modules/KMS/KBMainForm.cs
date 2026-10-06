@@ -99,6 +99,8 @@ namespace CMS.Presentation.Modules.KMS
         private Func<DialogResult> _importTemplateConfigFactory;
         /// <summary>Creates, wires, and shows a pre-wired KBArticleDisplayProfileConfigForm. Returns DialogResult.</summary>
         private Func<DialogResult> _displayProfileConfigFactory;
+        /// <summary>Creates, wires, and shows a pre-wired KBArticleMoveForm. Returns DialogResult.</summary>
+        private Func<DialogResult> _moveArticlesFactory;
 
 
         public KBMainForm()
@@ -231,6 +233,15 @@ namespace CMS.Presentation.Modules.KMS
         public void AttachDisplayProfileConfigFactory(Func<DialogResult> factory)
         {
             _displayProfileConfigFactory = factory;
+        }
+
+        /// <summary>
+        /// Inject the factory used to create and show the Move Articles screen
+        /// with its pre-wired presenter. Must be called before the form is shown.
+        /// </summary>
+        public void AttachMoveArticlesFactory(Func<DialogResult> factory)
+        {
+            _moveArticlesFactory = factory;
         }
 
         // ── Form events ──────────────────────────────────────────────────────────
@@ -1019,8 +1030,8 @@ namespace CMS.Presentation.Modules.KMS
 
         private void BtnSettings_Click(object sender, EventArgs e)
         {
-            if (_presenter == null) return;
-            ShowCategorySettings();
+            // เปิดเมนูเลือกหน้าตั้งค่า แสดงใต้ปุ่ม ชิดขอบขวา
+            cmsSettings.Show(btnSettings, new Point(btnSettings.Width - cmsSettings.PreferredSize.Width, btnSettings.Height));
         }
 
         private void BtnDashboard_Click(object sender, EventArgs e)
@@ -1044,6 +1055,16 @@ namespace CMS.Presentation.Modules.KMS
             _displayProfileConfigFactory();
 
             // Profile ที่แก้อาจกระทบหมวดที่กำลังดูอยู่ — โหลดต้นไม้หมวดหมู่ใหม่ให้แน่ใจว่า tree/label ตรงกัน
+            _presenter.LoadCategoryTree();
+        }
+
+        private void BtnMoveArticles_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            if (_moveArticlesFactory == null) return;
+            _moveArticlesFactory();
+
+            // บทความที่ย้ายเปลี่ยนหมวด — โหลดต้นไม้หมวดหมู่ใหม่ให้จำนวน/โหนดตรงกัน
             _presenter.LoadCategoryTree();
         }
 

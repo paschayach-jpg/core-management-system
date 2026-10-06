@@ -56,7 +56,7 @@ namespace CMS.Controllers.KMS.KB
 
             try
             {
-                // The selected category + every subcategory under it, at any depth (กฎหมาย › PLI › PLI2535)
+                // The selected category + every subcategory under it, at any depth (กฎหมาย › PLI00 › PLI002535)
                 var articles = _articleService.GetByCategory(cat.CategoryID).ToList();
 
                 foreach (int childId in KBCategoryTree.GetDescendantIds(_service.GetAll(), cat.CategoryID))

@@ -83,6 +83,7 @@
     <Compile Include="Models\ShareToken.cs" />
     <Compile Include="Models\KBCategory.cs" />
     <Compile Include="Models\KBCategoryTree.cs" />
+    <Compile Include="Models\KBArticleMoveModels.cs" />
     <Compile Include="Models\KBArticle.cs" />
     <Compile Include="Models\KBArticleColumnCatalog.cs" />
     <Compile Include="Models\KBImportTemplate.cs" />

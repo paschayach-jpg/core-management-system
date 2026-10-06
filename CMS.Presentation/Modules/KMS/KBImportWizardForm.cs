@@ -733,16 +733,16 @@ namespace CMS.Presentation.Modules.KMS
 
         /// <summary>
         /// Column spec for the 20-column "มาตรา" (law-matrix, "Code รวม") layout — KBExcelReader detects it from the
-        /// Code รวม (27 chars ending in 00000; header column C = "มาตรา" is only the fallback).
+        /// Code รวม (29 chars ending in 00000; header column C = "มาตรา" is only the fallback).
         /// Columns not listed here (D,E,F,...) exist in the real file but are ignored.
         /// </summary>
         private static readonly ColRef[] LawColumnRefs =
         {
-            new ColRef("A", "Code รวม (ArticleCode) — 27 หลัก ลงท้าย 00000; 3 ตัวแรก = รหัสกฎหมาย (เช่น PVI, RVA) ระบบหาหมวดกฎหมายเอง; ตัวที่ 4-7 = เลขมาตรา — Template ต้อง Map",
-                "Text", true, "PVI000153500001000000000000"),
+            new ColRef("A", "Code รวม (ArticleCode) — 29 หลัก ลงท้าย 00000; 5 ตัวแรก = รหัสกฎหมาย (เช่น PVI00, RVA00 — PVI00 กับ PVI01 เป็นคนละกฎหมาย) ระบบหาหมวดกฎหมายเอง; ตัวที่ 6-9 = เลขมาตรา — Template ต้อง Map",
+                "Text", true, "PVI00000153500001000000000000"),
             new ColRef("B", "Code กฎหมายแม่ — สำรองไว้สำหรับอ้างอิงในอนาคต (ยังไม่ใช้งาน)",
-                "Text", false, "PVI0001535000010000000"),
-            new ColRef("C", "มาตรา — ไม่อ่านค่านี้แล้ว (Title/Tags สร้างจากเลขมาตราตัวที่ 4-7 ของ Code รวม เช่น 0035=\"มาตรา 35\")",
+                "Text", false, "PVI000001535000010000000"),
+            new ColRef("C", "มาตรา — ไม่อ่านค่านี้แล้ว (Title/Tags สร้างจากเลขมาตราตัวที่ 6-9 ของ Code รวม เช่น 0035=\"มาตรา 35\")",
                 "Numeric", false, "0001"),
             new ColRef("M", "ชื่อ (Summary)", "Text", false, "พระราชบัญญัติประกันวินาศภัย พ.ศ. 2535 มาตรา 1"),
             new ColRef("N", "วันที่ประกาศ (PublishedDate) — พ.ศ. แปลงเป็น ค.ศ. อัตโนมัติ", "Date d/M/yyyy", false, "10/4/2535"),
@@ -753,16 +753,16 @@ namespace CMS.Presentation.Modules.KMS
 
         /// <summary>
         /// Column spec for the 12-column layout of non-law documents (AN/OR/SO/RG/CI/MR) — KBExcelReader detects it from the
-        /// Code รวม (27 chars NOT ending in 00000, digit 23 = 1-6; header column C = "ประเภทลูก" is only the fallback).
+        /// Code รวม (29 chars NOT ending in 00000, digit 25 = 1-6; header column C = "ประเภทลูก" is only the fallback).
         /// Every field is read through the Template mapping — there are no fixed column positions.
         /// </summary>
         private static readonly ColRef[] NonLawColumnRefs =
         {
-            new ColRef("A", "Code รวม (ArticleCode) — 27 หลัก ไม่ลงท้าย 00000; 22 ตัวแรก = Code กฎหมายแม่ (ระบบ link ให้), ตัวที่ 23 = ประเภท (1=AN 2=OR 3=SO 4=RG 5=CI 6=MR) ระบบหาหมวดเอง — Template ต้อง Map",
-                "Text", true, "PVI002953500002000000020025"),
-            new ColRef("B", "Code กฎหมายแม่ — ไม่อ่านค่านี้แล้ว (ใช้ 22 ตัวแรกของ Code รวมแทน)",
-                "Text", false, "PVI0029535000020000000"),
-            new ColRef("C", "ประเภทลูก — ไม่อ่านค่านี้แล้ว (ใช้ตัวที่ 23 ของ Code รวมแทน)",
+            new ColRef("A", "Code รวม (ArticleCode) — 29 หลัก ไม่ลงท้าย 00000; 24 ตัวแรก = Code กฎหมายแม่ (ระบบ link ให้), ตัวที่ 25 = ประเภท (1=AN 2=OR 3=SO 4=RG 5=CI 6=MR) ระบบหาหมวดเอง — Template ต้อง Map",
+                "Text", true, "PVI00002953500002000000020025"),
+            new ColRef("B", "Code กฎหมายแม่ — ไม่อ่านค่านี้แล้ว (ใช้ 24 ตัวแรกของ Code รวมแทน)",
+                "Text", false, "PVI000029535000020000000"),
+            new ColRef("C", "ประเภทลูก — ไม่อ่านค่านี้แล้ว (ใช้ตัวที่ 25 ของ Code รวมแทน)",
                 "1-6", false, "2"),
             new ColRef("D", "เอกสารลูก — ไม่อ่านค่านี้แล้ว (เลขที่เอกสารอยู่ใน 4 ตัวท้ายของ Code รวม)", "Text", false, "0025"),
             new ColRef("E", "ชื่อ (Title) — Template ต้อง Map", "Text", true, "ให้เพิ่มเติมเงื่อนไขการระงับข้อพิพาท..."),
@@ -781,7 +781,7 @@ namespace CMS.Presentation.Modules.KMS
             lvColumnRef.Groups.Clear();
 
             var grpLaw = new ListViewGroup("ไฟล์กฎหมาย (มาตรา) — ตรวจจับอัตโนมัติจาก Code รวมที่ลงท้าย 00000");
-            var grpNonLaw = new ListViewGroup("ไฟล์ที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR) — ตรวจจับอัตโนมัติจาก Code รวมที่ตัวที่ 23 = 1-6");
+            var grpNonLaw = new ListViewGroup("ไฟล์ที่ไม่ใช่กฎหมาย (AN/OR/SO/RG/CI/MR) — ตรวจจับอัตโนมัติจาก Code รวมที่ตัวที่ 25 = 1-6");
             lvColumnRef.Groups.Add(grpLaw);
             lvColumnRef.Groups.Add(grpNonLaw);
 
@@ -1397,7 +1397,7 @@ namespace CMS.Presentation.Modules.KMS
                 return;
             }
 
-            // The category the row needs (e.g. year category OR2535 / PLI2535) does not exist yet — the user must create it first
+            // The category the row needs (e.g. year category OR002535 / PLI002535) does not exist yet — the user must create it first
             if (note.IndexOf("กรุณาสร้าง", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 reason      = "❌ ยังไม่มีหมวดในระบบ — ต้องสร้างหมวดก่อน";

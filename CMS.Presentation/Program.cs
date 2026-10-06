@@ -172,6 +172,7 @@ namespace CMS.Presentation
                 var kbCategoryService = new KBCategoryService(kbCategoryRepository, auditService);
                 var kbArticleService  = new KBArticleService(kbArticleRepository, kbVersionRepository, kbArticleLinkRepository, kbArticleAttachmentRepository, fileDocumentRepository, auditService);
                 var kbImportTemplateService = new KBImportTemplateService(kbImportTemplateRepository, kbArticleRepository, kbCategoryRepository, auditService);
+                var kbArticleMoveService = new KBArticleMoveService(kbArticleRepository, kbCategoryRepository, auditService);
                 var kbArticleDisplayProfileService = new KBArticleDisplayProfileService(kbArticleDisplayProfileRepository, kbCategoryRepository, auditService);
                 var excelTemplatePreviewService = new ExcelTemplatePreviewService();
                 var kbDashboardService = new KBDashboardService(kbDashboardRepository, loggingService);
@@ -651,6 +652,7 @@ namespace CMS.Presentation
                     kbCategoryService: kbCategoryService,
                     kbArticleService: kbArticleService,
                     kbImportTemplateService: kbImportTemplateService,
+                    kbArticleMoveService: kbArticleMoveService,
                     kbArticleDisplayProfileService: kbArticleDisplayProfileService,
                     excelTemplatePreviewService: excelTemplatePreviewService,
                     workflowService: workflowService,

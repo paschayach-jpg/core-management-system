@@ -883,7 +883,7 @@ namespace CMS.Presentation.Modules.KMS
             this.lblImportTypeDigit.Name = "lblImportTypeDigit";
             this.lblImportTypeDigit.Size = new System.Drawing.Size(256, 31);
             this.lblImportTypeDigit.TabIndex = 17;
-            this.lblImportTypeDigit.Text = "รหัสประเภทเอกสาร (ตัวที่ 23)";
+            this.lblImportTypeDigit.Text = "รหัสประเภทเอกสาร (ตัวที่ 25)";
             // 
             // cboImportTypeDigit
             // 

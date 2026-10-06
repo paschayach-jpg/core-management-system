@@ -80,6 +80,7 @@ namespace CMS.Presentation
         private readonly CMS.Services.Interfaces.IKBCategoryService _kbCategoryService;
         private readonly CMS.Services.Interfaces.IKBArticleService  _kbArticleService;
         private readonly CMS.Services.Interfaces.IKBImportTemplateService _kbImportTemplateService;
+        private readonly CMS.Services.Interfaces.IKBArticleMoveService _kbArticleMoveService;
         private readonly CMS.Services.Interfaces.IKBArticleDisplayProfileService _kbArticleDisplayProfileService;
         private readonly CMS.Services.Interfaces.IExcelTemplatePreviewService _excelTemplatePreviewService;
         private readonly CMS.Data.Interfaces.IKBVersionRepository _kbVersionRepository;
@@ -223,6 +224,7 @@ namespace CMS.Presentation
             CMS.Services.Interfaces.IKBCategoryService kbCategoryService = null,
             CMS.Services.Interfaces.IKBArticleService kbArticleService = null,
             CMS.Services.Interfaces.IKBImportTemplateService kbImportTemplateService = null,
+            CMS.Services.Interfaces.IKBArticleMoveService kbArticleMoveService = null,
             CMS.Services.Interfaces.IKBArticleDisplayProfileService kbArticleDisplayProfileService = null,
             CMS.Services.Interfaces.IExcelTemplatePreviewService excelTemplatePreviewService = null,
             IWorkflowService workflowService = null,
@@ -316,6 +318,7 @@ namespace CMS.Presentation
             _kbCategoryService = kbCategoryService;
             _kbArticleService = kbArticleService;
             _kbImportTemplateService = kbImportTemplateService;
+            _kbArticleMoveService = kbArticleMoveService;
             _kbArticleDisplayProfileService = kbArticleDisplayProfileService;
             _excelTemplatePreviewService = excelTemplatePreviewService;
             _workflowService = workflowService;
@@ -1817,6 +1820,22 @@ namespace CMS.Presentation
                 configForm.AttachPresenter(configPresenter);
                 configForm.BackRequested += (s, e) => configForm.Close();
                 return configForm.ShowDialog(this);
+            });
+
+            // moveArticlesFactory — สร้าง KBArticleMoveForm (ย้ายบทความไปหมวดอื่น) พร้อม presenter
+            form.AttachMoveArticlesFactory(() =>
+            {
+                if (_kbArticleMoveService == null)
+                {
+                    MessageBox.Show("Article Move service ไม่พร้อมใช้งาน", "แจ้งเตือน",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return DialogResult.Cancel;
+                }
+                var moveForm = new KBArticleMoveForm(_currentUser);
+                var movePresenter = new KBArticleMoveController(moveForm, _kbArticleMoveService, _kbCategoryService, _currentUser);
+                moveForm.AttachPresenter(movePresenter);
+                moveForm.BackRequested += (s, e) => moveForm.Close();
+                return moveForm.ShowDialog(this);
             });
 
             // displayProfileConfigFactory — สร้าง KBArticleDisplayProfileConfigForm พร้อม presenter

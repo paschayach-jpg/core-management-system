@@ -8,7 +8,7 @@ namespace CMS.Services.Interfaces
     {
         /// <summary>
         /// ตรวจแต่ละแถวและตั้ง <see cref="KBImportRow.Status"/>/<see cref="KBImportRow.StatusNote"/> — CategoryID ของแต่ละแถว
-        /// หาจาก ArticleCode ของแถวนั้น (กฎหมาย: 3 ตัวแรกของ Code รวม, ไม่ใช่กฎหมาย: ตัวที่ 23) ไม่ผูกกับ Template
+        /// หาจาก ArticleCode ของแถวนั้น (กฎหมาย: 5 ตัวแรกของ Code รวม, ไม่ใช่กฎหมาย: ตัวที่ 25) ไม่ผูกกับ Template
         /// จึงรับได้หลายกฎหมาย/หลายประเภทในไฟล์เดียว แถวที่หาหมวดไม่ได้เป็น Error รายแถว.
         /// ArticleCode ที่มีในระบบแล้ว (ทั้งกฎหมายและไม่ใช่กฎหมาย) ไม่ใช่ Error/Skip — ตั้ง <see cref="KBImportRow.ExistingArticleId"/>
         /// แล้วเป็น Valid (จะ UPDATE บทความเดิมตอน import; หน้า preview บอกว่าจะอัปเดต field ไหน)
