@@ -40,6 +40,12 @@ namespace CMS.Presentation.Modules.KMS
         // โฟลเดอร์ไฟล์แนบ (PDF) ที่ผู้ใช้เลือกในเครื่อง — จำเป็นเมื่อ Template ที่เลือก map คอลัมน์ Attachment (ปุ่มนำเข้ากดไม่ได้จนกว่าจะเลือก)
         private string   _attachmentFolderPath;
         private bool     _attachmentFolderRequired;
+        private int?     _attachmentFileCount;   // จำนวนไฟล์ในโฟลเดอร์ไฟล์แนบที่เลือก (null = อ่านไม่ได้/ยังไม่เลือก)
+
+        // โฟลเดอร์ปลายทางใน DMS ที่ผู้ใช้เลือก (ผ่านการตรวจสิทธิ์ใน KBDmsFolderPickerDialog แล้ว) — จำเป็นพร้อมโฟลเดอร์ไฟล์แนบ
+        private int?     _dmsFolderId;
+        private string   _dmsFolderPath;
+        private Func<Func<int, string>, int, KBDmsFolderPickerDialog> _dmsPickerFactory;
 
         private static readonly Color ImportButtonEnabledColor  = Color.FromArgb(39, 174, 96);    // เขียวเดิมของ btnImport
         private static readonly Color ImportButtonDisabledColor = Color.FromArgb(189, 195, 199);  // เทา — เห็นชัดว่ากดไม่ได้ (FlatStyle.Flat ไม่เปลี่ยนสีพื้นเอง)
@@ -85,6 +91,15 @@ namespace CMS.Presentation.Modules.KMS
         {
             if (presenter == null) throw new ArgumentNullException("presenter");
             _presenter = presenter;
+        }
+
+        /// <summary>
+        /// Composition root ส่ง factory สร้างหน้าเลือกโฟลเดอร์ DMS (รับ delegate ตรวจสิทธิ์ และ Level เริ่มต้น).
+        /// ไม่เรียก = ปุ่มเลือกโฟลเดอร์ DMS แจ้งว่าใช้ไม่ได้
+        /// </summary>
+        public void AttachDmsFolderPicker(Func<Func<int, string>, int, KBDmsFolderPickerDialog> factory)
+        {
+            _dmsPickerFactory = factory;
         }
 
         #endregion
@@ -170,12 +185,15 @@ namespace CMS.Presentation.Modules.KMS
             get { return string.IsNullOrWhiteSpace(_attachmentFolderPath) ? null : _attachmentFolderPath; }
         }
 
+        public int? DmsFolderId { get { return _dmsFolderId; } }
+
         // Methods
 
         public void SetAttachmentFolderRequired(bool required)
         {
             _attachmentFolderRequired  = required;
             pnlAttachmentFolder.Visible = required;
+            pnlDmsFolder.Visible        = required;
             UpdateImportButtonState();
         }
 
@@ -464,8 +482,82 @@ namespace CMS.Presentation.Modules.KMS
                 if (dlg.ShowDialog() != DialogResult.OK) return;
 
                 _attachmentFolderPath = dlg.SelectedPath;
+                _attachmentFileCount  = CountFilesInFolder(_attachmentFolderPath);
                 UpdateImportButtonState();
-                SetStatus(string.Format("📂  เลือกโฟลเดอร์ไฟล์แนบ \"{0}\" แล้ว", _attachmentFolderPath));
+                SetStatus(_attachmentFileCount.HasValue
+                    ? string.Format("📂  เลือกโฟลเดอร์ไฟล์แนบ \"{0}\" แล้ว — พบ {1:N0} ไฟล์", _attachmentFolderPath, _attachmentFileCount.Value)
+                    : string.Format("📂  เลือกโฟลเดอร์ไฟล์แนบ \"{0}\" แล้ว", _attachmentFolderPath));
+            }
+        }
+
+        /// <summary>นับไฟล์ในโฟลเดอร์ (ไม่รวมโฟลเดอร์ย่อย — LawFileDownloader หาไฟล์ตามชื่อในโฟลเดอร์นี้โดยตรง); อ่านไม่ได้คืน null</summary>
+        private static int? CountFilesInFolder(string path)
+        {
+            try { return Directory.GetFiles(path).Length; }
+            catch (Exception) { return null; }
+        }
+
+        /// <summary>
+        /// ปุ่มทดสอบ: อัปโหลดทุกไฟล์ในโฟลเดอร์ไฟล์แนบเข้าโฟลเดอร์ DMS ที่เลือกโดยตรง (ไม่นำเข้าบทความ) — ใช้ตรวจสิทธิ์/ปลายทางก่อนนำเข้าจริง
+        /// </summary>
+        private async void BtnTestUploadFiles_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null || !_dmsFolderId.HasValue || string.IsNullOrWhiteSpace(_attachmentFolderPath))
+                return;
+
+            string localFolder = _attachmentFolderPath;
+            int    dmsFolderId = _dmsFolderId.Value;
+
+            var confirm = MessageBox.Show(
+                string.Format(
+                    "ต้องการอัปโหลดไฟล์ทั้งหมดในโฟลเดอร์\n{0}{1}\n\nเข้าโฟลเดอร์ DMS: {2}\n\n" +
+                    "การทดสอบนี้จะสร้างไฟล์จริงใน DMS (ชื่อซ้ำจะถูกตั้งชื่อใหม่) และไม่นำเข้าบทความ ใช่หรือไม่?",
+                    localFolder,
+                    _attachmentFileCount.HasValue ? string.Format("  ({0:N0} ไฟล์)", _attachmentFileCount.Value) : string.Empty,
+                    _dmsFolderPath),
+                "ยืนยันการทดสอบอัปโหลด", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (confirm != DialogResult.Yes) return;
+
+            btnTestUploadFiles.Enabled = false;
+            btnImport.Enabled          = false;
+            try
+            {
+                string summary = await System.Threading.Tasks.Task.Run(() =>
+                    _presenter.TestUploadFolderFiles(localFolder, dmsFolderId, (done, total) =>
+                        BeginInvoke(new Action(() =>
+                            SetStatus(string.Format("⬆  ทดสอบอัปโหลดไฟล์... {0}/{1}", done, total))))));
+
+                SetStatus("⬆  ทดสอบอัปโหลดเสร็จสิ้น");
+                MessageBox.Show(summary, "ผลการทดสอบอัปโหลด", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("ทดสอบอัปโหลดล้มเหลว: " + ex.Message, "ข้อผิดพลาด",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                UpdateImportButtonState();
+            }
+        }
+
+        private void BtnBrowseDmsFolder_Click(object sender, EventArgs e)
+        {
+            if (_dmsPickerFactory == null || _presenter == null)
+            {
+                MessageBox.Show("ไม่สามารถเลือกโฟลเดอร์ DMS ได้ — ระบบจัดการโฟลเดอร์ยังไม่พร้อมใช้งาน",
+                    "ไม่พร้อมใช้งาน", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (var dlg = _dmsPickerFactory(_presenter.CheckDmsFolder, 4))
+            {
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                _dmsFolderId   = dlg.SelectedFolderId;
+                _dmsFolderPath = dlg.SelectedFolderPath;
+                UpdateImportButtonState();
+                SetStatus(string.Format("🗄  เลือกโฟลเดอร์ปลายทางใน DMS \"{0}\" แล้ว", _dmsFolderPath));
             }
         }
 
@@ -520,6 +612,12 @@ namespace CMS.Presentation.Modules.KMS
             {
                 MessageBox.Show("กรุณาเลือกโฟลเดอร์ไฟล์แนบ (PDF) ก่อนนำเข้า",
                     "ยังไม่ได้เลือกโฟลเดอร์ไฟล์แนบ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (_attachmentFolderRequired && !_dmsFolderId.HasValue)
+            {
+                MessageBox.Show("กรุณาเลือกโฟลเดอร์ปลายทางใน DMS ก่อนนำเข้า",
+                    "ยังไม่ได้เลือกโฟลเดอร์ปลายทาง", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -945,23 +1043,37 @@ namespace CMS.Presentation.Modules.KMS
         }
 
         /// <summary>
-        /// ปุ่มนำเข้ากดได้เมื่อไม่ต้องใช้ไฟล์แนบ หรือเลือกโฟลเดอร์ไฟล์แนบแล้ว; ช่องโฟลเดอร์แสดง path ที่เลือก (หัวข้อสีแดงเมื่อยังไม่ได้เลือก)
+        /// ปุ่มนำเข้ากดได้เมื่อไม่ต้องใช้ไฟล์แนบ หรือเลือกครบทั้งโฟลเดอร์ไฟล์แนบ (ในเครื่อง) และโฟลเดอร์ปลายทางใน DMS
+        /// (โฟลเดอร์ DMS ผ่านการตรวจสิทธิ์ใน dialog แล้ว และ controller ตรวจซ้ำก่อนนำเข้า); ช่องโฟลเดอร์แสดงที่เลือก (หัวข้อสีแดงเมื่อยังไม่ได้เลือก)
         /// </summary>
         private void UpdateImportButtonState()
         {
-            // TODO: เมื่อเพิ่มการเลือกโฟลเดอร์ปลายทางใน DMS (ดูแนวทางที่ KBImportProcessor.EnsureUploaded) ปุ่มนำเข้าต้องกดได้ก็ต่อเมื่อ
-            //       เลือกครบทั้ง "โฟลเดอร์ไฟล์ต้นทาง" และ "โฟลเดอร์ปลายทางใน DMS" และโฟลเดอร์ DMS ผ่านการตรวจแล้ว (controller ตรวจแล้วแจ้ง view)
             bool folderChosen = !string.IsNullOrWhiteSpace(_attachmentFolderPath);
 
             txtAttachmentFolder.Text = _attachmentFolderPath ?? string.Empty;
             lblAttachmentFolder.Text = folderChosen
-                ? "📁  โฟลเดอร์ไฟล์แนบ (PDF)"
+                ? "📁  โฟลเดอร์ไฟล์แนบ (PDF)" + (_attachmentFileCount.HasValue
+                    ? string.Format(" — พบ {0:N0} ไฟล์", _attachmentFileCount.Value) : string.Empty)
                 : "📁  โฟลเดอร์ไฟล์แนบ (PDF) — ต้องเลือกก่อนจึงจะนำเข้าได้";
             lblAttachmentFolder.ForeColor = folderChosen
                 ? Color.FromArgb(30, 58, 95)
                 : Color.FromArgb(192, 57, 43);
 
-            bool canImport = !_attachmentFolderRequired || folderChosen;
+            bool dmsChosen = _dmsFolderId.HasValue;
+
+            txtDmsFolder.Text = _dmsFolderPath ?? string.Empty;
+            lblDmsFolder.Text = dmsChosen
+                ? "🗄  โฟลเดอร์ปลายทางใน DMS" + (_attachmentFileCount.HasValue
+                    ? string.Format(" — จะนำเข้า {0:N0} ไฟล์ที่พบไปยังโฟลเดอร์นี้เมื่อกดนำเข้า", _attachmentFileCount.Value)
+                    : " — จะนำเข้าไฟล์แนบไปยังโฟลเดอร์นี้เมื่อกดนำเข้า")
+                : "🗄  โฟลเดอร์ปลายทางใน DMS (Level 1-4) — ต้องเลือกก่อนจึงจะนำเข้าได้";
+            lblDmsFolder.ForeColor = dmsChosen
+                ? Color.FromArgb(30, 58, 95)
+                : Color.FromArgb(192, 57, 43);
+
+            btnTestUploadFiles.Enabled = folderChosen && dmsChosen;
+
+            bool canImport = !_attachmentFolderRequired || (folderChosen && dmsChosen);
             btnImport.Enabled   = canImport;
             btnImport.BackColor = canImport ? ImportButtonEnabledColor : ImportButtonDisabledColor;
         }
