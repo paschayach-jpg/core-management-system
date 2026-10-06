@@ -356,6 +356,12 @@
     <Compile Include="Modules\KMS\KBArticleDisplayProfileConfigForm.Designer.cs">
       <DependentUpon>KBArticleDisplayProfileConfigForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Modules\KMS\KBArticleMoveForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Modules\KMS\KBArticleMoveForm.Designer.cs">
+      <DependentUpon>KBArticleMoveForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Modules\KMS\KBMainForm.cs">
       <SubType>Form</SubType>
     </Compile>

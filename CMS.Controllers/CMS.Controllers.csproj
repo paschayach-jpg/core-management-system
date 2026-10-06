@@ -125,6 +125,7 @@
     <Compile Include="KMS\KB\Interfaces\IKBEditorController.cs" />
     <Compile Include="KMS\KB\Interfaces\IKBCategoryController.cs" />
     <Compile Include="KMS\KB\Interfaces\IKBImportTemplateConfigController.cs" />
+    <Compile Include="KMS\KB\Interfaces\IKBArticleMoveController.cs" />
     <Compile Include="KMS\KB\Interfaces\IKBArticleDisplayProfileConfigController.cs" />
     <Compile Include="KMS\KB\Interfaces\IArticleViewerController.cs" />
     <Compile Include="KMS\KB\Interfaces\IKBDashboardController.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="KMS\KB\KBEditorController.cs" />
     <Compile Include="KMS\KB\KBCategoryController.cs" />
     <Compile Include="KMS\KB\KBImportTemplateConfigController.cs" />
+    <Compile Include="KMS\KB\KBArticleMoveController.cs" />
     <Compile Include="KMS\KB\KBArticleDisplayProfileConfigController.cs" />
     <Compile Include="KMS\KB\ArticleViewerController.cs" />
     <Compile Include="KMS\KB\KBDashboardController.cs" />

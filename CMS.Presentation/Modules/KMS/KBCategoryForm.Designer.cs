@@ -748,16 +748,16 @@ namespace CMS.Presentation.Modules.KMS
             // 
             this.txtName.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.txtName.Location = new System.Drawing.Point(150, 14);
-            this.txtName.MaxLength = 100;
+            this.txtName.MaxLength = 300;
             this.txtName.Name = "txtName";
-            this.txtName.Size = new System.Drawing.Size(300, 34);
+            this.txtName.Size = new System.Drawing.Size(958, 34);
             this.txtName.TabIndex = 2;
             this.txtName.TextChanged += new System.EventHandler(this.TxtName_TextChanged);
             // 
             // lblCategoryCode
             // 
             this.lblCategoryCode.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblCategoryCode.Location = new System.Drawing.Point(495, 19);
+            this.lblCategoryCode.Location = new System.Drawing.Point(753, 57);
             this.lblCategoryCode.Name = "lblCategoryCode";
             this.lblCategoryCode.Size = new System.Drawing.Size(149, 30);
             this.lblCategoryCode.TabIndex = 3;
@@ -766,7 +766,7 @@ namespace CMS.Presentation.Modules.KMS
             // txtCategoryCode
             // 
             this.txtCategoryCode.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.txtCategoryCode.Location = new System.Drawing.Point(650, 15);
+            this.txtCategoryCode.Location = new System.Drawing.Point(908, 53);
             this.txtCategoryCode.MaxLength = 50;
             this.txtCategoryCode.Name = "txtCategoryCode";
             this.txtCategoryCode.Size = new System.Drawing.Size(200, 34);
@@ -798,7 +798,7 @@ namespace CMS.Presentation.Modules.KMS
             "💡 ความรู้"});
             this.cboIcon.Location = new System.Drawing.Point(149, 55);
             this.cboIcon.Name = "cboIcon";
-            this.cboIcon.Size = new System.Drawing.Size(130, 36);
+            this.cboIcon.Size = new System.Drawing.Size(301, 36);
             this.cboIcon.TabIndex = 6;
             this.cboIcon.SelectedIndexChanged += new System.EventHandler(this.CboIcon_SelectedIndexChanged);
             // 
@@ -854,7 +854,7 @@ namespace CMS.Presentation.Modules.KMS
             "○ Inactive (ปิดการใช้งาน)"});
             this.cboStatus.Location = new System.Drawing.Point(149, 100);
             this.cboStatus.Name = "cboStatus";
-            this.cboStatus.Size = new System.Drawing.Size(180, 36);
+            this.cboStatus.Size = new System.Drawing.Size(301, 36);
             this.cboStatus.TabIndex = 12;
             // 
             // lblParent
@@ -872,25 +872,25 @@ namespace CMS.Presentation.Modules.KMS
             this.cboParent.Font = new System.Drawing.Font("Segoe UI", 12F);
             this.cboParent.Location = new System.Drawing.Point(648, 100);
             this.cboParent.Name = "cboParent";
-            this.cboParent.Size = new System.Drawing.Size(280, 36);
+            this.cboParent.Size = new System.Drawing.Size(460, 36);
             this.cboParent.TabIndex = 14;
             this.cboParent.SelectedIndexChanged += new System.EventHandler(this.CboParent_SelectedIndexChanged);
             // 
             // lblImportTypeDigit
             // 
             this.lblImportTypeDigit.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.lblImportTypeDigit.Location = new System.Drawing.Point(700, 139);
+            this.lblImportTypeDigit.Location = new System.Drawing.Point(629, 152);
             this.lblImportTypeDigit.Name = "lblImportTypeDigit";
             this.lblImportTypeDigit.Size = new System.Drawing.Size(256, 31);
             this.lblImportTypeDigit.TabIndex = 17;
-            this.lblImportTypeDigit.Text = "รหัสประเภทเอกสาร (ตัวที่ 23)";
+            this.lblImportTypeDigit.Text = "รหัสประเภทเอกสาร (ตัวที่ 25)";
             // 
             // cboImportTypeDigit
             // 
             this.cboImportTypeDigit.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cboImportTypeDigit.DropDownWidth = 260;
             this.cboImportTypeDigit.Font = new System.Drawing.Font("Segoe UI", 12F);
-            this.cboImportTypeDigit.Location = new System.Drawing.Point(700, 170);
+            this.cboImportTypeDigit.Location = new System.Drawing.Point(901, 152);
             this.cboImportTypeDigit.Name = "cboImportTypeDigit";
             this.cboImportTypeDigit.Size = new System.Drawing.Size(207, 36);
             this.cboImportTypeDigit.TabIndex = 18;
@@ -913,7 +913,7 @@ namespace CMS.Presentation.Modules.KMS
             this.txtDescription.Multiline = true;
             this.txtDescription.Name = "txtDescription";
             this.txtDescription.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtDescription.Size = new System.Drawing.Size(530, 56);
+            this.txtDescription.Size = new System.Drawing.Size(474, 62);
             this.txtDescription.TabIndex = 16;
             this.txtDescription.TextChanged += new System.EventHandler(this.TxtDescription_TextChanged);
             // 

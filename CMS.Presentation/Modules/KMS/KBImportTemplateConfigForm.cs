@@ -187,6 +187,13 @@ namespace CMS.Presentation.Modules.KMS
             }
         }
 
+        private void BtnClear_Click(object sender, EventArgs e)
+        {
+            if (_presenter == null) return;
+            dgvTemplates.ClearSelection();
+            _presenter.OnNewTemplate();
+        }
+
         private void BtnClose_Click(object sender, EventArgs e)
         {
             Close();

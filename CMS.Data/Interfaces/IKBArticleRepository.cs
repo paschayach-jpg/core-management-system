@@ -58,5 +58,20 @@ namespace CMS.Data.Interfaces
         /// เรียงตาม ORDINAL_POSITION ของตารางจริง
         /// </summary>
         IList<string> GetImportableTargetColumns();
+
+        /// <summary>
+        /// รายการบทความ (ไม่ถูกลบ) ในหมวดที่ระบุ สำหรับหน้าย้ายบทความ — คืนเฉพาะ ArticleID, ArticleCode, Title, TitleCategory,
+        /// CategoryID, CategoryName, ArticleType, Status (ไม่ดึง ContentHTML) เรียงตาม ArticleCode
+        /// </summary>
+        IList<KBArticle> GetMoveCandidates(IEnumerable<int> categoryIds);
+
+        /// <summary>เหมือน <see cref="GetMoveCandidates"/> แต่ค้นด้วย ArticleID (บทความที่ถูกลบไม่ถูกคืน)</summary>
+        IList<KBArticle> GetMoveCandidatesByIds(IEnumerable<int> articleIds);
+
+        /// <summary>
+        /// ย้ายบทความไปหมวด <paramref name="toCategoryId"/> (อัปเดต CategoryID, UpdatedBy, UpdatedDate เท่านั้น) ในธุรกรรมเดียว —
+        /// ข้ามบทความที่ถูกลบหรืออยู่หมวดนั้นอยู่แล้ว คืนคู่ (ArticleID, CategoryID เดิม) ของบทความที่ถูกย้ายจริง
+        /// </summary>
+        IList<KeyValuePair<int, int>> MoveToCategory(IEnumerable<int> articleIds, int toCategoryId, string updatedBy);
     }
 }

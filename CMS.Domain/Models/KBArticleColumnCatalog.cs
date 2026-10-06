@@ -25,7 +25,7 @@ namespace CMS.Domain.Models
 
         private static readonly Dictionary<string, string> Descriptions = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
         {
-            { "ArticleCode",         "Code รวม 27 หลัก (กฎหมายลงท้าย 00000 / ประกาศ-คำสั่งตัวที่ 23 = รหัสประเภทเอกสาร 1-9) ใช้ตรวจประเภทไฟล์และหากฎหมายแม่ (22 ตัวแรก)" },
+            { "ArticleCode",         "Code รวม 29 หลัก (กฎหมายลงท้าย 00000 / ประกาศ-คำสั่งตัวที่ 25 = รหัสประเภทเอกสาร 1-9) ใช้ตรวจประเภทไฟล์และหากฎหมายแม่ (24 ตัวแรก)" },
             { AttachmentTargetColumn, "ไฟล์แนบของประกาศ/คำสั่ง — คอลัมน์ Excel ที่เป็นชื่อไฟล์ (มี hyperlink) ใช้เฉพาะ Template ที่ไม่ใช่กฎหมาย" },
             { LayoutTypeTargetColumn, "ประเภทไฟล์ของ Template: กฎหมาย (Law) หรือ ไม่ใช่กฎหมาย (NonLaw) — ใช้ตรวจว่า Excel ตรงกับ Template และกำหนดคอลัมน์ที่ต้อง Map" },
             { "Title",               "ชื่อเรื่อง/หัวข้อบทความ — ถ้าต้องคำนวณจากคอลัมน์ Excel (เช่น กฎหมาย/มาตรา) ให้ผสมข้อความคงที่กับคอลัมน์ในรูปแบบ {X} เช่น \"มาตรา {C}\"" },

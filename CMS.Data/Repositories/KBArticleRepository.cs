@@ -627,6 +627,139 @@ namespace CMS.Data.Repositories
             };
         }
 
+        private const int MoveChunkSize = 1000;   // SQL Server รับ parameter ได้ราว 2100 ต่อคำสั่ง
+
+        private static IEnumerable<List<int>> Chunk(IEnumerable<int> ids)
+        {
+            var distinct = (ids ?? Enumerable.Empty<int>()).Distinct().ToList();
+            for (int i = 0; i < distinct.Count; i += MoveChunkSize)
+                yield return distinct.GetRange(i, Math.Min(MoveChunkSize, distinct.Count - i));
+        }
+
+        /// <summary>สร้าง "@p0,@p1,..." และใส่ parameter ให้ครบ</summary>
+        private static string AddInParameters(SqlCommand cmd, List<int> ids)
+        {
+            var names = new string[ids.Count];
+            for (int i = 0; i < ids.Count; i++)
+            {
+                names[i] = "@p" + i;
+                cmd.Parameters.AddWithValue(names[i], ids[i]);
+            }
+            return string.Join(",", names);
+        }
+
+        public IList<KBArticle> GetMoveCandidates(IEnumerable<int> categoryIds)
+        {
+            return QueryMoveCandidates("a.CategoryID", categoryIds);
+        }
+
+        public IList<KBArticle> GetMoveCandidatesByIds(IEnumerable<int> articleIds)
+        {
+            return QueryMoveCandidates("a.ArticleID", articleIds);
+        }
+
+        private IList<KBArticle> QueryMoveCandidates(string filterColumn, IEnumerable<int> ids)
+        {
+            var results = new List<KBArticle>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                foreach (var chunk in Chunk(ids))
+                {
+                    using (var cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        string inList = AddInParameters(cmd, chunk);
+                        cmd.CommandText = @"
+                            SELECT a.ArticleID, a.ArticleCode, a.Title, a.TitleCategory, a.CategoryID,
+                                   a.ArticleType, a.Status, c.CategoryName
+                            FROM   KMS.t_KBArticle a
+                            LEFT JOIN KMS.m_KBCategory c ON c.CategoryID = a.CategoryID
+                            WHERE  " + filterColumn + @" IN (" + inList + @")
+                              AND  (a.IsDelete = 0 OR a.IsDelete IS NULL)";
+                        using (var r = cmd.ExecuteReader())
+                        {
+                            while (r.Read())
+                            {
+                                results.Add(new KBArticle
+                                {
+                                    ArticleID     = r.GetInt32(0),
+                                    ArticleCode   = r.IsDBNull(1) ? null : r.GetString(1),
+                                    Title         = r.IsDBNull(2) ? null : r.GetString(2),
+                                    TitleCategory = r.IsDBNull(3) ? null : r.GetString(3),
+                                    CategoryID    = r.GetInt32(4),
+                                    ArticleType   = r.IsDBNull(5) ? (byte)0 : r.GetByte(5),
+                                    Status        = r.IsDBNull(6) ? (byte)1 : r.GetByte(6),
+                                    CategoryName  = r.IsDBNull(7) ? null : r.GetString(7),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            return results.OrderBy(a => a.ArticleCode, StringComparer.Ordinal).ToList();
+        }
+
+        public IList<KeyValuePair<int, int>> MoveToCategory(IEnumerable<int> articleIds, int toCategoryId, string updatedBy)
+        {
+            var moved = new List<KeyValuePair<int, int>>();
+            using (var conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        foreach (var chunk in Chunk(articleIds))
+                        {
+                            var toMove = new List<KeyValuePair<int, int>>();   // (ArticleID, CategoryID เดิม)
+                            using (var cmd = new SqlCommand())
+                            {
+                                cmd.Connection  = conn;
+                                cmd.Transaction = tx;
+                                string inList = AddInParameters(cmd, chunk);
+                                cmd.Parameters.AddWithValue("@To", toCategoryId);
+                                cmd.CommandText = @"
+                                    SELECT ArticleID, CategoryID
+                                    FROM   KMS.t_KBArticle WITH (UPDLOCK)
+                                    WHERE  ArticleID IN (" + inList + @")
+                                      AND  CategoryID <> @To
+                                      AND  (IsDelete = 0 OR IsDelete IS NULL)";
+                                using (var r = cmd.ExecuteReader())
+                                {
+                                    while (r.Read())
+                                        toMove.Add(new KeyValuePair<int, int>(r.GetInt32(0), r.GetInt32(1)));
+                                }
+                            }
+                            if (toMove.Count == 0) continue;
+
+                            using (var cmd = new SqlCommand())
+                            {
+                                cmd.Connection  = conn;
+                                cmd.Transaction = tx;
+                                string inList = AddInParameters(cmd, toMove.Select(m => m.Key).ToList());
+                                cmd.Parameters.AddWithValue("@To", toCategoryId);
+                                cmd.Parameters.AddWithValue("@UpdatedBy", (object)updatedBy ?? DBNull.Value);
+                                cmd.CommandText = @"
+                                    UPDATE KMS.t_KBArticle
+                                    SET    CategoryID = @To, UpdatedBy = @UpdatedBy, UpdatedDate = GETDATE()
+                                    WHERE  ArticleID IN (" + inList + ")";
+                                cmd.ExecuteNonQuery();
+                            }
+                            moved.AddRange(toMove);
+                        }
+                        tx.Commit();
+                    }
+                    catch
+                    {
+                        tx.Rollback();
+                        throw;
+                    }
+                }
+            }
+            return moved;
+        }
+
         public void SoftDelete(int articleId)
         {
             using (var conn = new SqlConnection(_connectionString))

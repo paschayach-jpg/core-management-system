@@ -129,7 +129,7 @@ namespace CMS.Controllers.KMS.KB
                         nonLawTypes.Add(new KeyValuePair<int, string>(typeCategory.CategoryID, folderLabel));
                     }
 
-                    // บทความของประเภทเอกสารอยู่ในหมวดปีใต้หมวดประเภท (เช่น OR2535 ใต้ OR) — นับหมวดย่อยทุกชั้นเป็นประเภทเดียวกับหมวดประเภท
+                    // บทความของประเภทเอกสารอยู่ในหมวดปีใต้หมวดประเภท (เช่น OR002535 ใต้ OR00) — นับหมวดย่อยทุกชั้นเป็นประเภทเดียวกับหมวดประเภท
                     var nonLawTypeScopes = nonLawTypes.ToDictionary(t => t.Key, t =>
                     {
                         ISet<int> scope = KBCategoryTree.GetDescendantIds(categories, t.Key);
@@ -430,7 +430,7 @@ namespace CMS.Controllers.KMS.KB
 
         /// <summary>
         /// ค้นบทความของหมวดที่เลือก — ถ้าเป็นการดูทั้งหมวด (<see cref="_includeSubCategories"/>) รวมบทความของหมวดย่อยที่เปิดใช้งานทุกชั้นด้วย
-        /// (หมวดแม่ เช่น "พระราชบัญญัติประกันชีวิต" เห็นบทความของ PLI2535/PLI2540) เรียงตาม ArticleCode เหมือนผล query รายหมวด
+        /// (หมวดแม่ เช่น "พระราชบัญญัติประกันชีวิต" เห็นบทความของ PLI002535/PLI002540) เรียงตาม ArticleCode เหมือนผล query รายหมวด
         /// </summary>
         private List<KBArticle> SearchCategoryArticles(string keyword, int? catId, byte? status, byte? type, int searchFieldId)
         {
