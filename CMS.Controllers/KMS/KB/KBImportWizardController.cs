@@ -73,6 +73,39 @@ namespace CMS.Controllers.KMS.KB
         }
 
         /// <summary>
+        /// ปุ่มทดสอบ: อัปโหลดทุกไฟล์ในโฟลเดอร์ local เข้าโฟลเดอร์ DMS ที่เลือกโดยตรง (ไม่ผ่าน Excel/บทความ).
+        /// ตรวจสิทธิ์ก่อน; คืนข้อความสรุปผลให้ view แสดง
+        /// </summary>
+        public string TestUploadFolderFiles(string localFolder, int dmsFolderId, Action<int, int> onProgress)
+        {
+            if (string.IsNullOrWhiteSpace(localFolder))
+                return "ยังไม่ได้เลือกโฟลเดอร์ไฟล์แนบ";
+
+            string folderError = CheckDmsFolder(dmsFolderId);
+            if (folderError != null)
+                return folderError;
+
+            int success;
+            IList<string> errors;
+            try
+            {
+                _processor.UploadFolderFiles(localFolder, dmsFolderId, _user, out success, out errors, onProgress);
+            }
+            catch (Exception ex)
+            {
+                return "อัปโหลดไฟล์ล้มเหลว: " + ex.Message;
+            }
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendFormat("อัปโหลดสำเร็จ {0:N0} ไฟล์, ไม่สำเร็จ {1:N0} ไฟล์", success, errors.Count);
+            foreach (var err in errors.Take(10))
+                sb.AppendLine().Append("• ").Append(err);
+            if (errors.Count > 10)
+                sb.AppendLine().AppendFormat("... และอีก {0:N0} รายการ", errors.Count - 10);
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// ตรวจว่าผู้ใช้อัปโหลดไฟล์ลงโฟลเดอร์ DMS ที่เลือกได้หรือไม่ (เรียกจากหน้าเลือกโฟลเดอร์ปลายทาง).
         /// คืนข้อความไทยเมื่อไม่ผ่าน, null เมื่อผ่าน
         /// </summary>

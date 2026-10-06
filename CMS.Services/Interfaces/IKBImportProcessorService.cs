@@ -52,5 +52,18 @@ namespace CMS.Services.Interfaces
             out int successCount,
             out int errorCount,
             Action<int, int> onProgress);
+
+        /// <summary>
+        /// ทดสอบอัปโหลด: นำไฟล์ทุกไฟล์ในโฟลเดอร์ (ไม่รวมโฟลเดอร์ย่อย) เข้าโฟลเดอร์ DMS ที่เลือกโดยตรง — ไม่อ่าน Excel และไม่สร้างบทความ.
+        /// ชื่อซ้ำจะถูกตั้งชื่อใหม่ (ไม่ทับไฟล์เดิม). ผู้เรียกต้องตรวจสิทธิ์โฟลเดอร์ก่อน
+        /// </summary>
+        /// <param name="errors">ข้อความของไฟล์ที่อ่าน/อัปโหลดไม่สำเร็จ (ชื่อไฟล์ + สาเหตุ)</param>
+        void UploadFolderFiles(
+            string localFolder,
+            int dmsFolderId,
+            UserContext user,
+            out int successCount,
+            out IList<string> errors,
+            Action<int, int> onProgress);
     }
 }

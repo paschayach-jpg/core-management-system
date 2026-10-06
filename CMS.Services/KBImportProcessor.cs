@@ -1021,6 +1021,59 @@ namespace CMS.Services
             }
         }
 
+        public void UploadFolderFiles(
+            string localFolder,
+            int dmsFolderId,
+            UserContext user,
+            out int successCount,
+            out IList<string> errors,
+            Action<int, int> onProgress)
+        {
+            if (user == null) throw new ArgumentNullException("user");
+
+            successCount = 0;
+            var errorList = new List<string>();
+            errors = errorList;
+
+            string[] paths;
+            try
+            {
+                paths = Directory.GetFiles(localFolder);
+            }
+            catch (Exception ex)
+            {
+                errorList.Add("อ่านโฟลเดอร์ไม่สำเร็จ: " + ex.Message);
+                return;
+            }
+
+            for (int i = 0; i < paths.Length; i++)
+            {
+                string name = Path.GetFileName(paths[i]);
+                try
+                {
+                    var download = _downloader.Download(localFolder, null, name);
+                    if (!download.Success)
+                    {
+                        errorList.Add(download.ErrorMessage);
+                    }
+                    else
+                    {
+                        string uploadError;
+                        if (UploadToDms(download, user, dmsFolderId, out uploadError).HasValue)
+                            successCount++;
+                        else
+                            errorList.Add(string.Format("{0}: {1}", name, uploadError));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errorList.Add(string.Format("{0}: {1}", name, ex.Message));
+                }
+
+                if (onProgress != null) onProgress(i + 1, paths.Length);
+            }
+        }
+
         /// <summary>
         /// Truncates <paramref name="message"/> to at most 200 characters.
         /// </summary>
