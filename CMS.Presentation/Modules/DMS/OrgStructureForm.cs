@@ -184,7 +184,7 @@ namespace CMS.Presentation
                 treeView.Nodes.Add(divNode);
             }
 
-            treeView.ExpandAll();
+            ExpandTreeAfterLoad();
             treeView.EndUpdate();
         }
 
@@ -273,7 +273,7 @@ namespace CMS.Presentation
                 treeView.Nodes.Add(groupNode);
             }
 
-            treeView.ExpandAll();
+            ExpandTreeAfterLoad();
             treeView.EndUpdate();
         }
 
@@ -418,10 +418,9 @@ namespace CMS.Presentation
                 
                 if (selectedParent == null)
                 {
-                    // ไม่ได้เลือก parent - แสดงทุกตัวเลือก
+                    // ไม่ได้เลือก parent - สร้างได้เฉพาะ SubCommittee หรือฝ่ายอิสระ (แผนกต้องเลือกฝ่ายก่อน)
                     availableTiers.Add(OrgUnitTier.SubCommittee);
                     availableTiers.Add(OrgUnitTier.Division);
-                    availableTiers.Add(OrgUnitTier.Department);
                 }
                 else if (selectedParent.Tier == OrgUnitTier.SubCommittee)
                 {
@@ -432,8 +431,7 @@ namespace CMS.Presentation
                 }
                 else if (selectedParent.Tier == OrgUnitTier.Division)
                 {
-                    // Parent เป็น Division - สร้างได้ทั้ง SubCommittee และ Department
-                    availableTiers.Add(OrgUnitTier.SubCommittee);
+                    // Parent เป็น Division - สร้างได้เฉพาะแผนกใต้ฝ่ายนี้ (Div → Dep)
                     availableTiers.Add(OrgUnitTier.Department);
                     result = OrgUnitTier.Department; // Set default เป็น Department
                 }
@@ -472,7 +470,7 @@ namespace CMS.Presentation
                         case OrgUnitTier.Division:
                             btn = new Button
                             {
-                                Text      = "🏬  ฝ่าย  (ยืดหยุ่น - สามารถสังกัด SubCommittee หรือเป็นอิสระ)",
+                                Text      = "🏬  ฝ่าย + แผนก  (Sub → Div → Dep)",
                                 Location  = new Point(20, yPos),
                                 Size      = new Size(300, 38),
                                 FlatStyle = FlatStyle.Flat,
@@ -628,6 +626,26 @@ namespace CMS.Presentation
             if (confirm != DialogResult.Yes) return;
 
             _presenter.DeactivateOrgUnit(selected.OrgUnitId);
+        }
+
+        /// <summary>
+        /// ขยายต้นไม้ทั้งหมดหลังโหลดข้อมูลใหม่ — สั่งทันทีและสั่งซ้ำอีกครั้งหลัง UI วาดเสร็จ
+        /// เพื่อให้รายการที่เพิ่งสร้างแสดงโดยไม่ต้องกดขยายเอง
+        /// </summary>
+        private void ExpandTreeAfterLoad()
+        {
+            treeView.ExpandAll();
+            if (!IsHandleCreated) return;
+
+            BeginInvoke((Action)(() =>
+            {
+                if (treeView.IsDisposed) return;
+                treeView.BeginUpdate();
+                treeView.ExpandAll();
+                treeView.EndUpdate();
+                if (treeView.Nodes.Count > 0)
+                    treeView.Nodes[0].EnsureVisible();
+            }));
         }
 
         private void btnExpandAll_Click(object sender, EventArgs e)
@@ -874,7 +892,7 @@ namespace CMS.Presentation
                 }
             }
 
-            treeView.ExpandAll();
+            ExpandTreeAfterLoad();
             treeView.EndUpdate();
         }
 
@@ -996,7 +1014,7 @@ namespace CMS.Presentation
                     treeView.Nodes.Add(scNode);
                 }
 
-                treeView.ExpandAll();
+                ExpandTreeAfterLoad();
                 treeView.EndUpdate();
             }
             catch (Exception ex)

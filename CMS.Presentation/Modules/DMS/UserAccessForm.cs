@@ -1000,6 +1000,7 @@ namespace CMS.Presentation
                 dlg.Controls.Add(pnlCard);
                 dlg.Controls.Add(pnlBtns);
                 dlg.Controls.Add(pnlHeader);
+                dlg.Shown += (ss, se) => tree.ExpandAll();
                 dlg.ShowDialog(this);
             }
             return results;
